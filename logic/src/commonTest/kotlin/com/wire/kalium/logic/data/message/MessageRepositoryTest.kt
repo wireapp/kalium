@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestMessage.TEST_MESSAGE_ID
+import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID
 import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID_2
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
@@ -524,6 +525,34 @@ class MessageRepositoryTest {
             (result as Either.Right).value
         )
     }
+    @Test
+    fun givenLegalHoldForMembersMessage_whenUpdatingMembers_thenTheDAOShouldBeCalledWithProperValues() = runTest {
+        // given
+        val newUsersList = listOf(OTHER_USER_ID, OTHER_USER_ID_2)
+        val (arrangement, messageRepository) = Arrangement().arrange()
+        // when
+        messageRepository.updateLegalHoldMessageMembers(TEST_MESSAGE_ID, TEST_CONVERSATION_ID, newUsersList)
+        // then
+        verify(arrangement.messageDAO)
+            .suspendFunction(arrangement.messageDAO::updateLegalHoldMessageMembers)
+            .with(eq(TEST_CONVERSATION_ID.toDao()), eq(TEST_MESSAGE_ID), eq(newUsersList.map { it.toDao() }))
+            .wasInvoked(exactly = once)
+    }
+    @Test
+    fun givenConversationIds_whenGettingLastMessagesForConversationIds_thenTheDAOShouldBeCalledWithProperValues() = runTest {
+        // given
+        val conversationIds = listOf(TEST_CONVERSATION_ID.copy("id1"), TEST_CONVERSATION_ID.copy("id2"))
+        val (arrangement, messageRepository) = Arrangement()
+            .withGetLastMessagesByConversations(emptyMap())
+            .arrange()
+        // when
+        messageRepository.getLastMessagesForConversationIds(conversationIds)
+        // then
+        verify(arrangement.messageDAO)
+            .suspendFunction(arrangement.messageDAO::getLastMessagesByConversations)
+            .with(eq(conversationIds.map { it.toDao() }))
+            .wasInvoked(exactly = once)
+    }
 
     private class Arrangement {
 
@@ -689,6 +718,13 @@ class MessageRepositoryTest {
             given(messageDAO)
                 .suspendFunction(messageDAO::getMessageAssets)
                 .whenInvokedWith(eq(conversationId))
+                .thenReturn(result)
+        }
+
+        fun withGetLastMessagesByConversations(result: Map<QualifiedIDEntity, MessageEntity>) = apply {
+            given(messageDAO)
+                .suspendFunction(messageDAO::getLastMessagesByConversations)
+                .whenInvokedWith(anything())
                 .thenReturn(result)
         }
 

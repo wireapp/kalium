@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.monkeys.importer
+package com.wire.kalium.monkeys.model
 
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import kotlinx.serialization.SerialName
@@ -26,7 +26,27 @@ data class TestData(
     @SerialName("conversationDistribution") val conversationDistribution: Map<String, GroupConfig> = mapOf(),
     @SerialName("testCases") val testCases: List<TestCase>,
     @SerialName("backends") val backends: List<BackendConfig>,
+    @SerialName("eventStorage") val eventStorage: EventStorage? = null,
 )
+
+@Serializable
+sealed class EventStorage {
+    @Serializable
+    @SerialName("FILE")
+    data class FileStorage(
+        @SerialName("eventsLocation") val eventsLocation: String,
+        @SerialName("teamsLocation") val teamsLocation: String
+    ) : EventStorage()
+
+    @Serializable
+    @SerialName("POSTGRES")
+    data class PostgresStorage(
+        @SerialName("host") val host: String,
+        @SerialName("dbName") val dbName: String,
+        @SerialName("username") val username: String,
+        @SerialName("password") val password: String
+    ) : EventStorage()
+}
 
 @Serializable
 data class TestCase(

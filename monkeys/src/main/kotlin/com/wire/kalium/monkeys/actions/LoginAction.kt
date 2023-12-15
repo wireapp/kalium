@@ -18,19 +18,32 @@
 package com.wire.kalium.monkeys.actions
 
 import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.monkeys.importer.ActionType
+import com.wire.kalium.monkeys.conversation.Monkey
 import com.wire.kalium.monkeys.logger
+import com.wire.kalium.monkeys.model.ActionType
+import com.wire.kalium.monkeys.model.Event
+import com.wire.kalium.monkeys.model.EventType
 import com.wire.kalium.monkeys.pool.MonkeyPool
 import kotlinx.coroutines.delay
 
-class LoginAction(val config: ActionType.Login) : Action() {
+open class LoginAction(val config: ActionType.Login, sender: suspend (Event) -> Unit) : Action(sender) {
     override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
-        val monkeys = monkeyPool.randomLoggedOutMonkeys(this.config.userCount)
+        val monkeys = monkeys(monkeyPool)
         logger.i("Logging ${monkeys.count()} monkeys in")
-        monkeys.forEach { it.login(coreLogic, monkeyPool::loggedIn) }
+        monkeys.forEach {
+            it.login(coreLogic, monkeyPool::loggedIn)
+            this.sender(Event(it.internalId, EventType.Login))
+        }
         if (config.duration > 0u) {
             delay(config.duration.toLong())
-            monkeys.forEach { it.logout(monkeyPool::loggedOut) }
+            monkeys.forEach {
+                it.logout(monkeyPool::loggedOut)
+                this.sender(Event(it.internalId, EventType.Logout))
+            }
         }
+    }
+
+    open fun monkeys(monkeyPool: MonkeyPool): List<Monkey> {
+        return monkeyPool.randomLoggedOutMonkeys(this.config.userCount)
     }
 }

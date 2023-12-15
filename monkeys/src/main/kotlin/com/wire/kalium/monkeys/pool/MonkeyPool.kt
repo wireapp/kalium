@@ -22,9 +22,10 @@ import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.monkeys.MetricsCollector
 import com.wire.kalium.monkeys.conversation.Monkey
-import com.wire.kalium.monkeys.importer.Team
-import com.wire.kalium.monkeys.importer.UserCount
-import com.wire.kalium.monkeys.importer.UserData
+import com.wire.kalium.monkeys.model.MonkeyId
+import com.wire.kalium.monkeys.model.Team
+import com.wire.kalium.monkeys.model.UserCount
+import com.wire.kalium.monkeys.model.UserData
 import io.micrometer.core.instrument.Tag
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -32,6 +33,7 @@ import kotlinx.coroutines.coroutineScope
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.roundToInt
 
+@Suppress("TooManyFunctions")
 class MonkeyPool(users: List<UserData>, testCase: String) {
     // all the teams by name
     private val teams: ConcurrentHashMap<String, Team> = ConcurrentHashMap()
@@ -49,12 +51,12 @@ class MonkeyPool(users: List<UserData>, testCase: String) {
     private val poolLoggedOut: ConcurrentHashMap<String, ConcurrentHashMap<UserId, Monkey>> = ConcurrentHashMap()
 
     init {
-        users.forEach {
-            val monkey = Monkey.internal(it)
-            this.pool.getOrPut(it.team.name) { mutableListOf() }.add(monkey)
-            this.poolLoggedOut.getOrPut(it.team.name) { ConcurrentHashMap() }[it.userId] = monkey
-            this.poolById[it.userId] = monkey
-            this.teams.putIfAbsent(it.team.name, it.team)
+        users.forEachIndexed { index, userData ->
+            val monkey = Monkey.internal(userData, MonkeyId(index, userData.team.name))
+            this.pool.getOrPut(userData.team.name) { mutableListOf() }.add(monkey)
+            this.poolLoggedOut.getOrPut(userData.team.name) { ConcurrentHashMap() }[userData.userId] = monkey
+            this.poolById[userData.userId] = monkey
+            this.teams.putIfAbsent(userData.team.name, userData.team)
         }
         this.poolLoggedOut.forEach { (domain, usersById) ->
             MetricsCollector.gaugeMap(
@@ -158,6 +160,10 @@ class MonkeyPool(users: List<UserData>, testCase: String) {
 
     fun get(userId: UserId): Monkey {
         return this.poolById[userId] ?: Monkey.external(userId)
+    }
+
+    fun getFromTeam(team: String, index: Int): Monkey {
+        return this.pool[team]?.get(index) ?: error("Monkey not found")
     }
 }
 

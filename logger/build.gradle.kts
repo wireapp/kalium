@@ -34,6 +34,12 @@ kotlin {
                 api(libs.kermit)
             }
         }
+        val jvmMain by getting {
+            dependencies {
+                implementation(libs.coroutines.core)
+            }
+        }
+
         val commonTest by getting
 
         val androidUnitTest by getting {

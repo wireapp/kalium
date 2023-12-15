@@ -52,7 +52,7 @@ internal class ValidateUserHandleUseCaseImpl : ValidateUserHandleUseCase {
     }
 
     private companion object {
-        private const val HANDLE_FORBIDDEN_CHARACTERS_REGEX = "[^a-z0-9_]"
+        private const val HANDLE_FORBIDDEN_CHARACTERS_REGEX = "[^a-z0-9._-]"
         private const val HANDLE_MIN_LENGTH = 2
         private const val HANDLE_MAX_LENGTH = 255
     }
@@ -71,8 +71,4 @@ sealed class ValidateUserHandleResult(val handle: String) {
     }
 
     val isValid: Boolean get() = this is Valid
-
-    // in some cases there is still possible to create a handle with dots so we have to allow it in some cases, e.g. login
-    val isValidAllowingDots: Boolean
-        get() = this is Valid || (this is Invalid.InvalidCharacters && this.invalidCharactersUsed == listOf('.'))
 }

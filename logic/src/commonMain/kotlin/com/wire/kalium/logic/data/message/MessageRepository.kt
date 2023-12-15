@@ -117,6 +117,10 @@ internal interface MessageRepository {
         visibility: List<Message.Visibility> = Message.Visibility.values().toList()
     ): Flow<List<Message>>
 
+    suspend fun getLastMessagesForConversationIds(
+        conversationIdList: List<ConversationId>
+    ): Either<StorageFailure, Map<ConversationId, Message>>
+
     suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Either<CoreFailure, Flow<List<LocalNotification>>>
 
     suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
@@ -166,6 +170,12 @@ internal interface MessageRepository {
         messageContent: MessageContent.TextEdited,
         newMessageId: String,
         editTimeStamp: String
+    ): Either<CoreFailure, Unit>
+
+    suspend fun updateLegalHoldMessageMembers(
+        messageId: String,
+        conversationId: ConversationId,
+        newMembers: List<UserId>,
     ): Either<CoreFailure, Unit>
 
     suspend fun resetAssetProgressStatus()
@@ -256,6 +266,12 @@ internal class MessageDataSource internal constructor (
             offset,
             visibility.map { it.toEntityVisibility() }
         ).map { messagelist -> messagelist.map(messageMapper::fromEntityToMessage) }
+
+    override suspend fun getLastMessagesForConversationIds(
+        conversationIdList: List<ConversationId>
+    ): Either<StorageFailure, Map<ConversationId, Message>> = wrapStorageRequest {
+        messageDAO.getLastMessagesByConversations(conversationIdList.map { it.toDao() })
+    }.map { it.map { it.key.toModel() to messageMapper.fromEntityToMessage(it.value) }.toMap() }
 
     override suspend fun getAssetMessagesByConversationId(
         conversationId: ConversationId,
@@ -539,6 +555,14 @@ internal class MessageDataSource internal constructor (
                 newMessageId = newMessageId
             )
         }
+    }
+
+    override suspend fun updateLegalHoldMessageMembers(
+        messageId: String,
+        conversationId: ConversationId,
+        newMembers: List<UserId>,
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.updateLegalHoldMessageMembers(conversationId.toDao(), messageId, newMembers.map { it.toDao() })
     }
 
     override suspend fun resetAssetProgressStatus() {

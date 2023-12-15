@@ -18,10 +18,13 @@
 package com.wire.kalium.monkeys.actions
 
 import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.monkeys.conversation.Monkey
 import com.wire.kalium.monkeys.conversation.MonkeyConversation
-import com.wire.kalium.monkeys.importer.ActionType
-import com.wire.kalium.monkeys.importer.UserCount
 import com.wire.kalium.monkeys.logger
+import com.wire.kalium.monkeys.model.ActionType
+import com.wire.kalium.monkeys.model.Event
+import com.wire.kalium.monkeys.model.EventType
 import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 
@@ -110,41 +113,52 @@ private val MESSAGES = listOf(
     """,
 )
 
-class SendMessageAction(val config: ActionType.SendMessage) : Action() {
+open class SendMessageAction(val config: ActionType.SendMessage, sender: suspend (Event) -> Unit) : Action(sender) {
     override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
         repeat(this.config.count.toInt()) { i ->
-            if (this.config.targets.isNotEmpty()) {
-                this.config.targets.forEach { target ->
-                    if (target == ONE_2_1) {
-                        val monkeys = monkeyPool.randomLoggedInMonkeys(this.config.userCount)
-                        monkeys.forEach { monkey ->
-                            val targetMonkey = monkey.randomPeer(monkeyPool)
-                            monkey.sendDirectMessageTo(targetMonkey, randomMessage())
-                        }
-                    } else {
-                        ConversationPool.getFromPrefixed(target).forEach { conv ->
-                            conv.sendMessage(this.config.userCount, i)
+            sendersTargets(monkeyPool).forEach {
+                when (it) {
+                    is Either.Left -> {
+                        it.value.forEach { (monkeySender, monkeyReceiver) ->
+                            monkeySender.sendDirectMessageTo(monkeyReceiver, randomMessage())
+                            this.sender(Event(monkeySender.internalId, EventType.SendDirectMessage(monkeyReceiver.internalId)))
                         }
                     }
-                }
-            } else {
-                val conversations = ConversationPool.randomConversations(this.config.countGroups)
-                conversations.forEach {
-                    it.sendMessage(this.config.userCount, i)
+                    is Either.Right -> {
+                        it.value.forEach { (conv, senders) ->
+                            conv.sendMessage(senders, i, this.sender)
+                        }
+                    }
                 }
             }
         }
     }
+
+    open suspend fun sendersTargets(monkeyPool: MonkeyPool):
+            List<Either<List<Pair<Monkey, Monkey>>, List<Pair<MonkeyConversation, List<Monkey>>>>> {
+        return this.config.targets.map { target ->
+            if (target == ONE_2_1) {
+                Either.Left(monkeyPool.randomLoggedInMonkeys(this.config.userCount).map { it to it.randomPeer(monkeyPool) })
+            } else {
+                Either.Right(ConversationPool.getFromPrefixed(target).map { it to it.randomMonkeys(this.config.userCount) })
+            }
+        }.ifEmpty {
+            listOf(
+                Either.Right(ConversationPool.randomConversations(this.config.countGroups)
+                    .map { it to it.randomMonkeys(this.config.userCount) })
+            )
+        }
+    }
 }
 
-private suspend fun MonkeyConversation.sendMessage(userCount: UserCount, i: Int) {
-    val monkeys = this.randomMonkeys(userCount)
+private suspend fun MonkeyConversation.sendMessage(monkeys: List<Monkey>, i: Int, sender: suspend (Event) -> Unit) {
     if (monkeys.isEmpty()) {
         logger.d("No monkey is logged in in the picked conversation")
     }
     monkeys.forEach { monkey ->
         val message = randomMessage()
         monkey.sendMessageTo(this.conversation.id, message)
+        sender(Event(monkey.internalId, EventType.SendMessage(this.conversation.id)))
     }
 }
 
