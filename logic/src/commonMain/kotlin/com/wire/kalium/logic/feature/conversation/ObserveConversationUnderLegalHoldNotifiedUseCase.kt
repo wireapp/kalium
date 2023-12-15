@@ -41,7 +41,7 @@ class ObserveConversationUnderLegalHoldNotifiedUseCaseImpl internal constructor(
             .mapRight { (legalHoldStatus, isUserNotifiedAboutStatusChange) ->
                 when (legalHoldStatus) {
                     Conversation.LegalHoldStatus.ENABLED -> isUserNotifiedAboutStatusChange
-                    else -> true  // we only need to notify if legal hold was enabled
+                    else -> true // we only need to notify if legal hold was enabled
                 }
             }
             .mapToRightOr(true)
