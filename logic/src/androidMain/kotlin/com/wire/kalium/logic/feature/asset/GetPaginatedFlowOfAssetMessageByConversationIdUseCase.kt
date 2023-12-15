@@ -37,12 +37,10 @@ class GetPaginatedFlowOfAssetMessageByConversationIdUseCase internal constructor
 ) {
     suspend operator fun invoke(
         conversationId: ConversationId,
-        mimeTypes: Set<String>,
         startingOffset: Long,
         pagingConfig: PagingConfig
     ): Flow<PagingData<Message.Standalone>> = messageRepository.extensions.getPaginatedMessageAssetsWithoutImageByConversationId(
         conversationId = conversationId,
-        mimeTypes = mimeTypes,
         pagingConfig = pagingConfig,
         startingOffset = startingOffset
     ).flowOn(dispatcher.io)
