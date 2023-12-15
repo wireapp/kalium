@@ -120,7 +120,6 @@ internal class MemberLeaveEventHandlerImpl(
         }
     }
 
-
     private suspend fun deleteMembers(
         userIDList: List<UserId>,
         conversationID: ConversationId
