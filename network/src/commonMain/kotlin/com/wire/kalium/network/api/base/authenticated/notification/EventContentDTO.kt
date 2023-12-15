@@ -287,7 +287,7 @@ sealed class EventContentDTO {
             @SerialName("data") val teamUpdate: TeamUpdateData,
             @SerialName("team") val teamId: TeamId,
             @SerialName("time") val time: String,
-            ) : Team()
+        ) : Team()
 
         @Serializable
         @SerialName("team.member-update")
@@ -295,7 +295,7 @@ sealed class EventContentDTO {
             @SerialName("data") val permissionsResponse: PermissionsData,
             @SerialName("team") val teamId: TeamId,
             @SerialName("time") val time: String,
-            ) : Team()
+        ) : Team()
     }
 
     @Serializable

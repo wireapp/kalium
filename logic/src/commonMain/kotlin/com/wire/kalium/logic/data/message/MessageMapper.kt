@@ -270,6 +270,7 @@ class MessageMapperImpl(
                 message.date,
                 LocalNotificationCommentType.LOCATION
             )
+
             MessageEntity.ContentType.MEMBER_CHANGE -> null
             MessageEntity.ContentType.RESTRICTED_ASSET -> null
             MessageEntity.ContentType.CONVERSATION_RENAMED -> null
@@ -466,6 +467,7 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
         isSelfUserRemoved = isContainSelfUserId,
         otherUserIdList = otherUserIdList.map { it.toModel() }
     )
+
     is MessagePreviewEntityContent.TeamMembersRemoved -> MessagePreviewContent.WithUser.TeamMembersRemoved(
         username = senderName,
         isSelfUserRemoved = isContainSelfUserId,
@@ -618,7 +620,7 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
                 MessageEntity.MemberChangeType.FEDERATION_REMOVED
             )
 
-            is MessageContent.MemberChange.RemovedFromTeam -> MessageEntityContent.MemberChange (
+            is MessageContent.MemberChange.RemovedFromTeam -> MessageEntityContent.MemberChange(
                 memberUserIdList,
                 MessageEntity.MemberChangeType.REMOVED_FROM_TEAM
             )

@@ -72,24 +72,7 @@ internal class MemberLeaveEventHandlerImpl(
             // and keep them to properly show this member-leave message
             userRepository.fetchUsersIfUnknownByIds(event.removedList.toSet())
         }.onSuccess {
-            val content: MessageContent.System? = when (event.reason) {
-                MemberLeaveReason.Left,
-                MemberLeaveReason.Removed -> MessageContent.MemberChange.Removed(members = event.removedList)
-
-                MemberLeaveReason.UserDeleted -> {
-                    selfTeamIdProvider().getOrNull()?.let { teamId ->
-                        userRepository.isAtLeastOneUserATeamMember(event.removedList, teamId).getOrElse(false).let {
-                            if (it) {
-                                MessageContent.MemberChange.RemovedFromTeam(
-                                    members = event.removedList
-                                )
-                            } else {
-                                null
-                            }
-                        }
-                    }
-                }
-            }
+            val content: MessageContent.System? = resolveMessageContent(event)
 
             content?.let {
                 Message.System(
@@ -119,6 +102,24 @@ internal class MemberLeaveEventHandlerImpl(
                     Pair("errorInfo", "$it")
                 )
         }
+
+    private suspend fun resolveMessageContent(event: Event.Conversation.MemberLeave): MessageContent.System? {
+        return when (event.reason) {
+            MemberLeaveReason.Left,
+            MemberLeaveReason.Removed -> MessageContent.MemberChange.Removed(members = event.removedList)
+            MemberLeaveReason.UserDeleted -> handleUserDeleted(event)
+        }
+    }
+    private suspend fun handleUserDeleted(event: Event.Conversation.MemberLeave): MessageContent.System? {
+        val teamId = selfTeamIdProvider().getOrNull() ?: return null
+        val isMemberRemoved = userRepository.isAtLeastOneUserATeamMember(event.removedList, teamId).getOrElse(false)
+        return if (isMemberRemoved) {
+            MessageContent.MemberChange.RemovedFromTeam(members = event.removedList)
+        } else {
+            null
+        }
+    }
+
 
     private suspend fun deleteMembers(
         userIDList: List<UserId>,

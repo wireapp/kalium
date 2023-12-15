@@ -441,8 +441,8 @@ sealed class MessagePreviewEntityContent {
 
     data class ConversationNameChange(val adminName: String?) : MessagePreviewEntityContent()
 
-
     @Deprecated("not maintained and will be deleted")
+    @Suppress("ClassNaming")
     data class TeamMemberRemoved_Legacy(val userName: String?) : MessagePreviewEntityContent()
     data class Ephemeral(val isGroupConversation: Boolean) : MessagePreviewEntityContent()
     data object CryptoSessionReset : MessagePreviewEntityContent()
