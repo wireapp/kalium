@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
@@ -142,6 +143,8 @@ interface UserRepository {
     suspend fun updateSupportedProtocols(protocols: Set<SupportedProtocol>): Either<CoreFailure, Unit>
 
     suspend fun updateActiveOneOnOneConversation(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
+
+    suspend fun isAtLeastOneUserATeamMember(userId: List<UserId>, teamId: TeamId): Either<StorageFailure, Boolean>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -462,6 +465,10 @@ internal class UserDataSource internal constructor(
 
     override suspend fun updateActiveOneOnOneConversation(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit> =
         wrapStorageRequest { userDAO.updateActiveOneOnOneConversation(userId.toDao(), conversationId.toDao()) }
+
+    override suspend fun isAtLeastOneUserATeamMember(userId: List<UserId>, teamId: TeamId) = wrapStorageRequest {
+        userDAO.isAtLeastOneUserATeamMember(userId.map { it.toDao() }, teamId.value)
+    }
 
     override fun observeAllKnownUsersNotInConversation(
         conversationId: ConversationId

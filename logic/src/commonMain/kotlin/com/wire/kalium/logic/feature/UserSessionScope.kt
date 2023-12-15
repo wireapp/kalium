@@ -1157,9 +1157,10 @@ class UserSessionScope internal constructor(
             federatedIdMapper = federatedIdMapper
         )
 
-    private val updateConversationClientsForCurrentCall: Lazy<UpdateConversationClientsForCurrentCallUseCase> = lazy {
-        UpdateConversationClientsForCurrentCallUseCaseImpl(callRepository, conversationClientsInCallUpdater)
-    }
+    private val updateConversationClientsForCurrentCall: Lazy<UpdateConversationClientsForCurrentCallUseCase>
+        get() = lazy {
+            UpdateConversationClientsForCurrentCallUseCaseImpl(callRepository, conversationClientsInCallUpdater)
+        }
 
     private val reactionRepository = ReactionRepositoryImpl(userId, userStorage.database.reactionDAO)
     private val receiptRepository = ReceiptRepositoryImpl(userStorage.database.receiptDAO)
@@ -1269,7 +1270,7 @@ class UserSessionScope internal constructor(
         )
     private val memberLeaveHandler: MemberLeaveEventHandler
         get() = MemberLeaveEventHandlerImpl(
-            userStorage.database.memberDAO, userRepository, persistMessage, updateConversationClientsForCurrentCall
+            userStorage.database.memberDAO, userRepository, persistMessage, updateConversationClientsForCurrentCall, selfTeamId
         )
     private val memberChangeHandler: MemberChangeEventHandler
         get() = MemberChangeEventHandlerImpl(

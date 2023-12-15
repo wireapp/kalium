@@ -21,6 +21,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.MemberLeaveReason
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -54,6 +55,9 @@ class MemberLeaveEventHandlerTest {
     @Mock
     private val updateConversationClientsForCurrentCall = mock(classOf<UpdateConversationClientsForCurrentCallUseCase>())
 
+    @Mock
+    private val selfTeamIdProvider = mock(classOf<SelfTeamIdProvider>())
+
     private lateinit var memberLeaveEventHandler: MemberLeaveEventHandler
 
     @BeforeTest
@@ -62,7 +66,8 @@ class MemberLeaveEventHandlerTest {
             memberDAO = memberDao,
             userRepository = userRepository,
             persistMessage = persistMessage,
-            updateConversationClientsForCurrentCall = lazy { updateConversationClientsForCurrentCall }
+            updateConversationClientsForCurrentCall = lazy { updateConversationClientsForCurrentCall },
+            selfTeamIdProvider
         )
     }
 

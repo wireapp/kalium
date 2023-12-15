@@ -420,4 +420,8 @@ class UserDAOImpl internal constructor(
             }
         }
     }
+
+    override suspend fun isAtLeastOneUserATeamMember(userId: List<UserIDEntity>, teamId: String): Boolean = withContext(queriesContext) {
+        userQueries.isOneUserATeamMember(userId, teamId).executeAsOneOrNull() ?: false
+    }
 }
