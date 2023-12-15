@@ -95,6 +95,6 @@ class LegalHoldStatusMapperTest {
     }
 
     private class Arrangement {
-        val legalHoldStatusMapper = LegalHoldStatusMapperImpl()
+        val legalHoldStatusMapper = LegalHoldStatusMapperImpl
     }
 }
