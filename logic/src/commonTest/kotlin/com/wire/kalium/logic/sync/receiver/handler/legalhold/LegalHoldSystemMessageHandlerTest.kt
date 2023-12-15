@@ -377,7 +377,7 @@ class LegalHoldSystemMessagesHandlerTest {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::updateLegalHoldStatus)
                 .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
+                .thenReturn(Either.Right(true))
         }
         fun withDeleteLegalHoldRequestSuccess() = apply {
             given(userConfigRepository)

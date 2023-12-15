@@ -44,7 +44,8 @@ CREATE TABLE Conversation (
     verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT "NOT_VERIFIED",
     proteus_verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT "NOT_VERIFIED",
     degraded_conversation_notified INTEGER AS Boolean NOT NULL DEFAULT 1,
-    legal_hold_status TEXT AS ConversationEntity.LegalHoldStatus NOT NULL DEFAULT "DISABLED"
+    legal_hold_status TEXT AS ConversationEntity.LegalHoldStatus NOT NULL DEFAULT "DISABLED",
+    legal_hold_status_change_notified INTEGER AS Boolean NOT NULL DEFAULT 1
 );
 
 -- Optimise comparisons and sorting by dates:
@@ -409,13 +410,22 @@ UPDATE Conversation
 SET verification_status = :status
 WHERE qualified_id = :conversationId;
 
-updateLegalHoldStatus:
+updateLegalHoldStatus {
 UPDATE Conversation
-SET legal_hold_status = ?
-WHERE qualified_id = :qualified_id;
+SET legal_hold_status = :legal_hold_status
+WHERE qualified_id = :qualified_id AND legal_hold_status != :legal_hold_status;
+SELECT changes();
+}
 
-selectLegalHoldStatus:
-SELECT legal_hold_status FROM Conversation
+updateLegalHoldStatusChangeNotified {
+UPDATE Conversation
+SET legal_hold_status_change_notified = :notified
+WHERE qualified_id = :qualified_id AND legal_hold_status_change_notified != :notified;
+SELECT changes();
+}
+
+selectLegalHoldStatusWithChangeNotified:
+SELECT legal_hold_status, legal_hold_status_change_notified FROM Conversation
 WHERE qualified_id = :conversationId;
 
 selectDegradedConversationNotified:

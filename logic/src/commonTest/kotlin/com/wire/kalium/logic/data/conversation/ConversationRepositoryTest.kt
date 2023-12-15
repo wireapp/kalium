@@ -1321,12 +1321,15 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenLegalHoldStatus_whenUpdateIsCalled_thenInvokeUpdateLegalHoldStatusFromOnce() = runTest {
+    fun givenLegalHoldStatus_whenUpdateIsCalled_thenInvokeUpdateLegalHoldStatusOnce() = runTest {
+        // given
         val (arrange, conversationRepository) = Arrangement()
+            .withUpdateLegalHoldStatus(true)
+            .withUpdateLegalHoldStatusChangeNotified(true)
             .arrange()
-
+        // when
         conversationRepository.updateLegalHoldStatus(CONVERSATION_ID, Conversation.LegalHoldStatus.ENABLED)
-
+        // then
         verify(arrange.conversationDAO)
             .suspendFunction(arrange.conversationDAO::updateLegalHoldStatus)
             .with(eq(CONVERSATION_ID.toDao()), any())
@@ -1334,15 +1337,47 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenConversationId_whenObservingLegalHoldStatus_thenInvokeObserveLegalHoldStatusFromOnce() = runTest {
+    fun givenLegalHoldStatusUpdated_whenUpdateChangeNotifiedIsCalled_thenInvokeUpdateLegalHoldStatusChangeNotifiedOnce() = runTest {
+        // given
         val (arrange, conversationRepository) = Arrangement()
-            .withObserveLegalHoldStatus()
+            .withUpdateLegalHoldStatus(true)
+            .withUpdateLegalHoldStatusChangeNotified(true)
+            .arrange()
+        // when
+        conversationRepository.updateLegalHoldStatus(CONVERSATION_ID, Conversation.LegalHoldStatus.ENABLED)
+        // then
+        verify(arrange.conversationDAO)
+            .suspendFunction(arrange.conversationDAO::updateLegalHoldStatusChangeNotified)
+            .with(eq(CONVERSATION_ID.toDao()), any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenLegalHoldStatusNotUpdated_whenUpdateChangeNotifiedIsCalled_thenDoNotInvokeUpdateLegalHoldStatusChangeNotified() = runTest {
+        // given
+        val (arrange, conversationRepository) = Arrangement()
+            .withUpdateLegalHoldStatus(false)
+            .withUpdateLegalHoldStatusChangeNotified(false)
+            .arrange()
+        // when
+        conversationRepository.updateLegalHoldStatus(CONVERSATION_ID, Conversation.LegalHoldStatus.ENABLED)
+        // then
+        verify(arrange.conversationDAO)
+            .suspendFunction(arrange.conversationDAO::updateLegalHoldStatusChangeNotified)
+            .with(eq(CONVERSATION_ID.toDao()), any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenConversationId_whenObservingLegalHoldStatusWithChangeNotified_thenInvokeObserveLegalHoldStatusOnce() = runTest {
+        val (arrange, conversationRepository) = Arrangement()
+            .withObserveLegalHoldStatusWithChangeNotified()
             .arrange()
 
-        conversationRepository.observeLegalHoldForConversation(CONVERSATION_ID)
+        conversationRepository.observeLegalHoldStatusWithChangeNotifiedForConversation(CONVERSATION_ID)
 
         verify(arrange.conversationDAO)
-            .suspendFunction(arrange.conversationDAO::observeLegalHoldForConversation)
+            .suspendFunction(arrange.conversationDAO::observeLegalHoldStatusWithChangeNotifiedForConversation)
             .with(eq(CONVERSATION_ID.toDao()))
             .wasInvoked(exactly = once)
     }
@@ -1711,11 +1746,25 @@ class ConversationRepositoryTest {
                 .thenReturn(response)
         }
 
-        fun withObserveLegalHoldStatus() = apply {
+        fun withObserveLegalHoldStatusWithChangeNotified() = apply {
             given(conversationDAO)
-                .suspendFunction(conversationDAO::observeLegalHoldForConversation)
+                .suspendFunction(conversationDAO::observeLegalHoldStatusWithChangeNotifiedForConversation)
                 .whenInvokedWith(any())
-                .thenReturn(flowOf(ConversationEntity.LegalHoldStatus.ENABLED))
+                .thenReturn(flowOf(ConversationEntity.LegalHoldStatus.ENABLED to true))
+        }
+
+        fun withUpdateLegalHoldStatus(updated: Boolean) = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::updateLegalHoldStatus)
+                .whenInvokedWith(any(), any())
+                .thenReturn(updated)
+        }
+
+        fun withUpdateLegalHoldStatusChangeNotified(updated: Boolean) = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::updateLegalHoldStatusChangeNotified)
+                .whenInvokedWith(any(), any())
+                .thenReturn(updated)
         }
 
         fun arrange() = this to conversationRepository

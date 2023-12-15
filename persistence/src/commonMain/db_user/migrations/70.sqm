@@ -1,0 +1,4 @@
+import kotlin.Boolean;
+
+ALTER TABLE Conversation
+ADD COLUMN legal_hold_status_change_notified INTEGER AS Boolean NOT NULL DEFAULT 1;

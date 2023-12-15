@@ -288,9 +288,13 @@ interface ConversationRepository {
     suspend fun updateLegalHoldStatus(
         conversationId: ConversationId,
         legalHoldStatus: Conversation.LegalHoldStatus
-    ): Either<CoreFailure, Unit>
+    ): Either<CoreFailure, Boolean>
 
-    suspend fun observeLegalHoldForConversation(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation.LegalHoldStatus>>
+    suspend fun setLegalHoldStatusChangeNotified(conversationId: ConversationId): Either<CoreFailure, Boolean>
+
+    suspend fun observeLegalHoldStatusWithChangeNotifiedForConversation(
+        conversationId: ConversationId
+    ): Flow<Either<StorageFailure, Pair<Conversation.LegalHoldStatus, Boolean>>>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -1077,20 +1081,31 @@ internal class ConversationDataSource internal constructor(
     override suspend fun updateLegalHoldStatus(
         conversationId: ConversationId,
         legalHoldStatus: Conversation.LegalHoldStatus
-    ): Either<CoreFailure, Unit> {
+    ): Either<CoreFailure, Boolean> {
         val legalHoldStatusEntity = conversationMapper.legalHoldStatusToEntity(legalHoldStatus)
         return wrapStorageRequest {
-            conversationDAO.updateLegalHoldStatus(
-                conversationId = conversationId.toDao(),
-                legalHoldStatus = legalHoldStatusEntity
-            )
+            conversationId.toDao().let { conversationIdEntity ->
+                conversationDAO.updateLegalHoldStatus(
+                    conversationId = conversationIdEntity,
+                    legalHoldStatus = legalHoldStatusEntity
+                ).also { legalHoldUpdated ->
+                    if (legalHoldUpdated) {
+                        conversationDAO.updateLegalHoldStatusChangeNotified(conversationId = conversationIdEntity, notified = false)
+                    }
+                }
+            }
         }
     }
+    override suspend fun setLegalHoldStatusChangeNotified(conversationId: ConversationId): Either<CoreFailure, Boolean> =
+        wrapStorageRequest {
+            conversationDAO.updateLegalHoldStatusChangeNotified(conversationId = conversationId.toDao(), notified = true)
+        }
 
-    override suspend fun observeLegalHoldForConversation(conversationId: ConversationId) =
-        conversationDAO.observeLegalHoldForConversation(conversationId.toDao())
-            .map { conversationMapper.legalHoldStatusFromEntity(it) }
+    override suspend fun observeLegalHoldStatusWithChangeNotifiedForConversation(conversationId: ConversationId) =
+        conversationDAO.observeLegalHoldStatusWithChangeNotifiedForConversation(conversationId.toDao())
+            .map { (legalHoldStatus, changeNotified) -> conversationMapper.legalHoldStatusFromEntity(legalHoldStatus) to changeNotified }
             .wrapStorageRequest()
+            .distinctUntilChanged()
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"
