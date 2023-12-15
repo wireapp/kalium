@@ -237,12 +237,6 @@ class MessageScope internal constructor(
             messageRepository
         )
 
-    val getAssetMessagesByConversation: GetAssetMessagesForConversationUseCase
-        get() = GetAssetMessagesForConversationUseCaseImpl(
-            dispatcher,
-            messageRepository
-        )
-
     val getRecentMessages: GetRecentMessagesUseCase
         get() = GetRecentMessagesUseCase(
             messageRepository,
