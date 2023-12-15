@@ -18,8 +18,13 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.logic.feature.asset.GetPaginatedFlowOfAssetMessageByConversationIdUseCase
+
 val MessageScope.getPaginatedFlowOfMessagesByConversation
     get() = GetPaginatedFlowOfMessagesByConversationUseCase(dispatcher, messageRepository)
 
 val MessageScope.getPaginatedFlowOfMessagesBySearchQueryAndConversation
     get() = GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase(dispatcher, messageRepository)
+
+val MessageScope.getPaginatedFlowOfAssetMessageByConversationId
+    get() = GetPaginatedFlowOfAssetMessageByConversationIdUseCase(dispatcher, messageRepository)
