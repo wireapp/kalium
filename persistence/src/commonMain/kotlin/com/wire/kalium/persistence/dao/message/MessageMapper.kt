@@ -508,6 +508,7 @@ object MessageMapper {
                         textBody = quotedTextBody,
                         assetMimeType = quotedAssetMimeType,
                         assetName = quotedAssetName,
+                        locationName = locationName
                     )
                 },
             )
@@ -576,6 +577,7 @@ object MessageMapper {
                                 textBody = quotedTextBody,
                                 assetMimeType = quotedAssetMimeType,
                                 assetName = quotedAssetName,
+                                locationName = locationName
                             )
                         },
                     )

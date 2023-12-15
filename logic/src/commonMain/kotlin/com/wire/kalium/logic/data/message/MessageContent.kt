@@ -136,6 +136,8 @@ sealed class MessageContent {
             val assetMimeType: String
         ) : Content
 
+        data class Location(val locationName: String?) : Content
+
         data object Deleted : Content
 
         data object Invalid : Content

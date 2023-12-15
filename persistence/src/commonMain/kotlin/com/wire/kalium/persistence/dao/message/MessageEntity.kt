@@ -270,6 +270,7 @@ sealed class MessageEntityContent {
             val textBody: String?,
             val assetMimeType: String?,
             val assetName: String?,
+            val locationName: String?,
         )
     }
 
