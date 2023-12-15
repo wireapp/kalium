@@ -155,6 +155,7 @@ class UserDatabaseBuilder internal constructor(
         MessageFederationTerminatedContentAdapter = TableMapper.messageFederationTerminatedContentAdapter,
         MessageConversationProtocolChangedContentAdapter = TableMapper.messageConversationProtocolChangedContentAdapter,
         MessageConversationLocationContentAdapter = TableMapper.messageConversationLocationContentAdapter,
+        MessageLegalHoldContentAdapter = TableMapper.messageLegalHoldContentAdapter,
     )
 
     init {

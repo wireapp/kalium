@@ -38,7 +38,7 @@ internal interface MessageTextEditHandler {
     ): Either<CoreFailure, Unit>
 }
 
-class MessageTextEditHandlerImpl(
+internal class MessageTextEditHandlerImpl internal constructor(
     private val messageRepository: MessageRepository,
     private val editMessageNotificationsManager: EphemeralEventsNotificationManager,
 ) : MessageTextEditHandler {

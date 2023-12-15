@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.builtins.SetSerializer
 
 interface UserConfigDAO {
@@ -44,6 +45,8 @@ interface UserConfigDAO {
     suspend fun persistLegalHoldRequest(clientId: String, lastPreKeyId: Int, lastPreKey: String)
     suspend fun clearLegalHoldRequest()
     fun observeLegalHoldRequest(): Flow<LegalHoldRequestEntity?>
+    suspend fun setLegalHoldChangeNotified(isNotified: Boolean)
+    suspend fun observeLegalHoldChangeNotified(): Flow<Boolean?>
 }
 
 internal class UserConfigDAOImpl internal constructor(
@@ -104,10 +107,18 @@ internal class UserConfigDAOImpl internal constructor(
     override fun observeLegalHoldRequest(): Flow<LegalHoldRequestEntity?> =
         metadataDAO.observeSerializable(LEGAL_HOLD_REQUEST, LegalHoldRequestEntity.serializer())
 
+    override suspend fun setLegalHoldChangeNotified(isNotified: Boolean) {
+        metadataDAO.insertValue(isNotified.toString(), LEGAL_HOLD_CHANGE_NOTIFIED)
+    }
+
+    override suspend fun observeLegalHoldChangeNotified(): Flow<Boolean?> =
+        metadataDAO.valueByKeyFlow(LEGAL_HOLD_CHANGE_NOTIFIED).map { it?.toBoolean() }
+
     private companion object {
         private const val SELF_DELETING_MESSAGES_KEY = "SELF_DELETING_MESSAGES"
         private const val MLS_MIGRATION_KEY = "MLS_MIGRATION"
         private const val SUPPORTED_PROTOCOLS_KEY = "SUPPORTED_PROTOCOLS"
         const val LEGAL_HOLD_REQUEST = "legal_hold_request"
+        const val LEGAL_HOLD_CHANGE_NOTIFIED = "legal_hold_change_notified"
     }
 }

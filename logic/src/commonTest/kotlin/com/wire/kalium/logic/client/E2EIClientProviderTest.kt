@@ -33,7 +33,7 @@ import kotlin.test.Test
 
 class E2EIClientProviderTest {
     @Test
-    fun givenMLSClientWithoutE2EI_whenGettingE2EIClient_callsNewRotateEnrollment() = runTest{
+    fun givenMLSClientWithoutE2EI_whenGettingE2EIClient_callsNewRotateEnrollment() = runTest {
         val (arrangement, e2eiClientProvider) = Arrangement()
             .arrange {
                 withGetMLSClientSuccessful()
@@ -50,17 +50,17 @@ class E2EIClientProviderTest {
 
         verify(arrangement.mlsClient)
             .suspendFunction(arrangement.mlsClient::e2eiNewActivationEnrollment)
-            .with(any(), any(), any())
+            .with(any(), any(), any(), any())
             .wasInvoked(exactly = once)
 
         verify(arrangement.mlsClient)
             .suspendFunction(arrangement.mlsClient::e2eiNewRotateEnrollment)
-            .with(any(),any(),any())
+            .with(any(), any(), any(), any())
             .wasNotInvoked()
     }
 
     @Test
-    fun givenMLSClientWithE2EI_whenGettingE2EIClient_callsNewActivationEnrollment() = runTest{
+    fun givenMLSClientWithE2EI_whenGettingE2EIClient_callsNewActivationEnrollment() = runTest {
         val (arrangement, e2eiClientProvider) = Arrangement()
             .arrange {
                 withGetMLSClientSuccessful()
@@ -82,17 +82,17 @@ class E2EIClientProviderTest {
 
         verify(arrangement.mlsClient)
             .suspendFunction(arrangement.mlsClient::e2eiNewRotateEnrollment)
-            .with(any(),any(),any())
+            .with(any(), any(), any(), any())
             .wasInvoked(exactly = once)
 
         verify(arrangement.mlsClient)
             .suspendFunction(arrangement.mlsClient::e2eiNewActivationEnrollment)
-            .with(any(), any(), any())
+            .with(any(), any(), any(), any())
             .wasNotInvoked()
     }
 
     @Test
-    fun givenSelfUserNotFound_whenGettingE2EIClient_ReturnsError() = runTest{
+    fun givenSelfUserNotFound_whenGettingE2EIClient_ReturnsError() = runTest {
         val (arrangement, e2eiClientProvider) = Arrangement()
             .arrange {
                 withGetMLSClientSuccessful()
@@ -114,12 +114,12 @@ class E2EIClientProviderTest {
 
         verify(arrangement.mlsClient)
             .suspendFunction(arrangement.mlsClient::e2eiNewRotateEnrollment)
-            .with(any(),any(),any())
+            .with(any(), any(), any(), any())
             .wasNotInvoked()
 
         verify(arrangement.mlsClient)
             .suspendFunction(arrangement.mlsClient::e2eiNewActivationEnrollment)
-            .with(any(), any(), any())
+            .with(any(), any(), any(), any())
             .wasNotInvoked()
     }
 
