@@ -182,7 +182,7 @@ internal class MemberDAOImpl internal constructor(
 
                 memberList.forEach { member ->
                     userQueries.insertOrIgnoreUserId(member.user)
-                    memberQueries.insertMember(member.user, conversationID, member.role)
+                    memberQueries.insertOrUpdateMember(member.user, conversationID, member.role)
                 }
 
                 membersToDelete.forEach { member ->
