@@ -42,8 +42,6 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.asset.GetAssetMessagesForConversationUseCase
-import com.wire.kalium.logic.feature.asset.GetAssetMessagesForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetImageAssetMessagesForConversationUseCase
 import com.wire.kalium.logic.feature.asset.GetImageAssetMessagesForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
@@ -233,12 +231,6 @@ class MessageScope internal constructor(
 
     val getImageAssetMessagesByConversation: GetImageAssetMessagesForConversationUseCase
         get() = GetImageAssetMessagesForConversationUseCaseImpl(
-            dispatcher,
-            messageRepository
-        )
-
-    val getAssetMessagesByConversation: GetAssetMessagesForConversationUseCase
-        get() = GetAssetMessagesForConversationUseCaseImpl(
             dispatcher,
             messageRepository
         )
