@@ -479,7 +479,7 @@ class UserDAOTest : BaseDatabaseTest() {
         // when
         db.userDAO.observeUserDetailsByQualifiedID(USER_ENTITY_1.id).first().also { searchResult ->
             // then
-            assertEquals(mockUser.copy(deleted = true, team = null, userType = UserTypeEntity.NONE), searchResult?.toSimpleEntity())
+            assertEquals(mockUser.copy(deleted = true, userType = UserTypeEntity.NONE), searchResult?.toSimpleEntity())
         }
     }
 
@@ -669,7 +669,7 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenUser_WhenMarkingAsDeleted_ThenProperValueShouldBeUpdated() = runTest(dispatcher) {
         val user = user1
         db.userDAO.upsertUser(user)
-        val deletedUser = user1.copy(deleted = true, team = null, userType = UserTypeEntity.NONE)
+        val deletedUser = user1.copy(deleted = true, userType = UserTypeEntity.NONE)
         db.userDAO.markUserAsDeletedAndRemoveFromGroupConv(user1.id)
         val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertEquals(result?.toSimpleEntity(), deletedUser)
