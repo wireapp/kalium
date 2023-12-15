@@ -24,6 +24,7 @@ import app.cash.paging.map
 import com.wire.kalium.logic.data.asset.SUPPORTED_IMAGE_ASSET_MIME_TYPES
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
@@ -107,7 +108,9 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
         )
 
         return pager.pagingDataFlow.map {
+            kaliumLogger.d("ASSET_FILES_K -> ANTES")
             it.map { messageEntity ->
+                kaliumLogger.d("ASSET_FILES_K -> ${messageEntity.conversationId}")
                 messageMapper.fromEntityToMessage(messageEntity)
             }
         }
