@@ -23,13 +23,17 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
+import io.mockative.KFunction1
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
 import io.mockative.matchers.Matcher
 import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
+import kotlin.jvm.JvmName
+import kotlin.jvm.JvmOverloads
 
+@Suppress("INAPPLICABLE_JVM_NAME")
 internal interface UserRepositoryArrangement {
     val userRepository: UserRepository
 
@@ -37,7 +41,15 @@ internal interface UserRepositoryArrangement {
 
     fun withUpdateUserFailure(coreFailure: CoreFailure)
 
-    fun withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess()
+    @JvmName("withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccessWithUserId")
+    fun withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(
+        userIdMatcher: Matcher<UserId> = any()
+    )
+
+    @JvmName("withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccessWithUserIdList")
+    fun withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(
+        userIdMatcher: Matcher<List<UserId>> = any()
+    )
 
     fun withSelfUserReturning(selfUser: SelfUser?)
 
@@ -59,7 +71,8 @@ internal interface UserRepositoryArrangement {
     )
 }
 
-internal class UserRepositoryArrangementImpl: UserRepositoryArrangement {
+@Suppress("INAPPLICABLE_JVM_NAME")
+internal class UserRepositoryArrangementImpl : UserRepositoryArrangement {
 
     @Mock
     override val userRepository: UserRepository = mock(UserRepository::class)
@@ -69,14 +82,29 @@ internal class UserRepositoryArrangementImpl: UserRepositoryArrangement {
             .thenReturn(Either.Right(Unit))
     }
 
-    override fun withUpdateUserFailure(coreFailure: CoreFailure)  {
+    override fun withUpdateUserFailure(coreFailure: CoreFailure) {
         given(userRepository).suspendFunction(userRepository::updateUserFromEvent)
             .whenInvokedWith(any()).thenReturn(Either.Left(coreFailure))
     }
 
-    override fun withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess() {
-        given(userRepository).suspendFunction(userRepository::markUserAsDeletedAndRemoveFromGroupConversations)
-            .whenInvokedWith(any()).thenReturn(Either.Right(Unit))
+    @JvmName("withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccessWithUserId")
+    override fun withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(
+        userIdMatcher: Matcher<UserId>
+    ) {
+        given(userRepository).suspendFunction(
+            userRepository::markUserAsDeletedAndRemoveFromGroupConversations,
+            KFunction1<UserId>()
+        ).whenInvokedWith(userIdMatcher)
+            .thenReturn(Either.Right(Unit))
+    }
+
+    @JvmName("withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccessWithUserIdList")
+    override fun withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(userIdMatcher: Matcher<List<UserId>>) {
+        given(userRepository).suspendFunction(
+            userRepository::markUserAsDeletedAndRemoveFromGroupConversations,
+            KFunction1<List<UserId>>()
+        ).whenInvokedWith(userIdMatcher)
+            .thenReturn(Either.Right(Unit))
     }
 
     override fun withSelfUserReturning(selfUser: SelfUser?) {
@@ -131,7 +159,7 @@ internal class UserRepositoryArrangementImpl: UserRepositoryArrangement {
     override fun withFetchUsersByIdReturning(
         result: Either<CoreFailure, Unit>,
         userIdList: Matcher<Set<UserId>>
-        ) {
+    ) {
         given(userRepository)
             .suspendFunction(userRepository::fetchUsersByIds)
             .whenInvokedWith(userIdList)
