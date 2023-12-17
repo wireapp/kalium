@@ -21,86 +21,60 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.MemberLeaveReason
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
+import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
+import com.wire.kalium.logic.util.arrangement.provider.SelfTeamIdProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.SelfTeamIdProviderArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.member.MemberDAO
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 
 class MemberLeaveEventHandlerTest {
-
-    @Mock
-    private val memberDao = mock(classOf<MemberDAO>())
-
-    @Mock
-    private val userRepository = mock(classOf<UserRepository>())
-
-    @Mock
-    private val persistMessage = mock(classOf<PersistMessageUseCase>())
-
-    @Mock
-    private val updateConversationClientsForCurrentCall = mock(classOf<UpdateConversationClientsForCurrentCallUseCase>())
-
-    @Mock
-    private val selfTeamIdProvider = mock(classOf<SelfTeamIdProvider>())
-
-    private lateinit var memberLeaveEventHandler: MemberLeaveEventHandler
-
-    @BeforeTest
-    fun setup() {
-        memberLeaveEventHandler = MemberLeaveEventHandlerImpl(
-            memberDAO = memberDao,
-            userRepository = userRepository,
-            persistMessage = persistMessage,
-            updateConversationClientsForCurrentCall = lazy { updateConversationClientsForCurrentCall },
-            selfTeamIdProvider
-        )
-    }
 
     @Test
     fun givenDaoReturnsSuccess_whenDeletingMember_thenPersistSystemMessage() = runTest {
 
         val event = memberLeaveEvent(reason = MemberLeaveReason.Left)
-        val message = message(event)
+        val message = memberRemovedMessage(event)
 
-        given(memberDao).coroutine {
-            deleteMembersByQualifiedID(list, qualifiedConversationIdEntity)
-        }.then { Either.Right(Unit) }
-
-        given(userRepository).coroutine {
-            fetchUsersIfUnknownByIds(event.removedList.toSet())
-        }.then { Either.Right(Unit) }
-
-        given(persistMessage).coroutine {
-            persistMessage(message)
-        }.then { Either.Right(Unit) }
+        val (arrangement, memberLeaveEventHandler) = Arrangement()
+            .arrange {
+                withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(any<List<UserId>>())
+                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = eq(event.removedList.toSet()))
+                withPersistingMessage(Either.Right(Unit), messageMatcher = eq(message))
+                withDeleteMembersByQualifiedID(conversationId = eq(event.conversationId.toDao()), memberIdList = eq(list))
+            }
 
         memberLeaveEventHandler.handle(memberLeaveEvent(reason = MemberLeaveReason.Left))
 
-        verify(memberDao).coroutine {
+        verify(arrangement.memberDAO).coroutine {
             deleteMembersByQualifiedID(list, qualifiedConversationIdEntity)
         }.wasInvoked(once)
 
-        verify(updateConversationClientsForCurrentCall).coroutine {
-            updateConversationClientsForCurrentCall.invoke(message.conversationId)
+        verify(arrangement.updateConversationClientsForCurrentCall).coroutine {
+            invoke(message.conversationId)
         }.wasInvoked(once)
 
-        verify(persistMessage).coroutine {
-            persistMessage.invoke(message)
+        verify(arrangement.persistMessageUseCase).coroutine {
+            invoke(message)
         }.wasInvoked(once)
 
     }
@@ -108,59 +82,113 @@ class MemberLeaveEventHandlerTest {
     @Test
     fun givenDaoReturnsFailure_whenDeletingMember_thenNothingToDo() = runTest {
         val event = memberLeaveEvent(reason = MemberLeaveReason.Left)
-        given(memberDao).coroutine {
-            deleteMembersByQualifiedID(list, qualifiedConversationIdEntity)
-        }.then { Either.Left(failure) }
 
-        given(userRepository).coroutine {
-            fetchUsersIfUnknownByIds(event.removedList.toSet())
-        }.then { Either.Left(failure) }
+        val (arrangement, memberLeaveEventHandler) = Arrangement()
+            .arrange {
+                withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(any<List<UserId>>())
+                withFetchUsersIfUnknownByIdsReturning(
+                    Either.Left(failure),
+                    userIdList = eq(event.removedList.toSet())
+                )
+                withPersistingMessage(Either.Left(failure))
+                withDeleteMembersByQualifiedID(throws = IllegalArgumentException())
+            }
 
         memberLeaveEventHandler.handle(memberLeaveEvent(reason = MemberLeaveReason.Left))
 
-        verify(memberDao).coroutine {
+        verify(arrangement.memberDAO).coroutine {
             deleteMembersByQualifiedID(list, qualifiedConversationIdEntity)
         }.wasInvoked(once)
 
-        verify(persistMessage).coroutine {
-            persistMessage.invoke(message(event))
+        verify(arrangement.persistMessageUseCase).coroutine {
+            invoke(memberRemovedMessage(event))
         }.wasNotInvoked()
     }
 
     @Test
     fun givenDaoReturnsSuccess_whenDeletingMember_thenPersistSystemMessageAndFetchUsers() = runTest {
         val event = memberLeaveEvent(reason = MemberLeaveReason.UserDeleted)
-        val message = message(event)
+        val message = memberRemovedFromTeamMessage(event)
 
-        given(userRepository).coroutine {
-            markUserAsDeletedAndRemoveFromGroupConversations(event.removedList)
-        }.then { Either.Right(Unit) }
-
-        given(userRepository).coroutine {
-            fetchUsersIfUnknownByIds(event.removedList.toSet())
-        }.then { Either.Right(Unit) }
-
-        given(persistMessage).coroutine {
-            persistMessage(message)
-        }.then { Either.Right(Unit) }
+        val (arrangement, memberLeaveEventHandler) = Arrangement()
+            .arrange {
+                withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(any<List<UserId>>())
+                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = eq(event.removedList.toSet()))
+                withPersistingMessage(Either.Right(Unit), messageMatcher = eq(message))
+                withTeamId(Either.Right(TeamId("teamId")))
+                withIsAtLeastOneUserATeamMember(Either.Right(true))
+            }
 
         memberLeaveEventHandler.handle(memberLeaveEvent(reason = MemberLeaveReason.UserDeleted))
 
-        verify(userRepository).coroutine {
+        verify(arrangement.userRepository).coroutine {
             markUserAsDeletedAndRemoveFromGroupConversations(event.removedList)
         }.wasInvoked(once)
 
-        verify(userRepository).coroutine {
+        verify(arrangement.userRepository).coroutine {
             fetchUsersIfUnknownByIds(event.removedList.toSet())
         }.wasInvoked(once)
 
-        verify(updateConversationClientsForCurrentCall).coroutine {
-            updateConversationClientsForCurrentCall.invoke(message.conversationId)
+        verify(arrangement.updateConversationClientsForCurrentCall).coroutine {
+            invoke(message.conversationId)
         }.wasInvoked(once)
 
-        verify(persistMessage).coroutine {
-            persistMessage.invoke(message)
+        verify(arrangement.persistMessageUseCase).coroutine {
+            invoke(message)
         }.wasInvoked(once)
+    }
+
+    @Test
+    fun givenDaoReturnsSuccess_whenDeletingMemberAndSelfIsNotTeamMember_thenDoNothing() = runTest {
+        val event = memberLeaveEvent(reason = MemberLeaveReason.UserDeleted)
+        val (arrangement, memberLeaveEventHandler) = Arrangement()
+            .arrange {
+                withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(any<List<UserId>>())
+                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = eq(event.removedList.toSet()))
+                withTeamId(Either.Right(null))
+            }
+
+        memberLeaveEventHandler.handle(memberLeaveEvent(reason = MemberLeaveReason.UserDeleted))
+        verify(arrangement.userRepository).coroutine {
+            markUserAsDeletedAndRemoveFromGroupConversations(event.removedList)
+        }.wasInvoked(once)
+
+        verify(arrangement.userRepository).coroutine {
+            fetchUsersIfUnknownByIds(event.removedList.toSet())
+        }.wasInvoked(once)
+
+        verify(arrangement.updateConversationClientsForCurrentCall)
+            .suspendFunction(arrangement.updateConversationClientsForCurrentCall::invoke)
+            .with(eq(event.conversationId))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.persistMessageUseCase)
+            .suspendFunction(arrangement.persistMessageUseCase::invoke)
+            .with(eq(memberRemovedFromTeamMessage(event)))
+            .wasNotInvoked()
+    }
+
+    private class Arrangement : UserRepositoryArrangement by UserRepositoryArrangementImpl(),
+        PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
+        MemberDAOArrangement by MemberDAOArrangementImpl(),
+    SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl() {
+
+        @Mock
+        val updateConversationClientsForCurrentCall = mock(classOf<UpdateConversationClientsForCurrentCallUseCase>())
+
+        private lateinit var memberLeaveEventHandler: MemberLeaveEventHandler
+
+        fun arrange(block: Arrangement.() -> Unit): Pair<Arrangement, MemberLeaveEventHandler> = apply(block)
+            .let {
+                memberLeaveEventHandler = MemberLeaveEventHandlerImpl(
+                    memberDAO = memberDAO,
+                    userRepository = userRepository,
+                    persistMessage = persistMessageUseCase,
+                    updateConversationClientsForCurrentCall = lazy { updateConversationClientsForCurrentCall },
+                    selfTeamIdProvider
+                )
+                this to memberLeaveEventHandler
+            }
     }
 
     companion object {
@@ -182,9 +210,21 @@ class MemberLeaveEventHandlerTest {
             timestampIso = "timestampIso",
             reason = reason
         )
-        fun message(event: Event.Conversation.MemberLeave) = Message.System(
+
+        fun memberRemovedMessage(event: Event.Conversation.MemberLeave) = Message.System(
             id = event.id,
             content = MessageContent.MemberChange.Removed(members = event.removedList),
+            conversationId = event.conversationId,
+            date = event.timestampIso,
+            senderUserId = event.removedBy,
+            status = Message.Status.Sent,
+            visibility = Message.Visibility.VISIBLE,
+            expirationData = null
+        )
+
+        fun memberRemovedFromTeamMessage(event: Event.Conversation.MemberLeave) = Message.System(
+            id = event.id,
+            content = MessageContent.MemberChange.RemovedFromTeam(members = event.removedList),
             conversationId = event.conversationId,
             date = event.timestampIso,
             senderUserId = event.removedBy,
