@@ -911,6 +911,38 @@ class UserDAOTest : BaseDatabaseTest() {
         assertNotEquals(updatedTeamMemberUser.activeOneOnOneConversationId, result.activeOneOnOneConversationId)
     }
 
+    @Test
+    fun givenListOfUsers_whenOnlyOneBelongsToTheTeam_thenReturnTrue() = runTest {
+        val teamId = "teamId"
+        val users = listOf(
+            newUserEntity().copy(team = teamId, id = UserIDEntity("1", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("2", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("3", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("4", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("5", "wire.com")),
+        )
+
+        db.userDAO.upsertUsers(users)
+
+        assertTrue { db.userDAO.isAtLeastOneUserATeamMember(users.map { it.id }, teamId) }
+    }
+
+    @Test
+    fun givenListOfUsers_whenNoneBelongsToTheTeam_thenReturnFalse() = runTest {
+        val teamId = "teamId"
+        val users = listOf(
+            newUserEntity().copy(team = null, id = UserIDEntity("1", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("2", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("3", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("4", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("5", "wire.com")),
+        )
+
+        db.userDAO.upsertUsers(users)
+
+        assertFalse { db.userDAO.isAtLeastOneUserATeamMember(users.map { it.id }, teamId) }
+    }
+
     private companion object {
         val USER_ENTITY_1 = newUserEntity(QualifiedIDEntity("1", "wire.com"))
         val USER_ENTITY_2 = newUserEntity(QualifiedIDEntity("2", "wire.com"))
