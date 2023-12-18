@@ -65,7 +65,11 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
                                 )
                                 Either.Right(Unit)
                             } else {
-                                Either.Left(it)
+                                kaliumLogger.w(
+                                    "Failed to establish mls group for ${conversation.id.toLogString()} " +
+                                             "due to $it, skipping.."
+                                )
+                                Either.Right(Unit)
                             }
 
                         }

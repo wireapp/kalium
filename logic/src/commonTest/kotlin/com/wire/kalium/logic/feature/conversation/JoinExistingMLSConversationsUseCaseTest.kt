@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -29,6 +30,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
@@ -39,11 +41,10 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.twice
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class JoinExistingMLSConversationsUseCaseTest {
 
     @Test
@@ -109,6 +110,41 @@ class JoinExistingMLSConversationsUseCaseTest {
                 .wasInvoked(twice)
         }
 
+    @Test
+    fun givenNoKeyPackagesAvailable_WhenJoinExistingMLSConversationUseCase_ThenReturnUnit() =
+        runTest {
+            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+                .withIsMLSSupported(true)
+                .withHasRegisteredMLSClient(true)
+                .withGetConversationsByGroupStateSuccessful()
+                .withJoinExistingMLSConversationNoKeyPackagesAvailable()
+                .arrange()
+
+            joinExistingMLSConversationsUseCase().shouldSucceed()
+
+            verify(arrangement.joinExistingMLSConversationUseCase)
+                .suspendFunction(arrangement.joinExistingMLSConversationUseCase::invoke)
+                .with(anything())
+                .wasInvoked(twice)
+        }
+
+    @Test
+    fun givenFailure_WhenJoinExistingMLSConversationUseCase_ThenReturnUnit() = runTest {
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByGroupStateSuccessful()
+            .withJoinExistingMLSConversationFailure()
+            .arrange()
+
+        joinExistingMLSConversationsUseCase().shouldSucceed()
+
+        verify(arrangement.joinExistingMLSConversationUseCase)
+            .suspendFunction(arrangement.joinExistingMLSConversationUseCase::invoke)
+            .with(anything())
+            .wasInvoked(twice)
+    }
+
     private class Arrangement {
 
         @Mock
@@ -134,7 +170,12 @@ class JoinExistingMLSConversationsUseCaseTest {
         )
 
         @Suppress("MaxLineLength")
-        fun withGetConversationsByGroupStateSuccessful(conversations: List<Conversation> = listOf(MLS_CONVERSATION1, MLS_CONVERSATION2)) =
+        fun withGetConversationsByGroupStateSuccessful(
+            conversations: List<Conversation> = listOf(
+                MLS_CONVERSATION1,
+                MLS_CONVERSATION2
+            )
+        ) =
             apply {
                 given(conversationRepository)
                     .suspendFunction(conversationRepository::getConversationsByGroupState)
@@ -148,6 +189,21 @@ class JoinExistingMLSConversationsUseCaseTest {
                 .whenInvokedWith(anything())
                 .then { Either.Right(Unit) }
         }
+
+        fun withJoinExistingMLSConversationFailure() = apply {
+            given(joinExistingMLSConversationUseCase)
+                .suspendFunction(joinExistingMLSConversationUseCase::invoke)
+                .whenInvokedWith(anything())
+                .then { Either.Left(CoreFailure.NotSupportedByProteus) }
+        }
+
+        fun withJoinExistingMLSConversationNoKeyPackagesAvailable() = apply {
+            given(joinExistingMLSConversationUseCase)
+                .suspendFunction(joinExistingMLSConversationUseCase::invoke)
+                .whenInvokedWith(anything())
+                .then { Either.Left(CoreFailure.NoKeyPackagesAvailable(setOf())) }
+        }
+
 
         fun withIsMLSSupported(supported: Boolean) = apply {
             given(featureSupport)
