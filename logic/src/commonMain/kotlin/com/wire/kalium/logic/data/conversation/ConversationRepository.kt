@@ -292,9 +292,9 @@ interface ConversationRepository {
 
     suspend fun setLegalHoldStatusChangeNotified(conversationId: ConversationId): Either<CoreFailure, Boolean>
 
-    suspend fun observeLegalHoldStatusWithChangeNotifiedForConversation(
-        conversationId: ConversationId
-    ): Flow<Either<StorageFailure, Pair<Conversation.LegalHoldStatus, Boolean>>>
+    suspend fun observeLegalHoldStatus(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation.LegalHoldStatus>>
+
+    suspend fun observeLegalHoldStatusChangeNotified(conversationId: ConversationId): Flow<Either<StorageFailure, Boolean>>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -1101,9 +1101,14 @@ internal class ConversationDataSource internal constructor(
             conversationDAO.updateLegalHoldStatusChangeNotified(conversationId = conversationId.toDao(), notified = true)
         }
 
-    override suspend fun observeLegalHoldStatusWithChangeNotifiedForConversation(conversationId: ConversationId) =
-        conversationDAO.observeLegalHoldStatusWithChangeNotifiedForConversation(conversationId.toDao())
-            .map { (legalHoldStatus, changeNotified) -> conversationMapper.legalHoldStatusFromEntity(legalHoldStatus) to changeNotified }
+    override suspend fun observeLegalHoldStatus(conversationId: ConversationId) =
+        conversationDAO.observeLegalHoldStatus(conversationId.toDao())
+            .map { conversationMapper.legalHoldStatusFromEntity(it) }
+            .wrapStorageRequest()
+            .distinctUntilChanged()
+
+    override suspend fun observeLegalHoldStatusChangeNotified(conversationId: ConversationId): Flow<Either<StorageFailure, Boolean>> =
+        conversationDAO.observeLegalHoldStatusChangeNotified(conversationId.toDao())
             .wrapStorageRequest()
             .distinctUntilChanged()
 

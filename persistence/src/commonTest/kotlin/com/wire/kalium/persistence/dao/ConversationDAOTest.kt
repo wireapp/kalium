@@ -1634,16 +1634,26 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertEquals(false, result)
     }
     @Test
-    fun givenSameLegalHoldStatusAndChangeNotifiedFlag_whenObserving_thenShouldReturnCorrectValues() = runTest {
+    fun givenLegalHoldStatus_whenObserving_thenShouldReturnCorrectValue() = runTest {
         // given
         val conversationId = QualifiedIDEntity("conversationId", "domain")
         conversationDAO.insertConversation(conversationEntity1.copy(conversationId))
         conversationDAO.updateLegalHoldStatus(conversationId, ConversationEntity.LegalHoldStatus.ENABLED)
+        // when
+        val result = conversationDAO.observeLegalHoldStatus(conversationId).first()
+        // then
+        assertEquals(ConversationEntity.LegalHoldStatus.ENABLED, result)
+    }
+    @Test
+    fun givenLegalHoldStatusChangeNotified_whenObserving_thenShouldReturnCorrectValue() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("conversationId", "domain")
+        conversationDAO.insertConversation(conversationEntity1.copy(conversationId))
         conversationDAO.updateLegalHoldStatusChangeNotified(conversationId, false)
         // when
-        val result = conversationDAO.observeLegalHoldStatusWithChangeNotifiedForConversation(conversationId).first()
+        val result = conversationDAO.observeLegalHoldStatusChangeNotified(conversationId).first()
         // then
-        assertEquals(ConversationEntity.LegalHoldStatus.ENABLED to false, result)
+        assertEquals(false, result)
     }
 
     private fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity {

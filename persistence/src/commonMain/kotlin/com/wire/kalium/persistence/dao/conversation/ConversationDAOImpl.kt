@@ -407,10 +407,15 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.updateLegalHoldStatusChangeNotified(notified, conversationId).executeAsOne() > 0
         }
 
-    override suspend fun observeLegalHoldStatusWithChangeNotifiedForConversation(conversationId: QualifiedIDEntity) =
-        conversationQueries.selectLegalHoldStatusWithChangeNotified(conversationId)
+    override suspend fun observeLegalHoldStatus(conversationId: QualifiedIDEntity) =
+        conversationQueries.selectLegalHoldStatus(conversationId)
             .asFlow()
-            .mapToOne()
-            .map { it.legal_hold_status to it.legal_hold_status_change_notified }
+            .mapToOneOrDefault(ConversationEntity.LegalHoldStatus.DISABLED)
+            .flowOn(coroutineContext)
+
+    override suspend fun observeLegalHoldStatusChangeNotified(conversationId: QualifiedIDEntity) =
+        conversationQueries.selectLegalHoldStatusChangeNotified(conversationId)
+            .asFlow()
+            .mapToOneOrDefault(true)
             .flowOn(coroutineContext)
 }

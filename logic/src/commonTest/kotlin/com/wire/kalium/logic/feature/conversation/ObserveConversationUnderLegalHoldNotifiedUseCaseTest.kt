@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.map
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
@@ -41,7 +42,8 @@ class ObserveConversationUnderLegalHoldNotifiedUseCaseTest {
         // given
         val conversationId = ConversationId("conversationId", "domain")
         val (_, useCase) = Arrangement()
-            .withObserveLegalHoldStatusWithChangeNotifiedForConversation(given)
+            .withObserveLegalHoldStatusForConversation(given.map { it.first })
+            .withObserveLegalHoldStatusChangeNotifiedForConversation(given.map { it.second })
             .arrange()
         // when
         val result = useCase.invoke(conversationId)
@@ -74,11 +76,19 @@ class ObserveConversationUnderLegalHoldNotifiedUseCaseTest {
         }
 
         fun arrange() = this to useCase
-        fun withObserveLegalHoldStatusWithChangeNotifiedForConversation(
-            result: Either<StorageFailure, Pair<Conversation.LegalHoldStatus, Boolean>>
+        fun withObserveLegalHoldStatusForConversation(
+            result: Either<StorageFailure, Conversation.LegalHoldStatus>
         ) = apply {
             given(conversationRepository)
-                .suspendFunction(conversationRepository::observeLegalHoldStatusWithChangeNotifiedForConversation)
+                .suspendFunction(conversationRepository::observeLegalHoldStatus)
+                .whenInvokedWith(any())
+                .thenReturn(flowOf(result))
+        }
+        fun withObserveLegalHoldStatusChangeNotifiedForConversation(
+            result: Either<StorageFailure, Boolean>
+        ) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::observeLegalHoldStatusChangeNotified)
                 .whenInvokedWith(any())
                 .thenReturn(flowOf(result))
         }

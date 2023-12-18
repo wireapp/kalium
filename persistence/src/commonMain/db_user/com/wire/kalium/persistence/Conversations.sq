@@ -44,8 +44,14 @@ CREATE TABLE Conversation (
     verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT "NOT_VERIFIED",
     proteus_verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT "NOT_VERIFIED",
     degraded_conversation_notified INTEGER AS Boolean NOT NULL DEFAULT 1,
-    legal_hold_status TEXT AS ConversationEntity.LegalHoldStatus NOT NULL DEFAULT "DISABLED",
-    legal_hold_status_change_notified INTEGER AS Boolean NOT NULL DEFAULT 1
+    legal_hold_status TEXT AS ConversationEntity.LegalHoldStatus NOT NULL DEFAULT "DISABLED"
+);
+
+CREATE TABLE ConversationLegalHoldStatusChangeNotified (
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
+    legal_hold_status_change_notified INTEGER AS Boolean NOT NULL DEFAULT 1,
+
+    FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
 -- Optimise comparisons and sorting by dates:
@@ -418,15 +424,19 @@ SELECT changes();
 }
 
 updateLegalHoldStatusChangeNotified {
-UPDATE Conversation
+UPDATE ConversationLegalHoldStatusChangeNotified
 SET legal_hold_status_change_notified = :notified
-WHERE qualified_id = :qualified_id AND legal_hold_status_change_notified != :notified;
+WHERE conversation_id = :conversationId AND legal_hold_status_change_notified != :notified;
 SELECT changes();
 }
 
-selectLegalHoldStatusWithChangeNotified:
-SELECT legal_hold_status, legal_hold_status_change_notified FROM Conversation
+selectLegalHoldStatus:
+SELECT legal_hold_status FROM Conversation
 WHERE qualified_id = :conversationId;
+
+selectLegalHoldStatusChangeNotified:
+SELECT legal_hold_status_change_notified FROM ConversationLegalHoldStatusChangeNotified
+WHERE conversation_id = :conversationId;
 
 selectDegradedConversationNotified:
 SELECT degraded_conversation_notified FROM Conversation

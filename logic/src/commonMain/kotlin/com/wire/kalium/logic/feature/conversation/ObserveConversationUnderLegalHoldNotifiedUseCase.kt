@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.functional.flatMapRightWithEither
 import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.functional.mapToRightOr
 import kotlinx.coroutines.flow.Flow
@@ -37,12 +38,15 @@ class ObserveConversationUnderLegalHoldNotifiedUseCaseImpl internal constructor(
 ) : ObserveConversationUnderLegalHoldNotifiedUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): Flow<Boolean> =
-        conversationRepository.observeLegalHoldStatusWithChangeNotifiedForConversation(conversationId)
-            .mapRight { (legalHoldStatus, isUserNotifiedAboutStatusChange) ->
-                when (legalHoldStatus) {
-                    Conversation.LegalHoldStatus.ENABLED -> isUserNotifiedAboutStatusChange
-                    else -> true // we only need to notify if legal hold was enabled
-                }
+        conversationRepository.observeLegalHoldStatus(conversationId)
+            .flatMapRightWithEither { legalHoldStatus ->
+                conversationRepository.observeLegalHoldStatusChangeNotified(conversationId)
+                    .mapRight { isUserNotifiedAboutStatusChange ->
+                        when (legalHoldStatus) {
+                            Conversation.LegalHoldStatus.ENABLED -> isUserNotifiedAboutStatusChange
+                            else -> true // we only need to notify if legal hold was enabled
+                        }
+                    }
             }
             .mapToRightOr(true)
             .distinctUntilChanged()
