@@ -20,6 +20,7 @@
 
 package com.wire.kalium.network.api.base.authenticated.conversation
 
+import com.wire.kalium.network.api.base.authenticated.notification.MemberLeaveReasonDTO
 import com.wire.kalium.network.api.base.model.UserId
 import kotlinx.serialization.EncodeDefault
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -27,16 +28,15 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ConversationMembers(
+data class ConversationMembers @OptIn(ExperimentalSerializationApi::class) constructor(
     @SerialName("user_ids") val userIds: List<String>,
     @EncodeDefault @SerialName("users") val users: List<ConversationMemberDTO.Other> = emptyList()
 )
 
 @Serializable
-data class ConversationUsers(
-    @Deprecated("use qualifiedUserIds", replaceWith = ReplaceWith("this.qualifiedUserIds"))
-    @SerialName("user_ids") val userIds: List<String>,
-    @SerialName("qualified_user_ids") val qualifiedUserIds: List<UserId>
+data class ConversationMemberRemovedDTO(
+    @SerialName("qualified_user_ids") val qualifiedUserIds: List<UserId>,
+    @SerialName("reason") val reason: MemberLeaveReasonDTO = MemberLeaveReasonDTO.LEFT
 )
 
 @Serializable

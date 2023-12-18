@@ -180,7 +180,8 @@ sealed class Event(open val id: String, open val transient: Boolean, open val li
             override val live: Boolean,
             val removedBy: UserId,
             val removedList: List<UserId>,
-            val timestampIso: String
+            val timestampIso: String,
+            val reason: MemberLeaveReason
         ) : Conversation(id, transient, live, conversationId) {
 
             override fun toLogMap(): Map<String, Any?> = mapOf(

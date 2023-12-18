@@ -41,6 +41,7 @@ import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
+import com.wire.kalium.network.api.base.authenticated.notification.MemberLeaveReasonDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi.PropertyKey.WIRE_RECEIPT_MODE
@@ -475,10 +476,11 @@ class EventMapper(
         id = id,
         conversationId = eventContentDTO.qualifiedConversation.toModel(),
         removedBy = eventContentDTO.qualifiedFrom.toModel(),
-        removedList = eventContentDTO.members.qualifiedUserIds.map { it.toModel() },
+        removedList = eventContentDTO.removedUsers.qualifiedUserIds.map { it.toModel() },
         timestampIso = eventContentDTO.time,
         transient = transient,
         live = live,
+        reason = eventContentDTO.removedUsers.reason.toModel()
     )
 
     private fun memberUpdate(
@@ -702,3 +704,9 @@ class EventMapper(
     )
 
 }
+
+private fun MemberLeaveReasonDTO.toModel(): MemberLeaveReason = when (this) {
+        MemberLeaveReasonDTO.LEFT -> MemberLeaveReason.Left
+        MemberLeaveReasonDTO.REMOVED -> MemberLeaveReason.Removed
+        MemberLeaveReasonDTO.USER_DELETED -> MemberLeaveReason.UserDeleted
+    }
