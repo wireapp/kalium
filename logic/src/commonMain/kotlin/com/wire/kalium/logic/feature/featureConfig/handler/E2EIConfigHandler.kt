@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.featureConfig.E2EIModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.util.DateTimeUtil
-import kotlinx.datetime.Instant
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
@@ -32,12 +31,13 @@ class E2EIConfigHandler(
     private val userConfigRepository: UserConfigRepository,
 ) {
     fun handle(e2eiConfig: E2EIModel): Either<CoreFailure, Unit> {
-        val gracePeriodEndMs = e2eiConfig.config.verificationExpirationNS.toDuration(DurationUnit.NANOSECONDS).inWholeMilliseconds
+        val gracePeriodEnd = DateTimeUtil.currentInstant()
+            .plus(e2eiConfig.config.verificationExpirationSeconds.toDuration(DurationUnit.SECONDS))
         userConfigRepository.setE2EISettings(
             E2EISettings(
                 isRequired = e2eiConfig.status == Status.ENABLED,
                 discoverUrl = e2eiConfig.config.discoverUrl,
-                gracePeriodEnd = Instant.fromEpochMilliseconds(gracePeriodEndMs)
+                gracePeriodEnd = gracePeriodEnd
             )
         )
         return userConfigRepository.setE2EINotificationTime(DateTimeUtil.currentInstant())
