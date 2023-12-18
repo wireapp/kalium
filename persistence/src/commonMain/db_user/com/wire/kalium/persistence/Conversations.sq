@@ -423,10 +423,12 @@ WHERE qualified_id = :qualified_id AND legal_hold_status != :legal_hold_status;
 SELECT changes();
 }
 
-updateLegalHoldStatusChangeNotified {
-UPDATE ConversationLegalHoldStatusChangeNotified
-SET legal_hold_status_change_notified = :notified
-WHERE conversation_id = :conversationId AND legal_hold_status_change_notified != :notified;
+upsertLegalHoldStatusChangeNotified {
+INSERT INTO ConversationLegalHoldStatusChangeNotified(conversation_id, legal_hold_status_change_notified)
+VALUES (:conversationId, :notified)
+ON CONFLICT(conversation_id) DO UPDATE SET
+    legal_hold_status_change_notified = excluded.legal_hold_status_change_notified
+    WHERE legal_hold_status_change_notified != excluded.legal_hold_status_change_notified;
 SELECT changes();
 }
 
