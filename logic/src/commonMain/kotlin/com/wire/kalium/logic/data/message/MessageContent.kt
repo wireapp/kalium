@@ -232,6 +232,7 @@ sealed class MessageContent {
     sealed class MemberChange(open val members: List<UserId>) : System() {
         data class Added(override val members: List<UserId>) : MemberChange(members)
         data class Removed(override val members: List<UserId>) : MemberChange(members)
+        data class RemovedFromTeam(override val members: List<UserId>) : MemberChange(members)
         data class FailedToAdd(override val members: List<UserId>) : MemberChange(members)
         data class CreationAdded(override val members: List<UserId>) : MemberChange(members)
         data class FederationRemoved(override val members: List<UserId>) : MemberChange(members)
@@ -245,6 +246,7 @@ sealed class MessageContent {
 
     data class ConversationRenamed(val conversationName: String) : System()
 
+    @Deprecated("Use MemberChange.RemovedFromTeam instead")
     data class TeamMemberRemoved(val userName: String) : System()
 
     data object MissedCall : System()
@@ -358,9 +360,9 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.HistoryLostProtocolChanged -> "HistoryLostProtocolChanged"
     is MessageContent.MemberChange.Added -> "MemberChange.Added"
     is MessageContent.MemberChange.Removed -> "MemberChange.Removed"
+    is MessageContent.MemberChange.RemovedFromTeam -> "MemberChange.RemovedFromTeam"
     is MessageContent.MissedCall -> "MissedCall"
     is MessageContent.NewConversationReceiptMode -> "NewConversationReceiptMode"
-    is MessageContent.TeamMemberRemoved -> "TeamMemberRemoved"
     is MessageContent.ConversationCreated -> "ConversationCreated"
     is MessageContent.MemberChange.CreationAdded -> "MemberChange.CreationAdded"
     is MessageContent.MemberChange.FailedToAdd -> "MemberChange.FailedToAdd"
@@ -379,6 +381,7 @@ fun MessageContent?.getType() = when (this) {
     MessageContent.ConversationVerifiedProteus -> "ConversationVerification.Verified.Proteus"
     is MessageContent.ConversationStartedUnverifiedWarning -> "ConversationStartedUnverifiedWarning"
     is MessageContent.Location -> "Location"
+    is MessageContent.TeamMemberRemoved -> "TeamMemberRemoved"
     is MessageContent.LegalHold.ForConversation.Disabled -> "LegalHold.ForConversation.Disabled"
     is MessageContent.LegalHold.ForConversation.Enabled -> "LegalHold.ForConversation.Enabled"
     is MessageContent.LegalHold.ForMembers.Disabled -> "LegalHold.ForMembers.Disabled"
@@ -414,7 +417,13 @@ sealed interface MessagePreviewContent {
             val otherUserIdList: List<UserId> // TODO add usernames
         ) : WithUser
 
-        data class MembersRemoved(
+        data class ConversationMembersRemoved(
+            override val username: String?,
+            val isSelfUserRemoved: Boolean,
+            val otherUserIdList: List<UserId> // TODO add usernames
+        ) : WithUser
+
+        data class TeamMembersRemoved(
             override val username: String?,
             val isSelfUserRemoved: Boolean,
             val otherUserIdList: List<UserId> // TODO add usernames
@@ -434,6 +443,7 @@ sealed interface MessagePreviewContent {
 
         data class ConversationNameChange(override val username: String?) : WithUser
 
+        @Deprecated("Use WithUser.TeamMembersRemoved instead")
         data class TeamMemberRemoved(override val username: String?) : WithUser
 
         data class MissedCall(override val username: String?) : WithUser
