@@ -458,7 +458,7 @@ class UserConfigStorageImpl(
             E2EI_NOTIFICATION_TIME,
             timeStamp
         ).also {
-            e2EIFlow.tryEmit(Unit)
+            e2EINotificationFlow.tryEmit(Unit)
         }
     }
 

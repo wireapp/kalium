@@ -49,8 +49,11 @@ internal class LegalHoldHandlerImpl internal constructor(
         val userHasBeenUnderLegalHold = isUserUnderLegalHold(legalHoldEnabled.userId)
         // fetch and persist current clients for the given user
         processEvent(selfUserId, legalHoldEnabled.userId)
-        // create system messages only if legal hold status has changed for the given user
+        // create system messages and notify only if legal hold status has changed for the given user
         if (!userHasBeenUnderLegalHold) {
+            if (selfUserId == legalHoldEnabled.userId) { // notify only for self user
+                userConfigRepository.setLegalHoldChangeNotified(false)
+            }
             legalHoldSystemMessagesHandler.handleEnable(legalHoldEnabled.userId)
         }
 
@@ -63,8 +66,11 @@ internal class LegalHoldHandlerImpl internal constructor(
         val userHasBeenUnderLegalHold = isUserUnderLegalHold(legalHoldDisabled.userId)
         // fetch and persist current clients for the given user
         processEvent(selfUserId, legalHoldDisabled.userId)
-        // create system messages only if legal hold status has changed for the given user
+        // create system messages and notify only if legal hold status has changed for the given user
         if (userHasBeenUnderLegalHold) {
+            if (selfUserId == legalHoldDisabled.userId) { // notify only for self user
+                userConfigRepository.setLegalHoldChangeNotified(false)
+            }
             legalHoldSystemMessagesHandler.handleDisable(legalHoldDisabled.userId)
         }
 
@@ -75,7 +81,6 @@ internal class LegalHoldHandlerImpl internal constructor(
         if (selfUserId == userId) {
             userConfigRepository.deleteLegalHoldRequest()
             fetchSelfClientsFromRemote()
-            userConfigRepository.setLegalHoldChangeNotified(false)
         } else {
             persistOtherUserClients(userId)
         }

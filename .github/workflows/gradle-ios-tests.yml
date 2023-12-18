@@ -95,7 +95,7 @@ jobs:
         continue-on-error: true
         with:
             name: test-results
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         with:
           node-version: 18
       - name: Install datadog-ci

@@ -100,5 +100,5 @@ data class E2EIModel(
 
 data class E2EIConfigModel(
     val discoverUrl: String,
-    val verificationExpirationNS: Long
+    val verificationExpirationSeconds: Long
 )
