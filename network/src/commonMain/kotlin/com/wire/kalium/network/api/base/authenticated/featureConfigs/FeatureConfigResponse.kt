@@ -117,7 +117,7 @@ data class E2EIConfigDTO(
     @SerialName("acmeDiscoveryUrl")
     val url: String?,
     @SerialName("verificationExpiration")
-    val verificationExpirationNS: Long = 0L
+    val verificationExpirationSeconds: Long = 0L
 )
 
 @OptIn(ExperimentalSerializationApi::class)

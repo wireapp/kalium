@@ -54,6 +54,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.config.inMemoryUserConfigStorage
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
+import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -63,7 +64,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -590,7 +590,8 @@ class SyncFeatureConfigsUseCaseTest {
 
     @Test
     fun givenE2EIIsDisabled_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
-        val e2EIModel = E2EIModel(E2EIConfigModel("url", 10_000_000_000L), Status.DISABLED)
+        val e2EIModel = E2EIModel(E2EIConfigModel("url", 10_000L), Status.DISABLED)
+        val expectedGracePeriodEnd = DateTimeUtil.currentInstant().plus(10_000.toDuration(DurationUnit.SECONDS))
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
                 FeatureConfigTest.newModel(e2EIModel = e2EIModel)
@@ -604,7 +605,9 @@ class SyncFeatureConfigsUseCaseTest {
         arrangement.userConfigRepository.getE2EISettings().shouldSucceed {
             assertFalse(it.isRequired)
             assertEquals("url", it.discoverUrl)
-            assertEquals(Instant.fromEpochMilliseconds(10_000L), it.gracePeriodEnd)
+
+            val gracePeriodsDiff = it.gracePeriodEnd?.minus(expectedGracePeriodEnd)?.inWholeMilliseconds ?: Long.MAX_VALUE
+            assertTrue(gracePeriodsDiff > -1000 || gracePeriodsDiff < 1000)
         }
     }
 

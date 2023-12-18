@@ -342,16 +342,23 @@ class MemberDAOTest : BaseDatabaseTest() {
     fun givenConversationWithExistingMember_whenUpdateFullMemberListIsCalled_thenExistingMemberIsRemovedAndNewMembersAreAdded() = runTest {
         // Given
         val conversationID = TestStubs.conversationEntity1.id
+        val memberToUpdate = MemberEntity(TestStubs.user1.id, MemberEntity.Role.Member)
         val memberList = listOf(
-            MemberEntity(TestStubs.user1.id, MemberEntity.Role.Admin),
+            memberToUpdate,
             MemberEntity(TestStubs.user2.id, MemberEntity.Role.Member)
         )
 
         // Insert a conversation, user, and a member into the conversation to test the deletion operation
-        val oldMember = MemberEntity(TestStubs.user3.id, MemberEntity.Role.Member)
+        val memberToRemove = MemberEntity(TestStubs.user3.id, MemberEntity.Role.Member)
+        val oldMembers = listOf(
+            memberToRemove,
+            memberToUpdate.copy(role = MemberEntity.Role.Admin),
+        )
         userDAO.upsertUser(TestStubs.user3)
         conversationDAO.insertConversation(TestStubs.conversationEntity1)
-        memberDAO.insertMember(oldMember, conversationID)
+        oldMembers.forEach { oldMember ->
+            memberDAO.insertMember(oldMember, conversationID)
+        }
 
         // Ensure all new users are inserted before calling updateFullMemberList
         memberList.forEach { member ->
@@ -366,9 +373,9 @@ class MemberDAOTest : BaseDatabaseTest() {
         val fetchedMembers = memberDAO.observeConversationMembers(conversationID).first()
 
         // Assert that the old member was deleted
-        assertFalse(fetchedMembers.any { it.user == oldMember.user })
+        assertFalse(fetchedMembers.any { it.user == memberToRemove.user })
 
-        // Assert that the new members were inserted
+        // Assert that the new members were inserted and the old updated
         assertTrue(fetchedMembers.containsAll(memberList))
     }
 

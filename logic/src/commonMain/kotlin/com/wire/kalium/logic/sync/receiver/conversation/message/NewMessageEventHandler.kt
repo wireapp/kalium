@@ -22,6 +22,7 @@ import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
@@ -86,10 +87,12 @@ internal class NewMessageEventHandlerImpl(
             }.onSuccess {
                 if (it is MessageUnpackResult.ApplicationMessage) {
                     handleSuccessfulResult(it)
-                    conversationRepository.updateLegalHoldStatus(
-                        conversationId = it.conversationId,
-                        legalHoldStatus = it.content.legalHoldStatus
-                    )
+                    if (it.content.legalHoldStatus != Conversation.LegalHoldStatus.UNKNOWN) {
+                        conversationRepository.updateLegalHoldStatus(
+                            conversationId = it.conversationId,
+                            legalHoldStatus = it.content.legalHoldStatus
+                        )
+                    }
                     onMessageInserted(it)
                 }
                 kaliumLogger
@@ -113,6 +116,7 @@ internal class NewMessageEventHandlerImpl(
                     is MLSMessageFailureResolution.Ignore -> {
                         logger.i("Ignoring event: ${logMap.toJsonElement()}")
                     }
+
                     is MLSMessageFailureResolution.InformUser -> {
                         logger.i("Informing users about decryption error: ${logMap.toJsonElement()}")
                         applicationMessageHandler.handleDecryptionError(
@@ -127,19 +131,25 @@ internal class NewMessageEventHandlerImpl(
                             )
                         )
                     }
+
                     is MLSMessageFailureResolution.OutOfSync -> {
                         logger.i("Epoch out of sync error: ${logMap.toJsonElement()}")
-                        staleEpochVerifier.verifyEpoch(event.conversationId, event.timestampIso.toInstant())
+                        staleEpochVerifier.verifyEpoch(
+                            event.conversationId,
+                            event.timestampIso.toInstant()
+                        )
                     }
                 }
             }.onSuccess {
                 it.forEach {
                     if (it is MessageUnpackResult.ApplicationMessage) {
                         handleSuccessfulResult(it)
-                        conversationRepository.updateLegalHoldStatus(
-                            conversationId = it.conversationId,
-                            legalHoldStatus = it.content.legalHoldStatus
-                        )
+                        if (it.content.legalHoldStatus != Conversation.LegalHoldStatus.UNKNOWN) {
+                            conversationRepository.updateLegalHoldStatus(
+                                conversationId = it.conversationId,
+                                legalHoldStatus = it.content.legalHoldStatus
+                            )
+                        }
                         onMessageInserted(it)
                     }
                 }
