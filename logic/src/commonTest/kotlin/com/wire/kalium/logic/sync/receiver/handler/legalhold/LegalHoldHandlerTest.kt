@@ -97,6 +97,22 @@ class LegalHoldHandlerTest {
     }
 
     @Test
+    fun givenUserLegalHoldDisabled_whenHandlingEnable_thenCreateOrUpdateSystemMessages() = runTest {
+        // given
+        val (arrangement, handler) = Arrangement()
+            .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Disabled)
+            .withSetLegalHoldChangeNotifiedSuccess()
+            .arrange()
+        // when
+        handler.handleEnable(legalHoldEventEnabled)
+        // then
+        verify(arrangement.legalHoldSystemMessagesHandler)
+            .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleEnable)
+            .with(any())
+            .wasInvoked()
+    }
+
+    @Test
     fun givenUserLegalHoldEnabled_whenHandlingEnable_thenDoNotCreateOrUpdateSystemMessages() = runTest {
         // given
         val (arrangement, handler) = Arrangement()
@@ -113,6 +129,22 @@ class LegalHoldHandlerTest {
     }
 
     @Test
+    fun givenUserLegalHoldEnabled_whenHandlingDisable_thenCreateOrUpdateSystemMessages() = runTest {
+        // given
+        val (arrangement, handler) = Arrangement()
+            .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Enabled)
+            .withSetLegalHoldChangeNotifiedSuccess()
+            .arrange()
+        // when
+        handler.handleDisable(legalHoldEventDisabled)
+        // then
+        verify(arrangement.legalHoldSystemMessagesHandler)
+            .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleDisable)
+            .with(any())
+            .wasInvoked()
+    }
+
+    @Test
     fun givenUserLegalHoldDisabled_whenHandlingDisable_thenDoNotCreateOrUpdateSystemMessages() = runTest {
         // given
         val (arrangement, handler) = Arrangement()
@@ -123,6 +155,102 @@ class LegalHoldHandlerTest {
         // then
         verify(arrangement.legalHoldSystemMessagesHandler)
             .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleDisable)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenUserLegalHoldEnabled_whenHandlingEnable_thenDoNotSetLegalHoldChangeNotified() = runTest {
+        // given
+        val (arrangement, handler) = Arrangement()
+            .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Enabled)
+            .withSetLegalHoldChangeNotifiedSuccess()
+            .arrange()
+        // when
+        handler.handleEnable(legalHoldEventEnabled)
+        // then
+        verify(arrangement.userConfigRepository)
+            .suspendFunction(arrangement.userConfigRepository::setLegalHoldChangeNotified)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenUserLegalHoldDisabled_whenHandlingEnableForSelf_thenSetLegalHoldChangeNotifiedAsFalse() = runTest {
+        // given
+        val (arrangement, handler) = Arrangement()
+            .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Disabled)
+            .withSetLegalHoldChangeNotifiedSuccess()
+            .arrange()
+        // when
+        handler.handleEnable(legalHoldEventEnabled.copy(userId = TestUser.SELF.id))
+        // then
+        verify(arrangement.userConfigRepository)
+            .suspendFunction(arrangement.userConfigRepository::setLegalHoldChangeNotified)
+            .with(eq(false))
+            .wasInvoked()
+    }
+
+    @Test
+    fun givenUserLegalHoldDisabled_whenHandlingEnableForOther_thenDoNotSetLegalHoldChangeNotified() = runTest {
+        // given
+        val (arrangement, handler) = Arrangement()
+            .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Disabled)
+            .withSetLegalHoldChangeNotifiedSuccess()
+            .arrange()
+        // when
+        handler.handleEnable(legalHoldEventEnabled.copy(userId = TestUser.OTHER_USER_ID))
+        // then
+        verify(arrangement.userConfigRepository)
+            .suspendFunction(arrangement.userConfigRepository::setLegalHoldChangeNotified)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenUserLegalHoldDisabled_whenHandlingDisable_thenDoNotSetLegalHoldChangeNotified() = runTest {
+        // given
+        val (arrangement, handler) = Arrangement()
+            .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Disabled)
+            .withSetLegalHoldChangeNotifiedSuccess()
+            .arrange()
+        // when
+        handler.handleDisable(legalHoldEventDisabled)
+        // then
+        verify(arrangement.userConfigRepository)
+            .suspendFunction(arrangement.userConfigRepository::setLegalHoldChangeNotified)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenUserLegalHoldEnabled_whenHandlingDisableForSelf_thenSetLegalHoldChangeNotifiedAsFalse() = runTest {
+        // given
+        val (arrangement, handler) = Arrangement()
+            .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Enabled)
+            .withSetLegalHoldChangeNotifiedSuccess()
+            .arrange()
+        // when
+        handler.handleDisable(legalHoldEventDisabled.copy(userId = TestUser.SELF.id))
+        // then
+        verify(arrangement.userConfigRepository)
+            .suspendFunction(arrangement.userConfigRepository::setLegalHoldChangeNotified)
+            .with(eq(false))
+            .wasInvoked()
+    }
+
+    @Test
+    fun givenUserLegalHoldEnabled_whenHandlingDisableForOther_thenDoNotSetLegalHoldChangeNotified() = runTest {
+        // given
+        val (arrangement, handler) = Arrangement()
+            .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Enabled)
+            .withSetLegalHoldChangeNotifiedSuccess()
+            .arrange()
+        // when
+        handler.handleDisable(legalHoldEventDisabled.copy(userId = TestUser.OTHER_USER_ID))
+        // then
+        verify(arrangement.userConfigRepository)
+            .suspendFunction(arrangement.userConfigRepository::setLegalHoldChangeNotified)
             .with(any())
             .wasNotInvoked()
     }
