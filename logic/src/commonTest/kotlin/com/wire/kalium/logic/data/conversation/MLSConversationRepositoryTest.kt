@@ -55,12 +55,13 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembers
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationUsers
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.SendMLSMessageResponse
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.authenticated.notification.MemberLeaveReasonDTO
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -1577,7 +1578,7 @@ class MLSConversationRepositoryTest {
                 TestConversation.NETWORK_ID,
                 TestConversation.NETWORK_USER_ID1,
                 "2022-03-30T15:36:00.000Z",
-                ConversationUsers(emptyList(), emptyList()),
+                ConversationMemberRemovedDTO(emptyList(), MemberLeaveReasonDTO.LEFT),
                 TestConversation.NETWORK_USER_ID1.value
             )
             val WELCOME_EVENT = Event.Conversation.MLSWelcome(

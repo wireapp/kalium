@@ -479,7 +479,7 @@ class UserDAOTest : BaseDatabaseTest() {
         // when
         db.userDAO.observeUserDetailsByQualifiedID(USER_ENTITY_1.id).first().also { searchResult ->
             // then
-            assertEquals(mockUser.copy(deleted = true, team = null, userType = UserTypeEntity.NONE), searchResult?.toSimpleEntity())
+            assertEquals(mockUser.copy(deleted = true, userType = UserTypeEntity.NONE), searchResult?.toSimpleEntity())
         }
     }
 
@@ -669,7 +669,7 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenUser_WhenMarkingAsDeleted_ThenProperValueShouldBeUpdated() = runTest(dispatcher) {
         val user = user1
         db.userDAO.upsertUser(user)
-        val deletedUser = user1.copy(deleted = true, team = null, userType = UserTypeEntity.NONE)
+        val deletedUser = user1.copy(deleted = true, userType = UserTypeEntity.NONE)
         db.userDAO.markUserAsDeletedAndRemoveFromGroupConv(user1.id)
         val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertEquals(result?.toSimpleEntity(), deletedUser)
@@ -909,6 +909,38 @@ class UserDAOTest : BaseDatabaseTest() {
         assertNotEquals(updatedTeamMemberUser.availabilityStatus, result.availabilityStatus)
         assertNotEquals(updatedTeamMemberUser.defederated, result.defederated)
         assertNotEquals(updatedTeamMemberUser.activeOneOnOneConversationId, result.activeOneOnOneConversationId)
+    }
+
+    @Test
+    fun givenListOfUsers_whenOnlyOneBelongsToTheTeam_thenReturnTrue() = runTest {
+        val teamId = "teamId"
+        val users = listOf(
+            newUserEntity().copy(team = teamId, id = UserIDEntity("1", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("2", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("3", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("4", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("5", "wire.com")),
+        )
+
+        db.userDAO.upsertUsers(users)
+
+        assertTrue { db.userDAO.isAtLeastOneUserATeamMember(users.map { it.id }, teamId) }
+    }
+
+    @Test
+    fun givenListOfUsers_whenNoneBelongsToTheTeam_thenReturnFalse() = runTest {
+        val teamId = "teamId"
+        val users = listOf(
+            newUserEntity().copy(team = null, id = UserIDEntity("1", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("2", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("3", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("4", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("5", "wire.com")),
+        )
+
+        db.userDAO.upsertUsers(users)
+
+        assertFalse { db.userDAO.isAtLeastOneUserATeamMember(users.map { it.id }, teamId) }
     }
 
     private companion object {
