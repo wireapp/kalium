@@ -605,6 +605,12 @@ private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage)
         )
     }
 
+    it.contentType == MessageEntity.ContentType.LOCATION -> {
+        MessageContent.QuotedMessageDetails.Location(
+            locationName = it.locationName,
+        )
+    }
+
     // If a new content type can be replied to (Pings, for example), fallback to Invalid
     else -> MessageContent.QuotedMessageDetails.Invalid
 }
