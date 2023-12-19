@@ -110,6 +110,7 @@ QuotedMessage.content_type AS quotedMessageContentType,
 QuotedTextContent.text_body AS quotedTextBody,
 QuotedAssetContent.asset_mime_type AS quotedAssetMimeType,
 QuotedAssetContent.asset_name AS quotedAssetName,
+QuotedLocationContent.name AS quotedLocationName,
 
 NewConversationReceiptMode.receipt_mode AS newConversationReceiptMode,
 
@@ -156,6 +157,7 @@ LEFT JOIN Message AS QuotedMessage ON QuotedMessage.id = TextContent.quoted_mess
 LEFT JOIN User AS QuotedSender ON QuotedMessage.sender_user_id = QuotedSender.qualified_id
 LEFT JOIN MessageTextContent AS QuotedTextContent ON QuotedTextContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
 LEFT JOIN MessageAssetContent AS QuotedAssetContent ON QuotedAssetContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
+LEFT JOIN MessageConversationLocationContent AS QuotedLocationContent ON QuotedLocationContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = TextContent.conversation_id
 -- end joins for quoted messages
 LEFT JOIN MessageNewConversationReceiptModeContent AS NewConversationReceiptMode ON Message.id = NewConversationReceiptMode.message_id AND Message.conversation_id = NewConversationReceiptMode.conversation_id
 LEFT JOIN MessageConversationReceiptModeChangedContent AS ConversationReceiptModeChanged ON Message.id = ConversationReceiptModeChanged.message_id AND Message.conversation_id = ConversationReceiptModeChanged.conversation_id
