@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.RANDOM_ID_TOKEN
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.RANDOM_NONCE
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.RANDOM_URL
+import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.REFRESH_TOKEN
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.TEST_FAILURE
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
@@ -375,7 +376,7 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::setChallengeResponse)
+            .function(arrangement.e2eiClient::setOIDCChallengeResponse)
             .with(anyInstanceOf(ByteArray::class))
             .wasInvoked(once)
     }
@@ -407,7 +408,7 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::setChallengeResponse)
+            .function(arrangement.e2eiClient::setOIDCChallengeResponse)
             .with(anyInstanceOf(ByteArray::class))
             .wasNotInvoked()
     }
@@ -423,7 +424,7 @@ class E2EIRepositoryTest {
             .arrange()
 
         // When
-        val result = e2eiRepository.validateOIDCChallenge(RANDOM_ID_TOKEN, RANDOM_NONCE, ACME_CHALLENGE)
+        val result = e2eiRepository.validateOIDCChallenge(RANDOM_ID_TOKEN, REFRESH_TOKEN, RANDOM_NONCE, ACME_CHALLENGE)
 
         // Then
         result.shouldSucceed()
@@ -439,7 +440,7 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::setChallengeResponse)
+            .function(arrangement.e2eiClient::setOIDCChallengeResponse)
             .with(anyInstanceOf(ByteArray::class))
             .wasInvoked(once)
     }
@@ -455,7 +456,7 @@ class E2EIRepositoryTest {
             .arrange()
 
         // When
-        val result = e2eiRepository.validateOIDCChallenge(RANDOM_ID_TOKEN, RANDOM_NONCE, ACME_CHALLENGE)
+        val result = e2eiRepository.validateOIDCChallenge(RANDOM_ID_TOKEN, REFRESH_TOKEN, RANDOM_NONCE, ACME_CHALLENGE)
 
         // Then
         result.shouldFail()
@@ -471,7 +472,7 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::setChallengeResponse)
+            .function(arrangement.e2eiClient::setOIDCChallengeResponse)
             .with(anyInstanceOf(ByteArray::class))
             .wasNotInvoked()
     }
@@ -935,6 +936,7 @@ class E2EIRepositoryTest {
             val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(ErrorResponse(405, "", ""))
             val RANDOM_BYTE_ARRAY = "random-value".encodeToByteArray()
             val RANDOM_NONCE = "xxxxx"
+            val REFRESH_TOKEN = "YRjxLpsjRqL7zYuKstXogqioA_P3Z4fiEuga0NCVRcDSc8cy_9msxg"
             val RANDOM_ACCESS_TOKEN = "xxxxx"
             val RANDOM_ID_TOKEN = "xxxxx"
             val RANDOM_URL = "https://random.rn"

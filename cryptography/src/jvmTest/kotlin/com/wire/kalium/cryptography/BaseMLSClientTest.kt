@@ -23,8 +23,12 @@ import java.nio.file.Files
 actual open class BaseMLSClientTest {
 
     actual suspend fun createMLSClient(clientId: CryptoQualifiedClientId): MLSClient {
+        return createCoreCrypto(clientId).mlsClient(clientId)
+    }
+
+    actual suspend fun createCoreCrypto(clientId: CryptoQualifiedClientId): CoreCryptoCentral {
         val root = Files.createTempDirectory("mls").toFile()
         val keyStore = root.resolve("keystore-$clientId")
-        return coreCryptoCentral(keyStore.absolutePath, "test").mlsClient(clientId)
+        return coreCryptoCentral(keyStore.absolutePath, "test")
     }
 }
