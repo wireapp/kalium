@@ -477,6 +477,7 @@ object MessageMapper {
         quotedTextBody: String?,
         quotedAssetMimeType: String?,
         quotedAssetName: String?,
+        quotedLocationName: String?,
         newConversationReceiptMode: Boolean?,
         conversationReceiptModeChanged: Boolean?,
         messageTimerChanged: Long?,
@@ -515,6 +516,7 @@ object MessageMapper {
                         textBody = quotedTextBody,
                         assetMimeType = quotedAssetMimeType,
                         assetName = quotedAssetName,
+                        locationName = quotedLocationName
                     )
                 },
             )
@@ -583,6 +585,7 @@ object MessageMapper {
                                 textBody = quotedTextBody,
                                 assetMimeType = quotedAssetMimeType,
                                 assetName = quotedAssetName,
+                                locationName = quotedLocationName
                             )
                         },
                     )
