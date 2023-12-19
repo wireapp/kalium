@@ -108,11 +108,7 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
         )
 
         return pager.pagingDataFlow.map {
-            kaliumLogger.d("ASSET_FILES_K -> ANTES")
-            it.map { messageEntity ->
-                kaliumLogger.d("ASSET_FILES_K -> ${messageEntity.conversationId}")
-                messageMapper.fromEntityToMessage(messageEntity)
-            }
+            it.map { messageEntity -> messageMapper.fromEntityToMessage(messageEntity) }
         }
     }
 }
