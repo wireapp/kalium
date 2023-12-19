@@ -198,7 +198,7 @@ sealed interface MessageEntity {
         NEW_CONVERSATION_RECEIPT_MODE, CONVERSATION_RECEIPT_MODE_CHANGED, HISTORY_LOST, HISTORY_LOST_PROTOCOL_CHANGED,
         CONVERSATION_MESSAGE_TIMER_CHANGED, CONVERSATION_CREATED, MLS_WRONG_EPOCH_WARNING, CONVERSATION_DEGRADED_MLS,
         CONVERSATION_DEGRADED_PROTEUS, CONVERSATION_VERIFIED_MLS, CONVERSATION_VERIFIED_PROTEUS, COMPOSITE, FEDERATION,
-        CONVERSATION_PROTOCOL_CHANGED, CONVERSATION_STARTED_UNVERIFIED_WARNING, LOCATION, LEGAL_HOLD
+        CONVERSATION_PROTOCOL_CHANGED, CONVERSATION_PROTOCOL_CHANGED_DURING_CALL, CONVERSATION_STARTED_UNVERIFIED_WARNING, LOCATION, LEGAL_HOLD
     }
 
     enum class MemberChangeType {
@@ -344,6 +344,7 @@ sealed class MessageEntityContent {
     data class ConversationReceiptModeChanged(val receiptMode: Boolean) : System()
     data class ConversationMessageTimerChanged(val messageTimer: Long?) : System()
     data class ConversationProtocolChanged(val protocol: ConversationEntity.Protocol) : System()
+    data object ConversationProtocolChangedDuringACall : System()
     data object HistoryLostProtocolChanged : System()
     data object HistoryLost : System()
     data object ConversationCreated : System()

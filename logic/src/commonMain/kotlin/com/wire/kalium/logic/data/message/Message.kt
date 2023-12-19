@@ -353,6 +353,10 @@ sealed interface Message {
                     typeKey to "conversationProtocolChanged"
                 )
 
+                is MessageContent.ConversationProtocolChangedDuringACall -> mutableMapOf(
+                    typeKey to "conversationProtocolChangedDuringACall"
+                )
+
                 is MessageContent.ConversationStartedUnverifiedWarning -> mutableMapOf(
                     typeKey to "conversationStartedUnverifiedWarning"
                 )

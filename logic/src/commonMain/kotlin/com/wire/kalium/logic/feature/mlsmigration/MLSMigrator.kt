@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.mlsmigration
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Protocol
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -34,6 +35,7 @@ import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.kaliumLogger
+import kotlinx.coroutines.flow.first
 
 interface MLSMigrator {
     suspend fun migrateProteusConversations(): Either<CoreFailure, Unit>
@@ -46,7 +48,8 @@ internal class MLSMigratorImpl(
     private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
-    private val systemMessageInserter: SystemMessageInserter
+    private val systemMessageInserter: SystemMessageInserter,
+    private val callRepository: CallRepository
 ) : MLSMigrator {
 
     override suspend fun migrateProteusConversations(): Either<CoreFailure, Unit> =
@@ -96,6 +99,12 @@ internal class MLSMigratorImpl(
                     systemMessageInserter.insertProtocolChangedSystemMessage(
                         conversationId, selfUserId, Protocol.MIXED
                     )
+                    if (callRepository.establishedCallsFlow().first().isNotEmpty()) {
+                        systemMessageInserter.insertProtocolChangedDuringACallSystemMessage(
+                            conversationId,
+                            selfUserId
+                        )
+                    }
                 }
                 establishConversation(conversationId)
             }.flatMapLeft {

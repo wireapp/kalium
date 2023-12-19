@@ -291,6 +291,7 @@ class MessageMapperImpl(
             MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS -> null
             MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS -> null
             MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED -> null
+            MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED_DURING_CALL -> null
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> null
             MessageEntity.ContentType.LEGAL_HOLD -> null
         }
@@ -416,6 +417,7 @@ fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when
     }
 
     is MessageEntityContent.ConversationProtocolChanged -> MessageContent.ConversationProtocolChanged(protocol.toModel())
+    is MessageEntityContent.ConversationProtocolChangedDuringACall -> MessageContent.ConversationProtocolChangedDuringACall
     is MessageEntityContent.ConversationStartedUnverifiedWarning -> MessageContent.ConversationStartedUnverifiedWarning
     is MessageEntityContent.LegalHold -> {
         when (this.type) {
@@ -651,6 +653,7 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
     MessageContent.ConversationVerifiedMLS -> MessageEntityContent.ConversationVerifiedMLS
     MessageContent.ConversationVerifiedProteus -> MessageEntityContent.ConversationVerifiedProteus
     is MessageContent.ConversationProtocolChanged -> MessageEntityContent.ConversationProtocolChanged(protocol.toDao())
+    is MessageContent.ConversationProtocolChangedDuringACall -> MessageEntityContent.ConversationProtocolChangedDuringACall
     MessageContent.HistoryLostProtocolChanged -> MessageEntityContent.HistoryLostProtocolChanged
     is MessageContent.ConversationStartedUnverifiedWarning -> MessageEntityContent.ConversationStartedUnverifiedWarning
     is MessageContent.LegalHold -> when (this) {
