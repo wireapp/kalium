@@ -304,6 +304,14 @@ class UserDAOImpl internal constructor(
         userQueries.deleteUser(qualifiedID)
     }
 
+    override suspend fun markUserAsDeletedAndRemoveFromGroupConv(qualifiedID: List<QualifiedIDEntity>) = withContext(queriesContext) {
+        userQueries.transaction {
+            qualifiedID.forEach {
+                safeMarkAsDeleted(it)
+            }
+        }
+    }
+
     override suspend fun markUserAsDeletedAndRemoveFromGroupConv(qualifiedID: QualifiedIDEntity) = withContext(queriesContext) {
         userQueries.transaction {
             safeMarkAsDeleted(qualifiedID)
@@ -411,5 +419,9 @@ class UserDAOImpl internal constructor(
                 }
             }
         }
+    }
+
+    override suspend fun isAtLeastOneUserATeamMember(userId: List<UserIDEntity>, teamId: String): Boolean = withContext(queriesContext) {
+        userQueries.isOneUserATeamMember(userId, teamId).executeAsOneOrNull() ?: false
     }
 }

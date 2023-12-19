@@ -20,13 +20,14 @@ package com.wire.kalium.model
 
 import com.wire.kalium.api.json.ValidJsonProvider
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembers
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationUsers
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationProtocolDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.authenticated.notification.MemberLeaveReasonDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.ConversationId
@@ -203,7 +204,7 @@ object EventContentDTOJson {
             qualifiedFrom = UserId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
             from = "ebafd3d4-1548-49f2-ac4e-b2757e6ca44b",
             time = "2021-05-31T10:52:02.671Z",
-            members = ConversationUsers(emptyList(), emptyList())
+            removedUsers = ConversationMemberRemovedDTO(emptyList(), MemberLeaveReasonDTO.LEFT)
         ),
         jsonProviderMemberLeave
     )
