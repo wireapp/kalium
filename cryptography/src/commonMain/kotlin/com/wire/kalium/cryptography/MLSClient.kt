@@ -305,7 +305,6 @@ interface MLSClient {
      * @return wire end to end identity client
      */
     suspend fun e2eiNewActivationEnrollment(
-        clientId: CryptoQualifiedClientId,
         displayName: String,
         handle: String,
         teamId: String?
@@ -317,7 +316,6 @@ interface MLSClient {
      * @return wire end to end identity client
      */
     suspend fun e2eiNewRotateEnrollment(
-        clientId: CryptoQualifiedClientId,
         displayName: String?,
         handle: String?,
         teamId: String?
