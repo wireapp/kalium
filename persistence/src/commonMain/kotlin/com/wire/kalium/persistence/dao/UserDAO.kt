@@ -267,6 +267,7 @@ interface UserDAO {
 
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
     suspend fun markUserAsDeletedAndRemoveFromGroupConv(qualifiedID: QualifiedIDEntity)
+    suspend fun markUserAsDeletedAndRemoveFromGroupConv(qualifiedID: List<QualifiedIDEntity>)
     suspend fun markUserAsDefederated(qualifiedID: QualifiedIDEntity)
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
     suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
@@ -300,4 +301,5 @@ interface UserDAO {
     suspend fun updateActiveOneOnOneConversation(userId: QualifiedIDEntity, conversationId: QualifiedIDEntity)
 
     suspend fun upsertConnectionStatuses(userStatuses: Map<QualifiedIDEntity, ConnectionEntity.State>)
+    suspend fun isAtLeastOneUserATeamMember(userId: List<UserIDEntity>, teamId: String): Boolean
 }

@@ -270,6 +270,7 @@ class MessageMapperImpl(
                 message.date,
                 LocalNotificationCommentType.LOCATION
             )
+
             MessageEntity.ContentType.MEMBER_CHANGE -> null
             MessageEntity.ContentType.RESTRICTED_ASSET -> null
             MessageEntity.ContentType.CONVERSATION_RENAMED -> null
@@ -383,17 +384,18 @@ class MessageMapperImpl(
 }
 
 @Suppress("ComplexMethod")
-fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when (this) {
-    is MessageEntityContent.MemberChange -> {
-        val memberList = this.memberUserIdList.map { it.toModel() }
-        when (this.memberChangeType) {
-            MessageEntity.MemberChangeType.ADDED -> MessageContent.MemberChange.Added(memberList)
-            MessageEntity.MemberChangeType.REMOVED -> MessageContent.MemberChange.Removed(memberList)
-            MessageEntity.MemberChangeType.CREATION_ADDED -> MessageContent.MemberChange.CreationAdded(memberList)
-            MessageEntity.MemberChangeType.FAILED_TO_ADD -> MessageContent.MemberChange.FailedToAdd(memberList)
-            MessageEntity.MemberChangeType.FEDERATION_REMOVED -> MessageContent.MemberChange.FederationRemoved(memberList)
+ fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when (this) {
+        is MessageEntityContent.MemberChange -> {
+            val memberList = this.memberUserIdList.map { it.toModel() }
+            when (this.memberChangeType) {
+                MessageEntity.MemberChangeType.ADDED -> MessageContent.MemberChange.Added(memberList)
+                MessageEntity.MemberChangeType.REMOVED -> MessageContent.MemberChange.Removed(memberList)
+                MessageEntity.MemberChangeType.CREATION_ADDED -> MessageContent.MemberChange.CreationAdded(memberList)
+                MessageEntity.MemberChangeType.FAILED_TO_ADD -> MessageContent.MemberChange.FailedToAdd(memberList)
+                MessageEntity.MemberChangeType.FEDERATION_REMOVED -> MessageContent.MemberChange.FederationRemoved(memberList)
+                MessageEntity.MemberChangeType.REMOVED_FROM_TEAM -> MessageContent.MemberChange.RemovedFromTeam(memberList)
+            }
         }
-    }
 
     is MessageEntityContent.MissedCall -> MessageContent.MissedCall
     is MessageEntityContent.ConversationRenamed -> MessageContent.ConversationRenamed(conversationName)
@@ -454,7 +456,7 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
         otherUserIdList = otherUserIdList.map { it.toModel() }
     )
 
-    is MessagePreviewEntityContent.MembersRemoved -> MessagePreviewContent.WithUser.MembersRemoved(
+    is MessagePreviewEntityContent.ConversationMembersRemoved -> MessagePreviewContent.WithUser.ConversationMembersRemoved(
         username = senderName,
         isSelfUserRemoved = isContainSelfUserId,
         otherUserIdList = otherUserIdList.map { it.toModel() }
@@ -477,11 +479,17 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
         otherUserIdList = otherUserIdList.map { it.toModel() }
     )
 
+    is MessagePreviewEntityContent.TeamMembersRemoved -> MessagePreviewContent.WithUser.TeamMembersRemoved(
+        username = senderName,
+        isSelfUserRemoved = isContainSelfUserId,
+        otherUserIdList = otherUserIdList.map { it.toModel() }
+    )
+
     is MessagePreviewEntityContent.Ephemeral -> MessagePreviewContent.Ephemeral(isGroupConversation)
     is MessagePreviewEntityContent.MentionedSelf -> MessagePreviewContent.WithUser.MentionedSelf(senderName)
     is MessagePreviewEntityContent.MissedCall -> MessagePreviewContent.WithUser.MissedCall(senderName)
     is MessagePreviewEntityContent.QuotedSelf -> MessagePreviewContent.WithUser.QuotedSelf(senderName)
-    is MessagePreviewEntityContent.TeamMemberRemoved -> MessagePreviewContent.WithUser.TeamMemberRemoved(userName)
+    is MessagePreviewEntityContent.TeamMemberRemoved_Legacy -> MessagePreviewContent.WithUser.TeamMemberRemoved(userName)
     is MessagePreviewEntityContent.Text -> MessagePreviewContent.WithUser.Text(username = senderName, messageBody = messageBody)
     is MessagePreviewEntityContent.CryptoSessionReset -> MessagePreviewContent.CryptoSessionReset
     MessagePreviewEntityContent.Unknown -> MessagePreviewContent.Unknown
@@ -623,6 +631,10 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
                 MessageEntity.MemberChangeType.FEDERATION_REMOVED
             )
 
+            is MessageContent.MemberChange.RemovedFromTeam -> MessageEntityContent.MemberChange(
+                memberUserIdList,
+                MessageEntity.MemberChangeType.REMOVED_FROM_TEAM
+            )
         }
     }
 
