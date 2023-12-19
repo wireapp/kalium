@@ -353,6 +353,7 @@ class E2EIRepositoryTest {
     fun givenDpopChallengeRequestSucceed_whenCallingValidateDPoPChallenge_thenItSucceed() = runTest {
         // Given
         val (arrangement, e2eiRepository) = Arrangement()
+            .withGetCoreCryptoSuccessful()
             .withSendChallengeRequestApiSucceed()
             .withGetE2EIClientSuccessful()
             .withGetMLSClientSuccessful()
@@ -376,7 +377,7 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::setOIDCChallengeResponse)
+            .function(arrangement.e2eiClient::setDPoPChallengeResponse)
             .with(anyInstanceOf(ByteArray::class))
             .wasInvoked(once)
     }
@@ -409,7 +410,7 @@ class E2EIRepositoryTest {
 
         verify(arrangement.e2eiClient)
             .function(arrangement.e2eiClient::setOIDCChallengeResponse)
-            .with(anyInstanceOf(ByteArray::class))
+            .with(anyInstanceOf(CoreCryptoCentral::class), anyInstanceOf(ByteArray::class))
             .wasNotInvoked()
     }
 
@@ -417,6 +418,7 @@ class E2EIRepositoryTest {
     fun givenOIDCChallengeRequestSucceed_whenCallingValidateDPoPChallenge_thenItSucceed() = runTest {
         // Given
         val (arrangement, e2eiRepository) = Arrangement()
+            .withGetCoreCryptoSuccessful()
             .withSendChallengeRequestApiSucceed()
             .withGetE2EIClientSuccessful()
             .withGetMLSClientSuccessful()
@@ -431,7 +433,7 @@ class E2EIRepositoryTest {
 
         verify(arrangement.e2eiClient)
             .function(arrangement.e2eiClient::getNewOidcChallengeRequest)
-            .with(anyInstanceOf(String::class), anyInstanceOf(String::class))
+            .with(anyInstanceOf(String::class), anyInstanceOf(String::class), anyInstanceOf(String::class))
             .wasInvoked(once)
 
         verify(arrangement.acmeApi)
@@ -441,7 +443,7 @@ class E2EIRepositoryTest {
 
         verify(arrangement.e2eiClient)
             .function(arrangement.e2eiClient::setOIDCChallengeResponse)
-            .with(anyInstanceOf(ByteArray::class))
+            .with(anyInstanceOf(CoreCryptoCentral::class), anyInstanceOf(ByteArray::class))
             .wasInvoked(once)
     }
 
@@ -449,6 +451,7 @@ class E2EIRepositoryTest {
     fun givenOIDCChallengeRequestFails_whenCallingValidateDPoPChallenge_thenItFail() = runTest {
         // Given
         val (arrangement, e2eiRepository) = Arrangement()
+            .withGetCoreCryptoSuccessful()
             .withSendChallengeRequestApiFails()
             .withGetE2EIClientSuccessful()
             .withGetMLSClientSuccessful()
@@ -463,7 +466,7 @@ class E2EIRepositoryTest {
 
         verify(arrangement.e2eiClient)
             .function(arrangement.e2eiClient::getNewOidcChallengeRequest)
-            .with(anyInstanceOf(String::class), anyInstanceOf(String::class))
+            .with(anyInstanceOf(String::class), anyInstanceOf(String::class), anyInstanceOf(String::class))
             .wasInvoked(once)
 
         verify(arrangement.acmeApi)
@@ -473,7 +476,7 @@ class E2EIRepositoryTest {
 
         verify(arrangement.e2eiClient)
             .function(arrangement.e2eiClient::setOIDCChallengeResponse)
-            .with(anyInstanceOf(ByteArray::class))
+            .with(anyInstanceOf(CoreCryptoCentral::class), anyInstanceOf(ByteArray::class))
             .wasNotInvoked()
     }
 
@@ -731,6 +734,13 @@ class E2EIRepositoryTest {
                 .thenReturn(Either.Right(e2eiClient))
         }
 
+        fun withGetCoreCryptoSuccessful() = apply {
+            given(mlsClientProvider)
+                .suspendFunction(mlsClientProvider::getCoreCrypto)
+                .whenInvokedWith(anything())
+                .thenReturn(Either.Right(coreCryptoCentral))
+        }
+
         fun withE2EIClientLoadDirectoriesSuccessful() = apply {
             given(e2eiClient)
                 .suspendFunction(e2eiClient::directoryResponse)
@@ -819,7 +829,7 @@ class E2EIRepositoryTest {
         fun withGetNewOidcChallengeRequest() = apply {
             given(e2eiClient)
                 .suspendFunction(e2eiClient::getNewOidcChallengeRequest)
-                .whenInvokedWith(anything(), anything())
+                .whenInvokedWith(anything(), anything(), anything())
                 .thenReturn(RANDOM_BYTE_ARRAY)
         }
 
@@ -904,6 +914,9 @@ class E2EIRepositoryTest {
 
         @Mock
         val e2eiClient = mock(classOf<E2EIClient>())
+
+        @Mock
+        val coreCryptoCentral = mock(classOf<CoreCryptoCentral>())
 
         @Mock
         val mlsClientProvider: MLSClientProvider = mock(classOf<MLSClientProvider>())
