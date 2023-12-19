@@ -438,8 +438,10 @@ internal class MessageInsertExtensionImpl(
         MessageEntityContent.ConversationVerifiedMLS -> MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS
         MessageEntityContent.ConversationVerifiedProteus -> MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS
         is MessageEntityContent.ConversationProtocolChanged -> MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED
-        is MessageEntityContent.ConversationProtocolChangedDuringACall -> MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED_DURING_CALL
-        is MessageEntityContent.ConversationStartedUnverifiedWarning -> MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING
+        is MessageEntityContent.ConversationProtocolChangedDuringACall ->
+            MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED_DURING_CALL
+        is MessageEntityContent.ConversationStartedUnverifiedWarning ->
+            MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING
         is MessageEntityContent.Location -> MessageEntity.ContentType.LOCATION
         is MessageEntityContent.LegalHold -> MessageEntity.ContentType.LEGAL_HOLD
     }

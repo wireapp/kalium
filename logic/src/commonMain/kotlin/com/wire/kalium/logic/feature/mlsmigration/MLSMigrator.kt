@@ -42,6 +42,7 @@ interface MLSMigrator {
     suspend fun finaliseProteusConversations(): Either<CoreFailure, Unit>
     suspend fun finaliseAllProteusConversations(): Either<CoreFailure, Unit>
 }
+@Suppress("LongParameterList")
 internal class MLSMigratorImpl(
     private val selfUserId: UserId,
     private val selfTeamIdProvider: SelfTeamIdProvider,

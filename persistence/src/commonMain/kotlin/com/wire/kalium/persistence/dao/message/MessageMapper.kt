@@ -629,7 +629,8 @@ object MessageMapper {
                 protocol = conversationProtocolChanged ?: ConversationEntity.Protocol.PROTEUS
             )
 
-            MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED_DURING_CALL -> MessageEntityContent.ConversationProtocolChangedDuringACall
+            MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED_DURING_CALL ->
+                MessageEntityContent.ConversationProtocolChangedDuringACall
 
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> MessageEntityContent.ConversationStartedUnverifiedWarning
             MessageEntity.ContentType.LOCATION -> MessageEntityContent.Location(
