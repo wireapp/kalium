@@ -33,7 +33,7 @@ interface ObserveConversationUnderLegalHoldNotifiedUseCase {
     suspend operator fun invoke(conversationId: ConversationId): Flow<Boolean>
 }
 
-class ObserveConversationUnderLegalHoldNotifiedUseCaseImpl internal constructor(
+internal class ObserveConversationUnderLegalHoldNotifiedUseCaseImpl internal constructor(
     private val conversationRepository: ConversationRepository
 ) : ObserveConversationUnderLegalHoldNotifiedUseCase {
 
