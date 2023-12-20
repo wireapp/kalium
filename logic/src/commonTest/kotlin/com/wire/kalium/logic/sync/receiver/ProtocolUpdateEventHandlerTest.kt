@@ -22,12 +22,15 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.ProtocolUpdateEventHandlerImpl
+import com.wire.kalium.logic.util.arrangement.CallRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.CallRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.SystemMessageInserterArrangement
 import com.wire.kalium.logic.util.arrangement.SystemMessageInserterArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import io.mockative.any
 import io.mockative.eq
 import io.mockative.once
 import io.mockative.verify
@@ -44,6 +47,7 @@ class ProtocolUpdateEventHandlerTest {
         val (arrangement, useCase) = arrange {
             withUpdateProtocolLocally(Either.Right(true))
             withInsertProtocolChangedSystemMessage()
+            withoutAnyEstablishedCall()
         }
 
         useCase.handle(event).shouldSucceed()
@@ -51,6 +55,39 @@ class ProtocolUpdateEventHandlerTest {
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::updateProtocolLocally)
             .with(eq(event.conversationId), eq(event.protocol))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.systemMessageInserter)
+            .suspendFunction(arrangement.systemMessageInserter::insertProtocolChangedSystemMessage)
+            .with(any(), any(), any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenProtocolUpdatedDuringACall_whenHandlingEvent_ThenInsertSystemMessages() = runTest {
+        val event = TestEvent.newConversationProtocolEvent()
+
+        val (arrangement, useCase) = arrange {
+            withUpdateProtocolLocally(Either.Right(true))
+            withInsertProtocolChangedSystemMessage()
+            withEstablishedCall()
+        }
+
+        useCase.handle(event).shouldSucceed()
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateProtocolLocally)
+            .with(eq(event.conversationId), eq(event.protocol))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.systemMessageInserter)
+            .suspendFunction(arrangement.systemMessageInserter::insertProtocolChangedSystemMessage)
+            .with(any(), any(), any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.systemMessageInserter)
+            .suspendFunction(arrangement.systemMessageInserter::insertProtocolChangedDuringACallSystemMessage)
+            .with(any(), any())
             .wasInvoked(exactly = once)
     }
 
@@ -81,6 +118,7 @@ class ProtocolUpdateEventHandlerTest {
         val (arrangement, useCase) = arrange {
             withUpdateProtocolLocally(Either.Right(true))
             withInsertProtocolChangedSystemMessage()
+            withoutAnyEstablishedCall()
         }
 
         useCase.handle(event).shouldSucceed()
@@ -110,11 +148,13 @@ class ProtocolUpdateEventHandlerTest {
 
     private class Arrangement(private val block: Arrangement.() -> Unit) :
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
-        SystemMessageInserterArrangement by SystemMessageInserterArrangementImpl()
+        SystemMessageInserterArrangement by SystemMessageInserterArrangementImpl(),
+        CallRepositoryArrangement by CallRepositoryArrangementImpl()
     {
         private val protocolUpdateEventHandler: ProtocolUpdateEventHandler = ProtocolUpdateEventHandlerImpl(
             conversationRepository,
-            systemMessageInserter
+            systemMessageInserter,
+            callRepository
         )
 
         fun arrange() = run {

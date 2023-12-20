@@ -44,10 +44,13 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapProteusRequest
+import kotlinx.coroutines.flow.first
 
 interface MessageEnvelopeCreator {
 
@@ -64,6 +67,8 @@ interface MessageEnvelopeCreator {
 }
 
 class MessageEnvelopeCreatorImpl(
+    private val conversationRepository: ConversationRepository,
+    private val legalHoldStatusMapper: LegalHoldStatusMapper,
     private val proteusClientProvider: ProteusClientProvider,
     private val selfUserId: UserId,
     private val protoContentMapper: ProtoContentMapper = MapperProvider.protoContentMapper(selfUserId = selfUserId),
@@ -81,10 +86,10 @@ class MessageEnvelopeCreatorImpl(
             else -> false
         }
 
-        // TODO(legalhold) - Get correct legal hold status
-        val legalHoldStatus = when (message) {
-            is Message.Regular -> Conversation.LegalHoldStatus.DISABLED
-            else -> Conversation.LegalHoldStatus.DISABLED
+        val legalHoldStatus = conversationRepository.observeLegalHoldForConversation(
+            message.conversationId
+        ).first().let {
+            legalHoldStatusMapper.mapLegalHoldConversationStatus(it, message)
         }
 
         val actualMessageContent = ProtoContent.Readable(
@@ -105,7 +110,6 @@ class MessageEnvelopeCreatorImpl(
         val senderClientId = message.senderClientId
         val expectsReadConfirmation = false
 
-        // TODO - Get legal hold status
         val legalHoldStatus = Conversation.LegalHoldStatus.UNKNOWN
 
         val actualMessageContent = ProtoContent.Readable(message.id, message.content, expectsReadConfirmation, legalHoldStatus)
