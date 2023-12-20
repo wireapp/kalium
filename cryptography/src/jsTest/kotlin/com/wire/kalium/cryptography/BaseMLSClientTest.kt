@@ -23,4 +23,7 @@ actual open class BaseMLSClientTest actual constructor() {
         TODO("Not yet implemented")
     }
 
+    actual suspend fun createCoreCrypto(clientId: CryptoQualifiedClientId):CoreCryptoCentral {
+        TODO("Not yet implemented")
+    }
 }
