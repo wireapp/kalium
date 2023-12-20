@@ -32,7 +32,7 @@ import com.wire.kalium.persistence.util.JsonSerializer
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LargeClass")
 object MessageMapper {
 
     private val serializer = JsonSerializer()

@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.asset.toDao
 import com.wire.kalium.logic.data.asset.toModel
@@ -65,8 +64,7 @@ interface MessageMapper {
 @Suppress("TooManyFunctions")
 class MessageMapperImpl(
     private val selfUserId: UserId,
-    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
-    private val assetMapper: AssetMapper = MapperProvider.assetMapper()
+    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId)
 ) : MessageMapper {
 
     override fun fromMessageToEntity(message: Message.Standalone): MessageEntity =
