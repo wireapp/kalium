@@ -103,46 +103,52 @@ class E2EIClientTest : BaseMLSClientTest() {
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
         e2eiClient.setAuthzResponse(AUTHZ_API_RESPONSE)
         e2eiClient.createDpopToken(NONCE)
-        assertTrue(e2eiClient.getNewOidcChallengeRequest(OAUTH_ID_TOKEN, NONCE).isNotEmpty())
+        assertTrue(e2eiClient.getNewOidcChallengeRequest(OAUTH_ID_TOKEN, REFRESH_TOKEN, NONCE).isNotEmpty())
     }
 
     @Test
     fun givenClient_whenCallingCheckOrderRequest_ReturnNonEmptyResult() = runTest {
+        val coreCryptoCentral = createCoreCrypto(ALICE1.qualifiedClientId)
         val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
         e2eiClient.setAuthzResponse(AUTHZ_API_RESPONSE)
         e2eiClient.createDpopToken(NONCE)
-        e2eiClient.setChallengeResponse(DPOP_CHALLENGE_RESPONSE)
-        e2eiClient.setChallengeResponse(OIDC_CHALLENGE_RESPONSE)
+        e2eiClient.setDPoPChallengeResponse(DPOP_CHALLENGE_RESPONSE)
+        e2eiClient.getNewOidcChallengeRequest(OAUTH_ID_TOKEN, REFRESH_TOKEN, NONCE)
+        e2eiClient.setOIDCChallengeResponse(coreCryptoCentral, OIDC_CHALLENGE_RESPONSE)
         assertTrue(e2eiClient.checkOrderRequest(FINALIZE_ORDER_URL, NONCE).isNotEmpty())
     }
 
     @Test
     fun givenClient_whenCallingFinalizeRequest_ReturnNonEmptyResult() = runTest {
+        val coreCryptoCentral = createCoreCrypto(ALICE1.qualifiedClientId)
         val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
         e2eiClient.setAuthzResponse(AUTHZ_API_RESPONSE)
         e2eiClient.createDpopToken(NONCE)
-        e2eiClient.setChallengeResponse(DPOP_CHALLENGE_RESPONSE)
-        e2eiClient.setChallengeResponse(OIDC_CHALLENGE_RESPONSE)
+        e2eiClient.setDPoPChallengeResponse(DPOP_CHALLENGE_RESPONSE)
+        e2eiClient.getNewOidcChallengeRequest(OAUTH_ID_TOKEN, REFRESH_TOKEN, NONCE)
+        e2eiClient.setOIDCChallengeResponse(coreCryptoCentral, OIDC_CHALLENGE_RESPONSE)
         e2eiClient.checkOrderResponse(ORDER_RESPONSE)
         assertTrue(e2eiClient.finalizeRequest(NONCE).isNotEmpty())
     }
 
     @Test
     fun givenClient_whenCallingCertificateRequest_ReturnNonEmptyResult() = runTest {
+        val coreCryptoCentral = createCoreCrypto(ALICE1.qualifiedClientId)
         val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
         e2eiClient.setAuthzResponse(AUTHZ_API_RESPONSE)
         e2eiClient.createDpopToken(NONCE)
-        e2eiClient.setChallengeResponse(DPOP_CHALLENGE_RESPONSE)
-        e2eiClient.setChallengeResponse(OIDC_CHALLENGE_RESPONSE)
+        e2eiClient.setDPoPChallengeResponse(DPOP_CHALLENGE_RESPONSE)
+        e2eiClient.getNewOidcChallengeRequest(OAUTH_ID_TOKEN, REFRESH_TOKEN, NONCE)
+        e2eiClient.setOIDCChallengeResponse(coreCryptoCentral, OIDC_CHALLENGE_RESPONSE)
         e2eiClient.checkOrderResponse(ORDER_RESPONSE)
         e2eiClient.finalizeResponse(FINALIZE_RESPONSE)
         assertTrue(e2eiClient.certificateRequest(NONCE).isNotEmpty())
@@ -169,6 +175,7 @@ class E2EIClientTest : BaseMLSClientTest() {
             """.toByteArray()
 
         val NONCE = "TGR6Rk45RlR2WDlzanMxWEpYd21YaFR0SkZBYTNzUWk"
+        val REFRESH_TOKEN = "YRjxLpsjRqL7zYuKstXogqioA_P3Z4fiEuga0NCVRcDSc8cy_9msxg"
 
         val NEW_ACCOUNT_API_RESPONSE = """
             {

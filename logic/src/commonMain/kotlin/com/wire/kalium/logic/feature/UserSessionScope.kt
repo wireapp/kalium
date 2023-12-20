@@ -633,7 +633,6 @@ class UserSessionScope internal constructor(
 
     private val e2EIClientProvider: E2EIClientProvider by lazy {
         EI2EIClientProviderImpl(
-            userId = userId,
             currentClientIdProvider = clientIdProvider,
             mlsClientProvider = mlsClientProvider,
             userRepository = userRepository
