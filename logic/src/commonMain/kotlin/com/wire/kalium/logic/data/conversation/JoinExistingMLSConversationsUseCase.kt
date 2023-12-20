@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
 import com.wire.kalium.logic.featureFlags.FeatureSupport
@@ -58,16 +59,29 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
                 return pendingConversations.map { conversation ->
                     joinExistingMLSConversationUseCase(conversation.id)
                         .flatMapLeft {
-                            if (it is CoreFailure.NoKeyPackagesAvailable) {
-                                kaliumLogger.w(
-                                    "Failed to establish mls group for ${conversation.id.toLogString()} " +
-                                             "since some participants are out of key packages, skipping."
-                                )
-                                Either.Right(Unit)
-                            } else {
-                                Either.Left(it)
+                            when (it) {
+                                is NetworkFailure -> {
+                                    kaliumLogger.w(
+                                        "Failed to establish mls group for ${conversation.id.toLogString()} " +
+                                                "due to network failure"
+                                    )
+                                    Either.Left(it)
+                                }
+                                is CoreFailure.NoKeyPackagesAvailable -> {
+                                    kaliumLogger.w(
+                                        "Failed to establish mls group for ${conversation.id.toLogString()} " +
+                                                "since some participants are out of key packages, skipping."
+                                    )
+                                    Either.Right(Unit)
+                                }
+                                else -> {
+                                    kaliumLogger.w(
+                                        "Failed to establish mls group for ${conversation.id.toLogString()} " +
+                                                "due to $it, skipping.."
+                                    )
+                                    Either.Right(Unit)
+                                }
                             }
-
                         }
                 }.foldToEitherWhileRight(Unit) { value, _ ->
                     value
