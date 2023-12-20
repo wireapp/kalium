@@ -633,7 +633,6 @@ class UserSessionScope internal constructor(
 
     private val e2EIClientProvider: E2EIClientProvider by lazy {
         EI2EIClientProviderImpl(
-            userId = userId,
             currentClientIdProvider = clientIdProvider,
             mlsClientProvider = mlsClientProvider,
             userRepository = userRepository
@@ -1071,7 +1070,8 @@ class UserSessionScope internal constructor(
             userRepository,
             conversationRepository,
             mlsConversationRepository,
-            systemMessageInserter
+            systemMessageInserter,
+            callRepository
         )
 
     internal val keyPackageManager: KeyPackageManager = KeyPackageManagerImpl(featureSupport,
@@ -1320,7 +1320,8 @@ class UserSessionScope internal constructor(
     private val protocolUpdateEventHandler: ProtocolUpdateEventHandler
         get() = ProtocolUpdateEventHandlerImpl(
             conversationRepository = conversationRepository,
-            systemMessageInserter = systemMessageInserter
+            systemMessageInserter = systemMessageInserter,
+            callRepository = callRepository
         )
 
     private val conversationEventReceiver: ConversationEventReceiver by lazy {

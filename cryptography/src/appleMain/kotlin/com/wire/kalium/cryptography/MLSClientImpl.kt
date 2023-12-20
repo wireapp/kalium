@@ -184,7 +184,6 @@ class MLSClientImpl(
     }
 
     override suspend fun e2eiNewActivationEnrollment(
-        clientId: CryptoQualifiedClientId,
         displayName: String,
         handle: String,
         teamId: String?
@@ -193,7 +192,6 @@ class MLSClientImpl(
     }
 
     override suspend fun e2eiNewRotateEnrollment(
-        clientId: CryptoQualifiedClientId,
         displayName: String?,
         handle: String?,
         teamId: String?

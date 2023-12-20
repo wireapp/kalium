@@ -54,11 +54,15 @@ class E2EIClientImpl(
     override suspend fun getNewDpopChallengeRequest(accessToken: String, previousNonce: String) =
         wireE2eIdentity.newDpopChallengeRequest(accessToken, previousNonce)
 
-    override suspend fun getNewOidcChallengeRequest(idToken: String, previousNonce: String) =
-        wireE2eIdentity.newOidcChallengeRequest(idToken, previousNonce)
+    override suspend fun getNewOidcChallengeRequest(idToken: String, refreshToken: String, previousNonce: String) =
+        wireE2eIdentity.newOidcChallengeRequest(idToken, refreshToken, previousNonce)
 
-    override suspend fun setChallengeResponse(challenge: JsonRawData) =
-        wireE2eIdentity.newChallengeResponse(challenge)
+    override suspend fun setOIDCChallengeResponse(coreCrypto: CoreCryptoCentral, challenge: JsonRawData) =
+        wireE2eIdentity.newOidcChallengeResponse((coreCrypto as CoreCryptoCentralImpl).getCoreCrypto(), challenge)
+
+    override suspend fun setDPoPChallengeResponse(challenge: JsonRawData) {
+        wireE2eIdentity.newDpopChallengeResponse(challenge)
+    }
 
     override suspend fun checkOrderRequest(orderUrl: String, previousNonce: String) =
         wireE2eIdentity.checkOrderRequest(orderUrl, previousNonce)
