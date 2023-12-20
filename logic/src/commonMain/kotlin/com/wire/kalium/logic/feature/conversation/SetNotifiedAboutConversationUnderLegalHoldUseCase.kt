@@ -28,7 +28,7 @@ interface SetNotifiedAboutConversationUnderLegalHoldUseCase {
     suspend operator fun invoke(conversationId: ConversationId)
 }
 
-class SetNotifiedAboutConversationUnderLegalHoldUseCaseImpl internal constructor(
+internal class SetNotifiedAboutConversationUnderLegalHoldUseCaseImpl internal constructor(
     private val conversationRepository: ConversationRepository
 ) : SetNotifiedAboutConversationUnderLegalHoldUseCase {
     override suspend fun invoke(conversationId: ConversationId) {
