@@ -86,7 +86,7 @@ class MessageEnvelopeCreatorImpl(
             else -> false
         }
 
-        val legalHoldStatus = conversationRepository.observeLegalHoldForConversation(
+        val legalHoldStatus = conversationRepository.observeLegalHoldStatus(
             message.conversationId
         ).first().let {
             legalHoldStatusMapper.mapLegalHoldConversationStatus(it, message)
