@@ -30,6 +30,8 @@ import com.wire.kalium.logic.feature.legalhold.LegalHoldState
 import com.wire.kalium.logic.feature.legalhold.MembersHavingLegalHoldClientUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
@@ -40,6 +42,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
+import kotlin.time.Duration
 import kotlin.time.Duration.Companion.seconds
 
 internal interface LegalHoldHandler {
@@ -59,15 +62,17 @@ internal class LegalHoldHandlerImpl internal constructor(
     private val conversationRepository: ConversationRepository,
     private val legalHoldSystemMessagesHandler: LegalHoldSystemMessagesHandler,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    debounceBufferCapacity: Int = DEBOUNCE_BUFFER_CAPACITY,
+    devounceBufferTimeout: Duration = DEBOUNCE_BUFFER_TIMEOUT,
 ) : LegalHoldHandler {
     private val scope = CoroutineScope(kaliumDispatcher.default)
     private val conversationsWithUpdatedLegalHoldStatus =
-        DebounceBuffer<ConversationId>(DEBOUNCE_BUFFER_MAX_SIZE, DEBOUNCE_BUFFER_TIMEOUT, scope)
+        DebounceBuffer<ConversationId>(debounceBufferCapacity, devounceBufferTimeout, scope)
 
     init {
         scope.launch {
             conversationsWithUpdatedLegalHoldStatus.observe()
-                .collect {handleUpdatedBufferedConversations(it) }
+                .collect { handleUpdatedBufferedConversations(it) }
         }
     }
 
@@ -160,10 +165,18 @@ internal class LegalHoldHandlerImpl internal constructor(
     }
 
     private suspend fun handleUpdatedBufferedConversations(conversationIds: List<ConversationId>) {
-        conversationIds.forEach {
-            conversationRepository.getConversationMembers(it).map { memberIds ->
-                memberIds.forEach { userId ->
-                    val userHasBeenUnderLegalHold = isUserUnderLegalHold(userId)
+        conversationIds
+            .foldToEitherWhileRight(mapOf<UserId, Boolean>()) { conversationId, acc ->
+                conversationRepository.getConversationMembers(conversationId)
+                    .flatMap { members ->
+                        membersHavingLegalHoldClient(conversationId)
+                            .map { membersHavingLegalHoldClient ->
+                                (acc + members.map { it to membersHavingLegalHoldClient.contains(it) })
+                            }
+                    }
+            }
+            .map {
+                it.forEach { (userId, userHasBeenUnderLegalHold) ->
                     // TODO: to be optimized - send empty message and handle legal hold discovery after sending a message
                     processEvent(selfUserId, userId)
                     val userIsNowUnderLegalHold = isUserUnderLegalHold(userId)
@@ -176,11 +189,10 @@ internal class LegalHoldHandlerImpl internal constructor(
                     }
                 }
             }
-        }
     }
 
     companion object {
-        private const val DEBOUNCE_BUFFER_MAX_SIZE = 100
+        private const val DEBOUNCE_BUFFER_CAPACITY = 100
         private val DEBOUNCE_BUFFER_TIMEOUT = 3.seconds
     }
 }
