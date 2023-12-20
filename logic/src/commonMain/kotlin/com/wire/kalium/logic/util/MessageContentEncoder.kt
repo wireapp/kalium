@@ -80,8 +80,8 @@ class MessageContentEncoder {
     }
 
     private fun encodeLocationCoordinates(latitude: Float, longitude: Float, messageTimeStampInMillis: Long): EncodedMessageContent {
-        val latitudeBEBytes = (latitude * 1000).roundToLong().toByteArray()
-        val longitudeBEBytes = (longitude * 1000).roundToLong().toByteArray()
+        val latitudeBEBytes = (latitude * COORDINATES_ROUNDING).roundToLong().toByteArray()
+        val longitudeBEBytes = (longitude * COORDINATES_ROUNDING).roundToLong().toByteArray()
 
         return EncodedMessageContent(latitudeBEBytes + longitudeBEBytes + encodeMessageTimeStampInMillis(messageTimeStampInMillis))
     }
@@ -94,6 +94,7 @@ class MessageContentEncoder {
 
     private companion object {
         const val MILLIS_IN_SEC = 1000
+        const val COORDINATES_ROUNDING = 1000
     }
 }
 
