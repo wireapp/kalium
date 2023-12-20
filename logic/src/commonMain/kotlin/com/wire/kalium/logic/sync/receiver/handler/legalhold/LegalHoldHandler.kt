@@ -58,7 +58,7 @@ internal class LegalHoldHandlerImpl internal constructor(
     private val userConfigRepository: UserConfigRepository,
     private val conversationRepository: ConversationRepository,
     private val legalHoldSystemMessagesHandler: LegalHoldSystemMessagesHandler,
-    private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) : LegalHoldHandler {
     private val scope = CoroutineScope(kaliumDispatcher.default)
     private val conversationsWithUpdatedLegalHoldStatus =

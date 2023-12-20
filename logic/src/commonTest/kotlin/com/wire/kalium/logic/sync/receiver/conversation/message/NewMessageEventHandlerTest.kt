@@ -24,7 +24,6 @@ import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.ProtoContent
@@ -431,7 +430,6 @@ class NewMessageEventHandlerTest {
 
     private companion object {
         val SELF_USER_ID = UserId("selfUserId", "selfDomain")
-        val conversationID = ConversationId("conversationID", "domain")
         val applicationMessage = MessageUnpackResult.ApplicationMessage(
             ConversationId("conversationID", "domain"),
             Instant.DISTANT_PAST.toIsoDateTimeString(),
