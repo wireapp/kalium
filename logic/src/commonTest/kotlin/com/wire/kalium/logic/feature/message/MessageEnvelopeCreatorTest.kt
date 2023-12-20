@@ -92,7 +92,7 @@ class MessageEnvelopeCreatorTest {
         )
 
         given(conversationRepository)
-            .suspendFunction(conversationRepository::observeLegalHoldForConversation)
+            .suspendFunction(conversationRepository::observeLegalHoldStatus)
             .whenInvokedWith(anything())
             .then { flowOf(Either.Right(Conversation.LegalHoldStatus.DISABLED)) }
 
@@ -132,7 +132,7 @@ class MessageEnvelopeCreatorTest {
             )
 
         verify(conversationRepository)
-            .suspendFunction(conversationRepository::observeLegalHoldForConversation)
+            .suspendFunction(conversationRepository::observeLegalHoldStatus)
             .with(anything())
             .wasInvoked(once)
 
@@ -187,7 +187,7 @@ class MessageEnvelopeCreatorTest {
         }
 
         verify(conversationRepository)
-            .suspendFunction(conversationRepository::observeLegalHoldForConversation)
+            .suspendFunction(conversationRepository::observeLegalHoldStatus)
             .with(anything())
             .wasInvoked(once)
 
@@ -235,7 +235,7 @@ class MessageEnvelopeCreatorTest {
         }
 
         verify(conversationRepository)
-            .suspendFunction(conversationRepository::observeLegalHoldForConversation)
+            .suspendFunction(conversationRepository::observeLegalHoldStatus)
             .with(anything())
             .wasInvoked(once)
 
@@ -288,7 +288,7 @@ class MessageEnvelopeCreatorTest {
             }
 
         verify(conversationRepository)
-            .suspendFunction(conversationRepository::observeLegalHoldForConversation)
+            .suspendFunction(conversationRepository::observeLegalHoldStatus)
             .with(anything())
             .wasInvoked(once)
 
@@ -318,7 +318,7 @@ class MessageEnvelopeCreatorTest {
             }
 
         verify(conversationRepository)
-            .suspendFunction(conversationRepository::observeLegalHoldForConversation)
+            .suspendFunction(conversationRepository::observeLegalHoldStatus)
             .with(anything())
             .wasInvoked(once)
 
@@ -348,7 +348,7 @@ class MessageEnvelopeCreatorTest {
             .wasInvoked(exactly = once)
 
         verify(conversationRepository)
-            .suspendFunction(conversationRepository::observeLegalHoldForConversation)
+            .suspendFunction(conversationRepository::observeLegalHoldStatus)
             .with(anything())
             .wasInvoked(once)
 
