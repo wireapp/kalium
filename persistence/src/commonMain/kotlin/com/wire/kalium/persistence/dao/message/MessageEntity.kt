@@ -202,7 +202,7 @@ sealed interface MessageEntity {
     }
 
     enum class MemberChangeType {
-        ADDED, REMOVED, CREATION_ADDED, FAILED_TO_ADD, FEDERATION_REMOVED
+        ADDED, REMOVED, CREATION_ADDED, FAILED_TO_ADD, FEDERATION_REMOVED, REMOVED_FROM_TEAM;
     }
 
     enum class FederationType {
@@ -270,6 +270,7 @@ sealed class MessageEntityContent {
             val textBody: String?,
             val assetMimeType: String?,
             val assetName: String?,
+            val locationName: String?,
         )
     }
 
@@ -412,7 +413,12 @@ sealed class MessagePreviewEntityContent {
         val isContainSelfUserId: Boolean,
     ) : MessagePreviewEntityContent()
 
-    data class MembersRemoved(
+    data class ConversationMembersRemoved(
+        val senderName: String?,
+        val otherUserIdList: List<UserIDEntity>,
+        val isContainSelfUserId: Boolean,
+    ) : MessagePreviewEntityContent()
+    data class TeamMembersRemoved(
         val senderName: String?,
         val otherUserIdList: List<UserIDEntity>,
         val isContainSelfUserId: Boolean,
@@ -440,7 +446,10 @@ sealed class MessagePreviewEntityContent {
     data class MemberLeft(val senderName: String?) : MessagePreviewEntityContent()
 
     data class ConversationNameChange(val adminName: String?) : MessagePreviewEntityContent()
-    data class TeamMemberRemoved(val userName: String?) : MessagePreviewEntityContent()
+
+    @Deprecated("not maintained and will be deleted")
+    @Suppress("ClassNaming")
+    data class TeamMemberRemoved_Legacy(val userName: String?) : MessagePreviewEntityContent()
     data class Ephemeral(val isGroupConversation: Boolean) : MessagePreviewEntityContent()
     data object CryptoSessionReset : MessagePreviewEntityContent()
     data object ConversationVerifiedMls : MessagePreviewEntityContent()

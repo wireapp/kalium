@@ -15,13 +15,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.network.api.base.authenticated.notification
 
-package com.wire.kalium.cryptography
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-expect open class BaseMLSClientTest() {
+@Serializable
+enum class MemberLeaveReasonDTO {
+    @SerialName("left")
+    LEFT,
 
-    suspend fun createMLSClient(clientId: CryptoQualifiedClientId): MLSClient
+    @SerialName("removed")
+    REMOVED,
 
-    suspend fun createCoreCrypto(clientId: CryptoQualifiedClientId): CoreCryptoCentral
+    @SerialName("user-deleted")
+    USER_DELETED;
 
+    override fun toString(): String {
+        return when (this) {
+            LEFT -> "left"
+            REMOVED -> "removed"
+            USER_DELETED -> "user-deleted"
+        }
+    }
 }

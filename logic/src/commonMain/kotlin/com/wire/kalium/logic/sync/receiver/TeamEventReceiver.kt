@@ -43,7 +43,7 @@ internal class TeamEventReceiverImpl(
         }
         // TODO: Make sure errors are accounted for by each handler.
         //       onEvent now requires Either, so we can propagate errors,
-        //       but not all handlers are using it yet.®
+        //       but not all handlers are using it yet.
         //       Returning Either.Right is the equivalent of how it was originally working.
         return Either.Right(Unit)
     }

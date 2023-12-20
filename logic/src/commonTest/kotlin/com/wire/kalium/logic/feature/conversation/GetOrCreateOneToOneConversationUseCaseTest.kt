@@ -23,12 +23,12 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.util.arrangement.UserRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.UserRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import io.mockative.anything
 import io.mockative.eq
 import io.mockative.once
