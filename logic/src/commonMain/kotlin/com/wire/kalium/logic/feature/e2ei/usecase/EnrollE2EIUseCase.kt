@@ -33,6 +33,7 @@ interface EnrollE2EIUseCase {
     suspend fun initialEnrollment(): Either<CoreFailure, E2EIEnrollmentResult>
     suspend fun finalizeEnrollment(
         idToken: String,
+        refreshToken: String?,
         initializationResult: E2EIEnrollmentResult.Initialized
     ): Either<E2EIFailure, E2EIEnrollmentResult>
 }
@@ -90,6 +91,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
      */
     override suspend fun finalizeEnrollment(
         idToken: String,
+        refreshToken: String?,
         initializationResult: E2EIEnrollmentResult.Initialized
     ): Either<E2EIFailure, E2EIEnrollmentResult> {
 
@@ -118,7 +120,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
         prevNonce = dpopChallengeResponse.nonce
 
         val oidcChallengeResponse = e2EIRepository.validateOIDCChallenge(
-            idToken, prevNonce, authz.wireOidcChallenge!!
+            idToken, refreshToken ?: "", prevNonce, authz.wireOidcChallenge!!
         ).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.OIDCChallenge, it).toEitherLeft()
         }

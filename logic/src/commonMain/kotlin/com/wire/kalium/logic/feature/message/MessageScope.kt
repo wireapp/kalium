@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -42,6 +43,7 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.feature.asset.GetAssetMessagesForConversationUseCase
 import com.wire.kalium.logic.feature.asset.GetAssetMessagesForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
@@ -95,7 +97,8 @@ class MessageScope internal constructor(
     private val messageMetadataRepository: MessageMetadataRepository,
     private val staleEpochVerifier: StaleEpochVerifier,
     private val scope: CoroutineScope,
-    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
+    private val legalHoldStatusMapper: LegalHoldStatusMapper = LegalHoldStatusMapperImpl
 ) {
 
     private val messageSendFailureHandler: MessageSendFailureHandler
@@ -112,6 +115,8 @@ class MessageScope internal constructor(
 
     private val messageEnvelopeCreator: MessageEnvelopeCreator
         get() = MessageEnvelopeCreatorImpl(
+            conversationRepository = conversationRepository,
+            legalHoldStatusMapper = legalHoldStatusMapper,
             proteusClientProvider = proteusClientProvider,
             selfUserId = selfUserId,
             protoContentMapper = protoContentMapper
@@ -119,6 +124,8 @@ class MessageScope internal constructor(
 
     private val mlsMessageCreator: MLSMessageCreator
         get() = MLSMessageCreatorImpl(
+            conversationRepository = conversationRepository,
+            legalHoldStatusMapper = legalHoldStatusMapper,
             mlsClientProvider = mlsClientProvider,
             selfUserId = selfUserId,
             protoContentMapper = protoContentMapper

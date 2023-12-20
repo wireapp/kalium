@@ -170,5 +170,5 @@ internal object MapperProvider {
     fun receiptModeMapper(): ReceiptModeMapper = ReceiptModeMapperImpl()
     fun sendMessagePartialFailureMapper(): SendMessagePartialFailureMapper = SendMessagePartialFailureMapperImpl()
     fun serviceMapper(): ServiceMapper = ServiceMapper()
-    fun legalHoldStatusMapper(): LegalHoldStatusMapper = LegalHoldStatusMapperImpl()
+    fun legalHoldStatusMapper(): LegalHoldStatusMapper = LegalHoldStatusMapperImpl
 }

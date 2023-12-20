@@ -32,7 +32,7 @@ import com.wire.kalium.persistence.util.JsonSerializer
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
 
-@Suppress("LongParameterList")
+@Suppress("LongParameterList", "LargeClass")
 object MessageMapper {
 
     private val serializer = JsonSerializer()
@@ -147,7 +147,7 @@ object MessageMapper {
                         if (userIdList.contains(senderUserId) && userIdList.size == 1) {
                             MessagePreviewEntityContent.MemberLeft(senderName)
                         } else {
-                            MessagePreviewEntityContent.MembersRemoved(
+                            MessagePreviewEntityContent.ConversationMembersRemoved(
                                 senderName = senderName,
                                 isContainSelfUserId = userIdList
                                     .firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
@@ -175,6 +175,13 @@ object MessageMapper {
                             .firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
                         otherUserIdList = userIdList.filterNot { it == selfUserId },
                     )
+
+                    MessageEntity.MemberChangeType.REMOVED_FROM_TEAM -> MessagePreviewEntityContent.TeamMembersRemoved(
+                        senderName = senderName,
+                        isContainSelfUserId = userIdList
+                            .firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
+                        otherUserIdList = userIdList.filterNot { it == selfUserId },
+                    )
                 }
             }
 
@@ -188,7 +195,7 @@ object MessageMapper {
                 adminName = senderName
             )
 
-            MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessagePreviewEntityContent.TeamMemberRemoved(userName = senderName)
+            MessageEntity.ContentType.REMOVED_FROM_TEAM -> MessagePreviewEntityContent.TeamMemberRemoved_Legacy(userName = senderName)
             MessageEntity.ContentType.LOCATION -> MessagePreviewEntityContent.Location(senderName = senderName)
             MessageEntity.ContentType.FEDERATION -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.NEW_CONVERSATION_RECEIPT_MODE -> MessagePreviewEntityContent.Unknown
@@ -204,6 +211,7 @@ object MessageMapper {
             MessageEntity.ContentType.FAILED_DECRYPTION -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CRYPTO_SESSION_RESET -> MessagePreviewEntityContent.CryptoSessionReset
             MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED -> MessagePreviewEntityContent.Unknown
+            MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED_DURING_CALL -> MessagePreviewEntityContent.Unknown
             MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS -> MessagePreviewEntityContent.ConversationVerifiedMls
             MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS -> MessagePreviewEntityContent.ConversationVerifiedProteus
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> MessagePreviewEntityContent.Unknown
@@ -470,6 +478,7 @@ object MessageMapper {
         quotedTextBody: String?,
         quotedAssetMimeType: String?,
         quotedAssetName: String?,
+        quotedLocationName: String?,
         newConversationReceiptMode: Boolean?,
         conversationReceiptModeChanged: Boolean?,
         messageTimerChanged: Long?,
@@ -508,6 +517,7 @@ object MessageMapper {
                         textBody = quotedTextBody,
                         assetMimeType = quotedAssetMimeType,
                         assetName = quotedAssetName,
+                        locationName = quotedLocationName
                     )
                 },
             )
@@ -576,6 +586,7 @@ object MessageMapper {
                                 textBody = quotedTextBody,
                                 assetMimeType = quotedAssetMimeType,
                                 assetName = quotedAssetName,
+                                locationName = quotedLocationName
                             )
                         },
                     )
@@ -617,6 +628,9 @@ object MessageMapper {
             MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED -> MessageEntityContent.ConversationProtocolChanged(
                 protocol = conversationProtocolChanged ?: ConversationEntity.Protocol.PROTEUS
             )
+
+            MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED_DURING_CALL ->
+                MessageEntityContent.ConversationProtocolChangedDuringACall
 
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> MessageEntityContent.ConversationStartedUnverifiedWarning
             MessageEntity.ContentType.LOCATION -> MessageEntityContent.Location(

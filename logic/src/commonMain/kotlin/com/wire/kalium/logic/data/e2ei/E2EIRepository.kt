@@ -55,9 +55,10 @@ interface E2EIRepository {
     suspend fun getDPoPToken(wireNonce: String): Either<CoreFailure, String>
     suspend fun validateDPoPChallenge(accessToken: String, prevNonce: String, acmeChallenge: AcmeChallenge):
             Either<CoreFailure, ChallengeResponse>
-    suspend fun validateOIDCChallenge(idToken: String, prevNonce: String, acmeChallenge: AcmeChallenge):
+    suspend fun validateOIDCChallenge(idToken: String, refreshToken: String, prevNonce: String, acmeChallenge: AcmeChallenge):
             Either<CoreFailure, ChallengeResponse>
-    suspend fun validateChallenge(challengeResponse: ChallengeResponse): Either<CoreFailure, Unit>
+    suspend fun setDPoPChallengeResponse(challengeResponse: ChallengeResponse): Either<CoreFailure, Unit>
+    suspend fun setOIDCChallengeResponse(challengeResponse: ChallengeResponse): Either<CoreFailure, Unit>
     suspend fun finalize(location: String, prevNonce: String): Either<CoreFailure, Pair<ACMEResponse, String>>
     suspend fun checkOrderRequest(location: String, prevNonce: String): Either<CoreFailure, Pair<ACMEResponse, String>>
     suspend fun certificateRequest(location: String, prevNonce: String): Either<CoreFailure, ACMEResponse>
@@ -146,26 +147,34 @@ class E2EIRepositoryImpl(
             wrapApiRequest {
                 acmeApi.sendChallengeRequest(acmeChallenge.url, challengeRequest)
             }.map { apiResponse ->
-                validateChallenge(apiResponse)
+                setDPoPChallengeResponse(apiResponse)
                 apiResponse
             }
         }
 
-    override suspend fun validateOIDCChallenge(idToken: String, prevNonce: String, acmeChallenge: AcmeChallenge) =
+    override suspend fun validateOIDCChallenge(idToken: String, refreshToken: String, prevNonce: String, acmeChallenge: AcmeChallenge) =
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
-            val challengeRequest = e2eiClient.getNewOidcChallengeRequest(idToken, prevNonce)
+            val challengeRequest = e2eiClient.getNewOidcChallengeRequest(idToken, refreshToken, prevNonce)
             wrapApiRequest {
                 acmeApi.sendChallengeRequest(acmeChallenge.url, challengeRequest)
             }.map { apiResponse ->
-                validateChallenge(apiResponse)
+                setOIDCChallengeResponse(apiResponse)
                 apiResponse
             }
         }
 
-    override suspend fun validateChallenge(challengeResponse: ChallengeResponse) =
+    override suspend fun setDPoPChallengeResponse(challengeResponse: ChallengeResponse) =
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
-            e2eiClient.setChallengeResponse(Json.encodeToString(challengeResponse).encodeToByteArray())
+            e2eiClient.setDPoPChallengeResponse(Json.encodeToString(challengeResponse).encodeToByteArray())
             Either.Right(Unit)
+        }
+
+    override suspend fun setOIDCChallengeResponse(challengeResponse: ChallengeResponse) =
+        mlsClientProvider.getCoreCrypto().flatMap { coreCrypto ->
+            e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
+                e2eiClient.setOIDCChallengeResponse(coreCrypto, Json.encodeToString(challengeResponse).encodeToByteArray())
+                Either.Right(Unit)
+            }
         }
 
     override suspend fun checkOrderRequest(location: String, prevNonce: String) =

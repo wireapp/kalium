@@ -156,6 +156,8 @@ class UserDatabaseBuilder internal constructor(
         MessageConversationProtocolChangedContentAdapter = TableMapper.messageConversationProtocolChangedContentAdapter,
         MessageConversationLocationContentAdapter = TableMapper.messageConversationLocationContentAdapter,
         MessageLegalHoldContentAdapter = TableMapper.messageLegalHoldContentAdapter,
+        MessageConversationProtocolChangedDuringACallContentAdapter =
+            TableMapper.messageConversationProtocolChangedDuringACAllContentAdapter,
     )
 
     init {
@@ -175,7 +177,11 @@ class UserDatabaseBuilder internal constructor(
         get() = UserConfigDAOImpl(metadataDAO)
 
     val connectionDAO: ConnectionDAO
-        get() = ConnectionDAOImpl(database.connectionsQueries, database.conversationsQueries, queriesContext)
+        get() = ConnectionDAOImpl(
+            database.connectionsQueries,
+            database.conversationsQueries,
+            queriesContext
+        )
 
     val conversationDAO: ConversationDAO
         get() = ConversationDAOImpl(
@@ -195,7 +201,12 @@ class UserDatabaseBuilder internal constructor(
 
     private val metadataCache = LRUCache<String, Flow<String?>>(METADATA_CACHE_SIZE)
     val metadataDAO: MetadataDAO
-        get() = MetadataDAOImpl(database.metadataQueries, metadataCache, databaseScope, queriesContext)
+        get() = MetadataDAOImpl(
+            database.metadataQueries,
+            metadataCache,
+            databaseScope,
+            queriesContext
+        )
 
     val clientDAO: ClientDAO
         get() = ClientDAOImpl(database.clientsQueries, queriesContext)
@@ -204,7 +215,12 @@ class UserDatabaseBuilder internal constructor(
         get() = NewClientDAOImpl(database.newClientQueries, queriesContext)
 
     val databaseImporter: DatabaseImporter
-        get() = DatabaseImporterImpl(this, database.importContentQueries, isEncrypted, platformDatabaseData)
+        get() = DatabaseImporterImpl(
+            this,
+            database.importContentQueries,
+            isEncrypted,
+            platformDatabaseData
+        )
 
     val databaseExporter: DatabaseExporter
         get() = DatabaseExporterImpl(userId, platformDatabaseData, this)

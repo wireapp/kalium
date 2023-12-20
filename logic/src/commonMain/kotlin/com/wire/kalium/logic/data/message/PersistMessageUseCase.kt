@@ -85,7 +85,6 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.Reaction -> false
             is MessageContent.Cleared -> false
             is MessageContent.ConversationRenamed -> true
-            is MessageContent.TeamMemberRemoved -> false
             is MessageContent.Receipt -> false
             is MessageContent.ClientAction -> false
             is MessageContent.CryptoSessionReset -> false
@@ -109,8 +108,11 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.FederationStopped.ConnectionRemoved -> false
             is MessageContent.FederationStopped.Removed -> false
             is MessageContent.ConversationProtocolChanged -> false
+            is MessageContent.ConversationProtocolChangedDuringACall -> false
             is MessageContent.ConversationStartedUnverifiedWarning -> false
             is MessageContent.Location -> true
             is MessageContent.LegalHold -> false
+            is MessageContent.MemberChange.RemovedFromTeam -> false
+            is MessageContent.TeamMemberRemoved -> false
         }
 }

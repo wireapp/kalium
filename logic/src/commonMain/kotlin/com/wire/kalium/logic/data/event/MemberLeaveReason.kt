@@ -15,13 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.data.event
 
-package com.wire.kalium.cryptography
-
-expect open class BaseMLSClientTest() {
-
-    suspend fun createMLSClient(clientId: CryptoQualifiedClientId): MLSClient
-
-    suspend fun createCoreCrypto(clientId: CryptoQualifiedClientId): CoreCryptoCentral
-
+sealed interface MemberLeaveReason {
+    object Left : MemberLeaveReason
+    object Removed : MemberLeaveReason
+    object UserDeleted : MemberLeaveReason
 }
