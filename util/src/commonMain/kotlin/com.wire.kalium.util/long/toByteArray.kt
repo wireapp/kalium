@@ -18,6 +18,9 @@
 
 package com.wire.kalium.util.long
 
+/**
+ * Converts a Long into a Byte Array Big Endian.
+ */
 @Suppress("MagicNumber")
 fun Long.toByteArray(): ByteArray {
     val result = ByteArray(Long.SIZE_BYTES)
