@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -43,7 +44,7 @@ import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 class JoinExistingMLSConversationsUseCaseTest {
 
@@ -117,7 +118,7 @@ class JoinExistingMLSConversationsUseCaseTest {
                 .withIsMLSSupported(true)
                 .withHasRegisteredMLSClient(true)
                 .withGetConversationsByGroupStateSuccessful()
-                .withJoinExistingMLSConversationNoKeyPackagesAvailable()
+                .withNoKeyPackagesAvailable()
                 .arrange()
 
             joinExistingMLSConversationsUseCase().shouldSucceed()
@@ -129,7 +130,25 @@ class JoinExistingMLSConversationsUseCaseTest {
         }
 
     @Test
-    fun givenFailure_WhenJoinExistingMLSConversationUseCase_ThenReturnUnit() = runTest {
+    fun givenNetworkFailure_WhenJoinExistingMLSConversationUseCase_ThenPropagateFailure() = runTest {
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+            .withIsMLSSupported(true)
+            .withHasRegisteredMLSClient(true)
+            .withGetConversationsByGroupStateSuccessful()
+            .withJoinExistingMLSConversationNetworkFailure()
+            .arrange()
+
+        joinExistingMLSConversationsUseCase().shouldFail {
+            assertIs<NetworkFailure>(it)
+        }
+        verify(arrangement.joinExistingMLSConversationUseCase)
+            .suspendFunction(arrangement.joinExistingMLSConversationUseCase::invoke)
+            .with(anything())
+            .wasInvoked(twice)
+    }
+
+    @Test
+    fun givenOtherFailure_WhenJoinExistingMLSConversationUseCase_ThenReturnUnit() = runTest {
         val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
             .withIsMLSSupported(true)
             .withHasRegisteredMLSClient(true)
@@ -190,6 +209,13 @@ class JoinExistingMLSConversationsUseCaseTest {
                 .then { Either.Right(Unit) }
         }
 
+        fun withJoinExistingMLSConversationNetworkFailure() = apply {
+            given(joinExistingMLSConversationUseCase)
+                .suspendFunction(joinExistingMLSConversationUseCase::invoke)
+                .whenInvokedWith(anything())
+                .then { Either.Left(NetworkFailure.NoNetworkConnection(null)) }
+        }
+
         fun withJoinExistingMLSConversationFailure() = apply {
             given(joinExistingMLSConversationUseCase)
                 .suspendFunction(joinExistingMLSConversationUseCase::invoke)
@@ -197,7 +223,7 @@ class JoinExistingMLSConversationsUseCaseTest {
                 .then { Either.Left(CoreFailure.NotSupportedByProteus) }
         }
 
-        fun withJoinExistingMLSConversationNoKeyPackagesAvailable() = apply {
+        fun withNoKeyPackagesAvailable() = apply {
             given(joinExistingMLSConversationUseCase)
                 .suspendFunction(joinExistingMLSConversationUseCase::invoke)
                 .whenInvokedWith(anything())
