@@ -25,6 +25,7 @@ import com.wire.kalium.util.DateTimeUtil.toEpochMillis
 import com.wire.kalium.util.long.toByteArray
 import com.wire.kalium.util.string.toHexString
 import com.wire.kalium.util.string.toUTF16BEByteArray
+import kotlin.math.roundToLong
 
 class MessageContentEncoder {
     fun encodeMessageContent(messageDate: String, messageContent: MessageContent): EncodedMessageContent? {
@@ -40,6 +41,14 @@ class MessageContentEncoder {
                     messageTimeStampInMillis = messageDate.toEpochMillis(),
                     messageTextBody = messageContent.value
                 )
+
+            is MessageContent.Location -> with(messageContent) {
+                encodeLocationCoordinates(
+                    latitude = latitude,
+                    longitude = longitude,
+                    messageTimeStampInMillis = messageDate.toEpochMillis()
+                )
+            }
 
             else -> {
                 kaliumLogger.w("Attempting to encode message with unsupported content type")
@@ -68,6 +77,13 @@ class MessageContentEncoder {
         val messageTimeStampInSec = messageTimeStampInMillis / MILLIS_IN_SEC
 
         return messageTimeStampInSec.toByteArray()
+    }
+
+    private fun encodeLocationCoordinates(latitude: Float, longitude: Float, messageTimeStampInMillis: Long): EncodedMessageContent {
+        val latitudeBEBytes = (latitude * 1000).roundToLong().toByteArray()
+        val longitudeBEBytes = (longitude * 1000).roundToLong().toByteArray()
+
+        return EncodedMessageContent(latitudeBEBytes + longitudeBEBytes + encodeMessageTimeStampInMillis(messageTimeStampInMillis))
     }
 
     private fun wrapIntoResult(messageTimeStampByteArray: ByteArray, messageTextBodyUTF16BE: ByteArray): EncodedMessageContent {
