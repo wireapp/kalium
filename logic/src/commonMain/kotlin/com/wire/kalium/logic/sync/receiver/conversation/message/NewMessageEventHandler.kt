@@ -23,7 +23,6 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
@@ -34,6 +33,7 @@ import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.toInstant
 
@@ -46,8 +46,8 @@ internal interface NewMessageEventHandler {
 internal class NewMessageEventHandlerImpl(
     private val proteusMessageUnpacker: ProteusMessageUnpacker,
     private val mlsMessageUnpacker: MLSMessageUnpacker,
-    private val conversationRepository: ConversationRepository,
     private val applicationMessageHandler: ApplicationMessageHandler,
+    private val legalHoldHandler: LegalHoldHandler,
     private val enqueueSelfDeletion: (conversationId: ConversationId, messageId: String) -> Unit,
     private val selfUserId: UserId,
     private val staleEpochVerifier: StaleEpochVerifier
@@ -86,13 +86,10 @@ internal class NewMessageEventHandlerImpl(
                 )
             }.onSuccess {
                 if (it is MessageUnpackResult.ApplicationMessage) {
-                    handleSuccessfulResult(it)
                     if (it.content.legalHoldStatus != Conversation.LegalHoldStatus.UNKNOWN) {
-                        conversationRepository.updateLegalHoldStatus(
-                            conversationId = it.conversationId,
-                            legalHoldStatus = it.content.legalHoldStatus
-                        )
+                        legalHoldHandler.handleNewMessage(it)
                     }
+                    handleSuccessfulResult(it)
                     onMessageInserted(it)
                 }
                 kaliumLogger
@@ -143,13 +140,10 @@ internal class NewMessageEventHandlerImpl(
             }.onSuccess {
                 it.forEach {
                     if (it is MessageUnpackResult.ApplicationMessage) {
-                        handleSuccessfulResult(it)
                         if (it.content.legalHoldStatus != Conversation.LegalHoldStatus.UNKNOWN) {
-                            conversationRepository.updateLegalHoldStatus(
-                                conversationId = it.conversationId,
-                                legalHoldStatus = it.content.legalHoldStatus
-                            )
+                            legalHoldHandler.handleNewMessage(it)
                         }
+                        handleSuccessfulResult(it)
                         onMessageInserted(it)
                     }
                 }

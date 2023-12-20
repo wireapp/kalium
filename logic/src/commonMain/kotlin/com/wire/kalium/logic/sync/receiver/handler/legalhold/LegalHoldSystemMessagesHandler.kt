@@ -26,36 +26,51 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.legalhold.MembersHavingLegalHoldClientUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.util.DateTimeUtil
 
 internal interface LegalHoldSystemMessagesHandler {
-    suspend fun handleEnable(userId: UserId)
-    suspend fun handleDisable(userId: UserId)
+    suspend fun handleEnabledForUser(userId: UserId)
+    suspend fun handleDisabledForUser(userId: UserId)
+    suspend fun handleEnabledForConversation(conversationId: ConversationId)
+    suspend fun handleDisabledForConversation(conversationId: ConversationId)
 }
 
 internal class LegalHoldSystemMessagesHandlerImpl(
     private val selfUserId: UserId,
-    private val membersHavingLegalHoldClient: MembersHavingLegalHoldClientUseCase,
     private val persistMessage: PersistMessageUseCase,
     private val conversationRepository: ConversationRepository,
     private val messageRepository: MessageRepository,
 ) : LegalHoldSystemMessagesHandler {
 
-    override suspend fun handleEnable(userId: UserId) = handleSystemMessages(
-            userId = userId,
-            update = { members -> (members + userId).distinct() },
-            createNew = { MessageContent.LegalHold.ForMembers.Enabled(members = listOf(userId)) },
-            firstHandleForConversation = true
-        )
-    override suspend fun handleDisable(userId: UserId) = handleSystemMessages(
+    override suspend fun handleEnabledForUser(userId: UserId) = handleSystemMessagesForUser(
         userId = userId,
         update = { members -> (members + userId).distinct() },
-        createNew = { MessageContent.LegalHold.ForMembers.Disabled(members = listOf(userId)) },
-        firstHandleForConversation = false
+        createNew = { MessageContent.LegalHold.ForMembers.Enabled(members = listOf(userId)) }
     )
+
+    override suspend fun handleDisabledForUser(userId: UserId) = handleSystemMessagesForUser(
+        userId = userId,
+        update = { members -> (members + userId).distinct() },
+        createNew = { MessageContent.LegalHold.ForMembers.Disabled(members = listOf(userId)) }
+    )
+
+    override suspend fun handleEnabledForConversation(conversationId: ConversationId) =
+        handleSystemMessageForConversation(conversationId, Conversation.LegalHoldStatus.ENABLED)
+
+    override suspend fun handleDisabledForConversation(conversationId: ConversationId) =
+        handleSystemMessageForConversation(conversationId, Conversation.LegalHoldStatus.DISABLED)
+
+    private suspend fun handleSystemMessageForConversation(conversationId: ConversationId, newStatus: Conversation.LegalHoldStatus) {
+        when (newStatus) {
+            Conversation.LegalHoldStatus.DISABLED ->
+                persistMessage(createSystemMessage(MessageContent.LegalHold.ForConversation.Disabled, conversationId))
+            Conversation.LegalHoldStatus.ENABLED ->
+                persistMessage(createSystemMessage(MessageContent.LegalHold.ForConversation.Enabled, conversationId))
+            else -> { /* do nothing */ }
+        }
+    }
 
     private suspend inline fun <reified T : MessageContent.LegalHold.ForMembers> getLastLegalHoldMessagesForConversations(
         userId: UserId,
@@ -65,45 +80,21 @@ internal class LegalHoldSystemMessagesHandlerImpl(
         else messageRepository.getLastMessagesForConversationIds(conversations.map { it.id })
             .map { it.filterValues { it.content is T }.mapValues { it.value.id to (it.value.content as T) } }
 
-    private suspend inline fun <reified T : MessageContent.LegalHold.ForMembers> handleSystemMessages(
+    private suspend inline fun <reified T : MessageContent.LegalHold.ForMembers> handleSystemMessagesForUser(
         userId: UserId,
         crossinline update: (List<UserId>) -> List<UserId>,
         crossinline createNew: () -> T,
-        firstHandleForConversation: Boolean,
     ) {
         // get all conversations where the given user is a member
         conversationRepository.getConversationsByUserId(userId).map { conversations ->
             // get last legal hold messages for the given conversations
             getLastLegalHoldMessagesForConversations<T>(userId, conversations).map { lastMessagesMap ->
-
-                val createOrUpdateSystemMessageForMembers: suspend (conversation: Conversation) -> Unit = { conversation ->
+                conversations.forEach { conversation ->
+                    // create or update system messages for members
                     lastMessagesMap[conversation.id]?.let { (lastMessageId, lastMessageContent) ->
                         messageRepository.updateLegalHoldMessageMembers(lastMessageId, conversation.id, update(lastMessageContent.members))
                     } ?: persistMessage(createSystemMessage(createNew(), conversation.id))
                 }
-
-                val createSystemMessageForConversationIfNeeded: suspend (conversation: Conversation) -> Unit = { conversation ->
-                    membersHavingLegalHoldClient(conversation.id)
-                        .map { if (it.isEmpty()) Conversation.LegalHoldStatus.DISABLED else Conversation.LegalHoldStatus.ENABLED }
-                        .map { newLegalHoldStatus ->
-                            if (newLegalHoldStatus != conversation.legalHoldStatus) {
-                                // if conversation legal hold status has changed, update it
-                                conversationRepository.updateLegalHoldStatus(conversation.id, newLegalHoldStatus)
-                                // if conversation legal hold status changed, create system message for it
-                                if (newLegalHoldStatus == Conversation.LegalHoldStatus.DISABLED) persistMessage(
-                                    createSystemMessage(MessageContent.LegalHold.ForConversation.Disabled, conversation.id)
-                                )
-                                else if (newLegalHoldStatus == Conversation.LegalHoldStatus.ENABLED) persistMessage(
-                                    createSystemMessage(MessageContent.LegalHold.ForConversation.Enabled, conversation.id)
-                                )
-                            }
-                        }
-                }
-
-                val actionsForConversation = listOf(createOrUpdateSystemMessageForMembers, createSystemMessageForConversationIfNeeded)
-                    .let { if (firstHandleForConversation) it.reversed() else it }
-
-                conversations.forEach { conversation -> actionsForConversation.forEach { it(conversation) } }
             }
         }
     }
