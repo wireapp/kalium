@@ -35,6 +35,7 @@ import kotlinx.coroutines.withContext
 
 interface E2EIClientProvider {
     suspend fun getE2EIClient(clientId: ClientId? = null): Either<CoreFailure, E2EIClient>
+    suspend fun nuke()
 }
 
 internal class EI2EIClientProviderImpl(
@@ -84,6 +85,10 @@ internal class EI2EIClientProviderImpl(
         return if (selfUser.name == null || selfUser.handle == null)
             Either.Left(E2EIFailure.Generic(IllegalArgumentException(ERROR_NAME_AND_HANDLE_MUST_NOT_BE_NULL)))
         else Either.Right(selfUser)
+    }
+
+    override suspend fun nuke() {
+        e2EIClient = null
     }
 
     companion object {
