@@ -40,7 +40,7 @@ internal class TriggerBuffer<T>(trigger: Flow<Boolean>, scope: CoroutineScope) {
     private val mutex = Mutex()
     private val newItemFlow = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     private val sharedFlow = combine(newItemFlow, trigger, ::Pair)
-        .filter {(_, trigger) -> trigger }
+        .filter { (_, trigger) -> trigger }
         .map { getAllAndClear() }
         .shareIn(scope, SharingStarted.Eagerly, 1)
     suspend fun add(value: T) = mutex.withLock {
