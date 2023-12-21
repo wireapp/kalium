@@ -924,6 +924,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewOrderResulting(Either.Right(Triple(ACME_ORDER, RANDOM_NONCE, RANDOM_LOCATION)))
         arrangement.withCreateAuthzResulting(Either.Right(Triple(ACME_AUTHZ, RANDOM_NONCE, RANDOM_LOCATION)))
+        arrangement.withGettingRefreshTokenSucceeding()
         arrangement.withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
         arrangement.withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
@@ -977,7 +978,7 @@ class EnrollE2EICertificateUseCaseTest {
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::nukeE2EIClient)
             .with()
-            .wasInvoked(exactly = once)
+            .wasNotInvoked()
     }
 
     @Test
@@ -990,6 +991,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewOrderResulting(Either.Right(Triple(ACME_ORDER, RANDOM_NONCE, RANDOM_LOCATION)))
         arrangement.withCreateAuthzResulting(Either.Right(Triple(ACME_AUTHZ, RANDOM_NONCE, RANDOM_LOCATION)))
+        arrangement.withGettingRefreshTokenSucceeding()
         arrangement.withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
         arrangement.withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
@@ -1049,7 +1051,7 @@ class EnrollE2EICertificateUseCaseTest {
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::nukeE2EIClient)
             .with()
-            .wasInvoked(exactly = once)
+            .wasNotInvoked()
     }
 
     @Test
@@ -1231,6 +1233,13 @@ class EnrollE2EICertificateUseCaseTest {
                 .suspendFunction(e2EIRepository::certificateRequest)
                 .whenInvokedWith(any(), any())
                 .thenReturn(result)
+        }
+
+        fun withGettingRefreshTokenSucceeding() = apply {
+            given(e2EIRepository)
+                .suspendFunction(e2EIRepository::getOAuthRefreshToken)
+                .whenInvoked()
+                .thenReturn(Either.Right(" "))
         }
 
         fun arrange(): Pair<Arrangement, EnrollE2EIUseCase> = this to EnrollE2EIUseCaseImpl(e2EIRepository)
