@@ -138,27 +138,27 @@ class LegalHoldSystemMessagesHandlerTest {
     @Test
     fun givenConversationId_whenHandlingEnableForConversation_thenCreateNewSystemMessage() = runTest {
         // given
-        val (arrangement, handler) = Arrangement()
-            .arrange()
+        val timestampIso = "2022-03-30T15:36:00.000Z"
+        val (arrangement, handler) = Arrangement().arrange()
         // when
-        handler.handleEnabledForConversation(conversationId = TestConversation.CONVERSATION.id)
+        handler.handleEnabledForConversation(conversationId = TestConversation.CONVERSATION.id, timestampIso)
         // then
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching { it.content is MessageContent.LegalHold.ForConversation.Enabled })
+            .with(matching { it.content is MessageContent.LegalHold.ForConversation.Enabled && it.date == timestampIso })
             .wasInvoked(exactly = once)
     }
     @Test
     fun givenConversationId_whenHandlingDisableForConversation_thenCreateNewSystemMessage() = runTest {
         // given
-        val (arrangement, handler) = Arrangement()
-            .arrange()
+        val timestampIso = "2022-03-30T15:36:00.000Z"
+        val (arrangement, handler) = Arrangement().arrange()
         // when
-        handler.handleDisabledForConversation(conversationId = TestConversation.CONVERSATION.id)
+        handler.handleDisabledForConversation(conversationId = TestConversation.CONVERSATION.id, timestampIso)
         // then
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching { it.content is MessageContent.LegalHold.ForConversation.Disabled })
+            .with(matching { it.content is MessageContent.LegalHold.ForConversation.Disabled && it.date == timestampIso })
             .wasInvoked(exactly = once)
     }
 

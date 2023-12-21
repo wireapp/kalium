@@ -37,6 +37,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.conversation.message.MessageUnpackResult
 import com.wire.kalium.logic.util.DebounceBuffer
+import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -114,8 +115,10 @@ internal class LegalHoldHandlerImpl internal constructor(
 
     override suspend fun handleNewMessage(message: MessageUnpackResult.ApplicationMessage): Either<CoreFailure, Unit> {
         val isStatusChangedForConversation = when (message.content.legalHoldStatus) {
-            Conversation.LegalHoldStatus.ENABLED -> handleForConversation(message.conversationId, Conversation.LegalHoldStatus.ENABLED)
-            Conversation.LegalHoldStatus.DISABLED -> handleForConversation(message.conversationId, Conversation.LegalHoldStatus.DISABLED)
+            Conversation.LegalHoldStatus.ENABLED ->
+                handleForConversation(message.conversationId, Conversation.LegalHoldStatus.ENABLED, message.timestampIso)
+            Conversation.LegalHoldStatus.DISABLED ->
+                handleForConversation(message.conversationId, Conversation.LegalHoldStatus.DISABLED, message.timestampIso)
             else -> false
         }
         if (isStatusChangedForConversation) {
@@ -136,7 +139,11 @@ internal class LegalHoldHandlerImpl internal constructor(
     private suspend fun isUserUnderLegalHold(userId: UserId): Boolean =
         observeLegalHoldStateForUser(userId).firstOrNull() == LegalHoldState.Enabled
 
-    private suspend fun handleForConversation(conversationId: ConversationId, newStatus: Conversation.LegalHoldStatus): Boolean =
+    private suspend fun handleForConversation(
+        conversationId: ConversationId,
+        newStatus: Conversation.LegalHoldStatus,
+        systemMessageTimestampIso: String = DateTimeUtil.currentIsoDateTimeString(),
+    ): Boolean =
         if (newStatus != Conversation.LegalHoldStatus.UNKNOWN) {
             conversationRepository.updateLegalHoldStatus(conversationId, newStatus)
                 .getOrElse(false)
@@ -144,9 +151,9 @@ internal class LegalHoldHandlerImpl internal constructor(
                     if (isChanged) {
                         when (newStatus) {
                             Conversation.LegalHoldStatus.DISABLED ->
-                                legalHoldSystemMessagesHandler.handleDisabledForConversation(conversationId)
+                                legalHoldSystemMessagesHandler.handleDisabledForConversation(conversationId, systemMessageTimestampIso)
                             Conversation.LegalHoldStatus.ENABLED ->
-                                legalHoldSystemMessagesHandler.handleEnabledForConversation(conversationId)
+                                legalHoldSystemMessagesHandler.handleEnabledForConversation(conversationId, systemMessageTimestampIso)
                             else -> { /* do nothing */ }
                         }
                     }
@@ -171,7 +178,7 @@ internal class LegalHoldHandlerImpl internal constructor(
                     .flatMap { members ->
                         membersHavingLegalHoldClient(conversationId)
                             .map { membersHavingLegalHoldClient ->
-                                (acc + members.map { it to membersHavingLegalHoldClient.contains(it) })
+                                members.associateWith { membersHavingLegalHoldClient.contains(it) } + acc
                             }
                     }
             }

@@ -278,7 +278,7 @@ class LegalHoldHandlerTest {
         // then
         verify(arrangement.legalHoldSystemMessagesHandler)
             .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleDisabledForConversation)
-            .with(any())
+            .with(any(), any())
             .wasInvoked(exactly = once)
     }
     @Test
@@ -292,7 +292,7 @@ class LegalHoldHandlerTest {
         // then
         verify(arrangement.legalHoldSystemMessagesHandler)
             .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleDisabledForConversation)
-            .with(any())
+            .with(any(), any())
             .wasNotInvoked()
     }
     @Test
@@ -306,7 +306,7 @@ class LegalHoldHandlerTest {
         // then
         verify(arrangement.legalHoldSystemMessagesHandler)
             .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleDisabledForConversation)
-            .with(any())
+            .with(any(), any())
             .wasNotInvoked()
     }
     @Test
@@ -321,7 +321,7 @@ class LegalHoldHandlerTest {
         // then
         verify(arrangement.legalHoldSystemMessagesHandler)
             .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleEnabledForConversation)
-            .with(any())
+            .with(any(), any())
             .wasInvoked(exactly = once)
     }
     @Test
@@ -337,7 +337,7 @@ class LegalHoldHandlerTest {
         // then
         verify(arrangement.legalHoldSystemMessagesHandler)
             .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleEnabledForConversation)
-            .with(any())
+            .with(any(), any())
             .wasNotInvoked()
     }
     @Test
@@ -351,7 +351,7 @@ class LegalHoldHandlerTest {
         // then
         verify(arrangement.legalHoldSystemMessagesHandler)
             .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleEnabledForConversation)
-            .with(any())
+            .with(any(), any())
             .wasNotInvoked()
     }
 
@@ -367,7 +367,7 @@ class LegalHoldHandlerTest {
         // then
         verify(arrangement.legalHoldSystemMessagesHandler)
             .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleDisabledForConversation)
-            .with(any())
+            .with(any(), any())
             .wasNotInvoked()
     }
     @Test
@@ -381,7 +381,7 @@ class LegalHoldHandlerTest {
         // then
         verify(arrangement.legalHoldSystemMessagesHandler)
             .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleEnabledForConversation)
-            .with(eq(TestConversation.CONVERSATION.id))
+            .with(eq(TestConversation.CONVERSATION.id), any())
             .wasInvoked()
     }
     @Test
@@ -396,7 +396,7 @@ class LegalHoldHandlerTest {
         // then
         verify(arrangement.legalHoldSystemMessagesHandler)
             .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleEnabledForConversation)
-            .with(any())
+            .with(any(), any())
             .wasNotInvoked()
     }
     @Test
@@ -410,10 +410,24 @@ class LegalHoldHandlerTest {
         // then
         verify(arrangement.legalHoldSystemMessagesHandler)
             .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleDisabledForConversation)
-            .with(eq(TestConversation.CONVERSATION.id))
+            .with(eq(TestConversation.CONVERSATION.id), any())
             .wasInvoked()
     }
-
+    @Test
+    fun givenConversation_whenHandlingNewMessageWithChangedLegalHold_thenUseTimestampOfThatMessageToCreateSystemMessage() = runTest {
+        // given
+        val (arrangement, handler) = Arrangement()
+            .withGetConversationsByUserIdSuccess(listOf(conversation(legalHoldStatus = Conversation.LegalHoldStatus.DISABLED)))
+            .arrange()
+        val message = applicationMessage(Conversation.LegalHoldStatus.ENABLED)
+        // when
+        handler.handleNewMessage(message)
+        // then
+        verify(arrangement.legalHoldSystemMessagesHandler)
+            .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleEnabledForConversation)
+            .with(eq(TestConversation.CONVERSATION.id), eq(message.timestampIso))
+            .wasInvoked()
+    }
 
     private class Arrangement {
 
