@@ -39,7 +39,6 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -82,7 +81,7 @@ class MLSMessageCreatorTest {
             .then { Either.Right(MLS_CLIENT) }
 
         given(conversationRepository)
-            .suspendFunction(conversationRepository::observeLegalHoldForConversation)
+            .suspendFunction(conversationRepository::observeLegalHoldStatus)
             .whenInvokedWith(anything())
             .then { flowOf(Either.Right(Conversation.LegalHoldStatus.DISABLED)) }
 
@@ -110,7 +109,7 @@ class MLSMessageCreatorTest {
             .wasInvoked(once)
 
         verify(conversationRepository)
-            .suspendFunction(conversationRepository::observeLegalHoldForConversation)
+            .suspendFunction(conversationRepository::observeLegalHoldStatus)
             .with(anything())
             .wasInvoked(once)
 
