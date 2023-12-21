@@ -210,7 +210,6 @@ INSERT INTO Receipt
             OR selfdelete_message_id.conversation_id IS NULL;
 
 INSERT INTO ButtonContent SELECT * FROM local_db.ButtonContent;
-}
 
 WITH selfdelete_message_id AS (
     SELECT local_db.Message.id, local_db.Message.conversation_id
@@ -230,3 +229,5 @@ INSERT INTO MessageConversationLocationContent
           AND local_db.MessageConversationLocationContent.conversation_id = selfdelete_message_id.conversation_id
         WHERE selfdelete_message_id.id IS NULL
            OR selfdelete_message_id.conversation_id IS NULL;
+           
+}
