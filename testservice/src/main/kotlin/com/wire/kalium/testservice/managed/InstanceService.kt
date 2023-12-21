@@ -150,6 +150,7 @@ class InstanceService(
         CoreLogger.init(KaliumLogger.Config(KaliumLogLevel.VERBOSE, listOf(KaliumLogWriter(instanceId))))
 
         val serverConfig = if (instanceRequest.customBackend != null) {
+            log.info("Instance $instanceId: Login with ${instanceRequest.email} on ${instanceRequest.customBackend.rest}")
             ServerConfig.Links(
                 api = instanceRequest.customBackend.rest,
                 webSocket = instanceRequest.customBackend.ws,
@@ -163,13 +164,14 @@ class InstanceService(
             )
         } else {
             if (instanceRequest.backend == "staging") {
+                log.info("Instance $instanceId: Login with ${instanceRequest.email} on staging backend")
                 ServerConfig.STAGING
             } else {
+                log.info("Instance $instanceId: Login with ${instanceRequest.email} on default backend")
                 ServerConfig.DEFAULT
             }
         }
 
-        log.info("Instance $instanceId: Login with ${instanceRequest.email} on ${instanceRequest.backend}")
         val loginResult = provideVersionedAuthenticationScope(coreLogic, serverConfig)
             .login(
                 instanceRequest.email, instanceRequest.password, true,
