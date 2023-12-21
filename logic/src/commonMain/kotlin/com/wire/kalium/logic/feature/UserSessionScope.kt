@@ -1402,6 +1402,7 @@ class UserSessionScope internal constructor(
         membersHavingLegalHoldClient = membersHavingLegalHoldClient,
         userConfigRepository = userConfigRepository,
         conversationRepository = conversationRepository,
+        observeSyncState = observeSyncState,
         legalHoldSystemMessagesHandler = legalHoldSystemMessagesHandler,
     )
 

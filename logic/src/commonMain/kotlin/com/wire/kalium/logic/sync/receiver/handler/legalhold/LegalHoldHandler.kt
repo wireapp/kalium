@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.PersistOtherUserClientsUseCase
@@ -35,16 +36,16 @@ import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.receiver.conversation.message.MessageUnpackResult
-import com.wire.kalium.logic.util.DebounceBuffer
+import com.wire.kalium.logic.util.TriggerBuffer
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 
 internal interface LegalHoldHandler {
     suspend fun handleEnable(legalHoldEnabled: Event.User.LegalHoldEnabled): Either<CoreFailure, Unit>
@@ -59,16 +60,15 @@ internal class LegalHoldHandlerImpl internal constructor(
     private val fetchSelfClientsFromRemote: FetchSelfClientsFromRemoteUseCase,
     private val observeLegalHoldStateForUser: ObserveLegalHoldStateForUserUseCase,
     private val membersHavingLegalHoldClient: MembersHavingLegalHoldClientUseCase,
+    private val observeSyncState: ObserveSyncStateUseCase,
     private val userConfigRepository: UserConfigRepository,
     private val conversationRepository: ConversationRepository,
     private val legalHoldSystemMessagesHandler: LegalHoldSystemMessagesHandler,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
-    debounceBufferCapacity: Int = DEBOUNCE_BUFFER_CAPACITY,
-    devounceBufferTimeout: Duration = DEBOUNCE_BUFFER_TIMEOUT,
 ) : LegalHoldHandler {
     private val scope = CoroutineScope(kaliumDispatcher.default)
     private val conversationsWithUpdatedLegalHoldStatus =
-        DebounceBuffer<ConversationId>(debounceBufferCapacity, devounceBufferTimeout, scope)
+        TriggerBuffer<ConversationId>(observeSyncState().map { it == SyncState.Live }, scope)
 
     init {
         scope.launch {
@@ -196,10 +196,5 @@ internal class LegalHoldHandlerImpl internal constructor(
                     }
                 }
             }
-    }
-
-    companion object {
-        private const val DEBOUNCE_BUFFER_CAPACITY = 100
-        private val DEBOUNCE_BUFFER_TIMEOUT = 3.seconds
     }
 }

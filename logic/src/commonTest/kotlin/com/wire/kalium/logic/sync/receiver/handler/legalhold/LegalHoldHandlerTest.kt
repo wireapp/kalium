@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.ProtoContent
+import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.PersistOtherUserClientsUseCase
@@ -34,12 +35,14 @@ import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCa
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.receiver.conversation.message.MessageUnpackResult
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.anything
 import io.mockative.configure
 import io.mockative.eq
 import io.mockative.given
@@ -48,6 +51,8 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -428,6 +433,34 @@ class LegalHoldHandlerTest {
             .with(eq(TestConversation.CONVERSATION.id), eq(message.timestampIso))
             .wasInvoked()
     }
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun givenNewMessageWithChangedLegalHoldState_whenHandling_thenBufferAndHandleItWhenSyncStateIsLive() = runTest {
+        // given
+        val syncStatesFlow = MutableStateFlow<SyncState>(SyncState.GatheringPendingEvents)
+        val (arrangement, handler) = Arrangement()
+            .withGetConversationsByUserIdSuccess(listOf(conversation(legalHoldStatus = Conversation.LegalHoldStatus.DISABLED)))
+            .withGetConversationMembersSuccess(listOf(TestUser.OTHER_USER_ID))
+            .withMembersHavingLegalHoldClientSuccess(emptyList()) // checked before legal hold state change so empty
+            .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Enabled) // checked after legal hold state change, that's why enabled
+            .withSetLegalHoldChangeNotifiedSuccess()
+            .withSyncStates(syncStatesFlow)
+            .arrange()
+        advanceUntilIdle()
+        // when
+        handler.handleNewMessage(applicationMessage(Conversation.LegalHoldStatus.ENABLED))
+        // then
+        verify(arrangement.legalHoldSystemMessagesHandler)
+            .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleEnabledForUser)
+            .with(any())
+            .wasNotInvoked()
+        syncStatesFlow.emit(SyncState.Live)
+        advanceUntilIdle()
+        verify(arrangement.legalHoldSystemMessagesHandler)
+            .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleEnabledForUser)
+            .with(eq(TestUser.OTHER_USER_ID))
+            .wasInvoked()
+    }
 
     private class Arrangement {
 
@@ -452,6 +485,9 @@ class LegalHoldHandlerTest {
         @Mock
         val legalHoldSystemMessagesHandler = configure(mock(LegalHoldSystemMessagesHandler::class)) { stubsUnitByDefault = true }
 
+        @Mock
+        val observeSyncState = mock(ObserveSyncStateUseCase::class)
+
         init {
             withObserveLegalHoldStateForUserSuccess(LegalHoldState.Disabled)
             withFetchSelfClientsFromRemoteSuccess()
@@ -471,6 +507,7 @@ class LegalHoldHandlerTest {
                 conversationRepository = conversationRepository,
                 userConfigRepository = userConfigRepository,
                 legalHoldSystemMessagesHandler = legalHoldSystemMessagesHandler,
+                observeSyncState = observeSyncState,
                 kaliumDispatcher = testDispatchers,
             )
 
@@ -525,6 +562,18 @@ class LegalHoldHandlerTest {
                 .suspendFunction(conversationRepository::getConversationsByUserId)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(conversations))
+        }
+        fun withGetConversationMembersSuccess(members: List<UserId>) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::getConversationMembers)
+                .whenInvokedWith(anything())
+                .then { Either.Right(members) }
+        }
+        fun withSyncStates(syncStates: Flow<SyncState>) = apply {
+            given(observeSyncState)
+                .function(observeSyncState::invoke)
+                .whenInvoked()
+                .thenReturn(syncStates)
         }
     }
 
