@@ -51,6 +51,7 @@ interface UserConfigDAO {
     suspend fun shouldUpdateClientLegalHoldCapability(): Boolean
 }
 
+@Suppress("TooManyFunctions")
 internal class UserConfigDAOImpl internal constructor(
     private val metadataDAO: MetadataDAO
 ) : UserConfigDAO {

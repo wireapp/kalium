@@ -34,7 +34,10 @@ interface ClientApi {
 
     suspend fun fetchClientInfo(clientID: String): NetworkResponse<ClientDTO>
 
-    suspend fun updateClientMlsPublicKeys(updateClientMlsPublicKeysRequest: UpdateClientMlsPublicKeysRequest, clientID: String): NetworkResponse<Unit>
+    suspend fun updateClientMlsPublicKeys(
+        updateClientMlsPublicKeysRequest: UpdateClientMlsPublicKeysRequest,
+        clientID: String
+    ): NetworkResponse<Unit>
 
     suspend fun updateClientCapabilities(
         updateClientCapabilitiesRequest: UpdateClientCapabilitiesRequest,
