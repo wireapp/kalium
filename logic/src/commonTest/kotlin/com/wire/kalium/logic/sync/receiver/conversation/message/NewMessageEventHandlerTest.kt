@@ -406,7 +406,7 @@ class NewMessageEventHandlerTest {
             given(legalHoldHandler)
                 .suspendFunction(legalHoldHandler::handleNewMessage)
                 .whenInvokedWith(any())
-                .thenReturn(Either.Right(true))
+                .thenReturn(Either.Right(Unit))
         }
 
         fun withMLSUnpackerReturning(result: Either<CoreFailure, List<MessageUnpackResult>>) =

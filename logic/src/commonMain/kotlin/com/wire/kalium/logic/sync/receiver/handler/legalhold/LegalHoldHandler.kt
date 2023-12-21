@@ -32,7 +32,7 @@ import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCa
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.conversation.message.MessageUnpackResult
@@ -136,22 +136,22 @@ internal class LegalHoldHandlerImpl internal constructor(
     private suspend fun isUserUnderLegalHold(userId: UserId): Boolean =
         observeLegalHoldStateForUser(userId).firstOrNull() == LegalHoldState.Enabled
 
-    private suspend fun handleForConversation(conversationId: ConversationId, newStatus: Conversation.LegalHoldStatus): Boolean {
-        val currentStatus = conversationRepository.observeLegalHoldForConversation(conversationId).firstOrNull()?.getOrNull()
-        val isChanged = currentStatus != newStatus
-        if (isChanged && newStatus != Conversation.LegalHoldStatus.UNKNOWN) {
-            // if conversation legal hold status has changed, update it and create system message for it
+    private suspend fun handleForConversation(conversationId: ConversationId, newStatus: Conversation.LegalHoldStatus): Boolean =
+        if (newStatus != Conversation.LegalHoldStatus.UNKNOWN) {
             conversationRepository.updateLegalHoldStatus(conversationId, newStatus)
-            when (newStatus) {
-                Conversation.LegalHoldStatus.DISABLED ->
-                    legalHoldSystemMessagesHandler.handleDisabledForConversation(conversationId)
-                Conversation.LegalHoldStatus.ENABLED ->
-                    legalHoldSystemMessagesHandler.handleEnabledForConversation(conversationId)
-                else -> { /* do nothing */ }
-            }
-        }
-        return isChanged
-    }
+                .getOrElse(false)
+                .also { isChanged -> // if conversation legal hold status has changed, create system message for it
+                    if (isChanged) {
+                        when (newStatus) {
+                            Conversation.LegalHoldStatus.DISABLED ->
+                                legalHoldSystemMessagesHandler.handleDisabledForConversation(conversationId)
+                            Conversation.LegalHoldStatus.ENABLED ->
+                                legalHoldSystemMessagesHandler.handleEnabledForConversation(conversationId)
+                            else -> { /* do nothing */ }
+                        }
+                    }
+                }
+        } else false
 
     private suspend fun handleConversationsForUser(userId: UserId) {
         conversationRepository.getConversationsByUserId(userId).map { conversations ->
