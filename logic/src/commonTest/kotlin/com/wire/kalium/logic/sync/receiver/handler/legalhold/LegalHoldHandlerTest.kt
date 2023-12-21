@@ -368,7 +368,7 @@ class LegalHoldHandlerTest {
             .withUpdateLegalHoldStatusSuccess(false)
             .arrange()
         // when
-        handler.handleNewMessage(applicationMessage(Conversation.LegalHoldStatus.DISABLED))
+        handler.handleNewMessage(applicationMessage(Conversation.LegalHoldStatus.DISABLED), false)
         // then
         verify(arrangement.legalHoldSystemMessagesHandler)
             .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleDisabledForConversation)
@@ -382,7 +382,7 @@ class LegalHoldHandlerTest {
             .withGetConversationsByUserIdSuccess(listOf(conversation(legalHoldStatus = Conversation.LegalHoldStatus.DISABLED)))
             .arrange()
         // when
-        handler.handleNewMessage(applicationMessage(Conversation.LegalHoldStatus.ENABLED))
+        handler.handleNewMessage(applicationMessage(Conversation.LegalHoldStatus.ENABLED), false)
         // then
         verify(arrangement.legalHoldSystemMessagesHandler)
             .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleEnabledForConversation)
@@ -397,7 +397,7 @@ class LegalHoldHandlerTest {
             .withUpdateLegalHoldStatusSuccess(false)
             .arrange()
         // when
-        handler.handleNewMessage(applicationMessage(Conversation.LegalHoldStatus.ENABLED))
+        handler.handleNewMessage(applicationMessage(Conversation.LegalHoldStatus.ENABLED), false)
         // then
         verify(arrangement.legalHoldSystemMessagesHandler)
             .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleEnabledForConversation)
@@ -411,7 +411,7 @@ class LegalHoldHandlerTest {
             .withGetConversationsByUserIdSuccess(listOf(conversation(legalHoldStatus = Conversation.LegalHoldStatus.ENABLED)))
             .arrange()
         // when
-        handler.handleNewMessage(applicationMessage(Conversation.LegalHoldStatus.DISABLED))
+        handler.handleNewMessage(applicationMessage(Conversation.LegalHoldStatus.DISABLED), false)
         // then
         verify(arrangement.legalHoldSystemMessagesHandler)
             .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleDisabledForConversation)
@@ -426,7 +426,7 @@ class LegalHoldHandlerTest {
             .arrange()
         val message = applicationMessage(Conversation.LegalHoldStatus.ENABLED)
         // when
-        handler.handleNewMessage(message)
+        handler.handleNewMessage(message, false)
         // then
         verify(arrangement.legalHoldSystemMessagesHandler)
             .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleEnabledForConversation)
@@ -435,7 +435,7 @@ class LegalHoldHandlerTest {
     }
     @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun givenNewMessageWithChangedLegalHoldState_whenHandling_thenBufferAndHandleItWhenSyncStateIsLive() = runTest {
+    fun givenNewMessageWithChangedLegalHoldStateAndSyncing_whenHandling_thenBufferAndHandleItWhenSyncStateIsLive() = runTest {
         // given
         val syncStatesFlow = MutableStateFlow<SyncState>(SyncState.GatheringPendingEvents)
         val (arrangement, handler) = Arrangement()
@@ -448,7 +448,7 @@ class LegalHoldHandlerTest {
             .arrange()
         advanceUntilIdle()
         // when
-        handler.handleNewMessage(applicationMessage(Conversation.LegalHoldStatus.ENABLED))
+        handler.handleNewMessage(applicationMessage(Conversation.LegalHoldStatus.ENABLED), false)
         // then
         verify(arrangement.legalHoldSystemMessagesHandler)
             .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleEnabledForUser)
@@ -456,6 +456,28 @@ class LegalHoldHandlerTest {
             .wasNotInvoked()
         syncStatesFlow.emit(SyncState.Live)
         advanceUntilIdle()
+        verify(arrangement.legalHoldSystemMessagesHandler)
+            .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleEnabledForUser)
+            .with(eq(TestUser.OTHER_USER_ID))
+            .wasInvoked()
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun givenNewMessageWithChangedLegalHoldStateAndSynced_whenHandling_thenHandleItRightAway() = runTest {
+        // given
+        val (arrangement, handler) = Arrangement()
+            .withGetConversationsByUserIdSuccess(listOf(conversation(legalHoldStatus = Conversation.LegalHoldStatus.DISABLED)))
+            .withGetConversationMembersSuccess(listOf(TestUser.OTHER_USER_ID))
+            .withMembersHavingLegalHoldClientSuccess(emptyList()) // checked before legal hold state change so empty
+            .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Enabled) // checked after legal hold state change, that's why enabled
+            .withSetLegalHoldChangeNotifiedSuccess()
+            .withSyncStates(flowOf(SyncState.Live))
+            .arrange()
+        advanceUntilIdle()
+        // when
+        handler.handleNewMessage(applicationMessage(Conversation.LegalHoldStatus.ENABLED), true)
+        // then
         verify(arrangement.legalHoldSystemMessagesHandler)
             .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleEnabledForUser)
             .with(eq(TestUser.OTHER_USER_ID))
@@ -495,6 +517,7 @@ class LegalHoldHandlerTest {
             withGetConversationsByUserIdSuccess(emptyList())
             withMembersHavingLegalHoldClientSuccess(emptyList())
             withUpdateLegalHoldStatusSuccess()
+            withSyncStates(flowOf(SyncState.GatheringPendingEvents))
         }
 
         fun arrange() =

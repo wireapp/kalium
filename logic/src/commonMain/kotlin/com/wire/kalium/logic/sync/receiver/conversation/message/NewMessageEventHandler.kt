@@ -87,7 +87,7 @@ internal class NewMessageEventHandlerImpl(
             }.onSuccess {
                 if (it is MessageUnpackResult.ApplicationMessage) {
                     if (it.content.legalHoldStatus != Conversation.LegalHoldStatus.UNKNOWN) {
-                        legalHoldHandler.handleNewMessage(it)
+                        legalHoldHandler.handleNewMessage(it, event.live)
                     }
                     handleSuccessfulResult(it)
                     onMessageInserted(it)
@@ -141,7 +141,7 @@ internal class NewMessageEventHandlerImpl(
                 it.forEach {
                     if (it is MessageUnpackResult.ApplicationMessage) {
                         if (it.content.legalHoldStatus != Conversation.LegalHoldStatus.UNKNOWN) {
-                            legalHoldHandler.handleNewMessage(it)
+                            legalHoldHandler.handleNewMessage(it, event.live)
                         }
                         handleSuccessfulResult(it)
                         onMessageInserted(it)

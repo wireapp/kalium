@@ -31,8 +31,8 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.util.DateTimeUtil
 
 internal interface LegalHoldSystemMessagesHandler {
-    suspend fun handleEnabledForUser(userId: UserId)
-    suspend fun handleDisabledForUser(userId: UserId)
+    suspend fun handleEnabledForUser(userId: UserId, systemMessageTimestampIso: String)
+    suspend fun handleDisabledForUser(userId: UserId, systemMessageTimestampIso: String)
     suspend fun handleEnabledForConversation(conversationId: ConversationId, systemMessageTimestampIso: String)
     suspend fun handleDisabledForConversation(conversationId: ConversationId, systemMessageTimestampIso: String)
 }
@@ -44,14 +44,16 @@ internal class LegalHoldSystemMessagesHandlerImpl(
     private val messageRepository: MessageRepository,
 ) : LegalHoldSystemMessagesHandler {
 
-    override suspend fun handleEnabledForUser(userId: UserId) = handleSystemMessagesForUser(
+    override suspend fun handleEnabledForUser(userId: UserId, systemMessageTimestampIso: String) = handleSystemMessagesForUser(
         userId = userId,
+        newSystemMessageTimestampIso = systemMessageTimestampIso,
         update = { members -> (members + userId).distinct() },
         createNew = { MessageContent.LegalHold.ForMembers.Enabled(members = listOf(userId)) }
     )
 
-    override suspend fun handleDisabledForUser(userId: UserId) = handleSystemMessagesForUser(
+    override suspend fun handleDisabledForUser(userId: UserId, systemMessageTimestampIso: String) = handleSystemMessagesForUser(
         userId = userId,
+        newSystemMessageTimestampIso = systemMessageTimestampIso,
         update = { members -> (members + userId).distinct() },
         createNew = { MessageContent.LegalHold.ForMembers.Disabled(members = listOf(userId)) }
     )
@@ -88,6 +90,7 @@ internal class LegalHoldSystemMessagesHandlerImpl(
 
     private suspend inline fun <reified T : MessageContent.LegalHold.ForMembers> handleSystemMessagesForUser(
         userId: UserId,
+        newSystemMessageTimestampIso: String = DateTimeUtil.currentIsoDateTimeString(),
         crossinline update: (List<UserId>) -> List<UserId>,
         crossinline createNew: () -> T,
     ) {
@@ -99,7 +102,7 @@ internal class LegalHoldSystemMessagesHandlerImpl(
                     // create or update system messages for members
                     lastMessagesMap[conversation.id]?.let { (lastMessageId, lastMessageContent) ->
                         messageRepository.updateLegalHoldMessageMembers(lastMessageId, conversation.id, update(lastMessageContent.members))
-                    } ?: persistMessage(createSystemMessage(createNew(), conversation.id))
+                    } ?: persistMessage(createSystemMessage(createNew(), conversation.id, newSystemMessageTimestampIso))
                 }
             }
         }
