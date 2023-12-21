@@ -68,12 +68,12 @@ internal class LegalHoldHandlerImpl internal constructor(
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) : LegalHoldHandler {
     private val scope = CoroutineScope(kaliumDispatcher.default)
-    private val conversationsWithUpdatedLegalHoldStatus =
+    private val bufferedUpdatedConversationIds =
         TriggerBuffer<ConversationId>(observeSyncState().distinctUntilChanged().map { it == SyncState.Live }, scope)
 
     init {
         scope.launch {
-            conversationsWithUpdatedLegalHoldStatus.observe()
+            bufferedUpdatedConversationIds.observe()
                 .collect { handleUpdatedConversations(it) }
         }
     }
@@ -124,7 +124,7 @@ internal class LegalHoldHandlerImpl internal constructor(
         }
         if (isStatusChangedForConversation) {
             if (live) handleUpdatedConversations(listOf(message.conversationId), message.timestampIso) // handle it right away
-            else conversationsWithUpdatedLegalHoldStatus.add(message.conversationId) // buffer and handle after sync
+            else bufferedUpdatedConversationIds.add(message.conversationId) // buffer and handle after sync
         }
         return Either.Right(Unit)
     }
