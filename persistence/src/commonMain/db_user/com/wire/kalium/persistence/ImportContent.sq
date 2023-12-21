@@ -101,3 +101,6 @@ INSERT OR IGNORE INTO Receipt SELECT * FROM backup_db.Receipt;
 
 importCompositeButtons:
 INSERT OR IGNORE INTO ButtonContent SELECT * FROM backup_db.ButtonContent;
+
+importMessageLocationContentTable:
+INSERT OR IGNORE INTO MessageConversationLocationContent SELECT * FROM backup_db.MessageConversationLocationContent;
