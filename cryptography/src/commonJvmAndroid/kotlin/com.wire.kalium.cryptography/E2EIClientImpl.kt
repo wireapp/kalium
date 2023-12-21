@@ -79,6 +79,7 @@ class E2EIClientImpl(
     override suspend fun certificateRequest(previousNonce: String) =
         wireE2eIdentity.certificateRequest(previousNonce)
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun getOAuthRefreshToken() = try {
         wireE2eIdentity.getRefreshToken()
     } catch (e: Exception) {
@@ -108,4 +109,3 @@ class E2EIClientImpl(
         )
     }
 }
-

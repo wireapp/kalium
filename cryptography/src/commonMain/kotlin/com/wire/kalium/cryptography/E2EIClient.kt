@@ -62,5 +62,5 @@ interface E2EIClient {
     suspend fun finalizeRequest(previousNonce: String): JsonRawData
     suspend fun finalizeResponse(finalize: JsonRawData): String
     suspend fun certificateRequest(previousNonce: String): JsonRawData
-    suspend fun getOAuthRefreshToken():String?
+    suspend fun getOAuthRefreshToken(): String?
 }
