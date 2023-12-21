@@ -47,6 +47,8 @@ interface UserConfigDAO {
     fun observeLegalHoldRequest(): Flow<LegalHoldRequestEntity?>
     suspend fun setLegalHoldChangeNotified(isNotified: Boolean)
     suspend fun observeLegalHoldChangeNotified(): Flow<Boolean?>
+    suspend fun setShouldUpdateClientLegalHoldCapability(shouldUpdate: Boolean)
+    suspend fun shouldUpdateClientLegalHoldCapability(): Boolean
 }
 
 internal class UserConfigDAOImpl internal constructor(
@@ -54,7 +56,10 @@ internal class UserConfigDAOImpl internal constructor(
 ) : UserConfigDAO {
 
     override suspend fun getTeamSettingsSelfDeletionStatus(): TeamSettingsSelfDeletionStatusEntity? =
-        metadataDAO.getSerializable(SELF_DELETING_MESSAGES_KEY, TeamSettingsSelfDeletionStatusEntity.serializer())
+        metadataDAO.getSerializable(
+            SELF_DELETING_MESSAGES_KEY,
+            TeamSettingsSelfDeletionStatusEntity.serializer()
+        )
 
     override suspend fun setTeamSettingsSelfDeletionStatus(
         teamSettingsSelfDeletionStatusEntity: TeamSettingsSelfDeletionStatusEntity
@@ -67,7 +72,10 @@ internal class UserConfigDAOImpl internal constructor(
     }
 
     override suspend fun markTeamSettingsSelfDeletingMessagesStatusAsNotified() {
-        metadataDAO.getSerializable(SELF_DELETING_MESSAGES_KEY, TeamSettingsSelfDeletionStatusEntity.serializer())
+        metadataDAO.getSerializable(
+            SELF_DELETING_MESSAGES_KEY,
+            TeamSettingsSelfDeletionStatusEntity.serializer()
+        )
             ?.copy(isStatusChanged = false)?.let { newValue ->
                 metadataDAO.putSerializable(
                     SELF_DELETING_MESSAGES_KEY,
@@ -92,7 +100,11 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun setSupportedProtocols(protocols: Set<SupportedProtocolEntity>) =
         metadataDAO.putSerializable(SUPPORTED_PROTOCOLS_KEY, protocols, SetSerializer(SupportedProtocolEntity.serializer()))
 
-    override suspend fun persistLegalHoldRequest(clientId: String, lastPreKeyId: Int, lastPreKey: String) {
+    override suspend fun persistLegalHoldRequest(
+        clientId: String,
+        lastPreKeyId: Int,
+        lastPreKey: String
+    ) {
         metadataDAO.putSerializable(
             LEGAL_HOLD_REQUEST,
             LegalHoldRequestEntity(clientId, LastPreKey(lastPreKeyId, lastPreKey)),
@@ -114,11 +126,20 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun observeLegalHoldChangeNotified(): Flow<Boolean?> =
         metadataDAO.valueByKeyFlow(LEGAL_HOLD_CHANGE_NOTIFIED).map { it?.toBoolean() }
 
+    override suspend fun setShouldUpdateClientLegalHoldCapability(shouldUpdate: Boolean) {
+        metadataDAO.insertValue(shouldUpdate.toString(), SHOULD_UPDATE_CLIENT_LEGAL_HOLD_CAPABILITY)
+    }
+
+    override suspend fun shouldUpdateClientLegalHoldCapability(): Boolean =
+        metadataDAO.valueByKey(SHOULD_UPDATE_CLIENT_LEGAL_HOLD_CAPABILITY)?.toBoolean() ?: true
+
     private companion object {
         private const val SELF_DELETING_MESSAGES_KEY = "SELF_DELETING_MESSAGES"
         private const val MLS_MIGRATION_KEY = "MLS_MIGRATION"
         private const val SUPPORTED_PROTOCOLS_KEY = "SUPPORTED_PROTOCOLS"
         const val LEGAL_HOLD_REQUEST = "legal_hold_request"
         const val LEGAL_HOLD_CHANGE_NOTIFIED = "legal_hold_change_notified"
+        const val SHOULD_UPDATE_CLIENT_LEGAL_HOLD_CAPABILITY =
+            "should_update_client_legal_hold_capability"
     }
 }

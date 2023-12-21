@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.client
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
@@ -38,14 +39,28 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class ClientRemoteRepositoryTest {
+
+    @Test
+    fun givenClientCapabilitiesParam_whenUpdatingCapabilities_thenInvokeClientApiOnce() = runTest {
+        val (arrangement, clientRepository) = Arrangement()
+            .withClientUpdateClientCapabilities()
+            .arrange()
+
+        clientRepository.updateClientCapabilities(
+            UpdateClientCapabilitiesParam(listOf(ClientCapability.LegalHoldImplicitConsent)),
+            "client-id"
+        )
+
+        verify(arrangement.clientApi)
+            .suspendFunction(arrangement.clientApi::updateClientCapabilities).with(any())
+            .wasInvoked(exactly = once)
+    }
 
     @Test
     fun givenValidParams_whenRegisteringPushToken_thenShouldSucceed() = runTest {
@@ -66,48 +81,53 @@ class ClientRemoteRepositoryTest {
 
     }
 
+    @Test
+    fun givenOtherUsersClientsSuccess_whenFetchingOtherUserClients_thenTheSuccessIsReturned() =
+        runTest {
+            // Given
+            val userId = UserId("123", "wire.com")
+            val userIdDto = UserIdDTO("123", "wire.com")
+            val otherUsersClients = listOf(
+                SimpleClientResponse(deviceClass = DeviceTypeDTO.Phone, id = "1111"),
+                SimpleClientResponse(deviceClass = DeviceTypeDTO.Desktop, id = "2222")
+            )
+
+            val expectedSuccess = Either.Right(listOf(userId to otherUsersClients))
+            val (arrangement, clientRepository) = Arrangement().withSuccessfulResponse(
+                mapOf(
+                    userIdDto to otherUsersClients
+                )
+            ).arrange()
+
+            // When
+            val result = clientRepository.fetchOtherUserClients(listOf(userId))
+
+            // Then
+            result.shouldSucceed { expectedSuccess.value }
+            verify(arrangement.clientApi)
+                .suspendFunction(arrangement.clientApi::listClientsOfUsers).with(any())
+                .wasInvoked(once)
+        }
 
     @Test
-    fun givenOtherUsersClientsSuccess_whenFetchingOtherUserClients_thenTheSuccessIsReturned() = runTest {
-        // Given
-        val userId = UserId("123", "wire.com")
-        val userIdDto = UserIdDTO("123", "wire.com")
-        val otherUsersClients = listOf(
-            SimpleClientResponse(deviceClass = DeviceTypeDTO.Phone, id = "1111"),
-            SimpleClientResponse(deviceClass = DeviceTypeDTO.Desktop, id = "2222")
-        )
+    fun givenOtherUsersClientsError_whenFetchingOtherUserClients_thenTheErrorIsPropagated() =
+        runTest {
+            // Given
+            val userId = UserId("123", "wire.com")
+            val notFound = TestNetworkException.noTeam
+            val (arrangement, clientRepository) = Arrangement()
+                .withErrorResponse(notFound).arrange()
 
-        val expectedSuccess = Either.Right(listOf(userId to otherUsersClients))
-        val (arrangement, clientRepository) = Arrangement().withSuccessfulResponse(mapOf(userIdDto to otherUsersClients)).arrange()
+            // When
+            val result = clientRepository.fetchOtherUserClients(listOf(userId))
 
-        // When
-        val result = clientRepository.fetchOtherUserClients(listOf(userId))
+            // Then
+            result.shouldFail { Either.Left(notFound).value }
 
-        // Then
-        result.shouldSucceed { expectedSuccess.value }
-        verify(arrangement.clientApi)
-            .suspendFunction(arrangement.clientApi::listClientsOfUsers).with(any())
-            .wasInvoked(once)
-    }
-
-    @Test
-    fun givenOtherUsersClientsError_whenFetchingOtherUserClients_thenTheErrorIsPropagated() = runTest {
-        // Given
-        val userId = UserId("123", "wire.com")
-        val notFound = TestNetworkException.noTeam
-        val (arrangement, clientRepository) = Arrangement()
-            .withErrorResponse(notFound).arrange()
-
-        // When
-        val result = clientRepository.fetchOtherUserClients(listOf(userId))
-
-        // Then
-        result.shouldFail { Either.Left(notFound).value }
-
-        verify(arrangement.clientApi)
-            .suspendFunction(arrangement.clientApi::listClientsOfUsers).with(any())
-            .wasInvoked(exactly = once)
-    }
+            verify(arrangement.clientApi)
+                .suspendFunction(arrangement.clientApi::listClientsOfUsers).with(any())
+                .wasInvoked(exactly = once)
+        }
 
     private companion object {
         val pushTokenRequestBody = PushTokenBody(
@@ -134,12 +154,20 @@ class ClientRemoteRepositoryTest {
                 .thenReturn(result)
         }
 
-        fun withSuccessfulResponse(expectedResponse: Map<UserIdDTO, List<SimpleClientResponse>>) = apply {
+        fun withClientUpdateClientCapabilities() = apply {
             given(clientApi)
-                .suspendFunction(clientApi::listClientsOfUsers).whenInvokedWith(any()).then {
-                    NetworkResponse.Success(expectedResponse, mapOf(), 200)
-                }
+                .suspendFunction(clientApi::updateClientCapabilities)
+                .whenInvokedWith(any())
+                .thenReturn(NetworkResponse.Success(Unit, mapOf(), 200))
         }
+
+        fun withSuccessfulResponse(expectedResponse: Map<UserIdDTO, List<SimpleClientResponse>>) =
+            apply {
+                given(clientApi)
+                    .suspendFunction(clientApi::listClientsOfUsers).whenInvokedWith(any()).then {
+                        NetworkResponse.Success(expectedResponse, mapOf(), 200)
+                    }
+            }
 
         fun withErrorResponse(kaliumException: KaliumException) = apply {
             given(clientApi)

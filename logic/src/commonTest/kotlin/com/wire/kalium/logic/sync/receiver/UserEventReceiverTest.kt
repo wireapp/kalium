@@ -22,15 +22,12 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
-import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
@@ -113,7 +110,6 @@ class UserEventReceiverTest {
             withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(
                 userIdMatcher = any<UserId>()
             )
-            withConversationsByUserId(listOf(TestConversation.CONVERSATION))
         }
 
         eventReceiver.onEvent(event)
@@ -263,9 +259,6 @@ class UserEventReceiverTest {
         val logoutUseCase = mock(classOf<LogoutUseCase>())
 
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
-
-        @Mock
         private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         @Mock
@@ -283,7 +276,6 @@ class UserEventReceiverTest {
         private val userEventReceiver: UserEventReceiver = UserEventReceiverImpl(
             clientRepository,
             connectionRepository,
-            conversationRepository,
             userRepository,
             logoutUseCase,
             oneOnOneResolver,
@@ -328,11 +320,6 @@ class UserEventReceiverTest {
 
         fun withLogoutUseCaseSucceed() = apply {
             given(logoutUseCase).suspendFunction(logoutUseCase::invoke).whenInvokedWith(any()).thenReturn(Unit)
-        }
-
-        fun withConversationsByUserId(conversationIds: List<Conversation>) = apply {
-            given(conversationRepository).suspendFunction(conversationRepository::getConversationsByUserId)
-                .whenInvokedWith(any()).thenReturn(Either.Right(conversationIds))
         }
 
         fun arrange() = run {
