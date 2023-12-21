@@ -505,6 +505,10 @@ class EnrollE2EICertificateUseCaseTest {
             .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
             .with()
             .wasNotInvoked()
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::nukeE2EIClient)
+            .with()
+            .wasNotInvoked()
     }
 
     @Test
@@ -568,6 +572,10 @@ class EnrollE2EICertificateUseCaseTest {
             .wasNotInvoked()
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
+            .with()
+            .wasNotInvoked()
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::nukeE2EIClient)
             .with()
             .wasNotInvoked()
     }
@@ -634,6 +642,10 @@ class EnrollE2EICertificateUseCaseTest {
             .wasNotInvoked()
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
+            .with()
+            .wasNotInvoked()
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::nukeE2EIClient)
             .with()
             .wasNotInvoked()
     }
@@ -704,6 +716,10 @@ class EnrollE2EICertificateUseCaseTest {
             .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
             .with()
             .wasNotInvoked()
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::nukeE2EIClient)
+            .with()
+            .wasNotInvoked()
     }
 
     @Test
@@ -733,7 +749,6 @@ class EnrollE2EICertificateUseCaseTest {
             .function(arrangement.e2EIRepository::getWireNonce)
             .with()
             .wasInvoked(exactly = once)
-
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getDPoPToken)
             .with(any<String>())
@@ -768,6 +783,10 @@ class EnrollE2EICertificateUseCaseTest {
             .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
             .with()
             .wasNotInvoked()
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::nukeE2EIClient)
+            .with()
+            .wasNotInvoked()
     }
 
     @Test
@@ -798,17 +817,14 @@ class EnrollE2EICertificateUseCaseTest {
             .function(arrangement.e2EIRepository::getWireNonce)
             .with()
             .wasInvoked(exactly = once)
-
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getDPoPToken)
             .with(any<String>())
             .wasInvoked(exactly = once)
-
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireAccessToken)
             .with(any<String>())
             .wasInvoked(exactly = once)
-
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::validateDPoPChallenge)
             .with(any<String>(), any<String>(), any<AcmeChallenge>())
@@ -817,7 +833,6 @@ class EnrollE2EICertificateUseCaseTest {
             .function(arrangement.e2EIRepository::checkOrderRequest)
             .with(any<String>(), any<String>())
             .wasInvoked(exactly = once)
-
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::checkOrderRequest)
             .with()
@@ -834,7 +849,10 @@ class EnrollE2EICertificateUseCaseTest {
             .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
             .with()
             .wasNotInvoked()
-
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::nukeE2EIClient)
+            .with()
+            .wasNotInvoked()
     }
 
     @Test
@@ -866,17 +884,14 @@ class EnrollE2EICertificateUseCaseTest {
             .function(arrangement.e2EIRepository::getWireNonce)
             .with()
             .wasInvoked(exactly = once)
-
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getDPoPToken)
             .with(any<String>())
             .wasInvoked(exactly = once)
-
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireAccessToken)
             .with(any<String>())
             .wasInvoked(exactly = once)
-
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::validateDPoPChallenge)
             .with(any<String>(), any<String>(), any<AcmeChallenge>())
@@ -889,12 +904,14 @@ class EnrollE2EICertificateUseCaseTest {
             .function(arrangement.e2EIRepository::finalize)
             .with(any<String>(), any<String>())
             .wasInvoked(exactly = once)
-
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::certificateRequest)
             .with()
             .wasNotInvoked()
-
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::nukeE2EIClient)
+            .with()
+            .wasNotInvoked()
     }
 
     @Test
@@ -928,32 +945,26 @@ class EnrollE2EICertificateUseCaseTest {
             .function(arrangement.e2EIRepository::getWireNonce)
             .with()
             .wasInvoked(exactly = once)
-
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getDPoPToken)
             .with(any<String>())
             .wasInvoked(exactly = once)
-
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireAccessToken)
             .with(any<String>())
             .wasInvoked(exactly = once)
-
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::validateDPoPChallenge)
             .with(any<String>(), any<String>(), any<AcmeChallenge>())
             .wasInvoked(exactly = once)
-
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::validateOIDCChallenge)
             .with(any<String>(), any<String>(), any<String>(), any<AcmeChallenge>())
             .wasInvoked(exactly = once)
-
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::checkOrderRequest)
             .with(any<String>(), any<String>())
             .wasInvoked(exactly = once)
-
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::finalize)
             .with(any<String>(), any<String>())
@@ -962,6 +973,10 @@ class EnrollE2EICertificateUseCaseTest {
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
             .with(any<String>())
+            .wasInvoked(exactly = once)
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::nukeE2EIClient)
+            .with()
             .wasInvoked(exactly = once)
     }
 
@@ -1031,7 +1046,10 @@ class EnrollE2EICertificateUseCaseTest {
             .function(arrangement.e2EIRepository::certificateRequest)
             .with(any<String>(), any<String>())
             .wasInvoked(exactly = once)
-
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::nukeE2EIClient)
+            .with()
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -1104,6 +1122,10 @@ class EnrollE2EICertificateUseCaseTest {
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
             .with(any<String>())
+            .wasInvoked(exactly = once)
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::nukeE2EIClient)
+            .with()
             .wasInvoked(exactly = once)
     }
 
@@ -1269,10 +1291,10 @@ class EnrollE2EICertificateUseCaseTest {
 
         val INITIALIZATION_RESULT = E2EIEnrollmentResult.Initialized(
             target = ACME_CHALLENGE.target,
-            ACME_AUTHZ,
+            oAuthState = REFRESH_TOKEN,
+            authz = ACME_AUTHZ,
             lastNonce = RANDOM_NONCE,
             orderLocation = RANDOM_LOCATION
         )
-
     }
 }
