@@ -246,7 +246,8 @@ internal class MessageSenderImpl internal constructor(
 
     private suspend fun attemptToSendWithProteus(
         message: Message.Sendable,
-        messageTarget: MessageTarget
+        messageTarget: MessageTarget,
+        retryCount: Int = 0
     ): Either<CoreFailure, String> {
         val conversationId = message.conversationId
         val target = when (messageTarget) {
@@ -272,7 +273,7 @@ internal class MessageSenderImpl internal constructor(
                             is MessageTarget.Conversation ->
                                 MessageTarget.Conversation((messageTarget.usersToIgnore + usersWithoutSessions.users).toSet())
                         }
-                        trySendingProteusEnvelope(envelope, message, updatedMessageTarget)
+                        trySendingProteusEnvelope(envelope, message, updatedMessageTarget, retryCount = retryCount + 1)
                     }
             }
     }
@@ -347,13 +348,20 @@ internal class MessageSenderImpl internal constructor(
     private suspend fun trySendingProteusEnvelope(
         envelope: MessageEnvelope,
         message: Message.Sendable,
-        messageTarget: MessageTarget
+        messageTarget: MessageTarget,
+        retryCount: Int = 0
     ): Either<CoreFailure, String> =
         messageRepository
             .sendEnvelope(message.conversationId, envelope, messageTarget)
             .fold({
-                handleProteusError(it, "Send", message.toLogString(), message.conversationId) {
-                    attemptToSendWithProteus(message, messageTarget)
+                handleProteusError(
+                    failure = it,
+                    action = "Send",
+                    messageLogString = message.toLogString(),
+                    conversationId = message.conversationId,
+                    retryCount = retryCount + 1
+                ) {
+                    attemptToSendWithProteus(message, messageTarget, retryCount + 1)
                 }
             }, { messageSent ->
                 logger.i("Message Send Success: { \"message\" : \"${message.toLogString()}\" }")
@@ -391,6 +399,7 @@ internal class MessageSenderImpl internal constructor(
         action: String, // Send or Broadcast
         messageLogString: String,
         conversationId: ConversationId?,
+        retryCount: Int = 0,
         retry: suspend () -> Either<CoreFailure, String>
     ) =
         when (failure) {
@@ -402,7 +411,11 @@ internal class MessageSenderImpl internal constructor(
                     .handleClientsHaveChangedFailure(failure, conversationId)
                     .flatMap {
                         logger.w("Retrying After Proteus $action Failure: { \"message\" : \"${messageLogString}\"}")
-                        retry()
+                        if (retryCount <= MAX_RETRY_COUNT) {
+                            retry()
+                        } else {
+                            Either.Left(failure)
+                        }
                     }
                     .onFailure {
                         val logLine = "Fatal Proteus $action Failure: { \"message\" : \"${messageLogString}\"" +
@@ -478,5 +491,9 @@ internal class MessageSenderImpl internal constructor(
         else {
             messageRepository.persistRecipientsDeliveryFailure(message.conversationId, message.id, messageSent.failedToConfirmClients)
         }
+
+    companion object {
+        const val MAX_RETRY_COUNT: Int = 1
+    }
 
 }
