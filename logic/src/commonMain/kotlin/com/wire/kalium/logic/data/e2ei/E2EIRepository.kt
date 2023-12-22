@@ -46,23 +46,30 @@ interface E2EIRepository {
     suspend fun loadACMEDirectories(): Either<CoreFailure, AcmeDirectory>
     suspend fun getACMENonce(endpoint: String): Either<CoreFailure, String>
     suspend fun createNewAccount(prevNonce: String, createAccountEndpoint: String): Either<CoreFailure, String>
-    suspend fun createNewOrder(prevNonce: String, createOrderEndpoint: String):
-            Either<CoreFailure, Triple<NewAcmeOrder, String, String>>
-    suspend fun createAuthz(prevNonce: String, authzEndpoint: String):
-            Either<CoreFailure, Triple<NewAcmeAuthz, String, String>>
+    suspend fun createNewOrder(prevNonce: String, createOrderEndpoint: String): Either<CoreFailure, Triple<NewAcmeOrder, String, String>>
+    suspend fun createAuthz(prevNonce: String, authzEndpoint: String): Either<CoreFailure, Triple<NewAcmeAuthz, String, String>>
     suspend fun getWireNonce(): Either<CoreFailure, String>
     suspend fun getWireAccessToken(wireNonce: String): Either<CoreFailure, AccessTokenResponse>
     suspend fun getDPoPToken(wireNonce: String): Either<CoreFailure, String>
-    suspend fun validateDPoPChallenge(accessToken: String, prevNonce: String, acmeChallenge: AcmeChallenge):
-            Either<CoreFailure, ChallengeResponse>
-    suspend fun validateOIDCChallenge(idToken: String, refreshToken: String, prevNonce: String, acmeChallenge: AcmeChallenge):
-            Either<CoreFailure, ChallengeResponse>
+    suspend fun validateDPoPChallenge(
+        accessToken: String,
+        prevNonce: String,
+        acmeChallenge: AcmeChallenge
+    ): Either<CoreFailure, ChallengeResponse>
+    suspend fun validateOIDCChallenge(
+        idToken: String,
+        refreshToken: String,
+        prevNonce: String,
+        acmeChallenge: AcmeChallenge
+    ): Either<CoreFailure, ChallengeResponse>
     suspend fun setDPoPChallengeResponse(challengeResponse: ChallengeResponse): Either<CoreFailure, Unit>
     suspend fun setOIDCChallengeResponse(challengeResponse: ChallengeResponse): Either<CoreFailure, Unit>
     suspend fun finalize(location: String, prevNonce: String): Either<CoreFailure, Pair<ACMEResponse, String>>
     suspend fun checkOrderRequest(location: String, prevNonce: String): Either<CoreFailure, Pair<ACMEResponse, String>>
     suspend fun certificateRequest(location: String, prevNonce: String): Either<CoreFailure, ACMEResponse>
     suspend fun rotateKeysAndMigrateConversations(certificateChain: String): Either<CoreFailure, Unit>
+    suspend fun getOAuthRefreshToken(): Either<CoreFailure, String?>
+    suspend fun nukeE2EIClient()
 }
 
 @Suppress("LongParameterList")
@@ -213,6 +220,14 @@ class E2EIRepositoryImpl(
                 mlsConversationRepository.rotateKeysAndMigrateConversations(clientId, e2eiClient, certificateChain)
             }
         }
+
+    override suspend fun getOAuthRefreshToken() = e2EIClientProvider.getE2EIClient().flatMap { e2EIClient ->
+        Either.Right(e2EIClient.getOAuthRefreshToken())
+    }
+
+    override suspend fun nukeE2EIClient() {
+        e2EIClientProvider.nuke()
+    }
 
     companion object {
         // todo: remove after testing e2ei

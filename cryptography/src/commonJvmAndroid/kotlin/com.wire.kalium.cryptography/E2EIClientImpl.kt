@@ -79,6 +79,13 @@ class E2EIClientImpl(
     override suspend fun certificateRequest(previousNonce: String) =
         wireE2eIdentity.certificateRequest(previousNonce)
 
+    @Suppress("TooGenericExceptionCaught")
+    override suspend fun getOAuthRefreshToken() = try {
+        wireE2eIdentity.getRefreshToken()
+    } catch (e: Exception) {
+        null
+    }
+
     companion object {
         fun toAcmeDirectory(value: com.wire.crypto.AcmeDirectory) = AcmeDirectory(
             value.newNonce, value.newAccount, value.newOrder

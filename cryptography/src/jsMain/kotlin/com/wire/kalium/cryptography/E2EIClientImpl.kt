@@ -86,4 +86,8 @@ class E2EIClientImpl : E2EIClient {
     override suspend fun certificateRequest(previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
+
+    override suspend fun getOAuthRefreshToken(): String? {
+        TODO("Not yet implemented")
+    }
 }

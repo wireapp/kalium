@@ -87,4 +87,7 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
+    override suspend fun getOAuthRefreshToken(): String? {
+        TODO("Not yet implemented")
+    }
 }
