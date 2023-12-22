@@ -115,11 +115,9 @@ internal class LegalHoldHandlerImpl internal constructor(
     }
 
     override suspend fun handleNewMessage(message: MessageUnpackResult.ApplicationMessage, live: Boolean): Either<CoreFailure, Unit> {
-        val isStatusChangedForConversation = when (message.content.legalHoldStatus) {
-            Conversation.LegalHoldStatus.ENABLED ->
-                handleForConversation(message.conversationId, Conversation.LegalHoldStatus.ENABLED, message.timestampIso)
-            Conversation.LegalHoldStatus.DISABLED ->
-                handleForConversation(message.conversationId, Conversation.LegalHoldStatus.DISABLED, message.timestampIso)
+        val isStatusChangedForConversation = when (val legalHoldStatus = message.content.legalHoldStatus) {
+            Conversation.LegalHoldStatus.ENABLED, Conversation.LegalHoldStatus.DISABLED ->
+                handleForConversation(message.conversationId, legalHoldStatus, message.timestampIso)
             else -> false
         }
         if (isStatusChangedForConversation) {
