@@ -961,6 +961,7 @@ class MessageSenderTest {
             // then
             result.shouldFail() {
                 assertIs<LegalHoldEnabledForConversationFailure>(it)
+                assertEquals(message.id, it.messageId)
             }
             verify(arrangement.messageRepository)
                 .suspendFunction(arrangement.messageRepository::sendEnvelope)

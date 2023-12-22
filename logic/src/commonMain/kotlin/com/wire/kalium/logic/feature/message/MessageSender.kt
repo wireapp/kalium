@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.message.BroadcastMessage
 import com.wire.kalium.logic.data.message.BroadcastMessageOption
 import com.wire.kalium.logic.data.message.BroadcastMessageTarget
@@ -355,7 +356,7 @@ internal class MessageSenderImpl internal constructor(
         messageRepository
             .sendEnvelope(message.conversationId, envelope, messageTarget)
             .fold({
-                handleProteusError(it, "Send", message.toLogString(), message.date, message.conversationId) {
+                handleProteusError(it, "Send", message.toLogString(), message.id, message.date, message.conversationId) {
                     attemptToSendWithProteus(message, messageTarget)
                 }
             }, { messageSent ->
@@ -378,7 +379,7 @@ internal class MessageSenderImpl internal constructor(
         messageRepository
             .broadcastEnvelope(envelope, option)
             .fold({
-                handleProteusError(it, "Broadcast", message.toLogString(), message.date, null) {
+                handleProteusError(it, "Broadcast", message.toLogString(), message.id, message.date, null) {
                     attemptToBroadcastWithProteus(
                         message,
                         target
@@ -393,6 +394,7 @@ internal class MessageSenderImpl internal constructor(
         failure: CoreFailure,
         action: String, // Send or Broadcast
         messageLogString: String,
+        messageId: MessageId,
         messageTimestampIso: String,
         conversationId: ConversationId?,
         retry: suspend () -> Either<CoreFailure, String>
@@ -415,7 +417,7 @@ internal class MessageSenderImpl internal constructor(
                                 "Legal Hold Enabled, Could Not Retry After Proteus $action Failure: { " +
                                         "\"message\" : \"${messageLogString}\", \"errorInfo\" : \"${failure}\" }"
                             )
-                            Either.Left(LegalHoldEnabledForConversationFailure)
+                            Either.Left(LegalHoldEnabledForConversationFailure(messageId))
                         }
                     }
                     .onFailure {
