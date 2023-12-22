@@ -53,6 +53,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.util.DateTimeUtil
@@ -135,6 +136,7 @@ internal class MessageSenderImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
     private val syncManager: SyncManager,
     private val messageSendFailureHandler: MessageSendFailureHandler,
+    private val legalHoldHandler: LegalHoldHandler,
     private val sessionEstablisher: SessionEstablisher,
     private val messageEnvelopeCreator: MessageEnvelopeCreator,
     private val mlsMessageCreator: MLSMessageCreator,
@@ -352,7 +354,7 @@ internal class MessageSenderImpl internal constructor(
         messageRepository
             .sendEnvelope(message.conversationId, envelope, messageTarget)
             .fold({
-                handleProteusError(it, "Send", message.toLogString(), message.conversationId) {
+                handleProteusError(it, "Send", message.toLogString(), message.date, message.conversationId) {
                     attemptToSendWithProteus(message, messageTarget)
                 }
             }, { messageSent ->
@@ -375,7 +377,7 @@ internal class MessageSenderImpl internal constructor(
         messageRepository
             .broadcastEnvelope(envelope, option)
             .fold({
-                handleProteusError(it, "Broadcast", message.toLogString(), null) {
+                handleProteusError(it, "Broadcast", message.toLogString(), message.date, null) {
                     attemptToBroadcastWithProteus(
                         message,
                         target
@@ -390,6 +392,7 @@ internal class MessageSenderImpl internal constructor(
         failure: CoreFailure,
         action: String, // Send or Broadcast
         messageLogString: String,
+        messageTimestampIso: String,
         conversationId: ConversationId?,
         retry: suspend () -> Either<CoreFailure, String>
     ) =
@@ -398,11 +401,21 @@ internal class MessageSenderImpl internal constructor(
                 logger.w(
                     "Proteus $action Failure: { \"message\" : \"${messageLogString}\", \"errorInfo\" : \"${failure}\" }"
                 )
-                messageSendFailureHandler
-                    .handleClientsHaveChangedFailure(failure, conversationId)
-                    .flatMap {
-                        logger.w("Retrying After Proteus $action Failure: { \"message\" : \"${messageLogString}\"}")
-                        retry()
+                handleLegalHoldChanges(conversationId, messageTimestampIso) {
+                    messageSendFailureHandler
+                        .handleClientsHaveChangedFailure(failure, conversationId)
+                }
+                    .flatMap { legalHoldEnabled ->
+                        if (!legalHoldEnabled) {
+                            logger.w("Retrying After Proteus $action Failure: { \"message\" : \"${messageLogString}\"}")
+                            retry()
+                        } else {
+                            logger.w(
+                                "Legal Hold Enabled, Could Not Retry After Proteus $action Failure: { " +
+                                        "\"message\" : \"${messageLogString}\", \"errorInfo\" : \"${failure}\" }"
+                            )
+                            Either.Left(failure)
+                        }
                     }
                     .onFailure {
                         val logLine = "Fatal Proteus $action Failure: { \"message\" : \"${messageLogString}\"" +
@@ -419,6 +432,14 @@ internal class MessageSenderImpl internal constructor(
                 Either.Left(failure)
             }
         }
+
+    private suspend fun handleLegalHoldChanges(
+        conversationId: ConversationId?,
+        messageTimestampIso: String,
+        handleClientsHaveChangedFailure: suspend () -> Either<CoreFailure, Unit>
+    ) =
+        if (conversationId == null) handleClientsHaveChangedFailure().map { false }
+        else legalHoldHandler.handleMessageSendFailure(conversationId, messageTimestampIso, handleClientsHaveChangedFailure)
 
     private fun getBroadcastParams(
         selfUserId: UserId,

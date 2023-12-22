@@ -22,13 +22,16 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -69,9 +72,11 @@ interface MessageSendFailureHandler {
 class MessageSendFailureHandlerImpl internal constructor(
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
+    private val clientRemoteRepository: ClientRemoteRepository,
     private val messageRepository: MessageRepository,
     private val messageSendingScheduler: MessageSendingScheduler,
     private val conversationRepository: ConversationRepository,
+    private val clientMapper: ClientMapper = MapperProvider.clientMapper(),
 ) : MessageSendFailureHandler {
 
     override suspend fun handleClientsHaveChangedFailure(
@@ -110,7 +115,14 @@ class MessageSendFailureHandlerImpl internal constructor(
 
     private suspend fun addMissingClients(missingClients: Map<UserId, List<ClientId>>): Either<CoreFailure, Unit> {
         return if (missingClients.isEmpty()) Either.Right(Unit)
-        else clientRepository.storeMapOfUserToClientId(missingClients)
+        else  clientRemoteRepository.fetchOtherUserClients(missingClients.keys.toList())
+            .flatMap {
+                it.map { (userId, clientList) -> clientMapper.toInsertClientParam(clientList, userId) }
+                    .flatten().let { insertClientParamList ->
+                        if (insertClientParamList.isEmpty()) Either.Right(Unit)
+                        else clientRepository.storeUserClientListAndRemoveRedundantClients(insertClientParamList)
+                    }
+            }
     }
 
     override suspend fun handleFailureAndUpdateMessageStatus(

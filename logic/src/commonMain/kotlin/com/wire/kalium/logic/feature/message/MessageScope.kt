@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.ProteusClientProvider
+import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
@@ -65,6 +66,7 @@ import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTim
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -80,6 +82,7 @@ class MessageScope internal constructor(
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val clientRepository: ClientRepository,
+    private val clientRemoteRepository: ClientRemoteRepository,
     private val proteusClientProvider: ProteusClientProvider,
     private val mlsClientProvider: MLSClientProvider,
     private val preKeyRepository: PreKeyRepository,
@@ -96,6 +99,7 @@ class MessageScope internal constructor(
     private val observeSelfDeletingMessages: ObserveSelfDeletionTimerSettingsForConversationUseCase,
     private val messageMetadataRepository: MessageMetadataRepository,
     private val staleEpochVerifier: StaleEpochVerifier,
+    private val legalHoldHandler: LegalHoldHandler,
     private val scope: CoroutineScope,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     private val legalHoldStatusMapper: LegalHoldStatusMapper = LegalHoldStatusMapperImpl
@@ -105,6 +109,7 @@ class MessageScope internal constructor(
         get() = MessageSendFailureHandlerImpl(
             userRepository,
             clientRepository,
+            clientRemoteRepository,
             messageRepository,
             messageSendingScheduler,
             conversationRepository
@@ -158,6 +163,7 @@ class MessageScope internal constructor(
             mlsConversationRepository,
             syncManager,
             messageSendFailureHandler,
+            legalHoldHandler,
             sessionEstablisher,
             messageEnvelopeCreator,
             mlsMessageCreator,

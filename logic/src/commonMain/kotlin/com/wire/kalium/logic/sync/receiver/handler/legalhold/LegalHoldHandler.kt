@@ -40,6 +40,7 @@ import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.receiver.conversation.message.MessageUnpackResult
 import com.wire.kalium.logic.util.TriggerBuffer
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.DateTimeUtil.minusMilliseconds
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -52,6 +53,11 @@ internal interface LegalHoldHandler {
     suspend fun handleEnable(legalHoldEnabled: Event.User.LegalHoldEnabled): Either<CoreFailure, Unit>
     suspend fun handleDisable(legalHoldDisabled: Event.User.LegalHoldDisabled): Either<CoreFailure, Unit>
     suspend fun handleNewMessage(message: MessageUnpackResult.ApplicationMessage, live: Boolean): Either<CoreFailure, Unit>
+    suspend fun handleMessageSendFailure(
+        conversationId: ConversationId,
+        messageTimestampIso: String,
+        handleFailure: suspend () -> Either<CoreFailure, Unit>
+    ): Either<CoreFailure, Boolean>
 }
 
 @Suppress("LongParameterList")
@@ -115,19 +121,44 @@ internal class LegalHoldHandlerImpl internal constructor(
     }
 
     override suspend fun handleNewMessage(message: MessageUnpackResult.ApplicationMessage, live: Boolean): Either<CoreFailure, Unit> {
+        val systemMessageTimestampIso = minusMilliseconds(message.timestampIso, 1)
         val isStatusChangedForConversation = when (message.content.legalHoldStatus) {
             Conversation.LegalHoldStatus.ENABLED ->
-                handleForConversation(message.conversationId, Conversation.LegalHoldStatus.ENABLED, message.timestampIso)
+                handleForConversation(message.conversationId, Conversation.LegalHoldStatus.ENABLED, systemMessageTimestampIso)
             Conversation.LegalHoldStatus.DISABLED ->
-                handleForConversation(message.conversationId, Conversation.LegalHoldStatus.DISABLED, message.timestampIso)
+                handleForConversation(message.conversationId, Conversation.LegalHoldStatus.DISABLED, systemMessageTimestampIso)
             else -> false
         }
         if (isStatusChangedForConversation) {
-            if (live) handleUpdatedConversations(listOf(message.conversationId), message.timestampIso) // handle it right away
+            if (live) handleUpdatedConversations(listOf(message.conversationId), systemMessageTimestampIso) // handle it right away
             else bufferedUpdatedConversationIds.add(message.conversationId) // buffer and handle after sync
         }
         return Either.Right(Unit)
     }
+
+    override suspend fun handleMessageSendFailure(
+        conversationId: ConversationId,
+        messageTimestampIso: String,
+        handleFailure: suspend () -> Either<CoreFailure, Unit>,
+    ): Either<CoreFailure, Boolean> =
+        membersHavingLegalHoldClient(conversationId).flatMap { membersHavingLegalHoldClientBefore ->
+            handleFailure().flatMap {
+                val systemMessageTimestampIso = minusMilliseconds(messageTimestampIso, 1)
+                membersHavingLegalHoldClient(conversationId).map { membersHavingLegalHoldClientAfter ->
+                    val newStatus =
+                        if (membersHavingLegalHoldClientAfter.isEmpty()) Conversation.LegalHoldStatus.DISABLED
+                        else Conversation.LegalHoldStatus.ENABLED
+                    val isStatusChangedForConversation = handleForConversation(conversationId, newStatus, systemMessageTimestampIso)
+                    (membersHavingLegalHoldClientBefore - membersHavingLegalHoldClientAfter).forEach {
+                        legalHoldSystemMessagesHandler.handleDisabledForUser(it, systemMessageTimestampIso)
+                    }
+                    (membersHavingLegalHoldClientAfter - membersHavingLegalHoldClientBefore).forEach {
+                        legalHoldSystemMessagesHandler.handleEnabledForUser(it, systemMessageTimestampIso)
+                    }
+                    isStatusChangedForConversation && newStatus == Conversation.LegalHoldStatus.ENABLED
+                }
+            }
+        }
 
     private suspend fun processEvent(selfUserId: UserId, userId: UserId) {
         if (selfUserId == userId) {
