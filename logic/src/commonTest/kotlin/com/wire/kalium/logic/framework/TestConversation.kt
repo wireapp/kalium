@@ -30,14 +30,15 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembers
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationUsers
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.authenticated.notification.MemberLeaveReasonDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.QualifiedID
@@ -264,7 +265,7 @@ object TestConversation {
                 NETWORK_ID,
                 NETWORK_USER_ID1,
                 "2022-03-30T15:36:00.000Z",
-                ConversationUsers(emptyList(), emptyList()),
+                ConversationMemberRemovedDTO(emptyList(), MemberLeaveReasonDTO.LEFT),
                 NETWORK_USER_ID1.value
             )
         )

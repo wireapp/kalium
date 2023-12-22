@@ -31,6 +31,10 @@ internal interface SystemMessageInserter {
         senderUserId: UserId,
         protocol: Conversation.Protocol
     )
+    suspend fun insertProtocolChangedDuringACallSystemMessage(
+        conversationId: ConversationId,
+        senderUserId: UserId
+    )
     suspend fun insertHistoryLostProtocolChangedSystemMessage(
         conversationId: ConversationId
     )
@@ -52,6 +56,24 @@ internal class SystemMessageInserterImpl(
             MessageContent.ConversationProtocolChanged(
                 protocol = protocol
             ),
+            conversationId,
+            DateTimeUtil.currentIsoDateTimeString(),
+            senderUserId,
+            Message.Status.Sent,
+            Message.Visibility.VISIBLE,
+            null
+        )
+
+        persistMessage(message)
+    }
+
+    override suspend fun insertProtocolChangedDuringACallSystemMessage(
+        conversationId: ConversationId,
+        senderUserId: UserId
+    ) {
+        val message = Message.System(
+            uuid4().toString(),
+            MessageContent.ConversationProtocolChangedDuringACall,
             conversationId,
             DateTimeUtil.currentIsoDateTimeString(),
             senderUserId,

@@ -85,7 +85,7 @@ markUserAsDeleted:
 INSERT INTO User(qualified_id, user_type, deleted)
 VALUES (:qualified_id, :user_type, 1)
 ON CONFLICT (qualified_id) DO UPDATE SET
-team = NULL , preview_asset_id = NULL, complete_asset_id = NULL, user_type = excluded.user_type, deleted = 1;
+preview_asset_id = NULL, complete_asset_id = NULL, user_type = excluded.user_type, deleted = 1;
 
 deleteUserFromGroupConversations:
 DELETE FROM Member
@@ -237,3 +237,9 @@ UPDATE User SET supported_protocols = ? WHERE qualified_id = ?;
 
 updateOneOnOnConversationId:
 UPDATE User SET active_one_on_one_conversation_id = ? WHERE qualified_id = ?;
+
+isOneUserATeamMember:
+SELECT EXISTS (
+    SELECT 1 FROM User
+    WHERE qualified_id IN :userIdList AND team = :teamId
+);

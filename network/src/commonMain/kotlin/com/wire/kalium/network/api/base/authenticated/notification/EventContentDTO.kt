@@ -21,11 +21,11 @@ package com.wire.kalium.network.api.base.authenticated.notification
 import com.wire.kalium.network.api.base.authenticated.client.ClientDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientIdDTO
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembers
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationNameUpdateEvent
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRoleChange
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationUsers
 import com.wire.kalium.network.api.base.authenticated.conversation.TypingIndicatorStatusDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
@@ -140,7 +140,7 @@ sealed class EventContentDTO {
         data class NewConversationDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
-            val time: String,
+            @SerialName("time") val time: String,
             @SerialName("data") val data: ConversationResponse,
         ) : Conversation()
 
@@ -157,7 +157,7 @@ sealed class EventContentDTO {
         data class ConversationRenameDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
-            val time: String,
+            @SerialName("time") val time: String,
             @SerialName("data") val updateNameData: ConversationNameUpdateEvent,
         ) : Conversation()
 
@@ -166,7 +166,7 @@ sealed class EventContentDTO {
         data class MemberJoinDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
-            val time: String,
+            @SerialName("time") val time: String,
             @SerialName("data") val members: ConversationMembers,
             @Deprecated("use qualifiedFrom", replaceWith = ReplaceWith("this.qualifiedFrom")) @SerialName("from") val from: String
         ) : Conversation()
@@ -176,9 +176,8 @@ sealed class EventContentDTO {
         data class MemberLeaveDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
-            val time: String,
-            // TODO: rename members to something else since the name is confusing (it's only userIDs)
-            @SerialName("data") val members: ConversationUsers,
+            @SerialName("time") val time: String,
+            @SerialName("data") val removedUsers: ConversationMemberRemovedDTO,
             @SerialName("from") val from: String
         ) : Conversation()
 
@@ -187,7 +186,7 @@ sealed class EventContentDTO {
         data class MemberUpdateDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
-            val time: String,
+            @SerialName("time") val time: String,
             @SerialName("from") val from: String,
             @SerialName("data") val roleChange: ConversationRoleChange
         ) : Conversation()
@@ -197,7 +196,7 @@ sealed class EventContentDTO {
         data class ConversationTypingDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
-            val time: String,
+            @SerialName("time") val time: String,
             @SerialName("from") val from: String,
             @SerialName("data") val status: TypingIndicatorStatusDTO,
         ) : Conversation()
@@ -207,7 +206,7 @@ sealed class EventContentDTO {
         data class NewMessageDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
-            val time: String,
+            @SerialName("time") val time: String,
             @SerialName("data") val data: MessageEventData,
         ) : Conversation()
 
@@ -256,7 +255,7 @@ sealed class EventContentDTO {
         data class NewMLSMessageDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
-            val time: String,
+            @SerialName("time") val time: String,
             @SerialName("data") val message: String,
             @SerialName("subconv") val subconversation: String?,
         ) : Conversation()
@@ -287,7 +286,7 @@ sealed class EventContentDTO {
         data class Update(
             @SerialName("data") val teamUpdate: TeamUpdateData,
             @SerialName("team") val teamId: TeamId,
-            val time: String,
+            @SerialName("time") val time: String,
         ) : Team()
 
         @Serializable
@@ -295,7 +294,7 @@ sealed class EventContentDTO {
         data class MemberUpdate(
             @SerialName("data") val permissionsResponse: PermissionsData,
             @SerialName("team") val teamId: TeamId,
-            val time: String,
+            @SerialName("time") val time: String,
         ) : Team()
     }
 

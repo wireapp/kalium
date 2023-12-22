@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.asset.toDao
 import com.wire.kalium.logic.data.asset.toModel
@@ -65,8 +64,7 @@ interface MessageMapper {
 @Suppress("TooManyFunctions")
 class MessageMapperImpl(
     private val selfUserId: UserId,
-    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
-    private val assetMapper: AssetMapper = MapperProvider.assetMapper()
+    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId)
 ) : MessageMapper {
 
     override fun fromMessageToEntity(message: Message.Standalone): MessageEntity =
@@ -270,6 +268,7 @@ class MessageMapperImpl(
                 message.date,
                 LocalNotificationCommentType.LOCATION
             )
+
             MessageEntity.ContentType.MEMBER_CHANGE -> null
             MessageEntity.ContentType.RESTRICTED_ASSET -> null
             MessageEntity.ContentType.CONVERSATION_RENAMED -> null
@@ -291,6 +290,7 @@ class MessageMapperImpl(
             MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS -> null
             MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS -> null
             MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED -> null
+            MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED_DURING_CALL -> null
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> null
             MessageEntity.ContentType.LEGAL_HOLD -> null
         }
@@ -383,17 +383,18 @@ class MessageMapperImpl(
 }
 
 @Suppress("ComplexMethod")
-fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when (this) {
-    is MessageEntityContent.MemberChange -> {
-        val memberList = this.memberUserIdList.map { it.toModel() }
-        when (this.memberChangeType) {
-            MessageEntity.MemberChangeType.ADDED -> MessageContent.MemberChange.Added(memberList)
-            MessageEntity.MemberChangeType.REMOVED -> MessageContent.MemberChange.Removed(memberList)
-            MessageEntity.MemberChangeType.CREATION_ADDED -> MessageContent.MemberChange.CreationAdded(memberList)
-            MessageEntity.MemberChangeType.FAILED_TO_ADD -> MessageContent.MemberChange.FailedToAdd(memberList)
-            MessageEntity.MemberChangeType.FEDERATION_REMOVED -> MessageContent.MemberChange.FederationRemoved(memberList)
+ fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when (this) {
+        is MessageEntityContent.MemberChange -> {
+            val memberList = this.memberUserIdList.map { it.toModel() }
+            when (this.memberChangeType) {
+                MessageEntity.MemberChangeType.ADDED -> MessageContent.MemberChange.Added(memberList)
+                MessageEntity.MemberChangeType.REMOVED -> MessageContent.MemberChange.Removed(memberList)
+                MessageEntity.MemberChangeType.CREATION_ADDED -> MessageContent.MemberChange.CreationAdded(memberList)
+                MessageEntity.MemberChangeType.FAILED_TO_ADD -> MessageContent.MemberChange.FailedToAdd(memberList)
+                MessageEntity.MemberChangeType.FEDERATION_REMOVED -> MessageContent.MemberChange.FederationRemoved(memberList)
+                MessageEntity.MemberChangeType.REMOVED_FROM_TEAM -> MessageContent.MemberChange.RemovedFromTeam(memberList)
+            }
         }
-    }
 
     is MessageEntityContent.MissedCall -> MessageContent.MissedCall
     is MessageEntityContent.ConversationRenamed -> MessageContent.ConversationRenamed(conversationName)
@@ -416,6 +417,7 @@ fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when
     }
 
     is MessageEntityContent.ConversationProtocolChanged -> MessageContent.ConversationProtocolChanged(protocol.toModel())
+    is MessageEntityContent.ConversationProtocolChangedDuringACall -> MessageContent.ConversationProtocolChangedDuringACall
     is MessageEntityContent.ConversationStartedUnverifiedWarning -> MessageContent.ConversationStartedUnverifiedWarning
     is MessageEntityContent.LegalHold -> {
         when (this.type) {
@@ -454,7 +456,7 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
         otherUserIdList = otherUserIdList.map { it.toModel() }
     )
 
-    is MessagePreviewEntityContent.MembersRemoved -> MessagePreviewContent.WithUser.MembersRemoved(
+    is MessagePreviewEntityContent.ConversationMembersRemoved -> MessagePreviewContent.WithUser.ConversationMembersRemoved(
         username = senderName,
         isSelfUserRemoved = isContainSelfUserId,
         otherUserIdList = otherUserIdList.map { it.toModel() }
@@ -477,11 +479,17 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
         otherUserIdList = otherUserIdList.map { it.toModel() }
     )
 
+    is MessagePreviewEntityContent.TeamMembersRemoved -> MessagePreviewContent.WithUser.TeamMembersRemoved(
+        username = senderName,
+        isSelfUserRemoved = isContainSelfUserId,
+        otherUserIdList = otherUserIdList.map { it.toModel() }
+    )
+
     is MessagePreviewEntityContent.Ephemeral -> MessagePreviewContent.Ephemeral(isGroupConversation)
     is MessagePreviewEntityContent.MentionedSelf -> MessagePreviewContent.WithUser.MentionedSelf(senderName)
     is MessagePreviewEntityContent.MissedCall -> MessagePreviewContent.WithUser.MissedCall(senderName)
     is MessagePreviewEntityContent.QuotedSelf -> MessagePreviewContent.WithUser.QuotedSelf(senderName)
-    is MessagePreviewEntityContent.TeamMemberRemoved -> MessagePreviewContent.WithUser.TeamMemberRemoved(userName)
+    is MessagePreviewEntityContent.TeamMemberRemoved_Legacy -> MessagePreviewContent.WithUser.TeamMemberRemoved(userName)
     is MessagePreviewEntityContent.Text -> MessagePreviewContent.WithUser.Text(username = senderName, messageBody = messageBody)
     is MessagePreviewEntityContent.CryptoSessionReset -> MessagePreviewContent.CryptoSessionReset
     MessagePreviewEntityContent.Unknown -> MessagePreviewContent.Unknown
@@ -597,6 +605,12 @@ private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage)
         )
     }
 
+    it.contentType == MessageEntity.ContentType.LOCATION -> {
+        MessageContent.QuotedMessageDetails.Location(
+            locationName = it.locationName,
+        )
+    }
+
     // If a new content type can be replied to (Pings, for example), fallback to Invalid
     else -> MessageContent.QuotedMessageDetails.Invalid
 }
@@ -623,6 +637,10 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
                 MessageEntity.MemberChangeType.FEDERATION_REMOVED
             )
 
+            is MessageContent.MemberChange.RemovedFromTeam -> MessageEntityContent.MemberChange(
+                memberUserIdList,
+                MessageEntity.MemberChangeType.REMOVED_FROM_TEAM
+            )
         }
     }
 
@@ -651,6 +669,7 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
     MessageContent.ConversationVerifiedMLS -> MessageEntityContent.ConversationVerifiedMLS
     MessageContent.ConversationVerifiedProteus -> MessageEntityContent.ConversationVerifiedProteus
     is MessageContent.ConversationProtocolChanged -> MessageEntityContent.ConversationProtocolChanged(protocol.toDao())
+    is MessageContent.ConversationProtocolChangedDuringACall -> MessageEntityContent.ConversationProtocolChangedDuringACall
     MessageContent.HistoryLostProtocolChanged -> MessageEntityContent.HistoryLostProtocolChanged
     is MessageContent.ConversationStartedUnverifiedWarning -> MessageEntityContent.ConversationStartedUnverifiedWarning
     is MessageContent.LegalHold -> when (this) {
