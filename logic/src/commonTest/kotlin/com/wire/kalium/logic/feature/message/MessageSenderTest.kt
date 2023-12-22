@@ -41,6 +41,7 @@ import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.failure.LegalHoldEnabledForConversationFailure
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.FEDERATION_MESSAGE_FAILURE
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.MESSAGE_SENT_TIME
@@ -79,6 +80,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.time.Duration
 
 class MessageSenderTest {
@@ -957,7 +959,9 @@ class MessageSenderTest {
             // when
             val result = messageSender.sendMessage(message)
             // then
-            result.shouldFail()
+            result.shouldFail() {
+                assertIs<LegalHoldEnabledForConversationFailure>(it)
+            }
             verify(arrangement.messageRepository)
                 .suspendFunction(arrangement.messageRepository::sendEnvelope)
                 .with(eq(message.conversationId), anything(), anything())

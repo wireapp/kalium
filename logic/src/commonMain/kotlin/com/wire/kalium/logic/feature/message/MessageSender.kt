@@ -44,6 +44,7 @@ import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.failure.LegalHoldEnabledForConversationFailure
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -414,7 +415,7 @@ internal class MessageSenderImpl internal constructor(
                                 "Legal Hold Enabled, Could Not Retry After Proteus $action Failure: { " +
                                         "\"message\" : \"${messageLogString}\", \"errorInfo\" : \"${failure}\" }"
                             )
-                            Either.Left(failure)
+                            Either.Left(LegalHoldEnabledForConversationFailure)
                         }
                     }
                     .onFailure {
