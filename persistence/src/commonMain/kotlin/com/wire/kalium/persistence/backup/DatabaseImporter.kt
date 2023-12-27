@@ -67,6 +67,7 @@ internal class DatabaseImporterImpl internal constructor(
                 importReactionTable()
                 importReceiptTable()
                 importCompositeButtons()
+                importMessageLocationContentTable()
             }
         }
     }
