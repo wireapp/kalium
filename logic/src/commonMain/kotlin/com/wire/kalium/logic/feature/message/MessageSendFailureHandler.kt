@@ -69,6 +69,7 @@ interface MessageSendFailureHandler {
     )
 }
 
+@Suppress("LongParameterList")
 class MessageSendFailureHandlerImpl internal constructor(
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
@@ -113,9 +114,9 @@ class MessageSendFailureHandlerImpl internal constructor(
         else userRepository.fetchUsersByIds(userId)
     }
 
-    private suspend fun addMissingClients(missingClients: Map<UserId, List<ClientId>>): Either<CoreFailure, Unit> {
-        return if (missingClients.isEmpty()) Either.Right(Unit)
-        else  clientRemoteRepository.fetchOtherUserClients(missingClients.keys.toList())
+    private suspend fun addMissingClients(missingClients: Map<UserId, List<ClientId>>): Either<CoreFailure, Unit> =
+        if (missingClients.isEmpty()) Either.Right(Unit)
+        else clientRemoteRepository.fetchOtherUserClients(missingClients.keys.toList())
             .flatMap {
                 it.map { (userId, clientList) -> clientMapper.toInsertClientParam(clientList, userId) }
                     .flatten().let { insertClientParamList ->
@@ -123,7 +124,6 @@ class MessageSendFailureHandlerImpl internal constructor(
                         else clientRepository.storeUserClientListAndRemoveRedundantClients(insertClientParamList)
                     }
             }
-    }
 
     override suspend fun handleFailureAndUpdateMessageStatus(
         failure: CoreFailure,
