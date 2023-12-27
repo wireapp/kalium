@@ -25,15 +25,12 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.legalhold.MembersHavingLegalHoldClientUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.given
 import io.mockative.matching
 import io.mockative.mock
@@ -55,19 +52,20 @@ class LegalHoldSystemMessagesHandlerTest {
         Dispatchers.setMain(StandardTestDispatcher())
     }
     @Test
-    fun givenNoLastLegalHoldEnabledMessageForConversation_whenHandlingEnable_thenCreateNewSystemMessage() = runTest {
+    fun givenNoLastLegalHoldEnabledMessageForConversation_whenHandlingEnableForUser_thenCreateNewSystemMessage() = runTest {
         // given
+        val timestampIso = "2022-03-30T15:36:00.000Z"
         val (arrangement, handler) = Arrangement()
             .withGetConversationsByUserIdSuccess(listOf(TestConversation.CONVERSATION))
             .withGetLastMessagesForConversationIdsSuccess(mapOf(TestConversation.CONVERSATION.id to TestMessage.TEXT_MESSAGE))
             .arrange()
         // when
-        handler.handleEnable(userId = TestUser.OTHER_USER_ID)
+        handler.handleEnabledForUser(userId = TestUser.OTHER_USER_ID, timestampIso)
         // then
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
             .with(matching {
-                it.content is MessageContent.LegalHold.ForMembers.Enabled
+                it.content is MessageContent.LegalHold.ForMembers.Enabled && it.date == timestampIso
                         && (it.content as MessageContent.LegalHold.ForMembers.Enabled).members == listOf(TestUser.OTHER_USER_ID)
             })
             .wasInvoked(exactly = once)
@@ -77,15 +75,16 @@ class LegalHoldSystemMessagesHandlerTest {
             .wasNotInvoked()
     }
     @Test
-    fun givenLastLegalHoldEnabledMessageForConversation_whenHandlingEnable_thenUpdateExistingSystemMessage() = runTest {
+    fun givenLastLegalHoldEnabledMessageForConversation_whenHandlingEnableForUser_thenUpdateExistingSystemMessage() = runTest {
         // given
+        val timestampIso = "2022-03-30T15:36:00.000Z"
         val legalHoldMessage = testLegalHoldSystemMessage(MessageContent.LegalHold.ForMembers.Enabled(listOf(TestUser.OTHER_USER_ID_2)))
         val (arrangement, handler) = Arrangement()
             .withGetConversationsByUserIdSuccess(listOf(TestConversation.CONVERSATION))
             .withGetLastMessagesForConversationIdsSuccess(mapOf(TestConversation.CONVERSATION.id to legalHoldMessage))
             .arrange()
         // when
-        handler.handleEnable(userId = TestUser.OTHER_USER_ID)
+        handler.handleEnabledForUser(userId = TestUser.OTHER_USER_ID, timestampIso)
         // then
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
@@ -97,53 +96,20 @@ class LegalHoldSystemMessagesHandlerTest {
             .wasInvoked(exactly = once)
     }
     @Test
-    fun givenConversationLegalHoldStateIsDisabled_whenHandlingEnable_thenUpdateState() = runTest {
+    fun givenNoLastLegalHoldDisabledMessageForConversation_whenHandlingDisableForUser_thenCreateNewSystemMessage() = runTest {
         // given
-        val (arrangement, handler) = Arrangement()
-            .withGetConversationsByUserIdSuccess(
-                listOf(TestConversation.CONVERSATION.copy(legalHoldStatus = Conversation.LegalHoldStatus.DISABLED))
-            )
-            .withMembersHavingLegalHoldClientSuccess(listOf(TestUser.USER_ID))
-            .arrange()
-        // when
-        handler.handleEnable(userId = TestUser.OTHER_USER_ID)
-        // then
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateLegalHoldStatus)
-            .with(eq(TestConversation.CONVERSATION.id), eq(Conversation.LegalHoldStatus.ENABLED))
-            .wasInvoked(exactly = once)
-    }
-    @Test
-    fun givenConversationLegalHoldStateIsEnabled_whenHandlingEnable_thenDoNotUpdateState() = runTest {
-        // given
-        val (arrangement, handler) = Arrangement()
-            .withGetConversationsByUserIdSuccess(
-                listOf(TestConversation.CONVERSATION.copy(legalHoldStatus = Conversation.LegalHoldStatus.ENABLED))
-            )
-            .withMembersHavingLegalHoldClientSuccess(listOf(TestUser.USER_ID))
-            .arrange()
-        // when
-        handler.handleEnable(userId = TestUser.OTHER_USER_ID)
-        // then
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateLegalHoldStatus)
-            .with(any(), any())
-            .wasNotInvoked()
-    }
-    @Test
-    fun givenNoLastLegalHoldDisabledMessageForConversation_whenHandlingDisable_thenCreateNewSystemMessage() = runTest {
-        // given
+        val timestampIso = "2022-03-30T15:36:00.000Z"
         val (arrangement, handler) = Arrangement()
             .withGetConversationsByUserIdSuccess(listOf(TestConversation.CONVERSATION))
             .withGetLastMessagesForConversationIdsSuccess(mapOf(TestConversation.CONVERSATION.id to TestMessage.TEXT_MESSAGE))
             .arrange()
         // when
-        handler.handleDisable(userId = TestUser.OTHER_USER_ID)
+        handler.handleDisabledForUser(userId = TestUser.OTHER_USER_ID, timestampIso)
         // then
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
             .with(matching {
-                it.content is MessageContent.LegalHold.ForMembers.Disabled
+                it.content is MessageContent.LegalHold.ForMembers.Disabled && it.date == timestampIso
                         && (it.content as MessageContent.LegalHold.ForMembers.Disabled).members == listOf(TestUser.OTHER_USER_ID)
             })
             .wasInvoked(exactly = once)
@@ -153,15 +119,16 @@ class LegalHoldSystemMessagesHandlerTest {
             .wasNotInvoked()
     }
     @Test
-    fun givenLastLegalHoldDisabledMessageForConversation_whenHandlingDisable_thenUpdateExistingSystemMessage() = runTest {
+    fun givenLastLegalHoldDisabledMessageForConversation_whenHandlingDisableForUser_thenUpdateExistingSystemMessage() = runTest {
         // given
+        val timestampIso = "2022-03-30T15:36:00.000Z"
         val legalHoldMessage = testLegalHoldSystemMessage(MessageContent.LegalHold.ForMembers.Disabled(listOf(TestUser.OTHER_USER_ID_2)))
         val (arrangement, handler) = Arrangement()
             .withGetConversationsByUserIdSuccess(listOf(TestConversation.CONVERSATION))
             .withGetLastMessagesForConversationIdsSuccess(mapOf(TestConversation.CONVERSATION.id to legalHoldMessage))
             .arrange()
         // when
-        handler.handleDisable(userId = TestUser.OTHER_USER_ID)
+        handler.handleDisabledForUser(userId = TestUser.OTHER_USER_ID, timestampIso)
         // then
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
@@ -173,142 +140,34 @@ class LegalHoldSystemMessagesHandlerTest {
             .wasInvoked(exactly = once)
     }
     @Test
-    fun givenConversationLegalHoldStateIsEnabled_whenHandlingDisable_thenUpdateState() = runTest {
+    fun givenConversationId_whenHandlingEnableForConversation_thenCreateNewSystemMessage() = runTest {
         // given
-        val (arrangement, handler) = Arrangement()
-            .withGetConversationsByUserIdSuccess(
-                listOf(TestConversation.CONVERSATION.copy(legalHoldStatus = Conversation.LegalHoldStatus.ENABLED))
-            )
-            .arrange()
+        val timestampIso = "2022-03-30T15:36:00.000Z"
+        val (arrangement, handler) = Arrangement().arrange()
         // when
-        handler.handleDisable(userId = TestUser.OTHER_USER_ID)
+        handler.handleEnabledForConversation(conversationId = TestConversation.CONVERSATION.id, timestampIso)
         // then
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateLegalHoldStatus)
-            .with(eq(TestConversation.CONVERSATION.id), eq(Conversation.LegalHoldStatus.DISABLED))
+        verify(arrangement.persistMessage)
+            .suspendFunction(arrangement.persistMessage::invoke)
+            .with(matching { it.content is MessageContent.LegalHold.ForConversation.Enabled && it.date == timestampIso })
             .wasInvoked(exactly = once)
     }
     @Test
-    fun givenConversationLegalHoldStateIsDisabled_whenHandlingDisable_thenDoNotUpdateState() = runTest {
+    fun givenConversationId_whenHandlingDisableForConversation_thenCreateNewSystemMessage() = runTest {
         // given
-        val (arrangement, handler) = Arrangement()
-            .withGetConversationsByUserIdSuccess(
-                listOf(TestConversation.CONVERSATION.copy(legalHoldStatus = Conversation.LegalHoldStatus.DISABLED))
-            )
-            .arrange()
+        val timestampIso = "2022-03-30T15:36:00.000Z"
+        val (arrangement, handler) = Arrangement().arrange()
         // when
-        handler.handleDisable(userId = TestUser.OTHER_USER_ID)
-        // then
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateLegalHoldStatus)
-            .with(any(), any())
-            .wasNotInvoked()
-    }
-    @Test
-    fun givenNoMoreUsersUnderLegalHold_whenHandlingDisable_thenCreateLegalHoldForConversationDisabledMessage() = runTest {
-        // given
-        val (arrangement, handler) = Arrangement()
-            .withGetConversationsByUserIdSuccess(
-                listOf(TestConversation.CONVERSATION.copy(legalHoldStatus = Conversation.LegalHoldStatus.ENABLED))
-            )
-            .arrange()
-        // when
-        handler.handleDisable(userId = TestUser.OTHER_USER_ID)
+        handler.handleDisabledForConversation(conversationId = TestConversation.CONVERSATION.id, timestampIso)
         // then
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching { it.content is MessageContent.LegalHold.ForConversation.Disabled })
+            .with(matching { it.content is MessageContent.LegalHold.ForConversation.Disabled && it.date == timestampIso })
             .wasInvoked(exactly = once)
-    }
-    @Test
-    fun givenStillAreUsersUnderLegalHold_whenHandlingDisable_thenDoNotCreateLegalHoldForConversationDisabledMessage() = runTest {
-        // given
-        val (arrangement, handler) = Arrangement()
-            .withGetConversationsByUserIdSuccess(
-                listOf(TestConversation.CONVERSATION.copy(legalHoldStatus = Conversation.LegalHoldStatus.ENABLED))
-            )
-            .withMembersHavingLegalHoldClientSuccess(listOf(TestUser.USER_ID))
-            .arrange()
-        // when
-        handler.handleDisable(userId = TestUser.OTHER_USER_ID)
-        // then
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching { it.content is MessageContent.LegalHold.ForConversation.Disabled })
-            .wasNotInvoked()
-    }
-    @Test
-    fun givenConversationLegalHoldAlreadyDisabled_whenHandlingDisable_thenDoNotCreateLegalHoldForConversationDisabledMessage() = runTest {
-        // given
-        val (arrangement, handler) = Arrangement()
-            .withGetConversationsByUserIdSuccess(
-                listOf(TestConversation.CONVERSATION.copy(legalHoldStatus = Conversation.LegalHoldStatus.DISABLED))
-            )
-            .arrange()
-        // when
-        handler.handleDisable(userId = TestUser.OTHER_USER_ID)
-        // then
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching { it.content is MessageContent.LegalHold.ForConversation.Disabled })
-            .wasNotInvoked()
-    }
-    @Test
-    fun givenFirstUserUnderLegalHoldAppeared_whenHandlingEnable_thenCreateLegalHoldForConversationEnabledMessage() = runTest {
-        // given
-        val (arrangement, handler) = Arrangement()
-            .withGetConversationsByUserIdSuccess(
-                listOf(TestConversation.CONVERSATION.copy(legalHoldStatus = Conversation.LegalHoldStatus.DISABLED))
-            )
-            .withMembersHavingLegalHoldClientSuccess(listOf(TestUser.OTHER_USER_ID))
-            .arrange()
-        // when
-        handler.handleEnable(userId = TestUser.OTHER_USER_ID)
-        // then
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching { it.content is MessageContent.LegalHold.ForConversation.Enabled })
-            .wasInvoked(exactly = once)
-    }
-    @Test
-    fun givenNextUsersUnderLegalHoldAppeared_whenHandlingEnable_thenDoNotCreateLegalHoldForConversationEnabledMessage() = runTest {
-        // given
-        val (arrangement, handler) = Arrangement()
-            .withGetConversationsByUserIdSuccess(
-                listOf(TestConversation.CONVERSATION.copy(legalHoldStatus = Conversation.LegalHoldStatus.ENABLED))
-            )
-            .withMembersHavingLegalHoldClientSuccess(listOf(TestUser.OTHER_USER_ID, TestUser.USER_ID))
-            .arrange()
-        // when
-        handler.handleDisable(userId = TestUser.OTHER_USER_ID)
-        // then
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching { it.content is MessageContent.LegalHold.ForConversation.Enabled })
-            .wasNotInvoked()
-    }
-    @Test
-    fun givenConversationLegalHoldAlreadyEnabled_whenHandlingEnable_thenDoNotCreateLegalHoldForConversationEnabledMessage() = runTest {
-        // given
-        val (arrangement, handler) = Arrangement()
-            .withGetConversationsByUserIdSuccess(
-                listOf(TestConversation.CONVERSATION.copy(legalHoldStatus = Conversation.LegalHoldStatus.ENABLED))
-            )
-            .withMembersHavingLegalHoldClientSuccess(listOf(TestUser.OTHER_USER_ID))
-            .arrange()
-        // when
-        handler.handleEnable(userId = TestUser.OTHER_USER_ID)
-        // then
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching { it.content is MessageContent.LegalHold.ForConversation.Enabled })
-            .wasNotInvoked()
     }
 
     private class Arrangement {
 
-        @Mock
-        val membersHavingLegalHoldClient = mock(MembersHavingLegalHoldClientUseCase::class)
 
         @Mock
         val persistMessage = mock(PersistMessageUseCase::class)
@@ -325,8 +184,6 @@ class LegalHoldSystemMessagesHandlerTest {
         init {
             withGetConversationsByUserIdSuccess(emptyList())
             withGetLastMessagesForConversationIdsSuccess(mapOf())
-            withMembersHavingLegalHoldClientSuccess(emptyList())
-            withUpdateLegalHoldStatusSuccess()
             withUpdateLegalHoldMessageMembersSuccess()
             withPersistMessageSuccess()
             withDeleteLegalHoldRequestSuccess()
@@ -335,7 +192,6 @@ class LegalHoldSystemMessagesHandlerTest {
         fun arrange() =
             this to LegalHoldSystemMessagesHandlerImpl(
                 selfUserId = TestUser.SELF.id,
-                membersHavingLegalHoldClient = membersHavingLegalHoldClient,
                 persistMessage = persistMessage,
                 conversationRepository = conversationRepository,
                 messageRepository = messageRepository,
@@ -366,18 +222,7 @@ class LegalHoldSystemMessagesHandlerTest {
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
-        fun withMembersHavingLegalHoldClientSuccess(result: List<UserId>) = apply {
-            given(membersHavingLegalHoldClient)
-                .suspendFunction(membersHavingLegalHoldClient::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(result))
-        }
-        fun withUpdateLegalHoldStatusSuccess() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateLegalHoldStatus)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(true))
-        }
+
         fun withDeleteLegalHoldRequestSuccess() = apply {
             given(userConfigRepository)
                 .suspendFunction(userConfigRepository::deleteLegalHoldRequest)
