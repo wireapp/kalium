@@ -30,17 +30,17 @@ import com.wire.kalium.logic.kaliumLogger
 /**
  * Use case to get the other users clients (devices) from remote and save it in our local db so it can be fetched later
  */
-interface PersistOtherUserClientsUseCase {
-    suspend operator fun invoke(userId: UserId)
+interface FetchUsersClientsFromRemoteUseCase {
+    suspend operator fun invoke(userIdList: List<UserId>)
 }
 
-internal class PersistOtherUserClientsUseCaseImpl(
+internal class FetchUsersClientsFromRemoteUseCaseImpl(
     private val clientRemoteRepository: ClientRemoteRepository,
     private val clientRepository: ClientRepository,
     private val clientMapper: ClientMapper = MapperProvider.clientMapper()
-) : PersistOtherUserClientsUseCase {
-    override suspend operator fun invoke(userId: UserId): Unit =
-        clientRemoteRepository.fetchOtherUserClients(listOf(userId)).fold({
+) : FetchUsersClientsFromRemoteUseCase {
+    override suspend operator fun invoke(userIdList: List<UserId>): Unit =
+        clientRemoteRepository.fetchOtherUserClients(userIdList).fold({
             kaliumLogger.withFeatureId(CLIENTS).e("Failure while fetching other users clients $it")
         }, {
             it.forEach { (userId, clientList) ->

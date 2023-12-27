@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCase
-import com.wire.kalium.logic.feature.client.PersistOtherUserClientsUseCase
+import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.SelfClientsResult
 import com.wire.kalium.logic.feature.legalhold.LegalHoldState
 import com.wire.kalium.logic.feature.legalhold.MembersHavingLegalHoldClientUseCase
@@ -106,8 +106,8 @@ class LegalHoldHandlerTest {
             .wasNotInvoked()
 
         advanceUntilIdle()
-        verify(arrangement.persistOtherUserClients)
-            .suspendFunction(arrangement.persistOtherUserClients::invoke)
+        verify(arrangement.fetchUsersClientsFromRemote)
+            .suspendFunction(arrangement.fetchUsersClientsFromRemote::invoke)
             .with(any())
             .wasInvoked(once)
     }
@@ -487,7 +487,7 @@ class LegalHoldHandlerTest {
     private class Arrangement {
 
         @Mock
-        val persistOtherUserClients = mock(PersistOtherUserClientsUseCase::class)
+        val fetchUsersClientsFromRemote = mock(FetchUsersClientsFromRemoteUseCase::class)
 
         @Mock
         val fetchSelfClientsFromRemote = mock(FetchSelfClientsFromRemoteUseCase::class)
@@ -523,7 +523,7 @@ class LegalHoldHandlerTest {
         fun arrange() =
             this to LegalHoldHandlerImpl(
                 selfUserId = TestUser.SELF.id,
-                persistOtherUserClients = persistOtherUserClients,
+                fetchUsersClientsFromRemote = fetchUsersClientsFromRemote,
                 fetchSelfClientsFromRemote = fetchSelfClientsFromRemote,
                 observeLegalHoldStateForUser = observeLegalHoldStateForUser,
                 membersHavingLegalHoldClient = membersHavingLegalHoldClient,
