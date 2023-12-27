@@ -1250,8 +1250,8 @@ class UserSessionScope internal constructor(
         get() = NewMessageEventHandlerImpl(
             proteusUnpacker,
             mlsUnpacker,
-            conversationRepository,
             applicationMessageHandler,
+            legalHoldHandler,
             { conversationId, messageId ->
                 messages.ephemeralMessageDeletionHandler.startSelfDeletion(conversationId, messageId)
             },
@@ -1389,10 +1389,9 @@ class UserSessionScope internal constructor(
 
     private val legalHoldSystemMessagesHandler = LegalHoldSystemMessagesHandlerImpl(
         selfUserId = userId,
-        membersHavingLegalHoldClient = membersHavingLegalHoldClient,
         persistMessage = persistMessage,
         conversationRepository = conversationRepository,
-        messageRepository = messageRepository,
+        messageRepository = messageRepository
     )
 
     private val legalHoldHandler = LegalHoldHandlerImpl(
@@ -1400,7 +1399,10 @@ class UserSessionScope internal constructor(
         persistOtherUserClients = persistOtherUserClients,
         fetchSelfClientsFromRemote = fetchSelfClientsFromRemote,
         observeLegalHoldStateForUser = observeLegalHoldStateForUser,
+        membersHavingLegalHoldClient = membersHavingLegalHoldClient,
         userConfigRepository = userConfigRepository,
+        conversationRepository = conversationRepository,
+        observeSyncState = observeSyncState,
         legalHoldSystemMessagesHandler = legalHoldSystemMessagesHandler,
     )
 
