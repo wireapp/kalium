@@ -318,5 +318,9 @@ class ConversationScope internal constructor(
         get() = SetUserInformedAboutVerificationUseCaseImpl(conversationRepository)
     val observeInformAboutVerificationBeforeMessagingFlagUseCase: ObserveDegradedConversationNotifiedUseCase
         get() = ObserveDegradedConversationNotifiedUseCaseImpl(conversationRepository)
+    val setNotifiedAboutConversationUnderLegalHold: SetNotifiedAboutConversationUnderLegalHoldUseCase
+        get() = SetNotifiedAboutConversationUnderLegalHoldUseCaseImpl(conversationRepository)
+    val observeConversationUnderLegalHoldNotified: ObserveConversationUnderLegalHoldNotifiedUseCase
+        get() = ObserveConversationUnderLegalHoldNotifiedUseCaseImpl(conversationRepository)
 
 }

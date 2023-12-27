@@ -158,6 +158,7 @@ class UserDatabaseBuilder internal constructor(
         MessageLegalHoldContentAdapter = TableMapper.messageLegalHoldContentAdapter,
         MessageConversationProtocolChangedDuringACallContentAdapter =
             TableMapper.messageConversationProtocolChangedDuringACAllContentAdapter,
+        ConversationLegalHoldStatusChangeNotifiedAdapter = TableMapper.conversationLegalHoldStatusChangeNotifiedAdapter,
     )
 
     init {

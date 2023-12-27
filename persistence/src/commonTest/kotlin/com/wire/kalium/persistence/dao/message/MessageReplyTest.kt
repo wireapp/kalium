@@ -76,11 +76,34 @@ class MessageReplyTest : BaseMessageTest() {
         assertNull(quotedMessage.textBody)
     }
 
+    @Test
+    fun givenInsertedLocationMessage_whenNewMessageQuotesIt_thenNewMessageShouldBeQueriedWithQuoteAndLocationInfo() = runTest(dispatcher) {
+        insertInitialData()
+        messageDAO.insertOrIgnoreMessage(MESSAGE_QUOTING_LOCATION)
+
+        val message = messageDAO.getMessageById(MESSAGE_QUOTING_LOCATION.id, MESSAGE_QUOTING_LOCATION.conversationId)
+
+        assertNotNull(message)
+        val content = message.content
+        assertNotNull(content)
+        assertIs<MessageEntityContent.Text>(content)
+
+        assertEquals(ORIGINAL_LOCATION_MESSAGE.id, content.quotedMessageId)
+        val quotedMessage = content.quotedMessage
+        assertNotNull(quotedMessage)
+        assertEquals(ORIGINAL_MESSAGE_SENDER.id, quotedMessage.senderId)
+        assertEquals(ORIGINAL_MESSAGE_SENDER.name, quotedMessage.senderName)
+        assertEquals(ORIGINAL_LOCATION_MESSAGE.date.toIsoDateTimeString(), quotedMessage.dateTime)
+        assertEquals(ORIGINAL_LOCATION_NAME, quotedMessage.locationName)
+        assertNull(quotedMessage.textBody)
+    }
+
     override suspend fun insertInitialData() {
         super.insertInitialData()
         // Always insert original messages
         messageDAO.insertOrIgnoreMessage(ORIGINAL_TEXT_MESSAGE)
         messageDAO.insertOrIgnoreMessage(ORIGINAL_IMAGE_MESSAGE)
+        messageDAO.insertOrIgnoreMessage(ORIGINAL_LOCATION_MESSAGE)
     }
 
     private companion object {
@@ -125,6 +148,29 @@ class MessageReplyTest : BaseMessageTest() {
             content = MessageEntityContent.Text(
                 "I'm quoting you",
                 quotedMessageId = ORIGINAL_IMAGE_MESSAGE.id
+            )
+        )
+
+        const val ORIGINAL_LOCATION_NAME = "someSecretLocation"
+        val ORIGINAL_LOCATION_MESSAGE = newRegularMessageEntity(
+            id = "originalLocationMessage",
+            conversationId = TEST_CONVERSATION_1.id,
+            senderUserId = ORIGINAL_MESSAGE_SENDER.id,
+            content = MessageEntityContent.Location(
+                latitude = 42.0f,
+                longitude = -42.0f,
+                name = ORIGINAL_LOCATION_NAME,
+                zoom = 20
+            )
+        )
+
+        val MESSAGE_QUOTING_LOCATION = newRegularMessageEntity(
+            id = "quotingMessage",
+            conversationId = TEST_CONVERSATION_1.id,
+            senderUserId = SELF_USER_ID,
+            content = MessageEntityContent.Text(
+                "I'm quoting your location",
+                quotedMessageId = ORIGINAL_LOCATION_MESSAGE.id
             )
         )
     }
