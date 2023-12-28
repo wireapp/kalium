@@ -98,7 +98,7 @@ class PocIntegrationTest {
                 coreLogic = coreLogic
             )
 
-            val x = userSessionScope.client.selfClients()
+            val x = userSessionScope.client.fetchSelfClients()
             println(x.toString())
 
             userSessionScope.logout.invoke(LogoutReason.SELF_SOFT_LOGOUT)

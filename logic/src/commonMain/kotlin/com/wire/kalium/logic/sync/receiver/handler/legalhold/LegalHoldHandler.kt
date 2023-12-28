@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCase
-import com.wire.kalium.logic.feature.client.PersistOtherUserClientsUseCase
+import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.legalhold.LegalHoldState
 import com.wire.kalium.logic.feature.legalhold.MembersHavingLegalHoldClientUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
@@ -63,7 +63,7 @@ internal interface LegalHoldHandler {
 @Suppress("LongParameterList")
 internal class LegalHoldHandlerImpl internal constructor(
     private val selfUserId: UserId,
-    private val persistOtherUserClients: PersistOtherUserClientsUseCase,
+    private val fetchUsersClientsFromRemote: FetchUsersClientsFromRemoteUseCase,
     private val fetchSelfClientsFromRemote: FetchSelfClientsFromRemoteUseCase,
     private val observeLegalHoldStateForUser: ObserveLegalHoldStateForUserUseCase,
     private val membersHavingLegalHoldClient: MembersHavingLegalHoldClientUseCase,
@@ -163,7 +163,7 @@ internal class LegalHoldHandlerImpl internal constructor(
             userConfigRepository.deleteLegalHoldRequest()
             fetchSelfClientsFromRemote()
         } else {
-            persistOtherUserClients(userId)
+            fetchUsersClientsFromRemote(listOf(userId))
         }
     }
 
@@ -217,13 +217,13 @@ internal class LegalHoldHandlerImpl internal constructor(
                     }
             }
             .map {
+                fetchUsersClientsFromRemote(it.keys.toList())
                 it.forEach { (userId, userHasBeenUnderLegalHold) ->
-                    // TODO: to be optimized - send empty message and handle legal hold discovery after sending a message
-                    processEvent(selfUserId, userId)
                     val userIsNowUnderLegalHold = isUserUnderLegalHold(userId)
                     if (userHasBeenUnderLegalHold != userIsNowUnderLegalHold) {
-                        if (selfUserId == userId) { // notify only for self user
+                        if (selfUserId == userId) { // notify and delete request only for self user
                             userConfigRepository.setLegalHoldChangeNotified(false)
+                            userConfigRepository.deleteLegalHoldRequest()
                         }
                         if (userIsNowUnderLegalHold) legalHoldSystemMessagesHandler.handleEnabledForUser(userId, systemMessageTimestampIso)
                         else legalHoldSystemMessagesHandler.handleDisabledForUser(userId, systemMessageTimestampIso)
