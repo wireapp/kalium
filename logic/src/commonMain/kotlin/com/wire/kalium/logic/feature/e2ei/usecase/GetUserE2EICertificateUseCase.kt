@@ -53,5 +53,3 @@ sealed class GetUserE2eiCertificateStatusResult {
         data object NotActivated : Failure()
     }
 }
-
-
