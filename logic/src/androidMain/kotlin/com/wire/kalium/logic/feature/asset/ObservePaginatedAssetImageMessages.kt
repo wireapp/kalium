@@ -31,7 +31,7 @@ import kotlinx.coroutines.flow.flowOn
  * @see PagingData
  * @see AssetMessage
  */
-class GetPaginatedFlowOfAssetImageMessageByConversationIdUseCase internal constructor(
+class ObservePaginatedAssetImageMessages internal constructor(
     private val dispatcher: KaliumDispatcher,
     private val messageRepository: MessageRepository
 ) {
@@ -39,7 +39,7 @@ class GetPaginatedFlowOfAssetImageMessageByConversationIdUseCase internal constr
         conversationId: ConversationId,
         startingOffset: Long,
         pagingConfig: PagingConfig
-    ): Flow<PagingData<AssetMessage>> = messageRepository.extensions.getPaginatedMessageAssetImageByConversationId(
+    ): Flow<PagingData<AssetMessage>> = messageRepository.extensions.observePaginatedMessageAssetImageByConversationId(
         conversationId = conversationId,
         pagingConfig = pagingConfig,
         startingOffset = startingOffset

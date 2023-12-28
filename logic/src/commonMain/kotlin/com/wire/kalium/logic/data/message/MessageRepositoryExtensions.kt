@@ -20,7 +20,6 @@ package com.wire.kalium.logic.data.message
 
 import app.cash.paging.PagingConfig
 import app.cash.paging.PagingData
-import app.cash.paging.map
 import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.asset.SUPPORTED_IMAGE_ASSET_MIME_TYPES
 import com.wire.kalium.logic.data.id.ConversationId
@@ -53,7 +52,7 @@ internal interface MessageRepositoryExtensions {
         startingOffset: Long
     ): Flow<PagingData<Message.Standalone>>
 
-    suspend fun getPaginatedMessageAssetImageByConversationId(
+    suspend fun observePaginatedMessageAssetImageByConversationId(
         conversationId: ConversationId,
         pagingConfig: PagingConfig,
         startingOffset: Long
@@ -118,7 +117,7 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
         }
     }
 
-    override suspend fun getPaginatedMessageAssetImageByConversationId(
+    override suspend fun observePaginatedMessageAssetImageByConversationId(
         conversationId: ConversationId,
         pagingConfig: PagingConfig,
         startingOffset: Long
