@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.message.BroadcastMessage
 import com.wire.kalium.logic.data.message.BroadcastMessageOption
 import com.wire.kalium.logic.data.message.BroadcastMessageTarget
@@ -44,6 +45,7 @@ import com.wire.kalium.logic.data.message.getType
 import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.failure.LegalHoldEnabledForConversationFailure
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -53,6 +55,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.util.DateTimeUtil
@@ -135,6 +138,7 @@ internal class MessageSenderImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
     private val syncManager: SyncManager,
     private val messageSendFailureHandler: MessageSendFailureHandler,
+    private val legalHoldHandler: LegalHoldHandler,
     private val sessionEstablisher: SessionEstablisher,
     private val messageEnvelopeCreator: MessageEnvelopeCreator,
     private val mlsMessageCreator: MLSMessageCreator,
@@ -359,6 +363,8 @@ internal class MessageSenderImpl internal constructor(
                     failure = it,
                     action = "Send",
                     messageLogString = message.toLogString(),
+                    messageId = message.id,
+                    messageTimestampIso = message.date,
                     conversationId = message.conversationId,
                     remainingAttempts = remainingAttempts
                 ) { remainingAttempts ->
@@ -385,7 +391,7 @@ internal class MessageSenderImpl internal constructor(
         messageRepository
             .broadcastEnvelope(envelope, option)
             .fold({
-                handleProteusError(it, "Broadcast", message.toLogString(), null, remainingAttempts = 1) {
+                handleProteusError(it, "Broadcast", message.toLogString(), message.id, message.date, null, remainingAttempts = 1) {
                     attemptToBroadcastWithProteus(
                         message,
                         target,
@@ -401,6 +407,8 @@ internal class MessageSenderImpl internal constructor(
         failure: CoreFailure,
         action: String, // Send or Broadcast
         messageLogString: String,
+        messageId: MessageId,
+        messageTimestampIso: String,
         conversationId: ConversationId?,
         remainingAttempts: Int,
         retry: suspend (remainingAttempts: Int) -> Either<CoreFailure, String>
@@ -410,21 +418,33 @@ internal class MessageSenderImpl internal constructor(
                 logger.w(
                     "Proteus $action Failure: { \"message\" : \"${messageLogString}\", \"errorInfo\" : \"${failure}\" }"
                 )
-                messageSendFailureHandler
-                    .handleClientsHaveChangedFailure(failure, conversationId)
-                    .flatMap {
-                        if (remainingAttempts > 0) {
-                            logger.w(
-                                "Retrying (remaining attempts: $remainingAttempts) after Proteus $action " +
-                                        "Failure: { \"message\" : \"${messageLogString}\"}"
-                            )
-                            retry(remainingAttempts - 1)
-                        } else {
-                            logger.e(
-                                "No remaining attempts to retry after Proteus $action " +
-                                        "Failure: { \"message\" : \"${messageLogString}\"}"
-                            )
-                            Either.Left(failure)
+                handleLegalHoldChanges(conversationId, messageTimestampIso) {
+                    messageSendFailureHandler
+                        .handleClientsHaveChangedFailure(failure, conversationId)
+                }
+                    .flatMap { legalHoldEnabled ->
+                        when {
+                            legalHoldEnabled -> {
+                                logger.w(
+                                    "Legal hold enabled, no retry after Proteus $action " +
+                                            "Failure: { \"message\" : \"${messageLogString}\", \"errorInfo\" : \"${failure}\" }"
+                                )
+                                Either.Left(LegalHoldEnabledForConversationFailure(messageId))
+                            }
+                            remainingAttempts > 0 -> {
+                                logger.w(
+                                    "Retrying (remaining attempts: $remainingAttempts) after Proteus $action " +
+                                            "Failure: { \"message\" : \"${messageLogString}\", \"errorInfo\" : \"${failure}\" }"
+                                )
+                                retry(remainingAttempts - 1)
+                            }
+                            else -> {
+                                logger.e(
+                                    "No remaining attempts to retry after Proteus $action " +
+                                            "Failure: { \"message\" : \"${messageLogString}\", \"errorInfo\" : \"${failure}\" }"
+                                )
+                                Either.Left(failure)
+                            }
                         }
                     }
                     .onFailure {
@@ -442,6 +462,14 @@ internal class MessageSenderImpl internal constructor(
                 Either.Left(failure)
             }
         }
+
+    private suspend fun handleLegalHoldChanges(
+        conversationId: ConversationId?,
+        messageTimestampIso: String,
+        handleClientsHaveChangedFailure: suspend () -> Either<CoreFailure, Unit>
+    ) =
+        if (conversationId == null) handleClientsHaveChangedFailure().map { false }
+        else legalHoldHandler.handleMessageSendFailure(conversationId, messageTimestampIso, handleClientsHaveChangedFailure)
 
     private fun getBroadcastParams(
         selfUserId: UserId,

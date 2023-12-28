@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.persistence.dao.client.InsertClientParam
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
@@ -46,6 +47,10 @@ internal interface ClientRepositoryArrangement {
     fun withStoreMapOfUserToClientId(
         result: Either<StorageFailure, Unit>,
         mapUserToClientId: Matcher<Map<UserId, List<ClientId>>> = any()
+    )
+    fun withStoreUserClientListAndRemoveRedundantClients(
+        result: Either<StorageFailure, Unit>,
+        clients: Matcher<List<InsertClientParam>> = any()
     )
 }
 
@@ -95,6 +100,16 @@ internal open class ClientRepositoryArrangementImpl : ClientRepositoryArrangemen
         given(clientRepository)
             .suspendFunction(clientRepository::storeMapOfUserToClientId)
             .whenInvokedWith(mapUserToClientId)
+            .thenReturn(result)
+    }
+
+    override fun withStoreUserClientListAndRemoveRedundantClients(
+        result: Either<StorageFailure, Unit>,
+        clients: Matcher<List<InsertClientParam>>
+    ) {
+        given(clientRepository)
+            .suspendFunction(clientRepository::storeUserClientListAndRemoveRedundantClients)
+            .whenInvokedWith(any())
             .thenReturn(result)
     }
 }
