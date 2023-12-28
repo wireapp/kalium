@@ -1600,6 +1600,7 @@ class UserSessionScope internal constructor(
             conversationRepository,
             mlsConversationRepository,
             clientRepository,
+            clientRemoteRepository,
             clientIdProvider,
             proteusClientProvider,
             mlsClientProvider,
@@ -1613,6 +1614,7 @@ class UserSessionScope internal constructor(
             selfConversationIdProvider,
             staleEpochVerifier,
             eventProcessor,
+            legalHoldHandler,
             this
         )
     val messages: MessageScope
@@ -1625,6 +1627,7 @@ class UserSessionScope internal constructor(
             conversationRepository,
             mlsConversationRepository,
             clientRepository,
+            clientRemoteRepository,
             proteusClientProvider,
             mlsClientProvider,
             preKeyRepository,
@@ -1641,6 +1644,7 @@ class UserSessionScope internal constructor(
             observeSelfDeletingMessages,
             messageMetadataRepository,
             staleEpochVerifier,
+            legalHoldHandler,
             this
         )
     val users: UserScope
