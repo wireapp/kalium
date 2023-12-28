@@ -166,12 +166,12 @@ import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCu
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCaseImpl
+import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCase
+import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
-import com.wire.kalium.logic.feature.client.PersistOtherUserClientsUseCase
-import com.wire.kalium.logic.feature.client.PersistOtherUserClientsUseCaseImpl
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
@@ -1378,8 +1378,8 @@ class UserSessionScope internal constructor(
             clientRepository = clientRepository,
             provideClientId = clientIdProvider
         )
-    private val persistOtherUserClients: PersistOtherUserClientsUseCase
-        get() = PersistOtherUserClientsUseCaseImpl(
+    private val fetchUsersClientsFromRemote: FetchUsersClientsFromRemoteUseCase
+        get() = FetchUsersClientsFromRemoteUseCaseImpl(
             clientRemoteRepository = clientRemoteRepository,
             clientRepository = clientRepository
         )
@@ -1396,7 +1396,7 @@ class UserSessionScope internal constructor(
 
     private val legalHoldHandler = LegalHoldHandlerImpl(
         selfUserId = userId,
-        persistOtherUserClients = persistOtherUserClients,
+        fetchUsersClientsFromRemote = fetchUsersClientsFromRemote,
         fetchSelfClientsFromRemote = fetchSelfClientsFromRemote,
         observeLegalHoldStateForUser = observeLegalHoldStateForUser,
         membersHavingLegalHoldClient = membersHavingLegalHoldClient,
@@ -1600,6 +1600,7 @@ class UserSessionScope internal constructor(
             conversationRepository,
             mlsConversationRepository,
             clientRepository,
+            clientRemoteRepository,
             clientIdProvider,
             proteusClientProvider,
             mlsClientProvider,
@@ -1613,6 +1614,7 @@ class UserSessionScope internal constructor(
             selfConversationIdProvider,
             staleEpochVerifier,
             eventProcessor,
+            legalHoldHandler,
             this
         )
     val messages: MessageScope
@@ -1625,6 +1627,7 @@ class UserSessionScope internal constructor(
             conversationRepository,
             mlsConversationRepository,
             clientRepository,
+            clientRemoteRepository,
             proteusClientProvider,
             mlsClientProvider,
             preKeyRepository,
@@ -1641,6 +1644,7 @@ class UserSessionScope internal constructor(
             observeSelfDeletingMessages,
             messageMetadataRepository,
             staleEpochVerifier,
+            legalHoldHandler,
             this
         )
     val users: UserScope

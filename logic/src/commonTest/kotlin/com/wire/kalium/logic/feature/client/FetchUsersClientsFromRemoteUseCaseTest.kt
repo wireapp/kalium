@@ -27,7 +27,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
-import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.any
@@ -39,9 +38,10 @@ import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
 @ExperimentalCoroutinesApi
-class PersistOtherUsersClientsUseCaseTest {
+class FetchUsersClientsFromRemoteUseCaseTest {
 
     @Test
     fun givenASuccessfulRepositoryResponse_whenInvokingTheUseCase_thenSuccessResultIsReturned() = runTest {
@@ -52,12 +52,12 @@ class PersistOtherUsersClientsUseCaseTest {
         val otherUserClients = listOf(
             SimpleClientResponse("111", DeviceTypeDTO.Phone), SimpleClientResponse("2222", DeviceTypeDTO.Desktop)
         )
-        val (arrangement, getOtherUsersClientsUseCase) = Arrangement()
+        val (arrangement, useCase) = Arrangement()
             .withSuccessfulResponse(userIdDTO, otherUserClients)
             .arrange()
 
         // When
-        getOtherUsersClientsUseCase(userId)
+        useCase(listOf(userId))
 
         verify(arrangement.clientRemoteRepository)
             .suspendFunction(arrangement.clientRemoteRepository::fetchOtherUserClients).with(any())
@@ -71,16 +71,16 @@ class PersistOtherUsersClientsUseCaseTest {
     }
 
     @Test
-    fun givenRepositoryCallFailWithInvaliUserId_thenNoUserFoundReturned() = runTest {
+    fun givenRepositoryCallFailWithInvalidUserId_thenNoUserFoundReturned() = runTest {
         // Given
         val userId = UserId("123", "wire.com")
         val noUserFoundException = TestNetworkException.noTeam
-        val (arrangement, getOtherUsersClientsUseCase) = Arrangement()
+        val (arrangement, useCase) = Arrangement()
             .withGetOtherUserClientsErrorResponse(noUserFoundException)
             .arrange()
 
         // When
-        getOtherUsersClientsUseCase.invoke(userId)
+        useCase.invoke(listOf(userId))
 
         // Then
         verify(arrangement.clientRemoteRepository)
@@ -99,8 +99,8 @@ class PersistOtherUsersClientsUseCaseTest {
 
         val clientMapper = MapperProvider.clientMapper()
 
-        val persistOtherUserClientsUseCase =
-            PersistOtherUserClientsUseCaseImpl(clientRemoteRepository, clientRepository)
+        val fetchUsersClientsFromRemoteUseCase =
+            FetchUsersClientsFromRemoteUseCaseImpl(clientRemoteRepository, clientRepository)
 
         suspend fun withSuccessfulResponse(userIdDTO: UserIdDTO, expectedResponse: List<SimpleClientResponse>): Arrangement {
             given(clientRemoteRepository)
@@ -127,6 +127,6 @@ class PersistOtherUsersClientsUseCaseTest {
             return this
         }
 
-        fun arrange() = this to persistOtherUserClientsUseCase
+        fun arrange() = this to fetchUsersClientsFromRemoteUseCase
     }
 }
