@@ -145,7 +145,8 @@ interface MessageDAO {
     ): Int
 
     val platformExtensions: MessageExtensions
-    suspend fun getMessageAssets(
+
+    suspend fun getImageMessageAssets(
         conversationId: QualifiedIDEntity,
         mimeTypes: Set<String>,
         limit: Int,
