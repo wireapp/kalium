@@ -17,8 +17,10 @@
  */
 package com.wire.kalium.logic.util.arrangement.mls
 
+import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.any
 import io.mockative.given
@@ -28,6 +30,8 @@ interface MLSConversationRepositoryArrangement {
     val mlsConversationRepository: MLSConversationRepository
 
     fun withIsGroupOutOfSync(result: Either<CoreFailure, Boolean>)
+    fun withUserIdentity(result: Either<CoreFailure, List<WireIdentity>>)
+    fun withMembersIdentities(result: Either<CoreFailure, Map<UserId, List<WireIdentity>>>)
 }
 
 class MLSConversationRepositoryArrangementImpl : MLSConversationRepositoryArrangement {
@@ -37,6 +41,20 @@ class MLSConversationRepositoryArrangementImpl : MLSConversationRepositoryArrang
         given(mlsConversationRepository)
             .suspendFunction(mlsConversationRepository::isGroupOutOfSync)
             .whenInvokedWith(any(), any())
+            .thenReturn(result)
+    }
+
+    override fun withUserIdentity(result: Either<CoreFailure, List<WireIdentity>>) {
+        given(mlsConversationRepository)
+            .suspendFunction(mlsConversationRepository::getUserIdentity)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withMembersIdentities(result: Either<CoreFailure, Map<UserId, List<WireIdentity>>>) {
+        given(mlsConversationRepository)
+            .suspendFunction(mlsConversationRepository::getMembersIdentities)
+            .whenInvokedWith(any())
             .thenReturn(result)
     }
 }

@@ -112,4 +112,6 @@ interface ConversationDAO {
     suspend fun updateLegalHoldStatusChangeNotified(conversationId: QualifiedIDEntity, notified: Boolean): Boolean
     suspend fun observeLegalHoldStatus(conversationId: QualifiedIDEntity): Flow<ConversationEntity.LegalHoldStatus>
     suspend fun observeLegalHoldStatusChangeNotified(conversationId: QualifiedIDEntity): Flow<Boolean>
+    suspend fun getMLSGroupIdByUserId(userId: UserIDEntity): String?
+    suspend fun getMLSGroupIdAndUserIdsByConversationId(conversationId: QualifiedIDEntity): Map<String?, List<QualifiedIDEntity>>
 }

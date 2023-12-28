@@ -380,6 +380,17 @@ ON Member.conversation = Conversation.qualified_id OR Client.user_id = Conversat
 WHERE Conversation.mls_group_id IS NOT NULL AND Client.id = :clientId
 ORDER BY Conversation.type DESC LIMIT 1;
 
+getMLSGroupIdByUserId:
+SELECT Conversation.mls_group_id FROM Member
+JOIN Conversation ON Conversation.qualified_id = Member.conversation
+WHERE Conversation.type = 'ONE_ON_ONE' AND Member.user = :userId;
+
+getMLSGroupIdAndUsersByConversationId:
+SELECT Conversation.mls_group_id, Member.user FROM Member
+JOIN Conversation ON Conversation.qualified_id = Member.conversation
+WHERE Conversation.qualified_id = :conversationId
+GROUP BY Conversation.mls_group_id;
+
 updateConversationReceiptMode:
 UPDATE Conversation
 SET receipt_mode = ?
