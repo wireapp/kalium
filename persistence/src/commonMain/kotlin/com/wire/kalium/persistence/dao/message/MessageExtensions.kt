@@ -24,6 +24,7 @@ import app.cash.sqldelight.paging3.QueryPagingSource
 import com.wire.kalium.persistence.MessageAssetViewQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
+import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import kotlin.coroutines.CoroutineContext
 
 interface MessageExtensions {
@@ -47,6 +48,13 @@ interface MessageExtensions {
         pagingConfig: PagingConfig,
         startingOffset: Long
     ): KaliumPager<MessageEntity>
+
+    fun getPagerForMessageAssetImage(
+        conversationId: ConversationIDEntity,
+        mimeTypes: Set<String>,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): KaliumPager<AssetMessageEntity>
 }
 
 internal class MessageExtensionsImpl internal constructor(
@@ -93,6 +101,19 @@ internal class MessageExtensionsImpl internal constructor(
         return KaliumPager(
             Pager(pagingConfig) { getMessageAssetsWithoutImagePagingSource(conversationId, mimeTypes, startingOffset) },
             getMessageAssetsWithoutImagePagingSource(conversationId, mimeTypes, startingOffset),
+            coroutineContext
+        )
+    }
+
+    override fun getPagerForMessageAssetImage(
+        conversationId: ConversationIDEntity,
+        mimeTypes: Set<String>,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): KaliumPager<AssetMessageEntity> {
+        return KaliumPager(
+            Pager(pagingConfig) { getMessageImageAssetsPagingSource(conversationId, mimeTypes, startingOffset) },
+            getMessageImageAssetsPagingSource(conversationId, mimeTypes, startingOffset),
             coroutineContext
         )
     }
@@ -160,6 +181,33 @@ internal class MessageExtensionsImpl internal constructor(
                 limit,
                 offset,
                 messageMapper::toEntityMessageFromView
+            )
+        }
+    )
+
+    private fun getMessageImageAssetsPagingSource(
+        conversationId: ConversationIDEntity,
+        mimeTypes: Set<String>,
+        initialOffset: Long
+    ) = QueryPagingSource(
+        countQuery = messageAssetViewQueries.countImageAssetMessagesByConversationIdAndMimeTypes(
+            conversationId,
+            listOf(MessageEntity.Visibility.VISIBLE),
+            listOf(MessageEntity.ContentType.ASSET),
+            mimeTypes
+        ),
+        transacter = messageAssetViewQueries,
+        context = coroutineContext,
+        initialOffset = initialOffset,
+        queryProvider = { limit, offset ->
+            messageAssetViewQueries.getImageAssetMessagesByConversationIdAndMimeTypes(
+                conversationId,
+                listOf(MessageEntity.Visibility.VISIBLE),
+                listOf(MessageEntity.ContentType.ASSET),
+                mimeTypes,
+                limit,
+                offset,
+                messageMapper::toEntityAssetMessageFromView
             )
         }
     )
