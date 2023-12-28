@@ -99,7 +99,7 @@ class FetchUsersClientsFromRemoteUseCaseTest {
 
         val clientMapper = MapperProvider.clientMapper()
 
-        val persistOtherUserClientsUseCase =
+        val fetchUsersClientsFromRemoteUseCase =
             FetchUsersClientsFromRemoteUseCaseImpl(clientRemoteRepository, clientRepository)
 
         suspend fun withSuccessfulResponse(userIdDTO: UserIdDTO, expectedResponse: List<SimpleClientResponse>): Arrangement {
@@ -127,6 +127,6 @@ class FetchUsersClientsFromRemoteUseCaseTest {
             return this
         }
 
-        fun arrange() = this to persistOtherUserClientsUseCase
+        fun arrange() = this to fetchUsersClientsFromRemoteUseCase
     }
 }
