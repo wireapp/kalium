@@ -22,8 +22,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
-import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
@@ -52,13 +50,11 @@ internal interface UserEventReceiver : EventReceiver<Event.User>
 internal class UserEventReceiverImpl internal constructor(
     private val clientRepository: ClientRepository,
     private val connectionRepository: ConnectionRepository,
-    private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val logout: LogoutUseCase,
     private val oneOnOneResolver: OneOnOneResolver,
     private val selfUserId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val newGroupConversationSystemMessagesCreator: Lazy<NewGroupConversationSystemMessagesCreator>,
     private val legalHoldRequestHandler: LegalHoldRequestHandler,
     private val legalHoldHandler: LegalHoldHandler
 ) : UserEventReceiver {
@@ -117,10 +113,6 @@ internal class UserEventReceiverImpl internal constructor(
                             delay = if (event.live) 3.seconds else ZERO
                         )
                         Either.Right(Unit)
-                    }.flatMap {
-                        newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
-                            event.connection.qualifiedConversationId
-                        )
                     }
             }
             .onSuccess {
