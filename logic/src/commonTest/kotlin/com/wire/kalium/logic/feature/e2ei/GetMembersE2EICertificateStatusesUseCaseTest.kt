@@ -42,7 +42,7 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
             withMembersIdentities(Either.Left(MLSFailure.WrongEpoch))
         }
 
-        val result = getMembersE2EICertificateStatuses(conversationId)
+        val result = getMembersE2EICertificateStatuses(conversationId, listOf())
 
         assertEquals(mapOf(), result)
     }
@@ -53,7 +53,7 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
             withMembersIdentities(Either.Right(mapOf()))
         }
 
-        val result = getMembersE2EICertificateStatuses(conversationId)
+        val result = getMembersE2EICertificateStatuses(conversationId, listOf())
 
         assertEquals(mapOf(), result)
     }
@@ -73,7 +73,7 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
             )
         }
 
-        val result = getMembersE2EICertificateStatuses(conversationId)
+        val result = getMembersE2EICertificateStatuses(conversationId, listOf(userId))
 
         assertEquals(CertificateStatus.EXPIRED, result[userId])
     }
@@ -95,7 +95,7 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
             )
         }
 
-        val result = getMembersE2EICertificateStatuses(conversationId)
+        val result = getMembersE2EICertificateStatuses(conversationId, listOf(userId, userId2))
 
         assertEquals(CertificateStatus.REVOKED, result[userId])
         assertEquals(CertificateStatus.VALID, result[userId2])

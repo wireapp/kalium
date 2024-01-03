@@ -121,7 +121,10 @@ interface MLSConversationRepository {
 
     suspend fun getClientIdentity(clientId: ClientId): Either<CoreFailure, WireIdentity>
     suspend fun getUserIdentity(userId: UserId): Either<CoreFailure, List<WireIdentity>>
-    suspend fun getMembersIdentities(conversationId: ConversationId): Either<CoreFailure, Map<UserId, List<WireIdentity>>>
+    suspend fun getMembersIdentities(
+        conversationId: ConversationId,
+        userIds: List<UserId>
+    ): Either<CoreFailure, Map<UserId, List<WireIdentity>>>
 }
 
 private enum class CommitStrategy {
@@ -567,22 +570,21 @@ internal class MLSConversationDataSource(
             }
         }
 
-    override suspend fun getMembersIdentities(conversationId: ConversationId): Either<CoreFailure, Map<UserId, List<WireIdentity>>> =
+    override suspend fun getMembersIdentities(
+        conversationId: ConversationId,
+        userIds: List<UserId>
+    ): Either<CoreFailure, Map<UserId, List<WireIdentity>>> =
         wrapStorageRequest {
-            val mlsGroupIdAndUsers = conversationDAO.getMLSGroupIdAndUserIdsByConversationId(conversationId.toDao())
-            val mlsGroupId = mlsGroupIdAndUsers.keys.first { it != null }!!
-            val userIds = mlsGroupIdAndUsers[mlsGroupId]!!
-
-            mlsGroupId to userIds
-        }.flatMap { (mlsGroupId, userIds) ->
+            conversationDAO.getMLSGroupIdByConversationId(conversationId.toDao())!!
+        }.flatMap { mlsGroupId ->
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
                     val userIdsAndIdentity = mutableMapOf<UserId, List<WireIdentity>>()
 
-                    mlsClient.getUserIdentities(mlsGroupId, userIds.map { it.toModel().toCrypto() })
+                    mlsClient.getUserIdentities(mlsGroupId, userIds.map { it.toCrypto() })
                         .forEach { (userIdValue, identities) ->
                             userIds.firstOrNull { it.value == userIdValue }?.also {
-                                userIdsAndIdentity[it.toModel()] = identities
+                                userIdsAndIdentity[it] = identities
                             }
                         }
 

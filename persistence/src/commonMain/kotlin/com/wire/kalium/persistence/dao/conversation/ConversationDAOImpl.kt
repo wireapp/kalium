@@ -69,15 +69,13 @@ internal class ConversationDAOImpl internal constructor(
         withContext(coroutineContext) {
             conversationQueries.getMLSGroupIdByUserId(userId)
                 .executeAsOneOrNull()
-                ?.mls_group_id
         }
 
-    override suspend fun getMLSGroupIdAndUserIdsByConversationId(conversationId: QualifiedIDEntity): Map<String?, List<QualifiedIDEntity>> =
+    override suspend fun getMLSGroupIdByConversationId(conversationId: QualifiedIDEntity): String? =
         withContext(coroutineContext) {
-            conversationQueries.getMLSGroupIdAndUsersByConversationId(conversationId)
-                .executeAsList()
-                .groupBy { it.mls_group_id }
-                .mapValues { it.value.map { value -> value.user } }
+            conversationQueries.getMLSGroupIdByConversationId(conversationId)
+                .executeAsOneOrNull()
+                ?.mls_group_id
         }
 
     override suspend fun insertConversation(conversationEntity: ConversationEntity) = withContext(coroutineContext) {

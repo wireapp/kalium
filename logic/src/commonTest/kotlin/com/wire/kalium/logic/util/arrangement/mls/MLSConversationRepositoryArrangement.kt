@@ -54,7 +54,7 @@ class MLSConversationRepositoryArrangementImpl : MLSConversationRepositoryArrang
     override fun withMembersIdentities(result: Either<CoreFailure, Map<UserId, List<WireIdentity>>>) {
         given(mlsConversationRepository)
             .suspendFunction(mlsConversationRepository::getMembersIdentities)
-            .whenInvokedWith(any())
+            .whenInvokedWith(any(), any())
             .thenReturn(result)
     }
 }

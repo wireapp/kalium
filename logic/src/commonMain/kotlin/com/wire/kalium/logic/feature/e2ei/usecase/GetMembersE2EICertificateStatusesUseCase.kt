@@ -30,15 +30,15 @@ import com.wire.kalium.logic.functional.fold
  * Return [Map] where keys are [UserId] and values - nullable [CertificateStatus] of corresponding user.
  */
 interface GetMembersE2EICertificateStatusesUseCase {
-    suspend operator fun invoke(conversationId: ConversationId): Map<UserId, CertificateStatus?>
+    suspend operator fun invoke(conversationId: ConversationId, userIds: List<UserId>): Map<UserId, CertificateStatus?>
 }
 
 class GetMembersE2EICertificateStatusesUseCaseImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
     private val pemCertificateDecoder: PemCertificateDecoder
 ) : GetMembersE2EICertificateStatusesUseCase {
-    override suspend operator fun invoke(conversationId: ConversationId): Map<UserId, CertificateStatus?> =
-        mlsConversationRepository.getMembersIdentities(conversationId).fold(
+    override suspend operator fun invoke(conversationId: ConversationId, userIds: List<UserId>): Map<UserId, CertificateStatus?> =
+        mlsConversationRepository.getMembersIdentities(conversationId, userIds).fold(
             { mapOf() },
             {
                 it.mapValues { (_, identities) ->
