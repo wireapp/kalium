@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -115,9 +116,9 @@ class ObserveIsAppLockEditableUseCaseTest {
         fun arrange() = this to useCase
         fun withAllValidSessionsFlow(result: Flow<List<AccountInfo>>) = apply {
             given(sessionRepository)
-                .suspendFunction(sessionRepository::allValidSessionsFlow)
+                .function(sessionRepository::allValidSessionsFlow)
                 .whenInvoked()
-                .thenReturn(result)
+                .thenReturn(result.map { Either.Right(it) })
         }
         fun withObserveAppLockConfig(userId: UserId, result: Flow<Either<StorageFailure, AppLockTeamConfig>>) = apply {
             val userConfigRepository = mock(classOf<UserConfigRepository>())

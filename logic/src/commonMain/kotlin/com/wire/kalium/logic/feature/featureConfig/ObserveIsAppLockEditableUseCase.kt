@@ -19,11 +19,12 @@ package com.wire.kalium.logic.feature.featureConfig
 
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
+import com.wire.kalium.logic.functional.flatMapRight
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.mapToRightOr
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 
 /**
@@ -32,7 +33,7 @@ import kotlinx.coroutines.flow.map
  * If there is an enforced app lock on any of the user's accounts, the app lock is not editable.
  */
 interface ObserveIsAppLockEditableUseCase {
-    suspend operator fun invoke(): Flow<Boolean>
+    operator fun invoke(): Flow<Boolean>
 }
 
 class ObserveIsAppLockEditableUseCaseImpl internal constructor(
@@ -40,9 +41,9 @@ class ObserveIsAppLockEditableUseCaseImpl internal constructor(
     private val sessionRepository: SessionRepository
 ) : ObserveIsAppLockEditableUseCase {
     @OptIn(ExperimentalCoroutinesApi::class)
-    override suspend operator fun invoke(): Flow<Boolean> =
+    override operator fun invoke(): Flow<Boolean> =
         sessionRepository.allValidSessionsFlow()
-            .flatMapLatest { accounts ->
+            .flatMapRight { accounts ->
                 combine(
                     accounts.map { session ->
                         userSessionScopeProvider.getOrCreate(session.userId) { userConfigRepository }
@@ -53,4 +54,5 @@ class ObserveIsAppLockEditableUseCaseImpl internal constructor(
                     }
                 ) { it.contains(true).not() }
             }
+            .mapToRightOr(false)
 }
