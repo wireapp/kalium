@@ -23,7 +23,6 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestConversation
@@ -65,7 +64,6 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversationDetails =
             ConversationDetails.Group(
                 groupConversation,
-                LegalHoldStatus.DISABLED,
                 lastMessage = null,
                 isSelfUserMember = true,
                 isSelfUserCreator = true,
@@ -102,7 +100,6 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversationDetails1 =
             ConversationDetails.Group(
                 groupConversation1,
-                LegalHoldStatus.DISABLED,
                 lastMessage = null,
                 isSelfUserMember = true,
                 isSelfUserCreator = true,
@@ -112,7 +109,6 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversationDetails2 =
             ConversationDetails.Group(
                 groupConversation2,
-                LegalHoldStatus.DISABLED,
                 lastMessage = null,
                 isSelfUserMember = true,
                 isSelfUserCreator = true,
@@ -149,7 +145,6 @@ class ObserveConversationListDetailsUseCaseTest {
         val selfConversationDetails = ConversationDetails.Self(selfConversation)
         val groupConversationDetails = ConversationDetails.Group(
             conversation = groupConversation,
-            legalHoldStatus = LegalHoldStatus.DISABLED,
             lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
@@ -187,7 +182,6 @@ class ObserveConversationListDetailsUseCaseTest {
         val groupConversationUpdates = listOf(
             ConversationDetails.Group(
                 groupConversation,
-                LegalHoldStatus.DISABLED,
                 lastMessage = null,
                 isSelfUserMember = true,
                 isSelfUserCreator = true,
@@ -199,7 +193,6 @@ class ObserveConversationListDetailsUseCaseTest {
         val firstOneOnOneDetails = ConversationDetails.OneOne(
             oneOnOneConversation,
             TestUser.OTHER,
-            LegalHoldStatus.ENABLED,
             UserType.INTERNAL,
             lastMessage = null,
             unreadEventCount = emptyMap()
@@ -207,7 +200,6 @@ class ObserveConversationListDetailsUseCaseTest {
         val secondOneOnOneDetails = ConversationDetails.OneOne(
             oneOnOneConversation,
             TestUser.OTHER.copy(name = "New User Name"),
-            LegalHoldStatus.DISABLED,
             UserType.INTERNAL,
             lastMessage = null,
             unreadEventCount = emptyMap()
@@ -244,7 +236,6 @@ class ObserveConversationListDetailsUseCaseTest {
         val fetchArchivedConversations = false
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
-            LegalHoldStatus.DISABLED,
             lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
@@ -282,7 +273,6 @@ class ObserveConversationListDetailsUseCaseTest {
         val fetchArchivedConversations = false
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
-            LegalHoldStatus.DISABLED,
             lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
@@ -314,7 +304,6 @@ class ObserveConversationListDetailsUseCaseTest {
 
         val groupConversationDetails = ConversationDetails.Group(
             groupConversation,
-            LegalHoldStatus.DISABLED,
             lastMessage = null,
             isSelfUserMember = true,
             isSelfUserCreator = true,
