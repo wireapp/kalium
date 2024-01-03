@@ -26,8 +26,8 @@ class ConcurrentMutableMapTest {
     @Test
     fun givenConcurrentMap_whenSafeComputeIfAbsentIsCalledWith_thenTheSecondIsIgnored() {
         val map = ConcurrentMutableMap<String, String>()
-        map.safeComputeIfAbsent("a") { "c" }
-        map.safeComputeIfAbsent("a") { "d" }
+        map.computeIfAbsent("a") { "c" }
+        map.computeIfAbsent("a") { "d" }
         assertEquals("c", map["a"])
     }
 }
