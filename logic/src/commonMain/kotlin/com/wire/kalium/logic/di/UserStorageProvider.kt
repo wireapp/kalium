@@ -20,7 +20,6 @@ package com.wire.kalium.logic.di
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.util.safeComputeIfAbsent
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.UserPrefBuilder
 
@@ -31,7 +30,7 @@ abstract class UserStorageProvider {
         userId: UserId,
         platformUserStorageProperties: PlatformUserStorageProperties,
         shouldEncryptData: Boolean = true
-    ): UserStorage = inMemoryUserStorage.safeComputeIfAbsent(userId) {
+    ): UserStorage = inMemoryUserStorage.computeIfAbsent(userId) {
         create(userId, shouldEncryptData, platformUserStorageProperties)
     }
 
