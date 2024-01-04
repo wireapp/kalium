@@ -41,7 +41,8 @@ import com.wire.kalium.logic.feature.client.ClearNewClientsForUserUseCase
 import com.wire.kalium.logic.feature.client.ClearNewClientsForUserUseCaseImpl
 import com.wire.kalium.logic.feature.client.ObserveNewClientsUseCase
 import com.wire.kalium.logic.feature.client.ObserveNewClientsUseCaseImpl
-import com.wire.kalium.logic.feature.featureConfig.IsAppLockEditableUseCase
+import com.wire.kalium.logic.feature.featureConfig.ObserveIsAppLockEditableUseCase
+import com.wire.kalium.logic.feature.featureConfig.ObserveIsAppLockEditableUseCaseImpl
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCase
 import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseCaseImpl
 import com.wire.kalium.logic.feature.rootDetection.CheckSystemIntegrityUseCase
@@ -188,6 +189,6 @@ class GlobalKaliumScope internal constructor(
     val clearNewClientsForUser: ClearNewClientsForUserUseCase
         get() = ClearNewClientsForUserUseCaseImpl(userSessionScopeProvider.value)
 
-    val isAppLockEditableUseCase: IsAppLockEditableUseCase
-        get() = IsAppLockEditableUseCase(userSessionScopeProvider.value, sessionRepository)
+    val observeIsAppLockEditableUseCase: ObserveIsAppLockEditableUseCase
+        get() = ObserveIsAppLockEditableUseCaseImpl(userSessionScopeProvider.value, sessionRepository)
 }
