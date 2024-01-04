@@ -23,7 +23,6 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -77,7 +76,6 @@ class ObserveConversationDetailsUseCaseTest {
             Either.Right(
                 ConversationDetails.Group(
                     conversation,
-                    LegalHoldStatus.DISABLED,
                     lastMessage = null,
                     isSelfUserMember = true,
                     isSelfUserCreator = true,
@@ -88,7 +86,6 @@ class ObserveConversationDetailsUseCaseTest {
             Either.Right(
                 ConversationDetails.Group(
                     conversation.copy(name = "New Name"),
-                    LegalHoldStatus.DISABLED,
                     lastMessage = null,
                     isSelfUserMember = true,
                     isSelfUserCreator = true,
