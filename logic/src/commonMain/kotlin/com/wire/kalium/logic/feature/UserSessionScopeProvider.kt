@@ -27,6 +27,7 @@ import com.wire.kalium.logic.util.safeComputeIfAbsent
 interface UserSessionScopeProvider {
     fun get(userId: UserId): UserSessionScope?
     fun getOrCreate(userId: UserId): UserSessionScope
+    fun <T> getOrCreate(userId: UserId, action: UserSessionScope.() -> T): T
     fun delete(userId: UserId)
 }
 
@@ -44,6 +45,8 @@ abstract class UserSessionScopeProviderCommon(
         userScopeStorage.safeComputeIfAbsent(userId) {
             create(userId)
         }
+
+    override fun <T> getOrCreate(userId: UserId, action: UserSessionScope.() -> T): T = getOrCreate(userId).action()
 
     override fun get(userId: UserId): UserSessionScope? = userScopeStorage.get(userId)
 
