@@ -29,7 +29,6 @@ import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.MessagePreview
 import com.wire.kalium.logic.data.message.UnreadEventType
-import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
@@ -194,7 +193,7 @@ data class Conversation(
     enum class TypingIndicatorMode { STARTED, STOPPED }
 
     enum class VerificationStatus { VERIFIED, NOT_VERIFIED, DEGRADED }
-    enum class LegalHoldStatus { ENABLED, DISABLED, DEGRADED }
+    enum class LegalHoldStatus { ENABLED, DISABLED, DEGRADED, UNKNOWN }
 
     @Suppress("MagicNumber")
     enum class CipherSuite(val tag: Int) {
@@ -288,7 +287,6 @@ sealed class ConversationDetails(open val conversation: Conversation) {
     data class OneOne(
         override val conversation: Conversation,
         val otherUser: OtherUser,
-        val legalHoldStatus: LegalHoldStatus,
         val userType: UserType,
         val unreadEventCount: UnreadEventCount,
         val lastMessage: MessagePreview?
@@ -296,7 +294,6 @@ sealed class ConversationDetails(open val conversation: Conversation) {
 
     data class Group(
         override val conversation: Conversation,
-        val legalHoldStatus: LegalHoldStatus,
         val hasOngoingCall: Boolean = false,
         val unreadEventCount: UnreadEventCount,
         val lastMessage: MessagePreview?,

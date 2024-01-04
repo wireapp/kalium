@@ -262,9 +262,30 @@ internal class MessageInsertExtensionImpl(
                 protocol = content.protocol
             )
 
+            is MessageEntityContent.ConversationProtocolChangedDuringACall -> messagesQueries.insertConversationProtocolChangedDuringACall(
+                message_id = message.id,
+                conversation_id = message.conversationId
+            )
+
             is MessageEntityContent.ConversationStartedUnverifiedWarning -> {
                 /* no-op */
             }
+
+            is MessageEntityContent.Location -> messagesQueries.insertLocationMessageContent(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                latitude = content.latitude,
+                longitude = content.longitude,
+                name = content.name,
+                zoom = content.zoom
+            )
+
+            is MessageEntityContent.LegalHold -> messagesQueries.insertLegalHoldMessage(
+                message_id = message.id,
+                conversation_id = message.conversationId,
+                legal_hold_member_list = content.memberUserIdList,
+                legal_hold_type = content.type
+            )
         }
     }
 
@@ -289,6 +310,7 @@ internal class MessageInsertExtensionImpl(
                 is MessageEntityContent.Asset,
                 is MessageEntityContent.RestrictedAsset,
                 is MessageEntityContent.Composite,
+                is MessageEntityContent.Location,
                 is MessageEntityContent.FailedDecryption -> unreadEventsQueries.insertEvent(
                     message.id,
                     UnreadEventTypeEntity.MESSAGE,
@@ -309,6 +331,7 @@ internal class MessageInsertExtensionImpl(
                 is MessageEntityContent.ConversationReceiptModeChanged,
                 is MessageEntityContent.ConversationRenamed,
                 is MessageEntityContent.ConversationProtocolChanged,
+                is MessageEntityContent.ConversationProtocolChangedDuringACall,
                 MessageEntityContent.CryptoSessionReset,
                 MessageEntityContent.HistoryLost,
                 MessageEntityContent.HistoryLostProtocolChanged,
@@ -321,7 +344,9 @@ internal class MessageInsertExtensionImpl(
                 MessageEntityContent.ConversationDegradedProteus,
                 MessageEntityContent.ConversationVerifiedProteus,
                 MessageEntityContent.ConversationStartedUnverifiedWarning,
-                is MessageEntityContent.TeamMemberRemoved -> {
+                is MessageEntityContent.TeamMemberRemoved,
+                is MessageEntityContent.LegalHold,
+                -> {
                     /* no-op */
                 }
             }
@@ -413,6 +438,11 @@ internal class MessageInsertExtensionImpl(
         MessageEntityContent.ConversationVerifiedMLS -> MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS
         MessageEntityContent.ConversationVerifiedProteus -> MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS
         is MessageEntityContent.ConversationProtocolChanged -> MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED
-        is MessageEntityContent.ConversationStartedUnverifiedWarning -> MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING
+        is MessageEntityContent.ConversationProtocolChangedDuringACall ->
+            MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED_DURING_CALL
+        is MessageEntityContent.ConversationStartedUnverifiedWarning ->
+            MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING
+        is MessageEntityContent.Location -> MessageEntity.ContentType.LOCATION
+        is MessageEntityContent.LegalHold -> MessageEntity.ContentType.LEGAL_HOLD
     }
 }

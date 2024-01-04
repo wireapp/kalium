@@ -134,7 +134,7 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
         E2EIModel(
             E2EIConfigModel(
                 data?.config?.url ?: "",
-                data?.config?.verificationExpirationNS ?: 0L
+                data?.config?.verificationExpirationSeconds ?: 0L
             ),
             fromDTO(data?.status ?: FeatureFlagStatusDTO.DISABLED)
         )

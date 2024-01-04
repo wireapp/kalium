@@ -20,9 +20,6 @@
 
 package com.wire.kalium.cryptography
 
-import com.benasher44.uuid.uuidFrom
-import io.ktor.util.encodeBase64
-
 typealias MLSGroupId = String
 
 data class CryptoClientId(val value: String) {
@@ -78,32 +75,10 @@ data class WireIdentity(
     val handle: String,
     val displayName: String,
     val domain: String,
-    val certificate: String
+    val certificate: String,
+    val status: CryptoCertificateStatus
 )
 
-@Suppress("MagicNumber")
-data class E2EIQualifiedClientId(
-    val value: String,
-    val userId: CryptoQualifiedID
-) {
-    fun getEncodedUserID(): String {
-        val sourceUUID = uuidFrom(userId.value)
-
-        // Convert the UUID to bytes
-        val uuidBytes = ByteArray(16)
-        val mostSigBits = sourceUUID.mostSignificantBits
-        val leastSigBits = sourceUUID.leastSignificantBits
-
-        for (i in 0..7) {
-            uuidBytes[i] = ((mostSigBits shr (56 - i * 8)) and 0xFF).toByte()
-            uuidBytes[i + 8] = ((leastSigBits shr (56 - i * 8)) and 0xFF).toByte()
-        }
-
-        // Base64url encode the UUID bytes without padding
-        return uuidBytes.encodeBase64().removeSuffix("==")
-    }
-
-    override fun toString(): String {
-        return "${getEncodedUserID()}:${value}@${userId.domain}"
-    }
+enum class CryptoCertificateStatus {
+    VALID, EXPIRED, REVOKED;
 }

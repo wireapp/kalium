@@ -19,20 +19,25 @@
 package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.EnumColumnAdapter
+import app.cash.sqldelight.adapter.primitive.FloatColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import com.wire.kalium.persistence.Call
 import com.wire.kalium.persistence.Client
 import com.wire.kalium.persistence.Connection
 import com.wire.kalium.persistence.Conversation
+import com.wire.kalium.persistence.ConversationLegalHoldStatusChangeNotified
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageConversationChangedContent
+import com.wire.kalium.persistence.MessageConversationLocationContent
 import com.wire.kalium.persistence.MessageConversationProtocolChangedContent
+import com.wire.kalium.persistence.MessageConversationProtocolChangedDuringACallContent
 import com.wire.kalium.persistence.MessageConversationReceiptModeChangedContent
 import com.wire.kalium.persistence.MessageConversationTimerChangedContent
 import com.wire.kalium.persistence.MessageFailedToDecryptContent
 import com.wire.kalium.persistence.MessageFederationTerminatedContent
+import com.wire.kalium.persistence.MessageLegalHoldContent
 import com.wire.kalium.persistence.MessageMemberChangeContent
 import com.wire.kalium.persistence.MessageMention
 import com.wire.kalium.persistence.MessageMissedCallContent
@@ -58,9 +63,9 @@ import com.wire.kalium.persistence.adapter.MemberRoleAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
 import com.wire.kalium.persistence.adapter.ServiceTagListAdapter
-import com.wire.kalium.persistence.content.ButtonContent
 import com.wire.kalium.persistence.adapter.StringListAdapter
 import com.wire.kalium.persistence.adapter.SupportedProtocolSetAdapter
+import com.wire.kalium.persistence.content.ButtonContent
 
 internal object TableMapper {
     val callAdapter = Call.Adapter(
@@ -197,6 +202,9 @@ internal object TableMapper {
         conversation_idAdapter = QualifiedIDAdapter,
         protocolAdapter = EnumColumnAdapter()
     )
+    val messageConversationProtocolChangedDuringACAllContentAdapter = MessageConversationProtocolChangedDuringACallContent.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter
+    )
     val unreadEventAdapter = UnreadEvent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
         typeAdapter = EnumColumnAdapter(),
@@ -222,6 +230,23 @@ internal object TableMapper {
     )
 
     val buttonContentAdapter = ButtonContent.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter
+    )
+
+    val messageConversationLocationContentAdapter = MessageConversationLocationContent.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        latitudeAdapter = FloatColumnAdapter,
+        longitudeAdapter = FloatColumnAdapter,
+        zoomAdapter = IntColumnAdapter
+    )
+
+    val messageLegalHoldContentAdapter = MessageLegalHoldContent.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        legal_hold_member_listAdapter = QualifiedIDListAdapter,
+        legal_hold_typeAdapter = EnumColumnAdapter()
+    )
+
+    val conversationLegalHoldStatusChangeNotifiedAdapter = ConversationLegalHoldStatusChangeNotified.Adapter(
         conversation_idAdapter = QualifiedIDAdapter
     )
 }

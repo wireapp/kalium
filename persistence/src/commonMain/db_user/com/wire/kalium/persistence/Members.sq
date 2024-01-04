@@ -16,6 +16,12 @@ insertMember:
 INSERT OR IGNORE INTO Member(user, conversation, role)
 VALUES (?, ?, ?);
 
+insertOrUpdateMember:
+INSERT INTO Member(user, conversation, role)
+VALUES (?, ?, ?)
+ON CONFLICT(user, conversation) DO UPDATE SET
+role = excluded.role;
+
 deleteMember:
 DELETE FROM Member WHERE conversation = ? AND user = ?;
 
@@ -62,14 +68,6 @@ updateMemberRole:
 UPDATE Member
 SET role = ?
 WHERE user = ? AND conversation = ?;
-
-deleteUserFromGroupConversations:
-DELETE FROM Member
-WHERE conversation IN (
-    SELECT conversation FROM Member
-    JOIN Conversation ON Conversation.qualified_id = Member.conversation
-    WHERE Member.user = ? AND Conversation.type = 'GROUP'
-) AND Member.user = ?;
 
 isUserMember:
 SELECT user FROM Member WHERE conversation = :conversationId AND user = :userId;

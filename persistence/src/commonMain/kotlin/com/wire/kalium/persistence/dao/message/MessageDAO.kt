@@ -73,6 +73,8 @@ interface MessageDAO {
         visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
     ): Flow<List<MessageEntity>>
 
+    suspend fun getLastMessagesByConversations(conversationIds: List<QualifiedIDEntity>): Map<QualifiedIDEntity, MessageEntity>
+
     suspend fun getNotificationMessage(): Flow<List<NotificationMessageEntity>>
 
     suspend fun observeMessagesByConversationAndVisibilityAfterDate(
@@ -89,6 +91,7 @@ interface MessageDAO {
         newTextContent: MessageEntityContent.Text,
         newMessageId: String
     )
+    suspend fun updateLegalHoldMessageMembers(conversationId: QualifiedIDEntity, messageId: String, newMembers: List<QualifiedIDEntity>)
 
     suspend fun observeMessageVisibility(messageUuid: String, conversationId: QualifiedIDEntity): Flow<MessageEntity.Visibility?>
     suspend fun observeLastMessages(): Flow<List<MessagePreviewEntity>>
@@ -142,7 +145,8 @@ interface MessageDAO {
     ): Int
 
     val platformExtensions: MessageExtensions
-    suspend fun getMessageAssets(
+
+    suspend fun getImageMessageAssets(
         conversationId: QualifiedIDEntity,
         mimeTypes: Set<String>,
         limit: Int,

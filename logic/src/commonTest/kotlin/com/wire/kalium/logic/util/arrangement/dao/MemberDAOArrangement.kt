@@ -67,6 +67,7 @@ interface MemberDAOArrangement {
     )
 
     fun withDeleteMembersByQualifiedID(
+        throws: Throwable? = null,
         conversationId: Matcher<QualifiedIDEntity> = any(),
         memberIdList: Matcher<List<QualifiedIDEntity>> = any()
     )
@@ -140,13 +141,21 @@ class MemberDAOArrangementImpl : MemberDAOArrangement {
     }
 
     override fun withDeleteMembersByQualifiedID(
+        throws: Throwable?,
         conversationId: Matcher<QualifiedIDEntity>,
         memberIdList: Matcher<List<QualifiedIDEntity>>
     ) {
-        given(memberDAO)
-            .suspendFunction(memberDAO::deleteMembersByQualifiedID)
-            .whenInvokedWith(memberIdList, conversationId)
-            .thenReturn(Unit)
+        if (throws != null) {
+            given(memberDAO)
+                .suspendFunction(memberDAO::deleteMembersByQualifiedID)
+                .whenInvokedWith(memberIdList, conversationId)
+                .thenThrow(throws)
+        } else {
+            given(memberDAO)
+                .suspendFunction(memberDAO::deleteMembersByQualifiedID)
+                .whenInvokedWith(memberIdList, conversationId)
+                .thenReturn(Unit)
+        }
     }
 }
 

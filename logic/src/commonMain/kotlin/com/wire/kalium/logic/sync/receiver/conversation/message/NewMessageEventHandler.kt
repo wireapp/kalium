@@ -22,6 +22,7 @@ import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
@@ -32,6 +33,7 @@ import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.toInstant
 
@@ -40,10 +42,12 @@ internal interface NewMessageEventHandler {
     suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage)
 }
 
+@Suppress("LongParameterList")
 internal class NewMessageEventHandlerImpl(
     private val proteusMessageUnpacker: ProteusMessageUnpacker,
     private val mlsMessageUnpacker: MLSMessageUnpacker,
     private val applicationMessageHandler: ApplicationMessageHandler,
+    private val legalHoldHandler: LegalHoldHandler,
     private val enqueueSelfDeletion: (conversationId: ConversationId, messageId: String) -> Unit,
     private val selfUserId: UserId,
     private val staleEpochVerifier: StaleEpochVerifier
@@ -82,6 +86,9 @@ internal class NewMessageEventHandlerImpl(
                 )
             }.onSuccess {
                 if (it is MessageUnpackResult.ApplicationMessage) {
+                    if (it.content.legalHoldStatus != Conversation.LegalHoldStatus.UNKNOWN) {
+                        legalHoldHandler.handleNewMessage(it, event.live)
+                    }
                     handleSuccessfulResult(it)
                     onMessageInserted(it)
                 }
@@ -106,6 +113,7 @@ internal class NewMessageEventHandlerImpl(
                     is MLSMessageFailureResolution.Ignore -> {
                         logger.i("Ignoring event: ${logMap.toJsonElement()}")
                     }
+
                     is MLSMessageFailureResolution.InformUser -> {
                         logger.i("Informing users about decryption error: ${logMap.toJsonElement()}")
                         applicationMessageHandler.handleDecryptionError(
@@ -120,14 +128,21 @@ internal class NewMessageEventHandlerImpl(
                             )
                         )
                     }
+
                     is MLSMessageFailureResolution.OutOfSync -> {
                         logger.i("Epoch out of sync error: ${logMap.toJsonElement()}")
-                        staleEpochVerifier.verifyEpoch(event.conversationId, event.timestampIso.toInstant())
+                        staleEpochVerifier.verifyEpoch(
+                            event.conversationId,
+                            event.timestampIso.toInstant()
+                        )
                     }
                 }
             }.onSuccess {
                 it.forEach {
                     if (it is MessageUnpackResult.ApplicationMessage) {
+                        if (it.content.legalHoldStatus != Conversation.LegalHoldStatus.UNKNOWN) {
+                            legalHoldHandler.handleNewMessage(it, event.live)
+                        }
                         handleSuccessfulResult(it)
                         onMessageInserted(it)
                     }

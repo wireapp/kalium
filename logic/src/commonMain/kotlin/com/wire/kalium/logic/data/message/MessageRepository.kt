@@ -21,7 +21,6 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.asset.SUPPORTED_IMAGE_ASSET_MIME_TYPES
 import com.wire.kalium.logic.data.asset.toDao
@@ -64,7 +63,7 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
-interface MessageRepository {
+internal interface MessageRepository {
     /**
      * this fun should never be used directly, use PersistMessageUseCase() instead
      * @see PersistMessageUseCase
@@ -118,6 +117,10 @@ interface MessageRepository {
         visibility: List<Message.Visibility> = Message.Visibility.values().toList()
     ): Flow<List<Message>>
 
+    suspend fun getLastMessagesForConversationIds(
+        conversationIdList: List<ConversationId>
+    ): Either<StorageFailure, Map<ConversationId, Message>>
+
     suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Either<CoreFailure, Flow<List<LocalNotification>>>
 
     suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
@@ -167,6 +170,12 @@ interface MessageRepository {
         messageContent: MessageContent.TextEdited,
         newMessageId: String,
         editTimeStamp: String
+    ): Either<CoreFailure, Unit>
+
+    suspend fun updateLegalHoldMessageMembers(
+        messageId: String,
+        conversationId: ConversationId,
+        newMembers: List<UserId>,
     ): Either<CoreFailure, Unit>
 
     suspend fun resetAssetProgressStatus()
@@ -226,17 +235,20 @@ interface MessageRepository {
     ): Either<StorageFailure, Int>
 
     val extensions: MessageRepositoryExtensions
-    suspend fun getAssetMessagesByConversationId(conversationId: ConversationId, limit: Int, offset: Int): List<AssetMessage>
+    suspend fun getImageAssetMessagesByConversationId(
+        conversationId: ConversationId,
+        limit: Int,
+        offset: Int
+    ): List<AssetMessage>
 }
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
 @Suppress("LongParameterList", "TooManyFunctions")
-class MessageDataSource(
+internal class MessageDataSource internal constructor (
     private val selfUserId: UserId,
     private val messageApi: MessageApi,
     private val mlsMessageApi: MLSMessageApi,
     private val messageDAO: MessageDAO,
-    private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper(),
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
@@ -259,17 +271,23 @@ class MessageDataSource(
             visibility.map { it.toEntityVisibility() }
         ).map { messagelist -> messagelist.map(messageMapper::fromEntityToMessage) }
 
-    override suspend fun getAssetMessagesByConversationId(
+    override suspend fun getLastMessagesForConversationIds(
+        conversationIdList: List<ConversationId>
+    ): Either<StorageFailure, Map<ConversationId, Message>> = wrapStorageRequest {
+        messageDAO.getLastMessagesByConversations(conversationIdList.map { it.toDao() })
+    }.map { it.map { it.key.toModel() to messageMapper.fromEntityToMessage(it.value) }.toMap() }
+
+    override suspend fun getImageAssetMessagesByConversationId(
         conversationId: ConversationId,
         limit: Int,
         offset: Int
-    ): List<AssetMessage> = messageDAO.getMessageAssets(
+    ): List<AssetMessage> = messageDAO.getImageMessageAssets(
         conversationId.toDao(),
         mimeTypes = SUPPORTED_IMAGE_ASSET_MIME_TYPES,
         limit,
         offset
     )
-        .map(messageMapper::fromAssetEntityToMessage)
+        .map(messageMapper::fromAssetEntityToAssetMessage)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun getNotificationMessage(
@@ -541,6 +559,14 @@ class MessageDataSource(
                 newMessageId = newMessageId
             )
         }
+    }
+
+    override suspend fun updateLegalHoldMessageMembers(
+        messageId: String,
+        conversationId: ConversationId,
+        newMembers: List<UserId>,
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.updateLegalHoldMessageMembers(conversationId.toDao(), messageId, newMembers.map { it.toDao() })
     }
 
     override suspend fun resetAssetProgressStatus() {

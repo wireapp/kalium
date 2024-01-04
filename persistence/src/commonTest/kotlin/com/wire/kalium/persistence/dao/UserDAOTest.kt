@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao
 
 import app.cash.turbine.test
 import com.wire.kalium.persistence.BaseDatabaseTest
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.utils.stubs.TestStubs
@@ -465,6 +466,24 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenDeletedUser_whenInserting_thenDoNotOverrideOldData() = runTest(dispatcher) {
+        // given
+        val commonPrefix = "common"
+
+        val mockUser = USER_ENTITY_1.copy(name = commonPrefix + "u1", email = "test@wire.com")
+        db.userDAO.upsertUser(mockUser)
+
+        val deletedUser = mockUser.copy(name = null, deleted = true, email = null)
+        db.userDAO.upsertUser(deletedUser)
+
+        // when
+        db.userDAO.observeUserDetailsByQualifiedID(USER_ENTITY_1.id).first().also { searchResult ->
+            // then
+            assertEquals(mockUser.copy(deleted = true, userType = UserTypeEntity.NONE), searchResult?.toSimpleEntity())
+        }
+    }
+
+    @Test
     fun givenAExistingUsers_whenUpdatingTheirValues_ThenResultsIsEqualToThatUserButWithFieldsModified() = runTest(dispatcher) {
         // given
         val newNameA = "new user naming a"
@@ -494,6 +513,74 @@ class UserDAOTest : BaseDatabaseTest() {
         val inserted2 = db.userDAO.observeUserDetailsByQualifiedID(user2.id)
         assertEquals(newNameA, updated1.first()?.name)
         assertNotNull(inserted2)
+    }
+
+    @Test
+    fun givenExistingUsers_whenMarkUserAsDeletedAndRemoveFromGroupConv_thenRetainBasicInformation() = runTest {
+        val user = newUserEntity().copy(id = UserIDEntity("user-1", "domain-1"))
+        val groupConversation =
+            newConversationEntity(id = ConversationIDEntity("conversationId", "domain")).copy(type = ConversationEntity.Type.GROUP)
+        val oneOnOneConversation =
+            newConversationEntity(id = ConversationIDEntity("conversationId1on1", "domain")).copy(type = ConversationEntity.Type.ONE_ON_ONE)
+        db.userDAO.upsertUsers(listOf(user))
+        db.conversationDAO.insertConversation(groupConversation)
+        db.conversationDAO.insertConversation(oneOnOneConversation)
+        db.memberDAO.insertMember(MemberEntity(user.id, MemberEntity.Role.Member), groupConversation.id)
+        db.memberDAO.insertMember(MemberEntity(user.id, MemberEntity.Role.Member), oneOnOneConversation.id)
+        // when
+        db.userDAO.markUserAsDeletedAndRemoveFromGroupConv(user.id)
+
+        // then
+        db.userDAO.getAllUsersDetails().first().firstOrNull { it.id == user.id }.also {
+            assertNotNull(it)
+            assertTrue { it.deleted }
+            assertEquals(user.name, it.name)
+            assertEquals(user.handle, it.handle)
+            assertEquals(user.email, it.email)
+            assertEquals(user.phone, it.phone)
+        }
+
+        db.memberDAO.observeIsUserMember(userId = user.id, conversationId = groupConversation.id).first().also {
+            assertFalse(it)
+        }
+
+        db.memberDAO.observeIsUserMember(userId = user.id, conversationId = oneOnOneConversation.id).first().also {
+            assertTrue(it)
+        }
+    }
+
+    @Test
+    fun givenExistingUsers_whenUpsertToDeleted_thenRetainBasicInformation() = runTest {
+        val user = newUserEntity().copy(id = UserIDEntity("user-1", "domain-1"))
+        val groupConversation =
+            newConversationEntity(id = ConversationIDEntity("conversationId", "domain")).copy(type = ConversationEntity.Type.GROUP)
+        val oneOnOneConversation =
+            newConversationEntity(id = ConversationIDEntity("conversationId1on1", "domain")).copy(type = ConversationEntity.Type.ONE_ON_ONE)
+        db.userDAO.upsertUsers(listOf(user))
+        db.conversationDAO.insertConversation(groupConversation)
+        db.conversationDAO.insertConversation(oneOnOneConversation)
+        db.memberDAO.insertMember(MemberEntity(user.id, MemberEntity.Role.Member), groupConversation.id)
+        db.memberDAO.insertMember(MemberEntity(user.id, MemberEntity.Role.Member), oneOnOneConversation.id)
+        // when
+        db.userDAO.upsertUser(user.copy(deleted = true))
+
+        // then
+        db.userDAO.getAllUsersDetails().first().firstOrNull { it.id == user.id }.also {
+            assertNotNull(it)
+            assertTrue { it.deleted }
+            assertEquals(user.name, it.name)
+            assertEquals(user.handle, it.handle)
+            assertEquals(user.email, it.email)
+            assertEquals(user.phone, it.phone)
+        }
+
+        db.memberDAO.observeIsUserMember(userId = user.id, conversationId = groupConversation.id).first().also {
+            assertFalse(it)
+        }
+
+        db.memberDAO.observeIsUserMember(userId = user.id, conversationId = oneOnOneConversation.id).first().also {
+            assertTrue(it)
+        }
     }
 
     @Test
@@ -582,8 +669,8 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenUser_WhenMarkingAsDeleted_ThenProperValueShouldBeUpdated() = runTest(dispatcher) {
         val user = user1
         db.userDAO.upsertUser(user)
-        val deletedUser = user1.copy(deleted = true, team = null, userType = UserTypeEntity.NONE)
-        db.userDAO.markUserAsDeleted(user1.id)
+        val deletedUser = user1.copy(deleted = true, userType = UserTypeEntity.NONE)
+        db.userDAO.markUserAsDeletedAndRemoveFromGroupConv(user1.id)
         val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()
         assertEquals(result?.toSimpleEntity(), deletedUser)
 
@@ -698,6 +785,7 @@ class UserDAOTest : BaseDatabaseTest() {
         assertNotNull(result)
         assertEquals(true, result.defederated)
     }
+
     @Test
     fun givenAnExistingUser_whenUpdatingTheSupportedProtocols_thenTheValueShouldBeUpdated() = runTest(dispatcher) {
         // given
@@ -780,7 +868,7 @@ class UserDAOTest : BaseDatabaseTest() {
             activeOneOnOneConversationId = null,
         )
         db.userDAO.upsertUser(user)
-        val updatedTeamMemberUser = user1.copy(
+        val updatedTeamMemberUser = user.copy(
             name = "newName",
             handle = "newHandle",
             email = "newEmail",
@@ -793,7 +881,7 @@ class UserDAOTest : BaseDatabaseTest() {
             availabilityStatus = UserAvailabilityStatusEntity.BUSY,
             userType = UserTypeEntity.EXTERNAL,
             botService = BotIdEntity("newBotService", "newBotServiceDomain"),
-            deleted = true,
+            deleted = false,
             hasIncompleteMetadata = true,
             expiresAt = DateTimeUtil.currentInstant(),
             defederated = true,
@@ -821,6 +909,38 @@ class UserDAOTest : BaseDatabaseTest() {
         assertNotEquals(updatedTeamMemberUser.availabilityStatus, result.availabilityStatus)
         assertNotEquals(updatedTeamMemberUser.defederated, result.defederated)
         assertNotEquals(updatedTeamMemberUser.activeOneOnOneConversationId, result.activeOneOnOneConversationId)
+    }
+
+    @Test
+    fun givenListOfUsers_whenOnlyOneBelongsToTheTeam_thenReturnTrue() = runTest {
+        val teamId = "teamId"
+        val users = listOf(
+            newUserEntity().copy(team = teamId, id = UserIDEntity("1", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("2", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("3", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("4", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("5", "wire.com")),
+        )
+
+        db.userDAO.upsertUsers(users)
+
+        assertTrue { db.userDAO.isAtLeastOneUserATeamMember(users.map { it.id }, teamId) }
+    }
+
+    @Test
+    fun givenListOfUsers_whenNoneBelongsToTheTeam_thenReturnFalse() = runTest {
+        val teamId = "teamId"
+        val users = listOf(
+            newUserEntity().copy(team = null, id = UserIDEntity("1", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("2", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("3", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("4", "wire.com")),
+            newUserEntity().copy(team = null, id = UserIDEntity("5", "wire.com")),
+        )
+
+        db.userDAO.upsertUsers(users)
+
+        assertFalse { db.userDAO.isAtLeastOneUserATeamMember(users.map { it.id }, teamId) }
     }
 
     private companion object {

@@ -23,10 +23,12 @@ import com.wire.kalium.plugins.commonDokkaConfig
 plugins {
     application
     kotlin("jvm")
+    id(libs.plugins.sqldelight.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
 }
 val mainFunctionClassName = "com.wire.kalium.monkeys.MainKt"
+val replayerMainFunctionClassName = "com.wire.kalium.monkeys.ReplayerKt"
 
 application {
     mainClass.set(mainFunctionClassName)
@@ -38,7 +40,20 @@ java {
     }
 }
 
+val replayerJar by tasks.register("replayerJar", Jar::class) {
+    manifest.attributes["Main-Class"] = replayerMainFunctionClassName
+    archiveBaseName.set("replayer")
+    val dependencies = configurations
+        .runtimeClasspath
+        .get()
+        .map(::zipTree)
+    from(dependencies)
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    with(tasks.jar.get())
+}
+
 tasks.jar {
+    dependsOn(replayerJar)
     manifest.attributes["Main-Class"] = mainFunctionClassName
     val dependencies = configurations
         .runtimeClasspath
@@ -61,6 +76,7 @@ sourceSets {
             implementation(libs.ktor.utils)
             implementation(libs.coroutines.core)
             implementation(libs.ktxDateTime)
+            implementation(libs.ktxReactive)
 
             implementation(libs.ktxSerialization)
             implementation(libs.ktor.serialization)
@@ -74,6 +90,14 @@ sourceSets {
             implementation(libs.micrometer)
 
             implementation(libs.faker)
+
+            implementation(libs.concurrentCollections)
+            implementation(libs.statelyCommons)
+
+            implementation(libs.sqldelight.r2dbc)
+            implementation(libs.sqldelight.async)
+            implementation(libs.r2dbc.postgres)
+            implementation(libs.r2dbc.spi)
         }
     }
 
@@ -95,6 +119,17 @@ sourceSets {
 
     tasks.withType<JavaExec> {
         jvmArgs = listOf("-Djava.library.path=/usr/local/lib/:./native/libs")
+    }
+}
+
+sqldelight {
+    databases {
+        create("InfiniteMonkeysDB") {
+            dialect(libs.sqldelight.postgres.get().toString())
+            packageName.set("com.wire.kalium.monkeys.db")
+            generateAsync.set(true)
+            srcDirs.setFrom("src/main/db_monkeys")
+        }
     }
 }
 

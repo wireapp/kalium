@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.conversation
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.cryptography.CommitBundle
+import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.E2EIConversationState
 import com.wire.kalium.cryptography.GroupInfoBundle
@@ -54,12 +55,13 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembers
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationUsers
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.SendMLSMessageResponse
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.base.authenticated.notification.MemberLeaveReasonDTO
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -1117,8 +1119,7 @@ class MLSConversationRepositoryTest {
             .withGetMLSClientSuccessful()
             .withRotateAllSuccessful()
             .withSendCommitBundleSuccessful()
-            .withUploadKeyPackagesReturning(Either.Right(Unit))
-            .withDeleteKeyPackagesReturning(Either.Right(Unit))
+            .withReplaceKeyPackagesReturning(Either.Right(Unit))
             .arrange()
 
         assertEquals(
@@ -1132,12 +1133,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.keyPackageRepository)
-            .suspendFunction(arrangement.keyPackageRepository::deleteKeyPackages)
-            .with(any(), any())
-            .wasInvoked(once)
-
-        verify(arrangement.keyPackageRepository)
-            .suspendFunction(arrangement.keyPackageRepository::uploadKeyPackages)
+            .suspendFunction(arrangement.keyPackageRepository::replaceKeyPackages)
             .with(any(), any())
             .wasInvoked(once)
 
@@ -1148,12 +1144,11 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenDropKeypackagesFailed_whenRotatingKeysAndMigratingConversation_thenReturnsFailure() = runTest {
+    fun givenReplacingKeypackagesFailed_whenRotatingKeysAndMigratingConversation_thenReturnsFailure() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withRotateAllSuccessful()
-            .withUploadKeyPackagesReturning(Either.Right(Unit))
-            .withDeleteKeyPackagesReturning(TEST_FAILURE)
+            .withReplaceKeyPackagesReturning(TEST_FAILURE)
             .withSendCommitBundleSuccessful()
             .arrange()
 
@@ -1168,48 +1163,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.keyPackageRepository)
-            .suspendFunction(arrangement.keyPackageRepository::deleteKeyPackages)
-            .with(any(), any())
-            .wasInvoked(once)
-
-        verify(arrangement.keyPackageRepository)
-            .suspendFunction(arrangement.keyPackageRepository::uploadKeyPackages)
-            .with(any(), any())
-            .wasNotInvoked()
-
-        verify(arrangement.mlsMessageApi)
-            .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
-            .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
-            .wasNotInvoked()
-    }
-
-    @Test
-    fun givenUploadKeypackagesFailed_whenRotatingKeysAndMigratingConversation_thenReturnsFailure() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
-            .withRotateAllSuccessful()
-            .withUploadKeyPackagesReturning(TEST_FAILURE)
-            .withDeleteKeyPackagesReturning(Either.Right(Unit))
-            .withSendCommitBundleSuccessful()
-            .arrange()
-
-        assertEquals(
-            TEST_FAILURE,
-            mlsConversationRepository.rotateKeysAndMigrateConversations(TestClient.CLIENT_ID, arrangement.e2eiClient, "")
-        )
-
-        verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::e2eiRotateAll)
-            .with(any(), any(), any())
-            .wasInvoked(once)
-
-        verify(arrangement.keyPackageRepository)
-            .suspendFunction(arrangement.keyPackageRepository::deleteKeyPackages)
-            .with(any(), any())
-            .wasInvoked(once)
-
-        verify(arrangement.keyPackageRepository)
-            .suspendFunction(arrangement.keyPackageRepository::uploadKeyPackages)
+            .suspendFunction(arrangement.keyPackageRepository::replaceKeyPackages)
             .with(any(), any())
             .wasInvoked(once)
 
@@ -1224,8 +1178,7 @@ class MLSConversationRepositoryTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withRotateAllSuccessful()
-            .withUploadKeyPackagesReturning(Either.Right(Unit))
-            .withDeleteKeyPackagesReturning(Either.Right(Unit))
+            .withReplaceKeyPackagesReturning(Either.Right(Unit))
             .withSendCommitBundleFailing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
             .arrange()
 
@@ -1239,12 +1192,7 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.keyPackageRepository)
-            .suspendFunction(arrangement.keyPackageRepository::deleteKeyPackages)
-            .with(any(), any())
-            .wasInvoked(once)
-
-        verify(arrangement.keyPackageRepository)
-            .suspendFunction(arrangement.keyPackageRepository::uploadKeyPackages)
+            .suspendFunction(arrangement.keyPackageRepository::replaceKeyPackages)
             .with(any(), any())
             .wasInvoked(once)
 
@@ -1392,16 +1340,9 @@ class MLSConversationRepositoryTest {
                 .then { Either.Right(keyPackages) }
         }
 
-        fun withUploadKeyPackagesReturning(result: Either<CoreFailure, Unit>) = apply {
+        fun withReplaceKeyPackagesReturning(result: Either<CoreFailure, Unit>) = apply {
             given(keyPackageRepository)
-                .suspendFunction(keyPackageRepository::uploadKeyPackages)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(result)
-        }
-
-        fun withDeleteKeyPackagesReturning(result: Either<CoreFailure, Unit>) = apply {
-            given(keyPackageRepository)
-                .suspendFunction(keyPackageRepository::deleteKeyPackages)
+                .suspendFunction(keyPackageRepository::replaceKeyPackages)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(result)
         }
@@ -1616,7 +1557,7 @@ class MLSConversationRepositoryTest {
             )
             val COMMIT_BUNDLE = CommitBundle(COMMIT, WELCOME, PUBLIC_GROUP_STATE_BUNDLE)
             val ROTATE_BUNDLE = RotateBundle(mapOf(RAW_GROUP_ID to COMMIT_BUNDLE), emptyList(), emptyList())
-            val WIRE_IDENTITY = WireIdentity("id", "user_handle", "User Test", "domain.com", "certificate")
+            val WIRE_IDENTITY = WireIdentity("id", "user_handle", "User Test", "domain.com", "certificate", CryptoCertificateStatus.VALID)
             val E2EI_CONVERSATION_CLIENT_INFO_ENTITY =
                 E2EIConversationClientInfoEntity(UserIDEntity(uuid4().toString(), "domain.com"), "clientId", "groupId")
             val DECRYPTED_MESSAGE_BUNDLE = com.wire.kalium.cryptography.DecryptedMessageBundle(
@@ -1637,7 +1578,7 @@ class MLSConversationRepositoryTest {
                 TestConversation.NETWORK_ID,
                 TestConversation.NETWORK_USER_ID1,
                 "2022-03-30T15:36:00.000Z",
-                ConversationUsers(emptyList(), emptyList()),
+                ConversationMemberRemovedDTO(emptyList(), MemberLeaveReasonDTO.LEFT),
                 TestConversation.NETWORK_USER_ID1.value
             )
             val WELCOME_EVENT = Event.Conversation.MLSWelcome(

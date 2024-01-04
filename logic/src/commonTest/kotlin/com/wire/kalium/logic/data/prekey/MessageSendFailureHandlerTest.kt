@@ -21,10 +21,14 @@ package com.wire.kalium.logic.data.prekey
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.client.ClientMapper
+import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandlerImpl
@@ -36,6 +40,7 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
+import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mock
 import io.mockative.any
@@ -50,6 +55,7 @@ import kotlinx.coroutines.test.runTest
 import okio.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
 class MessageSendFailureHandlerTest {
 
@@ -58,30 +64,39 @@ class MessageSendFailureHandlerTest {
         val (arrangement, messageSendFailureHandler) = Arrangement()
             .arrange {
                 withFetchUsersByIdSuccess()
-                withStoreMapOfUserToClientId(Either.Right(Unit))
+                withFetchOtherUserClients(Either.Right(emptyMap()))
+                withStoreUserClientListAndRemoveRedundantClients(Either.Right(Unit))
             }
         val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne, arrangement.userTwo), mapOf(), mapOf(), null)
 
-        messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
+        messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, null)
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::fetchUsersByIds)
+            .with(eq(failureData.missingClientsOfUsers.keys))
+            .wasInvoked(once)
     }
 
     @Test
-    fun givenMissingContactsAndClients_whenHandlingClientsHaveChangedFailureThenClientsShouldBeAddedToContacts() = runTest {
+    fun givenMissingClients_whenHandlingClientsHaveChangedFailure_thenSimpleClientsDataShouldBeFetchedAndAddedToContacts() = runTest {
         val (arrangement, messageSendFailureHandler) = Arrangement()
             .arrange {
                 withFetchUsersByIdSuccess()
-                withStoreMapOfUserToClientId(Either.Right(Unit))
+                withFetchOtherUserClients(Either.Right(mapOf(userOneDTO, userTwoDTO)))
+                withStoreUserClientListAndRemoveRedundantClients(Either.Right(Unit))
             }
-        val expected =
-            mapOf(arrangement.userOne.first to arrangement.userOne.second, arrangement.userTwo.first to arrangement.userTwo.second)
 
         val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne, arrangement.userTwo), mapOf(), mapOf(), null)
 
-        messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
+        messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, null)
 
+        verify(arrangement.clientRemoteRepository)
+            .suspendFunction(arrangement.clientRemoteRepository::fetchOtherUserClients)
+            .with(eq(listOf(arrangement.userOne.first, arrangement.userTwo.first)))
+            .wasInvoked(once)
         verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::storeMapOfUserToClientId)
-            .with(eq(expected))
+            .suspendFunction(arrangement.clientRepository::storeUserClientListAndRemoveRedundantClients)
+            .with(eq(arrangement.userOneInsertClientParams + arrangement.userTwoInsertClientParams))
             .wasInvoked(once)
     }
 
@@ -93,7 +108,24 @@ class MessageSendFailureHandlerTest {
             .arrange()
         val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne, arrangement.userTwo), mapOf(), mapOf(), null)
 
-        val result = messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
+        val result = messageSendFailureHandler.handleClientsHaveChangedFailure(
+            failureData, null
+        )
+        result.shouldFail()
+        assertEquals(Either.Left(failure), result)
+    }
+
+    @Test
+    fun givenRepositoryFailsToFetchClients_whenHandlingClientsHaveChangedFailure_thenFailureShouldBePropagated() = runTest {
+        val failure = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
+        val (arrangement, messageSendFailureHandler) = Arrangement()
+            .arrange {
+                withFetchUsersByIdSuccess()
+                withFetchOtherUserClients(Either.Left(failure))
+            }
+        val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne), mapOf(), mapOf(), null)
+
+        val result = messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, null)
         result.shouldFail()
         assertEquals(Either.Left(failure), result)
     }
@@ -104,11 +136,12 @@ class MessageSendFailureHandlerTest {
         val (arrangement, messageSendFailureHandler) = Arrangement()
             .arrange {
                 withFetchUsersByIdSuccess()
-                withStoreMapOfUserToClientId(Either.Left(failure))
+                withFetchOtherUserClients(Either.Right(mapOf(userOneDTO)))
+                withStoreUserClientListAndRemoveRedundantClients(Either.Left(failure))
             }
         val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne), mapOf(), mapOf(), null)
 
-        val result = messageSendFailureHandler.handleClientsHaveChangedFailure(failureData)
+        val result = messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, null)
         result.shouldFail()
         assertEquals(Either.Left(failure), result)
     }
@@ -180,7 +213,8 @@ class MessageSendFailureHandlerTest {
             .arrange {
                 withRemoveClientsAndReturnUsersWithNoClients(Either.Right(listOf(userOne.first)))
                 withFetchUsersByIdSuccess()
-                withStoreMapOfUserToClientId(Either.Right(Unit))
+                withFetchOtherUserClients(Either.Right(emptyMap()))
+                withStoreUserClientListAndRemoveRedundantClients(Either.Right(Unit))
             }
         val failure = ProteusSendMessageFailure(
             missingClientsOfUsers = mapOf(),
@@ -189,7 +223,7 @@ class MessageSendFailureHandlerTest {
             failedClientsOfUsers = null
         )
 
-        messageSendFailureHandler.handleClientsHaveChangedFailure(failure)
+        messageSendFailureHandler.handleClientsHaveChangedFailure(failure, null)
 
         verify(arrangement.clientRepository)
             .suspendFunction(arrangement.clientRepository::removeClientsAndReturnUsersWithNoClients)
@@ -204,11 +238,12 @@ class MessageSendFailureHandlerTest {
 
     @Test
     fun givenDeletedClientsError_whenNotAllUserClientsAreDeleted_thenClientsShouldBeRemoved() = runTest {
-         val (arrangement, messageSendFailureHandler) = Arrangement()
+        val (arrangement, messageSendFailureHandler) = Arrangement()
             .arrange {
                 withRemoveClientsAndReturnUsersWithNoClients(Either.Right(emptyList()))
                 withFetchUsersByIdSuccess()
-                withStoreMapOfUserToClientId(Either.Right(Unit))
+                withFetchOtherUserClients(Either.Right(emptyMap()))
+                withStoreUserClientListAndRemoveRedundantClients(Either.Right(Unit))
             }
 
         val failure = ProteusSendMessageFailure(
@@ -218,7 +253,7 @@ class MessageSendFailureHandlerTest {
             failedClientsOfUsers = null
         )
 
-        messageSendFailureHandler.handleClientsHaveChangedFailure(failure)
+        messageSendFailureHandler.handleClientsHaveChangedFailure(failure, null)
 
         verify(arrangement.clientRepository)
             .suspendFunction(arrangement.clientRepository::removeClientsAndReturnUsersWithNoClients)
@@ -237,7 +272,8 @@ class MessageSendFailureHandlerTest {
             .arrange {
                 withRemoveClientsAndReturnUsersWithNoClients(Either.Right(listOf(userTwo.first)))
                 withFetchUsersByIdSuccess()
-                withStoreMapOfUserToClientId(Either.Right(Unit))
+                withFetchOtherUserClients(Either.Right(mapOf(userOneDTO)))
+                withStoreUserClientListAndRemoveRedundantClients(Either.Right(Unit))
             }
 
         val failure = ProteusSendMessageFailure(
@@ -247,22 +283,94 @@ class MessageSendFailureHandlerTest {
             failedClientsOfUsers = null
         )
 
-        messageSendFailureHandler.handleClientsHaveChangedFailure(failure)
+        messageSendFailureHandler.handleClientsHaveChangedFailure(failure, null)
 
         verify(arrangement.clientRepository)
             .suspendFunction(arrangement.clientRepository::removeClientsAndReturnUsersWithNoClients)
             .with(eq(mapOf(arrangement.userTwo.first to arrangement.userTwo.second)))
             .wasInvoked(once)
 
+        verify(arrangement.clientRemoteRepository)
+            .suspendFunction(arrangement.clientRemoteRepository::fetchOtherUserClients)
+            .with(eq(listOf(arrangement.userOne.first)))
+            .wasInvoked(once)
+
         verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::storeMapOfUserToClientId)
-            .with(eq(mapOf(arrangement.userOne.first to arrangement.userOne.second)))
+            .suspendFunction(arrangement.clientRepository::storeUserClientListAndRemoveRedundantClients)
+            .with(eq(arrangement.userOneInsertClientParams))
             .wasInvoked(once)
 
         verify(arrangement.userRepository)
             .suspendFunction(arrangement.userRepository::fetchUsersByIds)
             .with(eq(setOf(arrangement.userOne.first, arrangement.userTwo.first)))
             .wasInvoked(once)
+    }
+
+    @Test
+    fun givenMissingClientsError_whenAConversationIdIsProvided_thenUpdateConversationInfo() = runTest {
+        val (arrangement, messageSendFailureHandler) = Arrangement()
+            .arrange {
+                withFetchOtherUserClients(Either.Right(emptyMap()))
+                withStoreUserClientListAndRemoveRedundantClients(Either.Right(Unit))
+                withFetchUsersByIdSuccess()
+                withFetchConversation(Either.Right(Unit))
+            }
+        val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne, arrangement.userTwo), mapOf(), mapOf(), null)
+
+        messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, arrangement.conversationId)
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::fetchUsersByIds)
+            .with(eq(failureData.missingClientsOfUsers.keys))
+            .wasInvoked(once)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::fetchConversation)
+            .with(any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenMissingClientsError_whenNoConversationIdIsProvided_thenUpdateConversationInfo() = runTest {
+        val (arrangement, messageSendFailureHandler) = Arrangement()
+            .arrange {
+                withFetchOtherUserClients(Either.Right(emptyMap()))
+                withStoreUserClientListAndRemoveRedundantClients(Either.Right(Unit))
+                withFetchUsersByIdSuccess()
+            }
+        val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne, arrangement.userTwo), mapOf(), mapOf(), null)
+
+        messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, null)
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::fetchUsersByIds)
+            .with(eq(failureData.missingClientsOfUsers.keys))
+            .wasInvoked(once)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::fetchConversation)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenMissingClientsError_whenDeletedAndMissingAreEmpty_thenDoNotUpdateConversationInfo() = runTest {
+        val (arrangement, messageSendFailureHandler) = Arrangement()
+            .arrange()
+
+        val failureData = ProteusSendMessageFailure(
+            missingClientsOfUsers = emptyMap(),
+            deletedClientsOfUsers = mapOf(),
+            redundantClientsOfUsers = mapOf(arrangement.userOne, arrangement.userTwo),
+            failedClientsOfUsers = mapOf(arrangement.userOne, arrangement.userTwo)
+        )
+
+        messageSendFailureHandler.handleClientsHaveChangedFailure(failureData, null)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::fetchConversation)
+            .with(any())
+            .wasNotInvoked()
     }
 
     class Arrangement : ClientRepositoryArrangement by ClientRepositoryArrangementImpl() {
@@ -274,12 +382,35 @@ class MessageSendFailureHandlerTest {
 
         @Mock
         val messageSendingScheduler = configure(mock(MessageSendingScheduler::class)) { stubsUnitByDefault = true }
+
+        @Mock
+        val conversationRepository = mock(classOf<ConversationRepository>())
+
+        @Mock
+        val clientRemoteRepository = mock(classOf<ClientRemoteRepository>())
+
+        val clientMapper: ClientMapper = MapperProvider.clientMapper()
+
         private val messageSendFailureHandler: MessageSendFailureHandler =
-            MessageSendFailureHandlerImpl(userRepository, clientRepository, messageRepository, messageSendingScheduler)
+            MessageSendFailureHandlerImpl(
+                userRepository,
+                clientRepository,
+                clientRemoteRepository,
+                messageRepository,
+                messageSendingScheduler,
+                conversationRepository,
+                clientMapper
+            )
         val userOne: Pair<UserId, List<ClientId>> =
             UserId("userId1", "anta.wire") to listOf(ClientId("clientId"), ClientId("secondClientId"))
         val userTwo: Pair<UserId, List<ClientId>> =
             UserId("userId2", "bella.wire") to listOf(ClientId("clientId2"), ClientId("secondClientId2"))
+        val userOneDTO: Pair<UserIdDTO, List<SimpleClientResponse>> =
+            UserIdDTO("userId1", "anta.wire") to listOf(SimpleClientResponse("clientId"), SimpleClientResponse("secondClientId"))
+        val userTwoDTO: Pair<UserIdDTO, List<SimpleClientResponse>> =
+            UserIdDTO("userId2", "bella.wire") to listOf(SimpleClientResponse("clientId2"), SimpleClientResponse("secondClientId2"))
+        val userOneInsertClientParams = clientMapper.toInsertClientParam(userOneDTO.second, userOneDTO.first)
+        val userTwoInsertClientParams = clientMapper.toInsertClientParam(userTwoDTO.second, userTwoDTO.first)
         val messageId = TestMessage.TEST_MESSAGE_ID
         val conversationId = TestConversation.ID
 
@@ -304,6 +435,20 @@ class MessageSendFailureHandlerTest {
                 .suspendFunction(messageRepository::updateMessageStatus)
                 .whenInvokedWith(any(), any(), any())
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withFetchConversation(result: Either<CoreFailure, Unit>) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::fetchConversation)
+                .whenInvokedWith(any())
+                .thenReturn(result)
+        }
+
+        fun withFetchOtherUserClients(result: Either<NetworkFailure, Map<UserIdDTO, List<SimpleClientResponse>>>) = apply {
+            given(clientRemoteRepository)
+                .suspendFunction(clientRemoteRepository::fetchOtherUserClients)
+                .whenInvokedWith(any())
+                .thenReturn(result)
         }
     }
 

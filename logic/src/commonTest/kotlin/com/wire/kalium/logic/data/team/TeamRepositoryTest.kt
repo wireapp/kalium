@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.data.team
 
-import app.cash.turbine.test
+import  app.cash.turbine.test
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.data.id.TeamId
@@ -34,7 +34,6 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.client.ClientIdDTO
 import com.wire.kalium.network.api.base.authenticated.keypackage.LastPreKeyDTO
-import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
@@ -50,6 +49,7 @@ import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.configure
 import io.mockative.eq
@@ -59,11 +59,13 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.oneOf
 import io.mockative.verify
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class TeamRepositoryTest {
     @Test
     fun givenSelfUserExists_whenFetchingTeamInfo_thenTeamInfoShouldBeSuccessful() = runTest {
@@ -98,6 +100,52 @@ class TeamRepositoryTest {
             .thenReturn(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
 
         val result = teamRepository.fetchTeamById(teamId = TeamId("teamId"))
+
+        result.shouldFail {
+            assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)
+        }
+    }
+
+    @Test
+    fun givenTeamIdAndUserDomain_whenFetchingTeamMembers_thenTeamMembersShouldBeSuccessful() = runTest {
+        val teamMember = TestTeam.memberDTO(
+            nonQualifiedUserId = "teamMember1"
+        )
+
+        val teamMembersList = TeamsApi.TeamMemberList(
+            hasMore = false,
+            members = listOf(
+                teamMember
+            )
+        )
+
+        val (arrangement, teamRepository) = Arrangement()
+            .withGetTeamMembers(NetworkResponse.Success(teamMembersList, mapOf(), 200))
+            .arrange()
+
+        val result = teamRepository.fetchMembersByTeamId(teamId = TeamId("teamId"), userDomain = "userDomain")
+
+        // Verifies that userDAO insertUsers was called with the correct mapped values
+        verify(arrangement.userDAO)
+            .suspendFunction(arrangement.userDAO::upsertTeamMemberUserTypes)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        // Verifies that when fetching members by team id, it succeeded
+        result.shouldSucceed()
+    }
+
+    @Test
+    fun givenTeamApiFails_whenFetchingTeamMembers_thenTheFailureIsPropagated() = runTest {
+        val (arrangement, teamRepository) = Arrangement()
+            .arrange()
+
+        given(arrangement.teamsApi)
+            .suspendFunction(arrangement.teamsApi::getTeamMembers)
+            .whenInvokedWith(any(), anything())
+            .thenReturn(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
+
+        val result = teamRepository.fetchMembersByTeamId(teamId = TeamId("teamId"), userDomain = "userDomain")
 
         result.shouldFail {
             assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)
@@ -197,10 +245,11 @@ class TeamRepositoryTest {
     }
 
     @Test
-    fun givenTeamIdAndUserIdAndPassword_whenApprovingLegalHoldRequest_thenItShouldSucceedAndClearRequestLocally() = runTest {
+    fun givenTeamIdAndUserIdAndPassword_whenApprovingLegalHoldRequest_thenItShouldSucceedAndClearRequestLocallyAndCreateEvent() = runTest {
         // given
         val (arrangement, teamRepository) = Arrangement()
             .withApiApproveLegalHoldSuccess()
+            .withHandleLegalHoldSuccesses()
             .arrange()
         // when
         val result = teamRepository.approveLegalHoldRequest(teamId = TeamId(value = "teamId"), password = "password")
@@ -208,6 +257,10 @@ class TeamRepositoryTest {
         result.shouldSucceed()
         verify(arrangement.userConfigDAO)
             .suspendFunction(arrangement.userConfigDAO::clearLegalHoldRequest)
+            .wasInvoked(once)
+        verify(arrangement.legalHoldHandler)
+            .suspendFunction(arrangement.legalHoldHandler::handleEnable)
+            .with(matching { it.userId == TestUser.USER_ID })
             .wasInvoked(once)
     }
 
@@ -324,12 +377,12 @@ class TeamRepositoryTest {
             stubsUnitByDefault = true
         }
 
+        val teamMapper = MapperProvider.teamMapper()
+
         @Mock
         val userConfigDAO = configure(mock(classOf<UserConfigDAO>())) {
             stubsUnitByDefault = true
         }
-
-        val teamMapper = MapperProvider.teamMapper()
 
         @Mock
         val teamsApi = mock(classOf<TeamsApi>())
@@ -350,11 +403,12 @@ class TeamRepositoryTest {
             teamMapper = teamMapper,
             teamsApi = teamsApi,
             userDAO = userDAO,
-            userConfigDAO = userConfigDAO,
             selfUserId = TestUser.USER_ID,
             serviceDAO = serviceDAO,
             legalHoldHandler = legalHoldHandler,
             legalHoldRequestHandler = legalHoldRequestHandler,
+            userConfigDAO = userConfigDAO
+
         )
 
         fun withApiGetTeamInfoSuccess(teamDTO: TeamDTO) = apply {
@@ -362,13 +416,6 @@ class TeamRepositoryTest {
                 .suspendFunction(teamsApi::getTeamInfo)
                 .whenInvokedWith(oneOf(teamDTO.id))
                 .then { NetworkResponse.Success(value = teamDTO, headers = mapOf(), httpCode = 200) }
-        }
-
-        fun withApiGetTeamMemberSuccess(teamMemberDTO: TeamsApi.TeamMemberDTO) = apply {
-            given(teamsApi)
-                .suspendFunction(teamsApi::getTeamMember)
-                .whenInvokedWith(any(), any())
-                .thenReturn(NetworkResponse.Success(value = teamMemberDTO, headers = mapOf(), httpCode = 200))
         }
 
         fun withFetchWhiteListedServicesSuccess() = apply {
@@ -405,6 +452,14 @@ class TeamRepositoryTest {
                 .suspendFunction(legalHoldRequestHandler::handle)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withGetTeamMembers(result: NetworkResponse<TeamsApi.TeamMemberList>) = apply {
+            given(teamsApi)
+                .suspendFunction(teamsApi::getTeamMembers)
+                .whenInvokedWith(any(), any())
+                .thenReturn(result)
+
         }
 
         fun arrange() = this to teamRepository

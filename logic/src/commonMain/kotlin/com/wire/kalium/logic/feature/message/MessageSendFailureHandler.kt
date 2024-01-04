@@ -22,12 +22,16 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -42,7 +46,10 @@ interface MessageSendFailureHandler {
      * @return Either.Left if can't recover from error
      * @return Either.Right if the error was properly handled and a new attempt at sending message can be made
      */
-    suspend fun handleClientsHaveChangedFailure(sendFailure: ProteusSendMessageFailure): Either<CoreFailure, Unit>
+    suspend fun handleClientsHaveChangedFailure(
+        sendFailure: ProteusSendMessageFailure,
+        conversationId: ConversationId?
+    ): Either<CoreFailure, Unit>
 
     /**
      * Handle a failure when attempting to send a message
@@ -62,23 +69,40 @@ interface MessageSendFailureHandler {
     )
 }
 
+@Suppress("LongParameterList")
 class MessageSendFailureHandlerImpl internal constructor(
     private val userRepository: UserRepository,
     private val clientRepository: ClientRepository,
+    private val clientRemoteRepository: ClientRemoteRepository,
     private val messageRepository: MessageRepository,
-    private val messageSendingScheduler: MessageSendingScheduler
+    private val messageSendingScheduler: MessageSendingScheduler,
+    private val conversationRepository: ConversationRepository,
+    private val clientMapper: ClientMapper = MapperProvider.clientMapper(),
 ) : MessageSendFailureHandler {
 
-    override suspend fun handleClientsHaveChangedFailure(sendFailure: ProteusSendMessageFailure): Either<CoreFailure, Unit> =
-        // TODO(optimization): add/remove members to/from conversation
+    override suspend fun handleClientsHaveChangedFailure(
+        sendFailure: ProteusSendMessageFailure,
+        conversationId: ConversationId?
+    ): Either<CoreFailure, Unit> =
         handleDeletedClients(sendFailure.deletedClientsOfUsers)
             .map { usersWithNoClientsRemaining ->
                 sendFailure.missingClientsOfUsers.keys + usersWithNoClientsRemaining
             }.flatMap { usersThatNeedInfoRefresh ->
                 syncUserIds(usersThatNeedInfoRefresh)
             }.flatMap {
+                updateConversationInfo(sendFailure, conversationId)
+            }.flatMap {
                 addMissingClients(sendFailure.missingClientsOfUsers)
             }
+
+    private suspend fun updateConversationInfo(
+        sendFailure: ProteusSendMessageFailure,
+        conversationId: ConversationId?
+    ): Either<CoreFailure, Unit> = when {
+            (conversationId == null) -> Either.Right(Unit)
+            (sendFailure.deletedClientsOfUsers.isEmpty() && sendFailure.missingClientsOfUsers.isEmpty()) -> Either.Right(Unit)
+            else -> conversationRepository.fetchConversation(conversationId)
+        }
 
     private suspend fun handleDeletedClients(deletedClient: Map<UserId, List<ClientId>>): Either<StorageFailure, Set<UserId>> {
         return if (deletedClient.isEmpty()) Either.Right(emptySet())
@@ -90,10 +114,16 @@ class MessageSendFailureHandlerImpl internal constructor(
         else userRepository.fetchUsersByIds(userId)
     }
 
-    private suspend fun addMissingClients(missingClients: Map<UserId, List<ClientId>>): Either<CoreFailure, Unit> {
-        return if (missingClients.isEmpty()) Either.Right(Unit)
-        else clientRepository.storeMapOfUserToClientId(missingClients)
-    }
+    private suspend fun addMissingClients(missingClients: Map<UserId, List<ClientId>>): Either<CoreFailure, Unit> =
+        if (missingClients.isEmpty()) Either.Right(Unit)
+        else clientRemoteRepository.fetchOtherUserClients(missingClients.keys.toList())
+            .flatMap {
+                it.map { (userId, clientList) -> clientMapper.toInsertClientParam(clientList, userId) }
+                    .flatten().let { insertClientParamList ->
+                        if (insertClientParamList.isEmpty()) Either.Right(Unit)
+                        else clientRepository.storeUserClientListAndRemoveRedundantClients(insertClientParamList)
+                    }
+            }
 
     override suspend fun handleFailureAndUpdateMessageStatus(
         failure: CoreFailure,

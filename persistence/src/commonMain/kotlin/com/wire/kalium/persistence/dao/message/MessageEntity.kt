@@ -198,15 +198,20 @@ sealed interface MessageEntity {
         NEW_CONVERSATION_RECEIPT_MODE, CONVERSATION_RECEIPT_MODE_CHANGED, HISTORY_LOST, HISTORY_LOST_PROTOCOL_CHANGED,
         CONVERSATION_MESSAGE_TIMER_CHANGED, CONVERSATION_CREATED, MLS_WRONG_EPOCH_WARNING, CONVERSATION_DEGRADED_MLS,
         CONVERSATION_DEGRADED_PROTEUS, CONVERSATION_VERIFIED_MLS, CONVERSATION_VERIFIED_PROTEUS, COMPOSITE, FEDERATION,
-        CONVERSATION_PROTOCOL_CHANGED, CONVERSATION_STARTED_UNVERIFIED_WARNING
+        CONVERSATION_PROTOCOL_CHANGED, CONVERSATION_PROTOCOL_CHANGED_DURING_CALL,
+        CONVERSATION_STARTED_UNVERIFIED_WARNING, LOCATION, LEGAL_HOLD
     }
 
     enum class MemberChangeType {
-        ADDED, REMOVED, CREATION_ADDED, FAILED_TO_ADD, FEDERATION_REMOVED
+        ADDED, REMOVED, CREATION_ADDED, FAILED_TO_ADD, FEDERATION_REMOVED, REMOVED_FROM_TEAM;
     }
 
     enum class FederationType {
         DELETE, CONNECTION_REMOVED
+    }
+
+    enum class LegalHoldType {
+        ENABLED_FOR_MEMBERS, DISABLED_FOR_MEMBERS, ENABLED_FOR_CONVERSATION, DISABLED_FOR_CONVERSATION
     }
 
     enum class Visibility {
@@ -266,6 +271,7 @@ sealed class MessageEntityContent {
             val textBody: String?,
             val assetMimeType: String?,
             val assetName: String?,
+            val locationName: String?,
         )
     }
 
@@ -293,6 +299,12 @@ sealed class MessageEntityContent {
     ) : Regular()
 
     data class Knock(val hotKnock: Boolean) : Regular()
+    data class Location(
+        val latitude: Float,
+        val longitude: Float,
+        val name: String? = null,
+        val zoom: Int? = null,
+    ) : Regular()
 
     data class Unknown(
         val typeName: String? = null,
@@ -334,6 +346,7 @@ sealed class MessageEntityContent {
     data class ConversationReceiptModeChanged(val receiptMode: Boolean) : System()
     data class ConversationMessageTimerChanged(val messageTimer: Long?) : System()
     data class ConversationProtocolChanged(val protocol: ConversationEntity.Protocol) : System()
+    data object ConversationProtocolChangedDuringACall : System()
     data object HistoryLostProtocolChanged : System()
     data object HistoryLost : System()
     data object ConversationCreated : System()
@@ -343,6 +356,7 @@ sealed class MessageEntityContent {
     data object ConversationVerifiedProteus : System()
     data object ConversationStartedUnverifiedWarning : System()
     data class Federation(val domainList: List<String>, val type: MessageEntity.FederationType) : System()
+    data class LegalHold(val memberUserIdList: List<QualifiedIDEntity>, val type: MessageEntity.LegalHoldType) : System()
 }
 
 /**
@@ -393,6 +407,7 @@ sealed class MessagePreviewEntityContent {
     data class MissedCall(val senderName: String?) : MessagePreviewEntityContent()
 
     data class Knock(val senderName: String?) : MessagePreviewEntityContent()
+    data class Location(val senderName: String?) : MessagePreviewEntityContent()
 
     data class MembersAdded(
         val senderName: String?,
@@ -400,7 +415,12 @@ sealed class MessagePreviewEntityContent {
         val isContainSelfUserId: Boolean,
     ) : MessagePreviewEntityContent()
 
-    data class MembersRemoved(
+    data class ConversationMembersRemoved(
+        val senderName: String?,
+        val otherUserIdList: List<UserIDEntity>,
+        val isContainSelfUserId: Boolean,
+    ) : MessagePreviewEntityContent()
+    data class TeamMembersRemoved(
         val senderName: String?,
         val otherUserIdList: List<UserIDEntity>,
         val isContainSelfUserId: Boolean,
@@ -428,7 +448,10 @@ sealed class MessagePreviewEntityContent {
     data class MemberLeft(val senderName: String?) : MessagePreviewEntityContent()
 
     data class ConversationNameChange(val adminName: String?) : MessagePreviewEntityContent()
-    data class TeamMemberRemoved(val userName: String?) : MessagePreviewEntityContent()
+
+    @Deprecated("not maintained and will be deleted")
+    @Suppress("ClassNaming")
+    data class TeamMemberRemoved_Legacy(val userName: String?) : MessagePreviewEntityContent()
     data class Ephemeral(val isGroupConversation: Boolean) : MessagePreviewEntityContent()
     data object CryptoSessionReset : MessagePreviewEntityContent()
     data object ConversationVerifiedMls : MessagePreviewEntityContent()

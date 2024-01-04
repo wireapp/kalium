@@ -336,10 +336,6 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
-    override suspend fun revokeOneOnOneConversationsWithDeletedUser(userId: UserIDEntity) = withContext(coroutineContext) {
-        memberQueries.deleteUserFromGroupConversations(userId, userId)
-    }
-
     override suspend fun getConversationsByUserId(userId: UserIDEntity): List<ConversationEntity> = withContext(coroutineContext) {
         memberQueries.selectConversationsByMember(userId, conversationMapper::toModel).executeAsList()
     }
@@ -403,13 +399,23 @@ internal class ConversationDAOImpl internal constructor(
         conversationId: QualifiedIDEntity,
         legalHoldStatus: ConversationEntity.LegalHoldStatus
     ) = withContext(coroutineContext) {
-        conversationQueries.updateLegalHoldStatus(legalHoldStatus, conversationId)
+        conversationQueries.updateLegalHoldStatus(legalHoldStatus, conversationId).executeAsOne() > 0
     }
 
-    override suspend fun observeLegalHoldForConversation(conversationId: QualifiedIDEntity) =
+    override suspend fun updateLegalHoldStatusChangeNotified(conversationId: QualifiedIDEntity, notified: Boolean) =
+        withContext(coroutineContext) {
+            conversationQueries.upsertLegalHoldStatusChangeNotified(conversationId, notified).executeAsOne() > 0
+        }
+
+    override suspend fun observeLegalHoldStatus(conversationId: QualifiedIDEntity) =
         conversationQueries.selectLegalHoldStatus(conversationId)
             .asFlow()
             .mapToOneOrDefault(ConversationEntity.LegalHoldStatus.DISABLED)
             .flowOn(coroutineContext)
 
+    override suspend fun observeLegalHoldStatusChangeNotified(conversationId: QualifiedIDEntity) =
+        conversationQueries.selectLegalHoldStatusChangeNotified(conversationId)
+            .asFlow()
+            .mapToOneOrDefault(true)
+            .flowOn(coroutineContext)
 }

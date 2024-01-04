@@ -18,22 +18,56 @@
 package com.wire.kalium.monkeys.actions
 
 import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.monkeys.importer.ActionConfig
-import com.wire.kalium.monkeys.importer.ActionType
+import com.wire.kalium.monkeys.actions.replay.AddUserToConversationEventAction
+import com.wire.kalium.monkeys.actions.replay.CreateConversationEventAction
+import com.wire.kalium.monkeys.actions.replay.DestroyConversationEventAction
+import com.wire.kalium.monkeys.actions.replay.LeaveConversationEventAction
+import com.wire.kalium.monkeys.actions.replay.LoginEventAction
+import com.wire.kalium.monkeys.actions.replay.LogoutEventAction
+import com.wire.kalium.monkeys.actions.replay.RequestResponseEventAction
+import com.wire.kalium.monkeys.actions.replay.SendDirectMessageEventAction
+import com.wire.kalium.monkeys.actions.replay.SendMessageEventAction
+import com.wire.kalium.monkeys.actions.replay.SendRequestEventAction
+import com.wire.kalium.monkeys.model.ActionConfig
+import com.wire.kalium.monkeys.model.ActionType
+import com.wire.kalium.monkeys.model.Event
+import com.wire.kalium.monkeys.model.EventType
+import com.wire.kalium.monkeys.model.MonkeyId
 import com.wire.kalium.monkeys.pool.MonkeyPool
+import kotlinx.coroutines.channels.SendChannel
 
-abstract class Action {
+abstract class Action(val sender: suspend (Event) -> Unit) {
     companion object {
-        fun fromConfig(config: ActionConfig): Action {
+        fun fromConfig(config: ActionConfig, channel: SendChannel<Event>): Action {
+            val sender: suspend (Event) -> Unit = {
+                channel.send(it)
+            }
             return when (config.type) {
-                is ActionType.Login -> LoginAction(config.type)
-                is ActionType.CreateConversation -> CreateConversationAction(config.type)
-                is ActionType.AddUsersToConversation -> AddUserToConversationAction(config.type)
-                is ActionType.DestroyConversation -> DestroyConversationAction(config.type)
-                is ActionType.LeaveConversation -> LeaveConversationAction(config.type)
-                is ActionType.Reconnect -> ReconnectAction(config.type)
-                is ActionType.SendMessage -> SendMessageAction(config.type)
-                is ActionType.SendRequest -> SendRequestAction(config.type)
+                is ActionType.Login -> LoginAction(config.type, sender)
+                is ActionType.CreateConversation -> CreateConversationAction(config.type, sender)
+                is ActionType.AddUsersToConversation -> AddUserToConversationAction(config.type, sender)
+                is ActionType.DestroyConversation -> DestroyConversationAction(config.type, sender)
+                is ActionType.LeaveConversation -> LeaveConversationAction(config.type, sender)
+                is ActionType.Reconnect -> ReconnectAction(config.type, sender)
+                is ActionType.SendMessage -> SendMessageAction(config.type, sender)
+                is ActionType.SendRequest -> SendRequestAction(config.type, sender)
+                is ActionType.HandleExternalRequest -> HandleExternalRequestAction(config.type)
+                is ActionType.SendExternalRequest -> SendExternalRequestAction(config.type)
+            }
+        }
+
+        fun eventFromConfig(monkey: MonkeyId, config: EventType): Action {
+            return when (config) {
+                is EventType.AddUsersToConversation -> AddUserToConversationEventAction(config)
+                is EventType.CreateConversation -> CreateConversationEventAction(config)
+                is EventType.DestroyConversation -> DestroyConversationEventAction(config)
+                is EventType.LeaveConversation -> LeaveConversationEventAction(monkey, config)
+                is EventType.Login -> LoginEventAction(monkey)
+                is EventType.Logout -> LogoutEventAction(monkey)
+                is EventType.RequestResponse -> RequestResponseEventAction(monkey, config)
+                is EventType.SendDirectMessage -> SendDirectMessageEventAction(monkey, config)
+                is EventType.SendMessage -> SendMessageEventAction(monkey, config)
+                is EventType.SendRequest -> SendRequestEventAction(monkey, config)
             }
         }
     }

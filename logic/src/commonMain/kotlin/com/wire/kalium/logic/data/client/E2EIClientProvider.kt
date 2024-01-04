@@ -18,15 +18,13 @@
 
 package com.wire.kalium.logic.data.client
 
-import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.cryptography.E2EIClient
-import com.wire.kalium.cryptography.E2EIQualifiedClientId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -37,10 +35,10 @@ import kotlinx.coroutines.withContext
 
 interface E2EIClientProvider {
     suspend fun getE2EIClient(clientId: ClientId? = null): Either<CoreFailure, E2EIClient>
+    suspend fun nuke()
 }
 
 internal class EI2EIClientProviderImpl(
-    private val userId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val mlsClientProvider: MLSClientProvider,
     private val userRepository: UserRepository,
@@ -53,10 +51,6 @@ internal class EI2EIClientProviderImpl(
         withContext(dispatchers.io) {
             val currentClientId =
                 clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
-            val e2eiClientId = E2EIQualifiedClientId(
-                currentClientId.value,
-                CryptoQualifiedID(value = userId.value, domain = userId.domain)
-            )
 
             return@withContext e2EIClient?.let {
                 Either.Right(it)
@@ -64,18 +58,18 @@ internal class EI2EIClientProviderImpl(
                 getSelfUserInfo().flatMap { selfUser ->
                     mlsClientProvider.getMLSClient(currentClientId).flatMap {
                         val newE2EIClient = if (it.isE2EIEnabled()) {
-                            kaliumLogger.e("initial E2EI client for MLS client without e2ei")
+                            kaliumLogger.e("initial E2EI client for mls client that already has e2ei enabled")
                             it.e2eiNewRotateEnrollment(
-                                e2eiClientId,
-                                selfUser.first,
-                                selfUser.second
+                                selfUser.name,
+                                selfUser.handle,
+                                selfUser.teamId.toString()
                             )
                         } else {
-                            kaliumLogger.e("initial E2EI client for mls client that already has e2ei enabled")
+                            kaliumLogger.e("initial E2EI client for MLS client without e2ei")
                             it.e2eiNewActivationEnrollment(
-                                e2eiClientId,
-                                selfUser.first,
-                                selfUser.second
+                                selfUser.name!!,
+                                selfUser.handle!!,
+                                selfUser.teamId.toString()
                             )
                         }
                         e2EIClient = newE2EIClient
@@ -86,11 +80,15 @@ internal class EI2EIClientProviderImpl(
 
         }
 
-    private suspend fun getSelfUserInfo(): Either<CoreFailure, Pair<String, String>> {
+    private suspend fun getSelfUserInfo(): Either<CoreFailure, SelfUser> {
         val selfUser = userRepository.getSelfUser() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
         return if (selfUser.name == null || selfUser.handle == null)
             Either.Left(E2EIFailure.Generic(IllegalArgumentException(ERROR_NAME_AND_HANDLE_MUST_NOT_BE_NULL)))
-        else Either.Right(Pair(selfUser.name, selfUser.handle))
+        else Either.Right(selfUser)
+    }
+
+    override suspend fun nuke() {
+        e2EIClient = null
     }
 
     companion object {

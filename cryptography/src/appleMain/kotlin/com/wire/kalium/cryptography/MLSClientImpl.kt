@@ -146,14 +146,14 @@ class MLSClientImpl(
 
     override suspend fun addMember(
         groupId: MLSGroupId,
-        members: List<Pair<CryptoQualifiedClientId, MLSKeyPackage>>
+        membersKeyPackages: List<MLSKeyPackage>
     ): CommitBundle? {
-        if (members.isEmpty()) {
+        if (membersKeyPackages.isEmpty()) {
             return null
         }
-
-        val invitees = members.map {
-            Invitee(toUByteList(it.first.toString()), toUByteList(it.second))
+        // todo: fix later when the code is fixed for jvm
+        val invitees = membersKeyPackages.map {
+            Invitee(toUByteList("it.first.toString()"), toUByteList(it))
         }
 
         return toCommitBundle(coreCrypto.addClientsToConversation(toUByteList(groupId.decodeBase64Bytes()), invitees))
@@ -174,15 +174,28 @@ class MLSClientImpl(
         return toByteArray(coreCrypto.exportSecretKey(toUByteList(groupId.decodeBase64Bytes()), keyLength))
     }
 
-    override suspend fun newAcmeEnrollment(clientId: E2EIQualifiedClientId, displayName: String, handle: String): E2EIClient {
+    override suspend fun newAcmeEnrollment(
+        clientId: CryptoQualifiedClientId,
+        displayName: String,
+        handle: String,
+        teamId: String?
+    ): E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override suspend fun e2eiNewActivationEnrollment(clientId: E2EIQualifiedClientId, displayName: String, handle: String): E2EIClient {
+    override suspend fun e2eiNewActivationEnrollment(
+        displayName: String,
+        handle: String,
+        teamId: String?
+    ): E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override suspend fun e2eiNewRotateEnrollment(clientId: E2EIQualifiedClientId, displayName: String?, handle: String?): E2EIClient {
+    override suspend fun e2eiNewRotateEnrollment(
+        displayName: String?,
+        handle: String?,
+        teamId: String?
+    ): E2EIClient {
         TODO("Not yet implemented")
     }
 
@@ -191,6 +204,10 @@ class MLSClientImpl(
     }
 
     override suspend fun isE2EIEnabled(): Boolean {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun getMLSCredentials(): CredentialType {
         TODO("Not yet implemented")
     }
 
@@ -206,11 +223,11 @@ class MLSClientImpl(
         TODO("Not supported on apple devices")
     }
 
-    override suspend fun getDeviceIdentities(groupId: MLSGroupId, clients: List<E2EIQualifiedClientId>): List<WireIdentity> {
+    override suspend fun getDeviceIdentities(groupId: MLSGroupId, clients: List<CryptoQualifiedClientId>): List<WireIdentity> {
         TODO("Not yet implemented")
     }
 
-    override suspend fun getUserIdentities(groupId: MLSGroupId, clients: List<E2EIQualifiedClientId>): Map<String, List<WireIdentity>> {
+    override suspend fun getUserIdentities(groupId: MLSGroupId, users: List<CryptoQualifiedID>): Map<String, List<WireIdentity>> {
         TODO("Not yet implemented")
     }
 

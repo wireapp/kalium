@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.message
 
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.message.ProtoContent.ExternalMessageInstructions
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.ProtocolInfo.Proteus
 import com.wire.kalium.protobuf.messages.GenericMessage
@@ -38,6 +39,7 @@ sealed interface ProtoContent {
         override val messageUid: String,
         val messageContent: MessageContent.FromProto,
         val expectsReadConfirmation: Boolean,
+        val legalHoldStatus: Conversation.LegalHoldStatus,
         val expiresAfterMillis: Long? = null
     ) : ProtoContent
 

@@ -53,7 +53,7 @@ class ResetSessionUseCaseTest {
     val sessionResetSender = mock(classOf<SessionResetSender>())
 
     @Mock
-    val messageRepository = mock(classOf<MessageRepository>())
+    private val messageRepository = mock(classOf<MessageRepository>())
 
     @Mock
     val proteusClient = mock(classOf<ProteusClient>())

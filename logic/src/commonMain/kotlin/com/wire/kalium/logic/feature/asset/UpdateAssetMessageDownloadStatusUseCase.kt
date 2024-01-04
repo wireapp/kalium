@@ -23,6 +23,9 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message.DownloadStatus
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 interface UpdateAssetMessageDownloadStatusUseCase {
     /**
@@ -42,15 +45,16 @@ interface UpdateAssetMessageDownloadStatusUseCase {
 }
 
 internal class UpdateAssetMessageDownloadStatusUseCaseImpl(
-    private val messageRepository: MessageRepository
+    private val messageRepository: MessageRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : UpdateAssetMessageDownloadStatusUseCase {
 
     override suspend operator fun invoke(
         downloadStatus: DownloadStatus,
         conversationId: ConversationId,
         messageId: String
-    ): UpdateDownloadStatusResult {
-        return messageRepository.updateAssetMessageDownloadStatus(downloadStatus, conversationId, messageId).fold({
+    ): UpdateDownloadStatusResult = withContext(dispatcher.io) {
+        messageRepository.updateAssetMessageDownloadStatus(downloadStatus, conversationId, messageId).fold({
             UpdateDownloadStatusResult.Failure(it)
         }, {
             UpdateDownloadStatusResult.Success

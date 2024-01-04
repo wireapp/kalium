@@ -210,4 +210,24 @@ INSERT INTO Receipt
             OR selfdelete_message_id.conversation_id IS NULL;
 
 INSERT INTO ButtonContent SELECT * FROM local_db.ButtonContent;
+
+WITH selfdelete_message_id AS (
+    SELECT local_db.Message.id, local_db.Message.conversation_id
+        FROM local_db.Message
+        WHERE local_db.Message.expire_after_millis IS NOT NULL
+)
+INSERT INTO MessageConversationLocationContent
+    SELECT local_db.MessageConversationLocationContent.message_id,
+           local_db.MessageConversationLocationContent.conversation_id,
+           local_db.MessageConversationLocationContent.latitude,
+           local_db.MessageConversationLocationContent.longitude,
+           local_db.MessageConversationLocationContent.name,
+           local_db.MessageConversationLocationContent.zoom
+    FROM local_db.MessageConversationLocationContent
+        LEFT JOIN selfdelete_message_id
+           ON local_db.MessageConversationLocationContent.message_id = selfdelete_message_id.id
+          AND local_db.MessageConversationLocationContent.conversation_id = selfdelete_message_id.conversation_id
+        WHERE selfdelete_message_id.id IS NULL
+           OR selfdelete_message_id.conversation_id IS NULL;
+           
 }

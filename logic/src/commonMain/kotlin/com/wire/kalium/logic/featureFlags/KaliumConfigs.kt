@@ -33,7 +33,7 @@ data class KaliumConfigs(
     val lowerKeyPackageLimits: Boolean = false,
     val lowerKeyingMaterialsUpdateThreshold: Boolean = false,
     val developmentApiEnabled: Boolean = false,
-    val ignoreSSLCertificatesForUnboundCalls: Boolean = true,
+    val ignoreSSLCertificatesForUnboundCalls: Boolean = false,
     val guestRoomLink: Boolean = true,
     val selfDeletingMessages: Boolean = true,
     val wipeOnCookieInvalid: Boolean = false,
@@ -44,7 +44,8 @@ data class KaliumConfigs(
     val kaliumMockEngine: KaliumMockEngine? = null,
     val mockNetworkStateObserver: NetworkStateObserver? = null,
     // Interval between attempts to advance the proteus to MLS migration
-    val mlsMigrationInterval: Duration = 24.hours
+    val mlsMigrationInterval: Duration = 24.hours,
+    val fetchAllTeamMembersEagerly: Boolean = false,
 )
 
 sealed interface BuildFileRestrictionState {

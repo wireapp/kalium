@@ -23,14 +23,17 @@ import com.wire.kalium.cryptography.CryptoSessionId
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.ProteusFailure
+import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
@@ -43,7 +46,7 @@ import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -52,7 +55,6 @@ import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MessageEnvelopeCreatorTest {
 
     @Mock
@@ -63,6 +65,12 @@ class MessageEnvelopeCreatorTest {
 
     @Mock
     private val protoContentMapper = mock(ProtoContentMapper::class)
+
+    @Mock
+    private val conversationRepository = mock(ConversationRepository::class)
+
+    @Mock
+    private val legalHoldStatusMapper = mock(LegalHoldStatusMapper::class)
 
     private lateinit var messageEnvelopeCreator: MessageEnvelopeCreator
 
@@ -75,7 +83,23 @@ class MessageEnvelopeCreatorTest {
 
     @BeforeTest
     fun setup() {
-        messageEnvelopeCreator = MessageEnvelopeCreatorImpl(proteusClientProvider, SELF_USER_ID, protoContentMapper)
+        messageEnvelopeCreator = MessageEnvelopeCreatorImpl(
+            conversationRepository,
+            legalHoldStatusMapper,
+            proteusClientProvider,
+            SELF_USER_ID,
+            protoContentMapper
+        )
+
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::observeLegalHoldStatus)
+            .whenInvokedWith(anything())
+            .then { flowOf(Either.Right(Conversation.LegalHoldStatus.DISABLED)) }
+
+        given(legalHoldStatusMapper)
+            .function(legalHoldStatusMapper::mapLegalHoldConversationStatus)
+            .whenInvokedWith(anything(), anything())
+            .thenReturn(Conversation.LegalHoldStatus.DISABLED)
     }
 
     @Test
@@ -106,6 +130,16 @@ class MessageEnvelopeCreatorTest {
                 eq(plainData),
                 eq(sessionIds)
             )
+
+        verify(conversationRepository)
+            .suspendFunction(conversationRepository::observeLegalHoldStatus)
+            .with(anything())
+            .wasInvoked(once)
+
+        verify(legalHoldStatusMapper)
+            .function(legalHoldStatusMapper::mapLegalHoldConversationStatus)
+            .with(anything(), anything())
+            .wasInvoked(once)
     }
 
     @Test
@@ -151,6 +185,16 @@ class MessageEnvelopeCreatorTest {
                 }
             }
         }
+
+        verify(conversationRepository)
+            .suspendFunction(conversationRepository::observeLegalHoldStatus)
+            .with(anything())
+            .wasInvoked(once)
+
+        verify(legalHoldStatusMapper)
+            .function(legalHoldStatusMapper::mapLegalHoldConversationStatus)
+            .with(anything(), anything())
+            .wasInvoked(once)
     }
 
     @Test
@@ -189,6 +233,16 @@ class MessageEnvelopeCreatorTest {
                 }
             }
         }
+
+        verify(conversationRepository)
+            .suspendFunction(conversationRepository::observeLegalHoldStatus)
+            .with(anything())
+            .wasInvoked(once)
+
+        verify(legalHoldStatusMapper)
+            .function(legalHoldStatusMapper::mapLegalHoldConversationStatus)
+            .with(anything(), anything())
+            .wasInvoked(once)
     }
 
     @Test
@@ -232,6 +286,16 @@ class MessageEnvelopeCreatorTest {
                     }
                 }
             }
+
+        verify(conversationRepository)
+            .suspendFunction(conversationRepository::observeLegalHoldStatus)
+            .with(anything())
+            .wasInvoked(once)
+
+        verify(legalHoldStatusMapper)
+            .function(legalHoldStatusMapper::mapLegalHoldConversationStatus)
+            .with(anything(), anything())
+            .wasInvoked(once)
     }
 
     @Test
@@ -252,6 +316,16 @@ class MessageEnvelopeCreatorTest {
                 assertIs<ProteusFailure>(it)
                 assertEquals(exception, it.proteusException)
             }
+
+        verify(conversationRepository)
+            .suspendFunction(conversationRepository::observeLegalHoldStatus)
+            .with(anything())
+            .wasInvoked(once)
+
+        verify(legalHoldStatusMapper)
+            .function(legalHoldStatusMapper::mapLegalHoldConversationStatus)
+            .with(anything(), anything())
+            .wasInvoked(once)
     }
 
     @Test
@@ -272,6 +346,16 @@ class MessageEnvelopeCreatorTest {
             .suspendFunction(proteusClient::encryptBatched)
             .with(anything(), anything())
             .wasInvoked(exactly = once)
+
+        verify(conversationRepository)
+            .suspendFunction(conversationRepository::observeLegalHoldStatus)
+            .with(anything())
+            .wasInvoked(once)
+
+        verify(legalHoldStatusMapper)
+            .function(legalHoldStatusMapper::mapLegalHoldConversationStatus)
+            .with(anything(), anything())
+            .wasInvoked(once)
     }
     @Test
     fun givenRecipients_whenCreatingBroadcastEnvelope_thenProteusClientShouldBeUsedToEncryptForEachClient() = runTest {

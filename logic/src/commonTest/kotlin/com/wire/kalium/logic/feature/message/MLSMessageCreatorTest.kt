@@ -20,6 +20,9 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContentMapper
@@ -36,12 +39,11 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MLSMessageCreatorTest {
 
     @Mock
@@ -50,11 +52,24 @@ class MLSMessageCreatorTest {
     @Mock
     private val protoContentMapper = mock(ProtoContentMapper::class)
 
+    @Mock
+    private val conversationRepository = mock(ConversationRepository::class)
+
+    @Mock
+    private val legalHoldStatusMapper = mock(LegalHoldStatusMapper::class)
+
+
     private lateinit var mlsMessageCreator: MLSMessageCreator
 
     @BeforeTest
     fun setup() {
-        mlsMessageCreator = MLSMessageCreatorImpl(mlsClientProvider, SELF_USER_ID, protoContentMapper)
+        mlsMessageCreator = MLSMessageCreatorImpl(
+            conversationRepository,
+            legalHoldStatusMapper,
+            mlsClientProvider,
+            SELF_USER_ID,
+            protoContentMapper
+        )
     }
 
     @Test
@@ -64,6 +79,16 @@ class MLSMessageCreatorTest {
             .suspendFunction(mlsClientProvider::getMLSClient)
             .whenInvokedWith(anything())
             .then { Either.Right(MLS_CLIENT) }
+
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::observeLegalHoldStatus)
+            .whenInvokedWith(anything())
+            .then { flowOf(Either.Right(Conversation.LegalHoldStatus.DISABLED)) }
+
+        given(legalHoldStatusMapper)
+            .function(legalHoldStatusMapper::mapLegalHoldConversationStatus)
+            .whenInvokedWith(anything(), anything())
+            .thenReturn(Conversation.LegalHoldStatus.DISABLED)
 
         given(MLS_CLIENT)
             .suspendFunction(MLS_CLIENT::encryptMessage)
@@ -81,6 +106,16 @@ class MLSMessageCreatorTest {
         verify(MLS_CLIENT)
             .function(MLS_CLIENT::encryptMessage)
             .with(eq(CRYPTO_GROUP_ID), eq(plainData))
+            .wasInvoked(once)
+
+        verify(conversationRepository)
+            .suspendFunction(conversationRepository::observeLegalHoldStatus)
+            .with(anything())
+            .wasInvoked(once)
+
+        verify(legalHoldStatusMapper)
+            .function(legalHoldStatusMapper::mapLegalHoldConversationStatus)
+            .with(anything(), anything())
             .wasInvoked(once)
     }
 

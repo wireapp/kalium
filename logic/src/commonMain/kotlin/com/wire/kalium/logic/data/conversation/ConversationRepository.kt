@@ -97,7 +97,7 @@ interface ConversationRepository {
     // TODO make all functions to have only logic models
     suspend fun persistConversations(
         conversations: List<ConversationResponse>,
-        selfUserTeamId: String?,
+        selfUserTeamId: TeamId?,
         originatedFromEvent: Boolean = false,
         invalidateMembers: Boolean = false
     ): Either<CoreFailure, Unit>
@@ -215,9 +215,6 @@ interface ConversationRepository {
     suspend fun clearContent(conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun observeIsUserMember(conversationId: ConversationId, userId: UserId): Flow<Either<CoreFailure, Boolean>>
     suspend fun whoDeletedMe(conversationId: ConversationId): Either<CoreFailure, UserId?>
-
-    suspend fun deleteUserFromConversations(userId: UserId): Either<CoreFailure, Unit>
-
     suspend fun getConversationsByUserId(userId: UserId): Either<CoreFailure, List<Conversation>>
     suspend fun insertConversations(conversations: List<Conversation>): Either<CoreFailure, Unit>
     suspend fun changeConversationName(
@@ -291,9 +288,13 @@ interface ConversationRepository {
     suspend fun updateLegalHoldStatus(
         conversationId: ConversationId,
         legalHoldStatus: Conversation.LegalHoldStatus
-    ): Either<CoreFailure, Unit>
+    ): Either<CoreFailure, Boolean>
 
-    suspend fun observeLegalHoldForConversation(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation.LegalHoldStatus>>
+    suspend fun setLegalHoldStatusChangeNotified(conversationId: ConversationId): Either<CoreFailure, Boolean>
+
+    suspend fun observeLegalHoldStatus(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation.LegalHoldStatus>>
+
+    suspend fun observeLegalHoldStatusChangeNotified(conversationId: ConversationId): Flow<Either<StorageFailure, Boolean>>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -349,7 +350,7 @@ internal class ConversationDataSource internal constructor(
                     }
                     persistConversations(
                         conversations = conversations.conversationsFound,
-                        selfUserTeamId = selfTeamIdProvider().getOrNull()?.value,
+                        selfUserTeamId = selfTeamIdProvider().getOrNull(),
                         invalidateMembers = true
                     )
 
@@ -391,7 +392,7 @@ internal class ConversationDataSource internal constructor(
 
     override suspend fun persistConversations(
         conversations: List<ConversationResponse>,
-        selfUserTeamId: String?,
+        selfUserTeamId: TeamId?,
         originatedFromEvent: Boolean,
         invalidateMembers: Boolean
     ) = wrapStorageRequest {
@@ -412,7 +413,7 @@ internal class ConversationDataSource internal constructor(
         conversations.forEach { conversationsResponse ->
             // do the cleanup of members from conversation in case when self user rejoined conversation
             // and may not received any member remove or leave events
-            if (invalidateMembers && conversationsResponse.type == ConversationResponse.Type.GROUP) {
+            if (invalidateMembers && conversationsResponse.toConversationType(selfUserTeamId) == ConversationEntity.Type.GROUP) {
                 memberDAO.updateFullMemberList(
                     memberMapper.fromApiModelToDaoModel(conversationsResponse.members),
                     idMapper.fromApiToDao(conversationsResponse.id)
@@ -499,7 +500,7 @@ internal class ConversationDataSource internal constructor(
             val selfUserTeamId = selfTeamIdProvider().getOrNull()
             persistConversations(
                 conversations = listOf(conversationResponse),
-                selfUserTeamId = selfUserTeamId?.value
+                selfUserTeamId = selfUserTeamId
             ).map { conversationResponse }
         }.flatMap { response ->
             baseInfoById(response.id.toModel())
@@ -569,7 +570,7 @@ internal class ConversationDataSource internal constructor(
             conversationApi.fetchConversationDetails(conversationID.toApi())
         }.flatMap {
             val selfUserTeamId = selfTeamIdProvider().getOrNull()
-            persistConversations(listOf(it), selfUserTeamId?.value, invalidateMembers = true)
+            persistConversations(listOf(it), selfUserTeamId, invalidateMembers = true)
         }
     }
 
@@ -582,7 +583,7 @@ internal class ConversationDataSource internal constructor(
             val conversation = it.copy(
                 type = ConversationResponse.Type.WAIT_FOR_CONNECTION,
             )
-            persistConversations(listOf(conversation), selfUserTeamId?.value, invalidateMembers = true)
+            persistConversations(listOf(conversation), selfUserTeamId, invalidateMembers = true)
         }
     }
 
@@ -875,10 +876,6 @@ internal class ConversationDataSource internal constructor(
         )?.toModel()
     }
 
-    override suspend fun deleteUserFromConversations(userId: UserId): Either<CoreFailure, Unit> = wrapStorageRequest {
-        conversationDAO.revokeOneOnOneConversationsWithDeletedUser(userId.toDao())
-    }
-
     override suspend fun getConversationsByUserId(userId: UserId): Either<CoreFailure, List<Conversation>> {
         return wrapStorageRequest { conversationDAO.getConversationsByUserId(userId.toDao()) }
             .map { it.map { entity -> conversationMapper.fromDaoModel(entity) } }
@@ -1059,7 +1056,7 @@ internal class ConversationDataSource internal constructor(
             }.flatMap { updated ->
                 if (updated) {
                     val selfUserTeamId = selfTeamIdProvider().getOrNull()
-                    persistConversations(listOf(conversationResponse), selfUserTeamId?.value, invalidateMembers = true)
+                    persistConversations(listOf(conversationResponse), selfUserTeamId, invalidateMembers = true)
                 } else {
                     Either.Right(Unit)
                 }.map {
@@ -1084,20 +1081,36 @@ internal class ConversationDataSource internal constructor(
     override suspend fun updateLegalHoldStatus(
         conversationId: ConversationId,
         legalHoldStatus: Conversation.LegalHoldStatus
-    ): Either<CoreFailure, Unit> {
+    ): Either<CoreFailure, Boolean> {
         val legalHoldStatusEntity = conversationMapper.legalHoldStatusToEntity(legalHoldStatus)
         return wrapStorageRequest {
-            conversationDAO.updateLegalHoldStatus(
-                conversationId = conversationId.toDao(),
-                legalHoldStatus = legalHoldStatusEntity
-            )
+            conversationId.toDao().let { conversationIdEntity ->
+                conversationDAO.updateLegalHoldStatus(
+                    conversationId = conversationIdEntity,
+                    legalHoldStatus = legalHoldStatusEntity
+                ).also { legalHoldUpdated ->
+                    if (legalHoldUpdated) {
+                        conversationDAO.updateLegalHoldStatusChangeNotified(conversationId = conversationIdEntity, notified = false)
+                    }
+                }
+            }
         }
     }
+    override suspend fun setLegalHoldStatusChangeNotified(conversationId: ConversationId): Either<CoreFailure, Boolean> =
+        wrapStorageRequest {
+            conversationDAO.updateLegalHoldStatusChangeNotified(conversationId = conversationId.toDao(), notified = true)
+        }
 
-    override suspend fun observeLegalHoldForConversation(conversationId: ConversationId) =
-        conversationDAO.observeLegalHoldForConversation(conversationId.toDao())
+    override suspend fun observeLegalHoldStatus(conversationId: ConversationId) =
+        conversationDAO.observeLegalHoldStatus(conversationId.toDao())
             .map { conversationMapper.legalHoldStatusFromEntity(it) }
             .wrapStorageRequest()
+            .distinctUntilChanged()
+
+    override suspend fun observeLegalHoldStatusChangeNotified(conversationId: ConversationId): Flow<Either<StorageFailure, Boolean>> =
+        conversationDAO.observeLegalHoldStatusChangeNotified(conversationId.toDao())
+            .wrapStorageRequest()
+            .distinctUntilChanged()
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"

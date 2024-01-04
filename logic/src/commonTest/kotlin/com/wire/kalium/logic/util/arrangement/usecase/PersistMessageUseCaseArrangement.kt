@@ -18,26 +18,34 @@
 package com.wire.kalium.logic.util.arrangement.usecase
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
+import io.mockative.matchers.Matcher
 import io.mockative.mock
 
 internal interface PersistMessageUseCaseArrangement {
     val persistMessageUseCase: PersistMessageUseCase
-    fun withPersistingMessage(result: Either<CoreFailure, Unit>): PersistMessageUseCaseArrangementImpl
+    fun withPersistingMessage(
+        result: Either<CoreFailure, Unit>,
+        messageMatcher: Matcher<Message.Standalone> = any()
+    ): PersistMessageUseCaseArrangementImpl
 }
 
 internal open class PersistMessageUseCaseArrangementImpl : PersistMessageUseCaseArrangement {
     @Mock
     override val persistMessageUseCase: PersistMessageUseCase = mock(PersistMessageUseCase::class)
 
-    override fun withPersistingMessage(result: Either<CoreFailure, Unit>) = apply {
+    override fun withPersistingMessage(
+        result: Either<CoreFailure, Unit>,
+        messageMatcher: Matcher<Message.Standalone>
+    ) = apply {
         given(persistMessageUseCase)
             .suspendFunction(persistMessageUseCase::invoke)
-            .whenInvokedWith(any())
+            .whenInvokedWith(messageMatcher)
             .thenReturn(result)
     }
 }

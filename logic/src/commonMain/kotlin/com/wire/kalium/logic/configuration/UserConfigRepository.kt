@@ -118,6 +118,8 @@ interface UserConfigRepository {
 
     fun observeLegalHoldRequest(): Flow<Either<StorageFailure, LegalHoldRequest>>
     suspend fun deleteLegalHoldRequest(): Either<StorageFailure, Unit>
+    suspend fun setLegalHoldChangeNotified(isNotified: Boolean): Either<StorageFailure, Unit>
+    suspend fun observeLegalHoldChangeNotified(): Flow<Either<StorageFailure, Boolean>>
 }
 
 @Suppress("TooManyFunctions")
@@ -418,4 +420,10 @@ internal class UserConfigDataSource internal constructor(
         wrapStorageRequest {
             userConfigDAO.clearLegalHoldRequest()
         }
+
+    override suspend fun setLegalHoldChangeNotified(isNotified: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest { userConfigDAO.setLegalHoldChangeNotified(isNotified) }
+
+    override suspend fun observeLegalHoldChangeNotified(): Flow<Either<StorageFailure, Boolean>> =
+        userConfigDAO.observeLegalHoldChangeNotified().wrapStorageRequest()
 }

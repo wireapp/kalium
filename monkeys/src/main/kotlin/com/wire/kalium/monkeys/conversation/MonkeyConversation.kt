@@ -20,7 +20,7 @@ package com.wire.kalium.monkeys.conversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.monkeys.MetricsCollector
-import com.wire.kalium.monkeys.importer.UserCount
+import com.wire.kalium.monkeys.model.UserCount
 import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.resolveUserCount
 import io.micrometer.core.instrument.Tag
@@ -64,6 +64,10 @@ class MonkeyConversation(val creator: Monkey, val conversation: Conversation, va
     }
 
     fun membersIds(): List<UserId> {
-        return this.participants.map { it.user.userId }
+        return this.participants.map { it.monkeyType.userId() }
+    }
+
+    fun members(): Set<Monkey> {
+        return this.participants
     }
 }

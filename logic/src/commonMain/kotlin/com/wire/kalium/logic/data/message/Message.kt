@@ -134,6 +134,10 @@ sealed interface Message {
                 is MessageContent.Composite -> mutableMapOf(
                     typeKey to "composite"
                 )
+
+                is MessageContent.Location -> mutableMapOf(
+                    typeKey to "location",
+                )
             }
 
             val standardProperties = mapOf(
@@ -349,8 +353,31 @@ sealed interface Message {
                     typeKey to "conversationProtocolChanged"
                 )
 
+                is MessageContent.ConversationProtocolChangedDuringACall -> mutableMapOf(
+                    typeKey to "conversationProtocolChangedDuringACall"
+                )
+
                 is MessageContent.ConversationStartedUnverifiedWarning -> mutableMapOf(
                     typeKey to "conversationStartedUnverifiedWarning"
+                )
+
+                MessageContent.LegalHold.ForConversation.Disabled -> mutableMapOf(
+                    typeKey to "legalHoldDisabledForConversation"
+                )
+                MessageContent.LegalHold.ForConversation.Enabled -> mutableMapOf(
+                    typeKey to "legalHoldEnabledForConversation"
+                )
+                is MessageContent.LegalHold.ForMembers.Disabled -> mutableMapOf(
+                    typeKey to "legalHoldDisabledForMembers",
+                    "members" to content.members.fold("") { acc, member ->
+                        "$acc, ${member.value.obfuscateId()}@${member.domain.obfuscateDomain()}"
+                    }
+                )
+                is MessageContent.LegalHold.ForMembers.Enabled -> mutableMapOf(
+                    typeKey to "legalHoldEnabledForMembers",
+                    "members" to content.members.fold("") { acc, member ->
+                        "$acc, ${member.value.obfuscateId()}@${member.domain.obfuscateDomain()}"
+                    }
                 )
             }
 

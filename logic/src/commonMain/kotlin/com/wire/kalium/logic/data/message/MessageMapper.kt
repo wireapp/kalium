@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.asset.toDao
 import com.wire.kalium.logic.data.asset.toModel
@@ -56,7 +55,7 @@ import kotlin.time.toDuration
 interface MessageMapper {
     fun fromMessageToEntity(message: Message.Standalone): MessageEntity
     fun fromEntityToMessage(message: MessageEntity): Message.Standalone
-    fun fromAssetEntityToMessage(message: AssetMessageEntity): AssetMessage
+    fun fromAssetEntityToAssetMessage(message: AssetMessageEntity): AssetMessage
     fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview
     fun fromMessageToLocalNotificationMessage(message: NotificationMessageEntity): LocalNotificationMessage?
     fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular
@@ -65,8 +64,7 @@ interface MessageMapper {
 @Suppress("TooManyFunctions")
 class MessageMapperImpl(
     private val selfUserId: UserId,
-    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
-    private val assetMapper: AssetMapper = MapperProvider.assetMapper()
+    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId)
 ) : MessageMapper {
 
     override fun fromMessageToEntity(message: Message.Standalone): MessageEntity =
@@ -131,7 +129,7 @@ class MessageMapperImpl(
         }
     }
 
-    override fun fromAssetEntityToMessage(message: AssetMessageEntity): AssetMessage {
+    override fun fromAssetEntityToAssetMessage(message: AssetMessageEntity): AssetMessage {
         return AssetMessage(
             message.time,
             message.username,
@@ -264,6 +262,13 @@ class MessageMapperImpl(
                 )
             }
 
+            MessageEntity.ContentType.LOCATION -> LocalNotificationMessage.Comment(
+                message.id,
+                sender,
+                message.date,
+                LocalNotificationCommentType.LOCATION
+            )
+
             MessageEntity.ContentType.MEMBER_CHANGE -> null
             MessageEntity.ContentType.RESTRICTED_ASSET -> null
             MessageEntity.ContentType.CONVERSATION_RENAMED -> null
@@ -285,7 +290,9 @@ class MessageMapperImpl(
             MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS -> null
             MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS -> null
             MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED -> null
+            MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED_DURING_CALL -> null
             MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING -> null
+            MessageEntity.ContentType.LEGAL_HOLD -> null
         }
     }
 
@@ -358,6 +365,13 @@ class MessageMapperImpl(
                 )
             },
         )
+
+        is MessageContent.Location -> MessageEntityContent.Location(
+            latitude = regularMessage.latitude,
+            longitude = regularMessage.longitude,
+            name = regularMessage.name,
+            zoom = regularMessage.zoom
+        )
     }
 
     private fun toTextEntity(textContent: MessageContent.Text): MessageEntityContent.Text = MessageEntityContent.Text(
@@ -366,9 +380,10 @@ class MessageMapperImpl(
         quotedMessageId = textContent.quotedMessageReference?.quotedMessageId,
         isQuoteVerified = textContent.quotedMessageReference?.isVerified,
     )
+}
 
-    @Suppress("ComplexMethod")
-    private fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when (this) {
+@Suppress("ComplexMethod")
+ fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when (this) {
         is MessageEntityContent.MemberChange -> {
             val memberList = this.memberUserIdList.map { it.toModel() }
             when (this.memberChangeType) {
@@ -377,31 +392,42 @@ class MessageMapperImpl(
                 MessageEntity.MemberChangeType.CREATION_ADDED -> MessageContent.MemberChange.CreationAdded(memberList)
                 MessageEntity.MemberChangeType.FAILED_TO_ADD -> MessageContent.MemberChange.FailedToAdd(memberList)
                 MessageEntity.MemberChangeType.FEDERATION_REMOVED -> MessageContent.MemberChange.FederationRemoved(memberList)
+                MessageEntity.MemberChangeType.REMOVED_FROM_TEAM -> MessageContent.MemberChange.RemovedFromTeam(memberList)
             }
         }
 
-        is MessageEntityContent.MissedCall -> MessageContent.MissedCall
-        is MessageEntityContent.ConversationRenamed -> MessageContent.ConversationRenamed(conversationName)
-        is MessageEntityContent.TeamMemberRemoved -> MessageContent.TeamMemberRemoved(userName)
-        is MessageEntityContent.CryptoSessionReset -> MessageContent.CryptoSessionReset
-        is MessageEntityContent.NewConversationReceiptMode -> MessageContent.NewConversationReceiptMode(receiptMode)
-        is MessageEntityContent.ConversationReceiptModeChanged -> MessageContent.ConversationReceiptModeChanged(receiptMode)
-        is MessageEntityContent.HistoryLost -> MessageContent.HistoryLost
-        is MessageEntityContent.HistoryLostProtocolChanged -> MessageContent.HistoryLostProtocolChanged
-        is MessageEntityContent.ConversationMessageTimerChanged -> MessageContent.ConversationMessageTimerChanged(messageTimer)
-        is MessageEntityContent.ConversationCreated -> MessageContent.ConversationCreated
-        is MessageEntityContent.MLSWrongEpochWarning -> MessageContent.MLSWrongEpochWarning
-        is MessageEntityContent.ConversationDegradedMLS -> MessageContent.ConversationDegradedMLS
-        is MessageEntityContent.ConversationVerifiedMLS -> MessageContent.ConversationVerifiedMLS
-        is MessageEntityContent.ConversationDegradedProteus -> MessageContent.ConversationDegradedProteus
-        is MessageEntityContent.ConversationVerifiedProteus -> MessageContent.ConversationVerifiedProteus
-        is MessageEntityContent.Federation -> when (type) {
-            MessageEntity.FederationType.DELETE -> MessageContent.FederationStopped.Removed(domainList.first())
-            MessageEntity.FederationType.CONNECTION_REMOVED -> MessageContent.FederationStopped.ConnectionRemoved(domainList)
-        }
+    is MessageEntityContent.MissedCall -> MessageContent.MissedCall
+    is MessageEntityContent.ConversationRenamed -> MessageContent.ConversationRenamed(conversationName)
+    is MessageEntityContent.TeamMemberRemoved -> MessageContent.TeamMemberRemoved(userName)
+    is MessageEntityContent.CryptoSessionReset -> MessageContent.CryptoSessionReset
+    is MessageEntityContent.NewConversationReceiptMode -> MessageContent.NewConversationReceiptMode(receiptMode)
+    is MessageEntityContent.ConversationReceiptModeChanged -> MessageContent.ConversationReceiptModeChanged(receiptMode)
+    is MessageEntityContent.HistoryLost -> MessageContent.HistoryLost
+    is MessageEntityContent.HistoryLostProtocolChanged -> MessageContent.HistoryLostProtocolChanged
+    is MessageEntityContent.ConversationMessageTimerChanged -> MessageContent.ConversationMessageTimerChanged(messageTimer)
+    is MessageEntityContent.ConversationCreated -> MessageContent.ConversationCreated
+    is MessageEntityContent.MLSWrongEpochWarning -> MessageContent.MLSWrongEpochWarning
+    is MessageEntityContent.ConversationDegradedMLS -> MessageContent.ConversationDegradedMLS
+    is MessageEntityContent.ConversationVerifiedMLS -> MessageContent.ConversationVerifiedMLS
+    is MessageEntityContent.ConversationDegradedProteus -> MessageContent.ConversationDegradedProteus
+    is MessageEntityContent.ConversationVerifiedProteus -> MessageContent.ConversationVerifiedProteus
+    is MessageEntityContent.Federation -> when (type) {
+        MessageEntity.FederationType.DELETE -> MessageContent.FederationStopped.Removed(domainList.first())
+        MessageEntity.FederationType.CONNECTION_REMOVED -> MessageContent.FederationStopped.ConnectionRemoved(domainList)
+    }
 
-        is MessageEntityContent.ConversationProtocolChanged -> MessageContent.ConversationProtocolChanged(protocol.toModel())
-        is MessageEntityContent.ConversationStartedUnverifiedWarning -> MessageContent.ConversationStartedUnverifiedWarning
+    is MessageEntityContent.ConversationProtocolChanged -> MessageContent.ConversationProtocolChanged(protocol.toModel())
+    is MessageEntityContent.ConversationProtocolChangedDuringACall -> MessageContent.ConversationProtocolChangedDuringACall
+    is MessageEntityContent.ConversationStartedUnverifiedWarning -> MessageContent.ConversationStartedUnverifiedWarning
+    is MessageEntityContent.LegalHold -> {
+        when (this.type) {
+            MessageEntity.LegalHoldType.DISABLED_FOR_CONVERSATION -> MessageContent.LegalHold.ForConversation.Disabled
+            MessageEntity.LegalHoldType.ENABLED_FOR_CONVERSATION -> MessageContent.LegalHold.ForConversation.Enabled
+            MessageEntity.LegalHoldType.DISABLED_FOR_MEMBERS ->
+                MessageContent.LegalHold.ForMembers.Disabled(this.memberUserIdList.map { it.toModel() })
+            MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS ->
+                MessageContent.LegalHold.ForMembers.Enabled(this.memberUserIdList.map { it.toModel() })
+        }
     }
 }
 
@@ -430,7 +456,7 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
         otherUserIdList = otherUserIdList.map { it.toModel() }
     )
 
-    is MessagePreviewEntityContent.MembersRemoved -> MessagePreviewContent.WithUser.MembersRemoved(
+    is MessagePreviewEntityContent.ConversationMembersRemoved -> MessagePreviewContent.WithUser.ConversationMembersRemoved(
         username = senderName,
         isSelfUserRemoved = isContainSelfUserId,
         otherUserIdList = otherUserIdList.map { it.toModel() }
@@ -453,11 +479,17 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
         otherUserIdList = otherUserIdList.map { it.toModel() }
     )
 
+    is MessagePreviewEntityContent.TeamMembersRemoved -> MessagePreviewContent.WithUser.TeamMembersRemoved(
+        username = senderName,
+        isSelfUserRemoved = isContainSelfUserId,
+        otherUserIdList = otherUserIdList.map { it.toModel() }
+    )
+
     is MessagePreviewEntityContent.Ephemeral -> MessagePreviewContent.Ephemeral(isGroupConversation)
     is MessagePreviewEntityContent.MentionedSelf -> MessagePreviewContent.WithUser.MentionedSelf(senderName)
     is MessagePreviewEntityContent.MissedCall -> MessagePreviewContent.WithUser.MissedCall(senderName)
     is MessagePreviewEntityContent.QuotedSelf -> MessagePreviewContent.WithUser.QuotedSelf(senderName)
-    is MessagePreviewEntityContent.TeamMemberRemoved -> MessagePreviewContent.WithUser.TeamMemberRemoved(userName)
+    is MessagePreviewEntityContent.TeamMemberRemoved_Legacy -> MessagePreviewContent.WithUser.TeamMemberRemoved(userName)
     is MessagePreviewEntityContent.Text -> MessagePreviewContent.WithUser.Text(username = senderName, messageBody = messageBody)
     is MessagePreviewEntityContent.CryptoSessionReset -> MessagePreviewContent.CryptoSessionReset
     MessagePreviewEntityContent.Unknown -> MessagePreviewContent.Unknown
@@ -466,6 +498,7 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
     is MessagePreviewEntityContent.ConversationVerifiedProteus -> MessagePreviewContent.VerificationChanged.VerifiedProteus
     is MessagePreviewEntityContent.ConversationVerificationDegradedMls -> MessagePreviewContent.VerificationChanged.DegradedMls
     is MessagePreviewEntityContent.ConversationVerificationDegradedProteus -> MessagePreviewContent.VerificationChanged.DegradedProteus
+    is MessagePreviewEntityContent.Location -> MessagePreviewContent.WithUser.Location(username = senderName)
 }
 
 fun AssetTypeEntity.toModel(): AssetType = when (this) {
@@ -551,6 +584,13 @@ fun MessageEntityContent.Regular.toMessageContent(hidden: Boolean, selfUserId: U
             )
         }
     )
+
+    is MessageEntityContent.Location -> MessageContent.Location(
+        latitude = this.latitude,
+        longitude = this.longitude,
+        name = this.name,
+        zoom = this.zoom
+    )
 }
 
 private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage) = when {
@@ -562,6 +602,12 @@ private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage)
         MessageContent.QuotedMessageDetails.Asset(
             assetName = it.assetName,
             assetMimeType = requireNotNull(it.assetMimeType)
+        )
+    }
+
+    it.contentType == MessageEntity.ContentType.LOCATION -> {
+        MessageContent.QuotedMessageDetails.Location(
+            locationName = it.locationName,
         )
     }
 
@@ -591,6 +637,10 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
                 MessageEntity.MemberChangeType.FEDERATION_REMOVED
             )
 
+            is MessageContent.MemberChange.RemovedFromTeam -> MessageEntityContent.MemberChange(
+                memberUserIdList,
+                MessageEntity.MemberChangeType.REMOVED_FROM_TEAM
+            )
         }
     }
 
@@ -619,6 +669,17 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
     MessageContent.ConversationVerifiedMLS -> MessageEntityContent.ConversationVerifiedMLS
     MessageContent.ConversationVerifiedProteus -> MessageEntityContent.ConversationVerifiedProteus
     is MessageContent.ConversationProtocolChanged -> MessageEntityContent.ConversationProtocolChanged(protocol.toDao())
+    is MessageContent.ConversationProtocolChangedDuringACall -> MessageEntityContent.ConversationProtocolChangedDuringACall
     MessageContent.HistoryLostProtocolChanged -> MessageEntityContent.HistoryLostProtocolChanged
     is MessageContent.ConversationStartedUnverifiedWarning -> MessageEntityContent.ConversationStartedUnverifiedWarning
+    is MessageContent.LegalHold -> when (this) {
+        MessageContent.LegalHold.ForConversation.Disabled ->
+            MessageEntityContent.LegalHold(emptyList(), MessageEntity.LegalHoldType.DISABLED_FOR_CONVERSATION)
+        MessageContent.LegalHold.ForConversation.Enabled ->
+            MessageEntityContent.LegalHold(emptyList(), MessageEntity.LegalHoldType.ENABLED_FOR_CONVERSATION)
+        is MessageContent.LegalHold.ForMembers.Disabled ->
+            MessageEntityContent.LegalHold(this.members.map { it.toDao() }, MessageEntity.LegalHoldType.DISABLED_FOR_MEMBERS)
+        is MessageContent.LegalHold.ForMembers.Enabled ->
+            MessageEntityContent.LegalHold(this.members.map { it.toDao() }, MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS)
+    }
 }

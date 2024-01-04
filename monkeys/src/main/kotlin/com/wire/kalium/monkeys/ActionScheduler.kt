@@ -19,11 +19,13 @@ package com.wire.kalium.monkeys
 
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.actions.Action
-import com.wire.kalium.monkeys.importer.ActionConfig
+import com.wire.kalium.monkeys.model.ActionConfig
+import com.wire.kalium.monkeys.model.Event
 import com.wire.kalium.monkeys.pool.MonkeyPool
 import io.micrometer.core.instrument.Tag
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -31,41 +33,46 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.serializer
 
-object ActionScheduler {
-    @Suppress("TooGenericExceptionCaught")
-    @OptIn(InternalSerializationApi::class, ExperimentalSerializationApi::class)
-    suspend fun start(testCase: String, actions: List<ActionConfig>, coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
-        actions.forEach { actionConfig ->
-            CoroutineScope(Dispatchers.Default).launch {
-                while (this.isActive) {
-                    val actionName = actionConfig.type::class.serializer().descriptor.serialName
-                    val tags = listOf(Tag.of("testCase", testCase))
-                    try {
-                        logger.i("Running action $actionName: ${actionConfig.description} ${actionConfig.count} times")
-                        repeat(actionConfig.count.toInt()) {
-                            val startTime = System.currentTimeMillis()
-                            MetricsCollector.time("t_$actionName", tags) {
-                                Action.fromConfig(actionConfig).execute(coreLogic, monkeyPool)
-                            }
-                            MetricsCollector.count("c_$actionName", tags)
-                            logger.d("Action $actionName took ${System.currentTimeMillis() - startTime} milliseconds")
+@Suppress("TooGenericExceptionCaught")
+@OptIn(InternalSerializationApi::class, ExperimentalSerializationApi::class)
+suspend fun start(
+    testCase: String,
+    actions: List<ActionConfig>,
+    coreLogic: CoreLogic,
+    monkeyPool: MonkeyPool,
+    producer: SendChannel<Event>
+) {
+    actions.forEach { actionConfig ->
+        CoroutineScope(Dispatchers.Default).launch {
+            val actionName = actionConfig.type::class.serializer().descriptor.serialName
+            do {
+                val tags = listOf(Tag.of("testCase", testCase))
+                try {
+                    logger.i("Running action $actionName: ${actionConfig.description} ${actionConfig.count} times")
+                    repeat(actionConfig.count.toInt()) {
+                        val startTime = System.currentTimeMillis()
+                        MetricsCollector.time("t_$actionName", tags) {
+                            Action.fromConfig(actionConfig, producer).execute(coreLogic, monkeyPool)
                         }
-                    } catch (e: Exception) {
-                        logger.e("Error in action ${actionConfig.description}:", e)
-                        if (e.cause != null) {
-                            logger.e("Cause for error in ${actionConfig.description}:", e.cause)
-                        }
-                        MetricsCollector.count("c_errors", tags.plusElement(Tag.of("action", actionName)))
+                        MetricsCollector.count("c_$actionName", tags)
+                        logger.d("Action $actionName took ${System.currentTimeMillis() - startTime} milliseconds")
                     }
-                    delay(actionConfig.repeatInterval.toLong())
+                } catch (e: Exception) {
+                    logger.e("Error in action ${actionConfig.description}:", e)
+                    if (e.cause != null) {
+                        logger.e("Cause for error in ${actionConfig.description}:", e.cause)
+                    }
+                    MetricsCollector.count("c_errors", tags.plusElement(Tag.of("action", actionName)))
                 }
-            }
+                delay(actionConfig.repeatInterval.toLong())
+            } while (this.isActive && actionConfig.repeatInterval > 0u)
+            logger.i("Task for action $actionName finished")
         }
     }
+}
 
-    suspend fun runSetup(actions: List<ActionConfig>, coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
-        actions.forEach {
-            Action.fromConfig(it).execute(coreLogic, monkeyPool)
-        }
+suspend fun runSetup(actions: List<ActionConfig>, coreLogic: CoreLogic, monkeyPool: MonkeyPool, producer: SendChannel<Event>) {
+    actions.forEach { actionConfig ->
+        Action.fromConfig(actionConfig, producer).execute(coreLogic, monkeyPool)
     }
 }

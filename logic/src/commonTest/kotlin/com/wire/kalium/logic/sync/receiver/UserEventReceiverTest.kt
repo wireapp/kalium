@@ -25,10 +25,10 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
@@ -36,10 +36,11 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import com.wire.kalium.logic.util.arrangement.UserRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.UserRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
+import io.mockative.KFunction1
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -109,20 +110,19 @@ class UserEventReceiverTest {
     fun givenUserDeleteEvent_RepoAndPersisMessageAreInvoked() = runTest {
         val event = TestEvent.userDelete(userId = OTHER_USER_ID)
         val (arrangement, eventReceiver) = arrange {
-            withRemoveUserSuccess()
-            withDeleteUserFromConversationsSuccess()
+            withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(
+                userIdMatcher = any<UserId>()
+            )
             withConversationsByUserId(listOf(TestConversation.CONVERSATION))
         }
 
         eventReceiver.onEvent(event)
 
         verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::removeUser)
-            .with(any())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::deleteUserFromConversations)
+            .suspendFunction(
+                arrangement.userRepository::markUserAsDeletedAndRemoveFromGroupConversations,
+                KFunction1<UserId>()
+            )
             .with(any())
             .wasInvoked(exactly = once)
     }
@@ -276,6 +276,7 @@ class UserEventReceiverTest {
 
         @Mock
         val legalHoldRequestHandler = mock(classOf<LegalHoldRequestHandler>())
+
         @Mock
         val legalHoldHandler = mock(classOf<LegalHoldHandler>())
 
@@ -327,11 +328,6 @@ class UserEventReceiverTest {
 
         fun withLogoutUseCaseSucceed() = apply {
             given(logoutUseCase).suspendFunction(logoutUseCase::invoke).whenInvokedWith(any()).thenReturn(Unit)
-        }
-
-        fun withDeleteUserFromConversationsSuccess() = apply {
-            given(conversationRepository).suspendFunction(conversationRepository::deleteUserFromConversations)
-                .whenInvokedWith(any()).thenReturn(Either.Right(Unit))
         }
 
         fun withConversationsByUserId(conversationIds: List<Conversation>) = apply {
