@@ -235,14 +235,14 @@ internal class MessageDAOImpl internal constructor(
         queries.selectById(id, conversationId, mapper::toEntityMessageFromView).executeAsOneOrNull()
     }
 
-    override suspend fun getMessageAssets(
+    override suspend fun getImageMessageAssets(
         conversationId: QualifiedIDEntity,
         mimeTypes: Set<String>,
         limit: Int,
         offset: Int
     ): List<AssetMessageEntity> =
         withContext(coroutineContext) {
-            assetViewQueries.getAssetMessagesByConversationIdAndMimeTypes(
+            assetViewQueries.getImageAssetMessagesByConversationIdAndMimeTypes(
                 conversationId,
                 listOf(MessageEntity.Visibility.VISIBLE),
                 listOf(MessageEntity.ContentType.ASSET),
@@ -457,6 +457,6 @@ internal class MessageDAOImpl internal constructor(
             .toInt()
     }
 
-    override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, mapper, coroutineContext)
+    override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, assetViewQueries, mapper, coroutineContext)
 
 }

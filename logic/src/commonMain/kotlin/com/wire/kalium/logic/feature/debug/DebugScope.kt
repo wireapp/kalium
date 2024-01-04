@@ -23,7 +23,9 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.ProteusClientProvider
+import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -35,7 +37,6 @@ import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.feature.message.MLSMessageCreator
 import com.wire.kalium.logic.feature.message.MLSMessageCreatorImpl
 import com.wire.kalium.logic.feature.message.MessageEnvelopeCreator
@@ -53,6 +54,7 @@ import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageFor
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.incremental.EventProcessor
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -67,6 +69,7 @@ class DebugScope internal constructor(
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val clientRepository: ClientRepository,
+    private val clientRemoteRepository: ClientRemoteRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val proteusClientProvider: ProteusClientProvider,
     private val mlsClientProvider: MLSClientProvider,
@@ -80,6 +83,7 @@ class DebugScope internal constructor(
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val staleEpochVerifier: StaleEpochVerifier,
     private val eventProcessor: EventProcessor,
+    private val legalHoldHandler: LegalHoldHandler,
     private val scope: CoroutineScope,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
@@ -113,9 +117,10 @@ class DebugScope internal constructor(
         get() = MessageSendFailureHandlerImpl(
             userRepository,
             clientRepository,
+            clientRemoteRepository,
             messageRepository,
             messageSendingScheduler,
-            conversationRepository
+            conversationRepository,
         )
 
     private val sessionEstablisher: SessionEstablisher
@@ -153,6 +158,7 @@ class DebugScope internal constructor(
             mlsConversationRepository,
             syncManager,
             messageSendFailureHandler,
+            legalHoldHandler,
             sessionEstablisher,
             messageEnvelopeCreator,
             mlsMessageCreator,

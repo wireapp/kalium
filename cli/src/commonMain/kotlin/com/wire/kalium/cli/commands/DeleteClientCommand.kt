@@ -35,7 +35,7 @@ class DeleteClientCommand : CliktCommand(name = "delete-client") {
     private val password: String by option(help = "Account password").prompt("password", promptSuffix = ": ", hideInput = true)
 
     override fun run() = runBlocking {
-        val selfClientsResult = userSession.client.selfClients()
+        val selfClientsResult = userSession.client.fetchSelfClients()
 
         if (selfClientsResult !is SelfClientsResult.Success) {
             throw PrintMessage("failed to retrieve self clients")

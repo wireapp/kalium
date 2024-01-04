@@ -103,12 +103,12 @@ class MessageRepositoryTest {
             .arrange()
 
         // When
-        messageRepository.getAssetMessagesByConversationId(TEST_CONVERSATION_ID, 0, 0)
+        messageRepository.getImageAssetMessagesByConversationId(TEST_CONVERSATION_ID, 0, 0)
 
         // Then
         with(arrangement) {
             verify(messageDAO)
-                .suspendFunction(messageDAO::getMessageAssets)
+                .suspendFunction(messageDAO::getImageMessageAssets)
                 .with(eq(mappedId), anything(), anything())
                 .wasInvoked(exactly = once)
         }
@@ -595,7 +595,7 @@ class MessageRepositoryTest {
 
         fun withMappedAssetMessageModel(message: AssetMessage): Arrangement {
             given(messageMapper)
-                .function(messageMapper::fromAssetEntityToMessage)
+                .function(messageMapper::fromAssetEntityToAssetMessage)
                 .whenInvokedWith(anything())
                 .then { message }
             return this
@@ -716,7 +716,7 @@ class MessageRepositoryTest {
             result: List<AssetMessageEntity>
         ) = apply {
             given(messageDAO)
-                .suspendFunction(messageDAO::getMessageAssets)
+                .suspendFunction(messageDAO::getImageMessageAssets)
                 .whenInvokedWith(eq(conversationId))
                 .thenReturn(result)
         }

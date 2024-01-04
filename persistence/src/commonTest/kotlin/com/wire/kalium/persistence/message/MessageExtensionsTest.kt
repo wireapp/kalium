@@ -67,10 +67,16 @@ class MessageExtensionsTest : BaseDatabaseTest() {
         val db = createDatabase(selfUserId, encryptedDBSecret, true)
 
         val messagesQueries = db.database.messagesQueries
+        val messageAssetViewQueries = db.database.messageAssetViewQueries
         messageDAO = db.messageDAO
         conversationDAO = db.conversationDAO
         userDAO = db.userDAO
-        messageExtensions = MessageExtensionsImpl(messagesQueries, MessageMapper, dispatcher)
+        messageExtensions = MessageExtensionsImpl(
+            messagesQueries = messagesQueries,
+            messageAssetViewQueries = messageAssetViewQueries,
+            messageMapper = MessageMapper,
+            coroutineContext = dispatcher
+        )
     }
 
     @AfterTest

@@ -15,40 +15,33 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.logic.feature.asset
 
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.util.KaliumDispatcher
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 
-interface GetAssetMessagesForConversationUseCase {
-    /**
-     * This use case will return asset messages for a given [conversationId]
-     * paginated by [limit] and [offset]
-     * @see AssetMessage
-     */
+/**
+ * This use case will observe and return a flow of paginated image asset messages for a given conversation.
+ * @see PagingData
+ * @see AssetMessage
+ */
+class ObservePaginatedAssetImageMessages internal constructor(
+    private val dispatcher: KaliumDispatcher,
+    private val messageRepository: MessageRepository
+) {
     suspend operator fun invoke(
         conversationId: ConversationId,
-        limit: Int,
-        offset: Int,
-    ): List<AssetMessage>
-}
-
-class GetAssetMessagesForConversationUseCaseImpl internal constructor(
-    private val dispatcher: KaliumDispatcher,
-    private val messageRepository: MessageRepository,
-) : GetAssetMessagesForConversationUseCase {
-
-    override suspend operator fun invoke(
-        conversationId: ConversationId,
-        limit: Int,
-        offset: Int,
-    ): List<AssetMessage> = withContext(dispatcher.io) {
-        messageRepository.getAssetMessagesByConversationId(
-            conversationId, limit, offset
-        )
-    }
+        startingOffset: Long,
+        pagingConfig: PagingConfig
+    ): Flow<PagingData<AssetMessage>> = messageRepository.extensions.observePaginatedMessageAssetImageByConversationId(
+        conversationId = conversationId,
+        pagingConfig = pagingConfig,
+        startingOffset = startingOffset
+    ).flowOn(dispatcher.io)
 }
