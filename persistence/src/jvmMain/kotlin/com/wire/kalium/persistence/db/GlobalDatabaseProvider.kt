@@ -21,20 +21,23 @@ package com.wire.kalium.persistence.db
 import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.db.SqlDriver
-import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import app.cash.sqldelight.driver.jdbc.asJdbcDriver
 import com.wire.kalium.persistence.Accounts
 import com.wire.kalium.persistence.CurrentAccount
 import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.ServerConfiguration
+import com.wire.kalium.persistence.adapter.LogoutReasonAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAOImpl
-import com.wire.kalium.persistence.adapter.LogoutReasonAdapter
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
 import com.wire.kalium.util.KaliumDispatcherImpl
+import com.zaxxer.hikari.HikariConfig
+import com.zaxxer.hikari.HikariDataSource
 import java.io.File
+import javax.sql.DataSource
 import kotlin.coroutines.CoroutineContext
 
 // TODO(refactor): Unify creation just like it's done for UserDataBase
@@ -53,7 +56,7 @@ actual class GlobalDatabaseProvider(
         // Make sure all intermediate directories exist
         storePath.mkdirs()
 
-        val driver: SqlDriver = JdbcSqliteDriver("jdbc:sqlite:${databasePath.absolutePath}")
+        val driver: SqlDriver = createDataSource("jdbc:postgresql://localhost:5432/$dbName").asJdbcDriver()
 
         if (!databaseExists) {
             GlobalDatabase.Schema.create(driver)
@@ -76,6 +79,20 @@ actual class GlobalDatabaseProvider(
         )
 
         database.globalDatabasePropertiesQueries.enableForeignKeyContraints()
+    }
+
+    private fun createDataSource(driverUri: String): DataSource {
+        val dataSourceConfig = HikariConfig().apply {
+            driverClassName = "org.postgresql.Driver" // todo. parameterize
+            jdbcUrl = driverUri
+            username = "postgres"
+            password = ""
+            maximumPoolSize = 3
+            isAutoCommit = false
+            transactionIsolation = "TRANSACTION_REPEATABLE_READ"
+            validate()
+        }
+        return HikariDataSource(dataSourceConfig)
     }
 
     actual val serverConfigurationDAO: ServerConfigurationDAO
