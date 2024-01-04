@@ -251,6 +251,46 @@ class UserEventReceiverTest {
                 .wasInvoked(exactly = once)
         }
 
+    @Test
+    fun givenNewConnectionEventWithStatusAccepted_whenHandlingEvent_thenCreateUnverifiedWarningMessage() =
+        runTest(TestKaliumDispatcher.default) {
+            // given
+            val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED)
+            val (arrangement, eventReceiver) = arrange {
+                withFetchUserInfoReturning(Either.Right(Unit))
+                withInsertConnectionFromEventSucceeding()
+                withScheduleResolveOneOnOneConversationWithUserId()
+                withPersistUnverifiedWarningMessageSuccess()
+            }
+            // when
+            eventReceiver.onEvent(event)
+            // then
+            verify(arrangement.newGroupConversationSystemMessagesCreator)
+                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
+                .with(eq(event.connection.qualifiedConversationId))
+                .wasInvoked(exactly = once)
+        }
+
+    @Test
+    fun givenNewConnectionEventWithStatusCancelled_whenHandlingEvent_thenDoNotCreateUnverifiedWarningMessage() =
+        runTest(TestKaliumDispatcher.default) {
+            // given
+            val event = TestEvent.newConnection(status = ConnectionState.CANCELLED)
+            val (arrangement, eventReceiver) = arrange {
+                withFetchUserInfoReturning(Either.Right(Unit))
+                withInsertConnectionFromEventSucceeding()
+                withScheduleResolveOneOnOneConversationWithUserId()
+                withPersistUnverifiedWarningMessageSuccess()
+            }
+            // when
+            eventReceiver.onEvent(event)
+            // then
+            verify(arrangement.newGroupConversationSystemMessagesCreator)
+                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
+                .with(eq(event.connection.qualifiedConversationId))
+                .wasNotInvoked()
+        }
+
     private class Arrangement(private val block: Arrangement.() -> Unit) :
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl() {
