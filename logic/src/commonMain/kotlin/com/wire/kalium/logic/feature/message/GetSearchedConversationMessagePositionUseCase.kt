@@ -20,7 +20,11 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.feature.message.GetSearchedConversationMessagePositionUseCase.Result
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * Gets the Selected Message Position from Search
@@ -44,18 +48,21 @@ interface GetSearchedConversationMessagePositionUseCase {
 }
 
 internal class GetSearchedConversationMessagePositionUseCaseImpl internal constructor(
-    private val messageRepository: MessageRepository
+    private val messageRepository: MessageRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : GetSearchedConversationMessagePositionUseCase {
 
     override suspend fun invoke(
         conversationId: ConversationId,
         messageId: String
-    ): GetSearchedConversationMessagePositionUseCase.Result = messageRepository
-        .getSearchedConversationMessagePosition(
-            conversationId = conversationId,
-            messageId = messageId
-        ).fold(
-            { GetSearchedConversationMessagePositionUseCase.Result.Failure(it) },
-            { GetSearchedConversationMessagePositionUseCase.Result.Success(it) }
-        )
+    ): Result = withContext(dispatcher.io) {
+        messageRepository
+            .getSearchedConversationMessagePosition(
+                conversationId = conversationId,
+                messageId = messageId
+            ).fold(
+                { Result.Failure(it) },
+                { Result.Success(it) }
+            )
+    }
 }
