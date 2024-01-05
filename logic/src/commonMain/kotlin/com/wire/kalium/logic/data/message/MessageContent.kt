@@ -29,6 +29,10 @@ import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import kotlinx.datetime.Instant
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+typealias DomainToUserIdToClientsMap = Map<String, Map<String, List<String>>>
 
 sealed class MessageContent {
 
@@ -156,7 +160,23 @@ sealed class MessageContent {
         val conversationId: ConversationId,
     ) : Signaling()
 
-    data class Calling(val value: String, val conversationId: ConversationId? = null) : Signaling()
+
+    data class Calling(
+        val value: String,
+        val conversationId: ConversationId? = null
+    ) : Signaling() {
+        @Serializable
+        data class CallingValue(
+            val type: String,
+            @SerialName("data")
+            val targets: Targets? = null,
+        )
+        @Serializable
+        data class Targets(
+            @SerialName("targets")
+            val domainToUserIdToClients: DomainToUserIdToClientsMap
+        )
+    }
 
     data class DeleteMessage(val messageId: String) : Signaling()
 
