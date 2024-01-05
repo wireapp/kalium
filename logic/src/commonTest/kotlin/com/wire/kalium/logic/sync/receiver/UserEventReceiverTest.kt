@@ -241,6 +241,7 @@ class UserEventReceiverTest {
                 withFetchUserInfoReturning(Either.Right(Unit))
                 withInsertConnectionFromEventSucceeding()
                 withScheduleResolveOneOnOneConversationWithUserId()
+                withPersistUnverifiedWarningMessageSuccess()
             }
 
             eventReceiver.onEvent(event)
