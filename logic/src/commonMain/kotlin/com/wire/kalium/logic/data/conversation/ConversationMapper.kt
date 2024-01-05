@@ -30,7 +30,6 @@ import com.wire.kalium.logic.data.message.MessagePreview
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
 import com.wire.kalium.logic.data.user.BotService
 import com.wire.kalium.logic.data.user.Connection
-import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.toModel
@@ -220,7 +219,6 @@ internal class ConversationMapperImpl(
                             supportedProtocols = userSupportedProtocols?.map { it.toModel() }?.toSet(),
                             activeOneOnOneConversationId = userActiveOneOnOneConversationId?.toModel()
                         ),
-                        legalHoldStatus = LegalHoldStatus.DISABLED,
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
                         unreadEventCount = unreadEventCount ?: mapOf(),
                         lastMessage = lastMessage
@@ -230,7 +228,6 @@ internal class ConversationMapperImpl(
                 ConversationEntity.Type.GROUP -> {
                     ConversationDetails.Group(
                         conversation = fromDaoModel(daoModel),
-                        legalHoldStatus = LegalHoldStatus.DISABLED,
                         hasOngoingCall = callStatus != null, // todo: we can do better!
                         unreadEventCount = unreadEventCount ?: mapOf(),
                         lastMessage = lastMessage,

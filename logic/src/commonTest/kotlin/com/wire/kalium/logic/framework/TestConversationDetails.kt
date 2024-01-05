@@ -21,7 +21,6 @@ package com.wire.kalium.logic.framework
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo
 import com.wire.kalium.logic.data.conversation.ConversationDetails
-import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.data.user.type.UserType
 
 object TestConversationDetails {
@@ -40,7 +39,6 @@ object TestConversationDetails {
     val CONVERSATION_ONE_ONE = ConversationDetails.OneOne(
         TestConversation.ONE_ON_ONE(),
         TestUser.OTHER,
-        LegalHoldStatus.DISABLED,
         UserType.EXTERNAL,
         lastMessage = null,
         unreadEventCount = emptyMap()
@@ -48,7 +46,6 @@ object TestConversationDetails {
 
     val CONVERSATION_GROUP = ConversationDetails.Group(
         conversation = TestConversation.GROUP(),
-        legalHoldStatus = LegalHoldStatus.ENABLED,
         lastMessage = null,
         isSelfUserCreator = true,
         isSelfUserMember = true,
