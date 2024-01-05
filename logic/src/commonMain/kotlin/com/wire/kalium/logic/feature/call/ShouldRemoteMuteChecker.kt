@@ -20,6 +20,11 @@ package com.wire.kalium.logic.feature.call
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 
+/**
+ * Checks if the current user should be muted remotely.
+ * More details in the use case:
+ * https://wearezeta.atlassian.net/wiki/spaces/ENGINEERIN/pages/969605169/Use+case+conversation+admin+mutes+a+remote+participant
+ */
 internal interface ShouldRemoteMuteChecker {
     fun check(
         selfUserId: UserId,
@@ -34,6 +39,7 @@ internal class ShouldRemoteMuteCheckerImpl : ShouldRemoteMuteChecker {
         selfClientId: String,
         targets: MessageContent.Calling.Targets?
     ) = targets?.let {
+        // Having targets means that we are in an MLS call.
         it.domainToUserIdToClients.values.any { userClientsMap ->
             userClientsMap[selfUserId.value]?.any { client ->
                 client == selfClientId
@@ -42,6 +48,7 @@ internal class ShouldRemoteMuteCheckerImpl : ShouldRemoteMuteChecker {
             }
         }
     } ?: run {
+        // If there are no targets, we should mute. It's a proteus message with no targets.
         true
     }
 }
