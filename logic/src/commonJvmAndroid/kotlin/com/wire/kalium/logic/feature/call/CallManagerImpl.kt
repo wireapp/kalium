@@ -102,7 +102,7 @@ class CallManagerImpl internal constructor(
     private val videoStateChecker: VideoStateChecker,
     private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
     private val kaliumConfigs: KaliumConfigs,
-    private val json : Json = Json { ignoreUnknownKeys = true },
+    private val json: Json = Json { ignoreUnknownKeys = true },
     private val shouldRemoteMuteChecker: ShouldRemoteMuteChecker = ShouldRemoteMuteCheckerImpl(),
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : CallManager {

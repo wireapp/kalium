@@ -160,7 +160,6 @@ sealed class MessageContent {
         val conversationId: ConversationId,
     ) : Signaling()
 
-
     data class Calling(
         val value: String,
         val conversationId: ConversationId? = null
