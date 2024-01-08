@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -108,19 +108,17 @@ internal class UserEventReceiverImpl internal constructor(
             .flatMap {
                 connectionRepository.insertConnectionFromEvent(event)
                     .flatMap {
-                        if (event.connection.status != ConnectionState.ACCEPTED) {
-                            return@flatMap Either.Right(Unit)
+                        if (event.connection.status == ConnectionState.ACCEPTED) {
+                            oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(
+                                event.connection.qualifiedToId,
+                                delay = if (event.live) 3.seconds else ZERO
+                            )
+                            newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
+                                event.connection.qualifiedConversationId
+                            )
+                        } else {
+                            Either.Right(Unit)
                         }
-
-                        oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(
-                            event.connection.qualifiedToId,
-                            delay = if (event.live) 3.seconds else ZERO
-                        )
-                        Either.Right(Unit)
-                    }.flatMap {
-                        newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
-                            event.connection.qualifiedConversationId
-                        )
                     }
             }
             .onSuccess {
