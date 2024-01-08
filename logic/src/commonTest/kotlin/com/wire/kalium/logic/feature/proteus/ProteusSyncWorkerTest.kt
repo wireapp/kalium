@@ -123,7 +123,7 @@ class ProteusSyncWorkerTest {
                 incrementalSyncRepository = incrementalSyncRepository,
                 proteusPreKeyRefiller = proteusPreKeyRefiller,
                 preKeyRepository = preKeyRepository,
-                minInterValBetweenRefills = minIntervalBetweenRefills
+                minIntervalBetweenRefills = minIntervalBetweenRefills
             )
         }
     }
