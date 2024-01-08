@@ -101,22 +101,10 @@ kotlin {
             dependencies {
                 implementation(libs.cryptoboxAndroid)
                 implementation(libs.androidCrypto)
-                implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
-                    exclude("androidx.core")
-                    exclude("androidx.appcompat")
-                }
+                implementation(libs.coreCryptoAndroid)
             }
         }
 
-        val androidUnitTest by getting {
-            dependencies {
-                implementation(kotlin("test"))
-                implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
-                    exclude("androidx.core")
-                    exclude("androidx.appcompat")
-                }
-            }
-        }
         val appleMain by getting {
             dependencies {
                 implementation(libs.coreCrypto)
