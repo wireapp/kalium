@@ -34,6 +34,4 @@ class LogoutCallbackManagerImpl : LogoutCallbackManager {
     override suspend fun logout(userId: UserId, reason: LogoutReason) { callbacks.forEach { it(userId, reason) } }
 }
 
-interface LogoutCallback {
-    suspend operator fun invoke(userId: UserId, reason: LogoutReason)
-}
+typealias LogoutCallback = (userId: UserId, reason: LogoutReason) -> Unit
