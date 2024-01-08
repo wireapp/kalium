@@ -34,4 +34,4 @@ class LogoutCallbackManagerImpl : LogoutCallbackManager {
     override suspend fun logout(userId: UserId, reason: LogoutReason) { callbacks.forEach { it(userId, reason) } }
 }
 
-typealias LogoutCallback = (userId: UserId, reason: LogoutReason) -> Unit
+typealias LogoutCallback = suspend (userId: UserId, reason: LogoutReason) -> Unit
