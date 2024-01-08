@@ -88,6 +88,7 @@ actual class CoreLogic(
             globalCallManager,
             userStorageProvider,
             networkStateObserver,
+            logoutCallbackManager::logout,
             userAgent
         )
     }

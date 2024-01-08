@@ -28,6 +28,7 @@ import com.wire.kalium.logic.di.PlatformUserStorageProperties
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
+import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
@@ -49,6 +50,7 @@ internal fun UserSessionScope(
     userStorageProvider: UserStorageProvider,
     userSessionScopeProvider: UserSessionScopeProvider,
     networkStateObserver: NetworkStateObserver,
+    logoutCallback: LogoutCallback,
     userAgent: String
 ): UserSessionScope {
 
@@ -69,6 +71,7 @@ internal fun UserSessionScope(
         userStorageProvider,
         clientConfig,
         platformUserStorageProperties,
-        networkStateObserver
+        networkStateObserver,
+        logoutCallback
     )
 }

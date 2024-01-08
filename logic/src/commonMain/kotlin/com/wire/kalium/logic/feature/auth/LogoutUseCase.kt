@@ -63,7 +63,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private val userSessionWorkScheduler: UserSessionWorkScheduler,
     private val getEstablishedCallsUseCase: ObserveEstablishedCallsUseCase,
     private val endCallUseCase: EndCallUseCase,
-    private val logoutCallbackManager: LogoutCallbackManager,
+    private val logoutCallback: LogoutCallback,
     private val kaliumConfigs: KaliumConfigs
 ) : LogoutUseCase {
     // TODO(refactor): Maybe we can simplify by taking some of the responsibility away from here.
@@ -108,7 +108,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
 
             userSessionScopeProvider.get(userId)?.cancel()
             userSessionScopeProvider.delete(userId)
-            logoutCallbackManager.logout(userId, reason)
+            logoutCallback(userId, reason)
         }.let { if (waitUntilCompletes) it.join() else it }
     }
 
