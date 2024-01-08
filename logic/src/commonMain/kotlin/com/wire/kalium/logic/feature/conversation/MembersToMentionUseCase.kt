@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,10 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.data.conversation.MemberDetails
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 
 /**
  * This usecase returns a list of members to mention for a given conversation based on a search done with searchQuery
@@ -39,7 +42,8 @@ import kotlinx.coroutines.flow.first
 @Suppress("ReturnCount")
 class MembersToMentionUseCase internal constructor(
     private val observeConversationMembers: ObserveConversationMembersUseCase,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
     /**
      * search for members to mention in a conversation
@@ -47,7 +51,7 @@ class MembersToMentionUseCase internal constructor(
      * @param searchQuery string used to search for members
      * @return a List of [MemberDetails] of a conversation for the given string
      */
-    suspend operator fun invoke(conversationId: ConversationId, searchQuery: String): List<MemberDetails> {
+    suspend operator fun invoke(conversationId: ConversationId, searchQuery: String): List<MemberDetails> = withContext(dispatcher.io) {
         val conversationMembers = observeConversationMembers(conversationId).first()
 
         // TODO apply normalization techniques that are used for other searches to the name (e.g. ö -> oe)
@@ -56,10 +60,10 @@ class MembersToMentionUseCase internal constructor(
             it.user.id != userRepository.getSelfUser()?.id
         }
         if (searchQuery.isEmpty())
-            return usersToSearch
+            return@withContext usersToSearch
 
         if (searchQuery.first().isWhitespace())
-            return listOf()
+            return@withContext listOf()
 
         val rules: List<(MemberDetails) -> Boolean> = listOf(
             { it.user.name?.startsWith(searchQuery, true) == true },
@@ -83,7 +87,7 @@ class MembersToMentionUseCase internal constructor(
             usersToMention += matches
         }
 
-        return usersToMention
+        return@withContext usersToMention
     }
 }
 

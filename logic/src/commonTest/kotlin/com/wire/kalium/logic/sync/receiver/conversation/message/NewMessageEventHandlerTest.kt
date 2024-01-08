@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,6 @@ import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.ProtoContent
@@ -33,6 +32,7 @@ import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.Mock
@@ -146,7 +146,7 @@ class NewMessageEventHandlerTest {
     @Test
     fun givenAnMLSMessageWithLegalHoldUnknown_whenHandlingIt_thenDoNotUpdateLegalHoldStatus() = runTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
-            .withUpdateLegalHoldStatusSuccess()
+            .withHandleLegalHoldSuccess()
             .withMLSUnpackerReturning(
                 Either.Right(
                     listOf(
@@ -164,9 +164,9 @@ class NewMessageEventHandlerTest {
 
         newMessageEventHandler.handleNewMLSMessage(newMessageEvent)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateLegalHoldStatus)
-            .with(any(), eq(Conversation.LegalHoldStatus.DISABLED))
+        verify(arrangement.legalHoldHandler)
+            .suspendFunction(arrangement.legalHoldHandler::handleNewMessage)
+            .with(any())
             .wasNotInvoked()
 
         verify(arrangement.applicationMessageHandler)
@@ -178,7 +178,7 @@ class NewMessageEventHandlerTest {
     @Test
     fun givenUnpackingSuccess_whenHandling_thenHandleContent() = runTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
-            .withUpdateLegalHoldStatusSuccess()
+            .withHandleLegalHoldSuccess()
             .withMLSUnpackerReturning(Either.Right(listOf(applicationMessage)))
             .arrange()
 
@@ -191,9 +191,9 @@ class NewMessageEventHandlerTest {
             .with(eq(newMessageEvent))
             .wasInvoked(exactly = once)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateLegalHoldStatus)
-            .with(any(), eq(Conversation.LegalHoldStatus.DISABLED))
+        verify(arrangement.legalHoldHandler)
+            .suspendFunction(arrangement.legalHoldHandler::handleNewMessage)
+            .with(eq(applicationMessage))
             .wasInvoked(exactly = once)
 
         verify(arrangement.applicationMessageHandler)
@@ -205,7 +205,7 @@ class NewMessageEventHandlerTest {
     @Test
     fun givenEphemeralMessageFromSelf_whenHandling_thenEnqueueForSelfDelete() = runTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
-            .withUpdateLegalHoldStatusSuccess()
+            .withHandleLegalHoldSuccess()
             .withProteusUnpackerReturning(
                 Either.Right(
                     applicationMessage.copy(
@@ -237,7 +237,7 @@ class NewMessageEventHandlerTest {
     @Test
     fun givenEphemeralMessage_whenHandling_thenDoNotEnqueueForSelfDelete() = runTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
-            .withUpdateLegalHoldStatusSuccess()
+            .withHandleLegalHoldSuccess()
             .withProteusUnpackerReturning(Either.Right(applicationMessage))
             .arrange()
 
@@ -264,7 +264,7 @@ class NewMessageEventHandlerTest {
     @Test
     fun givenAMessageWithUnknownLegalHoldStatus_whenHandlingIt_thenDoNotUpdateCurrentLegalHold() = runTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
-            .withUpdateLegalHoldStatusSuccess()
+            .withHandleLegalHoldSuccess()
             .withProteusUnpackerReturning(
                 Either.Right(
                     applicationMessage.copy(
@@ -285,16 +285,16 @@ class NewMessageEventHandlerTest {
             .with(eq(newMessageEvent))
             .wasInvoked(exactly = once)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateLegalHoldStatus)
-            .with(eq(conversationID), eq(Conversation.LegalHoldStatus.UNKNOWN))
+        verify(arrangement.legalHoldHandler)
+            .suspendFunction(arrangement.legalHoldHandler::handleNewMessage)
+            .with(any())
             .wasNotInvoked()
     }
 
     @Test
     fun givenMessageFromSelf_whenHandling_thenDoNotEnqueueForSelfDelete() = runTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
-            .withUpdateLegalHoldStatusSuccess()
+            .withHandleLegalHoldSuccess()
             .withProteusUnpackerReturning(Either.Right(applicationMessage))
             .arrange()
 
@@ -307,9 +307,9 @@ class NewMessageEventHandlerTest {
             .with(eq(newMessageEvent))
             .wasInvoked(exactly = once)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateLegalHoldStatus)
-            .with(eq(conversationID), eq(Conversation.LegalHoldStatus.DISABLED))
+        verify(arrangement.legalHoldHandler)
+            .suspendFunction(arrangement.legalHoldHandler::handleNewMessage)
+            .with(eq(applicationMessage))
             .wasInvoked(exactly = once)
 
         verify(arrangement.applicationMessageHandler)
@@ -367,9 +367,6 @@ class NewMessageEventHandlerTest {
         val mlsMessageUnpacker = mock(classOf<MLSMessageUnpacker>())
 
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
-
-        @Mock
         val applicationMessageHandler = configure(mock(classOf<ApplicationMessageHandler>())) {
             stubsUnitByDefault = true
         }
@@ -380,11 +377,14 @@ class NewMessageEventHandlerTest {
         @Mock
         val ephemeralMessageDeletionHandler = mock(EphemeralMessageDeletionHandler::class)
 
+        @Mock
+        val legalHoldHandler = mock(LegalHoldHandler::class)
+
         private val newMessageEventHandler: NewMessageEventHandler = NewMessageEventHandlerImpl(
             proteusMessageUnpacker,
             mlsMessageUnpacker,
-            conversationRepository,
             applicationMessageHandler,
+            legalHoldHandler,
             { conversationId, messageId ->
                 ephemeralMessageDeletionHandler.startSelfDeletion(
                     conversationId,
@@ -402,10 +402,10 @@ class NewMessageEventHandlerTest {
                 .thenReturn(result)
         }
 
-        fun withUpdateLegalHoldStatusSuccess() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateLegalHoldStatus)
-                .whenInvokedWith(any(), any())
+        fun withHandleLegalHoldSuccess() = apply {
+            given(legalHoldHandler)
+                .suspendFunction(legalHoldHandler::handleNewMessage)
+                .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
 
@@ -430,7 +430,6 @@ class NewMessageEventHandlerTest {
 
     private companion object {
         val SELF_USER_ID = UserId("selfUserId", "selfDomain")
-        val conversationID = ConversationId("conversationID", "domain")
         val applicationMessage = MessageUnpackResult.ApplicationMessage(
             ConversationId("conversationID", "domain"),
             Instant.DISTANT_PAST.toIsoDateTimeString(),

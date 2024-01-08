@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -50,12 +50,12 @@ class E2EIClientProviderTest {
 
         verify(arrangement.mlsClient)
             .suspendFunction(arrangement.mlsClient::e2eiNewActivationEnrollment)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any())
             .wasInvoked(exactly = once)
 
         verify(arrangement.mlsClient)
             .suspendFunction(arrangement.mlsClient::e2eiNewRotateEnrollment)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any())
             .wasNotInvoked()
     }
 
@@ -82,12 +82,12 @@ class E2EIClientProviderTest {
 
         verify(arrangement.mlsClient)
             .suspendFunction(arrangement.mlsClient::e2eiNewRotateEnrollment)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any())
             .wasInvoked(exactly = once)
 
         verify(arrangement.mlsClient)
             .suspendFunction(arrangement.mlsClient::e2eiNewActivationEnrollment)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any())
             .wasNotInvoked()
     }
 
@@ -114,12 +114,12 @@ class E2EIClientProviderTest {
 
         verify(arrangement.mlsClient)
             .suspendFunction(arrangement.mlsClient::e2eiNewRotateEnrollment)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any())
             .wasNotInvoked()
 
         verify(arrangement.mlsClient)
             .suspendFunction(arrangement.mlsClient::e2eiNewActivationEnrollment)
-            .with(any(), any(), any(), any())
+            .with(any(), any(), any())
             .wasNotInvoked()
     }
 
@@ -130,7 +130,6 @@ class E2EIClientProviderTest {
         fun arrange(block: Arrangement.() -> Unit): Pair<Arrangement, E2EIClientProvider> {
             apply(block)
             e2eiClientProvider = EI2EIClientProviderImpl(
-                TestUser.USER_ID,
                 currentClientIdProvider,
                 mlsClientProvider,
                 userRepository

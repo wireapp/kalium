@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,12 +25,14 @@ import com.wire.kalium.persistence.Call
 import com.wire.kalium.persistence.Client
 import com.wire.kalium.persistence.Connection
 import com.wire.kalium.persistence.Conversation
+import com.wire.kalium.persistence.ConversationLegalHoldStatusChangeNotified
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
 import com.wire.kalium.persistence.MessageConversationChangedContent
 import com.wire.kalium.persistence.MessageConversationLocationContent
 import com.wire.kalium.persistence.MessageConversationProtocolChangedContent
+import com.wire.kalium.persistence.MessageConversationProtocolChangedDuringACallContent
 import com.wire.kalium.persistence.MessageConversationReceiptModeChangedContent
 import com.wire.kalium.persistence.MessageConversationTimerChangedContent
 import com.wire.kalium.persistence.MessageFailedToDecryptContent
@@ -200,6 +202,9 @@ internal object TableMapper {
         conversation_idAdapter = QualifiedIDAdapter,
         protocolAdapter = EnumColumnAdapter()
     )
+    val messageConversationProtocolChangedDuringACAllContentAdapter = MessageConversationProtocolChangedDuringACallContent.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter
+    )
     val unreadEventAdapter = UnreadEvent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
         typeAdapter = EnumColumnAdapter(),
@@ -239,5 +244,9 @@ internal object TableMapper {
         conversation_idAdapter = QualifiedIDAdapter,
         legal_hold_member_listAdapter = QualifiedIDListAdapter,
         legal_hold_typeAdapter = EnumColumnAdapter()
+    )
+
+    val conversationLegalHoldStatusChangeNotifiedAdapter = ConversationLegalHoldStatusChangeNotified.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter
     )
 }

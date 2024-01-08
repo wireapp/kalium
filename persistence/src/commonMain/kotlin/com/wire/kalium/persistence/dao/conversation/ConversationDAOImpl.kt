@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -399,13 +399,23 @@ internal class ConversationDAOImpl internal constructor(
         conversationId: QualifiedIDEntity,
         legalHoldStatus: ConversationEntity.LegalHoldStatus
     ) = withContext(coroutineContext) {
-        conversationQueries.updateLegalHoldStatus(legalHoldStatus, conversationId)
+        conversationQueries.updateLegalHoldStatus(legalHoldStatus, conversationId).executeAsOne() > 0
     }
 
-    override suspend fun observeLegalHoldForConversation(conversationId: QualifiedIDEntity) =
+    override suspend fun updateLegalHoldStatusChangeNotified(conversationId: QualifiedIDEntity, notified: Boolean) =
+        withContext(coroutineContext) {
+            conversationQueries.upsertLegalHoldStatusChangeNotified(conversationId, notified).executeAsOne() > 0
+        }
+
+    override suspend fun observeLegalHoldStatus(conversationId: QualifiedIDEntity) =
         conversationQueries.selectLegalHoldStatus(conversationId)
             .asFlow()
             .mapToOneOrDefault(ConversationEntity.LegalHoldStatus.DISABLED)
             .flowOn(coroutineContext)
 
+    override suspend fun observeLegalHoldStatusChangeNotified(conversationId: QualifiedIDEntity) =
+        conversationQueries.selectLegalHoldStatusChangeNotified(conversationId)
+            .asFlow()
+            .mapToOneOrDefault(true)
+            .flowOn(coroutineContext)
 }

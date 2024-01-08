@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,8 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.user.LegalHoldStatus
+import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
+import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -45,8 +46,6 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
-import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
@@ -172,7 +171,6 @@ class CallRepositoryTest {
                     Either.Right(
                         ConversationDetails.Group(
                             Arrangement.groupConversation,
-                            LegalHoldStatus.ENABLED,
                             false,
                             lastMessage = null,
                             isSelfUserMember = true,
@@ -214,7 +212,6 @@ class CallRepositoryTest {
                     Either.Right(
                         ConversationDetails.Group(
                             Arrangement.groupConversation,
-                            LegalHoldStatus.ENABLED,
                             lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
@@ -271,7 +268,6 @@ class CallRepositoryTest {
                     Either.Right(
                         ConversationDetails.Group(
                             Arrangement.groupConversation,
-                            LegalHoldStatus.ENABLED,
                             lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
@@ -317,7 +313,6 @@ class CallRepositoryTest {
                     Either.Right(
                         ConversationDetails.Group(
                             Arrangement.groupConversation,
-                            LegalHoldStatus.ENABLED,
                             lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
@@ -377,7 +372,6 @@ class CallRepositoryTest {
                     Either.Right(
                         ConversationDetails.Group(
                             Arrangement.groupConversation,
-                            LegalHoldStatus.ENABLED,
                             lastMessage = null,
                             isSelfUserMember = true,
                             isSelfUserCreator = true,
@@ -1742,7 +1736,6 @@ class CallRepositoryTest {
             val oneOnOneConversationDetails = ConversationDetails.OneOne(
                 conversation = oneOnOneConversation,
                 otherUser = TestUser.OTHER,
-                legalHoldStatus = LegalHoldStatus.ENABLED,
                 userType = UserType.INTERNAL,
                 lastMessage = null,
                 unreadEventCount = emptyMap()

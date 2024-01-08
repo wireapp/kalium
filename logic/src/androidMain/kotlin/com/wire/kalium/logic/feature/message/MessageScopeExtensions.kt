@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,8 +18,17 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.logic.feature.asset.GetPaginatedFlowOfAssetMessageByConversationIdUseCase
+import com.wire.kalium.logic.feature.asset.ObservePaginatedAssetImageMessages
+
 val MessageScope.getPaginatedFlowOfMessagesByConversation
     get() = GetPaginatedFlowOfMessagesByConversationUseCase(dispatcher, messageRepository)
 
 val MessageScope.getPaginatedFlowOfMessagesBySearchQueryAndConversation
     get() = GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase(dispatcher, messageRepository)
+
+val MessageScope.getPaginatedFlowOfAssetMessageByConversationId
+    get() = GetPaginatedFlowOfAssetMessageByConversationIdUseCase(dispatcher, messageRepository)
+
+val MessageScope.observePaginatedImageAssetMessageByConversationId
+    get() = ObservePaginatedAssetImageMessages(dispatcher, messageRepository)

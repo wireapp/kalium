@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -1587,6 +1587,73 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ),
             conversationId
         )
+    }
+
+    @Test
+    fun givenNewLegalHoldStatus_whenUpdating_thenShouldReturnTrue() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("conversationId", "domain")
+        conversationDAO.insertConversation(conversationEntity1.copy(conversationId))
+        conversationDAO.updateLegalHoldStatus(conversationId, ConversationEntity.LegalHoldStatus.DISABLED)
+        // when
+        val result = conversationDAO.updateLegalHoldStatus(conversationId, ConversationEntity.LegalHoldStatus.ENABLED)
+        // then
+        assertEquals(true, result)
+    }
+    @Test
+    fun givenTheSameLegalHoldStatus_whenUpdating_thenShouldReturnFalse() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("conversationId", "domain")
+        conversationDAO.insertConversation(conversationEntity1.copy(conversationId))
+        conversationDAO.updateLegalHoldStatus(conversationId, ConversationEntity.LegalHoldStatus.DISABLED)
+        // when
+        val result = conversationDAO.updateLegalHoldStatus(conversationId, ConversationEntity.LegalHoldStatus.DISABLED)
+        // then
+        assertEquals(false, result)
+    }
+    @Test
+    fun givenNewLegalHoldStatusChangeNotifiedFlag_whenUpdating_thenShouldReturnTrue() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("conversationId", "domain")
+        conversationDAO.insertConversation(conversationEntity1.copy(conversationId))
+        conversationDAO.updateLegalHoldStatusChangeNotified(conversationId, true)
+        // when
+        val result = conversationDAO.updateLegalHoldStatusChangeNotified(conversationId, false)
+        // then
+        assertEquals(true, result)
+    }
+    @Test
+    fun givenTheSameLegalHoldStatusChangeNotifiedFlag_whenUpdating_thenShouldReturnFalse() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("conversationId", "domain")
+        conversationDAO.insertConversation(conversationEntity1.copy(conversationId))
+        conversationDAO.updateLegalHoldStatusChangeNotified(conversationId, true)
+        // when
+        val result = conversationDAO.updateLegalHoldStatusChangeNotified(conversationId, true)
+        // then
+        assertEquals(false, result)
+    }
+    @Test
+    fun givenLegalHoldStatus_whenObserving_thenShouldReturnCorrectValue() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("conversationId", "domain")
+        conversationDAO.insertConversation(conversationEntity1.copy(conversationId))
+        conversationDAO.updateLegalHoldStatus(conversationId, ConversationEntity.LegalHoldStatus.ENABLED)
+        // when
+        val result = conversationDAO.observeLegalHoldStatus(conversationId).first()
+        // then
+        assertEquals(ConversationEntity.LegalHoldStatus.ENABLED, result)
+    }
+    @Test
+    fun givenLegalHoldStatusChangeNotified_whenObserving_thenShouldReturnCorrectValue() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("conversationId", "domain")
+        conversationDAO.insertConversation(conversationEntity1.copy(conversationId))
+        conversationDAO.updateLegalHoldStatusChangeNotified(conversationId, false)
+        // when
+        val result = conversationDAO.observeLegalHoldStatusChangeNotified(conversationId).first()
+        // then
+        assertEquals(false, result)
     }
 
     private fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity {

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,19 +19,21 @@ package com.wire.kalium.logic.feature.mlsmigration
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
+import com.wire.kalium.logic.util.arrangement.CallRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
@@ -44,12 +46,11 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MLSMigratorTest {
 
     @Test
@@ -67,6 +68,7 @@ class MLSMigratorTest {
             .withEstablishGroupSucceeds()
             .withGetConversationMembersReturning(Arrangement.MEMBERS)
             .withAddMembersSucceeds()
+            .withoutAnyEstablishedCall()
             .arrange()
 
         migrator.migrateProteusConversations()
@@ -86,6 +88,48 @@ class MLSMigratorTest {
     }
 
     @Test
+    fun givenAnOngoingCall_whenMigrating_thenInsertSystemMessages() = runTest {
+        val conversation = TestConversation.CONVERSATION.copy(
+            type = Conversation.Type.GROUP,
+            teamId = TestTeam.TEAM_ID
+        )
+
+        val (arrangement, migrator) = Arrangement()
+            .withGetProteusTeamConversationsReturning(listOf(conversation.id))
+            .withUpdateProtocolReturns()
+            .withFetchConversationSucceeding()
+            .withGetConversationProtocolInfoReturning(Arrangement.MIXED_PROTOCOL_INFO)
+            .withEstablishGroupSucceeds()
+            .withGetConversationMembersReturning(Arrangement.MEMBERS)
+            .withAddMembersSucceeds()
+            .withEstablishedCall()
+            .arrange()
+
+        migrator.migrateProteusConversations()
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateProtocolRemotely)
+            .with(eq(conversation.id), eq(Conversation.Protocol.MIXED))
+            .wasInvoked(once)
+
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::establishMLSGroup)
+            .with(eq(Arrangement.MIXED_PROTOCOL_INFO.groupId), eq(emptyList()))
+
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::addMemberToMLSGroup)
+            .with(eq(Arrangement.MIXED_PROTOCOL_INFO.groupId), eq(Arrangement.MEMBERS))
+
+        verify(arrangement.systemMessageInserter)
+            .suspendFunction(arrangement.systemMessageInserter::insertProtocolChangedSystemMessage)
+            .with(any(), any(), eq(Conversation.Protocol.MIXED))
+
+        verify(arrangement.systemMessageInserter)
+            .suspendFunction(arrangement.systemMessageInserter::insertProtocolChangedDuringACallSystemMessage)
+            .with(any(), any())
+    }
+
+    @Test
     fun givenAnError_whenMigrating_thenStillConsiderItASuccess() = runTest {
         val conversation = TestConversation.CONVERSATION.copy(
             type = Conversation.Type.GROUP,
@@ -98,9 +142,11 @@ class MLSMigratorTest {
             .withFetchConversationSucceeding()
             .withGetConversationProtocolInfoReturning(Arrangement.MIXED_PROTOCOL_INFO)
             .withEstablishGroupFails()
+            .withoutAnyEstablishedCall()
             .arrange()
 
         val result = migrator.migrateProteusConversations()
+
         result.shouldSucceed()
     }
 
@@ -164,6 +210,9 @@ class MLSMigratorTest {
 
         @Mock
         val systemMessageInserter = mock(classOf<SystemMessageInserter>())
+
+        @Mock
+        val callRepository = mock(classOf<CallRepository>())
 
         fun withFetchAllOtherUsersSucceeding() = apply {
             given(userRepository)
@@ -234,13 +283,28 @@ class MLSMigratorTest {
                 .thenReturn(Either.Right(Unit))
         }
 
+        fun withEstablishedCall() = apply {
+            given(callRepository)
+                .suspendFunction(callRepository::establishedCallsFlow)
+                .whenInvoked()
+                .thenReturn(flowOf(listOf(CallRepositoryArrangementImpl.call)))
+        }
+
+        fun withoutAnyEstablishedCall() = apply {
+            given(callRepository)
+                .suspendFunction(callRepository::establishedCallsFlow)
+                .whenInvoked()
+                .thenReturn(flowOf(listOf()))
+        }
+
         fun arrange() = this to MLSMigratorImpl(
             TestUser.SELF.id,
             selfTeamIdProvider,
             userRepository,
             conversationRepository,
             mlsConversationRepository,
-            systemMessageInserter
+            systemMessageInserter,
+            callRepository
         )
 
         init {

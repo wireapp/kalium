@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -126,6 +126,19 @@ class MessageContentEncoderTest {
         assertEquals(result.sha256Digest.toHexString(), markDown.second.second)
     }
 
+    @Test
+    fun givenALocationMessage_whenEncoding_ThenResultHasExpectedSHA256HashResult() = runTest {
+        val (locationMessage, messageDate, expectedHash) = location
+        val result = messageContentEncoder.encodeMessageContent(
+            messageDate = messageDate,
+            messageContent = locationMessage
+        )
+
+        // then
+        assertNotNull(result)
+        assertEquals(expectedHash, result.sha256Digest.toHexString())
+    }
+
     private companion object TestData {
         val textWithEmoji =
             (
@@ -165,5 +178,11 @@ class MessageContentEncoderTest {
                 "0005bcdcccd" to
                 "f25a925d55116800e66872d2a82d8292adf1d4177195703f976bc884d32b5c94"
                 )
+
+        val location = Triple(
+            MessageContent.Location(52.516666f, 13.4f, "someLocation", 10),
+            "2018-10-22T15:09:29.000+02:00",
+            "56a5fa30081bc16688574fdfbbe96c2eee004d1fb37dc714eec6efb340192816"
+        )
     }
 }

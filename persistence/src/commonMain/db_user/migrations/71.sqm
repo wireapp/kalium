@@ -1,0 +1,9 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+
+CREATE TABLE MessageConversationProtocolChangedDuringACallContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);

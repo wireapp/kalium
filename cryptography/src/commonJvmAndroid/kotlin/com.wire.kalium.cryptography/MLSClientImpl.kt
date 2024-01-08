@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -217,14 +217,12 @@ class MLSClientImpl(
     }
 
     override suspend fun e2eiNewActivationEnrollment(
-        clientId: CryptoQualifiedClientId,
         displayName: String,
         handle: String,
         teamId: String?
     ): E2EIClient {
         return E2EIClientImpl(
             coreCrypto.e2eiNewActivationEnrollment(
-                clientId.toString(),
                 displayName,
                 handle,
                 teamId,
@@ -235,14 +233,12 @@ class MLSClientImpl(
     }
 
     override suspend fun e2eiNewRotateEnrollment(
-        clientId: CryptoQualifiedClientId,
         displayName: String?,
         handle: String?,
         teamId: String?
     ): E2EIClient {
         return E2EIClientImpl(
             coreCrypto.e2eiNewRotateEnrollment(
-                clientId.toString(),
                 displayName,
                 handle,
                 teamId,
@@ -371,8 +367,7 @@ class MLSClientImpl(
 
         fun toE2EIConversationState(value: com.wire.crypto.E2eiConversationState) = when (value) {
             E2eiConversationState.VERIFIED -> E2EIConversationState.VERIFIED
-            // TODO: this value is wrong on CoreCrypto, it will be renamed to NOT_VERIFIED
-            E2eiConversationState.DEGRADED -> E2EIConversationState.NOT_VERIFIED
+            E2eiConversationState.NOT_VERIFIED -> E2EIConversationState.NOT_VERIFIED
             E2eiConversationState.NOT_ENABLED -> E2EIConversationState.NOT_ENABLED
         }
 

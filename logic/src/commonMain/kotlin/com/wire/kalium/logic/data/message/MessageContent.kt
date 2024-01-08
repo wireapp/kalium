@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -282,6 +282,8 @@ sealed class MessageContent {
         val protocol: Conversation.Protocol
     ) : System()
 
+    data object ConversationProtocolChangedDuringACall : System()
+
     // we can add other types to be processed, but signaling ones shouldn't be persisted
     data object Ignored : Signaling() // messages that aren't processed in any way
 
@@ -376,6 +378,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.FederationStopped.ConnectionRemoved -> "Federation.ConnectionRemoved"
     is MessageContent.FederationStopped.Removed -> "Federation.Removed"
     is MessageContent.ConversationProtocolChanged -> "ConversationProtocolChanged"
+    is MessageContent.ConversationProtocolChangedDuringACall -> "ConversationProtocolChangedDuringACall"
     is MessageContent.Unknown -> "Unknown"
     MessageContent.ConversationVerifiedMLS -> "ConversationVerification.Verified.MLS"
     MessageContent.ConversationVerifiedProteus -> "ConversationVerification.Verified.Proteus"

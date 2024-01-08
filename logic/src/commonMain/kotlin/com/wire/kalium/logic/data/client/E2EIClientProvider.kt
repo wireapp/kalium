@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,13 +18,10 @@
 
 package com.wire.kalium.logic.data.client
 
-import com.wire.kalium.cryptography.CryptoQualifiedClientId
-import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.SelfUser
@@ -38,10 +35,10 @@ import kotlinx.coroutines.withContext
 
 interface E2EIClientProvider {
     suspend fun getE2EIClient(clientId: ClientId? = null): Either<CoreFailure, E2EIClient>
+    suspend fun nuke()
 }
 
 internal class EI2EIClientProviderImpl(
-    private val userId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val mlsClientProvider: MLSClientProvider,
     private val userRepository: UserRepository,
@@ -54,10 +51,6 @@ internal class EI2EIClientProviderImpl(
         withContext(dispatchers.io) {
             val currentClientId =
                 clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
-            val e2eiClientId = CryptoQualifiedClientId(
-                currentClientId.value,
-                CryptoQualifiedID(value = userId.value, domain = userId.domain)
-            )
 
             return@withContext e2EIClient?.let {
                 Either.Right(it)
@@ -67,7 +60,6 @@ internal class EI2EIClientProviderImpl(
                         val newE2EIClient = if (it.isE2EIEnabled()) {
                             kaliumLogger.e("initial E2EI client for mls client that already has e2ei enabled")
                             it.e2eiNewRotateEnrollment(
-                                e2eiClientId,
                                 selfUser.name,
                                 selfUser.handle,
                                 selfUser.teamId.toString()
@@ -75,7 +67,6 @@ internal class EI2EIClientProviderImpl(
                         } else {
                             kaliumLogger.e("initial E2EI client for MLS client without e2ei")
                             it.e2eiNewActivationEnrollment(
-                                e2eiClientId,
                                 selfUser.name!!,
                                 selfUser.handle!!,
                                 selfUser.teamId.toString()
@@ -94,6 +85,10 @@ internal class EI2EIClientProviderImpl(
         return if (selfUser.name == null || selfUser.handle == null)
             Either.Left(E2EIFailure.Generic(IllegalArgumentException(ERROR_NAME_AND_HANDLE_MUST_NOT_BE_NULL)))
         else Either.Right(selfUser)
+    }
+
+    override suspend fun nuke() {
+        e2EIClient = null
     }
 
     companion object {

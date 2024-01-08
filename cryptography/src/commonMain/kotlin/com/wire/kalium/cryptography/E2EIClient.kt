@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,11 +54,13 @@ interface E2EIClient {
     suspend fun setAuthzResponse(authz: JsonRawData): NewAcmeAuthz
     suspend fun createDpopToken(backendNonce: String): DpopToken
     suspend fun getNewDpopChallengeRequest(accessToken: String, previousNonce: String): JsonRawData
-    suspend fun getNewOidcChallengeRequest(idToken: String, previousNonce: String): JsonRawData
-    suspend fun setChallengeResponse(challenge: JsonRawData)
+    suspend fun getNewOidcChallengeRequest(idToken: String, refreshToken: String, previousNonce: String): JsonRawData
+    suspend fun setOIDCChallengeResponse(coreCrypto: CoreCryptoCentral, challenge: JsonRawData)
+    suspend fun setDPoPChallengeResponse(challenge: JsonRawData)
     suspend fun checkOrderRequest(orderUrl: String, previousNonce: String): JsonRawData
     suspend fun checkOrderResponse(order: JsonRawData): String
     suspend fun finalizeRequest(previousNonce: String): JsonRawData
     suspend fun finalizeResponse(finalize: JsonRawData): String
     suspend fun certificateRequest(previousNonce: String): JsonRawData
+    suspend fun getOAuthRefreshToken(): String?
 }

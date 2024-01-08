@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,8 +21,11 @@ package com.wire.kalium.logic.data.message
 import app.cash.paging.PagingConfig
 import app.cash.paging.PagingData
 import app.cash.paging.map
+import com.wire.kalium.logic.data.asset.AssetMessage
+import com.wire.kalium.logic.data.asset.SUPPORTED_IMAGE_ASSET_MIME_TYPES
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.message.KaliumPager
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -43,6 +46,18 @@ internal interface MessageRepositoryExtensions {
         pagingConfig: PagingConfig,
         startingOffset: Long
     ): Flow<PagingData<Message.Standalone>>
+
+    suspend fun getPaginatedMessageAssetsWithoutImageByConversationId(
+        conversationId: ConversationId,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): Flow<PagingData<Message.Standalone>>
+
+    suspend fun observePaginatedMessageAssetImageByConversationId(
+        conversationId: ConversationId,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): Flow<PagingData<AssetMessage>>
 }
 
 internal class MessageRepositoryExtensionsImpl internal constructor(
@@ -83,6 +98,40 @@ internal class MessageRepositoryExtensionsImpl internal constructor(
 
         return pager.pagingDataFlow.map {
             it.map { messageMapper.fromEntityToMessage(it) }
+        }
+    }
+
+    override suspend fun getPaginatedMessageAssetsWithoutImageByConversationId(
+        conversationId: ConversationId,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): Flow<PagingData<Message.Standalone>> {
+        val pager: KaliumPager<MessageEntity> = messageDAO.platformExtensions.getPagerForMessageAssetsWithoutImage(
+            conversationId = conversationId.toDao(),
+            mimeTypes = SUPPORTED_IMAGE_ASSET_MIME_TYPES,
+            pagingConfig = pagingConfig,
+            startingOffset = startingOffset
+        )
+
+        return pager.pagingDataFlow.map {
+            it.map { messageEntity -> messageMapper.fromEntityToMessage(messageEntity) }
+        }
+    }
+
+    override suspend fun observePaginatedMessageAssetImageByConversationId(
+        conversationId: ConversationId,
+        pagingConfig: PagingConfig,
+        startingOffset: Long
+    ): Flow<PagingData<AssetMessage>> {
+        val pager: KaliumPager<AssetMessageEntity> = messageDAO.platformExtensions.getPagerForMessageAssetImage(
+            conversationId = conversationId.toDao(),
+            mimeTypes = SUPPORTED_IMAGE_ASSET_MIME_TYPES,
+            pagingConfig = pagingConfig,
+            startingOffset = startingOffset
+        )
+
+        return pager.pagingDataFlow.map {
+            it.map { messageEntity -> messageMapper.fromAssetEntityToAssetMessage(messageEntity) }
         }
     }
 }
