@@ -57,7 +57,7 @@ abstract class CoreLogicCommon internal constructor(
     protected val authenticationScopeProvider: AuthenticationScopeProvider =
         AuthenticationScopeProvider(userAgent)
 
-    fun getGlobalScope(): GlobalKaliumScope =
+    private val globalKaliumScope by lazy {
         GlobalKaliumScope(
             userAgent,
             globalDatabase,
@@ -67,6 +67,8 @@ abstract class CoreLogicCommon internal constructor(
             authenticationScopeProvider,
             networkStateObserver
         )
+    }
+    fun getGlobalScope(): GlobalKaliumScope = globalKaliumScope
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     fun getAuthenticationScope(

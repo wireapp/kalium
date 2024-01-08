@@ -31,6 +31,8 @@ import com.wire.kalium.logic.feature.appVersioning.ObserveIfAppUpdateRequiredUse
 import com.wire.kalium.logic.feature.appVersioning.ObserveIfAppUpdateRequiredUseCaseImpl
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
+import com.wire.kalium.logic.feature.auth.LogoutCallbackManager
+import com.wire.kalium.logic.feature.auth.LogoutCallbackManagerImpl
 import com.wire.kalium.logic.feature.auth.ValidateEmailUseCase
 import com.wire.kalium.logic.feature.auth.ValidateEmailUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidatePasswordUseCase
@@ -191,4 +193,6 @@ class GlobalKaliumScope internal constructor(
 
     val observeIsAppLockEditableUseCase: ObserveIsAppLockEditableUseCase
         get() = ObserveIsAppLockEditableUseCaseImpl(userSessionScopeProvider.value, sessionRepository)
+
+    val logoutCallbackManager: LogoutCallbackManager = LogoutCallbackManagerImpl()
 }
