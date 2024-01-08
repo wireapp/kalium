@@ -38,7 +38,7 @@ import kotlin.test.assertTrue
 class GetUserE2eiCertificateStatusUseCaseTest {
 
     @Test
-    fun givenErrorOnGettingUserIdentity_thenNotActivatedResult() = runTest {
+    fun givenErrorOnGettingUserIdentity_whenGetUserE2eiCertificateStatus_thenNotActivatedResult() = runTest {
         val (_, getUserE2eiCertificateStatus) = arrange {
             withUserIdentity(Either.Left(MLSFailure.WrongEpoch))
         }
@@ -49,7 +49,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
     }
 
     @Test
-    fun givenEmptyWireIdentityList_thenNotActivatedResult() = runTest {
+    fun givenEmptyWireIdentityList_whenGetUserE2eiCertificateStatus_thenNotActivatedResult() = runTest {
         val (_, getUserE2eiCertificateStatus) = arrange {
             withUserIdentity(Either.Right(listOf()))
         }
@@ -60,7 +60,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
     }
 
     @Test
-    fun givenOneWireIdentityExpired_thenResultIsExpired() = runTest {
+    fun givenOneWireIdentityExpired_whenGetUserE2eiCertificateStatus_thenResultIsExpired() = runTest {
         val (_, getUserE2eiCertificateStatus) = arrange {
             withUserIdentity(Either.Right(listOf(WIRE_IDENTITY, WIRE_IDENTITY.copy(status = CryptoCertificateStatus.EXPIRED))))
         }
@@ -72,7 +72,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
     }
 
     @Test
-    fun givenOneWireIdentityRevoked_thenResultIsRevoked() = runTest {
+    fun givenOneWireIdentityRevoked_whenGetUserE2eiCertificateStatus_thenResultIsRevoked() = runTest {
         val (_, getUserE2eiCertificateStatus) = arrange {
             withUserIdentity(Either.Right(listOf(WIRE_IDENTITY, WIRE_IDENTITY.copy(status = CryptoCertificateStatus.REVOKED))))
         }
@@ -84,7 +84,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
     }
 
     @Test
-    fun givenOneWireIdentityRevoked_thenResultIsRevoked2() = runTest {
+    fun givenOneWireIdentityRevoked_whenGetUserE2eiCertificateStatus_thenResultIsRevoked2() = runTest {
         val (_, getUserE2eiCertificateStatus) = arrange {
             withUserIdentity(
                 Either.Right(
