@@ -101,11 +101,7 @@ kotlin {
             dependencies {
                 implementation(libs.cryptoboxAndroid)
                 implementation(libs.androidCrypto)
-                implementation("org.jetbrains.kotlin:kotlin-test") {
-                    version {
-                        strictly(libs.versions.kotlin.get())
-                    }
-                }
+                implementation(libs.coreCryptoAndroid)
             }
         }
 
