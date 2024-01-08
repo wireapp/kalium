@@ -109,8 +109,7 @@ class MLSClientImpl(
         val conf = ConversationConfiguration(
             defaultCiphersuite,
             externalSenders.map { it.value },
-            defaultGroupConfiguration,
-            emptyList()
+            defaultGroupConfiguration
         )
 
         coreCrypto.createConversation(groupId.decodeBase64Bytes(), toCredentialType(getMLSCredentials()), conf)
