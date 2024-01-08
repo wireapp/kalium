@@ -71,7 +71,7 @@ kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref 
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
-ksp = { id = "com.google.devtools.ksp", version = "1.9.10-1.0.13" }
+ksp = { id = "com.google.devtools.ksp", version = "1.9.20-1.0.14" }
 carthage = { id = "com.wire.carthage-gradle-plugin", version.ref = "carthage" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobufCodegen" }
