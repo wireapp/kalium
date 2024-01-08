@@ -1884,6 +1884,7 @@ class UserSessionScope internal constructor(
 
         launch {
             typingIndicatorSyncManager.execute()
+        }
 
         launch {
             featureFlagsSyncWorker.execute()
