@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -160,24 +160,38 @@ internal class MessageDAOImpl internal constructor(
     - [MessageEntityContent.MemberChange]
     - [MessageEntityContent.ConversationRenamed]
     - [MessageEntityContent.ConversationMessageTimerChanged]
+    - [MessageEntityContent.ConversationStartedUnverifiedWarning]
      */
     @Suppress("ComplexMethod")
     private fun updateIdIfAlreadyExists(message: MessageEntity): Boolean =
         when (message.content) {
             is MessageEntityContent.MemberChange, is MessageEntityContent.ConversationRenamed,
+            is MessageEntityContent.ConversationStartedUnverifiedWarning,
             is MessageEntityContent.ConversationMessageTimerChanged -> message.content
 
             else -> null
         }?.let {
             if (message.senderUserId == selfUserId) it else null
         }?.let { messageContent ->
-            // Check if the message with given time and type already exists in the local DB.
-            queries.selectByConversationIdAndSenderIdAndTimeAndType(
-                message.conversationId,
-                message.senderUserId,
-                message.date,
-                contentTypeOf(messageContent)
-            )
+            val messagesQuery = if (messageContent is MessageEntityContent.ConversationStartedUnverifiedWarning) {
+                // Conversation could have only one ConversationStartedUnverifiedWarning message (very first message),
+                // all the others are duplicates.
+                queries.selectByConversationIdAndSenderIdAndType(
+                    message.conversationId,
+                    message.senderUserId,
+                    contentTypeOf(messageContent)
+                )
+            } else {
+                // Check if the message with given time and type already exists in the local DB.
+                queries.selectByConversationIdAndSenderIdAndTimeAndType(
+                    message.conversationId,
+                    message.senderUserId,
+                    message.date,
+                    contentTypeOf(messageContent)
+                )
+            }
+
+            messagesQuery
                 .executeAsList()
                 .firstOrNull {
                     LocalId.check(it.id) && when (messageContent) {
@@ -190,6 +204,8 @@ internal class MessageDAOImpl internal constructor(
 
                         is MessageEntityContent.ConversationMessageTimerChanged ->
                             it.messageTimerChanged == messageContent.messageTimer
+
+                        is MessageEntityContent.ConversationStartedUnverifiedWarning -> true
 
                         else -> false
                     }
