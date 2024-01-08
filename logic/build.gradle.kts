@@ -108,10 +108,7 @@ kotlin {
             addCommonKotlinJvmSourceDir()
             dependencies {
                 implementation(libs.work)
-                implementation(libs.coreCryptoAndroid.get().let { "${it.module}:${it.versionConstraint.requiredVersion}" }) {
-                    exclude("androidx.core")
-                    exclude("androidx.appcompat")
-                }
+                implementation(libs.coreCryptoAndroid)
             }
         }
         val androidUnitTest by getting {
