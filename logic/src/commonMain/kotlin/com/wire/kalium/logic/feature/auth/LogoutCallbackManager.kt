@@ -33,11 +33,13 @@ interface LogoutCallbackManager {
     fun unregister(callback: LogoutCallback)
 }
 
-internal class LogoutCallbackManagerImpl : LogoutCallbackManager {
+internal class LogoutCallbackManagerImpl : LogoutCallbackManager, LogoutCallback {
     private val callbacks = ConcurrentMutableList<LogoutCallback>()
     override fun register(callback: LogoutCallback) { callbacks.add(callback) }
     override fun unregister(callback: LogoutCallback) { callbacks.remove(callback) }
-    suspend fun logout(userId: UserId, reason: LogoutReason) { callbacks.forEach { it(userId, reason) } }
+    override suspend fun invoke(userId: UserId, reason: LogoutReason) { callbacks.forEach { it(userId, reason) } }
 }
 
-typealias LogoutCallback = suspend (userId: UserId, reason: LogoutReason) -> Unit
+interface LogoutCallback {
+    suspend operator fun invoke(userId: UserId, reason: LogoutReason)
+}

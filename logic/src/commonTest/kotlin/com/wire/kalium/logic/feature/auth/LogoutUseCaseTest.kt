@@ -104,8 +104,8 @@ class LogoutUseCaseTest {
                     .with(eq(true))
                     .wasInvoked(exactly = once)
             }
-            verify(arrangement.logoutCallbackManager)
-                .function(arrangement.logoutCallbackManager::logout)
+            verify(arrangement.logoutCallback)
+                .function(arrangement.logoutCallback::invoke)
                 .with(any<UserId>(), eq(reason))
                 .wasInvoked()
         }
@@ -379,7 +379,7 @@ class LogoutUseCaseTest {
         val endCall = configure(mock(EndCallUseCase::class)) { stubsUnitByDefault = true }
 
         @Mock
-        val logoutCallbackManager = configure(mock(classOf<LogoutCallbackManager>())) { stubsUnitByDefault = true }
+        val logoutCallback = configure(mock(classOf<LogoutCallback>())) { stubsUnitByDefault = true }
 
         var kaliumConfigs = KaliumConfigs()
 
@@ -400,7 +400,7 @@ class LogoutUseCaseTest {
                 userSessionWorkScheduler,
                 observeEstablishedCallsUseCase,
                 endCall,
-                logoutCallbackManager,
+                logoutCallback,
                 kaliumConfigs
             )
 
