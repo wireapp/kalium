@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -62,4 +62,5 @@ interface E2EIClient {
     suspend fun finalizeRequest(previousNonce: String): JsonRawData
     suspend fun finalizeResponse(finalize: JsonRawData): String
     suspend fun certificateRequest(previousNonce: String): JsonRawData
+    suspend fun getOAuthRefreshToken(): String?
 }

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ class DeleteClientCommand : CliktCommand(name = "delete-client") {
     private val password: String by option(help = "Account password").prompt("password", promptSuffix = ": ", hideInput = true)
 
     override fun run() = runBlocking {
-        val selfClientsResult = userSession.client.selfClients()
+        val selfClientsResult = userSession.client.fetchSelfClients()
 
         if (selfClientsResult !is SelfClientsResult.Success) {
             throw PrintMessage("failed to retrieve self clients")

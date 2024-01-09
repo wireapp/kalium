@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -85,7 +85,11 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
             secondFactorVerificationRepository
         )
 
-    val selfClients: FetchSelfClientsFromRemoteUseCase get() = FetchSelfClientsFromRemoteUseCaseImpl(clientRepository, clientIdProvider)
+    val fetchSelfClients: FetchSelfClientsFromRemoteUseCase
+        get() = FetchSelfClientsFromRemoteUseCaseImpl(clientRepository, clientIdProvider)
+    val fetchUsersClients: FetchUsersClientsFromRemoteUseCase
+        get() = FetchUsersClientsFromRemoteUseCaseImpl(clientRemoteRepository, clientRepository)
+    val getOtherUserClients: ObserveClientsByUserIdUseCase get() = ObserveClientsByUserIdUseCase(clientRepository)
     val observeClientDetailsUseCase: ObserveClientDetailsUseCase get() = ObserveClientDetailsUseCaseImpl(clientRepository, clientIdProvider)
     val deleteClient: DeleteClientUseCase
         get() = DeleteClientUseCaseImpl(
@@ -105,15 +109,6 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
             keyPackageRepository,
             keyPackageLimitsProvider,
             clientIdProvider
-        )
-    val persistOtherUserClients: PersistOtherUserClientsUseCase
-        get() = PersistOtherUserClientsUseCaseImpl(
-            clientRemoteRepository,
-            clientRepository
-        )
-    val getOtherUserClients: ObserveClientsByUserIdUseCase
-        get() = ObserveClientsByUserIdUseCase(
-            clientRepository
         )
 
     val observeCurrentClientId: ObserveCurrentClientIdUseCase

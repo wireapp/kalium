@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,9 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * @return the [Boolean] for if the user's team has conference calling enabled in its plan.
@@ -33,21 +36,23 @@ interface IsEligibleToStartCallUseCase {
 
 internal class IsEligibleToStartCallUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
-    private val callRepository: CallRepository
+    private val callRepository: CallRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : IsEligibleToStartCallUseCase {
 
-    override suspend fun invoke(conversationId: ConversationId, conversationType: Conversation.Type): ConferenceCallingResult {
-        val establishedCallConversationId = callRepository.establishedCallConversationId()
+    override suspend fun invoke(conversationId: ConversationId, conversationType: Conversation.Type): ConferenceCallingResult =
+        withContext(dispatcher.io) {
+            val establishedCallConversationId = callRepository.establishedCallConversationId()
 
-        val canStartCall = (conversationType == Conversation.Type.ONE_ON_ONE ||
-                (conversationType == Conversation.Type.GROUP && isConferenceCallingEnabled()))
+            val canStartCall = (conversationType == Conversation.Type.ONE_ON_ONE ||
+                    (conversationType == Conversation.Type.GROUP && isConferenceCallingEnabled()))
 
-        return establishedCallConversationId?.let {
-            callIsEstablished(it, conversationId, canStartCall)
-        } ?: run {
-            if (canStartCall) ConferenceCallingResult.Enabled else ConferenceCallingResult.Disabled.Unavailable
+            establishedCallConversationId?.let {
+                callIsEstablished(it, conversationId, canStartCall)
+            } ?: run {
+                if (canStartCall) ConferenceCallingResult.Enabled else ConferenceCallingResult.Disabled.Unavailable
+            }
         }
-    }
 
     private fun callIsEstablished(
         establishedCallConversationId: ConversationId,

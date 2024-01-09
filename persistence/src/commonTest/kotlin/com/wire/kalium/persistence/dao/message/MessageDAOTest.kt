@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -558,7 +558,7 @@ class MessageDAOTest : BaseDatabaseTest() {
         )
 
         // when
-        val assetMessages = messageDAO.getMessageAssets(conversationId, setOf(mimeType), 100, 0)
+        val assetMessages = messageDAO.getImageMessageAssets(conversationId, setOf(mimeType), 100, 0)
 
         // then
         assertEquals(1, assetMessages.size)
@@ -1957,6 +1957,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             senderUserId = userEntity1.id,
             senderName = userEntity1.name!!
         )
+
         val baseInstant = Instant.parse("2022-01-01T00:00:00.000Z")
         val messages = listOf(
             createMessage(id = "1A", conversationId = conversationEntity1.id, date = baseInstant),
@@ -1972,6 +1973,38 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertEquals(messages[2], result[conversationEntity1.id])
         assertEquals(messages[1], result[conversationEntity2.id])
         assertEquals(null, result[conversationEntity3.id])
+    }
+
+    @Test
+    fun givenUnverifiedWarningMessageIsInserted_whenInsertingSuchMessageAgain_thenOnlyIdIsUpdatedNoNewMessages() = runTest {
+        // given
+        insertInitialData()
+        userDAO.upsertUser(userEntity1.copy(selfUserId))
+        val message0 = newSystemMessageEntity(
+            conversationId = conversationEntity2.id,
+            id = "local_id_id_0",
+            content = MessageEntityContent.ConversationStartedUnverifiedWarning,
+            date = Instant.parse("2022-03-30T15:36:00.000Z"),
+            senderUserId = selfUserId
+        )
+        val message1 = message0.copy(
+            id = "local_id_id_1",
+            date = Instant.parse("2022-03-30T15:46:00.000Z")
+        )
+        messageDAO.insertOrIgnoreMessages(listOf(message0))
+
+        // when
+        messageDAO.insertOrIgnoreMessage(message1)
+
+        // then
+        val result = messageDAO.getMessagesByConversationAndVisibility(
+            conversationId = conversationEntity2.id,
+            limit = 10,
+            offset = 0
+        ).first()
+        assertEquals(1, result.size)
+        assertEquals(message1.id, result[0].id)
+        assertEquals(message0.date, result[0].date)
     }
 
     private suspend fun insertInitialData() {
