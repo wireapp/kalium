@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,20 +44,20 @@ internal interface ProteusSyncWorker {
  * @param incrementalSyncRepository The incremental sync repository.
  * @param proteusPreKeyRefiller The proteus pre-key refiller.
  * @param preKeyRepository The pre-key repository.
- * @param minInterValBetweenRefills The minimum interval between prekey refills.
+ * @param minIntervalBetweenRefills The minimum interval between prekey refills.
  */
 internal class ProteusSyncWorkerImpl(
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val proteusPreKeyRefiller: ProteusPreKeyRefiller,
     private val preKeyRepository: PreKeyRepository,
-    private val minInterValBetweenRefills: Duration = MIN_INTEVAL_BETWEEN_REFILLS
+    private val minIntervalBetweenRefills: Duration = MIN_INTERVAL_BETWEEN_REFILLS
 ) : ProteusSyncWorker {
 
     override suspend fun execute() {
         preKeyRepository.lastPreKeyRefillCheckInstantFlow()
             .collectLatest { lastRefill ->
                 val now = Clock.System.now()
-                val nextCheckTime = lastRefill?.plus(minInterValBetweenRefills) ?: now
+                val nextCheckTime = lastRefill?.plus(minIntervalBetweenRefills) ?: now
                 val delayUntilNextCheck = nextCheckTime - now
                 delay(delayUntilNextCheck)
                 waitUntilLiveAndRefillPreKeysIfNeeded()
@@ -74,6 +74,6 @@ internal class ProteusSyncWorkerImpl(
     }
 
     private companion object {
-        val MIN_INTEVAL_BETWEEN_REFILLS = 1.days
+        val MIN_INTERVAL_BETWEEN_REFILLS = 1.days
     }
 }

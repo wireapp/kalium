@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,7 +39,6 @@ import com.wire.kalium.logic.feature.appVersioning.CheckIfUpdateRequiredUseCaseI
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.logic.feature.register.RegisterScope
-import com.wire.kalium.logic.util.safeComputeIfAbsent
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.session.CertificatePinning
@@ -63,7 +62,7 @@ class AuthenticationScopeProvider internal constructor(
         certConfig: () -> CertificatePinning,
         mockEngine: HttpClientEngine?
     ): AuthenticationScope =
-        authenticationScopeStorage.safeComputeIfAbsent(serverConfig to proxyCredentials) {
+        authenticationScopeStorage.computeIfAbsent(serverConfig to proxyCredentials) {
             AuthenticationScope(
                 userAgent,
                 serverConfig,
