@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -78,6 +78,13 @@ class E2EIClientImpl(
 
     override suspend fun certificateRequest(previousNonce: String) =
         wireE2eIdentity.certificateRequest(previousNonce)
+
+    @Suppress("TooGenericExceptionCaught")
+    override suspend fun getOAuthRefreshToken() = try {
+        wireE2eIdentity.getRefreshToken()
+    } catch (e: Exception) {
+        null
+    }
 
     companion object {
         fun toAcmeDirectory(value: com.wire.crypto.AcmeDirectory) = AcmeDirectory(

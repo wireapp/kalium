@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,7 +55,7 @@ import kotlin.time.toDuration
 interface MessageMapper {
     fun fromMessageToEntity(message: Message.Standalone): MessageEntity
     fun fromEntityToMessage(message: MessageEntity): Message.Standalone
-    fun fromAssetEntityToMessage(message: AssetMessageEntity): AssetMessage
+    fun fromAssetEntityToAssetMessage(message: AssetMessageEntity): AssetMessage
     fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview
     fun fromMessageToLocalNotificationMessage(message: NotificationMessageEntity): LocalNotificationMessage?
     fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular
@@ -129,7 +129,7 @@ class MessageMapperImpl(
         }
     }
 
-    override fun fromAssetEntityToMessage(message: AssetMessageEntity): AssetMessage {
+    override fun fromAssetEntityToAssetMessage(message: AssetMessageEntity): AssetMessage {
         return AssetMessage(
             message.time,
             message.username,

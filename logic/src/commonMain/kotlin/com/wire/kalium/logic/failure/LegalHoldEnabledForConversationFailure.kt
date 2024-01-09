@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,19 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.util
 
-import co.touchlab.stately.collections.ConcurrentMutableMap
-import kotlin.test.Test
-import kotlin.test.assertEquals
+package com.wire.kalium.logic.failure
 
-class ConcurrentMutableMapTest {
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.id.MessageId
 
-    @Test
-    fun givenConcurrentMap_whenSafeComputeIfAbsentIsCalledWith_thenTheSecondIsIgnored() {
-        val map = ConcurrentMutableMap<String, String>()
-        map.safeComputeIfAbsent("a") { "c" }
-        map.safeComputeIfAbsent("a") { "d" }
-        assertEquals("c", map["a"])
-    }
-}
+data class LegalHoldEnabledForConversationFailure(val messageId: MessageId) : CoreFailure.FeatureFailure()

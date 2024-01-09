@@ -322,6 +322,7 @@ markMessageAsDeleted {
    DELETE FROM MessageMemberChangeContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
    DELETE FROM MessageUnknownContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
    DELETE FROM MessageRestrictedAssetContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
+   DELETE FROM MessageConversationLocationContent WHERE message_id = :message_id AND conversation_id = :conversation_id;
    -- deleted messages will not have a quote 100%
    -- TODO: why inserting a NULL here? Shouldn't we just not insert anything?
    INSERT INTO MessageTextContent(message_id, conversation_id, text_body, is_quoting_self) VALUES(:message_id, :conversation_id, NULL, 0);
@@ -506,6 +507,9 @@ SELECT * FROM MessageDetailsView WHERE senderUserId = ? AND status = ?;
 
 selectByConversationIdAndSenderIdAndTimeAndType:
 SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND date = ? AND contentType = ?;
+
+selectByConversationIdAndSenderIdAndType:
+SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND contentType = ?;
 
 resetAssetUploadStatus:
 UPDATE MessageAssetContent

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,9 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.TypingIndicatorOutgoingRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * UseCase for sending a typing event to a specific [ConversationId]
@@ -36,9 +39,12 @@ interface SendTypingEventUseCase {
 }
 
 internal class SendTypingEventUseCaseImpl(
-    private val typingIndicatorRepository: TypingIndicatorOutgoingRepository
+    private val typingIndicatorRepository: TypingIndicatorOutgoingRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : SendTypingEventUseCase {
     override suspend fun invoke(conversationId: ConversationId, typingStatus: Conversation.TypingIndicatorMode) {
-        typingIndicatorRepository.sendTypingIndicatorStatus(conversationId, typingStatus)
+        withContext(dispatcher.io) {
+            typingIndicatorRepository.sendTypingIndicatorStatus(conversationId, typingStatus)
+        }
     }
 }

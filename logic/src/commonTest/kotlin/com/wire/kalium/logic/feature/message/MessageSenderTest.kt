@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,6 +41,8 @@ import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.failure.LegalHoldEnabledForConversationFailure
+import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.FEDERATION_MESSAGE_FAILURE
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.MESSAGE_SENT_TIME
 import com.wire.kalium.logic.feature.message.MessageSenderTest.Arrangement.Companion.TEST_MEMBER_2
@@ -51,10 +53,12 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.arrangement.mls.StaleEpochVerifierArrangement
 import com.wire.kalium.logic.util.arrangement.mls.StaleEpochVerifierArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.logic.util.thenReturnSequentially
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
@@ -76,6 +80,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.time.Duration
 
 class MessageSenderTest {
@@ -884,6 +889,111 @@ class MessageSenderTest {
         }
     }
 
+    @Test
+    fun givenProteusSendMessageFailure_WhenSendingMessage_ThenHandleFailureProperly() {
+        // given
+        val failure = ProteusSendMessageFailure(emptyMap(), emptyMap(), emptyMap(), emptyMap())
+        val message = TestMessage.TEXT_MESSAGE
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage()
+            withSendEnvelope(Either.Left(failure), Either.Right(MessageSent(MESSAGE_SENT_TIME))) // to avoid loop - fail then succeed
+            withPromoteMessageToSentUpdatingServerTime()
+            withHandleLegalHoldMessageSendFailure(Either.Right(false))
+            withHandleClientsHaveChangedFailure()
+        }
+        arrangement.testScope.runTest {
+            // when
+            messageSender.sendMessage(message)
+            // then
+            verify(arrangement.messageSendFailureHandler)
+                .suspendFunction(arrangement.messageSendFailureHandler::handleClientsHaveChangedFailure)
+                .with(eq(failure), eq(message.conversationId))
+                .wasInvoked()
+            verify(arrangement.legalHoldHandler)
+                .suspendFunction(arrangement.legalHoldHandler::handleMessageSendFailure)
+                .with(eq(message.conversationId), eq(message.date), anything())
+                .wasInvoked()
+        }
+    }
+
+    @Test
+    fun givenProteusSendMessageFailure_WhenBroadcastingMessage_ThenHandleFailureProperly() {
+        // given
+        val failure = ProteusSendMessageFailure(emptyMap(), emptyMap(), emptyMap(), emptyMap())
+        val message = TestMessage.BROADCAST_MESSAGE
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage()
+            withAllRecipients(listOf(Arrangement.TEST_RECIPIENT_1) to listOf())
+            withCreateOutgoingBroadcastEnvelope()
+            withBroadcastEnvelope(Either.Left(failure), Either.Right(TestMessage.TEST_DATE_STRING)) // to avoid loop - fail then succeed
+            withHandleLegalHoldMessageSendFailure(Either.Right(false))
+            withHandleClientsHaveChangedFailure()
+        }
+        arrangement.testScope.runTest {
+            // when
+            messageSender.broadcastMessage(message, BroadcastMessageTarget.AllUsers(100))
+            // then
+            verify(arrangement.messageSendFailureHandler)
+                .suspendFunction(arrangement.messageSendFailureHandler::handleClientsHaveChangedFailure)
+                .with(eq(failure), eq(null))
+                .wasInvoked()
+            verify(arrangement.legalHoldHandler)
+                .suspendFunction(arrangement.legalHoldHandler::handleMessageSendFailure)
+                .with(anything(), anything(), anything())
+                .wasNotInvoked()
+        }
+    }
+
+    @Test
+    fun givenProteusSendMessageFailureAndLegalHoldEnabledForConversation_WhenSendingMessage_ThenDoNotRetrySendingAfterHandlingFailure() {
+        // given
+        val failure = ProteusSendMessageFailure(emptyMap(), emptyMap(), emptyMap(), emptyMap())
+        val message = TestMessage.TEXT_MESSAGE
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage()
+            withSendEnvelope(Either.Left(failure), Either.Right(MessageSent(MESSAGE_SENT_TIME))) // to avoid loop - fail then succeed
+            withHandleLegalHoldMessageSendFailure(Either.Right(true))
+            withHandleClientsHaveChangedFailure()
+        }
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendMessage(message)
+            // then
+            result.shouldFail() {
+                assertIs<LegalHoldEnabledForConversationFailure>(it)
+                assertEquals(message.id, it.messageId)
+            }
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::sendEnvelope)
+                .with(eq(message.conversationId), anything(), anything())
+                .wasInvoked(exactly = once)
+        }
+    }
+
+    @Test
+    fun givenProteusSendMessageFailureAndLegalHoldNotEnabledForConversation_WhenSendingMessage_ThenRetrySendingAfterHandlingFailure() {
+        // given
+        val failure = ProteusSendMessageFailure(emptyMap(), emptyMap(), emptyMap(), emptyMap())
+        val message = TestMessage.TEXT_MESSAGE
+        val (arrangement, messageSender) = arrange {
+            withSendProteusMessage()
+            withSendEnvelope(Either.Left(failure), Either.Right(MessageSent(MESSAGE_SENT_TIME))) // to avoid loop - fail then succeed
+            withPromoteMessageToSentUpdatingServerTime()
+            withHandleLegalHoldMessageSendFailure(Either.Right(false))
+            withHandleClientsHaveChangedFailure()
+        }
+        arrangement.testScope.runTest {
+            // when
+            val result = messageSender.sendMessage(message)
+            // then
+            result.shouldSucceed()
+            verify(arrangement.messageRepository)
+                .suspendFunction(arrangement.messageRepository::sendEnvelope)
+                .with(eq(message.conversationId), anything(), anything())
+                .wasInvoked(exactly = twice)
+        }
+    }
+
     private class Arrangement(private val block: Arrangement.() -> Unit):
         StaleEpochVerifierArrangement by StaleEpochVerifierArrangementImpl()
     {
@@ -917,6 +1027,9 @@ class MessageSenderTest {
         @Mock
         val selfDeleteMessageSenderHandler = mock(EphemeralMessageDeletionHandler::class)
 
+        @Mock
+        val legalHoldHandler = mock(LegalHoldHandler::class)
+
         val testScope = TestScope()
 
         private val messageSendingInterceptor = object : MessageSendingInterceptor {
@@ -933,6 +1046,7 @@ class MessageSenderTest {
                 mlsConversationRepository = mlsConversationRepository,
                 syncManager = syncManager,
                 messageSendFailureHandler = messageSendFailureHandler,
+                legalHoldHandler = legalHoldHandler,
                 sessionEstablisher = sessionEstablisher,
                 messageEnvelopeCreator = messageEnvelopeCreator,
                 mlsMessageCreator = mlsMessageCreator,
@@ -1015,6 +1129,13 @@ class MessageSenderTest {
                 .thenReturn(result)
         }
 
+        fun withBroadcastEnvelope(vararg result: Either<CoreFailure, String>) = apply {
+            given(messageRepository)
+                .suspendFunction(messageRepository::broadcastEnvelope)
+                .whenInvokedWith(anything(), anything())
+                .thenReturnSequentially(*result)
+        }
+
         fun withCreateOutgoingMlsMessage(failing: Boolean = false) = apply {
             given(mlsMessageCreator)
                 .suspendFunction(mlsMessageCreator::createOutgoingMLSMessage)
@@ -1027,6 +1148,13 @@ class MessageSenderTest {
                 .suspendFunction(messageRepository::sendEnvelope)
                 .whenInvokedWith(anything(), anything(), anything())
                 .thenReturn(result)
+        }
+
+        fun withSendEnvelope(vararg result: Either<CoreFailure, MessageSent>) = apply {
+            given(messageRepository)
+                .suspendFunction(messageRepository::sendEnvelope)
+                .whenInvokedWith(anything(), anything(), anything())
+                .thenReturnSequentially(*result)
         }
 
         fun withSendOutgoingMlsMessage(
@@ -1124,6 +1252,23 @@ class MessageSenderTest {
                 .suspendFunction(messageRepository::persistNoClientsToDeliverFailure)
                 .whenInvokedWith(anything(), anything(), anything())
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withHandleLegalHoldMessageSendFailure(result: Either<CoreFailure, Boolean> = Either.Right(false)) = apply {
+            given(legalHoldHandler)
+                .suspendFunction(legalHoldHandler::handleMessageSendFailure)
+                .whenInvokedWith(anything(), anything(), anything())
+                .then { _, _, handleFailure ->
+                    handleFailure() // simulate the handler calling the handleFailure function
+                    result
+                }
+        }
+
+        fun withHandleClientsHaveChangedFailure(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
+            given(messageSendFailureHandler)
+                .suspendFunction(messageSendFailureHandler::handleClientsHaveChangedFailure)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(result)
         }
 
         companion object {
