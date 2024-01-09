@@ -404,7 +404,7 @@ internal class UserDataSource internal constructor(
             .map { userMapper.fromUpdateRequestToPartialUserEntity(updateRequest, selfUserId) }
             .flatMap { partialUserEntity ->
                 wrapStorageRequest {
-                    userDAO.updateUser(selfUserId.toDao(), partialUserEntity)
+                    userDAO.updateUser(partialUserEntity)
                 }
             }.map { }
     }
@@ -433,7 +433,6 @@ internal class UserDataSource internal constructor(
     override suspend fun observeUser(userId: UserId): Flow<User?> =
         userDAO.observeUserDetailsByQualifiedID(qualifiedID = userId.toDao())
             .map { userEntity ->
-                // TODO: cache SelfUserId so it's not fetched from DB every single time
                 if (userId == selfUserId) {
                     userEntity?.let { userMapper.fromUserDetailsEntityToSelfUser(userEntity) }
                 } else {
@@ -442,12 +441,10 @@ internal class UserDataSource internal constructor(
             }
 
     override suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser> =
-        wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }.flatMap { userProfileDTO ->
-            getSelfUser()?.let { selfUser ->
-                Either.Right(
-                    userMapper.fromUserProfileDtoToOtherUser(userProfileDTO, selfUser)
-                )
-            } ?: Either.Left(StorageFailure.DataNotFound)
+        selfTeamIdProvider().flatMap { selfTeamId ->
+            wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }.map { userProfileDTO ->
+                userMapper.fromUserProfileDtoToOtherUser(userProfileDTO, selfUserId, selfTeamId)
+            }
         }
 
     override suspend fun updateOtherUserAvailabilityStatus(userId: UserId, status: UserAvailabilityStatus) {
@@ -502,7 +499,7 @@ internal class UserDataSource internal constructor(
         }
 
     override suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit> = wrapStorageRequest {
-        userDAO.updateUser(event.userId.toDao(), userMapper.fromUserUpdateEventToPartialUserEntity(event))
+        userDAO.updateUser(userMapper.fromUserUpdateEventToPartialUserEntity(event))
     }.flatMap { updated ->
         if (!updated) {
             Either.Left(StorageFailure.DataNotFound)

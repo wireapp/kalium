@@ -21,37 +21,33 @@ package com.wire.kalium.logic.data.publicuser
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
-import com.wire.kalium.logic.data.user.OtherUser
-import com.wire.kalium.logic.data.user.SelfUser
-import com.wire.kalium.logic.data.user.UserMapper
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.USER_PROFILE_DTO
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
-import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.logic.util.arrangement.provider.SelfTeamIdProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.SelfTeamIdProviderArrangementImpl
 import com.wire.kalium.network.api.base.authenticated.search.ContactDTO
 import com.wire.kalium.network.api.base.authenticated.search.SearchPolicyDTO
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchResponse
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
-import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.persistence.dao.ConnectionEntity
-import com.wire.kalium.persistence.dao.MetadataDAO
+import com.wire.kalium.persistence.dao.PartialUserEntity
+import com.wire.kalium.persistence.dao.SearchDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDetailsEntity
-import com.wire.kalium.persistence.dao.UserEntity
+import io.mockative.KFunction1
 import io.mockative.Mock
 import io.mockative.Times
 import io.mockative.any
 import io.mockative.anything
 import io.mockative.classOf
-import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -59,16 +55,18 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
+import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class SearchUserRepositoryTest {
 
     @Test
     fun givenContactSearchApiFailure_whenSearchPublicContact_resultIsFailure() = runTest {
         // given
         val (_, searchUserRepository) = Arrangement()
-            .withSearchResult(Either.Left(TestNetworkResponseError.noNetworkConnection()))
-            .arrange()
+            .arrange {
+                withSearchResult(Either.Left(TestNetworkResponseError.noNetworkConnection()))
+                withTeamId(Either.Right(TestUser.SELF.teamId))
+            }
 
         // when
         val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
@@ -81,8 +79,10 @@ class SearchUserRepositoryTest {
     fun givenContactSearchApiFailure_whenSearchPublicContact_thenOnlyContactSearchApiISInvoked() = runTest {
         // given
         val (arrangement, searchUserRepository) = Arrangement()
-            .withSearchResult(Either.Left(TestNetworkResponseError.noNetworkConnection()))
-            .arrange()
+            .arrange {
+                withTeamId(Either.Right(TestUser.SELF.teamId))
+                withSearchResult(Either.Left(TestNetworkResponseError.noNetworkConnection()))
+            }
 
         // when
         searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
@@ -98,8 +98,10 @@ class SearchUserRepositoryTest {
     fun givenContactSearchApiFailure_whenSearchPublicContact_thenUserDetailsApiAndPublicUserMapperIsNotInvoked() = runTest {
         // given
         val (arrangement, searchUserRepository) = Arrangement()
-            .withSearchResult(Either.Left(TestNetworkResponseError.noNetworkConnection()))
-            .arrange()
+            .arrange {
+                withSearchResult(Either.Left(TestNetworkResponseError.noNetworkConnection()))
+                withTeamId(Either.Right(TestUser.SELF.teamId))
+            }
 
         // when
         searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
@@ -108,20 +110,17 @@ class SearchUserRepositoryTest {
             .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
             .with(any())
             .wasNotInvoked()
-
-        verify(arrangement.userMapper)
-            .function(arrangement.userMapper::fromUserProfileDtoToOtherUser)
-            .with(any(), any())
-            .wasNotInvoked()
     }
 
     @Test
     fun givenContactSearchApiSuccessButuserDetailsApiFailure_whenSearchPublicContact_resultIsFailure() = runTest {
         // given
         val (_, searchUserRepository) = Arrangement()
-            .withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
-            .withGetMultipleUsersResult(TestNetworkResponseError.genericResponseError())
-            .arrange()
+            .arrange {
+                withTeamId(Either.Right(TestUser.SELF.teamId))
+                withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
+                withGetMultipleUsersResult(TestNetworkResponseError.genericResponseError())
+            }
 
         // when
         val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
@@ -131,31 +130,15 @@ class SearchUserRepositoryTest {
     }
 
     @Test
-    fun givenContactSearchApiSuccessButuserDetailsApiFailure_whenSearchPublicContact_ThenPublicUserMapperIsNotInvoked() = runTest {
-        // given
-        val (arrangement, searchUserRepository) = Arrangement()
-            .withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
-            .withGetMultipleUsersResult(TestNetworkResponseError.genericResponseError())
-            .arrange()
-
-        // when
-        searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
-
-        // then
-        verify(arrangement.userMapper)
-            .function(arrangement.userMapper::fromUserProfileDtoToOtherUser)
-            .with(any(), any())
-            .wasNotInvoked()
-    }
-
-    @Test
     fun givenContactSearchApiSuccessButUserDetailsApiFailure_whenSearchPublicContact_ThenContactSearchApiAndUserDetailsApiIsInvoked() =
         runTest {
             // given
             val (arrangement, searchUserRepository) = Arrangement()
-                .withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
-                .withGetMultipleUsersResult(TestNetworkResponseError.genericResponseError())
-                .arrange()
+                .arrange {
+                    withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
+                    withGetMultipleUsersResult(TestNetworkResponseError.genericResponseError())
+                    withTeamId(Either.Right(TestUser.SELF.teamId))
+                }
 
             // when
             searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
@@ -176,13 +159,12 @@ class SearchUserRepositoryTest {
     fun givenContactSearchApiAndUserDetailsApiAndPublicUserApiReturnSuccess_WhenSearchPublicContact_ThenResultIsSuccess() = runTest {
         // given
         val (_, searchUserRepository) = Arrangement()
-            .withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
-            .withGetMultipleUsersResult(NetworkResponse.Success(USER_RESPONSE, mapOf(), 200))
-            .withFromUserProfileDtoToOtherUserResult(TestUser.OTHER)
-            .withValueByKeyFlowResult(flowOf(JSON_QUALIFIED_ID))
-            .withObserveUserDetailsByQualifiedIdResult(flowOf(TestUser.DETAILS_ENTITY))
-            .withFromUserDetailsEntityToSelfUser(TestUser.SELF.copy(teamId = null))
-            .arrange()
+            .arrange {
+                withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
+                withGetMultipleUsersResult(NetworkResponse.Success(USER_RESPONSE, mapOf(), 200))
+                withObserveUserDetailsByQualifiedIdResult(flowOf(TestUser.DETAILS_ENTITY))
+                withTeamId(Either.Right(TestUser.SELF.teamId))
+            }
 
         // when
         val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
@@ -192,39 +174,16 @@ class SearchUserRepositoryTest {
     }
 
     @Test
-    fun givenContactSearchApiAndUserDetailsApiAndPublicUserApiReturnSuccess_WhenSearchPublicContact_ThenResultIsEqualToExpectedValue() =
-        runTest {
-            // given
-            val (_, searchUserRepository) = Arrangement()
-                .withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
-                .withGetMultipleUsersResult(NetworkResponse.Success(USER_RESPONSE, mapOf(), 200))
-                .withFromUserProfileDtoToOtherUserResult(TestUser.OTHER)
-                .withValueByKeyFlowResult(flowOf(JSON_QUALIFIED_ID))
-                .withObserveUserDetailsByQualifiedIdResult(flowOf(TestUser.DETAILS_ENTITY))
-                .withFromUserDetailsEntityToSelfUser(TestUser.SELF.copy(teamId = null))
-                .arrange()
-
-            val expectedResult = UserSearchResult(
-                result = listOf(TestUser.OTHER)
-            )
-            // when
-            val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
-
-            assertIs<Either.Right<UserSearchResult>>(actual)
-            assertEquals(expectedResult, actual.value)
-        }
-
-    @Test
     fun givenAValidUserSearchWithEmptyResults_WhenSearchingSomeText_ThenResultIsAnEmptyList() =
         runTest {
             // given
             val (_, searchUserRepository) = Arrangement()
-                .withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
-                .withGetMultipleUsersResult(NetworkResponse.Success(USER_RESPONSE.copy(usersFound = emptyList()), mapOf(), 200))
-                .withValueByKeyFlowResult(flowOf(JSON_QUALIFIED_ID))
-                .withObserveUserDetailsByQualifiedIdResult(flowOf(TestUser.DETAILS_ENTITY))
-                .withFromUserDetailsEntityToSelfUser(TestUser.SELF)
-                .arrange()
+                .arrange {
+                    withTeamId(Either.Right(TestUser.SELF.teamId))
+                    withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
+                    withGetMultipleUsersResult(NetworkResponse.Success(USER_RESPONSE.copy(usersFound = emptyList()), mapOf(), 200))
+                    withObserveUserDetailsByQualifiedIdResult(flowOf(TestUser.DETAILS_ENTITY))
+                }
 
             val expectedResult = UserSearchResult(
                 result = emptyList()
@@ -303,8 +262,10 @@ class SearchUserRepositoryTest {
     fun givenContactSearchApiSuccessButListIsEmpty_whenSearchPublicContact_thenReturnEmptyListWithoutCallingUserDetailsApi() = runTest {
         // given
         val (arrangement, searchUserRepository) = Arrangement()
-            .withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE_EMPTY))
-            .arrange()
+            .arrange {
+                withTeamId(Either.Right(TestUser.SELF.teamId))
+                withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE_EMPTY))
+            }
 
         // when
         val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
@@ -320,63 +281,73 @@ class SearchUserRepositoryTest {
     }
 
     @Test
-    fun givenContactSearchApiReturnsTeamMembers_whenSearchPublicContact_thenStoreThemLocallyAndExcludeFromResult() = runTest {
+    fun givenContactSearchApiReturnsTeamMembers_whenSearchPublicContact_thenStoreThemLocally() = runTest {
         // given
+        val selfUser = TestUser.SELF
+
         val userListResponse = ListUsersDTO(
             usersFailed = emptyList(),
             usersFound = listOf(
-                USER_PROFILE_DTO.copy(id = UserId("teamUser", TestUser.SELF.id.domain), teamId = TestUser.SELF.teamId?.value),
+                USER_PROFILE_DTO.copy(id = UserIdDTO("teamUser", selfUser.id.domain), teamId = selfUser.teamId?.value),
             )
         )
-        val teamMembersResponse = TeamsApi.TeamMemberList(
-            hasMore = false,
-            members = listOf(TEAM_MEMBER_DTO.copy(nonQualifiedUserId = "teamUser"))
-        )
+        val userSearchResponse = userListResponse.usersFound.map {
+            ContactDTO(
+                accentId = 1,
+                handle = it.handle,
+                name = it.name,
+                qualifiedID = it.id,
+                team = it.teamId
+            )
+        }.let {
+            UserSearchResponse(
+                documents = it,
+                found = 1,
+                returned = 1,
+                searchPolicy = SearchPolicyDTO.FULL_SEARCH,
+                took = 100,
+            )
+        }
+
+        val userMapper = MapperProvider.userMapper()
+
+        val expected: UserSearchResult = userListResponse.usersFound.map { searchEntity ->
+            userMapper.fromUserProfileDtoToOtherUser(searchEntity, selfUser.id, selfUser.teamId)
+        }.let {
+            UserSearchResult(it)
+        }
+
         val (arrangement, searchUserRepository) = Arrangement()
-            .withSearchResult(Either.Right(CONTACT_SEARCH_RESPONSE))
-            .withGetMultipleUsersResult(NetworkResponse.Success(userListResponse, mapOf(), 200))
-            .withGetTeamMembersByIdsResult(NetworkResponse.Success(teamMembersResponse, mapOf(), 200))
-            .withValueByKeyFlowResult(flowOf(JSON_QUALIFIED_ID))
-            .withObserveUserDetailsByQualifiedIdResult(flowOf(TestUser.DETAILS_ENTITY))
-            .withFromUserDetailsEntityToSelfUser(TestUser.SELF)
-            .withUpsertUsersSuccess()
-            .withFromUserProfileDtoToOtherUserResult(TestUser.OTHER)
-            .withFromUserProfileDtoToUserEntityResult(TestUser.ENTITY)
-            .arrange()
+            .arrange {
+                withTeamId(Either.Right(selfUser.teamId))
+                withSearchResult(Either.Right(userSearchResponse))
+                withGetMultipleUsersResult(NetworkResponse.Success(userListResponse, mapOf(), 200))
+                withUpsertUsersSuccess()
+            }
 
         // when
-        val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, selfUser.id.domain)
 
         // then
         assertIs<Either.Right<UserSearchResult>>(actual)
-        assertTrue { actual.value.result.isEmpty() }
+        assertEquals(expected, actual.value)
 
         verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::upsertUsers)
-            .with(eq(listOf(TestUser.ENTITY)))
-            .wasInvoked()
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::upsertConnectionStatuses)
-            .with(eq(mapOf(TestUser.ENTITY.id to ConnectionEntity.State.ACCEPTED)))
+            .suspendFunction(arrangement.userDAO::updateUser, KFunction1<List<PartialUserEntity>>())
+            .with(any())
             .wasInvoked()
     }
 
-    internal class Arrangement {
-
-        @Mock
-        internal val metadataDAO: MetadataDAO = mock(classOf<MetadataDAO>())
+    internal class Arrangement : SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl() {
 
         @Mock
         internal val userDetailsApi: UserDetailsApi = mock(classOf<UserDetailsApi>())
 
         @Mock
-        internal val teamsApi: TeamsApi = mock(classOf<TeamsApi>())
-
-        @Mock
         internal val userSearchApiWrapper: UserSearchApiWrapper = mock(classOf<UserSearchApiWrapper>())
 
         @Mock
-        internal val userMapper: UserMapper = mock(classOf<UserMapper>())
+        internal val searchDAO: SearchDAO = mock(classOf<SearchDAO>())
 
         @Mock
         internal val userDAO: UserDAO = mock(classOf<UserDAO>())
@@ -384,15 +355,17 @@ class SearchUserRepositoryTest {
         private val searchUserRepository: SearchUserRepository by lazy {
             SearchUserRepositoryImpl(
                 userDAO,
-                metadataDAO,
+                searchDAO,
                 userDetailsApi,
-                teamsApi,
                 userSearchApiWrapper,
-                userMapper,
+                selfUserid = TestUser.SELF.id,
+                selfTeamIdProvider
             )
         }
 
-        fun arrange() = this to searchUserRepository
+        fun arrange(block: Arrangement.() -> Unit = { }) = apply(block).run {
+            this to searchUserRepository
+        }
 
         fun withSearchResult(result: Either<NetworkFailure, UserSearchResponse>) = apply {
             given(userSearchApiWrapper)
@@ -408,37 +381,9 @@ class SearchUserRepositoryTest {
                 .thenReturn(result)
         }
 
-        fun withGetTeamMembersByIdsResult(result: NetworkResponse<TeamsApi.TeamMemberList>) = apply {
-            given(teamsApi)
-                .suspendFunction(teamsApi::getTeamMembersByIds)
-                .whenInvokedWith(any())
-                .thenReturn(result)
-        }
-
-        fun withFromUserProfileDtoToOtherUserResult(result: OtherUser) = apply {
-            given(userMapper)
-                .function(userMapper::fromUserProfileDtoToOtherUser)
-                .whenInvokedWith(any(), any())
-                .thenReturn(result)
-        }
-
-        fun withValueByKeyFlowResult(result: Flow<String?>) = apply {
-            given(metadataDAO)
-                .suspendFunction(metadataDAO::valueByKeyFlow)
-                .whenInvokedWith(any())
-                .thenReturn(result)
-        }
-
         fun withObserveUserDetailsByQualifiedIdResult(result: Flow<UserDetailsEntity?>) = apply {
             given(userDAO)
                 .suspendFunction(userDAO::observeUserDetailsByQualifiedID)
-                .whenInvokedWith(any())
-                .thenReturn(result)
-        }
-
-        fun withFromUserDetailsEntityToSelfUser(result: SelfUser) = apply {
-            given(userMapper)
-                .function(userMapper::fromUserDetailsEntityToSelfUser)
                 .whenInvokedWith(any())
                 .thenReturn(result)
         }
@@ -471,17 +416,10 @@ class SearchUserRepositoryTest {
                 .thenReturn(result)
         }
 
-        fun withFromUserProfileDtoToUserEntityResult(result: UserEntity) = apply {
-            given(userMapper)
-                .function(userMapper::fromUserProfileDtoToUserEntity)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(result)
-        }
-
         fun withUpsertUsersSuccess() = apply {
             given(userDAO)
                 .suspendFunction(userDAO::upsertUsers)
-                .whenInvokedWith(anything())
+                .whenInvokedWith(any())
                 .thenReturn(Unit)
         }
     }
@@ -489,16 +427,14 @@ class SearchUserRepositoryTest {
     private companion object {
         const val TEST_QUERY = "testQuery"
         const val TEST_DOMAIN = "testDomain"
-
         val CONTACTS = buildList {
             for (i in 1..5) {
                 add(
                     ContactDTO(
                         accentId = i,
                         handle = "handle$i",
-                        id = "id$i",
                         name = "name$i",
-                        qualifiedID = com.wire.kalium.network.api.base.model.UserId(
+                        qualifiedID = UserIdDTO(
                             value = "value$i",
                             domain = "domain$i"
                         ),
@@ -524,17 +460,7 @@ class SearchUserRepositoryTest {
             took = 0,
         )
 
-        val TEAM_MEMBER_DTO = TeamsApi.TeamMemberDTO(
-            nonQualifiedUserId = "value",
-            createdBy = null,
-            legalHoldStatus = null,
-            createdAt = null,
-            permissions = null,
-        )
-
         val USER_RESPONSE = ListUsersDTO(usersFailed = emptyList(), usersFound = listOf(USER_PROFILE_DTO))
-
-        const val JSON_QUALIFIED_ID = """{"value":"test" , "domain":"test" }"""
     }
 
 }

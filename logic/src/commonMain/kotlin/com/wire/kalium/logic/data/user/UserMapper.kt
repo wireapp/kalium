@@ -87,7 +87,7 @@ interface UserMapper {
         userTypeEntity: UserTypeEntity
     ): UserEntity
 
-    fun fromUserProfileDtoToOtherUser(userProfile: UserProfileDTO, selfUser: SelfUser): OtherUser
+    fun fromUserProfileDtoToOtherUser(userProfile: UserProfileDTO, selfUserId: UserId, selfTeamId: TeamId?): OtherUser
 
     fun fromFailedUserToEntity(userId: NetworkQualifiedId): UserEntity
 }
@@ -293,7 +293,8 @@ internal class UserMapperImpl(
         selfUserId: UserId,
     ): PartialUserEntity = PartialUserEntity(
         previewAssetId = updateRequest.assets.getPreviewAssetOrNull()?.toDao(selfUserId.domain),
-        completeAssetId = updateRequest.assets.getCompleteAssetOrNull()?.toDao(selfUserId.domain)
+        completeAssetId = updateRequest.assets.getCompleteAssetOrNull()?.toDao(selfUserId.domain),
+        id = selfUserId.toDao()
     )
 
     override fun fromUserProfileDtoToUserEntity(
@@ -323,19 +324,34 @@ internal class UserMapperImpl(
         activeOneOnOneConversationId = null
     )
 
-    override fun fromUserProfileDtoToOtherUser(userProfile: UserProfileDTO, selfUser: SelfUser): OtherUser =
-        fromUserEntityToOtherUser(
-            fromUserProfileDtoToUserEntity(
-                userProfile = userProfile,
-                connectionState = ConnectionEntity.State.NOT_CONNECTED,
-                userTypeEntity = userEntityTypeMapper.fromTeamAndDomain(
-                    otherUserDomain = userProfile.id.domain,
-                    selfUserTeamId = selfUser.teamId?.value,
-                    otherUserTeamId = userProfile.teamId,
-                    selfUserDomain = selfUser.id.domain,
-                    isService = userProfile.service != null,
-                )
-            )
+    override fun fromUserProfileDtoToOtherUser(userProfile: UserProfileDTO, selfUserId: UserId, selfTeamId: TeamId?): OtherUser =
+        OtherUser(
+            id = userProfile.id.toModel(),
+            name = userProfile.name,
+            handle = userProfile.handle,
+            email = userProfile.email,
+            phone = null,
+            accentId = userProfile.accentId,
+            teamId = userProfile.teamId?.let { TeamId(it) },
+            connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionState = ConnectionEntity.State.ACCEPTED),
+            previewPicture = userProfile.assets.getPreviewAssetOrNull()
+                ?.let { QualifiedIDEntity(it.key, userProfile.id.domain) }?.toModel(),
+            completePicture = userProfile.assets.getCompleteAssetOrNull()
+                ?.let { QualifiedIDEntity(it.key, userProfile.id.domain) }?.toModel(),
+            availabilityStatus = UserAvailabilityStatus.NONE,
+            userType = domainUserTypeMapper.fromTeamAndDomain(
+                otherUserDomain = userProfile.id.domain,
+                selfUserTeamId = selfTeamId?.value,
+                selfUserDomain = selfUserId.domain,
+                otherUserTeamId = userProfile.teamId,
+                isService = userProfile.service != null
+            ),
+            botService = userProfile.service?.let { BotService(it.id, it.provider) },
+            deleted = userProfile.deleted ?: false,
+            expiresAt = userProfile.expiresAt?.toInstant(),
+            defederated = false,
+            isProteusVerified = false,
+            supportedProtocols = userProfile.supportedProtocols?.toModel() ?: setOf(SupportedProtocol.PROTEUS),
         )
 
     override fun fromUserUpdateEventToPartialUserEntity(event: Event.User.Update): PartialUserEntity =
@@ -346,7 +362,8 @@ internal class UserMapperImpl(
             accentId = event.accentId,
             previewAssetId = event.previewAssetId?.let { QualifiedIDEntity(it, event.userId.domain) },
             completeAssetId = event.completeAssetId?.let { QualifiedIDEntity(it, event.userId.domain) },
-            supportedProtocols = event.supportedProtocols?.toDao()
+            supportedProtocols = event.supportedProtocols?.toDao(),
+            id = event.userId.toDao()
         )
 
     /**

@@ -15,24 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.feature.search
 
-package com.wire.kalium.logic.data.publicuser.model
-
-import com.wire.kalium.logic.data.user.AssetId
-import com.wire.kalium.logic.data.user.ConnectionState
-import com.wire.kalium.logic.data.user.OtherUser
+import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.type.UserType
-import kotlin.jvm.JvmInline
 
-@JvmInline
-value class UserSearchResult(val result: List<OtherUser>)
-
-data class UserSearchDetails(
-    val id: UserId,
-    val name: String?,
-    val completeAssetId: AssetId?,
-    val previewAssetId: AssetId?,
-    val type: UserType,
-    val connectionStatus: ConnectionState
-)
+class SearchScope internal constructor(
+    private val searchUserRepository: SearchUserRepository,
+    private val selfUserId: UserId
+) {
+    val searchUsersUseCase: SearchUsersUseCase get() = SearchUsersUseCase(searchUserRepository, selfUserId)
+}
