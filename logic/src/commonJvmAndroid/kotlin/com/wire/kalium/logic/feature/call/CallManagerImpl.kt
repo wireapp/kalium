@@ -44,13 +44,13 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.call.scenario.OnActiveSpeakers
 import com.wire.kalium.logic.feature.call.scenario.OnAnsweredCall
 import com.wire.kalium.logic.feature.call.scenario.OnClientsRequest
@@ -84,6 +84,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import java.util.Collections
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -101,6 +102,8 @@ class CallManagerImpl internal constructor(
     private val videoStateChecker: VideoStateChecker,
     private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
     private val kaliumConfigs: KaliumConfigs,
+    private val json: Json = Json { ignoreUnknownKeys = true },
+    private val shouldRemoteMuteChecker: ShouldRemoteMuteChecker = ShouldRemoteMuteCheckerImpl(),
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : CallManager {
 
@@ -208,31 +211,40 @@ class CallManagerImpl internal constructor(
         callingLogger.i("$TAG - onCallingMessageReceived called: { \"message\" : ${message.toLogString()}}")
         val msg = content.value.toByteArray()
 
-        val currTime = System.currentTimeMillis()
-        val msgTime = message.date.toEpochMillis()
-
-        val targetConversationId = if (message.isSelfMessage) {
-            content.conversationId ?: message.conversationId
-        } else {
-            message.conversationId
-        }
-
-        val type = conversationRepository.getConversationById(targetConversationId)?.let {
-            callMapper.fromConversationToConversationType(it)
-        } ?: ConversationType.Unknown
-
-        wcall_recv_msg(
-            inst = deferredHandle.await(),
-            msg = msg,
-            len = msg.size,
-            curr_time = Uint32_t(value = currTime / 1000),
-            msg_time = Uint32_t(value = msgTime / 1000),
-            convId = federatedIdMapper.parseToFederatedId(targetConversationId),
-            userId = federatedIdMapper.parseToFederatedId(message.senderUserId),
-            clientId = message.senderClientId.value,
-            convType = callMapper.toConversationTypeCalling(type).avsValue
+        val callingValue = json.decodeFromString<MessageContent.Calling.CallingValue>(content.value)
+        val shouldRemoteMute = shouldRemoteMuteChecker.check(
+            selfUserId = userId.await(),
+            selfClientId = clientId.await().value,
+            targets = callingValue.targets
         )
-        callingLogger.i("$TAG - wcall_recv_msg() called")
+
+        if (callingValue.type != REMOTE_MUTE_TYPE || shouldRemoteMute) {
+            val currTime = System.currentTimeMillis()
+            val msgTime = message.date.toEpochMillis()
+
+            val targetConversationId = if (message.isSelfMessage) {
+                content.conversationId ?: message.conversationId
+            } else {
+                message.conversationId
+            }
+
+            val type = conversationRepository.getConversationById(targetConversationId)?.let {
+                callMapper.fromConversationToConversationType(it)
+            } ?: ConversationType.Unknown
+
+            wcall_recv_msg(
+                inst = deferredHandle.await(),
+                msg = msg,
+                len = msg.size,
+                curr_time = Uint32_t(value = currTime / 1000),
+                msg_time = Uint32_t(value = msgTime / 1000),
+                convId = federatedIdMapper.parseToFederatedId(targetConversationId),
+                userId = federatedIdMapper.parseToFederatedId(message.senderUserId),
+                clientId = message.senderClientId.value,
+                convType = callMapper.toConversationTypeCalling(type).avsValue
+            )
+            callingLogger.i("$TAG - wcall_recv_msg() called")
+        }
     }
 
     override suspend fun startCall(
@@ -361,7 +373,10 @@ class CallManagerImpl internal constructor(
         }
     }
 
-    override suspend fun requestVideoStreams(conversationId: ConversationId, callClients: CallClientList) {
+    override suspend fun requestVideoStreams(
+        conversationId: ConversationId,
+        callClients: CallClientList
+    ) {
         withCalling {
             // Needed to support calls between federated and non federated environments
             val clients = callClients.clients.map { callClient ->
@@ -398,7 +413,10 @@ class CallManagerImpl internal constructor(
         }
     }
 
-    override suspend fun updateConversationClients(conversationId: ConversationId, clients: String) {
+    override suspend fun updateConversationClients(
+        conversationId: ConversationId,
+        clients: String
+    ) {
         withCalling {
             wcall_set_clients_for_conv(
                 it,
@@ -545,5 +563,6 @@ class CallManagerImpl internal constructor(
         const val TAG = "CallManager"
         const val NETWORK_QUALITY_INTERVAL_SECONDS = 5
         const val UTF8_ENCODING = "UTF-8"
+        const val REMOTE_MUTE_TYPE = "REMOTEMUTE"
     }
 }
