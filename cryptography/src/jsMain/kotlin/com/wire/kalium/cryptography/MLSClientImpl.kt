@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -122,7 +122,6 @@ class MLSClientImpl : MLSClient {
     }
 
     override suspend fun e2eiNewActivationEnrollment(
-        clientId: CryptoQualifiedClientId,
         displayName: String,
         handle: String,
         teamId: String?
@@ -131,7 +130,6 @@ class MLSClientImpl : MLSClient {
     }
 
     override suspend fun e2eiNewRotateEnrollment(
-        clientId: CryptoQualifiedClientId,
         displayName: String?,
         handle: String?,
         teamId: String?

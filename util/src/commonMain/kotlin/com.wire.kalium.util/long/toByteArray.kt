@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,9 @@
 
 package com.wire.kalium.util.long
 
+/**
+ * Converts a Long into a Byte Array Big Endian.
+ */
 @Suppress("MagicNumber")
 fun Long.toByteArray(): ByteArray {
     val result = ByteArray(Long.SIZE_BYTES)

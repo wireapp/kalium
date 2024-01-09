@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,14 +18,21 @@
 
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.LegalHoldStatus
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
 
 interface LegalHoldStatusMapper {
     fun fromApiModel(legalHoldStatusDTO: LegalHoldStatusDTO): LegalHoldStatus
+    fun mapLegalHoldConversationStatus(
+        legalHoldStatus: Either<StorageFailure, Conversation.LegalHoldStatus>,
+        message: Message.Sendable
+    ): Conversation.LegalHoldStatus
 }
 
-class LegalHoldStatusMapperImpl : LegalHoldStatusMapper {
+internal object LegalHoldStatusMapperImpl : LegalHoldStatusMapper {
     override fun fromApiModel(legalHoldStatusDTO: LegalHoldStatusDTO): LegalHoldStatus =
         when (legalHoldStatusDTO) {
             LegalHoldStatusDTO.ENABLED -> LegalHoldStatus.ENABLED
@@ -33,4 +40,17 @@ class LegalHoldStatusMapperImpl : LegalHoldStatusMapper {
             LegalHoldStatusDTO.DISABLED -> LegalHoldStatus.DISABLED
             LegalHoldStatusDTO.NO_CONSENT -> LegalHoldStatus.NO_CONSENT
         }
+
+    override fun mapLegalHoldConversationStatus(
+        legalHoldStatus: Either<StorageFailure, Conversation.LegalHoldStatus>,
+        message: Message.Sendable
+    ): Conversation.LegalHoldStatus = when (legalHoldStatus) {
+        is Either.Left -> Conversation.LegalHoldStatus.UNKNOWN
+        is Either.Right -> {
+            when (message) {
+                is Message.Regular -> legalHoldStatus.value
+                else -> Conversation.LegalHoldStatus.UNKNOWN
+            }
+        }
+    }
 }

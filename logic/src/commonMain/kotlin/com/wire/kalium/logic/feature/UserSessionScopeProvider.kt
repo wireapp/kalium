@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,11 +22,11 @@ import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.call.GlobalCallManager
-import com.wire.kalium.logic.util.safeComputeIfAbsent
 
 interface UserSessionScopeProvider {
     fun get(userId: UserId): UserSessionScope?
     fun getOrCreate(userId: UserId): UserSessionScope
+    fun <T> getOrCreate(userId: UserId, action: UserSessionScope.() -> T): T
     fun delete(userId: UserId)
 }
 
@@ -41,9 +41,11 @@ abstract class UserSessionScopeProviderCommon(
     }
 
     override fun getOrCreate(userId: UserId): UserSessionScope =
-        userScopeStorage.safeComputeIfAbsent(userId) {
+        userScopeStorage.computeIfAbsent(userId) {
             create(userId)
         }
+
+    override fun <T> getOrCreate(userId: UserId, action: UserSessionScope.() -> T): T = getOrCreate(userId).action()
 
     override fun get(userId: UserId): UserSessionScope? = userScopeStorage.get(userId)
 

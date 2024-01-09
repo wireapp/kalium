@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,8 +23,12 @@ import java.nio.file.Files
 actual open class BaseMLSClientTest {
 
     actual suspend fun createMLSClient(clientId: CryptoQualifiedClientId): MLSClient {
+        return createCoreCrypto(clientId).mlsClient(clientId)
+    }
+
+    actual suspend fun createCoreCrypto(clientId: CryptoQualifiedClientId): CoreCryptoCentral {
         val root = Files.createTempDirectory("mls").toFile()
         val keyStore = root.resolve("keystore-$clientId")
-        return coreCryptoCentral(keyStore.absolutePath, "test").mlsClient(clientId)
+        return coreCryptoCentral(keyStore.absolutePath, "test")
     }
 }

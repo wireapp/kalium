@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -251,6 +251,46 @@ class UserEventReceiverTest {
                 .suspendFunction(arrangement.oneOnOneResolver::scheduleResolveOneOnOneConversationWithUserId)
                 .with(eq(event.connection.qualifiedToId), eq(3.seconds))
                 .wasInvoked(exactly = once)
+        }
+
+    @Test
+    fun givenNewConnectionEventWithStatusAccepted_whenHandlingEvent_thenCreateUnverifiedWarningMessage() =
+        runTest(TestKaliumDispatcher.default) {
+            // given
+            val event = TestEvent.newConnection(status = ConnectionState.ACCEPTED)
+            val (arrangement, eventReceiver) = arrange {
+                withFetchUserInfoReturning(Either.Right(Unit))
+                withInsertConnectionFromEventSucceeding()
+                withScheduleResolveOneOnOneConversationWithUserId()
+                withPersistUnverifiedWarningMessageSuccess()
+            }
+            // when
+            eventReceiver.onEvent(event)
+            // then
+            verify(arrangement.newGroupConversationSystemMessagesCreator)
+                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
+                .with(eq(event.connection.qualifiedConversationId))
+                .wasInvoked(exactly = once)
+        }
+
+    @Test
+    fun givenNewConnectionEventWithStatusCancelled_whenHandlingEvent_thenDoNotCreateUnverifiedWarningMessage() =
+        runTest(TestKaliumDispatcher.default) {
+            // given
+            val event = TestEvent.newConnection(status = ConnectionState.CANCELLED)
+            val (arrangement, eventReceiver) = arrange {
+                withFetchUserInfoReturning(Either.Right(Unit))
+                withInsertConnectionFromEventSucceeding()
+                withScheduleResolveOneOnOneConversationWithUserId()
+                withPersistUnverifiedWarningMessageSuccess()
+            }
+            // when
+            eventReceiver.onEvent(event)
+            // then
+            verify(arrangement.newGroupConversationSystemMessagesCreator)
+                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
+                .with(eq(event.connection.qualifiedConversationId))
+                .wasNotInvoked()
         }
 
     private class Arrangement(private val block: Arrangement.() -> Unit) :

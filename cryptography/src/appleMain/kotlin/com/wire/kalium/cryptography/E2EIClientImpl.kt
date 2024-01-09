@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -55,11 +55,15 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override suspend fun getNewOidcChallengeRequest(idToken: String, previousNonce: String): JsonRawData {
+    override suspend fun getNewOidcChallengeRequest(idToken: String, refreshToken: String, previousNonce: String): JsonRawData {
         TODO("Not yet implemented")
     }
 
-    override suspend fun setChallengeResponse(challenge: JsonRawData) {
+    override suspend fun setOIDCChallengeResponse(coreCrypto: CoreCryptoCentral, challenge: JsonRawData) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun setDPoPChallengeResponse(challenge: JsonRawData) {
         TODO("Not yet implemented")
     }
 
@@ -83,4 +87,7 @@ class E2EIClientImpl : E2EIClient {
         TODO("Not yet implemented")
     }
 
+    override suspend fun getOAuthRefreshToken(): String? {
+        TODO("Not yet implemented")
+    }
 }

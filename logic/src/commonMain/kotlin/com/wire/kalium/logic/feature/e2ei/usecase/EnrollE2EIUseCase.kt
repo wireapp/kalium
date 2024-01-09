@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.getOrFail
+import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 
@@ -33,6 +34,7 @@ interface EnrollE2EIUseCase {
     suspend fun initialEnrollment(): Either<CoreFailure, E2EIEnrollmentResult>
     suspend fun finalizeEnrollment(
         idToken: String,
+        oAuthState: String,
         initializationResult: E2EIEnrollmentResult.Initialized
     ): Either<E2EIFailure, E2EIEnrollmentResult>
 }
@@ -70,9 +72,17 @@ class EnrollE2EIUseCaseImpl internal constructor(
         val authzResponse = e2EIRepository.createAuthz(prevNonce, newOrderResponse.first.authorizations[0]).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNewAuthz, it).toEitherLeft()
         }
+        kaliumLogger.i("getoAuth")
+
+        val oAuthState = e2EIRepository.getOAuthRefreshToken().getOrNull()
+        kaliumLogger.i("oAuthStAte: $oAuthState")
 
         val initializationResult = E2EIEnrollmentResult.Initialized(
-            authzResponse.first.wireOidcChallenge!!.target, authzResponse.first, authzResponse.second, newOrderResponse.third
+            target = authzResponse.first.wireOidcChallenge!!.target,
+            oAuthState = oAuthState,
+            authz = authzResponse.first,
+            lastNonce = authzResponse.second,
+            orderLocation = newOrderResponse.third
         )
 
         kaliumLogger.i("E2EI Enrollment Initialization Result: $initializationResult")
@@ -90,6 +100,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
      */
     override suspend fun finalizeEnrollment(
         idToken: String,
+        oAuthState: String,
         initializationResult: E2EIEnrollmentResult.Initialized
     ): Either<E2EIFailure, E2EIEnrollmentResult> {
 
@@ -118,7 +129,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
         prevNonce = dpopChallengeResponse.nonce
 
         val oidcChallengeResponse = e2EIRepository.validateOIDCChallenge(
-            idToken, prevNonce, authz.wireOidcChallenge!!
+            idToken, oAuthState, prevNonce, authz.wireOidcChallenge!!
         ).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.OIDCChallenge, it).toEitherLeft()
         }
@@ -145,6 +156,8 @@ class EnrollE2EIUseCaseImpl internal constructor(
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.ConversationMigration, it).toEitherLeft()
         }
 
+        e2EIRepository.nukeE2EIClient()
+
         return Either.Right(E2EIEnrollmentResult.Finalized(certificateRequest.response.decodeToString()))
     }
 
@@ -169,7 +182,13 @@ sealed interface E2EIEnrollmentResult {
         Certificate
     }
 
-    class Initialized(val target: String, val authz: NewAcmeAuthz, val lastNonce: String, val orderLocation: String) : E2EIEnrollmentResult
+    class Initialized(
+        val target: String,
+        val oAuthState: String?,
+        val authz: NewAcmeAuthz,
+        val lastNonce: String,
+        val orderLocation: String
+    ) : E2EIEnrollmentResult
 
     class Finalized(val certificate: String) : E2EIEnrollmentResult
 

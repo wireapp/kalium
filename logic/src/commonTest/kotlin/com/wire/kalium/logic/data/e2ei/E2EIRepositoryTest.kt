@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.RANDOM_ID_TOKEN
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.RANDOM_NONCE
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.RANDOM_URL
+import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.REFRESH_TOKEN
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryTest.Arrangement.Companion.TEST_FAILURE
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
@@ -352,6 +353,7 @@ class E2EIRepositoryTest {
     fun givenDpopChallengeRequestSucceed_whenCallingValidateDPoPChallenge_thenItSucceed() = runTest {
         // Given
         val (arrangement, e2eiRepository) = Arrangement()
+            .withGetCoreCryptoSuccessful()
             .withSendChallengeRequestApiSucceed()
             .withGetE2EIClientSuccessful()
             .withGetMLSClientSuccessful()
@@ -375,7 +377,7 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::setChallengeResponse)
+            .function(arrangement.e2eiClient::setDPoPChallengeResponse)
             .with(anyInstanceOf(ByteArray::class))
             .wasInvoked(once)
     }
@@ -407,8 +409,8 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::setChallengeResponse)
-            .with(anyInstanceOf(ByteArray::class))
+            .function(arrangement.e2eiClient::setOIDCChallengeResponse)
+            .with(anyInstanceOf(CoreCryptoCentral::class), anyInstanceOf(ByteArray::class))
             .wasNotInvoked()
     }
 
@@ -416,6 +418,7 @@ class E2EIRepositoryTest {
     fun givenOIDCChallengeRequestSucceed_whenCallingValidateDPoPChallenge_thenItSucceed() = runTest {
         // Given
         val (arrangement, e2eiRepository) = Arrangement()
+            .withGetCoreCryptoSuccessful()
             .withSendChallengeRequestApiSucceed()
             .withGetE2EIClientSuccessful()
             .withGetMLSClientSuccessful()
@@ -423,14 +426,14 @@ class E2EIRepositoryTest {
             .arrange()
 
         // When
-        val result = e2eiRepository.validateOIDCChallenge(RANDOM_ID_TOKEN, RANDOM_NONCE, ACME_CHALLENGE)
+        val result = e2eiRepository.validateOIDCChallenge(RANDOM_ID_TOKEN, REFRESH_TOKEN, RANDOM_NONCE, ACME_CHALLENGE)
 
         // Then
         result.shouldSucceed()
 
         verify(arrangement.e2eiClient)
             .function(arrangement.e2eiClient::getNewOidcChallengeRequest)
-            .with(anyInstanceOf(String::class), anyInstanceOf(String::class))
+            .with(anyInstanceOf(String::class), anyInstanceOf(String::class), anyInstanceOf(String::class))
             .wasInvoked(once)
 
         verify(arrangement.acmeApi)
@@ -439,8 +442,8 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::setChallengeResponse)
-            .with(anyInstanceOf(ByteArray::class))
+            .function(arrangement.e2eiClient::setOIDCChallengeResponse)
+            .with(anyInstanceOf(CoreCryptoCentral::class), anyInstanceOf(ByteArray::class))
             .wasInvoked(once)
     }
 
@@ -448,6 +451,7 @@ class E2EIRepositoryTest {
     fun givenOIDCChallengeRequestFails_whenCallingValidateDPoPChallenge_thenItFail() = runTest {
         // Given
         val (arrangement, e2eiRepository) = Arrangement()
+            .withGetCoreCryptoSuccessful()
             .withSendChallengeRequestApiFails()
             .withGetE2EIClientSuccessful()
             .withGetMLSClientSuccessful()
@@ -455,14 +459,14 @@ class E2EIRepositoryTest {
             .arrange()
 
         // When
-        val result = e2eiRepository.validateOIDCChallenge(RANDOM_ID_TOKEN, RANDOM_NONCE, ACME_CHALLENGE)
+        val result = e2eiRepository.validateOIDCChallenge(RANDOM_ID_TOKEN, REFRESH_TOKEN, RANDOM_NONCE, ACME_CHALLENGE)
 
         // Then
         result.shouldFail()
 
         verify(arrangement.e2eiClient)
             .function(arrangement.e2eiClient::getNewOidcChallengeRequest)
-            .with(anyInstanceOf(String::class), anyInstanceOf(String::class))
+            .with(anyInstanceOf(String::class), anyInstanceOf(String::class), anyInstanceOf(String::class))
             .wasInvoked(once)
 
         verify(arrangement.acmeApi)
@@ -471,8 +475,8 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::setChallengeResponse)
-            .with(anyInstanceOf(ByteArray::class))
+            .function(arrangement.e2eiClient::setOIDCChallengeResponse)
+            .with(anyInstanceOf(CoreCryptoCentral::class), anyInstanceOf(ByteArray::class))
             .wasNotInvoked()
     }
 
@@ -730,6 +734,13 @@ class E2EIRepositoryTest {
                 .thenReturn(Either.Right(e2eiClient))
         }
 
+        fun withGetCoreCryptoSuccessful() = apply {
+            given(mlsClientProvider)
+                .suspendFunction(mlsClientProvider::getCoreCrypto)
+                .whenInvokedWith(anything())
+                .thenReturn(Either.Right(coreCryptoCentral))
+        }
+
         fun withE2EIClientLoadDirectoriesSuccessful() = apply {
             given(e2eiClient)
                 .suspendFunction(e2eiClient::directoryResponse)
@@ -818,7 +829,7 @@ class E2EIRepositoryTest {
         fun withGetNewOidcChallengeRequest() = apply {
             given(e2eiClient)
                 .suspendFunction(e2eiClient::getNewOidcChallengeRequest)
-                .whenInvokedWith(anything(), anything())
+                .whenInvokedWith(anything(), anything(), anything())
                 .thenReturn(RANDOM_BYTE_ARRAY)
         }
 
@@ -905,6 +916,9 @@ class E2EIRepositoryTest {
         val e2eiClient = mock(classOf<E2EIClient>())
 
         @Mock
+        val coreCryptoCentral = mock(classOf<CoreCryptoCentral>())
+
+        @Mock
         val mlsClientProvider: MLSClientProvider = mock(classOf<MLSClientProvider>())
 
         @Mock
@@ -935,6 +949,7 @@ class E2EIRepositoryTest {
             val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(ErrorResponse(405, "", ""))
             val RANDOM_BYTE_ARRAY = "random-value".encodeToByteArray()
             val RANDOM_NONCE = "xxxxx"
+            val REFRESH_TOKEN = "YRjxLpsjRqL7zYuKstXogqioA_P3Z4fiEuga0NCVRcDSc8cy_9msxg"
             val RANDOM_ACCESS_TOKEN = "xxxxx"
             val RANDOM_ID_TOKEN = "xxxxx"
             val RANDOM_URL = "https://random.rn"

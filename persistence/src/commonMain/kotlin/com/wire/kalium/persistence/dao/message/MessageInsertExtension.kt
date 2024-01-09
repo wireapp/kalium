@@ -1,3 +1,20 @@
+/*
+ * Wire
+ * Copyright (C) 2024 Wire Swiss GmbH
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see http://www.gnu.org/licenses/.
+ */
 package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.ConversationsQueries
@@ -262,6 +279,11 @@ internal class MessageInsertExtensionImpl(
                 protocol = content.protocol
             )
 
+            is MessageEntityContent.ConversationProtocolChangedDuringACall -> messagesQueries.insertConversationProtocolChangedDuringACall(
+                message_id = message.id,
+                conversation_id = message.conversationId
+            )
+
             is MessageEntityContent.ConversationStartedUnverifiedWarning -> {
                 /* no-op */
             }
@@ -326,6 +348,7 @@ internal class MessageInsertExtensionImpl(
                 is MessageEntityContent.ConversationReceiptModeChanged,
                 is MessageEntityContent.ConversationRenamed,
                 is MessageEntityContent.ConversationProtocolChanged,
+                is MessageEntityContent.ConversationProtocolChangedDuringACall,
                 MessageEntityContent.CryptoSessionReset,
                 MessageEntityContent.HistoryLost,
                 MessageEntityContent.HistoryLostProtocolChanged,
@@ -432,7 +455,10 @@ internal class MessageInsertExtensionImpl(
         MessageEntityContent.ConversationVerifiedMLS -> MessageEntity.ContentType.CONVERSATION_VERIFIED_MLS
         MessageEntityContent.ConversationVerifiedProteus -> MessageEntity.ContentType.CONVERSATION_VERIFIED_PROTEUS
         is MessageEntityContent.ConversationProtocolChanged -> MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED
-        is MessageEntityContent.ConversationStartedUnverifiedWarning -> MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING
+        is MessageEntityContent.ConversationProtocolChangedDuringACall ->
+            MessageEntity.ContentType.CONVERSATION_PROTOCOL_CHANGED_DURING_CALL
+        is MessageEntityContent.ConversationStartedUnverifiedWarning ->
+            MessageEntity.ContentType.CONVERSATION_STARTED_UNVERIFIED_WARNING
         is MessageEntityContent.Location -> MessageEntity.ContentType.LOCATION
         is MessageEntityContent.LegalHold -> MessageEntity.ContentType.LEGAL_HOLD
     }

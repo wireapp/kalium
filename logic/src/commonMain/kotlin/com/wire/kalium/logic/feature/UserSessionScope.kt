@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -167,12 +167,12 @@ import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCu
 import com.wire.kalium.logic.feature.client.ClientScope
 import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCaseImpl
+import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCase
+import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCaseImpl
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
-import com.wire.kalium.logic.feature.client.PersistOtherUserClientsUseCase
-import com.wire.kalium.logic.feature.client.PersistOtherUserClientsUseCaseImpl
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
@@ -204,6 +204,8 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolverImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
+import com.wire.kalium.logic.feature.featureConfig.FeatureFlagSyncWorkerImpl
+import com.wire.kalium.logic.feature.featureConfig.FeatureFlagsSyncWorker
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
@@ -641,7 +643,6 @@ class UserSessionScope internal constructor(
 
     private val e2EIClientProvider: E2EIClientProvider by lazy {
         EI2EIClientProviderImpl(
-            userId = userId,
             currentClientIdProvider = clientIdProvider,
             mlsClientProvider = mlsClientProvider,
             userRepository = userRepository
@@ -1078,7 +1079,8 @@ class UserSessionScope internal constructor(
             userRepository,
             conversationRepository,
             mlsConversationRepository,
-            systemMessageInserter
+            systemMessageInserter,
+            callRepository
         )
 
     internal val keyPackageManager: KeyPackageManager = KeyPackageManagerImpl(featureSupport,
@@ -1257,8 +1259,8 @@ class UserSessionScope internal constructor(
         get() = NewMessageEventHandlerImpl(
             proteusUnpacker,
             mlsUnpacker,
-            conversationRepository,
             applicationMessageHandler,
+            legalHoldHandler,
             { conversationId, messageId ->
                 messages.ephemeralMessageDeletionHandler.startSelfDeletion(conversationId, messageId)
             },
@@ -1327,7 +1329,8 @@ class UserSessionScope internal constructor(
     private val protocolUpdateEventHandler: ProtocolUpdateEventHandler
         get() = ProtocolUpdateEventHandlerImpl(
             conversationRepository = conversationRepository,
-            systemMessageInserter = systemMessageInserter
+            systemMessageInserter = systemMessageInserter,
+            callRepository = callRepository
         )
 
     private val conversationEventReceiver: ConversationEventReceiver by lazy {
@@ -1384,8 +1387,8 @@ class UserSessionScope internal constructor(
             clientRepository = clientRepository,
             provideClientId = clientIdProvider
         )
-    private val persistOtherUserClients: PersistOtherUserClientsUseCase
-        get() = PersistOtherUserClientsUseCaseImpl(
+    private val fetchUsersClientsFromRemote: FetchUsersClientsFromRemoteUseCase
+        get() = FetchUsersClientsFromRemoteUseCaseImpl(
             clientRemoteRepository = clientRemoteRepository,
             clientRepository = clientRepository
         )
@@ -1395,18 +1398,20 @@ class UserSessionScope internal constructor(
 
     private val legalHoldSystemMessagesHandler = LegalHoldSystemMessagesHandlerImpl(
         selfUserId = userId,
-        membersHavingLegalHoldClient = membersHavingLegalHoldClient,
         persistMessage = persistMessage,
         conversationRepository = conversationRepository,
-        messageRepository = messageRepository,
+        messageRepository = messageRepository
     )
 
     private val legalHoldHandler = LegalHoldHandlerImpl(
         selfUserId = userId,
-        persistOtherUserClients = persistOtherUserClients,
+        fetchUsersClientsFromRemote = fetchUsersClientsFromRemote,
         fetchSelfClientsFromRemote = fetchSelfClientsFromRemote,
         observeLegalHoldStateForUser = observeLegalHoldStateForUser,
+        membersHavingLegalHoldClient = membersHavingLegalHoldClient,
         userConfigRepository = userConfigRepository,
+        conversationRepository = conversationRepository,
+        observeSyncState = observeSyncState,
         legalHoldSystemMessagesHandler = legalHoldSystemMessagesHandler,
     )
 
@@ -1507,6 +1512,13 @@ class UserSessionScope internal constructor(
         )
     }
 
+    private val featureFlagsSyncWorker: FeatureFlagsSyncWorker by lazy {
+        FeatureFlagSyncWorkerImpl(
+            incrementalSyncRepository = incrementalSyncRepository,
+            syncFeatureConfigs = syncFeatureConfigsUseCase,
+        )
+    }
+
     private val keyPackageRepository: KeyPackageRepository
         get() = KeyPackageDataSource(
             clientIdProvider, authenticatedNetworkContainer.keyPackageApi, mlsClientProvider, userId
@@ -1604,6 +1616,7 @@ class UserSessionScope internal constructor(
             conversationRepository,
             mlsConversationRepository,
             clientRepository,
+            clientRemoteRepository,
             clientIdProvider,
             proteusClientProvider,
             mlsClientProvider,
@@ -1617,6 +1630,7 @@ class UserSessionScope internal constructor(
             selfConversationIdProvider,
             staleEpochVerifier,
             eventProcessor,
+            legalHoldHandler,
             this
         )
     val messages: MessageScope
@@ -1629,6 +1643,7 @@ class UserSessionScope internal constructor(
             conversationRepository,
             mlsConversationRepository,
             clientRepository,
+            clientRemoteRepository,
             proteusClientProvider,
             mlsClientProvider,
             preKeyRepository,
@@ -1645,6 +1660,7 @@ class UserSessionScope internal constructor(
             observeSelfDeletingMessages,
             messageMetadataRepository,
             staleEpochVerifier,
+            legalHoldHandler,
             this
         )
     val users: UserScope
@@ -1882,6 +1898,10 @@ class UserSessionScope internal constructor(
 
         launch {
             typingIndicatorSyncManager.execute()
+        }
+
+        launch {
+            featureFlagsSyncWorker.execute()
         }
     }
 

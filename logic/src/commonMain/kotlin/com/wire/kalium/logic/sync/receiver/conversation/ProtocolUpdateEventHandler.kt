@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,8 @@ package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
@@ -30,6 +32,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import kotlinx.coroutines.flow.first
 
 interface ProtocolUpdateEventHandler {
     suspend fun handle(event: Event.Conversation.ConversationProtocol): Either<CoreFailure, Unit>
@@ -37,7 +40,8 @@ interface ProtocolUpdateEventHandler {
 
 internal class ProtocolUpdateEventHandlerImpl(
     private val conversationRepository: ConversationRepository,
-    private val systemMessageInserter: SystemMessageInserter
+    private val systemMessageInserter: SystemMessageInserter,
+    private val callRepository: CallRepository
 ) : ProtocolUpdateEventHandler {
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
@@ -51,6 +55,14 @@ internal class ProtocolUpdateEventHandlerImpl(
                         event.senderUserId,
                         event.protocol
                     )
+                    if (callRepository.establishedCallsFlow().first().isNotEmpty() &&
+                        event.protocol == Conversation.Protocol.MIXED
+                    ) {
+                        systemMessageInserter.insertProtocolChangedDuringACallSystemMessage(
+                            event.conversationId,
+                            event.senderUserId
+                        )
+                    }
                 }
                 logger
                     .logEventProcessing(

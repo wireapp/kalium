@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,10 +18,10 @@
 
 package com.wire.kalium.logic.data.client
 
+import com.wire.kalium.cryptography.CoreCryptoCentral
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoUserID
 import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.cryptography.MlsDBSecret
 import com.wire.kalium.cryptography.coreCryptoCentral
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.FileUtil
@@ -38,6 +39,8 @@ import kotlinx.coroutines.withContext
 
 interface MLSClientProvider {
     suspend fun getMLSClient(clientId: ClientId? = null): Either<CoreFailure, MLSClient>
+
+    suspend fun getCoreCrypto(clientId: ClientId? = null): Either<CoreFailure, CoreCryptoCentral>
 
     suspend fun clearLocalFiles()
 }
@@ -51,27 +54,22 @@ class MLSClientProviderImpl(
 ) : MLSClientProvider {
 
     private var mlsClient: MLSClient? = null
+    private var coreCryptoCentral: CoreCryptoCentral? = null
 
     override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> = withContext(dispatchers.io) {
         val currentClientId = clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
         val cryptoUserId = CryptoUserID(value = userId.value, domain = userId.domain)
 
-        val location = "$rootKeyStorePath/${currentClientId.value}".also {
-            // TODO: migrate to okio solution once assert refactor is merged
-            FileUtil.mkDirs(it)
-        }
-
         return@withContext mlsClient?.let {
             Either.Right(it)
         } ?: run {
-            val newClient = mlsClient(
+            mlsClient(
                 cryptoUserId,
-                currentClientId,
-                location,
-                SecurityHelperImpl(passphraseStorage).mlsDBSecret(userId)
-            )
-            mlsClient = newClient
-            Either.Right(newClient)
+                currentClientId
+            ).map {
+                mlsClient = it
+                return@run Either.Right(it)
+            }
         }
     }
 
@@ -81,11 +79,30 @@ class MLSClientProviderImpl(
         FileUtil.deleteDirectory(rootKeyStorePath)
     }
 
-    private suspend fun mlsClient(userId: CryptoUserID, clientId: ClientId, location: String, passphrase: MlsDBSecret): MLSClient {
-        return coreCryptoCentral(
-            rootDir = "$location/$KEYSTORE_NAME",
-            databaseKey = passphrase.value
-        ).mlsClient(CryptoQualifiedClientId(clientId.value, userId))
+    override suspend fun getCoreCrypto(clientId: ClientId?) = withContext(dispatchers.io) {
+        val currentClientId = clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
+
+        val location = "$rootKeyStorePath/${currentClientId.value}".also {
+            // TODO: migrate to okio solution once assert refactor is merged
+            FileUtil.mkDirs(it)
+        }
+        val passphrase = SecurityHelperImpl(passphraseStorage).mlsDBSecret(userId).value
+        return@withContext coreCryptoCentral?.let {
+            Either.Right(it)
+        } ?: run {
+            val cc = coreCryptoCentral(
+                rootDir = "$location/$KEYSTORE_NAME",
+                databaseKey = passphrase
+            )
+            coreCryptoCentral = cc
+            Either.Right(cc)
+        }
+    }
+
+    private suspend fun mlsClient(userId: CryptoUserID, clientId: ClientId): Either<CoreFailure, MLSClient> {
+        return getCoreCrypto(clientId).map {
+            it.mlsClient(CryptoQualifiedClientId(clientId.value, userId))
+        }
     }
 
     private companion object {

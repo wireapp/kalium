@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -235,7 +235,11 @@ internal interface MessageRepository {
     ): Either<StorageFailure, Int>
 
     val extensions: MessageRepositoryExtensions
-    suspend fun getAssetMessagesByConversationId(conversationId: ConversationId, limit: Int, offset: Int): List<AssetMessage>
+    suspend fun getImageAssetMessagesByConversationId(
+        conversationId: ConversationId,
+        limit: Int,
+        offset: Int
+    ): List<AssetMessage>
 }
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
@@ -273,17 +277,17 @@ internal class MessageDataSource internal constructor (
         messageDAO.getLastMessagesByConversations(conversationIdList.map { it.toDao() })
     }.map { it.map { it.key.toModel() to messageMapper.fromEntityToMessage(it.value) }.toMap() }
 
-    override suspend fun getAssetMessagesByConversationId(
+    override suspend fun getImageAssetMessagesByConversationId(
         conversationId: ConversationId,
         limit: Int,
         offset: Int
-    ): List<AssetMessage> = messageDAO.getMessageAssets(
+    ): List<AssetMessage> = messageDAO.getImageMessageAssets(
         conversationId.toDao(),
         mimeTypes = SUPPORTED_IMAGE_ASSET_MIME_TYPES,
         limit,
         offset
     )
-        .map(messageMapper::fromAssetEntityToMessage)
+        .map(messageMapper::fromAssetEntityToAssetMessage)
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun getNotificationMessage(
