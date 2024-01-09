@@ -22,13 +22,14 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
+import com.wire.kalium.logic.functional.flatMapRight
+import com.wire.kalium.logic.functional.mapToRightOr
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 
@@ -40,7 +41,7 @@ interface ObserveValidAccountsUseCase {
     /**
      * @return a [Flow] of the list of valid accounts and their associated team.
      */
-    suspend operator fun invoke(): Flow<List<Pair<SelfUser, Team?>>>
+    operator fun invoke(): Flow<List<Pair<SelfUser, Team?>>>
 }
 
 internal class ObserveValidAccountsUseCaseImpl internal constructor(
@@ -50,17 +51,20 @@ internal class ObserveValidAccountsUseCaseImpl internal constructor(
 ) : ObserveValidAccountsUseCase {
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    override suspend fun invoke(): Flow<List<Pair<SelfUser, Team?>>> =
-        sessionRepository.allValidSessionsFlow().flatMapLatest { accountList ->
-            if (accountList.isEmpty()) {
-                flowOf(listOf())
-            } else {
-                val flowsOfSelfUsers = accountList.map { accountInfo ->
-                    userSessionScopeProvider.getOrCreate(accountInfo.userId).let {
-                        it.users.getSelfUserWithTeam()
+    override fun invoke(): Flow<List<Pair<SelfUser, Team?>>> =
+        sessionRepository.allValidSessionsFlow()
+            .flatMapRight { accountList ->
+                if (accountList.isEmpty()) {
+                    flowOf(listOf())
+                } else {
+                    val flowsOfSelfUsers = accountList.map { accountInfo ->
+                        userSessionScopeProvider.getOrCreate(accountInfo.userId).let {
+                            it.users.getSelfUserWithTeam()
+                        }
                     }
+                    combine(flowsOfSelfUsers) { it.asList() }
                 }
-                combine(flowsOfSelfUsers) { it.asList() }
             }
-        }.flowOn(ioDispatcher)
+            .mapToRightOr(emptyList())
+            .flowOn(ioDispatcher)
 }
