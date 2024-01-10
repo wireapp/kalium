@@ -21,6 +21,8 @@ package com.wire.kalium.logic.feature.call
 import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.EpochInfo
+import com.wire.kalium.logic.data.call.Participant
+import com.wire.kalium.logic.data.call.TestVideoType
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
@@ -46,4 +48,8 @@ interface CallManager {
     suspend fun updateEpochInfo(conversationId: ConversationId, epochInfo: EpochInfo)
     suspend fun updateConversationClients(conversationId: ConversationId, clients: String)
     suspend fun reportProcessNotifications(isStarted: Boolean)
+
+    suspend fun setTestVideoType(testVideoType: TestVideoType)
+    suspend fun setTestPreviewActive(shouldEnble: Boolean)
+    suspend fun setTestRemoteVideoStates(conversationId: ConversationId, participants: List<Participant>)
 }
