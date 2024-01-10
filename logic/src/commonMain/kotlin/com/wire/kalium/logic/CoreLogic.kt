@@ -31,6 +31,7 @@ import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
+import com.wire.kalium.logic.feature.auth.LogoutCallbackManagerImpl
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -57,7 +58,7 @@ abstract class CoreLogicCommon internal constructor(
     protected val authenticationScopeProvider: AuthenticationScopeProvider =
         AuthenticationScopeProvider(userAgent)
 
-    fun getGlobalScope(): GlobalKaliumScope =
+    private val globalKaliumScope by lazy {
         GlobalKaliumScope(
             userAgent,
             globalDatabase,
@@ -65,8 +66,11 @@ abstract class CoreLogicCommon internal constructor(
             kaliumConfigs,
             userSessionScopeProvider,
             authenticationScopeProvider,
-            networkStateObserver
+            networkStateObserver,
+            logoutCallbackManager,
         )
+    }
+    fun getGlobalScope(): GlobalKaliumScope = globalKaliumScope
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     fun getAuthenticationScope(
@@ -108,6 +112,8 @@ abstract class CoreLogicCommon internal constructor(
         AutoVersionAuthScopeUseCase(kaliumConfigs, serverLinks, this)
 
     abstract val networkStateObserver: NetworkStateObserver
+
+    internal val logoutCallbackManager = LogoutCallbackManagerImpl()
 }
 
 expect val clientPlatform: String

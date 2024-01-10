@@ -80,6 +80,27 @@ class CurrentSessionFlowUseCaseTest {
 
         verify(sessionRepository).invocation { currentSessionFlow() }.wasInvoked(exactly = once)
     }
+    @Test
+    fun givenAUserID_whenCurrentSessionFlowEmitsSameDataAgain_thenDoPropagateTheSameDataAgain() = runTest {
+        val expected: AccountInfo = TEST_ACCOUNT_INFO
+
+        given(sessionRepository).invocation { currentSessionFlow() }.then {
+            flow {
+                emit(Either.Right(expected))
+                emit(Either.Right(expected))
+            }
+        }
+
+        currentSessionFlowUseCase().test {
+            awaitItem().run {
+                assertIs<CurrentSessionResult.Success>(this)
+                assertEquals(expected, this.accountInfo)
+            }
+            awaitComplete()
+        }
+
+        verify(sessionRepository).invocation { currentSessionFlow() }.wasInvoked(exactly = once)
+    }
 
     private companion object {
         val TEST_ACCOUNT_INFO: AccountInfo = AccountInfo.Valid(
