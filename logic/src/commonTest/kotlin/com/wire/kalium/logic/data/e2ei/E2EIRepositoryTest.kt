@@ -725,6 +725,72 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Test
+    fun givenGettingE2EITeamSettingsFails_whenFetchACMECertificates_thenItFail() = runTest {
+        // Given
+
+        val (arrangement, e2eiRepository) = Arrangement()
+            .withGettingE2EISettingsReturns(Either.Left(StorageFailure.DataNotFound))
+            .withAcmeFederationApiFails()
+            .withGetMLSClientSuccessful()
+            .withRegisterIntermediateCABag()
+            .arrange()
+
+        // When
+        val result = e2eiRepository.fetchACMECertificates()
+
+        // Then
+        result.shouldFail()
+
+        verify(arrangement.userConfigRepository)
+            .suspendFunction(arrangement.userConfigRepository::getE2EISettings)
+            .with()
+            .wasInvoked(once)
+
+        verify(arrangement.acmeApi)
+            .suspendFunction(arrangement.acmeApi::getACMEFederation)
+            .with(any())
+            .wasNotInvoked()
+
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::registerExternalCertificates)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenACMEFederationApiSucceed_whenFetchACMECertificates_thenItSucceed() = runTest {
+        // Given
+
+        val (arrangement, e2eiRepository) = Arrangement()
+            .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS))
+            .withAcmeFederationApiSucceed()
+            .withGetMLSClientSuccessful()
+            .withRegisterIntermediateCABag()
+            .arrange()
+
+        // When
+        val result = e2eiRepository.fetchACMECertificates()
+
+        // Then
+        result.shouldSucceed()
+
+        verify(arrangement.userConfigRepository)
+            .suspendFunction(arrangement.userConfigRepository::getE2EISettings)
+            .with()
+            .wasInvoked(once)
+
+        verify(arrangement.acmeApi)
+            .suspendFunction(arrangement.acmeApi::getACMEFederation)
+            .with(any())
+            .wasInvoked(once)
+
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::registerExternalCertificates)
+            .with(any())
+            .wasInvoked(once)
+    }
+
     private class Arrangement {
 
         fun withGetE2EIClientSuccessful() = apply {
@@ -901,6 +967,27 @@ class E2EIRepositoryTest {
                 .suspendFunction(acmeApi::sendChallengeRequest)
                 .whenInvokedWith(any(), any())
                 .thenReturn(NetworkResponse.Error(INVALID_REQUEST_ERROR))
+        }
+
+        fun withAcmeFederationApiSucceed() = apply {
+            given(acmeApi)
+                .suspendFunction(acmeApi::getACMEFederation)
+                .whenInvokedWith(any())
+                .thenReturn(NetworkResponse.Success(ByteArray(12), mapOf(), 200))
+        }
+
+        fun withAcmeFederationApiFails() = apply {
+            given(acmeApi)
+                .suspendFunction(acmeApi::getACMEFederation)
+                .whenInvokedWith(any())
+                .thenReturn(NetworkResponse.Error(INVALID_REQUEST_ERROR))
+        }
+
+        fun withRegisterIntermediateCABag() = apply {
+            given(mlsClient)
+                .suspendFunction(mlsClient::registerExternalCertificates)
+                .whenInvokedWith(any())
+                .thenReturn(Unit)
         }
 
         @Mock

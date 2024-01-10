@@ -201,6 +201,8 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigratorImpl
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolverImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
+import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorker
+import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorkerImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.FeatureFlagSyncWorkerImpl
@@ -1550,6 +1552,10 @@ class UserSessionScope internal constructor(
             userRepository
         )
 
+    private val acmeCertificatesSyncWorker: ACMECertificatesSyncWorker by lazy {
+        ACMECertificatesSyncWorkerImpl(e2eiRepository)
+    }
+
     @OptIn(DelicateKaliumApi::class)
     val client: ClientScope
         get() = ClientScope(
@@ -1888,6 +1894,10 @@ class UserSessionScope internal constructor(
 
         launch {
             featureFlagsSyncWorker.execute()
+        }
+
+        launch {
+            acmeCertificatesSyncWorker.execute()
         }
     }
 
