@@ -19,29 +19,40 @@ package com.wire.kalium.logic.feature.featureConfig
 
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
+import com.wire.kalium.logic.functional.flatMapRight
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.mapToRightOr
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
 
 /**
  * Checks if the app lock is editable.
  * The app lock is editable if there is no enforced app lock on any of the user's accounts.
  * If there is an enforced app lock on any of the user's accounts, the app lock is not editable.
  */
-class IsAppLockEditableUseCase internal constructor(
+interface ObserveIsAppLockEditableUseCase {
+    operator fun invoke(): Flow<Boolean>
+}
+
+class ObserveIsAppLockEditableUseCaseImpl internal constructor(
     private val userSessionScopeProvider: UserSessionScopeProvider,
     private val sessionRepository: SessionRepository
-) {
-    suspend operator fun invoke(): Boolean =
-            sessionRepository.allValidSessions().fold({
-                true
-            }) { accounts ->
-                accounts.map { session ->
-                    userSessionScopeProvider.getOrCreate(session.userId).let { userSessionScope ->
-                        userSessionScope.userConfigRepository.isTeamAppLockEnabled().fold({
-                            false
-                        }, { appLockConfig ->
-                            appLockConfig.isEnforced
-                        })
+) : ObserveIsAppLockEditableUseCase {
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override operator fun invoke(): Flow<Boolean> =
+        sessionRepository.allValidSessionsFlow()
+            .flatMapRight { accounts ->
+                combine(
+                    accounts.map { session ->
+                        userSessionScopeProvider.getOrCreate(session.userId) { userConfigRepository }
+                            .observeAppLockConfig()
+                            .map { appLockConfig ->
+                                appLockConfig.fold({ false }, { config -> config.isEnforced })
+                            }
                     }
-                }.contains(true).not()
+                ) { it.contains(true).not() }
             }
+            .mapToRightOr(false)
 }
