@@ -52,7 +52,7 @@ class MonkeyPool(users: List<UserData>, testCase: String) {
 
     init {
         users.forEachIndexed { index, userData ->
-            val monkey = Monkey.internal(userData, MonkeyId(index, userData.team.name))
+            val monkey = Monkey.internal(userData, MonkeyId(index, userData.team.name, testCase.hashCode()))
             this.pool.getOrPut(userData.team.name) { mutableListOf() }.add(monkey)
             this.poolLoggedOut.getOrPut(userData.team.name) { ConcurrentHashMap() }[userData.userId] = monkey
             this.poolById[userData.userId] = monkey
