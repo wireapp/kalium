@@ -22,6 +22,7 @@ package com.wire.kalium.logic.feature.auth
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.auth.AccountInfo
+import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -29,9 +30,9 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
-import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCase
 import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
@@ -79,10 +80,6 @@ class LogoutUseCaseTest {
             logoutUseCase.invoke(reason)
             arrangement.globalTestScope.advanceUntilIdle()
 
-            verify(arrangement.deregisterTokenUseCase)
-                .suspendFunction(arrangement.deregisterTokenUseCase::invoke)
-                .wasInvoked(exactly = once)
-
             verify(arrangement.sessionRepository)
                 .suspendFunction(arrangement.sessionRepository::logout)
                 .with(any(), eq(reason))
@@ -107,6 +104,10 @@ class LogoutUseCaseTest {
                     .with(eq(true))
                     .wasInvoked(exactly = once)
             }
+            verify(arrangement.logoutCallback)
+                .function(arrangement.logoutCallback::invoke)
+                .with(any<UserId>(), eq(reason))
+                .wasInvoked()
         }
     }
 
@@ -209,6 +210,9 @@ class LogoutUseCaseTest {
         logoutUseCase.invoke(reason)
         arrangement.globalTestScope.advanceUntilIdle()
 
+        verify(arrangement.deregisterTokenUseCase)
+            .suspendFunction(arrangement.deregisterTokenUseCase::invoke)
+            .wasNotInvoked()
         verify(arrangement.logoutRepository)
             .suspendFunction(arrangement.logoutRepository::logout)
             .wasNotInvoked()
@@ -240,6 +244,9 @@ class LogoutUseCaseTest {
             logoutUseCase.invoke(reason)
             arrangement.globalTestScope.advanceUntilIdle()
 
+            verify(arrangement.deregisterTokenUseCase)
+                .suspendFunction(arrangement.deregisterTokenUseCase::invoke)
+                .wasInvoked(exactly = once)
             verify(arrangement.logoutRepository)
                 .suspendFunction(arrangement.logoutRepository::logout)
                 .wasInvoked(exactly = once)
@@ -278,6 +285,9 @@ class LogoutUseCaseTest {
         logoutUseCase.invoke(reason)
         arrangement.globalTestScope.advanceUntilIdle()
 
+        verify(arrangement.deregisterTokenUseCase)
+            .suspendFunction(arrangement.deregisterTokenUseCase::invoke)
+            .wasInvoked(exactly = once)
         verify(arrangement.logoutRepository)
             .suspendFunction(arrangement.logoutRepository::logout)
             .wasInvoked(exactly = once)
@@ -318,6 +328,9 @@ class LogoutUseCaseTest {
         logoutUseCase.invoke(reason)
         arrangement.globalTestScope.advanceUntilIdle()
 
+        verify(arrangement.deregisterTokenUseCase)
+            .suspendFunction(arrangement.deregisterTokenUseCase::invoke)
+            .wasInvoked(exactly = once)
         verify(arrangement.logoutRepository)
             .suspendFunction(arrangement.logoutRepository::logout)
             .wasInvoked(exactly = once)
@@ -365,6 +378,9 @@ class LogoutUseCaseTest {
         @Mock
         val endCall = configure(mock(EndCallUseCase::class)) { stubsUnitByDefault = true }
 
+        @Mock
+        val logoutCallback = configure(mock(classOf<LogoutCallback>())) { stubsUnitByDefault = true }
+
         var kaliumConfigs = KaliumConfigs()
 
         val globalTestScope = TestScope()
@@ -384,6 +400,7 @@ class LogoutUseCaseTest {
                 userSessionWorkScheduler,
                 observeEstablishedCallsUseCase,
                 endCall,
+                logoutCallback,
                 kaliumConfigs
             )
 
