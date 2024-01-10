@@ -37,7 +37,7 @@ import kotlin.test.assertEquals
 class GetMembersE2EICertificateStatusesUseCaseTest {
 
     @Test
-    fun givenErrorOnGettingMembersIdentities_thenEmptyMapResult() = runTest {
+    fun givenErrorOnGettingMembersIdentities_whenRequestMembersStatuses_thenEmptyMapResult() = runTest {
         val (_, getMembersE2EICertificateStatuses) = arrange {
             withMembersIdentities(Either.Left(MLSFailure.WrongEpoch))
         }
@@ -48,7 +48,7 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
     }
 
     @Test
-    fun givenEmptyWireIdentityMap_thenNotActivatedResult() = runTest {
+    fun givenEmptyWireIdentityMap_whenRequestMembersStatuses_thenNotActivatedResult() = runTest {
         val (_, getMembersE2EICertificateStatuses) = arrange {
             withMembersIdentities(Either.Right(mapOf()))
         }
@@ -59,7 +59,7 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
     }
 
     @Test
-    fun givenOneWireIdentityExpiredForSomeUser_thenResultUsersStatusIsExpired() = runTest {
+    fun givenOneWireIdentityExpiredForSomeUser_whenRequestMembersStatuses_thenResultUsersStatusIsExpired() = runTest {
         val (_, getMembersE2EICertificateStatuses) = arrange {
             withMembersIdentities(
                 Either.Right(
@@ -79,7 +79,7 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
     }
 
     @Test
-    fun givenOneWireIdentityRevokedForSomeUser_thenResultUsersStatusIsRevoked() = runTest {
+    fun givenOneWireIdentityRevokedForSomeUser_whenRequestMembersStatuses_thenResultUsersStatusIsRevoked() = runTest {
         val userId2 = userId.copy(value = "value_2")
         val (_, getMembersE2EICertificateStatuses) = arrange {
             withMembersIdentities(
