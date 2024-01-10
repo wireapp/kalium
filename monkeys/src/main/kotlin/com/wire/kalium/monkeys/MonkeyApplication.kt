@@ -53,6 +53,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
 import sun.misc.Signal
 import sun.misc.SignalHandler
+import java.io.File
 import kotlin.system.exitProcess
 
 fun CoroutineScope.stopIM() {
@@ -102,12 +103,14 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
             null -> DummyEventStorage()
         }
         eventProcessor.storeBackends(testData.backends)
+        val kaliumCacheFolders = testData.testCases.map { it.name.replace(' ', '_') }
         try {
             runMonkeys(testData, eventProcessor)
         } catch (e: Throwable) {
             logger.e("Error running Infinite Monkeys", e)
         } finally {
             eventProcessor.releaseResources()
+            kaliumCacheFolders.forEach { File(it).deleteRecursively() }
             exitProcess(0)
         }
     }
@@ -125,12 +128,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
                 logger.i("Creating prefixed groups")
                 testData.conversationDistribution.forEach { (prefix, config) ->
                     ConversationPool.createPrefixedConversations(
-                        coreLogic,
-                        prefix,
-                        config.groupCount,
-                        config.userCount,
-                        config.protocol,
-                        monkeyPool
+                        coreLogic, prefix, config.groupCount, config.userCount, config.protocol, monkeyPool
                     ).forEach {
                         eventChannel.send(Event(it.owner, EventType.CreateConversation(it)))
                     }

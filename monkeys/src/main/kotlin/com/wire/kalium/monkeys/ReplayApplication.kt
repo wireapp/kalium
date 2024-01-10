@@ -32,6 +32,7 @@ import com.github.ajalt.clikt.parameters.types.int
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreLogger
+import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.actions.Action
 import com.wire.kalium.monkeys.model.Event
 import com.wire.kalium.monkeys.model.TestDataImporter
@@ -103,11 +104,14 @@ class ReplayApplication : CliktCommand(allowMultipleSubcommands = true) {
     @OptIn(InternalSerializationApi::class, ExperimentalSerializationApi::class)
     @Suppress("TooGenericExceptionCaught")
     private suspend fun processEvents(users: List<UserData>, events: ReceiveChannel<Event>) {
+        val logicClients = mutableMapOf<Int, CoreLogic>()
         events.consumeEach { config ->
             val actionName = config.eventType::class.serializer().descriptor.serialName
             try {
                 val monkeyPool = MonkeyPool(users, "Replayer")
-                val coreLogic = coreLogic("${homeDirectory()}/.kalium/replayer-${this.executionId}")
+                val coreLogic = logicClients.getOrPut(config.monkeyOrigin.clientId) {
+                    coreLogic("${homeDirectory()}/.kalium/replayer-${config.monkeyOrigin.clientId}")
+                }
                 logger.i("Running action $actionName")
                 val startTime = System.currentTimeMillis()
                 Action.eventFromConfig(config.monkeyOrigin, config.eventType).execute(coreLogic, monkeyPool)
