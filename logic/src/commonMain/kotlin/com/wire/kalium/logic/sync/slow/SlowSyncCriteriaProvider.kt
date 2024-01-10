@@ -44,7 +44,7 @@ internal interface SyncCriteriaResolution {
     /**
      * At least a criterion is not satisfied
      */
-    class MissingRequirement(val cause: String) : SyncCriteriaResolution
+    data class MissingRequirement(val cause: String) : SyncCriteriaResolution
 }
 
 /**
