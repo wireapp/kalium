@@ -64,7 +64,7 @@ internal class SearchDAOImpl internal constructor(
 ) : SearchDAO {
 
     override suspend fun getKnownContacts(): List<UserSearchEntity> = withContext(coroutineContext) {
-        searchQueries.getAllConnectedUsers(mapper = UserSearchEntityMapper::map).executeAsList()
+        searchQueries.selectAllConnectedUsers(mapper = UserSearchEntityMapper::map).executeAsList()
     }
 
     override suspend fun searchList(query: String): List<UserSearchEntity> = withContext(coroutineContext) {
@@ -73,7 +73,7 @@ internal class SearchDAOImpl internal constructor(
 
     override suspend fun getKnownContactsExcludingAConversation(conversationId: ConversationIDEntity): List<UserSearchEntity> =
         withContext(coroutineContext) {
-            searchQueries.getAllConnectedUsersNotInConversation(
+            searchQueries.selectAllConnectedUsersNotInConversation(
                 conversationId,
                 mapper = UserSearchEntityMapper::map
             ).executeAsList()

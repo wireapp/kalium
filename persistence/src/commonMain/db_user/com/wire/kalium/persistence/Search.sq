@@ -1,4 +1,4 @@
-getAllConnectedUsers:
+selectAllConnectedUsers:
 SELECT qualified_id, name, complete_asset_id, preview_asset_id, user_type, connection_status
     FROM User
     WHERE connection_status = 'ACCEPTED' AND
@@ -13,7 +13,7 @@ SELECT qualified_id, name, complete_asset_id, preview_asset_id, user_type, conne
     deleted = 0 AND
     name LIKE ('%' || :searchQuery || '%');
 
-getAllConnectedUsersNotInConversation:
+selectAllConnectedUsersNotInConversation:
 SELECT qualified_id, name, complete_asset_id, preview_asset_id, user_type, connection_status
     FROM User
     WHERE connection_status = 'ACCEPTED' AND
