@@ -46,9 +46,6 @@ import com.wire.kalium.network.api.base.model.UserProfileDTO
 import com.wire.kalium.persistence.dao.PartialUserEntity
 import com.wire.kalium.persistence.dao.SearchDAO
 import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.persistence.dao.UserDetailsEntity
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 
 internal interface SearchUserRepository {
     suspend fun searchUserRemoteDirectory(

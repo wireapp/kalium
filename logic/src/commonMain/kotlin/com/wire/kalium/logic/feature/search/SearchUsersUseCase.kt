@@ -77,9 +77,8 @@ class SearchUsersUseCase internal constructor(
                             connectionStatus = it.connectionStatus
                         )
                     }
-                }.getOrElse(
-                    emptyList()
-                ).associateBy { it.id }
+                }.getOrElse(emptyList())
+                .associateBy { it.id }
                 .toMutableMap()
         }
 
