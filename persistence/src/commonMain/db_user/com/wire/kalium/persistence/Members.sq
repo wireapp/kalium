@@ -16,6 +16,12 @@ insertMember:
 INSERT OR IGNORE INTO Member(user, conversation, role)
 VALUES (?, ?, ?);
 
+insertOrUpdateMember:
+INSERT INTO Member(user, conversation, role)
+VALUES (?, ?, ?)
+ON CONFLICT(user, conversation) DO UPDATE SET
+role = excluded.role;
+
 deleteMember:
 DELETE FROM Member WHERE conversation = ? AND user = ?;
 
