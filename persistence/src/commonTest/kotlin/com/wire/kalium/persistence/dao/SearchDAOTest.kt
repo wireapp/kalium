@@ -36,7 +36,6 @@ class SearchDAOTest : BaseDatabaseTest() {
     private lateinit var memberDAO: MemberDAO
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
-
     @BeforeTest
     fun setUp() {
         deleteDatabase(selfUserId)
