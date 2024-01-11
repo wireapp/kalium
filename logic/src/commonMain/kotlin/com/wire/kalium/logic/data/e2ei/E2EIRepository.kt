@@ -87,7 +87,7 @@ class E2EIRepositoryImpl(
 
     override suspend fun loadACMEDirectories(): Either<CoreFailure, AcmeDirectory> = userConfigRepository.getE2EISettings().flatMap {
         wrapApiRequest {
-            acmeApi.getACMEDirectories(TEMP_ACME_DISCOVER_URL)
+            acmeApi.getACMEDirectories(it.discoverUrl)
         }.flatMap { directories ->
             e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
                 wrapE2EIRequest {
@@ -241,10 +241,5 @@ class E2EIRepositoryImpl(
 
     override suspend fun nukeE2EIClient() {
         e2EIClientProvider.nuke()
-    }
-
-    companion object {
-        // todo: remove after testing e2ei
-        const val TEMP_ACME_DISCOVER_URL = "https://acme.elna.wire.link/acme/defaultteams"
     }
 }
