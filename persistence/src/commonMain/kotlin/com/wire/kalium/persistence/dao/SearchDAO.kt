@@ -68,7 +68,7 @@ internal class SearchDAOImpl internal constructor(
     }
 
     override suspend fun searchList(query: String): List<UserSearchEntity> = withContext(coroutineContext) {
-        searchQueries.searchMyName(query, mapper = UserSearchEntityMapper::map).executeAsList()
+        searchQueries.searchByName(query, mapper = UserSearchEntityMapper::map).executeAsList()
     }
 
     override suspend fun getKnownContactsExcludingAConversation(conversationId: ConversationIDEntity): List<UserSearchEntity> =

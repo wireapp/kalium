@@ -74,7 +74,7 @@ WHERE qualified_id = ?;
 SELECT changes();
 }
 
-updateUsersList:
+updatePartialUserInformation:
 UPDATE User
 SET
 name = coalesce(:name, name),

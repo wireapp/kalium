@@ -205,10 +205,10 @@ class UserDAOImpl internal constructor(
         ).executeAsOne() > 0
     }
 
-    override suspend fun updateUser(update: List<PartialUserEntity>) = withContext(queriesContext) {
+    override suspend fun updateUser(users: List<PartialUserEntity>) = withContext(queriesContext) {
         userQueries.transaction {
-            for (user: PartialUserEntity in update) {
-                userQueries.updateUsersList(
+            for (user: PartialUserEntity in users) {
+                userQueries.updatePartialUserInformation(
                     name = user.name,
                     handle = user.handle,
                     email = user.email,

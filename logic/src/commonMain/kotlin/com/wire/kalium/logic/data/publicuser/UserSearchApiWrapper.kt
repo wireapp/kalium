@@ -47,7 +47,7 @@ internal interface UserSearchApiWrapper {
 internal class UserSearchApiWrapperImpl(
     private val userSearchApi: UserSearchApi,
     private val memberDAO: MemberDAO,
-    private val selfUserid: UserId
+    private val selfUserId: UserId
 ) : UserSearchApiWrapper {
 
     override suspend fun search(
@@ -98,7 +98,7 @@ internal class UserSearchApiWrapperImpl(
             // care only about isConversationMember value, since it is going to be
             // !(isConversationMember || 0) making it a operation based only on negated isConversationMember value
             // since !(0 || 0) = 1 , !(1 || 0) = 0
-            val isSelfUser: Boolean = if (searchUsersOptions.selfUserIncluded) false else selfUserid == domainId
+            val isSelfUser: Boolean = if (searchUsersOptions.selfUserIncluded) false else selfUserId == domainId
 
             // negate it because that is exactly what we do not want to have in filter results
             !(isConversationMember || isSelfUser)

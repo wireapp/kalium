@@ -65,19 +65,18 @@ class SearchUsersUseCase internal constructor(
                         ?: ConversationMemberExcludedOptions.None,
                     selfUserIncluded = false
                 )
-            )
-                .map { userSearchResult ->
-                    userSearchResult.result.map {
-                        UserSearchDetails(
-                            id = it.id,
-                            name = it.name,
-                            completeAssetId = it.completePicture,
-                            previewAssetId = it.previewPicture,
-                            type = it.userType,
-                            connectionStatus = it.connectionStatus
-                        )
-                    }
-                }.getOrElse(emptyList())
+            ).map { userSearchResult ->
+                userSearchResult.result.map {
+                    UserSearchDetails(
+                        id = it.id,
+                        name = it.name,
+                        completeAssetId = it.completePicture,
+                        previewAssetId = it.previewPicture,
+                        type = it.userType,
+                        connectionStatus = it.connectionStatus
+                    )
+                }
+            }.getOrElse(emptyList())
                 .associateBy { it.id }
                 .toMutableMap()
         }
@@ -92,23 +91,27 @@ class SearchUsersUseCase internal constructor(
         val remoteResults = remoteResultsDeferred.await()
         val localSearchResult = localSearchResultDeferred.await()
 
-        // a list of updated user ids so it can be deleted from the remote results
-        val updatedUser = mutableListOf<UserId>()
+        resolveLocalAndRemoteResult(localSearchResult, remoteResults)
+    }
 
-        remoteResults.forEach { (userId, remoteUser) ->
-            if (localSearchResult.contains(userId)) {
-                localSearchResult[userId] = remoteUser
+    private inline fun resolveLocalAndRemoteResult(
+        localResult: MutableMap<UserId, UserSearchDetails>,
+        remoteSearch: MutableMap<UserId, UserSearchDetails>
+    ): Result {
+        val updatedUser = mutableListOf<UserId>()
+        remoteSearch.forEach { (userId, remoteUser) ->
+            if (localResult.contains(userId)) {
+                localResult[userId] = remoteUser
                 updatedUser.add(userId)
             }
         }
-
         updatedUser.forEach { userId ->
-            remoteResults.remove(userId)
+            remoteSearch.remove(userId)
         }
 
-        Result(
-            connected = localSearchResult.values.toList(),
-            notConnected = remoteResults.values.toList()
+        return Result(
+            connected = localResult.values.toList(),
+            notConnected = remoteSearch.values.toList()
         )
     }
 

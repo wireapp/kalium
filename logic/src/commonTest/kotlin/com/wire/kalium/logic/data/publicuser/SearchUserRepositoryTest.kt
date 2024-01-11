@@ -293,7 +293,7 @@ class SearchUserRepositoryTest {
                 searchDAO,
                 userDetailsApi,
                 userSearchApiWrapper,
-                selfUserid = TestUser.SELF.id,
+                selfUserId = TestUser.SELF.id,
                 selfTeamIdProvider
             )
         }

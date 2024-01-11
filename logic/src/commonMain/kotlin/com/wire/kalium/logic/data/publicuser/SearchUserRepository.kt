@@ -87,7 +87,7 @@ internal class SearchUserRepositoryImpl(
     private val searchDAO: SearchDAO,
     private val userDetailsApi: UserDetailsApi,
     private val userSearchAPiWrapper: UserSearchApiWrapper,
-    private val selfUserid: UserId,
+    private val selfUserId: UserId,
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper(),
@@ -117,7 +117,7 @@ internal class SearchUserRepositoryImpl(
                 }.map { userProfileDTOList ->
                     UserSearchResult(
                         userProfileDTOList.usersFound.map { userProfileDTO ->
-                            userMapper.fromUserProfileDtoToOtherUser(userProfileDTO, selfUserid, selfTeamId)
+                            userMapper.fromUserProfileDtoToOtherUser(userProfileDTO, selfUserId, selfTeamId)
                         }
                     )
                 }

@@ -216,7 +216,7 @@ interface UserDAO {
      */
     suspend fun updateUser(update: PartialUserEntity): Boolean
 
-    suspend fun updateUser(update: List<PartialUserEntity>)
+    suspend fun updateUser(users: List<PartialUserEntity>)
 
     /**
      * This will update all columns (or insert a new record), except:
