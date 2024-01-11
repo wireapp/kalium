@@ -20,23 +20,30 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.conversation.MLSConversationsVerificationStatusesHandler
 import com.wire.kalium.logic.functional.map
 
+/**
+ * Use case to check if the CRL is expired and if so, register the external certificates
+ */
 internal interface CheckRevocationListUseCase {
-    suspend operator fun invoke(domain: String = "fakeDomain")
+    suspend operator fun invoke()
 }
 
 internal class CheckRevocationListUseCaseImpl(
+    private val selfUserId: UserId,
     private val e2EIRepository: E2EIRepository,
     private val mlsClient: MLSClient,
-    private val userConfigRepository: UserConfigRepository
+    private val userConfigRepository: UserConfigRepository,
+    private val mLSConversationsVerificationStatusesHandler: MLSConversationsVerificationStatusesHandler
 ) : CheckRevocationListUseCase {
-    override suspend fun invoke(domain: String) {
-        e2EIRepository.getCRL().map {
+    override suspend fun invoke() {
+        e2EIRepository.getCurrentClientDomainCRL().map {
             mlsClient.registerExternalCertificates(it).run {
-                userConfigRepository.setCRLExpirationTime(domain, expirationTimestamp)
+                userConfigRepository.setCRLExpirationTime(selfUserId.domain, expirationTimestamp)
                 if (isThereAnyChanges) {
-                    // Do we need to update conversations manullay ? we are observing these cons  using MLSConversationsVerificationStatusesHandler
+                    mLSConversationsVerificationStatusesHandler()
                 }
             }
         }

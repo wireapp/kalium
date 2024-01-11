@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.cryptography
 
+// TODO: to remove when API e2ei_register_crl is ready, it's just used as fake data for tests
 data class RegisterCRLResult(
     val isThereAnyChanges: Boolean = false,
     val expirationTimestamp: Long = 0
