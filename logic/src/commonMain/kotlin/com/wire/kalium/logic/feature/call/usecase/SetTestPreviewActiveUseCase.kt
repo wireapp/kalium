@@ -18,8 +18,6 @@
 
 package com.wire.kalium.logic.feature.call.usecase
 
-import com.wire.kalium.logic.data.call.CallRepository
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
 
 class SetTestPreviewActiveUseCase internal constructor(
@@ -32,4 +30,3 @@ class SetTestPreviewActiveUseCase internal constructor(
         callManager.value.setTestPreviewActive(active)
     }
 }
-

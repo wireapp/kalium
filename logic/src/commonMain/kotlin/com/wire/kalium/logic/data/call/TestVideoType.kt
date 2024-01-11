@@ -28,4 +28,3 @@ enum class TestVideoType {
     PLATFORM,
     FAKE
 }
-

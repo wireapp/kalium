@@ -372,7 +372,7 @@ class CallManagerImpl internal constructor(
 
         when (testVideoType) {
             TestVideoType.NONE -> kcall_close()
-            TestVideoType.PLATFORM ->  {
+            TestVideoType.PLATFORM -> {
                 kcall_init(0)
                 kcall_set_local_user(selfUserId, selfClientId)
                 kcall_set_wuser(handle)
@@ -401,7 +401,7 @@ class CallManagerImpl internal constructor(
             kcall_set_user_vidstate(
                 federatedIdMapper.parseToFederatedId(conversationId),
                 federatedIdMapper.parseToFederatedId(part.id),
-                clientid = part.clientId, 
+                clientid = part.clientId,
                 videoState
             )
         }

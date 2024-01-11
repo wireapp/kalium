@@ -30,9 +30,7 @@ import com.wire.kalium.cli.getConversations
 import com.wire.kalium.cli.listConversations
 import com.wire.kalium.cli.selectConversation
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.feature.UserSessionScope
-import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.TestVideoType
 import com.wire.kalium.logic.data.call.VideoState
@@ -214,7 +212,7 @@ class ConsoleCommand : CliktCommand(name = "console") {
 
         userSession.calls.updateVideoState(
             conversationId = currentConversation.id,
-            videoState);
+            videoState)
 
         return 0
     }
