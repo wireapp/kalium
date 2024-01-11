@@ -18,7 +18,9 @@
 package com.wire.kalium.logic.feature.search
 
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.publicuser.ConversationMemberExcludedOptions
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
+import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
 import com.wire.kalium.logic.data.publicuser.model.UserSearchDetails
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.getOrElse
@@ -54,7 +56,16 @@ class SearchUsersUseCase internal constructor(
         customDomain: String?
     ): Result = coroutineScope {
         val remoteResultsDeferred = async {
-            searchUserRepository.searchUserRemoteDirectory(searchQuery, customDomain ?: selfUserId.domain, MAX_SEARCH_RESULTS)
+            searchUserRepository.searchUserRemoteDirectory(
+                searchQuery,
+                customDomain ?: selfUserId.domain,
+                MAX_SEARCH_RESULTS,
+                SearchUsersOptions(
+                    conversationExcluded = excludingConversation?.let { ConversationMemberExcludedOptions.ConversationExcluded(it) }
+                        ?: ConversationMemberExcludedOptions.None,
+                    selfUserIncluded = false
+                )
+            )
                 .map { userSearchResult ->
                     userSearchResult.result.map {
                         UserSearchDetails(

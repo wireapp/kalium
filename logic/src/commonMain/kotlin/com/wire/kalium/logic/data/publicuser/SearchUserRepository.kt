@@ -173,14 +173,14 @@ internal class SearchUserRepositoryImpl(
         userProfileDTOList: List<UserProfileDTO>,
     ) {
         userProfileDTOList
-            .map { teamMembers ->
+            .map { user ->
                 PartialUserEntity(
-                    id = teamMembers.id.toDao(),
-                    name = teamMembers.name,
-                    handle = teamMembers.handle,
-                    email = teamMembers.email,
-                    accentId = teamMembers.accentId,
-                    supportedProtocols = teamMembers.supportedProtocols?.toDao()
+                    id = user.id.toDao(),
+                    name = user.name,
+                    handle = user.handle,
+                    email = user.email,
+                    accentId = user.accentId,
+                    supportedProtocols = user.supportedProtocols?.toDao()
                 )
             }.also {
                 if (it.isNotEmpty()) {
@@ -188,20 +188,4 @@ internal class SearchUserRepositoryImpl(
                 }
             }
     }
-
-    private suspend fun handleSearchUsersOptions(
-        localSearchUserOptions: SearchUsersOptions,
-        excluded: suspend (conversationId: ConversationId) -> Flow<List<UserDetailsEntity>>,
-        default: suspend () -> Flow<List<UserDetailsEntity>>
-    ): Flow<UserSearchResult> {
-        val listFlow = when (val searchOptions = localSearchUserOptions.conversationExcluded) {
-            ConversationMemberExcludedOptions.None -> default()
-            is ConversationMemberExcludedOptions.ConversationExcluded -> excluded(searchOptions.conversationId)
-        }
-
-        return listFlow.map {
-            UserSearchResult(it.map(userMapper::fromUserDetailsEntityToOtherUser))
-        }
-    }
-
 }

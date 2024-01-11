@@ -67,7 +67,7 @@ class SearchUserRepositoryTest {
             }
 
         // when
-        val actual = searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN, null, SearchUsersOptions.Default)
 
         // then
         assertIs<Either.Left<NetworkFailure>>(actual)
@@ -83,7 +83,7 @@ class SearchUserRepositoryTest {
             }
 
         // when
-        searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN)
+        searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN, null, SearchUsersOptions.Default)
 
         // then
         verify(arrangement.userSearchApiWrapper)
@@ -102,7 +102,7 @@ class SearchUserRepositoryTest {
             }
 
         // when
-        searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN)
+        searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN, null, SearchUsersOptions.Default)
         // then
         verify(arrangement.userDetailsApi)
             .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
@@ -121,7 +121,7 @@ class SearchUserRepositoryTest {
             }
 
         // when
-        val actual = searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN, null, SearchUsersOptions.Default)
 
         // then
         assertIs<Either.Left<NetworkFailure>>(actual)
@@ -139,7 +139,7 @@ class SearchUserRepositoryTest {
                 }
 
             // when
-            searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN)
+            searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN, null, SearchUsersOptions.Default)
 
             // then
             verify(arrangement.userSearchApiWrapper)
@@ -165,7 +165,7 @@ class SearchUserRepositoryTest {
             }
 
         // when
-        val actual = searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN, null, SearchUsersOptions.Default)
 
         // then
         assertIs<Either.Right<UserSearchResult>>(actual)
@@ -187,7 +187,7 @@ class SearchUserRepositoryTest {
                 result = emptyList()
             )
             // when
-            val actual = searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN)
+            val actual = searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN, null, SearchUsersOptions.Default)
 
             assertIs<Either.Right<UserSearchResult>>(actual)
             assertEquals(expectedResult, actual.value)
@@ -203,7 +203,7 @@ class SearchUserRepositoryTest {
             }
 
         // when
-        val actual = searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN, null, SearchUsersOptions.Default)
 
         // then
         assertIs<Either.Right<UserSearchResult>>(actual)
@@ -261,7 +261,7 @@ class SearchUserRepositoryTest {
             }
 
         // when
-        val actual = searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, selfUser.id.domain)
+        val actual = searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, selfUser.id.domain, null, SearchUsersOptions.Default)
 
         // then
         assertIs<Either.Right<UserSearchResult>>(actual)
