@@ -40,7 +40,7 @@ class ACMECertificatesSyncWorkerTest {
         advanceTimeBy(arrangement.syncInterval.inWholeMilliseconds + 10)
 
         verify(arrangement.e2eiRepository)
-            .suspendFunction(arrangement.e2eiRepository::fetchACMECertificates)
+            .suspendFunction(arrangement.e2eiRepository::fetchFederationCertificates)
             .wasInvoked(exactly = twice) // first on start and second after interval passed
 
         job.cancel()

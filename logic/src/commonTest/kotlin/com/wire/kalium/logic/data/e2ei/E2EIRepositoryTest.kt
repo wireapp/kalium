@@ -737,7 +737,7 @@ class E2EIRepositoryTest {
             .arrange()
 
         // When
-        val result = e2eiRepository.fetchACMECertificates()
+        val result = e2eiRepository.fetchFederationCertificates()
 
         // Then
         result.shouldFail()
@@ -770,7 +770,7 @@ class E2EIRepositoryTest {
             .arrange()
 
         // When
-        val result = e2eiRepository.fetchACMECertificates()
+        val result = e2eiRepository.fetchFederationCertificates()
 
         // Then
         result.shouldSucceed()

@@ -57,12 +57,14 @@ interface E2EIRepository {
         prevNonce: String,
         acmeChallenge: AcmeChallenge
     ): Either<CoreFailure, ChallengeResponse>
+
     suspend fun validateOIDCChallenge(
         idToken: String,
         refreshToken: String,
         prevNonce: String,
         acmeChallenge: AcmeChallenge
     ): Either<CoreFailure, ChallengeResponse>
+
     suspend fun setDPoPChallengeResponse(challengeResponse: ChallengeResponse): Either<CoreFailure, Unit>
     suspend fun setOIDCChallengeResponse(challengeResponse: ChallengeResponse): Either<CoreFailure, Unit>
     suspend fun finalize(location: String, prevNonce: String): Either<CoreFailure, Pair<ACMEResponse, String>>
@@ -71,7 +73,7 @@ interface E2EIRepository {
     suspend fun rotateKeysAndMigrateConversations(certificateChain: String): Either<CoreFailure, Unit>
     suspend fun getOAuthRefreshToken(): Either<CoreFailure, String?>
     suspend fun nukeE2EIClient()
-    suspend fun fetchACMECertificates(): Either<CoreFailure, Unit>
+    suspend fun fetchFederationCertificates(): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
@@ -227,9 +229,9 @@ class E2EIRepositoryImpl(
         Either.Right(e2EIClient.getOAuthRefreshToken())
     }
 
-    override suspend fun fetchACMECertificates(): Either<CoreFailure, Unit> = userConfigRepository.getE2EISettings().flatMap {
+    override suspend fun fetchFederationCertificates(): Either<CoreFailure, Unit> = userConfigRepository.getE2EISettings().flatMap {
         wrapApiRequest {
-            acmeApi.getACMEFederation(TEMP_ACME_DISCOVER_URL)
+            acmeApi.getACMEFederation(it.discoverUrl)
         }.flatMap { data ->
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {

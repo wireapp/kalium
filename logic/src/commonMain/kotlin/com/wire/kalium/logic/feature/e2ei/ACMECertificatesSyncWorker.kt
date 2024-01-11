@@ -37,7 +37,7 @@ internal class ACMECertificatesSyncWorkerImpl(
     override suspend fun execute() {
         intervalFlow(syncInterval.inWholeMilliseconds)
             .collect {
-                e2eiRepository.fetchACMECertificates()
+                e2eiRepository.fetchFederationCertificates()
             }
     }
 

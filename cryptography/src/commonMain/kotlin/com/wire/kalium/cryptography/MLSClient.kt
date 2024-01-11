@@ -373,7 +373,7 @@ interface MLSClient {
     suspend fun getUserIdentities(groupId: MLSGroupId, users: List<CryptoQualifiedID>): Map<String, List<WireIdentity>>
 
     /**
-     * Register ACME certificates
+     * Register CA certificates for E2EI
      */
     suspend fun registerExternalCertificates(data: ByteArray)
 }

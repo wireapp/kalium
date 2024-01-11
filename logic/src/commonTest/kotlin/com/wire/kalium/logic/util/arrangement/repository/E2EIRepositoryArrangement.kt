@@ -35,7 +35,7 @@ internal class E2EIRepositoryArrangementImpl : E2EIRepositoryArrangement {
 
     override fun withFetchACMECertificates() {
         given(e2eiRepository)
-            .suspendFunction(e2eiRepository::fetchACMECertificates)
+            .suspendFunction(e2eiRepository::fetchFederationCertificates)
             .whenInvoked()
             .thenReturn(Either.Right(Unit))
     }
