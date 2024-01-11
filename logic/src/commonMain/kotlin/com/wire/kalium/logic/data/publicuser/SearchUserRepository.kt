@@ -43,7 +43,6 @@ import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserReques
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
 import com.wire.kalium.network.api.base.model.UserProfileDTO
-import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.PartialUserEntity
 import com.wire.kalium.persistence.dao.SearchDAO
 import com.wire.kalium.persistence.dao.UserDAO
@@ -52,24 +51,11 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 internal interface SearchUserRepository {
-
-    @Deprecated("to be deleted")
-    suspend fun searchKnownUsersByNameOrHandleOrEmail(
-        searchQuery: String,
-        searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default
-    ): Flow<UserSearchResult>
-
-    @Deprecated("to be deleted")
-    suspend fun searchKnownUsersByHandle(
-        handle: String,
-        searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default
-    ): Flow<UserSearchResult>
-
-    suspend fun searchUserDirectory(
+    suspend fun searchUserRemoteDirectory(
         searchQuery: String,
         domain: String,
-        maxResultSize: Int? = null,
-        searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default
+        maxResultSize: Int?,
+        searchUsersOptions: SearchUsersOptions
     ): Either<CoreFailure, UserSearchResult>
 
     suspend fun getKnownContacts(excludeConversation: ConversationId?): Either<StorageFailure, List<UserSearchDetails>>
@@ -110,48 +96,7 @@ internal class SearchUserRepositoryImpl(
     private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper(),
     private val connectionStateMapper: ConnectionStateMapper = MapperProvider.connectionStateMapper()
 ) : SearchUserRepository {
-
-    override suspend fun searchKnownUsersByNameOrHandleOrEmail(
-        searchQuery: String,
-        searchUsersOptions: SearchUsersOptions
-    ): Flow<UserSearchResult> =
-        handleSearchUsersOptions(
-            searchUsersOptions,
-            excluded = { conversationId ->
-                userDAO.getUsersDetailsNotInConversationByNameOrHandleOrEmail(
-                    conversationId = conversationId.toDao(),
-                    searchQuery = searchQuery
-                )
-            },
-            default = {
-                userDAO.getUserDetailsByNameOrHandleOrEmailAndConnectionStates(
-                    searchQuery = searchQuery,
-                    connectionStates = listOf(ConnectionEntity.State.ACCEPTED, ConnectionEntity.State.BLOCKED)
-                )
-            }
-        )
-
-    override suspend fun searchKnownUsersByHandle(
-        handle: String,
-        searchUsersOptions: SearchUsersOptions
-    ): Flow<UserSearchResult> =
-        handleSearchUsersOptions(
-            searchUsersOptions,
-            excluded = { conversationId ->
-                userDAO.getUsersDetailsNotInConversationByHandle(
-                    conversationId = conversationId.toDao(),
-                    handle = handle
-                )
-            },
-            default = {
-                userDAO.getUserDetailsByHandleAndConnectionStates(
-                    handle = handle,
-                    connectionStates = listOf(ConnectionEntity.State.ACCEPTED, ConnectionEntity.State.BLOCKED)
-                )
-            }
-        )
-
-    override suspend fun searchUserDirectory(
+    override suspend fun searchUserRemoteDirectory(
         searchQuery: String,
         domain: String,
         maxResultSize: Int?,

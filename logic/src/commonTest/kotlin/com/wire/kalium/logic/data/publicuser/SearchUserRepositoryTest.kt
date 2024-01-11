@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestUser
@@ -40,7 +39,6 @@ import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDetailsEntity
 import io.mockative.KFunction1
 import io.mockative.Mock
-import io.mockative.Times
 import io.mockative.any
 import io.mockative.anything
 import io.mockative.classOf
@@ -69,7 +67,7 @@ class SearchUserRepositoryTest {
             }
 
         // when
-        val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN)
 
         // then
         assertIs<Either.Left<NetworkFailure>>(actual)
@@ -85,7 +83,7 @@ class SearchUserRepositoryTest {
             }
 
         // when
-        searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
+        searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN)
 
         // then
         verify(arrangement.userSearchApiWrapper)
@@ -104,7 +102,7 @@ class SearchUserRepositoryTest {
             }
 
         // when
-        searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
+        searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN)
         // then
         verify(arrangement.userDetailsApi)
             .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
@@ -123,7 +121,7 @@ class SearchUserRepositoryTest {
             }
 
         // when
-        val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN)
 
         // then
         assertIs<Either.Left<NetworkFailure>>(actual)
@@ -141,7 +139,7 @@ class SearchUserRepositoryTest {
                 }
 
             // when
-            searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
+            searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN)
 
             // then
             verify(arrangement.userSearchApiWrapper)
@@ -167,7 +165,7 @@ class SearchUserRepositoryTest {
             }
 
         // when
-        val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN)
 
         // then
         assertIs<Either.Right<UserSearchResult>>(actual)
@@ -189,74 +187,11 @@ class SearchUserRepositoryTest {
                 result = emptyList()
             )
             // when
-            val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
+            val actual = searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN)
 
             assertIs<Either.Right<UserSearchResult>>(actual)
             assertEquals(expectedResult, actual.value)
         }
-
-    @Test
-    fun givenASearchWithConversationExcludedOption_WhenSearchingUsersByNameOrHandleOrEmail_ThenSearchForUsersNotInTheConversation() =
-        runTest {
-            // given
-            val (arrangement, searchUserRepository) = Arrangement()
-                .withGetUsersDetailsNotInConversationByNameOrHandleOrEmailResult(flowOf(listOf()))
-                .withGetUserDetailsByNameOrHandleOrEmailAndConnectionStatesResult(flowOf(listOf()))
-                .arrange()
-
-            // when
-            searchUserRepository.searchKnownUsersByNameOrHandleOrEmail(
-                searchQuery = "someQuery",
-                searchUsersOptions = SearchUsersOptions(
-                    conversationExcluded = ConversationMemberExcludedOptions.ConversationExcluded(
-                        ConversationId("someValue", "someDomain"),
-                    ),
-                    selfUserIncluded = true
-                )
-            )
-
-            // then
-            verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::getUserDetailsByNameOrHandleOrEmailAndConnectionStates)
-                .with(anything(), anything())
-                .wasNotInvoked()
-
-            verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::getUsersDetailsNotInConversationByNameOrHandleOrEmail)
-                .with(anything(), anything())
-                .wasInvoked(Times(1))
-        }
-
-    @Test
-    fun givenASearchWithConversationExcludedOption_WhenSearchingUsersByHandle_ThenSearchForUsersNotInTheConversation() = runTest {
-        // given
-        val (arrangement, searchUserRepository) = Arrangement()
-            .withGetUserDetailsByHandleAndConnectionStatesResult(flowOf(listOf()))
-            .withGetUsersDetailsNotInConversationByHandleResult(flowOf(listOf()))
-            .arrange()
-
-        // when
-        searchUserRepository.searchKnownUsersByHandle(
-            handle = "someQuery",
-            searchUsersOptions = SearchUsersOptions(
-                conversationExcluded = ConversationMemberExcludedOptions.ConversationExcluded(
-                    ConversationId("someValue", "someDomain")
-                ),
-                selfUserIncluded = true
-            )
-        )
-
-        // then
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::getUserDetailsByHandleAndConnectionStates)
-            .with(anything(), anything())
-            .wasNotInvoked()
-
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::getUsersDetailsNotInConversationByHandle)
-            .with(anything(), anything())
-            .wasInvoked(exactly = once)
-    }
 
     @Test
     fun givenContactSearchApiSuccessButListIsEmpty_whenSearchPublicContact_thenReturnEmptyListWithoutCallingUserDetailsApi() = runTest {
@@ -268,7 +203,7 @@ class SearchUserRepositoryTest {
             }
 
         // when
-        val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, TEST_DOMAIN)
+        val actual = searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, TEST_DOMAIN)
 
         // then
         assertIs<Either.Right<UserSearchResult>>(actual)
@@ -326,7 +261,7 @@ class SearchUserRepositoryTest {
             }
 
         // when
-        val actual = searchUserRepository.searchUserDirectory(TEST_QUERY, selfUser.id.domain)
+        val actual = searchUserRepository.searchUserRemoteDirectory(TEST_QUERY, selfUser.id.domain)
 
         // then
         assertIs<Either.Right<UserSearchResult>>(actual)

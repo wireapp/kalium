@@ -23,6 +23,8 @@ import com.wire.kalium.logic.data.publicuser.model.UserSearchDetails
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 
 /**
  * Use case for searching users.
@@ -50,15 +52,9 @@ class SearchUsersUseCase internal constructor(
         searchQuery: String,
         excludingConversation: ConversationId?,
         customDomain: String?
-    ): Result {
-        val localSearchResult =
-            searchUserRepository.searchLocalByName(searchQuery, excludingConversation)
-                .getOrElse(emptyList())
-                .associateBy { it.id }
-                .toMutableMap()
-
-        val remoteResults =
-            searchUserRepository.searchUserDirectory(searchQuery, customDomain ?: selfUserId.domain, MAX_SEARCH_RESULTS)
+    ): Result = coroutineScope {
+        val remoteResultsDeferred = async {
+            searchUserRepository.searchUserRemoteDirectory(searchQuery, customDomain ?: selfUserId.domain, MAX_SEARCH_RESULTS)
                 .map { userSearchResult ->
                     userSearchResult.result.map {
                         UserSearchDetails(
@@ -74,20 +70,33 @@ class SearchUsersUseCase internal constructor(
                     emptyList()
                 ).associateBy { it.id }
                 .toMutableMap()
+        }
 
-        localSearchResult.keys.forEach { userId ->
-            remoteResults[userId]?.let { remoteUser ->
+        val localSearchResultDeferred = async {
+            searchUserRepository.searchLocalByName(searchQuery, excludingConversation)
+                .getOrElse(emptyList())
+                .associateBy { it.id }
+                .toMutableMap()
+        }
+
+        val remoteResults = remoteResultsDeferred.await()
+        val localSearchResult = localSearchResultDeferred.await()
+
+        // a list of updated user ids so it can be deleted from the remote results
+        val updatedUser = mutableListOf<UserId>()
+
+        remoteResults.forEach { (userId, remoteUser) ->
+            if (localSearchResult.contains(userId)) {
                 localSearchResult[userId] = remoteUser
+                updatedUser.add(userId)
             }
         }
 
-        val updatedUserIds = localSearchResult.keys.intersect(remoteResults.keys)
-
-        updatedUserIds.forEach { userId ->
+        updatedUser.forEach { userId ->
             remoteResults.remove(userId)
         }
 
-        return Result(
+        Result(
             connected = localSearchResult.values.toList(),
             notConnected = remoteResults.values.toList()
         )
