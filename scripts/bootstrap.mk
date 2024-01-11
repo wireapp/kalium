@@ -3,7 +3,7 @@ SHELL := /bin/bash
 CRYPTOBOX_C_VERSION := v1.1.3
 CRYPTOBOX4J_VERSION := 1.2.2
 LIBSODIUM_VERSION := 1.0.18-RELEASE
-AVS_VERSION := 8.2.16
+AVS_VERSION := 9.7.1
 
 ifeq ($(JAVA_HOME),)
 	export JAVA_HOME := $(shell /usr/libexec/java_home)
