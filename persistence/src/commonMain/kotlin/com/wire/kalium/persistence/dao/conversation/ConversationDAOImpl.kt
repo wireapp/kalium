@@ -65,6 +65,19 @@ internal class ConversationDAOImpl internal constructor(
                 .executeAsOneOrNull()
         }
 
+    override suspend fun getMLSGroupIdByUserId(userId: UserIDEntity): String? =
+        withContext(coroutineContext) {
+            conversationQueries.getMLSGroupIdByUserId(userId)
+                .executeAsOneOrNull()
+        }
+
+    override suspend fun getMLSGroupIdByConversationId(conversationId: QualifiedIDEntity): String? =
+        withContext(coroutineContext) {
+            conversationQueries.getMLSGroupIdByConversationId(conversationId)
+                .executeAsOneOrNull()
+                ?.mls_group_id
+        }
+
     override suspend fun insertConversation(conversationEntity: ConversationEntity) = withContext(coroutineContext) {
         nonSuspendingInsertConversation(conversationEntity)
     }
