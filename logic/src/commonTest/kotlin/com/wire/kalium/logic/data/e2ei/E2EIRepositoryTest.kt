@@ -987,7 +987,7 @@ class E2EIRepositoryTest {
             given(mlsClient)
                 .suspendFunction(mlsClient::registerExternalCertificates)
                 .whenInvokedWith(any())
-                .thenReturn(Unit)
+                .thenReturn(RegisterCRLResult())
         }
 
         @Mock

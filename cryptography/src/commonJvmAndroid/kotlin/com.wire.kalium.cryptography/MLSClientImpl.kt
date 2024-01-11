@@ -295,9 +295,8 @@ class MLSClientImpl(
         }
     }
 
-    override suspend fun registerExternalCertificates(data: ByteArray) {
-        // TODO
-    }
+    // just passing some fake data, for testing purposes
+    override suspend fun registerExternalCertificates(data: ByteArray) = RegisterCRLResult()
 
     companion object {
         fun toUByteList(value: ByteArray): List<UByte> = value.asUByteArray().asList()

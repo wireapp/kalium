@@ -74,6 +74,7 @@ interface E2EIRepository {
     suspend fun getOAuthRefreshToken(): Either<CoreFailure, String?>
     suspend fun nukeE2EIClient()
     suspend fun fetchFederationCertificates(): Either<CoreFailure, Unit>
+    suspend fun getCRL(): Either<CoreFailure, ByteArray>
 }
 
 @Suppress("LongParameterList")
@@ -236,6 +237,7 @@ class E2EIRepositoryImpl(
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
                     mlsClient.registerExternalCertificates(data)
+                    Unit
                 }
             }
         }
@@ -244,4 +246,11 @@ class E2EIRepositoryImpl(
     override suspend fun nukeE2EIClient() {
         e2EIClientProvider.nuke()
     }
+
+    override suspend fun getCRL(): Either<CoreFailure, ByteArray> =
+        userConfigRepository.getE2EISettings().flatMap {
+            wrapApiRequest {
+                acmeApi.getACMEFederation(it.discoverUrl)
+            }
+        }
 }

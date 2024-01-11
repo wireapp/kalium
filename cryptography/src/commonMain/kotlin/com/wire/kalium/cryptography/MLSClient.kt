@@ -375,5 +375,5 @@ interface MLSClient {
     /**
      * Register CA certificates for E2EI
      */
-    suspend fun registerExternalCertificates(data: ByteArray)
+    suspend fun registerExternalCertificates(data: ByteArray): RegisterCRLResult
 }

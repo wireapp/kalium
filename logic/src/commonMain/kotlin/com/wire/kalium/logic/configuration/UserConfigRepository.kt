@@ -120,6 +120,8 @@ interface UserConfigRepository {
     suspend fun deleteLegalHoldRequest(): Either<StorageFailure, Unit>
     suspend fun setLegalHoldChangeNotified(isNotified: Boolean): Either<StorageFailure, Unit>
     suspend fun observeLegalHoldChangeNotified(): Flow<Either<StorageFailure, Boolean>>
+    suspend fun setCRLExpirationTime(domain: String, timestamp: Long)
+    suspend fun getCRLExpirationTime(domain: String): Long?
 }
 
 @Suppress("TooManyFunctions")
@@ -426,4 +428,11 @@ internal class UserConfigDataSource internal constructor(
 
     override suspend fun observeLegalHoldChangeNotified(): Flow<Either<StorageFailure, Boolean>> =
         userConfigDAO.observeLegalHoldChangeNotified().wrapStorageRequest()
+
+    override suspend fun setCRLExpirationTime(domain: String, timestamp: Long) {
+        userConfigDAO.setCRLExpirationTime(domain, timestamp)
+    }
+
+    override suspend fun getCRLExpirationTime(domain: String): Long? =
+        userConfigDAO.getCRLExpirationTime(domain)
 }
