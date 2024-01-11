@@ -38,7 +38,7 @@ private object UserSearchEntityMapper {
         complete_asset_id: QualifiedIDEntity?,
         preview_asset_id: QualifiedIDEntity?,
         user_type: UserTypeEntity,
-        connection_strate: ConnectionEntity.State
+        connection_state: ConnectionEntity.State
     ): UserSearchEntity {
         return UserSearchEntity(
             qualified_id,
@@ -46,9 +46,8 @@ private object UserSearchEntityMapper {
             completeAssetId = complete_asset_id,
             previewAssetId = preview_asset_id,
             user_type,
-            connectionStatus = connection_strate
-        )
-    }
+            connectionStatus = connection_state
+        )    }
 }
 
 interface SearchDAO {

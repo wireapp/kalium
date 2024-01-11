@@ -19,29 +19,42 @@
 package com.wire.kalium.logic.data.publicuser
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.publicuser.model.UserSearchDetails
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
+import com.wire.kalium.logic.data.user.ConnectionState
+import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.USER_PROFILE_DTO
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
+import com.wire.kalium.logic.util.arrangement.dao.SearchDAOArrangement
+import com.wire.kalium.logic.util.arrangement.dao.SearchDAOArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.SelfTeamIdProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.SelfTeamIdProviderArrangementImpl
+import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.search.ContactDTO
 import com.wire.kalium.network.api.base.authenticated.search.SearchPolicyDTO
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchResponse
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.utils.NetworkResponse
+import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.PartialUserEntity
-import com.wire.kalium.persistence.dao.SearchDAO
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDetailsEntity
+import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.UserSearchEntity
+import com.wire.kalium.persistence.dao.UserTypeEntity
 import io.mockative.KFunction1
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
 import io.mockative.classOf
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -273,16 +286,186 @@ class SearchUserRepositoryTest {
             .wasInvoked()
     }
 
-    internal class Arrangement : SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl() {
+    @Test
+    fun givenNotExcludedConversation_whenCallingGetKnownContacts_thenTheCorrectDAOFunctionIsCalled() = runTest {
+        // given
+        val searchResult = listOf(
+            UserSearchEntity(
+                id = UserIDEntity("id", "domain"),
+                name = "name",
+                completeAssetId = null,
+                previewAssetId = null,
+                connectionStatus = ConnectionEntity.State.ACCEPTED,
+                type = UserTypeEntity.STANDARD
+            )
+        )
+
+        val expected = searchResult.map {
+            UserSearchDetails(
+                id = it.id.toModel(),
+                name = it.name,
+                completeAssetId = it.completeAssetId?.toModel(),
+                previewAssetId = it.previewAssetId?.toModel(),
+                type = UserType.INTERNAL,
+                connectionStatus = ConnectionState.ACCEPTED
+            )
+        }
+        val (arrangement, searchUserRepository) = Arrangement()
+            .arrange {
+                withTeamId(Either.Right(TestUser.SELF.teamId))
+                withGetKnownContacts(searchResult)
+            }
+
+        // when
+        searchUserRepository.getKnownContacts(null).shouldSucceed {
+            assertEquals(expected, it)
+        }
+
+        // then
+        verify(arrangement.searchDAO)
+            .suspendFunction(arrangement.searchDAO::getKnownContacts)
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenExcludedConversation_whenCallingGetKnownContacts_thenTheCorrectDAOFunctionIsCalled() = runTest {
+        // given
+        val conversationId = ConversationId("conversationId", "domain")
+        val searchResult = listOf(
+            UserSearchEntity(
+                id = UserIDEntity("id", "domain"),
+                name = "name",
+                completeAssetId = null,
+                previewAssetId = null,
+                connectionStatus = ConnectionEntity.State.ACCEPTED,
+                type = UserTypeEntity.STANDARD
+            )
+        )
+
+        val expected = searchResult.map {
+            UserSearchDetails(
+                id = it.id.toModel(),
+                name = it.name,
+                completeAssetId = it.completeAssetId?.toModel(),
+                previewAssetId = it.previewAssetId?.toModel(),
+                type = UserType.INTERNAL,
+                connectionStatus = ConnectionState.ACCEPTED
+            )
+        }
+
+        val (arrangement, searchUserRepository) = Arrangement()
+            .arrange {
+                withTeamId(Either.Right(TestUser.SELF.teamId))
+                withGetKnownContactsExcludingAConversation(searchResult)
+            }
+
+        // when
+        searchUserRepository.getKnownContacts(conversationId).shouldSucceed {
+            assertEquals(expected, it)
+        }
+
+        // then
+        verify(arrangement.searchDAO)
+            .suspendFunction(arrangement.searchDAO::getKnownContactsExcludingAConversation)
+            .with(eq(conversationId.toDao()))
+            .wasInvoked(exactly = once)
+    }
+
+//     -------
+    @Test
+    fun givenNotExcludedConversation_whenCallingSearchLocalByName_thenTheCorrectDAOFunctionIsCalled() = runTest {
+        // given
+        val searchResult = listOf(
+            UserSearchEntity(
+                id = UserIDEntity("id", "domain"),
+                name = "name",
+                completeAssetId = null,
+                previewAssetId = null,
+                connectionStatus = ConnectionEntity.State.ACCEPTED,
+                type = UserTypeEntity.STANDARD
+            )
+        )
+
+        val expected = searchResult.map {
+            UserSearchDetails(
+                id = it.id.toModel(),
+                name = it.name,
+                completeAssetId = it.completeAssetId?.toModel(),
+                previewAssetId = it.previewAssetId?.toModel(),
+                type = UserType.INTERNAL,
+                connectionStatus = ConnectionState.ACCEPTED
+            )
+        }
+        val (arrangement, searchUserRepository) = Arrangement()
+            .arrange {
+                withTeamId(Either.Right(TestUser.SELF.teamId))
+                withSearchList(searchResult)
+            }
+
+        // when
+        searchUserRepository.searchLocalByName("name", null).shouldSucceed {
+            assertEquals(expected, it)
+        }
+
+        // then
+        verify(arrangement.searchDAO)
+            .suspendFunction(arrangement.searchDAO::searchList)
+            .with(eq("name"))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenExcludedConversation_whenCallingSearchLocalByName_thenTheCorrectDAOFunctionIsCalled() = runTest {
+        // given
+        val conversationId = ConversationId("conversationId", "domain")
+        val searchResult = listOf(
+            UserSearchEntity(
+                id = UserIDEntity("id", "domain"),
+                name = "name",
+                completeAssetId = null,
+                previewAssetId = null,
+                connectionStatus = ConnectionEntity.State.ACCEPTED,
+                type = UserTypeEntity.STANDARD
+            )
+        )
+
+        val expected = searchResult.map {
+            UserSearchDetails(
+                id = it.id.toModel(),
+                name = it.name,
+                completeAssetId = it.completeAssetId?.toModel(),
+                previewAssetId = it.previewAssetId?.toModel(),
+                type = UserType.INTERNAL,
+                connectionStatus = ConnectionState.ACCEPTED
+            )
+        }
+
+        val (arrangement, searchUserRepository) = Arrangement()
+            .arrange {
+                withTeamId(Either.Right(TestUser.SELF.teamId))
+                withSearchListExcludingAConversation(searchResult)
+            }
+
+        // when
+        searchUserRepository.searchLocalByName("name", conversationId).shouldSucceed {
+            assertEquals(expected, it)
+        }
+
+        // then
+        verify(arrangement.searchDAO)
+            .suspendFunction(arrangement.searchDAO::searchListExcludingAConversation)
+            .with(eq(conversationId.toDao()), any())
+            .wasInvoked(exactly = once)
+    }
+
+    internal class Arrangement : SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl(),
+        SearchDAOArrangement by SearchDAOArrangementImpl() {
 
         @Mock
         internal val userDetailsApi: UserDetailsApi = mock(classOf<UserDetailsApi>())
 
         @Mock
         internal val userSearchApiWrapper: UserSearchApiWrapper = mock(classOf<UserSearchApiWrapper>())
-
-        @Mock
-        internal val searchDAO: SearchDAO = mock(classOf<SearchDAO>())
 
         @Mock
         internal val userDAO: UserDAO = mock(classOf<UserDAO>())
