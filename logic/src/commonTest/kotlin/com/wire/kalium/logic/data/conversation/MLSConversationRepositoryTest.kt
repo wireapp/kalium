@@ -1265,6 +1265,71 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Test
+    fun givenUserId_whenGetMLSGroupIdByUserIdSucceed_thenReturnsIdentities() = runTest {
+        val groupId = "some_group"
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withGetUserIdentitiesReturn(
+                mapOf(
+                    TestUser.USER_ID.value to listOf(WIRE_IDENTITY),
+                    "some_other_user_id" to listOf(WIRE_IDENTITY.copy(clientId = "another_client_id")),
+                )
+            )
+            .withGetMLSGroupIdByUserIdReturns(groupId)
+            .arrange()
+
+        assertEquals(Either.Right(listOf(WIRE_IDENTITY)), mlsConversationRepository.getUserIdentity(TestUser.USER_ID))
+
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::getUserIdentities)
+            .with(eq(groupId), any())
+            .wasInvoked(once)
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::getMLSGroupIdByUserId)
+            .with(any())
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenConversationId_whenGetMLSGroupIdByConversationIdSucceed_thenReturnsIdentities() = runTest {
+        val groupId = "some_group"
+        val member1 = TestUser.USER_ID
+        val member2 = TestUser.USER_ID.copy(value = "member_2_id")
+        val member3 = TestUser.USER_ID.copy(value = "member_3_id")
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withGetUserIdentitiesReturn(
+                mapOf(
+                    member1.value to listOf(WIRE_IDENTITY),
+                    member2.value to listOf(WIRE_IDENTITY.copy(clientId = "member_2_client_id"))
+                )
+            )
+            .withGetMLSGroupIdByConversationIdReturns(groupId)
+            .arrange()
+
+        assertEquals(
+            Either.Right(
+                mapOf(
+                    member1 to listOf(WIRE_IDENTITY),
+                    member2 to listOf(WIRE_IDENTITY.copy(clientId = "member_2_client_id"))
+                )
+            ),
+            mlsConversationRepository.getMembersIdentities(TestConversation.ID, listOf(member1, member2, member3))
+        )
+
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::getUserIdentities)
+            .with(eq(groupId), any())
+            .wasInvoked(once)
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::getMLSGroupIdByConversationId)
+            .with(any())
+            .wasInvoked(once)
+    }
+
     private class Arrangement {
 
         @Mock
@@ -1510,6 +1575,27 @@ class MLSConversationRepositoryTest {
                 .suspendFunction(mlsClient::isGroupVerified)
                 .whenInvokedWith(anything())
                 .thenReturn(verificationStatus)
+        }
+
+        fun withGetMLSGroupIdByUserIdReturns(result: String?) = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getMLSGroupIdByUserId)
+                .whenInvokedWith(anything())
+                .thenReturn(result)
+        }
+
+        fun withGetMLSGroupIdByConversationIdReturns(result: String?) = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getMLSGroupIdByConversationId)
+                .whenInvokedWith(anything())
+                .thenReturn(result)
+        }
+
+        fun withGetUserIdentitiesReturn(identitiesMap: Map<String, List<WireIdentity>>) = apply {
+            given(mlsClient)
+                .suspendFunction(mlsClient::getUserIdentities)
+                .whenInvokedWith(anything(), anything())
+                .thenReturn(identitiesMap)
         }
 
         fun arrange() = this to MLSConversationDataSource(

@@ -154,6 +154,7 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.ClearUserDataUseCase
 import com.wire.kalium.logic.feature.auth.ClearUserDataUseCaseImpl
+import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
 import com.wire.kalium.logic.feature.backup.BackupScope
@@ -446,7 +447,8 @@ class UserSessionScope internal constructor(
     userStorageProvider: UserStorageProvider,
     private val clientConfig: ClientConfig,
     platformUserStorageProperties: PlatformUserStorageProperties,
-    networkStateObserver: NetworkStateObserver
+    networkStateObserver: NetworkStateObserver,
+    private val logoutCallback: LogoutCallback,
 ) : CoroutineScope {
 
     private val userStorage = userStorageProvider.getOrCreate(
@@ -1710,6 +1712,7 @@ class UserSessionScope internal constructor(
             userSessionWorkScheduler,
             calls.establishedCall,
             calls.endCall,
+            logoutCallback,
             kaliumConfigs
         )
     val persistPersistentWebSocketConnectionStatus: PersistPersistentWebSocketConnectionStatusUseCase
