@@ -52,9 +52,9 @@ private object UserSearchEntityMapper {
 }
 
 interface SearchDAO {
-    suspend fun initialSearchList(): List<UserSearchEntity>
+    suspend fun getKnownContacts(): List<UserSearchEntity>
     suspend fun searchList(query: String): List<UserSearchEntity>
-    suspend fun initialSearchListExcludingAConversation(conversationId: ConversationIDEntity): List<UserSearchEntity>
+    suspend fun getKnownContactsExcludingAConversation(conversationId: ConversationIDEntity): List<UserSearchEntity>
     suspend fun searchListExcludingAConversation(conversationId: ConversationIDEntity, query: String): List<UserSearchEntity>
 }
 
@@ -63,17 +63,17 @@ internal class SearchDAOImpl internal constructor(
     private val coroutineContext: CoroutineContext
 ) : SearchDAO {
 
-    override suspend fun initialSearchList(): List<UserSearchEntity> = withContext(coroutineContext) {
-        searchQueries.initialSearchList(mapper = UserSearchEntityMapper::map).executeAsList()
+    override suspend fun getKnownContacts(): List<UserSearchEntity> = withContext(coroutineContext) {
+        searchQueries.getAllConnectedUsers(mapper = UserSearchEntityMapper::map).executeAsList()
     }
 
     override suspend fun searchList(query: String): List<UserSearchEntity> = withContext(coroutineContext) {
         searchQueries.searchMyName(query, mapper = UserSearchEntityMapper::map).executeAsList()
     }
 
-    override suspend fun initialSearchListExcludingAConversation(conversationId: ConversationIDEntity): List<UserSearchEntity> =
+    override suspend fun getKnownContactsExcludingAConversation(conversationId: ConversationIDEntity): List<UserSearchEntity> =
         withContext(coroutineContext) {
-            searchQueries.initialSearchListExcludingAConversation(
+            searchQueries.getAllConnectedUsersNotInConversation(
                 conversationId,
                 mapper = UserSearchEntityMapper::map
             ).executeAsList()

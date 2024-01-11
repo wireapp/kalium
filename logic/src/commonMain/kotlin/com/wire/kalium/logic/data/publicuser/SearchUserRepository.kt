@@ -72,11 +72,11 @@ internal interface SearchUserRepository {
         searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default
     ): Either<CoreFailure, UserSearchResult>
 
-    suspend fun initialSearchList(excludeConversation: ConversationId?): Either<StorageFailure, List<UserSearchDetails>>
+    suspend fun getKnownContacts(excludeConversation: ConversationId?): Either<StorageFailure, List<UserSearchDetails>>
 
     suspend fun searchLocalByName(
         name: String,
-        excludeConversation: ConversationId?
+        excludeMembersOfConversation: ConversationId?
     ): Either<StorageFailure, List<UserSearchDetails>>
 
 }
@@ -182,12 +182,12 @@ internal class SearchUserRepositoryImpl(
             }
         }
 
-    override suspend fun initialSearchList(excludeConversation: ConversationId?): Either<StorageFailure, List<UserSearchDetails>> =
+    override suspend fun getKnownContacts(excludeConversation: ConversationId?): Either<StorageFailure, List<UserSearchDetails>> =
         wrapStorageRequest {
             if (excludeConversation == null) {
-                searchDAO.initialSearchList()
+                searchDAO.getKnownContacts()
             } else {
-                searchDAO.initialSearchListExcludingAConversation(excludeConversation.toDao())
+                searchDAO.getKnownContactsExcludingAConversation(excludeConversation.toDao())
             }
         }.map { searchEntityList ->
             searchEntityList.map {
@@ -204,12 +204,12 @@ internal class SearchUserRepositoryImpl(
 
     override suspend fun searchLocalByName(
         name: String,
-        excludeConversation: ConversationId?
+        excludeMembersOfConversation: ConversationId?
     ): Either<StorageFailure, List<UserSearchDetails>> = wrapStorageRequest {
-        if (excludeConversation == null) {
+        if (excludeMembersOfConversation == null) {
             searchDAO.searchList(name)
         } else {
-            searchDAO.searchListExcludingAConversation(excludeConversation.toDao(), name)
+            searchDAO.searchListExcludingAConversation(excludeMembersOfConversation.toDao(), name)
         }
     }.map {
         it.map { searchEntity ->

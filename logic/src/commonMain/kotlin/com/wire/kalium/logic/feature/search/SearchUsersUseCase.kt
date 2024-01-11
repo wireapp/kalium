@@ -33,16 +33,16 @@ class SearchUsersUseCase internal constructor(
 ) {
     suspend operator fun invoke(
         searchQuery: String,
-        excludingConversation: ConversationId?,
+        excludingMembersOfConversation: ConversationId?,
         customDomain: String?
     ): Result {
         return if (searchQuery.isBlank()) {
             Result(
-                connected = searchUserRepository.initialSearchList(excludingConversation).getOrElse(emptyList()),
+                connected = searchUserRepository.getKnownContacts(excludingMembersOfConversation).getOrElse(emptyList()),
                 notConnected = emptyList()
             )
         } else {
-            handleSearch(searchQuery, excludingConversation, customDomain)
+            handleSearch(searchQuery, excludingMembersOfConversation, customDomain)
         }
     }
 
