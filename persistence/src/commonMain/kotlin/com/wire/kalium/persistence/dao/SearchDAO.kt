@@ -47,7 +47,8 @@ private object UserSearchEntityMapper {
             previewAssetId = preview_asset_id,
             user_type,
             connectionStatus = connection_state
-        )    }
+        )
+    }
 }
 
 interface SearchDAO {

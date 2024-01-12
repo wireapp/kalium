@@ -19,7 +19,6 @@
 
 package com.wire.kalium.logic.functional
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.functional.Either.Left
 import com.wire.kalium.logic.functional.Either.Right
 import kotlin.contracts.ExperimentalContracts
@@ -207,5 +206,5 @@ inline fun <T, L, R> Iterable<T>.foldToEitherWhileRight(initialValue: R, fn: (it
     }
 }
 
-inline fun<T> T.right() = Right(this)
-inline fun<T> T.left() = Left(this)
+inline fun <T> T.right() = Right(this)
+inline fun <T> T.left() = Left(this)
