@@ -127,7 +127,6 @@ class SendLocationUseCaseTest {
         val result = sendLocationUseCase.invoke(conversationId, LATITUDE, LONGITUDE, NAME, ZOOM)
 
         // Then
-
         result.shouldSucceed()
         verify(arrangement.messageSender)
             .suspendFunction(arrangement.messageSender::sendMessage)
