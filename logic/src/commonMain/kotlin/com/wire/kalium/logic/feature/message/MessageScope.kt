@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
+import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -44,7 +45,6 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.feature.asset.GetImageAssetMessagesForConversationUseCase
 import com.wire.kalium.logic.feature.asset.GetImageAssetMessagesForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
@@ -286,6 +286,17 @@ class MessageScope internal constructor(
 
     val sendKnock: SendKnockUseCase
         get() = SendKnockUseCase(
+            persistMessage,
+            selfUserId,
+            currentClientIdProvider,
+            slowSyncRepository,
+            messageSender,
+            messageSendFailureHandler,
+            observeSelfDeletingMessages
+        )
+
+    val sendLocation: SendLocationUseCase
+        get() = SendLocationUseCase(
             persistMessage,
             selfUserId,
             currentClientIdProvider,
