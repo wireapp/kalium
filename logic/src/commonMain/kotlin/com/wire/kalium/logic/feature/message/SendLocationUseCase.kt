@@ -56,7 +56,13 @@ class SendLocationUseCase internal constructor(
 
     /**
      * Operation to send a location message to a conversation.
-
+     *
+     * @param conversationId the id of the conversation to send the location to
+     * @param latitude the latitude of the location
+     * @param longitude the longitude of the location
+     * @param name the address line or name of the location to send
+     * @param zoom the zoom level of the location
+     *
      * @return [Either] [CoreFailure] or [Unit]
      */
     suspend operator fun invoke(
