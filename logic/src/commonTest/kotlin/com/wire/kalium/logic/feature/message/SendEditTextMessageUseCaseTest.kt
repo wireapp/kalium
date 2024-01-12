@@ -67,7 +67,7 @@ class SendEditTextMessageUseCaseTest {
         val result = sendEditTextMessage(TestConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
 
         // Then
-        assertTrue(result is Either.Right)
+        result.shouldSucceed()
         verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::updateTextMessage)
             .with(any(), any(), eq(originalMessageId), any())
@@ -104,7 +104,7 @@ class SendEditTextMessageUseCaseTest {
         val result = sendEditTextMessage(TestConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
 
         // Then
-        assertTrue(result is Either.Left)
+        result.shouldFail()
         verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::updateTextMessage)
             .with(any(), any(), eq(originalMessageId), any())

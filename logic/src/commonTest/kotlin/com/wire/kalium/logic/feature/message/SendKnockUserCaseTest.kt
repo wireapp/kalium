@@ -71,7 +71,7 @@ class SendKnockUserCaseTest {
         val result = sendKnockUseCase.invoke(conversationId, false)
 
         // Then
-        assertTrue(result is Either.Right)
+        result.shouldSucceed()
         verify(arrangement.messageSender)
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(any(), any())
@@ -99,7 +99,7 @@ class SendKnockUserCaseTest {
         val result = sendKnockUseCase.invoke(conversationId, false)
 
         // Then
-        assertTrue(result is Either.Left)
+        result.shouldFail()
         verify(arrangement.messageSender)
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(any(), any())
@@ -128,7 +128,7 @@ class SendKnockUserCaseTest {
         val result = sendKnockUseCase.invoke(conversationId, false)
 
         // Then
-        assertTrue(result is Either.Right)
+        result.shouldSucceed()
         verify(arrangement.messageSender)
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(matching {

@@ -52,7 +52,7 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
-        assertTrue(result is Either.Left)
+        result.shouldFail()
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::loadACMEDirectories)
@@ -130,7 +130,7 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
-        assertTrue(result is Either.Left)
+        result.shouldFail()
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::loadACMEDirectories)
@@ -210,7 +210,7 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
-        assertTrue(result is Either.Left)
+        result.shouldFail()
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::loadACMEDirectories)
@@ -292,7 +292,7 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
-        assertTrue(result is Either.Left)
+        result.shouldFail()
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::loadACMEDirectories)
@@ -376,7 +376,7 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
-        assertTrue(result is Either.Left)
+        result.shouldFail()
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::loadACMEDirectories)
@@ -462,7 +462,7 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
-        assertTrue(result is Either.Left)
+        result.shouldFail()
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -529,7 +529,7 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
-        assertTrue(result is Either.Left)
+        result.shouldFail()
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -599,7 +599,7 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
-        assertTrue(result is Either.Left)
+        result.shouldFail()
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -670,7 +670,7 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
-        assertTrue(result is Either.Left)
+        result.shouldFail()
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -743,7 +743,7 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
-        assertTrue(result is Either.Left)
+        result.shouldFail()
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -811,7 +811,7 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
-        assertTrue(result is Either.Left)
+        result.shouldFail()
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -878,7 +878,7 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
-        assertTrue(result is Either.Left)
+        result.shouldFail()
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -940,7 +940,7 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
-        assertTrue(result is Either.Left)
+        result.shouldFail()
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -1007,7 +1007,7 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
-        assertTrue(result is Either.Left)
+        result.shouldFail()
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -1079,7 +1079,7 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldSucceed()
-        assertTrue(result is Either.Right)
+        result.shouldSucceed()
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)

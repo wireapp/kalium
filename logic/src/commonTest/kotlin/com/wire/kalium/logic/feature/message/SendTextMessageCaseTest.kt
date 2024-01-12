@@ -31,6 +31,7 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -67,7 +68,7 @@ class SendTextMessageCaseTest {
         val result = sendTextMessage(TestConversation.ID, "some-text")
 
         // Then
-        assertTrue(result is Either.Right)
+        result.shouldSucceed()
 
         verify(arrangement.userPropertyRepository)
             .suspendFunction(arrangement.userPropertyRepository::getReadReceiptsStatus)
@@ -102,7 +103,7 @@ class SendTextMessageCaseTest {
         val result = sendTextMessage(TestConversation.ID, "some-text")
 
         // Then
-        assertTrue(result is Either.Left)
+        result.shouldFail()
 
         verify(arrangement.userPropertyRepository)
             .suspendFunction(arrangement.userPropertyRepository::getReadReceiptsStatus)

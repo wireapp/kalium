@@ -52,7 +52,7 @@ class PersistMigratedMessagesUseCaseTest {
         val result = persistMigratedMessages(listOf(arrangement.fakeMigratedMessage()), TestScope())
 
         // Then
-        assertTrue(result is Either.Right)
+        result.shouldSucceed()
     }
 
     private class Arrangement {
