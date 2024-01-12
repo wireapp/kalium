@@ -24,6 +24,7 @@ import kotlin.coroutines.CoroutineContext
 data class UserSearchEntity(
     val id: QualifiedIDEntity,
     val name: String?,
+    val handle: String?,
     val completeAssetId: QualifiedIDEntity?,
     val previewAssetId: QualifiedIDEntity?,
     val type: UserTypeEntity,
@@ -38,15 +39,17 @@ private object UserSearchEntityMapper {
         complete_asset_id: QualifiedIDEntity?,
         preview_asset_id: QualifiedIDEntity?,
         user_type: UserTypeEntity,
-        connection_state: ConnectionEntity.State
+        connection_state: ConnectionEntity.State,
+        handle: String?,
     ): UserSearchEntity {
         return UserSearchEntity(
-            qualified_id,
-            name,
+            id = qualified_id,
+            name = name,
             completeAssetId = complete_asset_id,
             previewAssetId = preview_asset_id,
-            user_type,
-            connectionStatus = connection_state
+            type = user_type,
+            connectionStatus = connection_state,
+            handle = handle
         )
     }
 }

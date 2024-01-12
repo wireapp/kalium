@@ -31,6 +31,7 @@ value class UserSearchResult(val result: List<OtherUser>)
 data class UserSearchDetails(
     val id: UserId,
     val name: String?,
+    val handle: String?,
     val completeAssetId: AssetId?,
     val previewAssetId: AssetId?,
     val type: UserType,

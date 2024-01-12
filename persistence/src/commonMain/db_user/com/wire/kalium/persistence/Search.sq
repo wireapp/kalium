@@ -1,12 +1,12 @@
 selectAllConnectedUsers:
-SELECT qualified_id, name, complete_asset_id, preview_asset_id, user_type, connection_status
+SELECT qualified_id, name, complete_asset_id, preview_asset_id, user_type, connection_status, handle
     FROM User
     WHERE connection_status = 'ACCEPTED' AND
     qualified_id != (SELECT id FROM SelfUser LIMIT 1) AND
     deleted = 0;
 
 searchByName:
-SELECT qualified_id, name, complete_asset_id, preview_asset_id, user_type, connection_status
+SELECT qualified_id, name, complete_asset_id, preview_asset_id, user_type, connection_status, handle
     FROM User
     WHERE connection_status = 'ACCEPTED' AND
     qualified_id != (SELECT id FROM SelfUser LIMIT 1) AND
@@ -14,7 +14,7 @@ SELECT qualified_id, name, complete_asset_id, preview_asset_id, user_type, conne
     name LIKE ('%' || :searchQuery || '%');
 
 selectAllConnectedUsersNotInConversation:
-SELECT qualified_id, name, complete_asset_id, preview_asset_id, user_type, connection_status
+SELECT qualified_id, name, complete_asset_id, preview_asset_id, user_type, connection_status, handle
     FROM User
     WHERE connection_status = 'ACCEPTED' AND
     qualified_id != (SELECT id FROM SelfUser LIMIT 1) AND
@@ -26,7 +26,7 @@ SELECT qualified_id, name, complete_asset_id, preview_asset_id, user_type, conne
     );
 
 searchMyNameExcludingAConversation:
-SELECT qualified_id, name, complete_asset_id, preview_asset_id, user_type, connection_status
+SELECT qualified_id, name, complete_asset_id, preview_asset_id, user_type, connection_status, handle
     FROM User
     WHERE connection_status = 'ACCEPTED' AND
     qualified_id != (SELECT id FROM SelfUser LIMIT 1) AND

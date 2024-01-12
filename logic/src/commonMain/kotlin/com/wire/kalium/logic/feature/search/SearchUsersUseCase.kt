@@ -73,7 +73,8 @@ class SearchUsersUseCase internal constructor(
                         completeAssetId = it.completePicture,
                         previewAssetId = it.previewPicture,
                         type = it.userType,
-                        connectionStatus = it.connectionStatus
+                        connectionStatus = it.connectionStatus,
+                        handle = it.handle
                     )
                 }
             }.getOrElse(emptyList())

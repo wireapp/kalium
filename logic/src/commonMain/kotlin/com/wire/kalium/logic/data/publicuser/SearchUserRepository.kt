@@ -139,7 +139,8 @@ internal class SearchUserRepositoryImpl(
                     completeAssetId = it.completeAssetId?.toModel(),
                     type = userTypeMapper.fromUserTypeEntity(it.type),
                     previewAssetId = it.previewAssetId?.toModel(),
-                    connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(it.connectionStatus)
+                    connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(it.connectionStatus),
+                    handle = it.handle
                 )
             }
         }
@@ -161,7 +162,8 @@ internal class SearchUserRepositoryImpl(
                 completeAssetId = searchEntity.completeAssetId?.toModel(),
                 previewAssetId = searchEntity.previewAssetId?.toModel(),
                 type = userTypeMapper.fromUserTypeEntity(searchEntity.type),
-                connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(searchEntity.connectionStatus)
+                connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(searchEntity.connectionStatus),
+                handle = searchEntity.handle
             )
         }
     }
