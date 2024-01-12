@@ -295,6 +295,10 @@ class MLSClientImpl(
         }
     }
 
+    override suspend fun registerExternalCertificates(data: ByteArray) {
+        // TODO
+    }
+
     companion object {
         fun toUByteList(value: ByteArray): List<UByte> = value.asUByteArray().asList()
         fun toUByteList(value: String): List<UByte> = value.encodeToByteArray().asUByteArray().asList()
