@@ -58,6 +58,8 @@ internal interface UserRepositoryArrangement {
 
     fun withSelfUserReturning(selfUser: SelfUser?)
 
+    fun withObservingSelfUserReturning(selfUserFlow: Flow<SelfUser>)
+
     fun withUserByIdReturning(result: Either<CoreFailure, OtherUser>)
 
     fun withUpdateOneOnOneConversationReturning(result: Either<CoreFailure, Unit>)
@@ -143,6 +145,13 @@ internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
             .suspendFunction(userRepository::getSelfUser)
             .whenInvoked()
             .thenReturn(selfUser)
+    }
+
+    override fun withObservingSelfUserReturning(selfUserFlow: Flow<SelfUser>) {
+        given(userRepository)
+            .suspendFunction(userRepository::observeSelfUser)
+            .whenInvoked()
+            .thenReturn(selfUserFlow)
     }
 
     override fun withUserByIdReturning(result: Either<CoreFailure, OtherUser>) {

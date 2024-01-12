@@ -371,4 +371,9 @@ interface MLSClient {
      * @return the exist identities for requested clients
      */
     suspend fun getUserIdentities(groupId: MLSGroupId, users: List<CryptoQualifiedID>): Map<String, List<WireIdentity>>
+
+    /**
+     * Register CA certificates for E2EI
+     */
+    suspend fun registerExternalCertificates(data: ByteArray)
 }
