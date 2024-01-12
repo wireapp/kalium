@@ -181,7 +181,7 @@ class SearchUseCaseTest {
         fun newOtherUser(id: String) = OtherUser(
             UserId(id, "otherDomain"),
             name = "otherUsername",
-            handle = "otherHandle",
+            handle = "handle",
             email = "otherEmail",
             phone = "otherPhone",
             accentId = 0,
@@ -204,7 +204,8 @@ class SearchUseCaseTest {
             previewAssetId = UserAssetId("value", "domain"),
             completeAssetId = UserAssetId("value", "domain"),
             type = UserType.INTERNAL,
-            connectionStatus = ConnectionState.ACCEPTED
+            connectionStatus = ConnectionState.ACCEPTED,
+            handle = "handle"
         )
     }
 

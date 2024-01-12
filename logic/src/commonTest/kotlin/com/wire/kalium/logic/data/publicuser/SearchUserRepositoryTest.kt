@@ -296,7 +296,8 @@ class SearchUserRepositoryTest {
                 completeAssetId = null,
                 previewAssetId = null,
                 connectionStatus = ConnectionEntity.State.ACCEPTED,
-                type = UserTypeEntity.STANDARD
+                type = UserTypeEntity.STANDARD,
+                handle = "handle"
             )
         )
 
@@ -307,7 +308,8 @@ class SearchUserRepositoryTest {
                 completeAssetId = it.completeAssetId?.toModel(),
                 previewAssetId = it.previewAssetId?.toModel(),
                 type = UserType.INTERNAL,
-                connectionStatus = ConnectionState.ACCEPTED
+                connectionStatus = ConnectionState.ACCEPTED,
+                handle = "handle"
             )
         }
         val (arrangement, searchUserRepository) = Arrangement()
@@ -338,7 +340,8 @@ class SearchUserRepositoryTest {
                 completeAssetId = null,
                 previewAssetId = null,
                 connectionStatus = ConnectionEntity.State.ACCEPTED,
-                type = UserTypeEntity.STANDARD
+                type = UserTypeEntity.STANDARD,
+                handle = "handle"
             )
         )
 
@@ -349,7 +352,8 @@ class SearchUserRepositoryTest {
                 completeAssetId = it.completeAssetId?.toModel(),
                 previewAssetId = it.previewAssetId?.toModel(),
                 type = UserType.INTERNAL,
-                connectionStatus = ConnectionState.ACCEPTED
+                connectionStatus = ConnectionState.ACCEPTED,
+                handle = "handle"
             )
         }
 
@@ -371,7 +375,7 @@ class SearchUserRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
-//     -------
+    //     -------
     @Test
     fun givenNotExcludedConversation_whenCallingSearchLocalByName_thenTheCorrectDAOFunctionIsCalled() = runTest {
         // given
@@ -382,7 +386,8 @@ class SearchUserRepositoryTest {
                 completeAssetId = null,
                 previewAssetId = null,
                 connectionStatus = ConnectionEntity.State.ACCEPTED,
-                type = UserTypeEntity.STANDARD
+                type = UserTypeEntity.STANDARD,
+                handle = "handle"
             )
         )
 
@@ -393,7 +398,8 @@ class SearchUserRepositoryTest {
                 completeAssetId = it.completeAssetId?.toModel(),
                 previewAssetId = it.previewAssetId?.toModel(),
                 type = UserType.INTERNAL,
-                connectionStatus = ConnectionState.ACCEPTED
+                connectionStatus = ConnectionState.ACCEPTED,
+                handle = "handle"
             )
         }
         val (arrangement, searchUserRepository) = Arrangement()
@@ -425,7 +431,8 @@ class SearchUserRepositoryTest {
                 completeAssetId = null,
                 previewAssetId = null,
                 connectionStatus = ConnectionEntity.State.ACCEPTED,
-                type = UserTypeEntity.STANDARD
+                type = UserTypeEntity.STANDARD,
+                handle = "handle"
             )
         )
 
@@ -436,7 +443,8 @@ class SearchUserRepositoryTest {
                 completeAssetId = it.completeAssetId?.toModel(),
                 previewAssetId = it.previewAssetId?.toModel(),
                 type = UserType.INTERNAL,
-                connectionStatus = ConnectionState.ACCEPTED
+                connectionStatus = ConnectionState.ACCEPTED,
+                handle = "handle"
             )
         }
 
