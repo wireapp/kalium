@@ -51,6 +51,7 @@ class ObserveAllServicesUseCaseImpl internal constructor(
     override suspend fun invoke(): Flow<List<ServiceDetails>> = flow {
         // TODO: This should be called only one time preferably by the view model to
         //  avoid unnecessary updates each time the use case is invoked
+        //  or have a in memory timer to avoid calling it too often
         val scope = CoroutineScope(currentCoroutineContext())
         scope.launch {
             selfTeamIdProvider().getOrNull()?.let { teamId ->
