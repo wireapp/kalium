@@ -23,9 +23,11 @@ import com.wire.kalium.logic.feature.e2ei.E2eiCertificate
 import com.wire.kalium.logic.feature.e2ei.PemCertificateDecoder
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.data.conversation.ClientId
 
 /**
- * This use case is used to get the e2ei certificate status of specific user
+ * This use case is used to get all e2ei certificates of the user.
+ * Returns Map<String, E2eiCertificate> where key is value of [ClientId] and [E2eiCertificate] is certificate itself
  */
 interface GetUserE2eiCertificatesUseCase {
     suspend operator fun invoke(userId: UserId): Map<String, E2eiCertificate>
