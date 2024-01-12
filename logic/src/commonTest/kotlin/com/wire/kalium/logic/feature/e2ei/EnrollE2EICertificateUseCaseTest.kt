@@ -52,7 +52,6 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
-        result.shouldFail()
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::loadACMEDirectories)
@@ -129,7 +128,6 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.initialEnrollment()
 
         // then
-        result.shouldFail()
         result.shouldFail()
 
         verify(arrangement.e2EIRepository)
@@ -209,7 +207,6 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.initialEnrollment()
 
         // then
-        result.shouldFail()
         result.shouldFail()
 
         verify(arrangement.e2EIRepository)
@@ -291,7 +288,6 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.initialEnrollment()
 
         // then
-        result.shouldFail()
         result.shouldFail()
 
         verify(arrangement.e2EIRepository)
@@ -375,7 +371,6 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.initialEnrollment()
 
         // then
-        result.shouldFail()
         result.shouldFail()
 
         verify(arrangement.e2EIRepository)
@@ -462,7 +457,6 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
-        result.shouldFail()
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -528,7 +522,6 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
         // then
-        result.shouldFail()
         result.shouldFail()
 
         verify(arrangement.e2EIRepository)
@@ -599,7 +592,6 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
-        result.shouldFail()
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -669,7 +661,6 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
         // then
-        result.shouldFail()
         result.shouldFail()
 
         verify(arrangement.e2EIRepository)
@@ -743,7 +734,6 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
-        result.shouldFail()
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -811,7 +801,6 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
-        result.shouldFail()
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -878,7 +867,6 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
-        result.shouldFail()
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -939,7 +927,6 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
         // then
-        result.shouldFail()
         result.shouldFail()
 
         verify(arrangement.e2EIRepository)
@@ -1006,7 +993,6 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
         // then
-        result.shouldFail()
         result.shouldFail()
 
         verify(arrangement.e2EIRepository)
@@ -1078,7 +1064,6 @@ class EnrollE2EICertificateUseCaseTest {
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
         // then
-        result.shouldSucceed()
         result.shouldSucceed()
 
         verify(arrangement.e2EIRepository)
