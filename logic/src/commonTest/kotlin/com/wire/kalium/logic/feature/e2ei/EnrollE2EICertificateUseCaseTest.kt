@@ -36,7 +36,6 @@ import io.mockative.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
 @ExperimentalCoroutinesApi
 class EnrollE2EICertificateUseCaseTest {

@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.MigrationDAO
 import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.GenericMessage
@@ -32,13 +32,10 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
 import io.mockative.mock
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class PersistMigratedMessagesUseCaseTest {
 
     @Test
