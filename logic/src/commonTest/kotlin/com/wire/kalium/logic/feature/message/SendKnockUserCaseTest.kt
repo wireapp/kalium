@@ -32,6 +32,8 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.arrangement.ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangementImpl
+import com.wire.kalium.logic.util.shouldFail
+import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -48,10 +50,8 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
-import kotlin.test.assertTrue
 import kotlin.time.Duration
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class SendKnockUserCaseTest {
 
     @Test
@@ -71,7 +71,7 @@ class SendKnockUserCaseTest {
         val result = sendKnockUseCase.invoke(conversationId, false)
 
         // Then
-        assertTrue(result is Either.Right)
+        result.shouldSucceed()
         verify(arrangement.messageSender)
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(any(), any())
@@ -99,7 +99,7 @@ class SendKnockUserCaseTest {
         val result = sendKnockUseCase.invoke(conversationId, false)
 
         // Then
-        assertTrue(result is Either.Left)
+        result.shouldFail()
         verify(arrangement.messageSender)
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(any(), any())
@@ -128,7 +128,7 @@ class SendKnockUserCaseTest {
         val result = sendKnockUseCase.invoke(conversationId, false)
 
         // Then
-        assertTrue(result is Either.Right)
+        result.shouldSucceed()
         verify(arrangement.messageSender)
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(matching {
