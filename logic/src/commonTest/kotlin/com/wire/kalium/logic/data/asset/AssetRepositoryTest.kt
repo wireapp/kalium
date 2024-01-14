@@ -51,7 +51,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.thenDoNothing
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import okio.Buffer
@@ -253,7 +252,7 @@ class AssetRepositoryTest {
 
         // Then
         with(arrangement) {
-            assertTrue(result is Either.Right)
+            result.shouldSucceed()
             val expectedPath = fakeKaliumFileSystem.providePersistentAssetPath("${assetKey.value}.${assetName.fileExtension()}")
             val realPath = result.value
             assertEquals(expectedPath, realPath)
@@ -300,7 +299,7 @@ class AssetRepositoryTest {
 
             // Then
             with(arrangement) {
-                assertTrue(result is Either.Left)
+                result.shouldFail()
                 assertIs<StorageFailure.DataNotFound>(result.value)
                 verify(assetDAO).suspendFunction(assetDAO::getAssetByKey)
                     .with(eq(assetKey.value))
@@ -346,7 +345,7 @@ class AssetRepositoryTest {
 
             // Then
             with(arrangement) {
-                assertTrue(result is Either.Right)
+                result.shouldSucceed()
                 assertEquals(assetPath, result.value)
                 verify(assetDAO).suspendFunction(assetDAO::getAssetByKey)
                     .with(eq(assetKey.value))
@@ -397,7 +396,7 @@ class AssetRepositoryTest {
 
         // Then
         with(arrangement) {
-            assertTrue(result is Either.Left)
+            result.shouldFail()
             assertTrue(result.value is EncryptionFailure.WrongAssetHash)
         }
     }
