@@ -52,7 +52,6 @@ internal interface UserEventReceiver : EventReceiver<Event.User>
 internal class UserEventReceiverImpl internal constructor(
     private val clientRepository: ClientRepository,
     private val connectionRepository: ConnectionRepository,
-    private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val logout: LogoutUseCase,
     private val oneOnOneResolver: OneOnOneResolver,

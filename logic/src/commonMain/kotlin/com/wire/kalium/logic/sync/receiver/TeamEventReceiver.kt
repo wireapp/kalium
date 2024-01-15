@@ -18,26 +18,39 @@
 
 package com.wire.kalium.logic.sync.receiver
 
+import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import kotlinx.coroutines.flow.first
 
 internal interface TeamEventReceiver : EventReceiver<Event.Team>
 
 internal class TeamEventReceiverImpl(
-    private val teamRepository: TeamRepository
-
+    private val teamRepository: TeamRepository,
+    private val conversationRepository: ConversationRepository,
+    private val userRepository: UserRepository,
+    private val persistMessage: PersistMessageUseCase,
+    private val selfUserId: UserId,
 ) : TeamEventReceiver {
 
     override suspend fun onEvent(event: Event.Team): Either<CoreFailure, Unit> {
         when (event) {
+            is Event.Team.MemberJoin -> handleMemberJoin(event)
+            is Event.Team.MemberLeave -> handleMemberLeave(event)
             is Event.Team.MemberUpdate -> handleMemberUpdate(event)
             is Event.Team.Update -> handleUpdate(event)
         }
@@ -46,6 +59,97 @@ internal class TeamEventReceiverImpl(
         //       but not all handlers are using it yet.
         //       Returning Either.Right is the equivalent of how it was originally working.
         return Either.Right(Unit)
+    }
+
+    private suspend fun handleMemberJoin(event: Event.Team.MemberJoin) =
+        teamRepository.fetchTeamMember(
+            teamId = event.teamId,
+            userId = event.memberId,
+        )
+            .onSuccess {
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SUCCESS,
+                        event
+                    )
+            }
+            .onFailure {
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.FAILURE,
+                        event,
+                        Pair("errorInfo", "$it")
+                    )
+            }
+
+    @Suppress("LongMethod")
+    private suspend fun handleMemberLeave(event: Event.Team.MemberLeave) {
+        val userId = UserId(event.memberId, selfUserId.domain)
+        teamRepository.removeTeamMember(
+            teamId = event.teamId,
+            userId = event.memberId,
+        )
+            .onSuccess {
+                val knownUser = userRepository.getKnownUser(userId).first()
+                if (knownUser?.name != null) {
+                    conversationRepository.getConversationsByUserId(userId)
+                        .onSuccess {
+                            it.forEach { conversation ->
+                                val message = Message.System(
+                                    id = uuid4().toString(), // We generate a random uuid for this new system message
+                                    content = MessageContent.TeamMemberRemoved(knownUser.name),
+                                    conversationId = conversation.id,
+                                    date = event.timestampIso,
+                                    senderUserId = userId,
+                                    status = Message.Status.Sent,
+                                    visibility = Message.Visibility.VISIBLE,
+                                    expirationData = null
+                                )
+                                persistMessage(message)
+                            }
+
+                            conversationRepository.deleteUserFromConversations(userId)
+                                .onSuccess {
+                                    kaliumLogger
+                                        .logEventProcessing(
+                                            EventLoggingStatus.SUCCESS,
+                                            event
+                                        )
+                                }
+                                .onFailure { deleteFailure ->
+                                    kaliumLogger
+                                        .logEventProcessing(
+                                            EventLoggingStatus.FAILURE,
+                                            event,
+                                            Pair("errorInfo", "$deleteFailure")
+                                        )
+                                }
+
+                        }.onFailure {
+                            kaliumLogger
+                                .logEventProcessing(
+                                    EventLoggingStatus.FAILURE,
+                                    event,
+                                    Pair("errorInfo", "$it")
+                                )
+                        }
+                } else {
+                    kaliumLogger
+                        .logEventProcessing(
+                            EventLoggingStatus.SKIPPED,
+                            event,
+                            Pair("info", "User or User name is null")
+                        )
+                }
+            }
+            .onFailure {
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.FAILURE,
+                        event,
+                        Pair("errorInfo", "$it")
+                    )
+            }
     }
 
     private suspend fun handleMemberUpdate(event: Event.Team.MemberUpdate) =

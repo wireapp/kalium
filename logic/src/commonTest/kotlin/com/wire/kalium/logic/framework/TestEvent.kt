@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import com.wire.kalium.util.time.Second
 import io.ktor.util.encodeBase64
 import kotlinx.datetime.Instant
 
@@ -155,6 +156,23 @@ object TestEvent {
         transient = false,
         live = false,
         icon = "icon",
+    )
+
+    fun teamMemberJoin(eventId: String = "eventId") = Event.Team.MemberJoin(
+        eventId,
+        teamId = "teamId",
+        transient = false,
+        live = false,
+        memberId = "memberId"
+    )
+
+    fun teamMemberLeave(eventId: String = "eventId") = Event.Team.MemberLeave(
+        eventId,
+        teamId = "teamId",
+        memberId = "memberId",
+        timestampIso = "2022-03-30T15:36:00.000Z",
+        transient = false,
+        live = false
     )
 
     fun teamMemberUpdate(eventId: String = "eventId", permissionCode: Int) = Event.Team.MemberUpdate(
