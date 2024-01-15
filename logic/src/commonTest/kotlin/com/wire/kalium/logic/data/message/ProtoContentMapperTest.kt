@@ -239,6 +239,7 @@ class ProtoContentMapperTest {
 
         assertEquals(originalContent, decoded)
     }
+
     @Test
     fun givenReactionContent_whenMappingToProtoAndBack_thenShouldMaintainSameValues() {
         val messageUid = "uid"
@@ -276,6 +277,7 @@ class ProtoContentMapperTest {
 
         assertEquals(originalContent, decoded)
     }
+
     @Test
     fun givenCompositeContent_whenMappingToProtoAndBack_thenShouldMaintainSameValues() {
         val messageUid = "uid"
@@ -407,6 +409,27 @@ class ProtoContentMapperTest {
         assertIs<ProtoContent.Readable>(decoded)
         assertEquals(decoded.expiresAfterMillis, expiresAfterMillis)
         assertEquals(protoContent, decoded)
+    }
+
+    @Test
+    fun givenProtoLocationContent_whenMappingProtoDataAndBack_thenTheContentsShouldMatchTheOriginal() {
+        val messageContent = MessageContent.Location(
+            latitude = 1.0f,
+            longitude = 2.0f,
+            zoom = 3,
+            name = "name"
+        )
+        val protoContent = ProtoContent.Readable(
+            TEST_MESSAGE_UUID,
+            messageContent,
+            false,
+            Conversation.LegalHoldStatus.DISABLED
+        )
+
+        val encoded = protoContentMapper.encodeToProtobuf(protoContent)
+        val decoded = protoContentMapper.decodeFromProtobuf(encoded)
+
+        assertEquals(decoded, protoContent)
     }
 
     private companion object {
