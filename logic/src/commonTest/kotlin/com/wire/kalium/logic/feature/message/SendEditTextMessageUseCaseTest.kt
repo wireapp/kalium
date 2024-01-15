@@ -28,6 +28,8 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.shouldFail
+import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mock
 import io.mockative.any
@@ -39,14 +41,11 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class SendEditTextMessageUseCaseTest {
 
     @Test
@@ -67,7 +66,7 @@ class SendEditTextMessageUseCaseTest {
         val result = sendEditTextMessage(TestConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
 
         // Then
-        assertTrue(result is Either.Right)
+        result.shouldSucceed()
         verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::updateTextMessage)
             .with(any(), any(), eq(originalMessageId), any())
@@ -104,7 +103,7 @@ class SendEditTextMessageUseCaseTest {
         val result = sendEditTextMessage(TestConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)
 
         // Then
-        assertTrue(result is Either.Left)
+        result.shouldFail()
         verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::updateTextMessage)
             .with(any(), any(), eq(originalMessageId), any())
