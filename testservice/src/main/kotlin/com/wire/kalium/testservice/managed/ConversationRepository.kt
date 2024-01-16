@@ -152,7 +152,8 @@ sealed class ConversationRepository {
             text: String?,
             mentions: List<MessageMention>,
             messageTimer: Int?,
-            quotedMessageId: String?
+            quotedMessageId: String?,
+            buttons: List<String>? = listOf()
         ): Response = instance.coreLogic.globalScope {
             return when (val session = session.currentSession()) {
                 is CurrentSessionResult.Success -> {
@@ -168,7 +169,7 @@ sealed class ConversationRepository {
                             persistNewSelfDeletionStatus.invoke(conversationId, newSelfDeletionTimer)
                             log.info("Instance ${instance.instanceId}: Send text message '$text'")
                             messages.sendTextMessage(
-                                conversationId, text, mentions, quotedMessageId
+                                conversationId, text, mentions, quotedMessageId, buttons
                             ).fold({
                                 Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
                             }, {

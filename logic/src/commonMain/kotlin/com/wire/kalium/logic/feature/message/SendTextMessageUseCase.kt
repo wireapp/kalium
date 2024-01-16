@@ -64,7 +64,8 @@ class SendTextMessageUseCase internal constructor(
         conversationId: ConversationId,
         text: String,
         mentions: List<MessageMention> = emptyList(),
-        quotedMessageId: String? = null
+        quotedMessageId: String? = null,
+        buttons: List<String>? = listOf()
     ): Either<CoreFailure, Unit> = scope.async(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
@@ -77,19 +78,31 @@ class SendTextMessageUseCase internal constructor(
             .duration
 
         provideClientId().flatMap { clientId ->
+            val textContent = MessageContent.Text(
+                value = text,
+                mentions = mentions,
+                quotedMessageReference = quotedMessageId?.let { quotedMessageId ->
+                    MessageContent.QuoteReference(
+                        quotedMessageId = quotedMessageId,
+                        quotedMessageSha256 = null,
+                        isVerified = true
+                    )
+                }
+            )
+            val content = when {
+                !buttons.isNullOrEmpty() -> {
+                    val transform: (String) -> MessageContent.Composite.Button = { MessageContent.Composite.Button(it, it, false) }
+                    val buttonContent = buttons.map(transform)
+                    MessageContent.Composite(textContent, buttonContent)
+                }
+
+                else -> {
+                    textContent
+                }
+            }
             val message = Message.Regular(
                 id = generatedMessageUuid,
-                content = MessageContent.Text(
-                    value = text,
-                    mentions = mentions,
-                    quotedMessageReference = quotedMessageId?.let { quotedMessageId ->
-                        MessageContent.QuoteReference(
-                            quotedMessageId = quotedMessageId,
-                            quotedMessageSha256 = null,
-                            isVerified = true
-                        )
-                    }
-                ),
+                content = content,
                 expectsReadConfirmation = expectsReadConfirmation,
                 conversationId = conversationId,
                 date = DateTimeUtil.currentIsoDateTimeString(),
