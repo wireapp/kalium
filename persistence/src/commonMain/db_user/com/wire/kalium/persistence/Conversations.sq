@@ -383,7 +383,7 @@ ORDER BY Conversation.type DESC LIMIT 1;
 getMLSGroupIdByUserId:
 SELECT Conversation.mls_group_id FROM Member
 JOIN Conversation ON Conversation.qualified_id = Member.conversation
-WHERE Conversation.mls_group_id IS NOT NULL AND Member.user = :userId;
+WHERE Conversation.mls_group_id IS NOT NULL AND Member.user = :userId LIMIT 1;
 
 getMLSGroupIdByConversationId:
 SELECT Conversation.mls_group_id FROM Conversation
