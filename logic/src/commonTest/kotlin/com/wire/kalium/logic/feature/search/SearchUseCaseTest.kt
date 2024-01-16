@@ -179,6 +179,40 @@ class SearchUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenSearchQuery_whenDoingSearch_thenCallTheSearchFunctionsWithCleanQuery() = runTest {
+            val searchQuery = "    search Query     "
+            val cleanQuery = "search Query"
+            val (arrangement, searchUseCase) = Arrangement().arrange {
+                withSearchUserRemoteDirectory(
+                    result = UserSearchResult(emptyList()).right(),
+                    searchQuery = eq(cleanQuery),
+                )
+                withSearchLocalByName(
+                    result = emptyList<UserSearchDetails>().right(),
+                    searchQuery = eq(cleanQuery),
+                )
+            }
+
+            val result = searchUseCase(
+                searchQuery = searchQuery,
+                excludingMembersOfConversation = null,
+                customDomain = null
+            )
+
+            assertEquals(
+                expected = emptyList<UserSearchDetails>(),
+                actual = result.connected
+            )
+            verify(arrangement.searchUserRepository)
+                .suspendFunction(arrangement.searchUserRepository::searchUserRemoteDirectory)
+                .with(eq(cleanQuery), any(), any(), any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.searchUserRepository)
+                .suspendFunction(arrangement.searchUserRepository::searchLocalByName)
+                .with(eq(cleanQuery), anything())
+                .wasInvoked(exactly = once)
+    }
 
     private companion object {
 

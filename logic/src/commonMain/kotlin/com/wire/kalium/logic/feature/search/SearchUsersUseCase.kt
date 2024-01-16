@@ -56,7 +56,7 @@ class SearchUsersUseCase internal constructor(
         excludingConversation: ConversationId?,
         customDomain: String?
     ): Result = coroutineScope {
-        val cleanSearchQuery = searchQuery.lowercase()
+        val cleanSearchQuery = searchQuery.trim().lowercase()
 
         val remoteResultsDeferred = async {
             searchUserRepository.searchUserRemoteDirectory(
