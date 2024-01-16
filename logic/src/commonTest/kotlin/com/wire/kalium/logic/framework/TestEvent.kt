@@ -105,7 +105,7 @@ object TestEvent {
         false, false, eventId, TestClient.CLIENT
     )
 
-    fun newConnection(eventId: String = "eventId", status:  ConnectionState = ConnectionState.PENDING) = Event.User.NewConnection(
+    fun newConnection(eventId: String = "eventId", status: ConnectionState = ConnectionState.PENDING) = Event.User.NewConnection(
         false,
         false,
         eventId,
@@ -146,24 +146,6 @@ object TestEvent {
         false,
         receiptMode = Conversation.ReceiptMode.ENABLED,
         senderUserId = TestUser.USER_ID
-    )
-
-    fun teamUpdated(eventId: String = "eventId") = Event.Team.Update(
-        eventId,
-        teamId = "teamId",
-        name = "teamName",
-        transient = false,
-        live = false,
-        icon = "icon",
-    )
-
-    fun teamMemberUpdate(eventId: String = "eventId", permissionCode: Int) = Event.Team.MemberUpdate(
-        eventId,
-        teamId = "teamId",
-        memberId = "memberId",
-        permissionCode = permissionCode,
-        transient = false,
-        live = false
     )
 
     fun timerChanged(eventId: String = "eventId") = Event.Conversation.ConversationMessageTimer(

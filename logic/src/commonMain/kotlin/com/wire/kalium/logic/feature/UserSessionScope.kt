@@ -347,8 +347,6 @@ import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiverImpl
-import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
-import com.wire.kalium.logic.sync.receiver.TeamEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiverImpl
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
@@ -848,7 +846,6 @@ class UserSessionScope internal constructor(
             eventRepository,
             conversationEventReceiver,
             userEventReceiver,
-            teamEventReceiver,
             featureConfigEventReceiver,
             userPropertiesEventReceiver,
             federationEventReceiver
@@ -1441,9 +1438,6 @@ class UserSessionScope internal constructor(
             conversationRepository, connectionRepository, userRepository,
             userStorage.database.memberDAO, persistMessage, userId
         )
-
-    private val teamEventReceiver: TeamEventReceiver
-        get() = TeamEventReceiverImpl(teamRepository)
 
     private val guestRoomConfigHandler
         get() = GuestRoomConfigHandler(userConfigRepository, kaliumConfigs)

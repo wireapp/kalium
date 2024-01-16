@@ -24,9 +24,7 @@ import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
-import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
-import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.logic.util.arrangement.eventHandler.FeatureConfigEventReceiverArrangement
@@ -235,9 +233,6 @@ class EventProcessorTest {
         val userEventReceiver = mock(UserEventReceiver::class)
 
         @Mock
-        val teamEventReceiver = mock(TeamEventReceiver::class)
-
-        @Mock
         val userPropertiesEventReceiver = mock(UserPropertiesEventReceiver::class)
 
         @Mock
@@ -246,7 +241,6 @@ class EventProcessorTest {
         init {
             withConversationEventReceiverSucceeding()
             withUserEventReceiverSucceeding()
-            withTeamEventReceiverSucceeding()
             withUserPropertiesEventReceiverSucceeding()
         }
 
@@ -283,19 +277,6 @@ class EventProcessorTest {
             Either.Left(failure)
         )
 
-        fun withTeamEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
-            given(teamEventReceiver)
-                .suspendFunction(teamEventReceiver::onEvent)
-                .whenInvokedWith(any())
-                .thenReturn(result)
-        }
-
-        fun withTeamEventReceiverSucceeding() = withTeamEventReceiverReturning(Either.Right(Unit))
-
-        fun withTeamEventReceiverFailingWith(failure: CoreFailure) = withTeamEventReceiverReturning(
-            Either.Left(failure)
-        )
-
         fun withUserPropertiesEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
             given(userPropertiesEventReceiver)
                 .suspendFunction(userPropertiesEventReceiver::onEvent)
@@ -314,7 +295,6 @@ class EventProcessorTest {
                 eventRepository,
                 conversationEventReceiver,
                 userEventReceiver,
-                teamEventReceiver,
                 featureConfigEventReceiver,
                 userPropertiesEventReceiver,
                 federationEventReceiver
