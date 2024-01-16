@@ -34,6 +34,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.client.ClientIdDTO
 import com.wire.kalium.network.api.base.authenticated.keypackage.LastPreKeyDTO
+import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
@@ -226,27 +227,6 @@ class TeamRepositoryTest {
     }
 
     @Test
-    fun givenTeamIdAndUserId_whenFetchingTeamMember_thenTeamMemberShouldBeSuccessful() = runTest {
-        val teamMemberDTO = TestTeam.memberDTO(
-            nonQualifiedUserId = "teamMember1"
-        )
-
-        val (arrangement, teamRepository) = Arrangement()
-            .withApiGetTeamMemberSuccess(teamMemberDTO)
-            .withGetUsersInfoSuccess()
-            .arrange()
-
-        val result = teamRepository.fetchTeamMember("teamId", "userId")
-
-        result.shouldSucceed()
-
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::upsertUser)
-            .with(any())
-            .wasInvoked(once)
-    }
-
-    @Test
     fun givenTeamId_whenSyncingWhitelistedServices_thenInsertIntoDatabase() = runTest {
         // given
         val (arrangement, teamRepository) = Arrangement()
@@ -404,8 +384,6 @@ class TeamRepositoryTest {
         val userConfigDAO = configure(mock(classOf<UserConfigDAO>())) {
             stubsUnitByDefault = true
         }
-
-        val teamMapper = MapperProvider.teamMapper()
 
         @Mock
         val teamsApi = mock(classOf<TeamsApi>())

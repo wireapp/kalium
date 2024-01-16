@@ -96,7 +96,6 @@ class EventMapper(
             is EventContentDTO.Conversation.AccessUpdate -> unknown(id, transient, live, eventContentDTO)
             is EventContentDTO.Conversation.DeletedConversationDTO -> conversationDeleted(id, eventContentDTO, transient, live)
             is EventContentDTO.Conversation.ConversationRenameDTO -> conversationRenamed(id, eventContentDTO, transient, live)
-            is EventContentDTO.Team.MemberJoin -> teamMemberJoined(id, eventContentDTO, transient, live)
             is EventContentDTO.Team.MemberLeave -> teamMemberLeft(id, eventContentDTO, transient, live)
             is EventContentDTO.Team.MemberUpdate -> teamMemberUpdate(id, eventContentDTO, transient, live)
             is EventContentDTO.Team.Update -> teamUpdate(id, eventContentDTO, transient, live)
@@ -110,6 +109,7 @@ class EventMapper(
             is EventContentDTO.Federation -> federationTerminated(id, eventContentDTO, transient, live)
             is EventContentDTO.Conversation.ConversationTypingDTO -> conversationTyping(id, eventContentDTO, transient, live)
             is EventContentDTO.Conversation.ProtocolUpdate -> conversationProtocolUpdate(id, eventContentDTO, transient, live)
+            is EventContentDTO.Team.MemberJoin -> unknown(id, transient, live, eventContentDTO)
         }
 
     private fun conversationTyping(
@@ -655,19 +655,6 @@ class EventMapper(
         transient = transient,
         live = live,
         timestampIso = event.time,
-    )
-
-    private fun teamMemberJoined(
-        id: String,
-        event: EventContentDTO.Team.MemberJoin,
-        transient: Boolean,
-        live: Boolean
-    ) = Event.Team.MemberJoin(
-        id = id,
-        teamId = event.teamId,
-        transient = transient,
-        live = live,
-        memberId = event.teamMember.nonQualifiedUserId
     )
 
     private fun teamMemberLeft(

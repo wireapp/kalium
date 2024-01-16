@@ -23,11 +23,12 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.team.TeamRole
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -57,40 +58,18 @@ class TeamEventReceiverTest {
     }
 
     @Test
-    fun givenMemberJoinEvent_repoIsInvoked() = runTest {
-        val event = TestEvent.teamMemberJoin()
-        val (arrangement, eventReceiver) = Arrangement()
-            .withMemberJoinSuccess()
-            .arrange()
-
-        eventReceiver.onEvent(event)
-
-        verify(arrangement.teamRepository)
-            .suspendFunction(arrangement.teamRepository::fetchTeamMember)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
     fun givenMemberLeaveEvent_RepoAndPersisMessageAreInvoked() = runTest {
         val event = TestEvent.teamMemberLeave()
         val (arrangement, eventReceiver) = Arrangement()
-            .withMemberLeaveSuccess()
-            .withConversationsByUserId(listOf(TestConversation.CONVERSATION))
-            .withPersistMessageSuccess()
-            .arrange()
+            .arrange {
+                withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(
+                    listOf(TestConversation.ID)
+                )
+                withConversationsByUserId(listOf(TestConversation.CONVERSATION))
+                withPersistMessageSuccess()
+            }
 
         eventReceiver.onEvent(event)
-
-        verify(arrangement.teamRepository)
-            .suspendFunction(arrangement.teamRepository::removeTeamMember)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::deleteUserFromConversations)
-            .with(any())
-            .wasInvoked(exactly = once)
 
         verify(arrangement.persistMessageUseCase)
             .suspendFunction(arrangement.persistMessageUseCase::invoke)
@@ -114,15 +93,12 @@ class TeamEventReceiverTest {
             .wasInvoked(exactly = once)
     }
 
-    private class Arrangement {
+    private class Arrangement : UserRepositoryArrangement by UserRepositoryArrangementImpl() {
         @Mock
         val teamRepository = mock(classOf<TeamRepository>())
 
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
-
-        @Mock
-        val userRepository = mock(classOf<UserRepository>())
 
         @Mock
         val persistMessageUseCase = mock(classOf<PersistMessageUseCase>())
@@ -134,27 +110,13 @@ class TeamEventReceiverTest {
 
         init {
             apply {
-                given(userRepository).suspendFunction(userRepository::getKnownUser)
-                    .whenInvokedWith(any())
-                    .thenReturn(flowOf(TestUser.OTHER))
+                withGetKnownUserReturning(flowOf(TestUser.OTHER))
             }
         }
 
         fun withUpdateTeamSuccess() = apply {
             given(teamRepository).suspendFunction(teamRepository::updateTeam).whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
-        }
-
-        fun withMemberJoinSuccess() = apply {
-            given(teamRepository).suspendFunction(teamRepository::fetchTeamMember)
-                .whenInvokedWith(any(), any()).thenReturn(Either.Right(Unit))
-        }
-
-        fun withMemberLeaveSuccess() = apply {
-            given(teamRepository).suspendFunction(teamRepository::removeTeamMember)
-                .whenInvokedWith(any(), any()).thenReturn(Either.Right(Unit))
-            given(conversationRepository).suspendFunction(conversationRepository::deleteUserFromConversations)
-                .whenInvokedWith(any()).thenReturn(Either.Right(Unit))
         }
 
         fun withMemberUpdateSuccess() = apply {
@@ -172,6 +134,9 @@ class TeamEventReceiverTest {
                 .whenInvokedWith(any()).thenReturn(Either.Right(Unit))
         }
 
-        fun arrange() = this to teamEventReceiver
+        fun arrange(block: Arrangement.() -> Unit = { }) = apply(block)
+            .let {
+                this to teamEventReceiver
+            }
     }
 }

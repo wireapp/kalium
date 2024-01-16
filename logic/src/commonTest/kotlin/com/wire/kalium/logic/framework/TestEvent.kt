@@ -158,14 +158,6 @@ object TestEvent {
         icon = "icon",
     )
 
-    fun teamMemberJoin(eventId: String = "eventId") = Event.Team.MemberJoin(
-        eventId,
-        teamId = "teamId",
-        transient = false,
-        live = false,
-        memberId = "memberId"
-    )
-
     fun teamMemberLeave(eventId: String = "eventId") = Event.Team.MemberLeave(
         eventId,
         teamId = "teamId",

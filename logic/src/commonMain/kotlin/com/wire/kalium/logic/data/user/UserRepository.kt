@@ -63,6 +63,7 @@ import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.UserProfileDTO
 import com.wire.kalium.network.api.base.model.isTeamMember
 import com.wire.kalium.persistence.dao.ConnectionEntity
+import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -111,9 +112,9 @@ interface UserRepository {
      */
     suspend fun getAllRecipients(): Either<CoreFailure, Pair<List<Recipient>, List<Recipient>>>
     suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit>
-    suspend fun markUserAsDeletedAndRemoveFromGroupConversations(userId: UserId): Either<CoreFailure, Unit>
+    suspend fun markUserAsDeletedAndRemoveFromGroupConversations(userId: UserId): Either<CoreFailure, List<ConversationId>>
 
-    suspend fun markUserAsDeletedAndRemoveFromGroupConversations(userId: List<UserId>): Either<CoreFailure, Unit>
+    suspend fun markAsDeleted(userId: List<UserId>): Either<StorageFailure, Unit>
 
     /**
      * Marks federated user as defederated in order to hold conversation history
@@ -511,14 +512,13 @@ internal class UserDataSource internal constructor(
         }
     }
 
-    override suspend fun markUserAsDeletedAndRemoveFromGroupConversations(userId: UserId): Either<CoreFailure, Unit> = wrapStorageRequest {
+    override suspend fun markUserAsDeletedAndRemoveFromGroupConversations(userId: UserId): Either<CoreFailure, List<ConversationId>> = wrapStorageRequest {
         userDAO.markUserAsDeletedAndRemoveFromGroupConv(userId.toDao())
-    }
+    }.map { it.map(ConversationIDEntity::toModel) }
 
-    override suspend fun markUserAsDeletedAndRemoveFromGroupConversations(userId: List<UserId>): Either<CoreFailure, Unit> =
-        wrapStorageRequest {
-            userDAO.markUserAsDeletedAndRemoveFromGroupConv(userId.map { it.toDao() })
-        }
+    override suspend fun markAsDeleted(userId: List<UserId>): Either<StorageFailure, Unit> = wrapStorageRequest {
+        userDAO.markAsDeleted(userId.map { it.toDao() })
+    }
 
     override suspend fun defederateUser(userId: UserId): Either<CoreFailure, Unit> {
         return wrapStorageRequest {

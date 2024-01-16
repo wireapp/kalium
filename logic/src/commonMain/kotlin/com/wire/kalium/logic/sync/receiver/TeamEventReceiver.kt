@@ -35,7 +35,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import kotlinx.coroutines.flow.first
 
 internal interface TeamEventReceiver : EventReceiver<Event.Team>
 
@@ -49,7 +48,6 @@ internal class TeamEventReceiverImpl(
 
     override suspend fun onEvent(event: Event.Team): Either<CoreFailure, Unit> {
         when (event) {
-            is Event.Team.MemberJoin -> handleMemberJoin(event)
             is Event.Team.MemberLeave -> handleMemberLeave(event)
             is Event.Team.MemberUpdate -> handleMemberUpdate(event)
             is Event.Team.Update -> handleUpdate(event)
@@ -61,94 +59,24 @@ internal class TeamEventReceiverImpl(
         return Either.Right(Unit)
     }
 
-    private suspend fun handleMemberJoin(event: Event.Team.MemberJoin) =
-        teamRepository.fetchTeamMember(
-            teamId = event.teamId,
-            userId = event.memberId,
-        )
-            .onSuccess {
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.SUCCESS,
-                        event
-                    )
-            }
-            .onFailure {
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.FAILURE,
-                        event,
-                        Pair("errorInfo", "$it")
-                    )
-            }
-
     @Suppress("LongMethod")
     private suspend fun handleMemberLeave(event: Event.Team.MemberLeave) {
-        val userId = UserId(event.memberId, selfUserId.domain)
-        teamRepository.removeTeamMember(
-            teamId = event.teamId,
-            userId = event.memberId,
-        )
+        val removedUser = UserId(event.memberId, selfUserId.domain)
+        userRepository.markUserAsDeletedAndRemoveFromGroupConversations(removedUser)
             .onSuccess {
-                val knownUser = userRepository.getKnownUser(userId).first()
-                if (knownUser?.name != null) {
-                    conversationRepository.getConversationsByUserId(userId)
-                        .onSuccess {
-                            it.forEach { conversation ->
-                                val message = Message.System(
-                                    id = uuid4().toString(), // We generate a random uuid for this new system message
-                                    content = MessageContent.TeamMemberRemoved(knownUser.name),
-                                    conversationId = conversation.id,
-                                    date = event.timestampIso,
-                                    senderUserId = userId,
-                                    status = Message.Status.Sent,
-                                    visibility = Message.Visibility.VISIBLE,
-                                    expirationData = null
-                                )
-                                persistMessage(message)
-                            }
-
-                            conversationRepository.deleteUserFromConversations(userId)
-                                .onSuccess {
-                                    kaliumLogger
-                                        .logEventProcessing(
-                                            EventLoggingStatus.SUCCESS,
-                                            event
-                                        )
-                                }
-                                .onFailure { deleteFailure ->
-                                    kaliumLogger
-                                        .logEventProcessing(
-                                            EventLoggingStatus.FAILURE,
-                                            event,
-                                            Pair("errorInfo", "$deleteFailure")
-                                        )
-                                }
-
-                        }.onFailure {
-                            kaliumLogger
-                                .logEventProcessing(
-                                    EventLoggingStatus.FAILURE,
-                                    event,
-                                    Pair("errorInfo", "$it")
-                                )
-                        }
-                } else {
-                    kaliumLogger
-                        .logEventProcessing(
-                            EventLoggingStatus.SKIPPED,
-                            event,
-                            Pair("info", "User or User name is null")
-                        )
-                }
-            }
-            .onFailure {
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.FAILURE,
-                        event,
-                        Pair("errorInfo", "$it")
+                it.forEach { conversationId ->
+                    val message = Message.System(
+                        id = uuid4().toString(), // We generate a random uuid for this new system message
+                        content = MessageContent.MemberChange.RemovedFromTeam(listOf(removedUser)),
+                        conversationId = conversationId,
+                        date = event.timestampIso,
+                        senderUserId = removedUser,
+                        status = Message.Status.Sent,
+                        visibility = Message.Visibility.VISIBLE,
+                        expirationData = null
                     )
+                    persistMessage(message)
+                }
             }
     }
 

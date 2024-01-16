@@ -180,6 +180,7 @@ internal class UserEventReceiverImpl internal constructor(
             Either.Right(Unit)
         } else {
             userRepository.markUserAsDeletedAndRemoveFromGroupConversations(event.userId)
+                .map { Unit }
                 .onFailure {
                     kaliumLogger
                         .logEventProcessing(

@@ -234,6 +234,8 @@ import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldChangeNotifiedFor
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldChangeNotifiedForSelfUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldForSelfUserUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldForSelfUserUseCaseImpl
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldRequestUseCase
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldRequestUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCaseImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
@@ -1421,7 +1423,6 @@ class UserSessionScope internal constructor(
         get() = UserEventReceiverImpl(
             clientRepository,
             connectionRepository,
-            conversationRepository,
             userRepository,
             logout,
             oneOnOneResolver,

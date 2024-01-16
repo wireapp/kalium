@@ -59,8 +59,6 @@ interface TeamRepository {
     suspend fun getTeam(teamId: TeamId): Flow<Team?>
     suspend fun deleteConversation(conversationId: ConversationId, teamId: TeamId): Either<CoreFailure, Unit>
     suspend fun updateMemberRole(teamId: String, userId: String, permissionCode: Int?): Either<CoreFailure, Unit>
-    suspend fun fetchTeamMember(teamId: String, userId: String): Either<CoreFailure, Unit>
-    suspend fun removeTeamMember(teamId: String, userId: String): Either<CoreFailure, Unit>
     suspend fun updateTeam(team: Team): Either<CoreFailure, Unit>
     suspend fun syncServices(teamId: TeamId): Either<CoreFailure, Unit>
     suspend fun approveLegalHoldRequest(teamId: TeamId, password: String?): Either<CoreFailure, Unit>
@@ -151,34 +149,6 @@ internal class TeamDataSource(
                     QualifiedIDEntity(userId, selfUserId.domain) to userTypeEntityTypeMapper.teamRoleCodeToUserType(permissionCode)
                 )
             )
-        }
-    }
-
-    override suspend fun fetchTeamMember(teamId: String, userId: String): Either<CoreFailure, Unit> {
-        return wrapApiRequest {
-            teamsApi.getTeamMember(
-                teamId = teamId,
-                userId = userId,
-            )
-        }.flatMap { member ->
-            wrapApiRequest { userDetailsApi.getUserInfo(userId = QualifiedID(userId, selfUserId.domain)) }
-                .flatMap { userProfileDTO ->
-                    wrapStorageRequest {
-                        val userEntity = userMapper.fromUserProfileDtoToUserEntity(
-                            userProfile = userProfileDTO,
-                            connectionState = ConnectionEntity.State.ACCEPTED,
-                            userTypeEntity = userTypeEntityTypeMapper.teamRoleCodeToUserType(member.permissions?.own)
-                        )
-                        userDAO.upsertUser(userEntity)
-                        userDAO.upsertConnectionStatuses(mapOf(userEntity.id to userEntity.connectionStatus))
-                    }
-                }
-        }
-    }
-
-    override suspend fun removeTeamMember(teamId: String, userId: String): Either<CoreFailure, Unit> {
-        return wrapStorageRequest {
-            userDAO.markUserAsDeleted(QualifiedIDEntity(userId, selfUserId.domain))
         }
     }
 

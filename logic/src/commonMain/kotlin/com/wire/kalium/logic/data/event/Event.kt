@@ -447,21 +447,6 @@ sealed class Event(open val id: String, open val transient: Boolean, open val li
             )
         }
 
-        data class MemberJoin(
-            override val id: String,
-            override val teamId: String,
-            override val transient: Boolean,
-            override val live: Boolean,
-            val memberId: String,
-        ) : Team(id, teamId, transient, live) {
-            override fun toLogMap(): Map<String, Any?> = mapOf(
-                typeKey to "Team.MemberJoin",
-                idKey to id.obfuscateId(),
-                teamIdKey to teamId.obfuscateId(),
-                memberIdKey to memberId.obfuscateId(),
-            )
-        }
-
         data class MemberLeave(
             override val id: String,
             override val transient: Boolean,

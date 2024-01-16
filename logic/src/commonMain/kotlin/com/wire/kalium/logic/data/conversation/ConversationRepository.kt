@@ -67,6 +67,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConvers
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -154,7 +155,6 @@ interface ConversationRepository {
         conversationID: ConversationId
     ): Either<CoreFailure, Unit>
 
-    suspend fun deleteMembersFromEvent(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun observeOneToOneConversationWithOtherUser(otherUserId: UserId): Flow<Either<CoreFailure, Conversation>>
 
     suspend fun getOneOnOneConversationsWithOtherUser(
@@ -653,17 +653,6 @@ internal class ConversationDataSource internal constructor(
             memberDAO.updateMemberRole(member.id.toDao(), conversationID.toDao(), conversationRoleMapper.toDAO(member.role))
         }
 
-    override suspend fun deleteMembersFromEvent(
-        userIDList: List<UserId>,
-        conversationID: ConversationId
-    ): Either<CoreFailure, Unit> =
-        wrapStorageRequest {
-            memberDAO.deleteMembersByQualifiedID(
-                userIDList.map { it.toDao() },
-                conversationID.toDao()
-            )
-        }
-
     override suspend fun getConversationsByGroupState(
         groupState: GroupState
     ): Either<StorageFailure, List<Conversation>> =
@@ -1096,6 +1085,7 @@ internal class ConversationDataSource internal constructor(
             }
         }
     }
+
     override suspend fun setLegalHoldStatusChangeNotified(conversationId: ConversationId): Either<CoreFailure, Boolean> =
         wrapStorageRequest {
             conversationDAO.updateLegalHoldStatusChangeNotified(conversationId = conversationId.toDao(), notified = true)

@@ -19,6 +19,7 @@ package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.User
@@ -26,7 +27,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import io.mockative.KFunction1
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
@@ -34,7 +34,6 @@ import io.mockative.matchers.Matcher
 import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
-import kotlin.jvm.JvmName
 
 @Suppress("INAPPLICABLE_JVM_NAME")
 internal interface UserRepositoryArrangement {
@@ -46,14 +45,9 @@ internal interface UserRepositoryArrangement {
 
     fun withUpdateUserFailure(coreFailure: CoreFailure)
 
-    @JvmName("withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccessWithUserId")
     fun withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(
+        result: List<ConversationId>,
         userIdMatcher: Matcher<UserId> = any()
-    )
-
-    @JvmName("withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccessWithUserIdList")
-    fun withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(
-        userIdMatcher: Matcher<List<UserId>> = any()
     )
 
     fun withSelfUserReturning(selfUser: SelfUser?)
@@ -86,6 +80,8 @@ internal interface UserRepositoryArrangement {
         result: Either<StorageFailure, Boolean>,
         userIdList: Matcher<List<UserId>> = any()
     )
+
+    fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: Matcher<List<UserId>>)
 }
 
 @Suppress("INAPPLICABLE_JVM_NAME")
@@ -120,24 +116,14 @@ internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
             .whenInvokedWith(any()).thenReturn(Either.Left(coreFailure))
     }
 
-    @JvmName("withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccessWithUserId")
     override fun withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(
+        result: List<ConversationId>,
         userIdMatcher: Matcher<UserId>
     ) {
         given(userRepository).suspendFunction(
-            userRepository::markUserAsDeletedAndRemoveFromGroupConversations,
-            KFunction1<UserId>()
+            userRepository::markUserAsDeletedAndRemoveFromGroupConversations
         ).whenInvokedWith(userIdMatcher)
-            .thenReturn(Either.Right(Unit))
-    }
-
-    @JvmName("withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccessWithUserIdList")
-    override fun withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(userIdMatcher: Matcher<List<UserId>>) {
-        given(userRepository).suspendFunction(
-            userRepository::markUserAsDeletedAndRemoveFromGroupConversations,
-            KFunction1<List<UserId>>()
-        ).whenInvokedWith(userIdMatcher)
-            .thenReturn(Either.Right(Unit))
+            .thenReturn(Either.Right(result))
     }
 
     override fun withSelfUserReturning(selfUser: SelfUser?) {
@@ -217,6 +203,13 @@ internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
         given(userRepository)
             .suspendFunction(userRepository::isAtLeastOneUserATeamMember)
             .whenInvokedWith(userIdList)
+            .thenReturn(result)
+    }
+
+    override fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: Matcher<List<UserId>>) {
+        given(userRepository)
+            .suspendFunction(userRepository::markAsDeleted)
+            .whenInvokedWith(userId)
             .thenReturn(result)
     }
 }
