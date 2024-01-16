@@ -512,9 +512,12 @@ internal class UserDataSource internal constructor(
         }
     }
 
-    override suspend fun markUserAsDeletedAndRemoveFromGroupConversations(userId: UserId): Either<CoreFailure, List<ConversationId>> = wrapStorageRequest {
-        userDAO.markUserAsDeletedAndRemoveFromGroupConv(userId.toDao())
-    }.map { it.map(ConversationIDEntity::toModel) }
+    override suspend fun markUserAsDeletedAndRemoveFromGroupConversations(
+        userId: UserId
+    ): Either<CoreFailure, List<ConversationId>> =
+        wrapStorageRequest {
+            userDAO.markUserAsDeletedAndRemoveFromGroupConv(userId.toDao())
+        }.map { it.map(ConversationIDEntity::toModel) }
 
     override suspend fun markAsDeleted(userId: List<UserId>): Either<StorageFailure, Unit> = wrapStorageRequest {
         userDAO.markAsDeleted(userId.map { it.toDao() })

@@ -304,13 +304,16 @@ class UserDAOImpl internal constructor(
         userQueries.deleteUser(qualifiedID)
     }
 
-    override suspend fun markUserAsDeletedAndRemoveFromGroupConv(qualifiedID: QualifiedIDEntity): List<ConversationIDEntity> = withContext(queriesContext) {
-        userQueries.transactionWithResult {
-            val conversationIds = userQueries.selectGroupConversationsUserIsMemberOf(qualifiedID).executeAsList()
-            safeMarkAsDeletedAndRemoveFromGroupConversation(qualifiedID)
-            conversationIds
+    override suspend fun markUserAsDeletedAndRemoveFromGroupConv(
+        qualifiedID: QualifiedIDEntity
+    ): List<ConversationIDEntity> =
+        withContext(queriesContext) {
+            userQueries.transactionWithResult {
+                val conversationIds = userQueries.selectGroupConversationsUserIsMemberOf(qualifiedID).executeAsList()
+                safeMarkAsDeletedAndRemoveFromGroupConversation(qualifiedID)
+                conversationIds
+            }
         }
-    }
 
     private fun safeMarkAsDeletedAndRemoveFromGroupConversation(qualifiedID: QualifiedIDEntity) {
         userQueries.markUserAsDeleted(qualifiedID, UserTypeEntity.NONE)
