@@ -32,6 +32,7 @@ import com.wire.kalium.testservice.models.SendConfirmationReadRequest
 import com.wire.kalium.testservice.models.SendEphemeralConfirmationDeliveredRequest
 import com.wire.kalium.testservice.models.SendFileRequest
 import com.wire.kalium.testservice.models.SendImageRequest
+import com.wire.kalium.testservice.models.SendLocationRequest
 import com.wire.kalium.testservice.models.SendPingRequest
 import com.wire.kalium.testservice.models.SendReactionRequest
 import com.wire.kalium.testservice.models.SendTextRequest
@@ -257,8 +258,26 @@ class ConversationResources(private val instanceService: InstanceService) {
         }
     }
 
-    // POST /api/v1/instance/{instanceId}/sendLocation
-    // Send a location to a conversation.
+    @POST
+    @Path("/instance/{id}/sendLocation")
+    @Operation(summary = "Send a location to a conversation")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun sendLocation(@PathParam("id") id: String, @Valid sendLocationRequest: SendLocationRequest): Response {
+        val instance = instanceService.getInstanceOrThrow(id)
+        return with(sendLocationRequest) {
+            runBlocking {
+                ConversationRepository.sendLocation(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    latitude,
+                    longitude,
+                    locationName,
+                    zoom,
+                    messageTimer
+                )
+            }
+        }
+    }
 
     @POST
     @Path("/instance/{id}/sendPing")
