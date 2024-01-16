@@ -45,7 +45,6 @@ class UpdateConversationArchivedStatusUseCaseTest {
         val onlyLocally = false
 
         val (arrangement, updateConversationArchivedStatus) = Arrangement()
-            .withSuccessfulMutingUpdates()
             .withUpdateArchivedStatusFullSuccess()
             .arrange()
 
@@ -74,7 +73,6 @@ class UpdateConversationArchivedStatusUseCaseTest {
             val onlyLocally = true
 
             val (arrangement, updateConversationArchivedStatus) = Arrangement()
-                .withSuccessfulMutingUpdates()
                 .withUpdateArchivedStatusFullSuccess()
                 .arrange()
 
@@ -102,7 +100,6 @@ class UpdateConversationArchivedStatusUseCaseTest {
         val onlyLocally = false
 
         val (arrangement, updateConversationArchivedStatus) = Arrangement()
-            .withSuccessfulMutingUpdates()
             .withRemoteUpdateArchivedStatusFailure()
             .arrange()
 
@@ -131,7 +128,6 @@ class UpdateConversationArchivedStatusUseCaseTest {
 
         val (arrangement, updateConversationArchivedStatus) = Arrangement()
             .withLocalUpdateArchivedStatusFailure()
-            .withSuccessfulMutingUpdates()
             .arrange()
 
         val result = updateConversationArchivedStatus(conversationId, isConversationArchived, onlyLocally, archivedStatusTimestamp)
@@ -149,64 +145,6 @@ class UpdateConversationArchivedStatusUseCaseTest {
                 .wasInvoked(exactly = once)
         }
     }
-
-    @Test
-    fun givenAConversationId_whenInvokingAnArchivedStatusChangeAndFailsUpdatingRemoteMutingStatus_thenItShouldStillReturnASuccessResult() =
-        runTest {
-            val conversationId = TestConversation.ID
-            val isConversationArchived = true
-            val archivedStatusTimestamp = 123456789L
-            val onlyLocally = false
-
-            val (arrangement, updateConversationArchivedStatus) = Arrangement()
-                .withUpdateArchivedStatusFullSuccess()
-                .withRemoteErrorMutingUpdates()
-                .arrange()
-
-            val result = updateConversationArchivedStatus(conversationId, isConversationArchived, onlyLocally, archivedStatusTimestamp)
-            assertTrue(result is ArchiveStatusUpdateResult.Success)
-
-            with(arrangement) {
-                verify(conversationRepository)
-                    .suspendFunction(conversationRepository::updateArchivedStatusRemotely)
-                    .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp })
-                    .wasInvoked(exactly = once)
-
-                verify(conversationRepository)
-                    .suspendFunction(conversationRepository::updateArchivedStatusLocally)
-                    .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp })
-                    .wasInvoked(exactly = once)
-            }
-        }
-
-    @Test
-    fun givenAConversationId_whenInvokingAnArchivedStatusChangeAndFailsUpdatingLocalMutingStatus_thenItShouldStillReturnASuccessResult() =
-        runTest {
-            val conversationId = TestConversation.ID
-            val isConversationArchived = true
-            val archivedStatusTimestamp = 123456789L
-            val onlyLocally = false
-
-            val (arrangement, updateConversationArchivedStatus) = Arrangement()
-                .withUpdateArchivedStatusFullSuccess()
-                .withLocalErrorMutingUpdates()
-                .arrange()
-
-            val result = updateConversationArchivedStatus(conversationId, isConversationArchived, onlyLocally, archivedStatusTimestamp)
-            assertTrue(result is ArchiveStatusUpdateResult.Success)
-
-            with(arrangement) {
-                verify(conversationRepository)
-                    .suspendFunction(conversationRepository::updateArchivedStatusRemotely)
-                    .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp })
-                    .wasInvoked(exactly = once)
-
-                verify(conversationRepository)
-                    .suspendFunction(conversationRepository::updateArchivedStatusLocally)
-                    .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp })
-                    .wasInvoked(exactly = once)
-            }
-        }
 
     private class Arrangement {
         @Mock
@@ -240,35 +178,6 @@ class UpdateConversationArchivedStatusUseCaseTest {
                 .thenReturn(Either.Right(Unit))
             given(conversationRepository)
                 .suspendFunction(conversationRepository::updateArchivedStatusLocally)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Either.Left(StorageFailure.DataNotFound))
-        }
-
-        fun withSuccessfulMutingUpdates() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateMutedStatusRemotely)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Either.Right(Unit))
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateMutedStatusLocally)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Either.Right(Unit))
-        }
-
-        fun withRemoteErrorMutingUpdates() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateMutedStatusRemotely)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Either.Left(NetworkFailure.NoNetworkConnection(RuntimeException("some error"))))
-        }
-
-        fun withLocalErrorMutingUpdates() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateMutedStatusRemotely)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Either.Right(Unit))
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateMutedStatusLocally)
                 .whenInvokedWith(any(), any(), any())
                 .thenReturn(Either.Left(StorageFailure.DataNotFound))
         }
