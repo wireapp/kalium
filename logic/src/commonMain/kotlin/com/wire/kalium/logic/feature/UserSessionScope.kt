@@ -1773,7 +1773,7 @@ class UserSessionScope internal constructor(
             appLockConfigHandler
         )
 
-    val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId)
+    val team: TeamScope get() = TeamScope(teamRepository, conversationRepository, selfTeamId)
 
     val service: ServiceScope
         get() = ServiceScope(
