@@ -229,6 +229,42 @@ sealed class ConversationRepository {
             }
         }
 
+        @Suppress("LongParameterList")
+        suspend fun sendLocation(
+            instance: Instance,
+            conversationId: ConversationId,
+            latitude: Float,
+            longitude: Float,
+            name: String,
+            zoom: Int,
+            messageTimer: Int?
+        ): Response = instance.coreLogic.globalScope {
+            when (val session = session.currentSession()) {
+                is CurrentSessionResult.Success -> {
+                    instance.coreLogic.sessionScope(session.accountInfo.userId) {
+                        val newSelfDeletionTimer = if (messageTimer != 0 && messageTimer != null) {
+                            log.info("Instance ${instance.instanceId}: Enable self deletion timer")
+                            SelfDeletionTimer.Enabled(messageTimer.toDuration(DurationUnit.MILLISECONDS))
+                        } else {
+                            log.info("Instance ${instance.instanceId}: Disable self deletion timer")
+                            SelfDeletionTimer.Disabled
+                        }
+                        persistNewSelfDeletionStatus.invoke(conversationId, newSelfDeletionTimer)
+                        log.info("Instance ${instance.instanceId}: Send ping")
+                        messages.sendLocation(conversationId, latitude, longitude, name, zoom).fold({
+                            Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
+                        }, {
+                            Response.status(Response.Status.OK).build()
+                        })
+                    }
+                }
+
+                is CurrentSessionResult.Failure -> {
+                    Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Session failure").build()
+                }
+            }
+        }
+
         suspend fun sendPing(instance: Instance, conversationId: ConversationId): Response = instance.coreLogic.globalScope {
             when (val session = session.currentSession()) {
                 is CurrentSessionResult.Success -> {
