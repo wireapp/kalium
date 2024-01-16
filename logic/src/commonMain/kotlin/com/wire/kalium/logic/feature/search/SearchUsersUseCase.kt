@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.publicuser.ConversationMemberExcludedOptions
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
 import com.wire.kalium.logic.data.publicuser.model.UserSearchDetails
+import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
@@ -55,9 +56,11 @@ class SearchUsersUseCase internal constructor(
         excludingConversation: ConversationId?,
         customDomain: String?
     ): Result = coroutineScope {
+        val cleanSearchQuery = searchQuery.lowercase()
+
         val remoteResultsDeferred = async {
             searchUserRepository.searchUserRemoteDirectory(
-                searchQuery,
+                cleanSearchQuery,
                 customDomain ?: selfUserId.domain,
                 MAX_SEARCH_RESULTS,
                 SearchUsersOptions(
@@ -83,7 +86,7 @@ class SearchUsersUseCase internal constructor(
         }
 
         val localSearchResultDeferred = async {
-            searchUserRepository.searchLocalByName(searchQuery, excludingConversation)
+            searchUserRepository.searchLocalByName(cleanSearchQuery, excludingConversation)
                 .getOrElse(emptyList())
                 .associateBy { it.id }
                 .toMutableMap()
@@ -101,11 +104,12 @@ class SearchUsersUseCase internal constructor(
     ): Result {
         val updatedUser = mutableListOf<UserId>()
         remoteSearch.forEach { (userId, remoteUser) ->
-            if (localResult.contains(userId)) {
+            if (localResult.contains(userId) || (remoteUser.connectionStatus == ConnectionState.ACCEPTED)) {
                 localResult[userId] = remoteUser
                 updatedUser.add(userId)
             }
         }
+
         updatedUser.forEach { userId ->
             remoteSearch.remove(userId)
         }

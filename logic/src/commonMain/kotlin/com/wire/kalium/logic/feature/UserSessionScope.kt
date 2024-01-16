@@ -1429,7 +1429,6 @@ class UserSessionScope internal constructor(
         get() = UserEventReceiverImpl(
             clientRepository,
             connectionRepository,
-            conversationRepository,
             userRepository,
             logout,
             oneOnOneResolver,
