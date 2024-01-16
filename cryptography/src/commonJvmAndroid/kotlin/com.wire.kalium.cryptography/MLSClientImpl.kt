@@ -294,15 +294,15 @@ class MLSClientImpl(
         }
     }
 
-    override suspend fun registerTrustAnchors(pem: String) {
+    override suspend fun registerTrustAnchors(pem: CertificateChain) {
         coreCrypto.e2eiRegisterAcmeCa(pem)
     }
 
-    override suspend fun registerCrl(url: String, crl: ByteArray): CrlRegistration {
+    override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration {
         return toCrlRegistration(coreCrypto.e2eiRegisterCrl(url, crl))
     }
 
-    override suspend fun registerIntermediateCa(pem: String) {
+    override suspend fun registerIntermediateCa(pem: CertificateChain) {
         coreCrypto.e2eiRegisterIntermediateCa(pem)
     }
 
