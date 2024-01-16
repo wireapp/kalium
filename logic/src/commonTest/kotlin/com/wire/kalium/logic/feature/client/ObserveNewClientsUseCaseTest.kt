@@ -40,7 +40,10 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -51,7 +54,7 @@ class ObserveNewClientsUseCaseTest {
     @Test
     fun givenNewClientAndCurrentSessionError_thenNewClientErrorResult() = runTest {
         val (_, observeNewClients) = Arrangement()
-            .withoutValidAccounts(listOf(TestUser.SELF to null))
+            .withValidAccounts(listOf(TestUser.SELF to null))
             .withCurrentSession(Either.Left(StorageFailure.DataNotFound))
             .withNewClientsForUser1(listOf(TestClient.CLIENT))
             .arrange()
@@ -65,7 +68,7 @@ class ObserveNewClientsUseCaseTest {
     @Test
     fun givenNewClientForCurrentUser_thenNewClientInCurrentUserResult() = runTest {
         val (_, observeNewClients) = Arrangement()
-            .withoutValidAccounts(listOf(TestUser.SELF to null))
+            .withValidAccounts(listOf(TestUser.SELF to null))
             .withCurrentSession(Either.Right(TEST_ACCOUNT_INFO))
             .withNewClientsForUser1(listOf(TestClient.CLIENT))
             .arrange()
@@ -80,7 +83,7 @@ class ObserveNewClientsUseCaseTest {
     @Test
     fun givenNewClientForOtherUser_thenNewClientInOtherUserResult() = runTest {
         val (arrangement, observeNewClients) = Arrangement()
-            .withoutValidAccounts(listOf(TestUser.SELF to null, TestUser.SELF.copy(id = TestUser.OTHER_USER_ID) to null))
+            .withValidAccounts(listOf(TestUser.SELF to null, TestUser.SELF.copy(id = TestUser.OTHER_USER_ID) to null))
             .withCurrentSession(Either.Right(TEST_ACCOUNT_INFO))
             .withNewClientsForUser1(listOf())
             .withNewClientsForUser2(listOf(TestClient.CLIENT))
@@ -109,7 +112,7 @@ class ObserveNewClientsUseCaseTest {
         val client1 = TestClient.CLIENT
         val client2 = TestClient.CLIENT.copy(id = ClientId("other_client"))
         val (_, observeNewClients) = Arrangement()
-            .withoutValidAccounts(listOf(TestUser.SELF to null, TestUser.SELF.copy(id = TestUser.OTHER_USER_ID) to null))
+            .withValidAccounts(listOf(TestUser.SELF to null, TestUser.SELF.copy(id = TestUser.OTHER_USER_ID) to null))
             .withCurrentSession(Either.Right(TEST_ACCOUNT_INFO))
             .withNewClientsForUser1(listOf(client1))
             .withNewClientsForUser2(listOf(client2))
@@ -127,7 +130,7 @@ class ObserveNewClientsUseCaseTest {
         val client1 = TestClient.CLIENT
         val client2 = TestClient.CLIENT.copy(id = ClientId("other_client"))
         val (_, observeNewClients) = Arrangement()
-            .withoutValidAccounts(listOf(TestUser.SELF to null))
+            .withValidAccounts(listOf(TestUser.SELF to null))
             .withCurrentSession(Either.Right(TEST_ACCOUNT_INFO))
             .withNewClientsForUser1(listOf(client1, client2))
             .arrange()
@@ -136,6 +139,53 @@ class ObserveNewClientsUseCaseTest {
             assertEquals(NewClientResult.InCurrentAccount(listOf(client1, client2), TestUser.USER_ID), awaitItem())
 
             awaitComplete()
+        }
+    }
+
+    @Test
+    fun givenNoNewClients_thenEmptyResult() = runTest {
+        val (_, observeNewClients) = Arrangement()
+            .withValidAccounts(listOf(TestUser.SELF to null))
+            .withCurrentSession(Either.Right(TEST_ACCOUNT_INFO))
+            .withNewClientsForUser1(emptyList())
+            .arrange()
+
+        observeNewClients().test {
+            assertEquals(NewClientResult.Empty, awaitItem())
+
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun givenNoAccountsLoggedIn_thenEmptyResult() = runTest {
+        val (_, observeNewClients) = Arrangement()
+            .withValidAccounts(emptyList())
+            .arrange()
+
+        observeNewClients().test {
+            assertEquals(NewClientResult.Empty, awaitItem())
+
+            awaitComplete()
+        }
+    }
+    @Test
+    fun givenNewClientForCurrentUser_whenUserIsBeingLoggedOut_thenChangeToEmptyResult() = runTest {
+        val validAccountsFlow = MutableStateFlow(listOf(TestUser.SELF to null))
+        val (_, observeNewClients) = Arrangement()
+            .withValidAccountsFlow(validAccountsFlow)
+            .withCurrentSession(Either.Right(TEST_ACCOUNT_INFO))
+            .withNewClientsForUser1(listOf(TestClient.CLIENT))
+            .arrange()
+
+        observeNewClients().test {
+            assertEquals(NewClientResult.InCurrentAccount(listOf(TestClient.CLIENT), TestUser.USER_ID), awaitItem())
+
+            validAccountsFlow.value = emptyList()
+            advanceUntilIdle()
+            assertEquals(NewClientResult.Empty, awaitItem())
+
+            cancel()
         }
     }
 
@@ -198,11 +248,17 @@ class ObserveNewClientsUseCaseTest {
                 .then { flowOf(Either.Right(result)) }
         }
 
-        fun withoutValidAccounts(result: List<Pair<SelfUser, Team?>>) = apply {
+        fun withValidAccounts(result: List<Pair<SelfUser, Team?>>) = apply {
             given(observeValidAccounts)
                 .function(observeValidAccounts::invoke)
                 .whenInvoked()
                 .thenReturn(flowOf(result))
+        }
+        fun withValidAccountsFlow(flowResult: Flow<List<Pair<SelfUser, Team?>>>) = apply {
+            given(observeValidAccounts)
+                .function(observeValidAccounts::invoke)
+                .whenInvoked()
+                .thenReturn(flowResult)
         }
 
         fun arrange() = this to observeNewClientsUseCase

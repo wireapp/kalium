@@ -34,6 +34,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapE2EIRequest
+import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.network.api.base.authenticated.e2ei.AccessTokenResponse
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
@@ -56,12 +57,14 @@ interface E2EIRepository {
         prevNonce: String,
         acmeChallenge: AcmeChallenge
     ): Either<CoreFailure, ChallengeResponse>
+
     suspend fun validateOIDCChallenge(
         idToken: String,
         refreshToken: String,
         prevNonce: String,
         acmeChallenge: AcmeChallenge
     ): Either<CoreFailure, ChallengeResponse>
+
     suspend fun setDPoPChallengeResponse(challengeResponse: ChallengeResponse): Either<CoreFailure, Unit>
     suspend fun setOIDCChallengeResponse(challengeResponse: ChallengeResponse): Either<CoreFailure, Unit>
     suspend fun finalize(location: String, prevNonce: String): Either<CoreFailure, Pair<ACMEResponse, String>>
@@ -70,6 +73,7 @@ interface E2EIRepository {
     suspend fun rotateKeysAndMigrateConversations(certificateChain: String): Either<CoreFailure, Unit>
     suspend fun getOAuthRefreshToken(): Either<CoreFailure, String?>
     suspend fun nukeE2EIClient()
+    suspend fun fetchFederationCertificates(): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
@@ -85,7 +89,7 @@ class E2EIRepositoryImpl(
 
     override suspend fun loadACMEDirectories(): Either<CoreFailure, AcmeDirectory> = userConfigRepository.getE2EISettings().flatMap {
         wrapApiRequest {
-            acmeApi.getACMEDirectories(TEMP_ACME_DISCOVER_URL)
+            acmeApi.getACMEDirectories(it.discoverUrl)
         }.flatMap { directories ->
             e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
                 wrapE2EIRequest {
@@ -225,12 +229,19 @@ class E2EIRepositoryImpl(
         Either.Right(e2EIClient.getOAuthRefreshToken())
     }
 
-    override suspend fun nukeE2EIClient() {
-        e2EIClientProvider.nuke()
+    override suspend fun fetchFederationCertificates(): Either<CoreFailure, Unit> = userConfigRepository.getE2EISettings().flatMap {
+        wrapApiRequest {
+            acmeApi.getACMEFederation(it.discoverUrl)
+        }.flatMap { data ->
+            mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+                wrapMLSRequest {
+                    mlsClient.registerIntermediateCa(data.value)
+                }
+            }
+        }
     }
 
-    companion object {
-        // todo: remove after testing e2ei
-        const val TEMP_ACME_DISCOVER_URL = "https://acme.elna.wire.link/acme/defaultteams"
+    override suspend fun nukeE2EIClient() {
+        e2EIClientProvider.nuke()
     }
 }
