@@ -133,8 +133,26 @@ class ProtoContentMapperImpl(
             is MessageContent.ButtonAction -> packButtonAction(readableContent)
 
             is MessageContent.ButtonActionConfirmation -> TODO()
-            is MessageContent.Location -> TODO("todo, when implementing send location")
+            is MessageContent.Location -> packLocation(readableContent, expectsReadConfirmation, legalHoldStatus)
         }
+    }
+
+    private fun packLocation(
+        readableContent: MessageContent.Location,
+        expectsReadConfirmation: Boolean,
+        legalHoldStatus: Conversation.LegalHoldStatus
+    ): GenericMessage.Content.Location {
+        val protoLegalHoldStatus = toProtoLegalHoldStatus(legalHoldStatus)
+        return GenericMessage.Content.Location(
+            Location(
+                latitude = readableContent.latitude,
+                longitude = readableContent.longitude,
+                name = readableContent.name,
+                zoom = readableContent.zoom,
+                expectsReadConfirmation = expectsReadConfirmation,
+                legalHoldStatus = protoLegalHoldStatus
+            )
+        )
     }
 
     private fun packButtonAction(
@@ -203,7 +221,10 @@ class ProtoContentMapperImpl(
             }
 
             is MessageContent.Location -> {
-                TODO("todo, when implementing send location")
+                val location = packLocation(readableContent, expectsReadConfirmation, legalHoldStatus)
+                Ephemeral.Content.Location(
+                    location.value
+                )
             }
 
             is MessageContent.FailedDecryption,

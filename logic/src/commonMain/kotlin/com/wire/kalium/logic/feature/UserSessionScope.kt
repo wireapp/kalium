@@ -153,6 +153,7 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.ClearUserDataUseCase
 import com.wire.kalium.logic.feature.auth.ClearUserDataUseCaseImpl
+import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import com.wire.kalium.logic.feature.auth.LogoutUseCaseImpl
 import com.wire.kalium.logic.feature.backup.BackupScope
@@ -201,6 +202,8 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigratorImpl
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolverImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
+import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorker
+import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorkerImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.FeatureFlagSyncWorkerImpl
@@ -442,7 +445,8 @@ class UserSessionScope internal constructor(
     userStorageProvider: UserStorageProvider,
     private val clientConfig: ClientConfig,
     platformUserStorageProperties: PlatformUserStorageProperties,
-    networkStateObserver: NetworkStateObserver
+    networkStateObserver: NetworkStateObserver,
+    private val logoutCallback: LogoutCallback,
 ) : CoroutineScope {
 
     private val userStorage = userStorageProvider.getOrCreate(
@@ -1549,6 +1553,10 @@ class UserSessionScope internal constructor(
             userRepository
         )
 
+    private val acmeCertificatesSyncWorker: ACMECertificatesSyncWorker by lazy {
+        ACMECertificatesSyncWorkerImpl(e2eiRepository)
+    }
+
     @OptIn(DelicateKaliumApi::class)
     val client: ClientScope
         get() = ClientScope(
@@ -1695,6 +1703,7 @@ class UserSessionScope internal constructor(
             userSessionWorkScheduler,
             calls.establishedCall,
             calls.endCall,
+            logoutCallback,
             kaliumConfigs
         )
     val persistPersistentWebSocketConnectionStatus: PersistPersistentWebSocketConnectionStatusUseCase
@@ -1887,6 +1896,10 @@ class UserSessionScope internal constructor(
 
         launch {
             featureFlagsSyncWorker.execute()
+        }
+
+        launch {
+            acmeCertificatesSyncWorker.execute()
         }
 
         launch {
