@@ -235,7 +235,7 @@ class E2EIRepositoryImpl(
         }.flatMap { data ->
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
-                    mlsClient.registerExternalCertificates(data)
+                    mlsClient.registerIntermediateCa(data.value)
                 }
             }
         }
