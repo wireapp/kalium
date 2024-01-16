@@ -29,6 +29,7 @@ logging:
     appenders:
         - type: console
           threshold: DEBUG
+          logFormat: "%-6level [%d{HH:mm:ss.SSS}] %X{code} %msg %n"
         - type: file
           threshold: DEBUG
           logFormat: "%-6level [%d{HH:mm:ss.SSS}] %X{code} %msg %n"
