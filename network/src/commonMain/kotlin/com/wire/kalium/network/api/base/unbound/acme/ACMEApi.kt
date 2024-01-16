@@ -40,7 +40,7 @@ interface ACMEApi {
     suspend fun getACMENonce(url: String): NetworkResponse<String>
     suspend fun sendACMERequest(url: String, body: ByteArray? = null): NetworkResponse<ACMEResponse>
     suspend fun sendChallengeRequest(url: String, body: ByteArray): NetworkResponse<ChallengeResponse>
-    suspend fun getACMEFederation(baseUrl: String): NetworkResponse<ByteArray>
+    suspend fun getACMEFederation(baseUrl: String): NetworkResponse<CertificateChain>
 
 }
 
@@ -114,7 +114,7 @@ class ACMEApiImpl internal constructor(
             }
         }
 
-    override suspend fun getACMEFederation(baseUrl: String): NetworkResponse<ByteArray> = wrapKaliumResponse {
+    override suspend fun getACMEFederation(baseUrl: String): NetworkResponse<CertificateChain> = wrapKaliumResponse {
         httpClient.get("$baseUrl/$PATH_ACME_FEDERATION")
     }
 

@@ -62,14 +62,14 @@ internal class EI2EIClientProviderImpl(
                             it.e2eiNewRotateEnrollment(
                                 selfUser.name,
                                 selfUser.handle,
-                                selfUser.teamId.toString()
+                                selfUser.teamId?.value
                             )
                         } else {
                             kaliumLogger.e("initial E2EI client for MLS client without e2ei")
                             it.e2eiNewActivationEnrollment(
                                 selfUser.name!!,
                                 selfUser.handle!!,
-                                selfUser.teamId.toString()
+                                selfUser.teamId?.value
                             )
                         }
                         e2EIClient = newE2EIClient
