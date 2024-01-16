@@ -753,7 +753,7 @@ class E2EIRepositoryTest {
             .wasNotInvoked()
 
         verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::registerExternalCertificates)
+            .suspendFunction(arrangement.mlsClient::registerIntermediateCa)
             .with(any())
             .wasNotInvoked()
     }
@@ -786,7 +786,7 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::registerExternalCertificates)
+            .suspendFunction(arrangement.mlsClient::registerIntermediateCa)
             .with(any())
             .wasInvoked(once)
     }
@@ -973,7 +973,7 @@ class E2EIRepositoryTest {
             given(acmeApi)
                 .suspendFunction(acmeApi::getACMEFederation)
                 .whenInvokedWith(any())
-                .thenReturn(NetworkResponse.Success(ByteArray(12), mapOf(), 200))
+                .thenReturn(NetworkResponse.Success("", mapOf(), 200))
         }
 
         fun withAcmeFederationApiFails() = apply {
@@ -985,7 +985,7 @@ class E2EIRepositoryTest {
 
         fun withRegisterIntermediateCABag() = apply {
             given(mlsClient)
-                .suspendFunction(mlsClient::registerExternalCertificates)
+                .suspendFunction(mlsClient::registerIntermediateCa)
                 .whenInvokedWith(any())
                 .thenReturn(Unit)
         }

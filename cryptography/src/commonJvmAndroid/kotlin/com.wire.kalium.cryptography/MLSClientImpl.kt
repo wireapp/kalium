@@ -109,8 +109,7 @@ class MLSClientImpl(
         val conf = ConversationConfiguration(
             defaultCiphersuite,
             externalSenders.map { it.value },
-            defaultGroupConfiguration,
-            emptyList()
+            defaultGroupConfiguration
         )
 
         coreCrypto.createConversation(groupId.decodeBase64Bytes(), toCredentialType(getMLSCredentials()), conf)
@@ -295,8 +294,16 @@ class MLSClientImpl(
         }
     }
 
-    override suspend fun registerExternalCertificates(data: ByteArray) {
-        // TODO
+    override suspend fun registerTrustAnchors(pem: String) {
+        coreCrypto.e2eiRegisterAcmeCa(pem)
+    }
+
+    override suspend fun registerCrl(url: String, crl: ByteArray): CrlRegistration {
+        return  toCrlRegistration(coreCrypto.e2eiRegisterCrl(url, crl))
+    }
+
+    override suspend fun registerIntermediateCa(pem: String) {
+        coreCrypto.e2eiRegisterIntermediateCa(pem)
     }
 
     companion object {
@@ -395,5 +402,10 @@ class MLSClientImpl(
             CredentialType.Basic -> MlsCredentialType.BASIC
             CredentialType.X509 -> MlsCredentialType.X509
         }
+
+        fun toCrlRegistration(value: com.wire.crypto.CrlRegistration) = CrlRegistration(
+            value.dirty,
+            value.expiration
+        )
     }
 }
