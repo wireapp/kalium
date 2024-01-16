@@ -169,5 +169,15 @@ class MLSClientImpl : MLSClient {
         TODO("Not yet implemented")
     }
 
-    override suspend fun registerExternalCertificates(data: ByteArray) = RegisterCRLResult()
+    override suspend fun registerTrustAnchors(pem: CertificateChain) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun registerIntermediateCa(pem: CertificateChain) {
+        TODO("Not yet implemented")
+    }
 }

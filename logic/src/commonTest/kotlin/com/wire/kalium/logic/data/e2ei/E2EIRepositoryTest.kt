@@ -43,6 +43,7 @@ import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.base.unbound.acme.AcmeDirectoriesResponse
+import com.wire.kalium.network.api.base.unbound.acme.CertificateChain
 import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -753,7 +754,7 @@ class E2EIRepositoryTest {
             .wasNotInvoked()
 
         verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::registerExternalCertificates)
+            .suspendFunction(arrangement.mlsClient::registerIntermediateCa)
             .with(any())
             .wasNotInvoked()
     }
@@ -786,7 +787,7 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::registerExternalCertificates)
+            .suspendFunction(arrangement.mlsClient::registerIntermediateCa)
             .with(any())
             .wasInvoked(once)
     }
@@ -973,7 +974,7 @@ class E2EIRepositoryTest {
             given(acmeApi)
                 .suspendFunction(acmeApi::getACMEFederation)
                 .whenInvokedWith(any())
-                .thenReturn(NetworkResponse.Success(ByteArray(12), mapOf(), 200))
+                .thenReturn(NetworkResponse.Success(CertificateChain(""), mapOf(), 200))
         }
 
         fun withAcmeFederationApiFails() = apply {
@@ -985,7 +986,7 @@ class E2EIRepositoryTest {
 
         fun withRegisterIntermediateCABag() = apply {
             given(mlsClient)
-                .suspendFunction(mlsClient::registerExternalCertificates)
+                .suspendFunction(mlsClient::registerIntermediateCa)
                 .whenInvokedWith(any())
                 .thenReturn(RegisterCRLResult())
         }
