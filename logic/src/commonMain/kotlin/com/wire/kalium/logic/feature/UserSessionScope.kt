@@ -728,7 +728,6 @@ class UserSessionScope internal constructor(
             userStorage.database.userConfigDAO,
             userStorage.database.teamDAO,
             authenticatedNetworkContainer.teamsApi,
-            authenticatedNetworkContainer.userDetailsApi,
             userId,
             userStorage.database.serviceDAO,
             legalHoldHandler,

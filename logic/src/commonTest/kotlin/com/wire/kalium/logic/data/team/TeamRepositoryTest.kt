@@ -389,9 +389,6 @@ class TeamRepositoryTest {
         val teamsApi = mock(classOf<TeamsApi>())
 
         @Mock
-        val userDetailsApi = mock(classOf<UserDetailsApi>())
-
-        @Mock
         val serviceDAO = configure(mock(classOf<ServiceDAO>())) {
             stubsUnitByDefault = true
         }
@@ -406,7 +403,6 @@ class TeamRepositoryTest {
             teamDAO = teamDAO,
             teamMapper = teamMapper,
             teamsApi = teamsApi,
-            userDetailsApi = userDetailsApi,
             userDAO = userDAO,
             selfUserId = TestUser.USER_ID,
             serviceDAO = serviceDAO,

@@ -109,7 +109,6 @@ class EventMapper(
             is EventContentDTO.Federation -> federationTerminated(id, eventContentDTO, transient, live)
             is EventContentDTO.Conversation.ConversationTypingDTO -> conversationTyping(id, eventContentDTO, transient, live)
             is EventContentDTO.Conversation.ProtocolUpdate -> conversationProtocolUpdate(id, eventContentDTO, transient, live)
-            is EventContentDTO.Team.MemberJoin -> unknown(id, transient, live, eventContentDTO)
         }
 
     private fun conversationTyping(

@@ -291,14 +291,6 @@ sealed class EventContentDTO {
         ) : Team()
 
         @Serializable
-        @SerialName("team.member-join")
-        data class MemberJoin(
-            @SerialName("data") val teamMember: TeamMemberIdData,
-            @SerialName("team") val teamId: TeamId,
-            val time: String,
-        ) : Team()
-
-        @Serializable
         @SerialName("team.member-leave")
         data class MemberLeave(
             @SerialName("data") val teamMember: TeamMemberIdData,
