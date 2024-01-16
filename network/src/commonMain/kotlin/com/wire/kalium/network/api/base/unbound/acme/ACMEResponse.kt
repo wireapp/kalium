@@ -18,6 +18,7 @@
 package com.wire.kalium.network.api.base.unbound.acme
 
 import kotlinx.serialization.Serializable
+import kotlin.jvm.JvmInline
 
 @Suppress("EnforceSerializableFields")
 @Serializable
@@ -46,3 +47,6 @@ data class ChallengeResponse(
     val token: String,
     val nonce: String = ""
 )
+
+@JvmInline
+value class CertificateChain(val value: String)
