@@ -58,8 +58,6 @@ sealed class Event(open val id: String, open val transient: Boolean, open val li
         const val userIdKey = "userId"
         const val conversationIdKey = "conversationId"
         const val senderUserIdKey = "senderUserId"
-        const val teamIdKey = "teamId"
-        const val memberIdKey = "memberId"
         const val timestampIsoKey = "timestampIso"
         const val selfDeletionDurationKey = "selfDeletionDuration"
     }
