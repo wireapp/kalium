@@ -27,7 +27,7 @@ import com.wire.kalium.logic.functional.flatMap
 /**
  * This use case is responsible for getting the updated team information of the self user.
  */
-class GetUpdatedSelfTeamUseCaseImpl internal constructor(
+class GetUpdatedSelfTeamUseCase internal constructor(
     private val selfTeamIdProvider: SelfTeamIdProvider,
     private val teamRepository: TeamRepository,
 ) {

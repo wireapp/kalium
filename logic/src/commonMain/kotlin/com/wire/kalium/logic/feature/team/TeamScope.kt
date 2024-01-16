@@ -29,8 +29,8 @@ class TeamScope internal constructor(
     private val conversationRepository: ConversationRepository,
     private val selfTeamIdProvider: SelfTeamIdProvider
 ) {
-    val getUpdatedSelfTeamUseCase: GetUpdatedSelfTeamUseCaseImpl
-        get() = GetUpdatedSelfTeamUseCaseImpl(
+    val getUpdatedSelfTeamUseCase: GetUpdatedSelfTeamUseCase
+        get() = GetUpdatedSelfTeamUseCase(
             selfTeamIdProvider = selfTeamIdProvider,
             teamRepository = teamRepository,
         )
