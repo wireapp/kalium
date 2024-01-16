@@ -299,7 +299,7 @@ class MLSClientImpl(
     }
 
     override suspend fun registerCrl(url: String, crl: ByteArray): CrlRegistration {
-        return  toCrlRegistration(coreCrypto.e2eiRegisterCrl(url, crl))
+        return toCrlRegistration(coreCrypto.e2eiRegisterCrl(url, crl))
     }
 
     override suspend fun registerIntermediateCa(pem: String) {
