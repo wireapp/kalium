@@ -65,7 +65,7 @@ class SendTextMessageUseCase internal constructor(
         text: String,
         mentions: List<MessageMention> = emptyList(),
         quotedMessageId: String? = null,
-        buttons: List<String>? = listOf()
+        buttons: List<String> = listOf()
     ): Either<CoreFailure, Unit> = scope.async(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
@@ -90,7 +90,7 @@ class SendTextMessageUseCase internal constructor(
                 }
             )
             val content = when {
-                !buttons.isNullOrEmpty() -> {
+                buttons.isNotEmpty() -> {
                     val transform: (String) -> MessageContent.Composite.Button = { MessageContent.Composite.Button(it, it, false) }
                     val buttonContent = buttons.map(transform)
                     MessageContent.Composite(textContent, buttonContent)

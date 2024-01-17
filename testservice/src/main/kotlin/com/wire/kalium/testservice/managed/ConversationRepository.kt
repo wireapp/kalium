@@ -153,7 +153,7 @@ sealed class ConversationRepository {
             mentions: List<MessageMention>,
             messageTimer: Int?,
             quotedMessageId: String?,
-            buttons: List<String>? = listOf()
+            buttons: List<String> = listOf()
         ): Response = instance.coreLogic.globalScope {
             return when (val session = session.currentSession()) {
                 is CurrentSessionResult.Success -> {
