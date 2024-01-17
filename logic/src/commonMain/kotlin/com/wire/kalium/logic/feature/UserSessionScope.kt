@@ -1696,8 +1696,10 @@ class UserSessionScope internal constructor(
     val search: SearchScope
         get() = SearchScope(
             searchUserRepository = searchUserRepository,
-            selfUserId = userId
+            selfUserId = userId,
+            sessionRepository = globalScope.sessionRepository
         )
+
     private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(userStorage)
 
     private val validateAssetMimeType: ValidateAssetMimeTypeUseCase get() = ValidateAssetMimeTypeUseCaseImpl()
