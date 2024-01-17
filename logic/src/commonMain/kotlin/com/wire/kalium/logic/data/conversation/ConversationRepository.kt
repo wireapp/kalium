@@ -154,7 +154,6 @@ interface ConversationRepository {
         conversationID: ConversationId
     ): Either<CoreFailure, Unit>
 
-    suspend fun deleteMembersFromEvent(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun observeOneToOneConversationWithOtherUser(otherUserId: UserId): Flow<Either<CoreFailure, Conversation>>
 
     suspend fun getOneOnOneConversationsWithOtherUser(
@@ -653,17 +652,6 @@ internal class ConversationDataSource internal constructor(
             memberDAO.updateMemberRole(member.id.toDao(), conversationID.toDao(), conversationRoleMapper.toDAO(member.role))
         }
 
-    override suspend fun deleteMembersFromEvent(
-        userIDList: List<UserId>,
-        conversationID: ConversationId
-    ): Either<CoreFailure, Unit> =
-        wrapStorageRequest {
-            memberDAO.deleteMembersByQualifiedID(
-                userIDList.map { it.toDao() },
-                conversationID.toDao()
-            )
-        }
-
     override suspend fun getConversationsByGroupState(
         groupState: GroupState
     ): Either<StorageFailure, List<Conversation>> =
@@ -1096,6 +1084,7 @@ internal class ConversationDataSource internal constructor(
             }
         }
     }
+
     override suspend fun setLegalHoldStatusChangeNotified(conversationId: ConversationId): Either<CoreFailure, Boolean> =
         wrapStorageRequest {
             conversationDAO.updateLegalHoldStatusChangeNotified(conversationId = conversationId.toDao(), notified = true)

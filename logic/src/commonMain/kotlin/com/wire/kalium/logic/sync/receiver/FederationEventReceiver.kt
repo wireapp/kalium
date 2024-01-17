@@ -190,7 +190,7 @@ class FederationEventReceiverImpl internal constructor(
                 userIDList.map { it.toDao() },
                 conversationID.toDao()
             )
-        }
+        }.map { }
 
     private suspend fun handleMemberRemovedEvent(conversationID: ConversationId, userIDList: List<UserId>) {
         val message = Message.System(
