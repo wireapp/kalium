@@ -45,7 +45,8 @@ class MLSClientImpl(
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration, MlsWirePolicy.PLAINTEXT)
 
     @Suppress("EmptyFunctionBlock")
-    override suspend fun close() {}
+    override suspend fun close() {
+    }
 
     override suspend fun getPublicKey(): ByteArray {
         return coreCrypto.clientPublicKey().toUByteArray().asByteArray()
@@ -231,7 +232,15 @@ class MLSClientImpl(
         TODO("Not yet implemented")
     }
 
-    override suspend fun registerExternalCertificates(data: ByteArray) {
+    override suspend fun registerTrustAnchors(pem: CertificateChain) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun registerIntermediateCa(pem: String) {
         TODO("Not yet implemented")
     }
 

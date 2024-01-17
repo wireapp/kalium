@@ -320,6 +320,27 @@ class MessageNotificationsTest : BaseMessageTest() {
         }
     }
 
+    @Test
+    fun givenConversationIsArchived_whenMessageInserted_thenDoNotNotify() = runTest {
+        val message = OTHER_MESSAGE
+        userDAO.upsertUsers(listOf(SELF_USER, OTHER_USER, OTHER_USER_2))
+        conversationDAO.insertConversations(
+            listOf(
+                TEST_CONVERSATION_1.copy(
+                    archived = true
+                ),
+                TEST_CONVERSATION_2
+            )
+        )
+
+        messageDAO.insertOrIgnoreMessage(message)
+
+        messageDAO.getNotificationMessage().test {
+            val notifications = awaitItem()
+            assertTrue { notifications.isEmpty() }
+        }
+    }
+
     private suspend fun doTheTest(
         mutedStatus: ConversationEntity.MutedStatus,
         status: UserAvailabilityStatusEntity,
