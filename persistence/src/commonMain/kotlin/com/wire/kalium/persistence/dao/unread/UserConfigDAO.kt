@@ -50,8 +50,8 @@ interface UserConfigDAO {
     fun observeLegalHoldRequest(): Flow<LegalHoldRequestEntity?>
     suspend fun setLegalHoldChangeNotified(isNotified: Boolean)
     suspend fun observeLegalHoldChangeNotified(): Flow<Boolean?>
-    suspend fun setCRLExpirationTime(domain: String, timestamp: Long)
-    suspend fun getCRLExpirationTime(domain: String): Long?
+    suspend fun setCRLExpirationTime(domain: String, timestamp: ULong)
+    suspend fun getCRLExpirationTime(domain: String): ULong?
 }
 
 internal class UserConfigDAOImpl internal constructor(
@@ -119,15 +119,15 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun observeLegalHoldChangeNotified(): Flow<Boolean?> =
         metadataDAO.valueByKeyFlow(LEGAL_HOLD_CHANGE_NOTIFIED).map { it?.toBoolean() }
 
-    override suspend fun setCRLExpirationTime(domain: String, timestamp: Long) {
+    override suspend fun setCRLExpirationTime(domain: String, timestamp: ULong) {
         metadataDAO.insertValue(
             key = domain,
             value = timestamp.toString()
         )
     }
 
-    override suspend fun getCRLExpirationTime(domain: String): Long? =
-        metadataDAO.valueByKey(domain)?.toLongOrNull()
+    override suspend fun getCRLExpirationTime(domain: String): ULong? =
+        metadataDAO.valueByKey(domain)?.toULongOrNull()
 
     private companion object {
         private const val SELF_DELETING_MESSAGES_KEY = "SELF_DELETING_MESSAGES"

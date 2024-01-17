@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.feature.e2ei.usecase
 
+import com.wire.kalium.cryptography.CrlRegistration
 import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.cryptography.RegisterCRLResult
 import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
@@ -154,16 +154,16 @@ class CheckRevocationListUseCaseTest {
 
         fun withRegisterExternalCertificatesResult() = apply {
             given(mlsClient)
-                .suspendFunction(mlsClient::registerExternalCertificates)
-                .whenInvokedWith(any())
-                .thenReturn(RegisterCRLResult(false, 10))
+                .suspendFunction(mlsClient::registerCrl)
+                .whenInvokedWith(any(), any())
+                .thenReturn(CrlRegistration(false, 10.toULong()))
         }
 
         fun withRegisterExternalCertificatesIsChangedTrueResult() = apply {
             given(mlsClient)
-                .suspendFunction(mlsClient::registerExternalCertificates)
+                .suspendFunction(mlsClient::registerCrl)
                 .whenInvokedWith(any())
-                .thenReturn(RegisterCRLResult(true, 10))
+                .thenReturn(CrlRegistration(true, 10.toULong()))
         }
     }
 }

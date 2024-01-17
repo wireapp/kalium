@@ -988,7 +988,7 @@ class E2EIRepositoryTest {
             given(mlsClient)
                 .suspendFunction(mlsClient::registerIntermediateCa)
                 .whenInvokedWith(any())
-                .thenReturn(RegisterCRLResult())
+                .thenDoNothing()
         }
 
         @Mock

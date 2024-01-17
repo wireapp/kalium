@@ -40,9 +40,9 @@ internal class CheckRevocationListUseCaseImpl(
 ) : CheckRevocationListUseCase {
     override suspend fun invoke() {
         e2EIRepository.getCurrentClientDomainCRL().map {
-            mlsClient.registerExternalCertificates(it).run {
-                userConfigRepository.setCRLExpirationTime(selfUserId.domain, expirationTimestamp)
-                if (isThereAnyChanges) {
+            mlsClient.registerCrl("url", it).run {
+                userConfigRepository.setCRLExpirationTime(selfUserId.domain, expiration!!)
+                if (dirty) {
                     mLSConversationsVerificationStatusesHandler()
                 }
             }
