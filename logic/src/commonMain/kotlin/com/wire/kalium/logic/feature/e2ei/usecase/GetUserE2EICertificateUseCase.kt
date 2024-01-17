@@ -22,6 +22,9 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.CertificateStatus
 import com.wire.kalium.logic.feature.e2ei.PemCertificateDecoder
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * This use case is used to get the e2ei certificate status of specific user
@@ -32,19 +35,22 @@ interface GetUserE2eiCertificateStatusUseCase {
 
 class GetUserE2eiCertificateStatusUseCaseImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
-    private val pemCertificateDecoder: PemCertificateDecoder
+    private val pemCertificateDecoder: PemCertificateDecoder,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : GetUserE2eiCertificateStatusUseCase {
     override suspend operator fun invoke(userId: UserId): GetUserE2eiCertificateStatusResult =
-        mlsConversationRepository.getUserIdentity(userId).fold(
-            {
-                GetUserE2eiCertificateStatusResult.Failure.NotActivated
-            },
-            { identities ->
-                identities.getUserCertificateStatus(pemCertificateDecoder)?.let {
-                    GetUserE2eiCertificateStatusResult.Success(it)
-                } ?: GetUserE2eiCertificateStatusResult.Failure.NotActivated
-            }
-        )
+        withContext(dispatchers.io) {
+            mlsConversationRepository.getUserIdentity(userId).fold(
+                {
+                    GetUserE2eiCertificateStatusResult.Failure.NotActivated
+                },
+                { identities ->
+                    identities.getUserCertificateStatus(pemCertificateDecoder)?.let {
+                        GetUserE2eiCertificateStatusResult.Success(it)
+                    } ?: GetUserE2eiCertificateStatusResult.Failure.NotActivated
+                }
+            )
+        }
 }
 
 sealed class GetUserE2eiCertificateStatusResult {
