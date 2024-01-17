@@ -77,20 +77,19 @@ class SendTextMessageUseCase internal constructor(
             .duration
 
         provideClientId().flatMap { clientId ->
-            val content = MessageContent.Text(
-                value = text,
-                mentions = mentions,
-                quotedMessageReference = quotedMessageId?.let { quotedMessageId ->
-                    MessageContent.QuoteReference(
-                        quotedMessageId = quotedMessageId,
-                        quotedMessageSha256 = null,
-                        isVerified = true
-                    )
-                }
-            )
             val message = Message.Regular(
                 id = generatedMessageUuid,
-                content = content,
+                content = MessageContent.Text(
+                    value = text,
+                    mentions = mentions,
+                    quotedMessageReference = quotedMessageId?.let { quotedMessageId ->
+                        MessageContent.QuoteReference(
+                            quotedMessageId = quotedMessageId,
+                            quotedMessageSha256 = null,
+                            isVerified = true
+                        )
+                    }
+                ),
                 expectsReadConfirmation = expectsReadConfirmation,
                 conversationId = conversationId,
                 date = DateTimeUtil.currentIsoDateTimeString(),
