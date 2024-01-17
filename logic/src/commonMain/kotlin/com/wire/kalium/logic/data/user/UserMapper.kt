@@ -333,7 +333,11 @@ internal class UserMapperImpl(
             phone = null,
             accentId = userProfile.accentId,
             teamId = userProfile.teamId?.let { TeamId(it) },
-            connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionState = ConnectionEntity.State.ACCEPTED),
+            connectionStatus = if (selfTeamId != null && selfTeamId.value == userProfile.teamId) {
+                ConnectionState.ACCEPTED
+            } else {
+                ConnectionState.NOT_CONNECTED
+            },
             previewPicture = userProfile.assets.getPreviewAssetOrNull()
                 ?.let { QualifiedIDEntity(it.key, userProfile.id.domain) }?.toModel(),
             completePicture = userProfile.assets.getCompleteAssetOrNull()

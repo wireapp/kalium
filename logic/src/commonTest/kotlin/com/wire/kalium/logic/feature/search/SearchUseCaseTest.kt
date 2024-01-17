@@ -118,7 +118,7 @@ class SearchUseCaseTest {
         )
         verify(arrangement.searchUserRepository)
             .suspendFunction(arrangement.searchUserRepository::searchUserRemoteDirectory)
-            .with(eq("searchQuery"), any(), any(), any())
+            .with(eq("searchquery"), any(), any(), any())
             .wasInvoked(exactly = once)
     }
 
@@ -127,7 +127,10 @@ class SearchUseCaseTest {
 
         val remoteSearchResult = listOf(
             newOtherUser("remoteAndLocalUser1").copy(name = "updatedNewName"),
-            newOtherUser("remoteUser2"),
+            newOtherUser("remoteUser2").copy(
+                teamId = TeamId("otherTeamId"),
+                connectionStatus = ConnectionState.PENDING
+            ),
         )
 
         val localSearchResult = listOf(
@@ -141,18 +144,18 @@ class SearchUseCaseTest {
                 newUserSearchDetails("localUser2")
             ),
             notConnected = listOf(
-                newUserSearchDetails("remoteUser2")
+                newUserSearchDetails("remoteUser2").copy(connectionStatus = ConnectionState.PENDING),
             )
         )
 
         val (arrangement, searchUseCase) = Arrangement().arrange {
             withSearchUserRemoteDirectory(
                 result = UserSearchResult(remoteSearchResult).right(),
-                searchQuery = eq("searchQuery"),
+                searchQuery = eq("searchquery"),
             )
             withSearchLocalByName(
                 result = localSearchResult.right(),
-                searchQuery = eq("searchQuery"),
+                searchQuery = eq("searchquery"),
             )
         }
 
@@ -168,15 +171,52 @@ class SearchUseCaseTest {
         )
         verify(arrangement.searchUserRepository)
             .suspendFunction(arrangement.searchUserRepository::searchUserRemoteDirectory)
-            .with(eq("searchQuery"), any(), any(), any())
+            .with(eq("searchquery"), any(), any(), any())
             .wasInvoked(exactly = once)
         verify(arrangement.searchUserRepository)
             .suspendFunction(arrangement.searchUserRepository::searchLocalByName)
-            .with(eq("searchQuery"), anything())
+            .with(eq("searchquery"), anything())
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenSearchQuery_whenDoingSearch_thenCallTheSearchFunctionsWithCleanQuery() = runTest {
+            val searchQuery = "    search Query     "
+            val cleanQuery = "search query"
+            val (arrangement, searchUseCase) = Arrangement().arrange {
+                withSearchUserRemoteDirectory(
+                    result = UserSearchResult(emptyList()).right(),
+                    searchQuery = eq(cleanQuery),
+                )
+                withSearchLocalByName(
+                    result = emptyList<UserSearchDetails>().right(),
+                    searchQuery = eq(cleanQuery),
+                )
+            }
+
+            val result = searchUseCase(
+                searchQuery = searchQuery,
+                excludingMembersOfConversation = null,
+                customDomain = null
+            )
+
+            assertEquals(
+                expected = emptyList<UserSearchDetails>(),
+                actual = result.connected
+            )
+            verify(arrangement.searchUserRepository)
+                .suspendFunction(arrangement.searchUserRepository::searchUserRemoteDirectory)
+                .with(eq(cleanQuery), any(), any(), any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.searchUserRepository)
+                .suspendFunction(arrangement.searchUserRepository::searchLocalByName)
+                .with(eq(cleanQuery), anything())
+                .wasInvoked(exactly = once)
+    }
+
     private companion object {
+
+        val selfUserID = UserId("searchUserID", "searchUserDomain")
 
         fun newOtherUser(id: String) = OtherUser(
             UserId(id, "otherDomain"),
@@ -211,7 +251,6 @@ class SearchUseCaseTest {
 
     private class Arrangement : SearchRepositoryArrangement by SearchRepositoryArrangementImpl() {
 
-        val selfUserID = UserId("searchUserID", "searchUserDomain")
         private val searchUseCase: SearchUsersUseCase = SearchUsersUseCase(
             searchUserRepository = searchUserRepository,
             selfUserId = selfUserID

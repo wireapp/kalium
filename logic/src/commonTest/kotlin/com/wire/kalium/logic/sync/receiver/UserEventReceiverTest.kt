@@ -113,7 +113,6 @@ class UserEventReceiverTest {
             withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(
                 userIdMatcher = any<UserId>()
             )
-            withConversationsByUserId(listOf(TestConversation.CONVERSATION))
         }
 
         eventReceiver.onEvent(event)
@@ -303,9 +302,6 @@ class UserEventReceiverTest {
         val logoutUseCase = mock(classOf<LogoutUseCase>())
 
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
-
-        @Mock
         private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         @Mock
@@ -323,7 +319,6 @@ class UserEventReceiverTest {
         private val userEventReceiver: UserEventReceiver = UserEventReceiverImpl(
             clientRepository,
             connectionRepository,
-            conversationRepository,
             userRepository,
             logoutUseCase,
             oneOnOneResolver,
@@ -368,11 +363,6 @@ class UserEventReceiverTest {
 
         fun withLogoutUseCaseSucceed() = apply {
             given(logoutUseCase).suspendFunction(logoutUseCase::invoke).whenInvokedWith(any()).thenReturn(Unit)
-        }
-
-        fun withConversationsByUserId(conversationIds: List<Conversation>) = apply {
-            given(conversationRepository).suspendFunction(conversationRepository::getConversationsByUserId)
-                .whenInvokedWith(any()).thenReturn(Either.Right(conversationIds))
         }
 
         fun arrange() = run {
