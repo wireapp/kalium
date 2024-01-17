@@ -19,10 +19,12 @@ package com.wire.kalium.logic.feature.team
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.any
@@ -36,10 +38,48 @@ import kotlin.test.Test
 class GetUpdatedSelfTeamUseCaseTest {
 
     @Test
-    fun givenSelfUserHaveValidTeam_whenGettingSelfTeam_thenTeamInfoAndServicesAreRequested() = runTest {
+    fun givenSelfUserHasNotValidTeam_whenGettingSelfTeam_thenTeamInfoAndServicesAreNotRequested() = runTest {
         // given
         val (arrangement, sut) = Arrangement()
-            .withSelfTeamIdProvider()
+            .withSelfTeamIdProvider(Either.Right(null))
+            .withFetchingIdReturning(Either.Right(TestTeam.TEAM))
+            .arrange()
+
+        // when
+        val result = sut.invoke()
+
+        // then
+        result.shouldSucceed()
+        verify(arrangement.teamRepository)
+            .suspendFunction(arrangement.teamRepository::fetchTeamById)
+            .with(eq(TestTeam.TEAM_ID))
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenAnError_whenGettingSelfTeam_thenTeamInfoAndServicesAreNotRequested() = runTest {
+        // given
+        val (arrangement, sut) = Arrangement()
+            .withSelfTeamIdProvider(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
+            .withFetchingIdReturning(Either.Right(TestTeam.TEAM))
+            .arrange()
+
+        // when
+        val result = sut.invoke()
+
+        // then
+        result.shouldFail()
+        verify(arrangement.teamRepository)
+            .suspendFunction(arrangement.teamRepository::fetchTeamById)
+            .with(eq(TestTeam.TEAM_ID))
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenSelfUserHasValidTeam_whenGettingSelfTeam_thenTeamInfoAndServicesAreRequested() = runTest {
+        // given
+        val (arrangement, sut) = Arrangement()
+            .withSelfTeamIdProvider(Either.Right(TestTeam.TEAM_ID))
             .withFetchingIdReturning(Either.Right(TestTeam.TEAM))
             .arrange()
 
@@ -54,6 +94,7 @@ class GetUpdatedSelfTeamUseCaseTest {
             .wasInvoked()
     }
 
+
     private class Arrangement() {
         @Mock
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
@@ -61,11 +102,11 @@ class GetUpdatedSelfTeamUseCaseTest {
         @Mock
         val teamRepository: TeamRepository = mock(TeamRepository::class)
 
-        fun withSelfTeamIdProvider() = apply {
+        fun withSelfTeamIdProvider(result: Either<CoreFailure, TeamId?>) = apply {
             given(selfTeamIdProvider)
                 .suspendFunction(selfTeamIdProvider::invoke)
                 .whenInvoked()
-                .thenReturn(Either.Right(TestTeam.TEAM_ID))
+                .thenReturn(result)
         }
 
         fun withFetchingIdReturning(result: Either<CoreFailure, Team>) = apply {
