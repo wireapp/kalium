@@ -74,7 +74,8 @@ interface E2EIRepository {
     suspend fun getOAuthRefreshToken(): Either<CoreFailure, String?>
     suspend fun nukeE2EIClient()
     suspend fun fetchFederationCertificates(): Either<CoreFailure, Unit>
-    suspend fun getCurrentClientDomainCRL(): Either<CoreFailure, ByteArray>
+    suspend fun getCurrentClientDomainCRL(): Either<CoreFailure, ByteArray> // TODO remove
+    suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray>
 }
 
 @Suppress("LongParameterList")
@@ -237,7 +238,6 @@ class E2EIRepositoryImpl(
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
                     mlsClient.registerIntermediateCa(data.value)
-                    Unit
                 }
             }
         }
@@ -250,7 +250,12 @@ class E2EIRepositoryImpl(
     override suspend fun getCurrentClientDomainCRL(): Either<CoreFailure, ByteArray> =
         userConfigRepository.getE2EISettings().flatMap {
             wrapApiRequest {
-                acmeApi.getCurrentClientDomainCRL(it.discoverUrl)
+                acmeApi.getClientDomainCRL(it.discoverUrl)
             }
         }
+
+    override suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray> =
+        wrapApiRequest {
+            acmeApi.getClientDomainCRL(url)
+         }
 }

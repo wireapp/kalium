@@ -136,6 +136,7 @@ class MLSClientImpl(
             message
         )
 
+        decryptedMessage.proposals
         val messageBundle = listOf(
             toDecryptedMessageBundle(
                 decryptedMessage

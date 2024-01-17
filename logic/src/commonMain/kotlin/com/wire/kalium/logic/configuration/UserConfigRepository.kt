@@ -40,11 +40,13 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.wrapFlowStorageRequest
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
@@ -120,8 +122,8 @@ interface UserConfigRepository {
     suspend fun deleteLegalHoldRequest(): Either<StorageFailure, Unit>
     suspend fun setLegalHoldChangeNotified(isNotified: Boolean): Either<StorageFailure, Unit>
     suspend fun observeLegalHoldChangeNotified(): Flow<Either<StorageFailure, Boolean>>
-    suspend fun setCRLExpirationTime(domain: String, timestamp: ULong)
-    suspend fun getCRLExpirationTime(domain: String): ULong?
+    suspend fun setCRLExpirationTime(domain: String, url: String, timestamp: ULong)
+    suspend fun getCRLExpirationTime(domain: String, url: String): CRLUrlExpirationList?
 }
 
 @Suppress("TooManyFunctions")
@@ -429,10 +431,10 @@ internal class UserConfigDataSource internal constructor(
     override suspend fun observeLegalHoldChangeNotified(): Flow<Either<StorageFailure, Boolean>> =
         userConfigDAO.observeLegalHoldChangeNotified().wrapStorageRequest()
 
-    override suspend fun setCRLExpirationTime(domain: String, timestamp: ULong) {
-        userConfigDAO.setCRLExpirationTime(domain, timestamp)
+    override suspend fun setCRLExpirationTime(domain: String, url: String, timestamp: ULong) {
+        userConfigDAO.setCRLExpirationTime(domain, url, timestamp)
     }
 
-    override suspend fun getCRLExpirationTime(domain: String): ULong? =
-        userConfigDAO.getCRLExpirationTime(domain)
+    override suspend fun getCRLExpirationTime(domain: String,  url: String): CRLUrlExpirationList? =
+        userConfigDAO.getCRLsPerDomain(domain)
 }
