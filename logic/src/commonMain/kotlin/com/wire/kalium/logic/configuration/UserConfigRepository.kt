@@ -46,7 +46,6 @@ import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
@@ -435,6 +434,6 @@ internal class UserConfigDataSource internal constructor(
         userConfigDAO.setCRLExpirationTime(domain, url, timestamp)
     }
 
-    override suspend fun getCRLExpirationTime(domain: String,  url: String): CRLUrlExpirationList? =
+    override suspend fun getCRLExpirationTime(domain: String, url: String): CRLUrlExpirationList? =
         userConfigDAO.getCRLsPerDomain(domain)
 }
