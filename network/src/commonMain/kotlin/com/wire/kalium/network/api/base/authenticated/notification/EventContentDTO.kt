@@ -36,9 +36,11 @@ import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConf
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.base.authenticated.keypackage.LastPreKeyDTO
 import com.wire.kalium.network.api.base.authenticated.notification.conversation.MessageEventData
+import com.wire.kalium.network.api.base.authenticated.notification.team.TeamMemberIdData
 import com.wire.kalium.network.api.base.authenticated.notification.user.RemoveClientEventData
 import com.wire.kalium.network.api.base.authenticated.notification.user.UserUpdateEventData
 import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.util.serialization.toJsonElement
@@ -274,6 +276,17 @@ sealed class EventContentDTO {
             @SerialName("qualified_from") val qualifiedFrom: UserId,
         ) : Conversation()
 
+    }
+
+    @Serializable
+    sealed class Team : EventContentDTO() {
+        @Serializable
+        @SerialName("team.member-leave")
+        data class MemberLeave(
+            @SerialName("data") val teamMember: TeamMemberIdData,
+            @SerialName("team") val teamId: TeamId,
+            val time: String,
+        ) : Team()
     }
 
     @Serializable

@@ -148,6 +148,15 @@ object TestEvent {
         senderUserId = TestUser.USER_ID
     )
 
+    fun teamMemberLeave(eventId: String = "eventId") = Event.Team.MemberLeave(
+        eventId,
+        teamId = "teamId",
+        memberId = "memberId",
+        timestampIso = "2022-03-30T15:36:00.000Z",
+        transient = false,
+        live = false
+    )
+
     fun timerChanged(eventId: String = "eventId") = Event.Conversation.ConversationMessageTimer(
         id = eventId,
         conversationId = TestConversation.ID,

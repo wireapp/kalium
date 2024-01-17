@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.data.team
 
-import  app.cash.turbine.test
+import app.cash.turbine.test
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.data.id.TeamId
@@ -34,6 +34,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.client.ClientIdDTO
 import com.wire.kalium.network.api.base.authenticated.keypackage.LastPreKeyDTO
+import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse

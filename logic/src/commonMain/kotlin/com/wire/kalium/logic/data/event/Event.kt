@@ -58,6 +58,8 @@ sealed class Event(open val id: String, open val transient: Boolean, open val li
         const val userIdKey = "userId"
         const val conversationIdKey = "conversationId"
         const val senderUserIdKey = "senderUserId"
+        const val teamIdKey = "teamId"
+        const val memberIdKey = "memberId"
         const val timestampIsoKey = "timestampIso"
         const val selfDeletionDurationKey = "selfDeletionDuration"
     }
@@ -418,6 +420,31 @@ sealed class Event(open val id: String, open val transient: Boolean, open val li
                 conversationIdKey to conversationId.toLogString(),
                 "protocol" to protocol.name,
                 senderUserIdKey to senderUserId.toLogString(),
+            )
+        }
+    }
+
+    sealed class Team(
+        id: String,
+        open val teamId: String,
+        transient: Boolean,
+        live: Boolean,
+    ) : Event(id, transient, live) {
+
+        data class MemberLeave(
+            override val id: String,
+            override val transient: Boolean,
+            override val live: Boolean,
+            override val teamId: String,
+            val memberId: String,
+            val timestampIso: String,
+        ) : Team(id, teamId, transient, live) {
+            override fun toLogMap(): Map<String, Any?> = mapOf(
+                typeKey to "Team.MemberLeave",
+                idKey to id.obfuscateId(),
+                teamIdKey to teamId.obfuscateId(),
+                timestampIsoKey to timestampIso,
+                memberIdKey to memberId.obfuscateId(),
             )
         }
     }

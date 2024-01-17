@@ -23,7 +23,10 @@ ON CONFLICT(user, conversation) DO UPDATE SET
 role = excluded.role;
 
 deleteMember:
-DELETE FROM Member WHERE conversation = ? AND user = ?;
+DELETE FROM Member WHERE conversation = :conversationId AND user = :userId;
+
+deleteMembers:
+DELETE FROM Member WHERE conversation = :conversationId AND user IN :userIds;
 
 deleteMembersFromConversation:
 DELETE FROM Member WHERE conversation = ?;
@@ -114,3 +117,6 @@ BEGIN
         ELSE "DEGRADED" END)
     WHERE qualified_id = old.conversation;
 END;
+
+selectChanges:
+SELECT changes();
