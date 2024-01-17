@@ -234,17 +234,18 @@ class EventProcessorTest {
         val userEventReceiver = mock(UserEventReceiver::class)
 
         @Mock
+        val teamEventReceiver = mock(TeamEventReceiver::class)
+
+        @Mock
         val userPropertiesEventReceiver = mock(UserPropertiesEventReceiver::class)
 
         @Mock
         val federationEventReceiver = mock(FederationEventReceiver::class)
 
-        @Mock
-        val teamEventReceiver = mock(TeamEventReceiver::class)
-
         init {
             withConversationEventReceiverSucceeding()
             withUserEventReceiverSucceeding()
+            withTeamEventReceiverSucceeding()
             withUserPropertiesEventReceiverSucceeding()
         }
 
@@ -280,6 +281,15 @@ class EventProcessorTest {
         fun withUserEventReceiverFailingWith(failure: CoreFailure) = withUserEventReceiverReturning(
             Either.Left(failure)
         )
+
+        fun withTeamEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
+            given(teamEventReceiver)
+                .suspendFunction(teamEventReceiver::onEvent)
+                .whenInvokedWith(any())
+                .thenReturn(result)
+        }
+
+        fun withTeamEventReceiverSucceeding() = withTeamEventReceiverReturning(Either.Right(Unit))
 
         fun withUserPropertiesEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
             given(userPropertiesEventReceiver)
