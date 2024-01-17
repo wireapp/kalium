@@ -35,6 +35,27 @@ import kotlin.test.*
 internal class ACMEApiTest : ApiTest() {
 
     @Test
+    fun whenCallingGeTrustAnchorsApi_theResponseShouldBeConfigureCorrectly() = runTest {
+        val expected = CertificateChain("")
+        val networkClient = mockUnboundNetworkClient(
+            "",
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertJson()
+                assertUrlEqual(ACME_ROOTS_PEM_PATH)
+                assertGet()
+                assertNoQueryParams()
+            }
+        )
+        val acmeApi: ACMEApi = ACMEApiImpl(networkClient)
+
+        acmeApi.getTrustAnchors(ACME_DISCOVERY_URL).also { actual ->
+            assertIs<NetworkResponse.Success<CertificateChain>>(actual)
+            assertEquals(expected, actual.value)
+        }
+    }
+
+    @Test
     fun whenCallingGetACMEDirectoriesApi_theResponseShouldBeConfigureCorrectly() = runTest {
         val expected = ACME_DIRECTORIES_SAMPLE
         val networkClient = mockUnboundNetworkClient(
@@ -49,7 +70,7 @@ internal class ACMEApiTest : ApiTest() {
         )
         val acmeApi: ACMEApi = ACMEApiImpl(networkClient)
 
-        acmeApi.getACMEDirectories(BASE_URL).also { actual ->
+        acmeApi.getACMEDirectories(ACME_DISCOVERY_URL).also { actual ->
             assertIs<NetworkResponse.Success<AcmeDirectoriesResponse>>(actual)
             assertEquals(expected, actual.value)
         }
@@ -168,8 +189,9 @@ internal class ACMEApiTest : ApiTest() {
         }
     }
     companion object {
-        private const val BASE_URL = "https://balderdash.hogwash.work:9000/acme/google-android"
+        private const val ACME_DISCOVERY_URL = "https://balderdash.hogwash.work:9000/acme/google-android/directory"
         private const val ACME_DIRECTORIES_PATH = "https://balderdash.hogwash.work:9000/acme/google-android/directory"
+        private const val ACME_ROOTS_PEM_PATH = "https://balderdash.hogwash.work:9000"
 
         val ACME_DIRECTORIES_RESPONSE = ACMEApiResponseJsonSample.validAcmeDirectoriesResponse.rawJson
         val ACME_DIRECTORIES_SAMPLE = ACMEApiResponseJsonSample.ACME_DIRECTORIES_SAMPLE
