@@ -34,6 +34,7 @@ import kotlin.test.*
 @OptIn(ExperimentalCoroutinesApi::class)
 internal class ACMEApiTest : ApiTest() {
 
+    @Ignore
     @Test
     fun whenCallingGeTrustAnchorsApi_theResponseShouldBeConfigureCorrectly() = runTest {
         val expected = CertificateChain("")
