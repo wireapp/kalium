@@ -96,6 +96,7 @@ class EventMapper(
             is EventContentDTO.Conversation.AccessUpdate -> unknown(id, transient, live, eventContentDTO)
             is EventContentDTO.Conversation.DeletedConversationDTO -> conversationDeleted(id, eventContentDTO, transient, live)
             is EventContentDTO.Conversation.ConversationRenameDTO -> conversationRenamed(id, eventContentDTO, transient, live)
+            is EventContentDTO.Team.MemberLeave -> teamMemberLeft(id, eventContentDTO, transient, live)
             is EventContentDTO.Team.MemberUpdate -> teamMemberUpdate(id, eventContentDTO, transient, live)
             is EventContentDTO.Team.Update -> teamUpdate(id, eventContentDTO, transient, live)
             is EventContentDTO.User.UpdateDTO -> userUpdate(id, eventContentDTO, transient, live)
@@ -653,6 +654,20 @@ class EventMapper(
         transient = transient,
         live = live,
         timestampIso = event.time,
+    )
+
+    private fun teamMemberLeft(
+        id: String,
+        event: EventContentDTO.Team.MemberLeave,
+        transient: Boolean,
+        live: Boolean
+    ) = Event.Team.MemberLeave(
+        id = id,
+        teamId = event.teamId,
+        memberId = event.teamMember.nonQualifiedUserId,
+        transient = transient,
+        live = live,
+        timestampIso = event.time
     )
 
     private fun teamMemberUpdate(
