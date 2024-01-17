@@ -39,6 +39,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.authenticationCodeFailure
@@ -53,6 +54,8 @@ import kotlinx.coroutines.withContext
 
 sealed class RegisterClientResult {
     class Success(val client: Client) : RegisterClientResult()
+
+    class E2EICertificateRequired(val client: Client) : RegisterClientResult()
 
     sealed class Failure : RegisterClientResult() {
         sealed class InvalidCredentials : Failure() {
@@ -121,13 +124,11 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
     private val clientRepository: ClientRepository,
     private val preKeyRepository: PreKeyRepository,
-    private val keyPackageRepository: KeyPackageRepository,
-    private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
-    private val mlsClientProvider: MLSClientProvider,
     private val sessionRepository: SessionRepository,
     private val selfUserId: UserId,
     private val userRepository: UserRepository,
     private val secondFactorVerificationRepository: SecondFactorVerificationRepository,
+    private val registerMLSClientUseCase: RegisterMLSClientUseCase,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : RegisterClientUseCase {
 
@@ -143,9 +144,14 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
                 RegisterClientResult.Failure.Generic(it)
             }, { registerClientParam ->
                 clientRepository.registerClient(registerClientParam)
+                   //todo? separate this in mls client usesCase register! separate everything
                     .flatMap { registeredClient ->
                         if (isAllowedToRegisterMLSClient()) {
-                            createMLSClient(registeredClient)
+                            registerMLSClientUseCase.invoke(clientId = registeredClient.id).flatMap {
+                                if (it is RegisterMLSClientResult.E2EICertificateRequired)
+                                    return RegisterClientResult.E2EICertificateRequired(registeredClient)
+                                else Either.Right(registeredClient)
+                            }
                         } else {
                             Either.Right(registeredClient)
                         }.map { client -> client to registerClientParam.preKeys.maxOfOrNull { it.id } }
@@ -198,14 +204,6 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
             RegisterClientResult.Failure.InvalidCredentials.Invalid2FA
         }
     }
-
-    // TODO(mls): when https://github.com/wireapp/core-crypto/issues/11 is implemented we
-    // can remove registerMLSClient() and supply the MLS public key in registerClient().
-    private suspend fun createMLSClient(client: Client): Either<CoreFailure, Client> =
-        mlsClientProvider.getMLSClient(client.id)
-            .flatMap { clientRepository.registerMLSClient(client.id, it.getPublicKey()) }
-            .flatMap { keyPackageRepository.uploadNewKeyPackages(client.id, keyPackageLimitsProvider.refillAmount()) }
-            .map { client }
 
     private suspend fun generateProteusPreKeys(
         preKeysToSend: Int,

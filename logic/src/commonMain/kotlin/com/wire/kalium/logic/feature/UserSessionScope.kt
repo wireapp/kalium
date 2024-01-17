@@ -173,6 +173,7 @@ import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
+import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
@@ -484,7 +485,7 @@ class UserSessionScope internal constructor(
             userId, qualifiedIdMapper, globalScope.sessionRepository
         )
 
-    private val clientIdProvider = CurrentClientIdProvider { clientId() }
+    val clientIdProvider = CurrentClientIdProvider { clientId() }
     private val mlsSelfConversationIdProvider: MLSSelfConversationIdProvider by lazy {
         MLSSelfConversationIdProviderImpl(
             conversationRepository
@@ -901,6 +902,15 @@ class UserSessionScope internal constructor(
             mlsConversationRepository
         )
 
+    private val registerMLSClientUseCase: RegisterMLSClientUseCase
+        get() = RegisterMLSClientUseCaseImpl(
+            mlsClientProvider,
+            clientRepository,
+            keyPackageRepository,
+            keyPackageLimitsProvider,
+            userConfigRepository
+        )
+
     private val recoverMLSConversationsUseCase: RecoverMLSConversationsUseCase
         get() = RecoverMLSConversationsUseCaseImpl(
             featureSupport,
@@ -1099,7 +1109,7 @@ class UserSessionScope internal constructor(
         lazy { clientRepository },
         lazy {
             RegisterMLSClientUseCaseImpl(
-                mlsClientProvider, clientRepository, keyPackageRepository, keyPackageLimitsProvider
+                mlsClientProvider, clientRepository, keyPackageRepository, keyPackageLimitsProvider, userConfigRepository
             )
         })
 
@@ -1580,7 +1590,9 @@ class UserSessionScope internal constructor(
             authenticationScope.secondFactorVerificationRepository,
             slowSyncRepository,
             cachedClientIdClearer,
-            updateSupportedProtocolsAndResolveOneOnOnes
+            updateSupportedProtocolsAndResolveOneOnOnes,
+            registerMLSClientUseCase,
+            syncFeatureConfigsUseCase
         )
     val conversations: ConversationScope by lazy {
         ConversationScope(

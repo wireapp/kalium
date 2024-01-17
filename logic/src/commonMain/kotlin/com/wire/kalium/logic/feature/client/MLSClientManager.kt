@@ -76,11 +76,12 @@ internal class MLSClientManagerImpl(
     }
 
     private suspend fun registerMLSClientIfNeeded() {
-        clientRepository.value.hasRegisteredMLSClient().flatMap {
+        clientRepository.value.hasRegisteredMLSClient().flatMap { it ->
             if (!it) {
                 currentClientIdProvider().flatMap { clientId ->
                     kaliumLogger.i("No existing MLS Client, registering..")
-                    registerMLSClient.value(clientId).onSuccess {
+                    registerMLSClient.value(clientId).onSuccess { mlsClientRegistrationResult ->
+                        kaliumLogger.i("Registering mls client result: $mlsClientRegistrationResult")
                         kaliumLogger.i("Triggering slow sync after enabling MLS")
                         slowSyncRepository.value.clearLastSlowSyncCompletionInstant()
                     }
