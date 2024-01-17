@@ -25,10 +25,10 @@ import com.wire.kalium.logic.feature.conversation.MLSConversationsVerificationSt
 import com.wire.kalium.logic.functional.map
 
 /**
- * Use case to check if the CRL is expired and if so, register the external certificates
+ * Use case to check if the CRL is expired and if so, register CRL
  */
 internal interface CheckRevocationListUseCase {
-    suspend operator fun invoke()
+    suspend operator fun invoke(url: String)
 }
 
 internal class CheckRevocationListUseCaseImpl(
@@ -38,10 +38,10 @@ internal class CheckRevocationListUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
     private val mLSConversationsVerificationStatusesHandler: MLSConversationsVerificationStatusesHandler
 ) : CheckRevocationListUseCase {
-    override suspend fun invoke() {
-        e2EIRepository.getCurrentClientDomainCRL().map {
-            mlsClient.registerCrl("url", it).run {
-                userConfigRepository.setCRLExpirationTime(selfUserId.domain, expiration!!)
+    override suspend fun invoke(url: String) {
+        e2EIRepository.getClientDomainCRL(url).map {
+            mlsClient.registerCrl(url, it).run {
+                userConfigRepository.setCRLExpirationTime(selfUserId.domain, url, expiration!!)
                 if (dirty) {
                     mLSConversationsVerificationStatusesHandler()
                 }
