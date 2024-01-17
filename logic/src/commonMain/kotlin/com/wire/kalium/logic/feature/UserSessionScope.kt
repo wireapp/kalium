@@ -1422,7 +1422,6 @@ class UserSessionScope internal constructor(
         get() = UserEventReceiverImpl(
             clientRepository,
             connectionRepository,
-            conversationRepository,
             userRepository,
             logout,
             oneOnOneResolver,
@@ -1443,7 +1442,7 @@ class UserSessionScope internal constructor(
         )
 
     private val teamEventReceiver: TeamEventReceiver
-        get() = TeamEventReceiverImpl(teamRepository)
+        get() = TeamEventReceiverImpl(teamRepository, conversationRepository, userRepository, persistMessage, userId)
 
     private val guestRoomConfigHandler
         get() = GuestRoomConfigHandler(userConfigRepository, kaliumConfigs)

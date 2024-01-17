@@ -35,6 +35,7 @@ import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCu
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -53,67 +54,68 @@ internal class MemberLeaveEventHandlerImpl(
     private val selfTeamIdProvider: SelfTeamIdProvider
 ) : MemberLeaveEventHandler {
 
-    override suspend fun handle(event: Event.Conversation.MemberLeave) =
+    override suspend fun handle(event: Event.Conversation.MemberLeave): Either<CoreFailure, Unit> =
         let {
-            when (event.reason) {
-                MemberLeaveReason.Removed,
-                MemberLeaveReason.Left -> {
-                    deleteMembers(event.removedList, event.conversationId)
-                }
-
-                MemberLeaveReason.UserDeleted -> {
-                    userRepository.markUserAsDeletedAndRemoveFromGroupConversations(event.removedList)
-                }
+            if (event.reason == MemberLeaveReason.UserDeleted) {
+                userRepository.markAsDeleted(event.removedList)
             }
-        }.onSuccess {
-            updateConversationClientsForCurrentCall.value(event.conversationId)
-        }.onSuccess {
-            // fetch required unknown users that haven't been persisted during slow sync, e.g. from another team
-            // and keep them to properly show this member-leave message
-            userRepository.fetchUsersIfUnknownByIds(event.removedList.toSet())
-        }.onSuccess {
-            val content: MessageContent.System? = resolveMessageContent(event)
-
-            content?.let {
-                Message.System(
-                    id = event.id,
-                    content = it,
-                    conversationId = event.conversationId,
-                    date = event.timestampIso,
-                    senderUserId = event.removedBy,
-                    status = Message.Status.Sent,
-                    visibility = Message.Visibility.VISIBLE,
-                    expirationData = null
-                ).also {
-                    persistMessage(it)
-                }
-            }
-        }.onSuccess {
-            kaliumLogger
-                .logEventProcessing(
-                    EventLoggingStatus.SUCCESS,
-                    event
-                )
-        }.onFailure {
-            kaliumLogger
-                .logEventProcessing(
-                    EventLoggingStatus.FAILURE,
-                    event,
-                    Pair("errorInfo", "$it")
-                )
+            deleteMembers(event.removedList, event.conversationId)
         }
+            .onSuccess {
+                updateConversationClientsForCurrentCall.value(event.conversationId)
+            }.onSuccess {
+                // fetch required unknown users that haven't been persisted during slow sync, e.g. from another team
+                // and keep them to properly show this member-leave message
+                userRepository.fetchUsersIfUnknownByIds(event.removedList.toSet())
+            }.onSuccess { numberOfUsersDeleted ->
+                val content: MessageContent.System? = resolveMessageContent(event, numberOfUsersDeleted)
 
-    private suspend fun resolveMessageContent(event: Event.Conversation.MemberLeave): MessageContent.System? {
+                content?.let {
+                    Message.System(
+                        id = event.id,
+                        content = it,
+                        conversationId = event.conversationId,
+                        date = event.timestampIso,
+                        senderUserId = event.removedBy,
+                        status = Message.Status.Sent,
+                        visibility = Message.Visibility.VISIBLE,
+                        expirationData = null
+                    ).also {
+                        persistMessage(it)
+                    }
+                }
+            }.onSuccess {
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.SUCCESS,
+                        event
+                    )
+            }.onFailure {
+                kaliumLogger
+                    .logEventProcessing(
+                        EventLoggingStatus.FAILURE,
+                        event,
+                        Pair("errorInfo", "$it")
+                    )
+            }.map { }
+
+    private suspend fun resolveMessageContent(event: Event.Conversation.MemberLeave, numberOfUsersDeleted: Long): MessageContent.System? {
         return when (event.reason) {
             MemberLeaveReason.Left,
             MemberLeaveReason.Removed -> MessageContent.MemberChange.Removed(members = event.removedList)
-            MemberLeaveReason.UserDeleted -> handleUserDeleted(event)
+
+            MemberLeaveReason.UserDeleted -> handleUserDeleted(event, numberOfUsersDeleted)
         }
     }
-    private suspend fun handleUserDeleted(event: Event.Conversation.MemberLeave): MessageContent.System? {
+
+    private suspend fun handleUserDeleted(event: Event.Conversation.MemberLeave, numberOfUsersDeleted: Long): MessageContent.System? {
         val teamId = selfTeamIdProvider().getOrNull() ?: return null
-        val isMemberRemoved = userRepository.isAtLeastOneUserATeamMember(event.removedList, teamId).getOrElse(false)
-        return if (isMemberRemoved) {
+
+        val isMemberRemoved = userRepository.isAtLeastOneUserATeamMember(
+            event.removedList,
+            teamId
+        ).getOrElse(false)
+        return if (isMemberRemoved && numberOfUsersDeleted > 0) {
             MessageContent.MemberChange.RemovedFromTeam(members = event.removedList)
         } else {
             null
@@ -123,7 +125,7 @@ internal class MemberLeaveEventHandlerImpl(
     private suspend fun deleteMembers(
         userIDList: List<UserId>,
         conversationID: ConversationId
-    ): Either<CoreFailure, Unit> =
+    ): Either<CoreFailure, Long> =
         wrapStorageRequest {
             memberDAO.deleteMembersByQualifiedID(
                 userIDList.map { it.toDao() },
