@@ -15,12 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
-package com.wire.kalium.logic.feature.message
+package com.wire.kalium.logic.feature.message.composite
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -29,8 +29,8 @@ import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
+import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
+import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
@@ -40,14 +40,13 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
-import kotlin.time.Duration
 
 @Suppress("LongParameterList")
 /**
  * @sample samples.logic.MessageUseCases.sendingBasicTextMessage
  * @sample samples.logic.MessageUseCases.sendingTextMessageWithMentions
  */
-class SendTextMessageUseCase internal constructor(
+class SendButtonMessageUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: QualifiedID,
     private val provideClientId: CurrentClientIdProvider,
@@ -55,7 +54,6 @@ class SendTextMessageUseCase internal constructor(
     private val messageSender: MessageSender,
     private val messageSendFailureHandler: MessageSendFailureHandler,
     private val userPropertyRepository: UserPropertyRepository,
-    private val selfDeleteTimer: ObserveSelfDeletionTimerSettingsForConversationUseCase,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
     private val scope: CoroutineScope
 ) {
@@ -64,7 +62,8 @@ class SendTextMessageUseCase internal constructor(
         conversationId: ConversationId,
         text: String,
         mentions: List<MessageMention> = emptyList(),
-        quotedMessageId: String? = null
+        quotedMessageId: String? = null,
+        buttons: List<String> = listOf()
     ): Either<CoreFailure, Unit> = scope.async(dispatchers.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
@@ -72,12 +71,9 @@ class SendTextMessageUseCase internal constructor(
 
         val generatedMessageUuid = uuid4().toString()
         val expectsReadConfirmation = userPropertyRepository.getReadReceiptsStatus()
-        val messageTimer: Duration? = selfDeleteTimer(conversationId, true)
-            .first()
-            .duration
 
         provideClientId().flatMap { clientId ->
-            val content = MessageContent.Text(
+            val textContent = MessageContent.Text(
                 value = text,
                 mentions = mentions,
                 quotedMessageReference = quotedMessageId?.let { quotedMessageId ->
@@ -88,6 +84,11 @@ class SendTextMessageUseCase internal constructor(
                     )
                 }
             )
+
+            val transform: (String) -> MessageContent.Composite.Button = { MessageContent.Composite.Button(it, it, false) }
+            val buttonContent = buttons.map(transform)
+            val content = MessageContent.Composite(textContent, buttonContent)
+
             val message = Message.Regular(
                 id = generatedMessageUuid,
                 content = content,
@@ -98,7 +99,8 @@ class SendTextMessageUseCase internal constructor(
                 senderClientId = clientId,
                 status = Message.Status.Pending,
                 editStatus = Message.EditStatus.NotEdited,
-                expirationData = messageTimer?.let { Message.ExpirationData(it) },
+                // According to proto Ephemeral it is not possible to send a Composite message with timer
+                expirationData = null,
                 isSelfMessage = true
             )
             persistMessage(message).flatMap {

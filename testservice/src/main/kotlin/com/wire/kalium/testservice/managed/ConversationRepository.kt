@@ -161,9 +161,16 @@ sealed class ConversationRepository {
                         if (text != null) {
                             setMessageTimer(instance, conversationId, messageTimer)
                             log.info("Instance ${instance.instanceId}: Send text message '$text'")
-                            messages.sendTextMessage(
-                                conversationId, text, mentions, quotedMessageId, buttons
-                            ).fold({
+                            val result = if (buttons.isEmpty()) {
+                                messages.sendTextMessage(
+                                    conversationId, text, mentions, quotedMessageId
+                                )
+                            } else {
+                                messages.sendButtonMessage(
+                                    conversationId, text, mentions, quotedMessageId, buttons
+                                )
+                            }
+                            result.fold({
                                 Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
                             }, {
                                 Response.status(Response.Status.OK)
