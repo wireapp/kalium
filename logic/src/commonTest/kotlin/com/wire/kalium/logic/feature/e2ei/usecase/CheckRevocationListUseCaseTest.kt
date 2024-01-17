@@ -39,40 +39,42 @@ import kotlin.test.Test
 class CheckRevocationListUseCaseTest {
 
     @Test
-    fun givenE2EIRepositoryReturnsFailure_whenRunningUseCase_thenDoNotRegisterExternalCertificates() =
+    fun givenE2EIRepositoryReturnsFailure_whenRunningUseCase_thenDoNotRegisterCrl() =
         runTest {
             val (arrangement, checkRevocationList) = Arrangement()
                 .withE2EIRepositoryFailure()
                 .arrange()
 
-            checkRevocationList.invoke()
+            checkRevocationList.invoke(DUMMY_URL)
 
             verify(arrangement.e2EIRepository)
-                .suspendFunction(arrangement.e2EIRepository::getCurrentClientDomainCRL)
+                .suspendFunction(arrangement.e2EIRepository::getClientDomainCRL)
+                .with(any())
                 .wasInvoked(once)
 
             verify(arrangement.mlsClient)
-                .suspendFunction(arrangement.mlsClient::registerExternalCertificates)
+                .suspendFunction(arrangement.mlsClient::registerCrl)
                 .with(any())
                 .wasNotInvoked()
         }
 
     @Test
-    fun givenE2EIRepositoryReturnsSuccess_whenRunningUseCase_thenRegisterExternalCertificates() =
+    fun givenE2EIRepositoryReturnsSuccess_whenRunningUseCase_thenRegisterCrl() =
         runTest {
             val (arrangement, checkRevocationList) = Arrangement()
                 .withE2EIRepositorySuccess()
                 .withRegisterExternalCertificatesResult()
                 .arrange()
 
-            checkRevocationList.invoke()
+            checkRevocationList.invoke(DUMMY_URL)
 
             verify(arrangement.e2EIRepository)
-                .suspendFunction(arrangement.e2EIRepository::getCurrentClientDomainCRL)
+                .suspendFunction(arrangement.e2EIRepository::getClientDomainCRL)
+                .with(any())
                 .wasInvoked(once)
 
             verify(arrangement.mlsClient)
-                .suspendFunction(arrangement.mlsClient::registerExternalCertificates)
+                .suspendFunction(arrangement.mlsClient::registerCrl)
                 .with(any())
                 .wasInvoked(once)
 
@@ -94,14 +96,15 @@ class CheckRevocationListUseCaseTest {
                 .withRegisterExternalCertificatesIsChangedTrueResult()
                 .arrange()
 
-            checkRevocationList.invoke()
+            checkRevocationList.invoke(DUMMY_URL)
 
             verify(arrangement.e2EIRepository)
-                .suspendFunction(arrangement.e2EIRepository::getCurrentClientDomainCRL)
+                .suspendFunction(arrangement.e2EIRepository::getClientDomainCRL)
+                .with(any())
                 .wasInvoked(once)
 
             verify(arrangement.mlsClient)
-                .suspendFunction(arrangement.mlsClient::registerExternalCertificates)
+                .suspendFunction(arrangement.mlsClient::registerCrl)
                 .with(any())
                 .wasInvoked(once)
 
@@ -140,15 +143,15 @@ class CheckRevocationListUseCaseTest {
 
         fun withE2EIRepositoryFailure() = apply {
             given(e2EIRepository)
-                .suspendFunction(e2EIRepository::getCurrentClientDomainCRL)
-                .whenInvoked()
+                .suspendFunction(e2EIRepository::getClientDomainCRL)
+                .whenInvokedWith(any())
                 .thenReturn(Either.Left(E2EIFailure.Generic(Exception())))
         }
 
         fun withE2EIRepositorySuccess() = apply {
             given(e2EIRepository)
-                .suspendFunction(e2EIRepository::getCurrentClientDomainCRL)
-                .whenInvoked()
+                .suspendFunction(e2EIRepository::getClientDomainCRL)
+                .whenInvokedWith(any())
                 .thenReturn(Either.Right("result".toByteArray()))
         }
 
@@ -165,5 +168,9 @@ class CheckRevocationListUseCaseTest {
                 .whenInvokedWith(any())
                 .thenReturn(CrlRegistration(true, 10.toULong()))
         }
+    }
+
+    companion object {
+        const val DUMMY_URL = "https://dummy.url"
     }
 }
