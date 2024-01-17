@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
@@ -61,13 +62,14 @@ interface ProtoContentMapper {
     fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent
 }
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 class ProtoContentMapperImpl(
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val availabilityMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val selfUserId: UserId,
+    private val linkPreviewMapper: LinkPreviewMapper = MapperProvider.linkPreviewMapper(selfUserId),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
 ) : ProtoContentMapper {
 
@@ -547,6 +549,7 @@ class ProtoContentMapperImpl(
         expectsReadConfirmation: Boolean,
         legalHoldStatus: Conversation.LegalHoldStatus
     ): GenericMessage.Content.Text {
+        val linkPreview = readableContent.linkPreview.map { linkPreviewMapper.fromModelToProto(it) }
         val mentions = readableContent.mentions.map { messageMentionMapper.fromModelToProto(it) }
         val quote = readableContent.quotedMessageReference?.let {
             Quote(it.quotedMessageId, it.quotedMessageSha256?.let { hash -> ByteArr(hash) })
@@ -555,6 +558,7 @@ class ProtoContentMapperImpl(
         return GenericMessage.Content.Text(
             Text(
                 content = readableContent.value,
+                linkPreview = linkPreview,
                 mentions = mentions,
                 quote = quote,
                 expectsReadConfirmation = expectsReadConfirmation,
@@ -576,6 +580,7 @@ class ProtoContentMapperImpl(
 
     private fun unpackText(protoContent: Text) = MessageContent.Text(
         value = protoContent.content,
+        linkPreview = protoContent.linkPreview.mapNotNull { linkPreviewMapper.fromProtoToModel(it) },
         mentions = protoContent.mentions.mapNotNull { messageMentionMapper.fromProtoToModel(it) },
         quotedMessageReference = protoContent.quote?.let {
             MessageContent.QuoteReference(

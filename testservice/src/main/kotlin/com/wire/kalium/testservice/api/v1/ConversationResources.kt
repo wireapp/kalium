@@ -20,6 +20,7 @@ package com.wire.kalium.testservice.api.v1
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
 import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
@@ -344,11 +345,24 @@ class ConversationResources(private val instanceService: InstanceService) {
             }
         }
         return with(sendTextRequest) {
+            val linkPreviews = when (linkPreview) {
+                null -> emptyList()
+                else -> listOf(
+                    MessageLinkPreview(
+                        linkPreview.url,
+                        linkPreview.urlOffset,
+                        linkPreview.summary,
+                        linkPreview.title,
+                        linkPreview.permanentUrl
+                    )
+                )
+            }
             runBlocking {
                 ConversationRepository.sendTextMessage(
                     instance,
                     ConversationId(conversationId, conversationDomain),
                     text,
+                    linkPreviews,
                     mentions,
                     messageTimer,
                     quotedMessageId

@@ -67,6 +67,8 @@ import com.wire.kalium.logic.data.message.SendMessageFailureMapper
 import com.wire.kalium.logic.data.message.SendMessageFailureMapperImpl
 import com.wire.kalium.logic.data.message.SendMessagePartialFailureMapper
 import com.wire.kalium.logic.data.message.SendMessagePartialFailureMapperImpl
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapper
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapperImpl
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapperImpl
 import com.wire.kalium.logic.data.message.reaction.ReactionsMapper
@@ -141,6 +143,7 @@ internal object MapperProvider {
         receiptModeMapper(),
     )
 
+    fun linkPreviewMapper(selfUserId: UserId): LinkPreviewMapper = LinkPreviewMapperImpl(idMapper(), selfUserId)
     fun messageMentionMapper(selfUserId: UserId): MessageMentionMapper = MessageMentionMapperImpl(idMapper(), selfUserId)
 
     fun preyKeyMapper(): PreKeyMapper = PreKeyMapperImpl()

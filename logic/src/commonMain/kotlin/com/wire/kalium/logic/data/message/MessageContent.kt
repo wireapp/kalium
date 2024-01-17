@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MessageButtonId
 import com.wire.kalium.logic.data.id.MessageId
+import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
 import com.wire.kalium.logic.data.message.mention.MessageMention
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
@@ -80,7 +81,8 @@ sealed class MessageContent {
     // client message content types
     data class Text(
         val value: String,
-        val mentions: List<MessageMention> = listOf(),
+        val linkPreview: List<MessageLinkPreview> = emptyList(),
+        val mentions: List<MessageMention> = emptyList(),
         val quotedMessageReference: QuoteReference? = null,
         val quotedMessageDetails: QuotedMessageDetails? = null
     ) : Regular()

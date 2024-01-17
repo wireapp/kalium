@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -63,6 +64,7 @@ class SendTextMessageUseCase internal constructor(
     suspend operator fun invoke(
         conversationId: ConversationId,
         text: String,
+        linkPreview: List<MessageLinkPreview> = emptyList(),
         mentions: List<MessageMention> = emptyList(),
         quotedMessageId: String? = null
     ): Either<CoreFailure, Unit> = scope.async(dispatchers.io) {
@@ -81,6 +83,7 @@ class SendTextMessageUseCase internal constructor(
                 id = generatedMessageUuid,
                 content = MessageContent.Text(
                     value = text,
+                    linkPreview = linkPreview,
                     mentions = mentions,
                     quotedMessageReference = quotedMessageId?.let { quotedMessageId ->
                         MessageContent.QuoteReference(

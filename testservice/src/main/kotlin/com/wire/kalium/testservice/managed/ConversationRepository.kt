@@ -28,6 +28,7 @@ import com.wire.kalium.logic.feature.conversation.ClearConversationContentUseCas
 import com.wire.kalium.logic.feature.debug.BrokenState
 import com.wire.kalium.logic.feature.debug.SendBrokenAssetMessageResult
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
+import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
@@ -150,6 +151,7 @@ sealed class ConversationRepository {
             instance: Instance,
             conversationId: ConversationId,
             text: String?,
+            linkPreviews: List<MessageLinkPreview> = emptyList(),
             mentions: List<MessageMention>,
             messageTimer: Int?,
             quotedMessageId: String?
@@ -161,7 +163,7 @@ sealed class ConversationRepository {
                             setMessageTimer(instance, conversationId, messageTimer)
                             log.info("Instance ${instance.instanceId}: Send text message '$text'")
                             messages.sendTextMessage(
-                                conversationId, text, mentions, quotedMessageId
+                                conversationId, text, linkPreviews, mentions, quotedMessageId
                             ).fold({
                                 Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
                             }, {
