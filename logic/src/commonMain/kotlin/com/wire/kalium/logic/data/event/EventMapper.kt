@@ -41,9 +41,9 @@ import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
-import com.wire.kalium.network.api.base.authenticated.notification.MemberLeaveReasonDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
+import com.wire.kalium.network.api.base.authenticated.notification.MemberLeaveReasonDTO
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi.PropertyKey.WIRE_RECEIPT_MODE
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi.PropertyKey.WIRE_TYPING_INDICATOR_MODE
 import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
@@ -97,8 +97,6 @@ class EventMapper(
             is EventContentDTO.Conversation.DeletedConversationDTO -> conversationDeleted(id, eventContentDTO, transient, live)
             is EventContentDTO.Conversation.ConversationRenameDTO -> conversationRenamed(id, eventContentDTO, transient, live)
             is EventContentDTO.Team.MemberLeave -> teamMemberLeft(id, eventContentDTO, transient, live)
-            is EventContentDTO.Team.MemberUpdate -> teamMemberUpdate(id, eventContentDTO, transient, live)
-            is EventContentDTO.Team.Update -> teamUpdate(id, eventContentDTO, transient, live)
             is EventContentDTO.User.UpdateDTO -> userUpdate(id, eventContentDTO, transient, live)
             is EventContentDTO.UserProperty.PropertiesSetDTO -> updateUserProperties(id, eventContentDTO, transient, live)
             is EventContentDTO.UserProperty.PropertiesDeleteDTO -> deleteUserProperties(id, eventContentDTO, transient, live)
@@ -670,34 +668,6 @@ class EventMapper(
         timestampIso = event.time
     )
 
-    private fun teamMemberUpdate(
-        id: String,
-        event: EventContentDTO.Team.MemberUpdate,
-        transient: Boolean,
-        live: Boolean
-    ) = Event.Team.MemberUpdate(
-        id = id,
-        teamId = event.teamId,
-        memberId = event.permissionsResponse.nonQualifiedUserId,
-        transient = transient,
-        live = live,
-        permissionCode = event.permissionsResponse.permissions.own
-    )
-
-    private fun teamUpdate(
-        id: String,
-        event: EventContentDTO.Team.Update,
-        transient: Boolean,
-        live: Boolean
-    ) = Event.Team.Update(
-        id = id,
-        teamId = event.teamId,
-        icon = event.teamUpdate.icon,
-        transient = transient,
-        live = live,
-        name = event.teamUpdate.name
-    )
-
     private fun userUpdate(
         id: String,
         event: EventContentDTO.User.UpdateDTO,
@@ -721,7 +691,7 @@ class EventMapper(
 }
 
 private fun MemberLeaveReasonDTO.toModel(): MemberLeaveReason = when (this) {
-        MemberLeaveReasonDTO.LEFT -> MemberLeaveReason.Left
-        MemberLeaveReasonDTO.REMOVED -> MemberLeaveReason.Removed
-        MemberLeaveReasonDTO.USER_DELETED -> MemberLeaveReason.UserDeleted
-    }
+    MemberLeaveReasonDTO.LEFT -> MemberLeaveReason.Left
+    MemberLeaveReasonDTO.REMOVED -> MemberLeaveReason.Removed
+    MemberLeaveReasonDTO.USER_DELETED -> MemberLeaveReason.UserDeleted
+}
