@@ -30,6 +30,7 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
+import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.util.serialization.toJsonElement
@@ -61,6 +62,7 @@ internal class EventProcessorImpl(
     private val eventRepository: EventRepository,
     private val conversationEventReceiver: ConversationEventReceiver,
     private val userEventReceiver: UserEventReceiver,
+    private val teamEventReceiver: TeamEventReceiver,
     private val featureConfigEventReceiver: FeatureConfigEventReceiver,
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver,
     private val federationEventReceiver: FederationEventReceiver
@@ -94,6 +96,7 @@ internal class EventProcessorImpl(
 
             is Event.UserProperty -> userPropertiesEventReceiver.onEvent(event)
             is Event.Federation -> federationEventReceiver.onEvent(event)
+            is Event.Team.MemberLeave -> teamEventReceiver.onEvent(event)
         }.onSuccess {
             val logMap = mapOf<String, Any>(
                 "event" to event.toLogMap()

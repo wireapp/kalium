@@ -25,6 +25,7 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
+import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
 import com.wire.kalium.logic.util.arrangement.eventHandler.FeatureConfigEventReceiverArrangement
@@ -238,6 +239,9 @@ class EventProcessorTest {
         @Mock
         val federationEventReceiver = mock(FederationEventReceiver::class)
 
+        @Mock
+        val teamEventReceiver = mock(TeamEventReceiver::class)
+
         init {
             withConversationEventReceiverSucceeding()
             withUserEventReceiverSucceeding()
@@ -295,6 +299,7 @@ class EventProcessorTest {
                 eventRepository,
                 conversationEventReceiver,
                 userEventReceiver,
+                teamEventReceiver,
                 featureConfigEventReceiver,
                 userPropertiesEventReceiver,
                 federationEventReceiver
