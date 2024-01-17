@@ -123,6 +123,8 @@ interface UserConfigRepository {
     suspend fun observeLegalHoldChangeNotified(): Flow<Either<StorageFailure, Boolean>>
     suspend fun setCRLExpirationTime(domain: String, url: String, timestamp: ULong)
     suspend fun getCRLExpirationTime(domain: String, url: String): CRLUrlExpirationList?
+    suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean)
+    suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Either<StorageFailure, Boolean>>
 }
 
 @Suppress("TooManyFunctions")
@@ -436,4 +438,11 @@ internal class UserConfigDataSource internal constructor(
 
     override suspend fun getCRLExpirationTime(domain: String, url: String): CRLUrlExpirationList? =
         userConfigDAO.getCRLsPerDomain(domain)
+
+    override suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean) {
+        userConfigDAO.setShouldNotifyForRevokedCertificate(shouldNotify)
+    }
+
+    override suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Either<StorageFailure, Boolean>> =
+        userConfigDAO.observeShouldNotifyForRevokedCertificate().wrapStorageRequest()
 }

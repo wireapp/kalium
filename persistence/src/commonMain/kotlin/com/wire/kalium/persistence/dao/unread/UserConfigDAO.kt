@@ -54,6 +54,8 @@ interface UserConfigDAO {
     suspend fun setCRLExpirationTime(domain: String, url: String, timestamp: ULong)
     suspend fun getCRLsPerDomain(domain: String): CRLUrlExpirationList?
     suspend fun observeCRLsPerDomain(domain: String): Flow<CRLUrlExpirationList?>
+    suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean)
+    suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Boolean?>
 }
 
 internal class UserConfigDAOImpl internal constructor(
@@ -170,8 +172,16 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun observeCRLsPerDomain(domain: String): Flow<CRLUrlExpirationList?> =
         metadataDAO.observeSerializable(domain, CRLUrlExpirationList.serializer())
 
+    override suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean) {
+        metadataDAO.insertValue(shouldNotify.toString(), SHOULD_NOTIFY_FOR_REVOKED_CERTIFICATE)
+    }
+
+    override suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Boolean?> =
+        metadataDAO.valueByKeyFlow(SHOULD_NOTIFY_FOR_REVOKED_CERTIFICATE).map { it?.toBoolean() }
+
     private companion object {
         private const val SELF_DELETING_MESSAGES_KEY = "SELF_DELETING_MESSAGES"
+        private const val SHOULD_NOTIFY_FOR_REVOKED_CERTIFICATE = "should_notify_for_revoked_certificate"
         private const val MLS_MIGRATION_KEY = "MLS_MIGRATION"
         private const val SUPPORTED_PROTOCOLS_KEY = "SUPPORTED_PROTOCOLS"
         const val LEGAL_HOLD_REQUEST = "legal_hold_request"

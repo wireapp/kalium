@@ -22,6 +22,7 @@ import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.conversation.MLSConversationsVerificationStatusesHandler
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -133,12 +134,22 @@ class CheckRevocationListUseCaseTest {
         val mLSConversationsVerificationStatusesHandler =
             mock(classOf<MLSConversationsVerificationStatusesHandler>())
 
+        @Mock
+        val currentClientIdProvider =
+            mock(classOf<CurrentClientIdProvider>())
+
+        @Mock
+        val getE2eiCertificate =
+            mock(classOf<GetE2eiCertificateUseCase>())
+
         fun arrange() = this to CheckRevocationListUseCaseImpl(
             selfUserId = TestUser.USER_ID,
             e2EIRepository = e2EIRepository,
             mlsClient = mlsClient,
             userConfigRepository = userConfigRepository,
-            mLSConversationsVerificationStatusesHandler = mLSConversationsVerificationStatusesHandler
+            mLSConversationsVerificationStatusesHandler = mLSConversationsVerificationStatusesHandler,
+            currentClientIdProvider = currentClientIdProvider,
+            getE2eiCertificate = getE2eiCertificate
         )
 
         fun withE2EIRepositoryFailure() = apply {

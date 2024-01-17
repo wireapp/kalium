@@ -20,8 +20,10 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.conversation.MLSConversationsVerificationStatusesHandler
+import com.wire.kalium.logic.feature.e2ei.CertificateStatus
 import com.wire.kalium.logic.functional.map
 
 /**
@@ -36,7 +38,9 @@ internal class CheckRevocationListUseCaseImpl(
     private val e2EIRepository: E2EIRepository,
     private val mlsClient: MLSClient,
     private val userConfigRepository: UserConfigRepository,
-    private val mLSConversationsVerificationStatusesHandler: MLSConversationsVerificationStatusesHandler
+    private val mLSConversationsVerificationStatusesHandler: MLSConversationsVerificationStatusesHandler,
+    private val currentClientIdProvider: CurrentClientIdProvider,
+    private val getE2eiCertificate: GetE2eiCertificateUseCase
 ) : CheckRevocationListUseCase {
     override suspend fun invoke(url: String) {
         e2EIRepository.getClientDomainCRL(url).map {
@@ -44,6 +48,13 @@ internal class CheckRevocationListUseCaseImpl(
                 userConfigRepository.setCRLExpirationTime(selfUserId.domain, url, expiration!!)
                 if (dirty) {
                     mLSConversationsVerificationStatusesHandler()
+                }
+                currentClientIdProvider().map { clientId ->
+                    getE2eiCertificate(clientId).run {
+                        if (this is GetE2EICertificateUseCaseResult.Success && certificate.status == CertificateStatus.REVOKED) {
+                            userConfigRepository.setShouldNotifyForRevokedCertificate(true)
+                        }
+                    }
                 }
             }
         }
