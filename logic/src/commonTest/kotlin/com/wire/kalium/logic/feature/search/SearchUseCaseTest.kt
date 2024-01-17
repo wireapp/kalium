@@ -182,7 +182,7 @@ class SearchUseCaseTest {
     @Test
     fun givenSearchQuery_whenDoingSearch_thenCallTheSearchFunctionsWithCleanQuery() = runTest {
             val searchQuery = "    search Query     "
-            val cleanQuery = "search Query"
+            val cleanQuery = "search query"
             val (arrangement, searchUseCase) = Arrangement().arrange {
                 withSearchUserRemoteDirectory(
                     result = UserSearchResult(emptyList()).right(),
