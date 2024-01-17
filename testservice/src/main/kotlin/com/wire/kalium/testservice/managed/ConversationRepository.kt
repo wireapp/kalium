@@ -159,14 +159,7 @@ sealed class ConversationRepository {
                 is CurrentSessionResult.Success -> {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
                         if (text != null) {
-                            val newSelfDeletionTimer = if (messageTimer != 0 && messageTimer != null) {
-                                log.info("Instance ${instance.instanceId}: Enable self deletion timer")
-                                SelfDeletionTimer.Enabled(messageTimer.toDuration(DurationUnit.MILLISECONDS))
-                            } else {
-                                log.info("Instance ${instance.instanceId}: Disable self deletion timer")
-                                SelfDeletionTimer.Disabled
-                            }
-                            persistNewSelfDeletionStatus.invoke(conversationId, newSelfDeletionTimer)
+                            setMessageTimer(instance, conversationId, messageTimer)
                             log.info("Instance ${instance.instanceId}: Send text message '$text'")
                             messages.sendTextMessage(
                                 conversationId, text, mentions, quotedMessageId, buttons
@@ -201,14 +194,7 @@ sealed class ConversationRepository {
                 is CurrentSessionResult.Success -> {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
                         if (text != null) {
-                            val newSelfDeletionTimer = if (messageTimer != 0 && messageTimer != null) {
-                                log.info("Instance ${instance.instanceId}: Enable self deletion timer")
-                                SelfDeletionTimer.Enabled(messageTimer.toDuration(DurationUnit.MILLISECONDS))
-                            } else {
-                                log.info("Instance ${instance.instanceId}: Disable self deletion timer")
-                                SelfDeletionTimer.Disabled
-                            }
-                            persistNewSelfDeletionStatus.invoke(conversationId, newSelfDeletionTimer)
+                            setMessageTimer(instance, conversationId, messageTimer)
                             log.info("Instance ${instance.instanceId}: Send text message '$text'")
                             messages.sendEditTextMessage(
                                 conversationId, firstMessageId, text, mentions
@@ -243,14 +229,7 @@ sealed class ConversationRepository {
             when (val session = session.currentSession()) {
                 is CurrentSessionResult.Success -> {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
-                        val newSelfDeletionTimer = if (messageTimer != 0 && messageTimer != null) {
-                            log.info("Instance ${instance.instanceId}: Enable self deletion timer")
-                            SelfDeletionTimer.Enabled(messageTimer.toDuration(DurationUnit.MILLISECONDS))
-                        } else {
-                            log.info("Instance ${instance.instanceId}: Disable self deletion timer")
-                            SelfDeletionTimer.Disabled
-                        }
-                        persistNewSelfDeletionStatus.invoke(conversationId, newSelfDeletionTimer)
+                        setMessageTimer(instance, conversationId, messageTimer)
                         log.info("Instance ${instance.instanceId}: Send ping")
                         messages.sendLocation(conversationId, latitude, longitude, name, zoom).fold({
                             Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
@@ -334,14 +313,7 @@ sealed class ConversationRepository {
                             syncManager.waitUntilLiveOrFailure().onFailure {
                                 log.info("Instance ${instance.instanceId}: Sync failed with $it")
                             }
-                            val newSelfDeletionTimer = if (messageTimer != 0 && messageTimer != null) {
-                                log.info("Instance ${instance.instanceId}: Enable self deletion timer")
-                                SelfDeletionTimer.Enabled(messageTimer.toDuration(DurationUnit.MILLISECONDS))
-                            } else {
-                                log.info("Instance ${instance.instanceId}: Disable self deletion timer")
-                                SelfDeletionTimer.Disabled
-                            }
-                            persistNewSelfDeletionStatus.invoke(conversationId, newSelfDeletionTimer)
+                            setMessageTimer(instance, conversationId, messageTimer)
                             val sendResult = if (invalidHash || otherAlgorithm || otherHash) {
                                 val brokenState = BrokenState(invalidHash, otherHash, otherAlgorithm)
                                 @Suppress("IMPLICIT_CAST_TO_ANY")
@@ -429,14 +401,7 @@ sealed class ConversationRepository {
                             syncManager.waitUntilLiveOrFailure().onFailure {
                                 log.info("Instance ${instance.instanceId}: Sync failed with $it")
                             }
-                            val newSelfDeletionTimer = if (messageTimer != 0 && messageTimer != null) {
-                                log.info("Instance ${instance.instanceId}: Enable self deletion timer")
-                                SelfDeletionTimer.Enabled(messageTimer.toDuration(DurationUnit.MILLISECONDS))
-                            } else {
-                                log.info("Instance ${instance.instanceId}: Disable self deletion timer")
-                                SelfDeletionTimer.Disabled
-                            }
-                            persistNewSelfDeletionStatus.invoke(conversationId, newSelfDeletionTimer)
+                            setMessageTimer(instance, conversationId, messageTimer)
                             val sendResult = messages.sendAssetMessage(
                                 conversationId,
                                 temp.toOkioPath(),
@@ -458,6 +423,29 @@ sealed class ConversationRepository {
                             } else {
                                 Response.status(Response.Status.OK).build()
                             }
+                        }
+                    }
+
+                    is CurrentSessionResult.Failure -> {
+                        Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Session failure").build()
+                    }
+                }
+            }
+        }
+
+        private suspend fun setMessageTimer(instance: Instance, conversationId: ConversationId, messageTimer: Int?) {
+            instance.coreLogic.globalScope {
+                when (val session = session.currentSession()) {
+                    is CurrentSessionResult.Success -> {
+                        instance.coreLogic.sessionScope(session.accountInfo.userId) {
+                            val newSelfDeletionTimer = if (messageTimer != 0 && messageTimer != null) {
+                                log.info("Instance ${instance.instanceId}: Enable self deletion timer")
+                                SelfDeletionTimer.Enabled(messageTimer.toDuration(DurationUnit.MILLISECONDS))
+                            } else {
+                                log.info("Instance ${instance.instanceId}: Disable self deletion timer")
+                                SelfDeletionTimer.Disabled
+                            }
+                            persistNewSelfDeletionStatus.invoke(conversationId, newSelfDeletionTimer)
                         }
                     }
 
