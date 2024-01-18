@@ -21,12 +21,12 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -43,7 +43,6 @@ import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -52,13 +51,13 @@ import kotlin.test.Test
 import kotlin.test.assertIs
 import kotlin.time.Duration
 
-class SendKnockUserCaseTest {
+class SendLocationUseCaseTest {
 
     @Test
-    fun givenAValidSendKnockRequest_whenSendingKnock_thenShouldReturnASuccessResult() = runTest {
+    fun givenAValidSendLocationRequest_whenSendingLocation_thenShouldReturnASuccessResult() = runTest {
         // Given
         val conversationId = ConversationId("some-convo-id", "some-domain-id")
-        val (arrangement, sendKnockUseCase) = Arrangement()
+        val (arrangement, sendLocationUseCase) = Arrangement()
             .withCurrentClientProviderSuccess()
             .withPersistMessageSuccess()
             .withSlowSyncStatusComplete()
@@ -68,7 +67,7 @@ class SendKnockUserCaseTest {
             }
 
         // When
-        val result = sendKnockUseCase.invoke(conversationId, false)
+        val result = sendLocationUseCase.invoke(conversationId, LATITUDE, LONGITUDE, NAME, ZOOM)
 
         // Then
         result.shouldSucceed()
@@ -83,10 +82,10 @@ class SendKnockUserCaseTest {
     }
 
     @Test
-    fun givenNoNetwork_whenSendingKnock_thenShouldReturnAFailure() = runTest {
+    fun givenNoNetwork_whenSendingLocation_thenShouldReturnAFailure() = runTest {
         // Given
         val conversationId = ConversationId("some-convo-id", "some-domain-id")
-        val (arrangement, sendKnockUseCase) = Arrangement()
+        val (arrangement, sendLocationUseCase) = Arrangement()
             .withCurrentClientProviderSuccess()
             .withPersistMessageSuccess()
             .withSlowSyncStatusComplete()
@@ -96,7 +95,7 @@ class SendKnockUserCaseTest {
             }
 
         // When
-        val result = sendKnockUseCase.invoke(conversationId, false)
+        val result = sendLocationUseCase.invoke(conversationId, LATITUDE, LONGITUDE, NAME, ZOOM)
 
         // Then
         result.shouldFail()
@@ -111,11 +110,11 @@ class SendKnockUserCaseTest {
     }
 
     @Test
-    fun givenConversationHasTimer_whenSendingKnock_thenTheTimerIsAdded() = runTest {
+    fun givenConversationHasTimer_whenSendingLocation_thenTheTimerIsAdded() = runTest {
         // Given
         val expectedDuration = Duration.parse("PT1H")
         val conversationId = ConversationId("some-convo-id", "some-domain-id")
-        val (arrangement, sendKnockUseCase) = Arrangement()
+        val (arrangement, sendLocationUseCase) = Arrangement()
             .withCurrentClientProviderSuccess()
             .withPersistMessageSuccess()
             .withSlowSyncStatusComplete()
@@ -125,7 +124,7 @@ class SendKnockUserCaseTest {
             }
 
         // When
-        val result = sendKnockUseCase.invoke(conversationId, false)
+        val result = sendLocationUseCase.invoke(conversationId, LATITUDE, LONGITUDE, NAME, ZOOM)
 
         // Then
         result.shouldSucceed()
@@ -133,7 +132,7 @@ class SendKnockUserCaseTest {
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(matching {
                 assertIs<Message.Regular>(it)
-                           it.expirationData?.expireAfter == expectedDuration
+                it.expirationData?.expireAfter == expectedDuration
             }, any())
             .wasInvoked(once)
         verify(arrangement.messageSendFailureHandler)
@@ -198,9 +197,9 @@ class SendKnockUserCaseTest {
                 .thenReturn(stateFlow)
         }
 
-        fun arrange(block: (Arrangement.() -> Unit) = {}): Pair<Arrangement, SendKnockUseCase> {
+        fun arrange(block: (Arrangement.() -> Unit) = {}): Pair<Arrangement, SendLocationUseCase> {
             block()
-            return this to SendKnockUseCase(
+            return this to SendLocationUseCase(
                 persistMessage,
                 TestUser.SELF.id,
                 currentClientIdProvider,
@@ -210,6 +209,13 @@ class SendKnockUserCaseTest {
                 observeSelfDeletionTimerSettingsForConversation
             )
         }
+    }
+
+    private companion object {
+        const val LATITUDE = 52.0f
+        const val LONGITUDE = 52.0f
+        const val NAME = "Wire HQ, Berlin"
+        const val ZOOM = 20
     }
 
 }
