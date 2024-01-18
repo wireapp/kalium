@@ -104,8 +104,9 @@ class E2EIClientImpl(
 
         fun toNewAcmeAuthz(value: com.wire.crypto.NewAcmeAuthz) = NewAcmeAuthz(
             value.identifier,
-            value.wireOidcChallenge?.let { toAcmeChallenge(it) },
-            value.wireDpopChallenge?.let { toAcmeChallenge(it) },
+            value.keyauth,
+            toAcmeChallenge(value.wireOidcChallenge),
+            toAcmeChallenge(value.wireDpopChallenge),
         )
     }
 }

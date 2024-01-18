@@ -1102,7 +1102,7 @@ class UserSessionScope internal constructor(
         lazy { conversations.updateMLSGroupsKeyingMaterials },
         lazy { users.timestampKeyRepository })
 
-    internal val mlsClientManager: MLSClientManager = MLSClientManagerImpl(clientIdProvider,
+    val mlsClientManager: MLSClientManager = MLSClientManagerImpl(clientIdProvider,
         isAllowedToRegisterMLSClient,
         incrementalSyncRepository,
         lazy { slowSyncRepository },

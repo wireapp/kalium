@@ -55,7 +55,7 @@ import kotlinx.coroutines.withContext
 sealed class RegisterClientResult {
     class Success(val client: Client) : RegisterClientResult()
 
-    class E2EICertificateRequired(val client: Client) : RegisterClientResult()
+    class E2EICertificateRequired(val client: Client, val userId: UserId) : RegisterClientResult()
 
     sealed class Failure : RegisterClientResult() {
         sealed class InvalidCredentials : Failure() {
@@ -149,7 +149,7 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
                         if (isAllowedToRegisterMLSClient()) {
                             registerMLSClientUseCase.invoke(clientId = registeredClient.id).flatMap {
                                 if (it is RegisterMLSClientResult.E2EICertificateRequired)
-                                    return RegisterClientResult.E2EICertificateRequired(registeredClient)
+                                    return RegisterClientResult.E2EICertificateRequired(registeredClient, selfUserId)
                                 else Either.Right(registeredClient)
                             }
                         } else {

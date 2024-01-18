@@ -24,25 +24,15 @@ private const val END_INDEX_DOMAIN = 3
 private const val END_INDEX_URL_PATH = 3
 
 fun String.obfuscateId(): String {
-    return if (this.length >= END_INDEX_ID) {
-        this.substring(START_INDEX, END_INDEX_ID) + "***"
-    } else {
-        this
-    }
+    return this
+
 }
 
 fun String.obfuscateDomain(): String {
-    return if (this.length >= END_INDEX_DOMAIN) {
-        this.substring(START_INDEX, END_INDEX_DOMAIN) + "***"
-    } else {
-        this
-    }
+    return this
+
 }
 
 fun String.obfuscateUrlPath(): String {
-    return if (this.length >= END_INDEX_URL_PATH) {
-        this.substring(START_INDEX, END_INDEX_URL_PATH) + "***"
-    } else {
-        this
-    }
+    return this
 }

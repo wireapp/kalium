@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.feature.CachedClientIdClearer
+import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
@@ -177,6 +178,9 @@ class GetOrRegisterClientUseCaseTest {
         val upgradeCurrentSessionUseCase = mock(classOf<UpgradeCurrentSessionUseCase>())
 
         @Mock
+        val syncFeatureConfigsUseCase = mock(classOf<SyncFeatureConfigsUseCase>())
+
+        @Mock
         val verifyExistingClientUseCase = mock(classOf<VerifyExistingClientUseCase>())
 
         @Mock
@@ -190,7 +194,8 @@ class GetOrRegisterClientUseCaseTest {
             clearClientDataUseCase,
             verifyExistingClientUseCase,
             upgradeCurrentSessionUseCase,
-            cachedClientIdClearer
+            cachedClientIdClearer,
+            syncFeatureConfigsUseCase
         )
 
         fun withRetainedClientIdResult(result: Either<CoreFailure, ClientId>) = apply {

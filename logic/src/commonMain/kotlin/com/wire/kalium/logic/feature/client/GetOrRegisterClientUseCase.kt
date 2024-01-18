@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.feature.CachedClientIdClearer
@@ -38,6 +39,8 @@ interface GetOrRegisterClientUseCase {
     suspend operator fun invoke(
         registerClientParam: RegisterClientUseCase.RegisterClientParam
     ): RegisterClientResult
+
+    suspend operator fun invoke(clientId: ClientId)
 }
 
 @Suppress("LongParameterList")
@@ -79,14 +82,14 @@ internal class GetOrRegisterClientUseCaseImpl(
                 clientRepository.persistClientId(result.client.id)
             }
         }
-        //todo: ask vitor and mohammad
-//         if (result is RegisterClientResult.E2EICertificateRequired) {
-//             upgradeCurrentSessionUseCase(result.client.id).flatMap {
-//                 clientRepository.persistClientId(result.client.id)
-//             }
-//         }
 
         return result
+    }
+
+    override suspend fun invoke(clientId: ClientId) {
+        upgradeCurrentSessionUseCase(clientId).flatMap {
+            clientRepository.persistClientId(clientId)
+        }
     }
 
     private suspend fun clearOldClientRelatedData() {
