@@ -24,12 +24,16 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.conversation.MLSConversationsVerificationStatusesHandler
+import com.wire.kalium.logic.feature.e2ei.CertificateStatus
+import com.wire.kalium.logic.feature.e2ei.E2eiCertificate
+import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -64,7 +68,9 @@ class CheckRevocationListUseCaseTest {
         runTest {
             val (arrangement, checkRevocationList) = Arrangement()
                 .withE2EIRepositorySuccess()
-                .withRegisterExternalCertificatesResult()
+                .withRegisterCrlResult()
+                .withCurrentClientId()
+                .withValidCertificate()
                 .arrange()
 
             checkRevocationList.invoke(DUMMY_URL)
@@ -94,7 +100,9 @@ class CheckRevocationListUseCaseTest {
         runTest {
             val (arrangement, checkRevocationList) = Arrangement()
                 .withE2EIRepositorySuccess()
-                .withRegisterExternalCertificatesIsChangedTrueResult()
+                .withRegisterCrlResultDirty()
+                .withCurrentClientId()
+                .withValidCertificate()
                 .arrange()
 
             checkRevocationList.invoke(DUMMY_URL)
@@ -116,6 +124,67 @@ class CheckRevocationListUseCaseTest {
 
             verify(arrangement.mLSConversationsVerificationStatusesHandler)
                 .suspendFunction(arrangement.mLSConversationsVerificationStatusesHandler::invoke)
+                .wasInvoked(once)
+
+
+            verify(arrangement.currentClientIdProvider)
+                .suspendFunction(arrangement.currentClientIdProvider::invoke)
+                .wasInvoked(once)
+
+            verify(arrangement.getE2eiCertificate)
+                .suspendFunction(arrangement.getE2eiCertificate::invoke)
+                .with(eq(TestClient.CLIENT_ID))
+                .wasInvoked(once)
+
+            verify(arrangement.userConfigRepository)
+                .suspendFunction(arrangement.userConfigRepository::setShouldNotifyForRevokedCertificate)
+                .with(eq(true))
+                .wasNotInvoked()
+        }
+
+    @Test
+    fun givenCertificateRevokedForCurrentClient_whenRunningUseCase_thenUpdateShouldNotifyFlagToTrue() =
+        runTest {
+            val (arrangement, checkRevocationList) = Arrangement()
+                .withE2EIRepositorySuccess()
+                .withRegisterCrlResultDirty()
+                .withCurrentClientId()
+                .withRevokedCertificate()
+                .arrange()
+
+            checkRevocationList.invoke(DUMMY_URL)
+
+            verify(arrangement.e2EIRepository)
+                .suspendFunction(arrangement.e2EIRepository::getClientDomainCRL)
+                .with(any())
+                .wasInvoked(once)
+
+            verify(arrangement.mlsClient)
+                .suspendFunction(arrangement.mlsClient::registerCrl)
+                .with(any())
+                .wasInvoked(once)
+
+            verify(arrangement.userConfigRepository)
+                .suspendFunction(arrangement.userConfigRepository::setCRLExpirationTime)
+                .with(any(), any())
+                .wasInvoked(once)
+
+            verify(arrangement.mLSConversationsVerificationStatusesHandler)
+                .suspendFunction(arrangement.mLSConversationsVerificationStatusesHandler::invoke)
+                .wasInvoked(once)
+
+            verify(arrangement.currentClientIdProvider)
+                .suspendFunction(arrangement.currentClientIdProvider::invoke)
+                .wasInvoked(once)
+
+            verify(arrangement.getE2eiCertificate)
+                .suspendFunction(arrangement.getE2eiCertificate::invoke)
+                .with(eq(TestClient.CLIENT_ID))
+                .wasInvoked(once)
+
+            verify(arrangement.userConfigRepository)
+                .suspendFunction(arrangement.userConfigRepository::setShouldNotifyForRevokedCertificate)
+                .with(eq(true))
                 .wasInvoked(once)
         }
 
@@ -166,18 +235,47 @@ class CheckRevocationListUseCaseTest {
                 .thenReturn(Either.Right("result".toByteArray()))
         }
 
-        fun withRegisterExternalCertificatesResult() = apply {
+        fun withRegisterCrlResult() = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::registerCrl)
                 .whenInvokedWith(any(), any())
                 .thenReturn(CrlRegistration(false, 10.toULong()))
         }
 
-        fun withRegisterExternalCertificatesIsChangedTrueResult() = apply {
+        fun withRegisterCrlResultDirty() = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::registerCrl)
                 .whenInvokedWith(any())
                 .thenReturn(CrlRegistration(true, 10.toULong()))
+        }
+
+        fun withCurrentClientId() = apply {
+            given(currentClientIdProvider)
+                .suspendFunction(currentClientIdProvider::invoke)
+                .whenInvoked()
+                .thenReturn(Either.Right(TestClient.CLIENT_ID))
+        }
+
+        fun withValidCertificate() = apply {
+            given(getE2eiCertificate)
+                .suspendFunction(getE2eiCertificate::invoke)
+                .whenInvokedWith(eq(TestClient.CLIENT_ID))
+                .thenReturn(
+                    GetE2EICertificateUseCaseResult.Success(
+                        E2eiCertificate(status = CertificateStatus.VALID)
+                    )
+                )
+        }
+
+        fun withRevokedCertificate() = apply {
+            given(getE2eiCertificate)
+                .suspendFunction(getE2eiCertificate::invoke)
+                .whenInvokedWith(eq(TestClient.CLIENT_ID))
+                .thenReturn(
+                    GetE2EICertificateUseCaseResult.Success(
+                        E2eiCertificate(status = CertificateStatus.REVOKED)
+                    )
+                )
         }
     }
 
