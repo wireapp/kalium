@@ -67,7 +67,13 @@ interface MemberDAOArrangement {
     )
 
     fun withDeleteMembersByQualifiedID(
-        throws: Throwable? = null,
+        result: Long,
+        conversationId: Matcher<QualifiedIDEntity> = any(),
+        memberIdList: Matcher<List<QualifiedIDEntity>> = any()
+    )
+
+    fun withDeleteMembersByQualifiedIDThrows(
+        throws: Throwable,
         conversationId: Matcher<QualifiedIDEntity> = any(),
         memberIdList: Matcher<List<QualifiedIDEntity>> = any()
     )
@@ -110,14 +116,14 @@ class MemberDAOArrangementImpl : MemberDAOArrangement {
     }
 
     override fun withObserveIsUserMember(
-        result: Flow<Boolean>,
+        expectedIsUserMember: Flow<Boolean>,
         userId: Matcher<UserIDEntity>,
         conversationId: Matcher<QualifiedIDEntity>
     ) {
         given(memberDAO)
             .suspendFunction(memberDAO::observeIsUserMember)
             .whenInvokedWith(userId, conversationId)
-            .thenReturn(result)
+            .thenReturn(expectedIsUserMember)
     }
 
     override fun withInsertMemberWithConversationIdSuccess(
@@ -141,21 +147,25 @@ class MemberDAOArrangementImpl : MemberDAOArrangement {
     }
 
     override fun withDeleteMembersByQualifiedID(
-        throws: Throwable?,
+        result: Long,
         conversationId: Matcher<QualifiedIDEntity>,
         memberIdList: Matcher<List<QualifiedIDEntity>>
     ) {
-        if (throws != null) {
-            given(memberDAO)
-                .suspendFunction(memberDAO::deleteMembersByQualifiedID)
-                .whenInvokedWith(memberIdList, conversationId)
-                .thenThrow(throws)
-        } else {
-            given(memberDAO)
-                .suspendFunction(memberDAO::deleteMembersByQualifiedID)
-                .whenInvokedWith(memberIdList, conversationId)
-                .thenReturn(Unit)
-        }
+        given(memberDAO)
+            .suspendFunction(memberDAO::deleteMembersByQualifiedID)
+            .whenInvokedWith(memberIdList, conversationId)
+            .thenReturn(result)
+    }
+
+    override fun withDeleteMembersByQualifiedIDThrows(
+        throws: Throwable,
+        conversationId: Matcher<QualifiedIDEntity>,
+        memberIdList: Matcher<List<QualifiedIDEntity>>
+    ) {
+        given(memberDAO)
+            .suspendFunction(memberDAO::deleteMembersByQualifiedID)
+            .whenInvokedWith(memberIdList, conversationId)
+            .thenThrow(throws)
     }
 }
 
