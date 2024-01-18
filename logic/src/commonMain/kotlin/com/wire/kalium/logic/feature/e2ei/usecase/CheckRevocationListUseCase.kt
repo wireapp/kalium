@@ -33,6 +33,7 @@ internal interface CheckRevocationListUseCase {
     suspend operator fun invoke(url: String)
 }
 
+@Suppress("LongParameterList")
 internal class CheckRevocationListUseCaseImpl(
     private val selfUserId: UserId,
     private val e2EIRepository: E2EIRepository,
