@@ -30,6 +30,7 @@ import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.RegisterClientRequest
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
+import com.wire.kalium.network.api.base.authenticated.client.UpdateClientCapabilitiesRequest
 import com.wire.kalium.persistence.dao.client.ClientTypeEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.client.InsertClientParam
@@ -58,6 +59,12 @@ class ClientMapper(
         preKeys = param.preKeys.map { preyKeyMapper.toPreKeyDTO(it) },
         cookieLabel = param.cookieLabel,
         secondFactorVerificationCode = param.secondFactorVerificationCode,
+    )
+
+    fun toUpdateClientCapabilitiesRequest(
+        updateClientCapabilitiesParam: UpdateClientCapabilitiesParam,
+    ): UpdateClientCapabilitiesRequest = UpdateClientCapabilitiesRequest(
+        capabilities = updateClientCapabilitiesParam.capabilities.map { toClientCapabilityDTO(it) },
     )
 
     // TODO: mapping directly form DTO to domain object is not ideal since we lose verification information

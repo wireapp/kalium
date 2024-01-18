@@ -107,8 +107,13 @@ internal data class PasswordRequest(
 )
 
 @Serializable
-data class UpdateClientRequest(
+data class UpdateClientMlsPublicKeysRequest(
     @SerialName("mls_public_keys") val mlsPublicKeys: Map<MLSPublicKeyTypeDTO, MLSPublicKey>
+)
+
+@Serializable
+data class UpdateClientCapabilitiesRequest(
+    @SerialName("capabilities") val capabilities: List<ClientCapabilityDTO>
 )
 
 @Serializable

@@ -51,6 +51,10 @@ class EnrollE2EIUseCaseImpl internal constructor(
     override suspend fun initialEnrollment(): Either<CoreFailure, E2EIEnrollmentResult> {
         kaliumLogger.i("start E2EI Enrollment Initialization")
 
+        e2EIRepository.fetchTrustAnchors().onFailure {
+            return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.TrustAnchors, it).toEitherLeft()
+        }
+
         val acmeDirectories = e2EIRepository.loadACMEDirectories().getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeDirectories, it).toEitherLeft()
         }
@@ -165,6 +169,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
 
 sealed interface E2EIEnrollmentResult {
     enum class E2EIStep {
+        TrustAnchors,
         AcmeNonce,
         AcmeDirectories,
         AcmeNewAccount,
