@@ -92,7 +92,7 @@ class FederationEventReceiverTest {
             withGetGroupConversationsWithMembersWithBothDomains(Either.Right(defederatedGroupConversations))
             withGetOneOnOneConversationsWithFederatedMember(Either.Right(defederatedOneOnOneConversations))
             withDefederateUser(Either.Right(Unit))
-            withDeleteMembersByQualifiedID()
+            withDeleteMembersByQualifiedID(defederatedConnections.size.toLong())
             withPersistingMessage(Either.Right(Unit))
         }
 
@@ -163,7 +163,7 @@ class FederationEventReceiverTest {
 
             val (arrangement, useCase) = arrange {
                 withGetGroupConversationsWithMembersWithBothDomains(Either.Right(defederatedGroupConversations))
-                withDeleteMembersByQualifiedID()
+                withDeleteMembersByQualifiedID(defederatedUserIdList.size.toLong())
                 withPersistingMessage(Either.Right(Unit))
             }
 

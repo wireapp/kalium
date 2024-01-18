@@ -18,12 +18,19 @@
 
 package com.wire.kalium.logic.sync.receiver
 
+import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
@@ -32,12 +39,16 @@ import com.wire.kalium.logic.kaliumLogger
 internal interface TeamEventReceiver : EventReceiver<Event.Team>
 
 internal class TeamEventReceiverImpl(
-    private val teamRepository: TeamRepository
-
+    private val teamRepository: TeamRepository,
+    private val conversationRepository: ConversationRepository,
+    private val userRepository: UserRepository,
+    private val persistMessage: PersistMessageUseCase,
+    private val selfUserId: UserId,
 ) : TeamEventReceiver {
 
     override suspend fun onEvent(event: Event.Team): Either<CoreFailure, Unit> {
         when (event) {
+            is Event.Team.MemberLeave -> handleMemberLeave(event)
             is Event.Team.MemberUpdate -> handleMemberUpdate(event)
             is Event.Team.Update -> handleUpdate(event)
         }
@@ -46,6 +57,27 @@ internal class TeamEventReceiverImpl(
         //       but not all handlers are using it yet.
         //       Returning Either.Right is the equivalent of how it was originally working.
         return Either.Right(Unit)
+    }
+
+    @Suppress("LongMethod")
+    private suspend fun handleMemberLeave(event: Event.Team.MemberLeave) {
+        val removedUser = UserId(event.memberId, selfUserId.domain)
+        userRepository.markUserAsDeletedAndRemoveFromGroupConversations(removedUser)
+            .onSuccess {
+                it.forEach { conversationId ->
+                    val message = Message.System(
+                        id = uuid4().toString(), // We generate a random uuid for this new system message
+                        content = MessageContent.MemberChange.RemovedFromTeam(listOf(removedUser)),
+                        conversationId = conversationId,
+                        date = event.timestampIso,
+                        senderUserId = removedUser,
+                        status = Message.Status.Sent,
+                        visibility = Message.Visibility.VISIBLE,
+                        expirationData = null
+                    )
+                    persistMessage(message)
+                }
+            }
     }
 
     private suspend fun handleMemberUpdate(event: Event.Team.MemberUpdate) =
