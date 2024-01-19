@@ -1531,7 +1531,7 @@ class UserSessionScope internal constructor(
     private val avsSyncStateReporter: AvsSyncStateReporter by lazy {
         AvsSyncStateReporterImpl(
             callManager = callManager,
-            observeSyncStateUseCase = observeSyncState
+            incrementalSyncRepository = incrementalSyncRepository
         )
     }
 

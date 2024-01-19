@@ -17,11 +17,11 @@
  */
 package com.wire.kalium.logic.sync
 
-import com.wire.kalium.logic.data.sync.SyncState
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
  * This class is responsible for reporting the current sync state to AVS.
@@ -34,24 +34,31 @@ internal interface AvsSyncStateReporter {
 
 internal class AvsSyncStateReporterImpl(
     val callManager: Lazy<CallManager>,
-    val observeSyncStateUseCase: ObserveSyncStateUseCase
+    val incrementalSyncRepository: IncrementalSyncRepository
 ) : AvsSyncStateReporter {
     override suspend fun execute() {
-        observeSyncStateUseCase().distinctUntilChanged().collectLatest {
+        incrementalSyncRepository.incrementalSyncState.collectLatest {
             when (it) {
-                SyncState.GatheringPendingEvents -> {
-                    kaliumLogger.d("Reporting that the app has started IncrementalSync to AVS")
+                IncrementalSyncStatus.FetchingPendingEvents -> {
+                    kaliumLogger.d("Incremental sync started - Reporting that the app has started IncrementalSync to AVS")
                     callManager.value.reportProcessNotifications(true)
                 }
 
-                SyncState.Live -> {
-                    kaliumLogger.d("Reporting that the app has finished IncrementalSync to AVS")
+                IncrementalSyncStatus.Live -> {
+                    kaliumLogger.d("Incremental sync done - Reporting that the app has finished IncrementalSync to AVS")
                     callManager.value.reportProcessNotifications(false)
                 }
 
-                else -> {}
+                is IncrementalSyncStatus.Failed -> {
+                    kaliumLogger.d("Incremental sync failed - Reporting that the app has finished IncrementalSync to AVS")
+                    callManager.value.reportProcessNotifications(false)
+                }
+
+                IncrementalSyncStatus.Pending -> {
+                    kaliumLogger.d("Incremental sync Pending - Reporting that the app has finished IncrementalSync to AVS")
+                    callManager.value.reportProcessNotifications(false)
+                }
             }
         }
-
     }
 }
