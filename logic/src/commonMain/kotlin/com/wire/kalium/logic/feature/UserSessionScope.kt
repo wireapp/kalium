@@ -239,6 +239,8 @@ import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldRequestUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldRequestUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCaseImpl
+import com.wire.kalium.logic.feature.legalhold.UpdateSelfClientCapabilityToLegalHoldConsentUseCase
+import com.wire.kalium.logic.feature.legalhold.UpdateSelfClientCapabilityToLegalHoldConsentUseCaseImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.message.EphemeralEventsNotificationManagerImpl
@@ -327,8 +329,6 @@ import com.wire.kalium.logic.network.ApiMigrationV3
 import com.wire.kalium.logic.network.SessionManagerImpl
 import com.wire.kalium.logic.sync.AvsSyncStateReporter
 import com.wire.kalium.logic.sync.AvsSyncStateReporterImpl
-import com.wire.kalium.logic.sync.MissingMetadataUpdateManager
-import com.wire.kalium.logic.sync.MissingMetadataUpdateManagerImpl
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCaseImpl
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
@@ -871,13 +871,6 @@ class UserSessionScope internal constructor(
         )
     }
 
-    internal val missingMetadataUpdateManager: MissingMetadataUpdateManager = MissingMetadataUpdateManagerImpl(
-        incrementalSyncRepository,
-        lazy { users.refreshUsersWithoutMetadata },
-        lazy { conversations.refreshConversationsWithoutMetadata },
-        lazy { users.timestampKeyRepository }
-    )
-
     private val syncConversations: SyncConversationsUseCase
         get() = SyncConversationsUseCaseImpl(
             conversationRepository,
@@ -1407,6 +1400,13 @@ class UserSessionScope internal constructor(
         messageRepository = messageRepository
     )
 
+    private val updateSelfClientCapabilityToLegalHoldConsent: UpdateSelfClientCapabilityToLegalHoldConsentUseCase
+        get() = UpdateSelfClientCapabilityToLegalHoldConsentUseCaseImpl(
+            clientRemoteRepository = clientRemoteRepository,
+            userConfigRepository = userConfigRepository,
+            selfClientIdProvider = clientIdProvider,
+        )
+
     private val legalHoldHandler = LegalHoldHandlerImpl(
         selfUserId = userId,
         fetchUsersClientsFromRemote = fetchUsersClientsFromRemote,
@@ -1449,7 +1449,7 @@ class UserSessionScope internal constructor(
         )
 
     private val teamEventReceiver: TeamEventReceiver
-        get() = TeamEventReceiverImpl(teamRepository)
+        get() = TeamEventReceiverImpl(userRepository, persistMessage, userId)
 
     private val guestRoomConfigHandler
         get() = GuestRoomConfigHandler(userConfigRepository, kaliumConfigs)
@@ -1794,7 +1794,7 @@ class UserSessionScope internal constructor(
             appLockConfigHandler
         )
 
-    val team: TeamScope get() = TeamScope(userRepository, teamRepository, conversationRepository, selfTeamId)
+    val team: TeamScope get() = TeamScope(teamRepository, conversationRepository, selfTeamId)
 
     val service: ServiceScope
         get() = ServiceScope(
@@ -1916,6 +1916,10 @@ class UserSessionScope internal constructor(
 
         launch {
             acmeCertificatesSyncWorker.execute()
+        }
+
+        launch {
+            updateSelfClientCapabilityToLegalHoldConsent()
         }
     }
 

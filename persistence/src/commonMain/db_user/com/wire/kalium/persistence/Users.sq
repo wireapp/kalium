@@ -97,7 +97,10 @@ markUserAsDeleted:
 INSERT INTO User(qualified_id, user_type, deleted)
 VALUES (:qualified_id, :user_type, 1)
 ON CONFLICT (qualified_id) DO UPDATE SET
-preview_asset_id = NULL, complete_asset_id = NULL, user_type = excluded.user_type, deleted = 1;
+preview_asset_id = NULL,
+complete_asset_id = NULL,
+ user_type = excluded.user_type,
+  deleted = 1;
 
 deleteUserFromGroupConversations:
 DELETE FROM Member
@@ -255,3 +258,10 @@ SELECT EXISTS (
     SELECT 1 FROM User
     WHERE qualified_id IN :userIdList AND team = :teamId
 );
+
+selectGroupConversationsUserIsMemberOf:
+SELECT c.qualified_id
+FROM Conversation c
+INNER JOIN Member m ON c.qualified_id = m.conversation
+WHERE m.user = :userId
+  AND c.type = 'GROUP';

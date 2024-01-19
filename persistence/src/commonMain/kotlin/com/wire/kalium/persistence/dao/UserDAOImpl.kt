@@ -227,7 +227,7 @@ class UserDAOImpl internal constructor(
             for (user: UserEntity in users) {
                 if (user.deleted) {
                     // mark as deleted and remove from groups
-                    safeMarkAsDeleted(user.id)
+                    safeMarkAsDeletedAndRemoveFromGroupConversation(user.id)
                 } else {
                     userQueries.insertUser(
                         qualified_id = user.id,
@@ -321,23 +321,28 @@ class UserDAOImpl internal constructor(
         userQueries.deleteUser(qualifiedID)
     }
 
-    override suspend fun markUserAsDeletedAndRemoveFromGroupConv(qualifiedID: List<QualifiedIDEntity>) = withContext(queriesContext) {
-        userQueries.transaction {
-            qualifiedID.forEach {
-                safeMarkAsDeleted(it)
+    override suspend fun markUserAsDeletedAndRemoveFromGroupConv(
+        qualifiedID: QualifiedIDEntity
+    ): List<ConversationIDEntity> =
+        withContext(queriesContext) {
+            userQueries.transactionWithResult {
+                val conversationIds = userQueries.selectGroupConversationsUserIsMemberOf(qualifiedID).executeAsList()
+                safeMarkAsDeletedAndRemoveFromGroupConversation(qualifiedID)
+                conversationIds
             }
         }
-    }
 
-    override suspend fun markUserAsDeletedAndRemoveFromGroupConv(qualifiedID: QualifiedIDEntity) = withContext(queriesContext) {
-        userQueries.transaction {
-            safeMarkAsDeleted(qualifiedID)
-        }
-    }
-
-    private fun safeMarkAsDeleted(qualifiedID: QualifiedIDEntity) {
+    private fun safeMarkAsDeletedAndRemoveFromGroupConversation(qualifiedID: QualifiedIDEntity) {
         userQueries.markUserAsDeleted(qualifiedID, UserTypeEntity.NONE)
         userQueries.deleteUserFromGroupConversations(qualifiedID)
+    }
+
+    override suspend fun markAsDeleted(userId: List<UserIDEntity>) {
+        userQueries.transaction {
+            userId.forEach {
+                userQueries.markUserAsDeleted(it, UserTypeEntity.NONE)
+            }
+        }
     }
 
     override suspend fun markUserAsDefederated(qualifiedID: QualifiedIDEntity) {
