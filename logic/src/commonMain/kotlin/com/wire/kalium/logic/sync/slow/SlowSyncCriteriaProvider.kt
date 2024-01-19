@@ -75,9 +75,16 @@ internal class SlowSlowSyncCriteriaProviderImpl(
         .onStart { emit(null) }
 
     override suspend fun syncCriteriaFlow(): Flow<SyncCriteriaResolution> =
-        logoutReasonFlow().combine(clientRepository.observeCurrentClientId()) { logoutReason, clientId ->
+        //add e2ei criteria here!
+        //combine with e2ei state flow
+        logoutReasonFlow().combine(clientRepository.observeCurrentClientId()/*add e2ei here*/) { logoutReason, clientId ->
+//             when{
+//                 logoutReason != null ->
+//                     clientId == null -> MissingRequirement("Client is not registered")
+//             }
             handleLogoutReason(logoutReason)
                 ?: handleClientId(clientId)
+                ?: isE2EIRequired()
                 // All criteria are satisfied. We're ready to start sync!
                 ?: Ready
         }
@@ -92,6 +99,14 @@ internal class SlowSlowSyncCriteriaProviderImpl(
     } else {
         null
     }
+
+    val e2eiReuired = true
+    fun isE2EIRequired() = if (e2eiReuired) {
+        MissingRequirement("E2EI is required")
+    } else {
+        null
+    }
+
 
     /**
      * Handles the current [logoutReason], returning a

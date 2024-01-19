@@ -31,6 +31,7 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.e2ei.AccessTokenResponse
 import com.wire.kalium.network.api.base.unbound.acme.ACMEResponse
+import com.wire.kalium.network.api.base.unbound.acme.CertificateChain
 import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
 import io.mockative.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -40,10 +41,92 @@ import kotlin.test.Test
 @ExperimentalCoroutinesApi
 class EnrollE2EICertificateUseCaseTest {
     @Test
+    fun givenLoadTrustAnchorsFails_whenInvokeUseCase_thenReturnFailure() = runTest {
+        val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
+
+        // given
+        arrangement.withLoadTrustAnchorsResulting(TEST_EITHER_LEFT)
+
+        // when
+        val result = enrollE2EICertificateUseCase.initialEnrollment()
+
+        // then
+        result.shouldFail()
+
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::fetchTrustAnchors)
+            .with()
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::loadACMEDirectories)
+            .with()
+            .wasNotInvoked()
+
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::getACMENonce)
+            .with()
+            .wasNotInvoked()
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::createNewAccount)
+            .with()
+            .wasNotInvoked()
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::createNewOrder)
+            .with()
+            .wasNotInvoked()
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::createAuthz)
+            .with()
+            .wasNotInvoked()
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::getWireNonce)
+            .with()
+            .wasNotInvoked()
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::getDPoPToken)
+            .with()
+            .wasNotInvoked()
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::getWireAccessToken)
+            .with()
+            .wasNotInvoked()
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::validateDPoPChallenge)
+            .with()
+            .wasNotInvoked()
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::validateOIDCChallenge)
+            .with()
+            .wasNotInvoked()
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::checkOrderRequest)
+            .with()
+            .wasNotInvoked()
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::checkOrderRequest)
+            .with()
+            .wasNotInvoked()
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::finalize)
+            .with()
+            .wasNotInvoked()
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::certificateRequest)
+            .with()
+            .wasNotInvoked()
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
+            .with()
+            .wasNotInvoked()
+    }
+
+    @Test
     fun givenLoadACMEDirectoriesFails_whenInvokeUseCase_thenReturnFailure() = runTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
 
         // given
+        arrangement.withLoadTrustAnchorsResulting(Either.Right(Unit))
         arrangement.withLoadACMEDirectoriesResulting(TEST_EITHER_LEFT)
 
         // when
@@ -51,6 +134,11 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
+
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::fetchTrustAnchors)
+            .with()
+            .wasInvoked(exactly = once)
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::loadACMEDirectories)
@@ -120,6 +208,7 @@ class EnrollE2EICertificateUseCaseTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
 
         // given
+        arrangement.withLoadTrustAnchorsResulting(Either.Right(Unit))
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
         arrangement.withGetACMENonceResulting(TEST_EITHER_LEFT)
 
@@ -128,6 +217,11 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
+
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::fetchTrustAnchors)
+            .with()
+            .wasInvoked(exactly = once)
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::loadACMEDirectories)
@@ -198,6 +292,7 @@ class EnrollE2EICertificateUseCaseTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
 
         // given
+        arrangement.withLoadTrustAnchorsResulting(Either.Right(Unit))
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
         arrangement.withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewAccountResulting(TEST_EITHER_LEFT)
@@ -207,6 +302,11 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
+
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::fetchTrustAnchors)
+            .with()
+            .wasInvoked(exactly = once)
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::loadACMEDirectories)
@@ -278,6 +378,7 @@ class EnrollE2EICertificateUseCaseTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
 
         // given
+        arrangement.withLoadTrustAnchorsResulting(Either.Right(Unit))
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
         arrangement.withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
@@ -288,6 +389,11 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
+
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::fetchTrustAnchors)
+            .with()
+            .wasInvoked(exactly = once)
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::loadACMEDirectories)
@@ -360,6 +466,7 @@ class EnrollE2EICertificateUseCaseTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
 
         // given
+        arrangement.withLoadTrustAnchorsResulting(Either.Right(Unit))
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
         arrangement.withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
@@ -371,6 +478,11 @@ class EnrollE2EICertificateUseCaseTest {
 
         // then
         result.shouldFail()
+
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::fetchTrustAnchors)
+            .with()
+            .wasInvoked(exactly = once)
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::loadACMEDirectories)
@@ -444,6 +556,7 @@ class EnrollE2EICertificateUseCaseTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
 
         // given
+        arrangement.withLoadTrustAnchorsResulting(Either.Right(Unit))
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
         arrangement.withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
@@ -1120,6 +1233,13 @@ class EnrollE2EICertificateUseCaseTest {
 
         @Mock
         val e2EIRepository = mock(classOf<E2EIRepository>())
+
+        fun withLoadTrustAnchorsResulting(result: Either<CoreFailure, Unit>) = apply {
+            given(e2EIRepository)
+                .suspendFunction(e2EIRepository::fetchTrustAnchors)
+                .whenInvoked()
+                .thenReturn(result)
+        }
 
         fun withLoadACMEDirectoriesResulting(result: Either<CoreFailure, AcmeDirectory>) = apply {
             given(e2EIRepository)
