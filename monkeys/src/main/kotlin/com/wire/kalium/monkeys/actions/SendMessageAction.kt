@@ -115,7 +115,7 @@ private val MESSAGES = listOf(
 
 open class SendMessageAction(val config: ActionType.SendMessage, sender: suspend (Event) -> Unit) : Action(sender) {
     override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
-        repeat(this.config.count.toInt()) { i ->
+        repeat(this.config.count.toInt()) {
             sendersTargets(monkeyPool).forEach {
                 when (it) {
                     is Either.Left -> {
@@ -126,7 +126,7 @@ open class SendMessageAction(val config: ActionType.SendMessage, sender: suspend
                     }
                     is Either.Right -> {
                         it.value.forEach { (conv, senders) ->
-                            conv.sendMessage(senders, i, this.sender)
+                            conv.sendMessage(senders, this.sender)
                         }
                     }
                 }
@@ -151,7 +151,7 @@ open class SendMessageAction(val config: ActionType.SendMessage, sender: suspend
     }
 }
 
-private suspend fun MonkeyConversation.sendMessage(monkeys: List<Monkey>, i: Int, sender: suspend (Event) -> Unit) {
+private suspend fun MonkeyConversation.sendMessage(monkeys: List<Monkey>, sender: suspend (Event) -> Unit) {
     if (monkeys.isEmpty()) {
         logger.d("No monkey is logged in in the picked conversation")
     }

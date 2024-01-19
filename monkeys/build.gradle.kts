@@ -40,27 +40,15 @@ java {
     }
 }
 
-val replayerJar by tasks.register("replayerJar", Jar::class) {
-    manifest.attributes["Main-Class"] = replayerMainFunctionClassName
-    archiveBaseName.set("replayer")
-    val dependencies = configurations
-        .runtimeClasspath
-        .get()
-        .map(::zipTree)
-    from(dependencies)
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    with(tasks.jar.get())
+val replayerScripts by tasks.register("replayerScripts", CreateStartScripts::class) {
+    mainClass.set(replayerMainFunctionClassName)
+    outputDir = tasks.startScripts.get().outputDir
+    classpath = tasks.startScripts.get().classpath
+    applicationName = "replayer"
 }
 
-tasks.jar {
-    dependsOn(replayerJar)
-    manifest.attributes["Main-Class"] = mainFunctionClassName
-    val dependencies = configurations
-        .runtimeClasspath
-        .get()
-        .map(::zipTree)
-    from(dependencies)
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+tasks.startScripts {
+    dependsOn(replayerScripts)
 }
 
 sourceSets {

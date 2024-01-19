@@ -90,7 +90,7 @@ object ConversationPool {
         protocol: ConversationOptions.Protocol,
         monkeyPool: MonkeyPool
     ): ConversationDef {
-        val creator = monkeyPool.randomMonkeys(UserCount.single())[0]
+        val creator = monkeyPool.randomLoggedInMonkeys(UserCount.single())[0]
         val members = creator.randomPeers(userCount, monkeyPool)
         return this.createDynamicConversation(creator, protocol, members)
     }
@@ -101,7 +101,7 @@ object ConversationPool {
         protocol: ConversationOptions.Protocol,
         monkeyPool: MonkeyPool
     ): ConversationDef {
-        val creator = monkeyPool.randomMonkeysFromTeam(team, UserCount.single())[0]
+        val creator = monkeyPool.randomLoggedInMonkeysFromTeam(team, UserCount.single()).first()
         val members = creator.randomPeers(userCount, monkeyPool)
         return this.createDynamicConversation(creator, protocol, members)
     }
