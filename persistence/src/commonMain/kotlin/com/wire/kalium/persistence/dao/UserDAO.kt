@@ -142,6 +142,7 @@ data class BotIdEntity(
 )
 
 data class PartialUserEntity(
+    val id: QualifiedIDEntity,
     val name: String? = null,
     val handle: String? = null,
     val email: String? = null,
@@ -213,7 +214,9 @@ interface UserDAO {
      *
      * @return true if the user was updated
      */
-    suspend fun updateUser(id: UserIDEntity, update: PartialUserEntity): Boolean
+    suspend fun updateUser(update: PartialUserEntity): Boolean
+
+    suspend fun updateUser(users: List<PartialUserEntity>)
 
     /**
      * This will update all columns (or insert a new record), except:
