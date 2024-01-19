@@ -20,10 +20,10 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 import com.wire.kalium.cryptography.CrlRegistration
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.E2EIFailure
-import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.conversation.MLSConversationsVerificationStatusesHandler
-import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
@@ -78,11 +78,6 @@ class CheckRevocationListUseCaseTest {
                 .with(any())
                 .wasInvoked(once)
 
-            verify(arrangement.userConfigRepository)
-                .suspendFunction(arrangement.userConfigRepository::setCRLExpirationTime)
-                .with(any(), any())
-                .wasInvoked(once)
-
             verify(arrangement.mLSConversationsVerificationStatusesHandler)
                 .suspendFunction(arrangement.mLSConversationsVerificationStatusesHandler::invoke)
                 .wasNotInvoked()
@@ -108,11 +103,6 @@ class CheckRevocationListUseCaseTest {
                 .with(any())
                 .wasInvoked(once)
 
-            verify(arrangement.userConfigRepository)
-                .suspendFunction(arrangement.userConfigRepository::setCRLExpirationTime)
-                .with(any(), any())
-                .wasInvoked(once)
-
             verify(arrangement.mLSConversationsVerificationStatusesHandler)
                 .suspendFunction(arrangement.mLSConversationsVerificationStatusesHandler::invoke)
                 .wasInvoked(once)
@@ -127,17 +117,21 @@ class CheckRevocationListUseCaseTest {
         val mlsClient = mock(classOf<MLSClient>())
 
         @Mock
-        val userConfigRepository = mock(classOf<UserConfigRepository>())
-
-        @Mock
         val mLSConversationsVerificationStatusesHandler =
             mock(classOf<MLSConversationsVerificationStatusesHandler>())
 
+        @Mock
+        val currentClientIdProvider =
+            mock(classOf<CurrentClientIdProvider>())
+
+        @Mock
+        val mlsClientProvider =
+            mock(classOf<MLSClientProvider>())
+
         fun arrange() = this to CheckRevocationListUseCaseImpl(
-            selfUserId = TestUser.USER_ID,
             e2EIRepository = e2EIRepository,
-            mlsClient = mlsClient,
-            userConfigRepository = userConfigRepository,
+            currentClientIdProvider = currentClientIdProvider,
+            mlsClientProvider = mlsClientProvider,
             mLSConversationsVerificationStatusesHandler = mLSConversationsVerificationStatusesHandler
         )
 

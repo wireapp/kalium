@@ -204,8 +204,12 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolverImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorker
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorkerImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
+import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateForCurrentClientUseCase
+import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateForCurrentClientUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.FeatureFlagSyncWorkerImpl
 import com.wire.kalium.logic.feature.featureConfig.FeatureFlagsSyncWorker
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
@@ -1850,6 +1854,20 @@ class UserSessionScope internal constructor(
     private val typingIndicatorSyncManager: TypingIndicatorSyncManager =
         TypingIndicatorSyncManager(lazy { conversations.typingIndicatorIncomingRepository }, observeSyncState)
 
+    private val checkRevocationList: CheckRevocationListUseCase
+        get() = CheckRevocationListUseCaseImpl(
+            e2EIRepository = e2eiRepository,
+            currentClientIdProvider = clientIdProvider,
+            mlsClientProvider = mlsClientProvider,
+            mLSConversationsVerificationStatusesHandler = mlsConversationsVerificationStatusesHandler
+        )
+    val observeCertificateForCurrentClient: ObserveCertificateForCurrentClientUseCase
+        get() = ObserveCertificateForCurrentClientUseCaseImpl(
+            e2EIRepository = e2eiRepository,
+            userConfigRepository = userConfigRepository,
+            checkRevocationList = checkRevocationList
+        )
+
     init {
         launch {
             apiMigrationManager.performMigrations()
@@ -1904,6 +1922,10 @@ class UserSessionScope internal constructor(
 
         launch {
             updateSelfClientCapabilityToLegalHoldConsent()
+        }
+
+        launch {
+            observeCertificateForCurrentClient()
         }
     }
 

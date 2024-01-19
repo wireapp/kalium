@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
@@ -32,7 +33,6 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.TimestampKeyRepositoryImpl
 import com.wire.kalium.logic.feature.asset.DeleteAssetUseCase
 import com.wire.kalium.logic.feature.asset.DeleteAssetUseCaseImpl
@@ -50,10 +50,10 @@ import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMembersE2EICertificateStatusesUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMembersE2EICertificateStatusesUseCaseImpl
-import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificatesUseCase
-import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificatesUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificateStatusUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificateStatusUseCaseImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificatesUseCase
+import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificatesUseCaseImpl
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCase
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCaseImpl
