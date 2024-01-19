@@ -486,10 +486,6 @@ class ClientRepositoryTest {
                 )
             )
         )
-        val pushTokenRequestBody = PushTokenBody(
-            senderId = "7239",
-            client = "cliId", token = "7239", transport = "GCM"
-        )
     }
 
     private class Arrangement {

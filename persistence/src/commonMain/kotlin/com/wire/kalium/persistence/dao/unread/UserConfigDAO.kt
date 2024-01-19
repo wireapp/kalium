@@ -51,11 +51,14 @@ interface UserConfigDAO {
     fun observeLegalHoldRequest(): Flow<LegalHoldRequestEntity?>
     suspend fun setLegalHoldChangeNotified(isNotified: Boolean)
     suspend fun observeLegalHoldChangeNotified(): Flow<Boolean?>
+    suspend fun setShouldUpdateClientLegalHoldCapability(shouldUpdate: Boolean)
+    suspend fun shouldUpdateClientLegalHoldCapability(): Boolean
     suspend fun setCRLExpirationTime(domain: String, url: String, timestamp: ULong)
     suspend fun getCRLsPerDomain(domain: String): CRLUrlExpirationList?
     suspend fun observeCRLsPerDomain(domain: String): Flow<CRLUrlExpirationList?>
 }
 
+@Suppress("TooManyFunctions")
 internal class UserConfigDAOImpl internal constructor(
     private val metadataDAO: MetadataDAO
 ) : UserConfigDAO {
@@ -145,6 +148,13 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun observeLegalHoldChangeNotified(): Flow<Boolean?> =
         metadataDAO.valueByKeyFlow(LEGAL_HOLD_CHANGE_NOTIFIED).map { it?.toBoolean() }
 
+    override suspend fun setShouldUpdateClientLegalHoldCapability(shouldUpdate: Boolean) {
+        metadataDAO.insertValue(shouldUpdate.toString(), SHOULD_UPDATE_CLIENT_LEGAL_HOLD_CAPABILITY)
+    }
+
+    override suspend fun shouldUpdateClientLegalHoldCapability(): Boolean =
+        metadataDAO.valueByKey(SHOULD_UPDATE_CLIENT_LEGAL_HOLD_CAPABILITY)?.toBoolean() ?: true
+
     override suspend fun setCRLExpirationTime(domain: String, url: String, timestamp: ULong) {
         metadataDAO.insertValue(
             key = domain,
@@ -176,5 +186,7 @@ internal class UserConfigDAOImpl internal constructor(
         private const val SUPPORTED_PROTOCOLS_KEY = "SUPPORTED_PROTOCOLS"
         const val LEGAL_HOLD_REQUEST = "legal_hold_request"
         const val LEGAL_HOLD_CHANGE_NOTIFIED = "legal_hold_change_notified"
+        const val SHOULD_UPDATE_CLIENT_LEGAL_HOLD_CAPABILITY =
+            "should_update_client_legal_hold_capability"
     }
 }

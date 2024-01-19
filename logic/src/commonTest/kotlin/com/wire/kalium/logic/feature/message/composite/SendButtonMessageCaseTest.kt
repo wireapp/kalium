@@ -15,24 +15,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
-package com.wire.kalium.logic.feature.message
+package com.wire.kalium.logic.feature.message.composite
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
+import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
-import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.any
@@ -46,26 +45,25 @@ import io.mockative.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-class SendTextMessageCaseTest {
+class SendButtonMessageCaseTest {
 
     @Test
-    fun givenAValidMessage_whenSendingSomeText_thenShouldReturnASuccessResult() = runTest {
+    fun givenATextMessageContainsButtons_whenSendingIt_thenShouldBeCompositeAndReturnASuccessResult() = runTest {
         // Given
-        val (arrangement, sendTextMessage) = Arrangement(this)
+        val (arrangement, sendTextMessage) = SendButtonMessageCaseTest.Arrangement(this)
             .withToggleReadReceiptsStatus()
             .withCurrentClientProviderSuccess()
             .withPersistMessageSuccess()
             .withSlowSyncStatusComplete()
-            .withMessageTimer(SelfDeletionTimer.Disabled)
             .withSendMessageSuccess()
             .arrange()
+        val buttons = listOf("OK", "Cancel")
 
         // When
-        val result = sendTextMessage(TestConversation.ID, "some-text")
+        val result = sendTextMessage.invoke(TestConversation.ID, "some-text", listOf(), null, buttons)
 
         // Then
         result.shouldSucceed()
@@ -75,12 +73,12 @@ class SendTextMessageCaseTest {
             .wasInvoked(once)
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching { message -> message.content is MessageContent.Text })
+            .with(matching { message -> message.content is MessageContent.Composite })
             .wasInvoked(once)
         verify(arrangement.messageSender)
             .suspendFunction(arrangement.messageSender::sendMessage)
             .with(
-                matching { message -> message.content is MessageContent.Text },
+                matching { message -> message.content is MessageContent.Composite },
                 any()
             )
             .wasInvoked(once)
@@ -88,41 +86,6 @@ class SendTextMessageCaseTest {
             .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
             .with(any(), any(), any(), any(), any())
             .wasNotInvoked()
-    }
-
-    @Test
-    fun givenNoNetwork_whenSendingSomeText_thenShouldReturnAFailure() = runTest {
-        // Given
-        val (arrangement, sendTextMessage) = Arrangement(this)
-            .withToggleReadReceiptsStatus()
-            .withCurrentClientProviderSuccess()
-            .withPersistMessageSuccess()
-            .withSlowSyncStatusComplete()
-            .withSendMessageFailure()
-            .withMessageTimer(SelfDeletionTimer.Disabled)
-            .arrange()
-
-        // When
-        val result = sendTextMessage(TestConversation.ID, "some-text")
-
-        // Then
-        result.shouldFail()
-
-        verify(arrangement.userPropertyRepository)
-            .suspendFunction(arrangement.userPropertyRepository::getReadReceiptsStatus)
-            .wasInvoked(once)
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(any())
-            .wasInvoked(once)
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(any(), any())
-            .wasInvoked(once)
-        verify(arrangement.messageSendFailureHandler)
-            .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-            .with(any(), any(), any(), any(), any())
-            .wasInvoked(once)
     }
 
     private class Arrangement(private val coroutineScope: CoroutineScope) {
@@ -144,9 +107,6 @@ class SendTextMessageCaseTest {
 
         @Mock
         val messageSendFailureHandler = configure(mock(classOf<MessageSendFailureHandler>())) { stubsUnitByDefault = true }
-
-        @Mock
-        val observeSelfDeletionTimerSettingsForConversation = mock(ObserveSelfDeletionTimerSettingsForConversationUseCase::class)
 
         fun withSendMessageSuccess() = apply {
             given(messageSender)
@@ -191,14 +151,7 @@ class SendTextMessageCaseTest {
                 .thenReturn(enabled)
         }
 
-        fun withMessageTimer(result: SelfDeletionTimer) = apply {
-            given(observeSelfDeletionTimerSettingsForConversation)
-                .suspendFunction(observeSelfDeletionTimerSettingsForConversation::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(flowOf(result))
-        }
-
-        fun arrange() = this to SendTextMessageUseCase(
+        fun arrange() = this to SendButtonMessageUseCase(
             persistMessage,
             TestUser.SELF.id,
             currentClientIdProvider,
@@ -206,9 +159,7 @@ class SendTextMessageCaseTest {
             messageSender,
             messageSendFailureHandler,
             userPropertyRepository,
-            observeSelfDeletionTimerSettingsForConversation,
             scope = coroutineScope
         )
     }
-
 }
