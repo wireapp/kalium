@@ -463,6 +463,7 @@ com.wire.kalium.logic.feature.publicuser
 com.wire.kalium.logic.feature.publicuser.search
 com.wire.kalium.logic.feature.register
 com.wire.kalium.logic.feature.rootDetection
+com.wire.kalium.logic.feature.search
 com.wire.kalium.logic.feature.selfDeletingMessages
 com.wire.kalium.logic.feature.server
 com.wire.kalium.logic.feature.service
