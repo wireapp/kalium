@@ -25,13 +25,14 @@ import io.mockative.any
 import io.mockative.eq
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class FederatedSearchParserTest {
 
     @Test
-    fun givenUserIsNotFederated_whenParsingSearchQuery_thenSearchQueryIsNotModified() {
+    fun givenUserIsNotFederated_whenParsingSearchQuery_thenSearchQueryIsNotModified() = runTest {
         val (arrangement, federatedSearchParser) = Arrangement().arrange {
             withIsFederated(result = false.right(), userId = any())
         }
@@ -49,7 +50,7 @@ class FederatedSearchParserTest {
     }
 
     @Test
-    fun givenUserIsFederated_whenSearchQueryIncludeNoDomain_thenSearchQueryIsNotModified() {
+    fun givenUserIsFederated_whenSearchQueryIncludeNoDomain_thenSearchQueryIsNotModified() = runTest {
         val (arrangement, federatedSearchParser) = Arrangement().arrange {
             withIsFederated(result = true.right(), userId = any())
         }
@@ -67,7 +68,7 @@ class FederatedSearchParserTest {
     }
 
     @Test
-    fun givenUserIsFederated_whenSearchQueryIncludeDomain_thenSearchQueryIsModified() {
+    fun givenUserIsFederated_whenSearchQueryIncludeDomain_thenSearchQueryIsModified() = runTest {
         val (arrangement, federatedSearchParser) = Arrangement().arrange {
             withIsFederated(result = true.right(), userId = any())
         }
@@ -85,7 +86,7 @@ class FederatedSearchParserTest {
     }
 
     @Test
-    fun givenSearchQuery_whenTheParserIsCalledMultibletime_thenIsFederatedIsExecutedOnlyOnce() {
+    fun givenSearchQuery_whenTheParserIsCalledMultibletime_thenIsFederatedIsExecutedOnlyOnce() = runTest {
         val (arrangement, federatedSearchParser) = Arrangement().arrange {
             withIsFederated(result = true.right(), userId = any())
         }

@@ -39,7 +39,7 @@ internal class SessionRepositoryArrangementImpl : SessionRepositoryArrangement {
     override val sessionRepository: SessionRepository = mock(SessionRepository::class)
     override fun withIsFederated(result: Either<StorageFailure, Boolean>, userId: Matcher<UserId>) {
         given(sessionRepository)
-            .function(sessionRepository::isFederated)
+            .suspendFunction(sessionRepository::isFederated)
             .whenInvokedWith(userId)
             .then { result }
     }
