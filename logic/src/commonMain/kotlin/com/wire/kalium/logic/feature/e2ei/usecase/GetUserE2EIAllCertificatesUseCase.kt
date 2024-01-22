@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 
 /**
  * This use case is used to get all e2ei certificates of the user.
- * Returns Map<String, E2eiCertificate> where key is value of [ClientId] and [E2eiCertificate] is certificate itself
+ * Returns [UsersE2eiCertificates] from which we can get [E2eiCertificate] by [ClientId]
  */
 interface GetUserE2eiCertificatesUseCase {
     suspend operator fun invoke(userId: UserId): UsersE2eiCertificates
