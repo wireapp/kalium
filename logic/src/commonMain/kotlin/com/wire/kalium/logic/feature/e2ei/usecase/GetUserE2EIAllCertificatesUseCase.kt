@@ -30,20 +30,25 @@ import com.wire.kalium.logic.data.conversation.ClientId
  * Returns Map<String, E2eiCertificate> where key is value of [ClientId] and [E2eiCertificate] is certificate itself
  */
 interface GetUserE2eiCertificatesUseCase {
-    suspend operator fun invoke(userId: UserId): Map<String, E2eiCertificate>
+    suspend operator fun invoke(userId: UserId): UsersE2eiCertificates
 }
 
 class GetUserE2eiCertificatesUseCaseImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
     private val pemCertificateDecoder: PemCertificateDecoder
 ) : GetUserE2eiCertificatesUseCase {
-    override suspend operator fun invoke(userId: UserId): Map<String, E2eiCertificate> =
+    override suspend operator fun invoke(userId: UserId): UsersE2eiCertificates =
         mlsConversationRepository.getUserIdentity(userId).map { identities ->
             val result = mutableMapOf<String, E2eiCertificate>()
             identities.forEach {
                 result[it.clientId] = pemCertificateDecoder.decode(it.certificate, it.status)
             }
-            result
-        }.getOrElse(mapOf())
+            UsersE2eiCertificates(userId, result)
+        }.getOrElse(UsersE2eiCertificates(userId, mapOf()))
 
+}
+
+data class UsersE2eiCertificates(private val userId: UserId, private val map: Map<String, E2eiCertificate>) {
+    operator fun get(clientId: ClientId): E2eiCertificate? = map["${userId.value}:${clientId.value}@${userId.domain}"]
+    fun isEmpty() = map.isEmpty()
 }
