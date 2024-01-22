@@ -49,7 +49,7 @@ class SendButtonActionConfirmationMessageUseCase internal constructor(
         conversationId: ConversationId,
         messageId: String,
         buttonId: String,
-        userIds: List<String>
+        userIds: List<UserId>
     ): Result = syncManager.waitUntilLiveOrFailure().flatMap {
             currentClientIdProvider().flatMap { currentClientId ->
                 val regularMessage = Message.Signaling(
@@ -66,9 +66,7 @@ class SendButtonActionConfirmationMessageUseCase internal constructor(
                     isSelfMessage = true,
                     expirationData = null
                 )
-                messageSender.sendMessage(regularMessage, messageTarget = MessageTarget.Users(
-                    userIds.map { UserId(it, selfUserId.domain) }
-                ))
+                messageSender.sendMessage(regularMessage, messageTarget = MessageTarget.Users(userIds))
             }
     }.fold(Result::Failure, { Result.Success })
 

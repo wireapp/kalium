@@ -330,7 +330,7 @@ class ConversationResources(private val instanceService: InstanceService) {
                     ConversationId(conversationId, conversationDomain),
                     referenceMessageId,
                     buttonId,
-                    userIds
+                    userIds.map { UserId(it, conversationDomain) }
                 )
             }
         }

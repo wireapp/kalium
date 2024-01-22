@@ -28,6 +28,7 @@ import com.wire.kalium.logic.feature.conversation.ClearConversationContentUseCas
 import com.wire.kalium.logic.feature.debug.BrokenState
 import com.wire.kalium.logic.feature.debug.SendBrokenAssetMessageResult
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
@@ -156,7 +157,7 @@ sealed class ConversationRepository {
             conversationId: ConversationId,
             referenceMessageId: String,
             buttonId: String,
-            userIds: List<String>
+            userIds: List<UserId>
         ): Response = instance.coreLogic.globalScope {
             when (val session = session.currentSession()) {
                 is CurrentSessionResult.Success -> {

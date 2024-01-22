@@ -41,7 +41,7 @@ class SendButtonActionConfirmationMessageTest {
     @Test
     fun givenMessageSendingSuccess_thenMessageIsSentOnlyToOriginalSenderOfTheButtonAction() = runTest {
         val convId = ConversationId("conversation-id", "conversation-domain")
-        val buttonActionSender = UserId("action-sender-id", "self-user-domain")
+        val buttonActionSender = UserId("action-sender-id", "action-sender-domain")
         val (arrangement, useCase) = Arrangement()
             .arrange {
                 withWaitUntilLiveOrFailure(Either.Right(Unit))
@@ -53,7 +53,7 @@ class SendButtonActionConfirmationMessageTest {
             conversationId = convId,
             messageId = "message-id",
             buttonId = "button-id",
-            userIds = listOf(buttonActionSender.value)
+            userIds = listOf(buttonActionSender)
         )
 
         assertIs<SendButtonActionConfirmationMessageUseCase.Result.Success>(result)
