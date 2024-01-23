@@ -575,7 +575,7 @@ internal class MLSConversationDataSource(
         userIds: List<UserId>
     ): Either<CoreFailure, Map<UserId, List<WireIdentity>>> =
         wrapStorageRequest {
-            conversationDAO.getMLSGroupIdByConversationId(conversationId.toDao())!!
+            conversationDAO.getMLSGroupIdByConversationId(conversationId.toDao())
         }.flatMap { mlsGroupId ->
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
