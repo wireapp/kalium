@@ -64,34 +64,26 @@ class EnrollE2EIUseCaseImpl internal constructor(
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeDirectories, it).toEitherLeft()
         }
 
-        kaliumLogger.i("acmeDirectories $acmeDirectories")
-
         var prevNonce = e2EIRepository.getACMENonce(acmeDirectories.newNonce).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNonce, it).toEitherLeft()
         }
 
-        kaliumLogger.i("acme nonce prev nonce  $prevNonce")
-
         prevNonce = e2EIRepository.createNewAccount(prevNonce, acmeDirectories.newAccount).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNewAccount, it).toEitherLeft()
         }
-        kaliumLogger.i("create account acmeDirectories $acmeDirectories")
 
         val newOrderResponse = e2EIRepository.createNewOrder(prevNonce, acmeDirectories.newOrder).getOrFail {
-            kaliumLogger.i("create new order $it")
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNewOrder, it).toEitherLeft()
         }
-        kaliumLogger.i("create new order $newOrderResponse")
 
         prevNonce = newOrderResponse.second
 
         val authzResponse = e2EIRepository.createAuthz(prevNonce, newOrderResponse.first.authorizations[0]).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNewAuthz, it).toEitherLeft()
         }
-        kaliumLogger.i("getoAu  th")
+        kaliumLogger.i("getoAuth")
 
         val oAuthState = e2EIRepository.getOAuthRefreshToken().getOrNull()
-        kaliumLogger.i("oAuthStAte: $oAuthState")
 
         val initializationResult = E2EIEnrollmentResult.Initialized(
             target = authzResponse.first.wireOidcChallenge.target,
@@ -125,30 +117,24 @@ class EnrollE2EIUseCaseImpl internal constructor(
         var prevNonce = initializationResult.lastNonce
         val authz = initializationResult.authz
         val orderLocation = initializationResult.orderLocation
-        kaliumLogger.i("start finalization ${initializationResult}")
 
         val wireNonce = e2EIRepository.getWireNonce().getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.WireNonce, it).toEitherLeft()
         }
-        kaliumLogger.i("wire nonce $wireNonce")
 
         val dpopToken = e2EIRepository.getDPoPToken(wireNonce).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.DPoPToken, it).toEitherLeft()
         }
 
-        kaliumLogger.i("dpop token $dpopToken")
-
         val wireAccessToken = e2EIRepository.getWireAccessToken(dpopToken).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.WireAccessToken, it).toEitherLeft()
         }
-        kaliumLogger.i("wireAccessToken: $wireAccessToken")
 
         val dpopChallengeResponse = e2EIRepository.validateDPoPChallenge(
             wireAccessToken.token, prevNonce, authz.wireDpopChallenge!!
         ).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.DPoPChallenge, it).toEitherLeft()
         }
-        kaliumLogger.i("dpop challenge: $dpopChallengeResponse")
 
         prevNonce = dpopChallengeResponse.nonce
 
@@ -157,29 +143,24 @@ class EnrollE2EIUseCaseImpl internal constructor(
         ).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.OIDCChallenge, it).toEitherLeft()
         }
-        kaliumLogger.i("oidc challenge: $oidcChallengeResponse")
 
         prevNonce = oidcChallengeResponse.nonce
 
         val orderResponse = e2EIRepository.checkOrderRequest(orderLocation, prevNonce).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.CheckOrderRequest, it).toEitherLeft()
         }
-        kaliumLogger.i("order response: $orderResponse")
 
         prevNonce = orderResponse.first.nonce
 
         val finalizeResponse = e2EIRepository.finalize(orderResponse.second, prevNonce).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.FinalizeRequest, it).toEitherLeft()
         }
-        kaliumLogger.i("finalise response: $finalizeResponse")
 
         prevNonce = finalizeResponse.first.nonce
 
         val certificateRequest = e2EIRepository.certificateRequest(finalizeResponse.second, prevNonce).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.Certificate, it).toEitherLeft()
         }
-        kaliumLogger.i("certificate:${certificateRequest.response.decodeToString()}")
-
 
         e2EIRepository.rotateKeysAndMigrateConversations(certificateRequest.response.decodeToString()).onFailure {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.ConversationMigration, it).toEitherLeft()

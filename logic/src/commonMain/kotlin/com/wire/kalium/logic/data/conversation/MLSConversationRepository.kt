@@ -312,8 +312,8 @@ internal class MLSConversationDataSource(
         }
     }
 
-    private suspend fun sendCommitBundle(groupID: GroupID, bundle: CommitBundle, clientId: ClientId? = null): Either<CoreFailure, Unit> {
-        return mlsClientProvider.getMLSClient(clientId).flatMap { mlsClient ->
+    private suspend fun sendCommitBundle(groupID: GroupID, bundle: CommitBundle): Either<CoreFailure, Unit> {
+        return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapApiRequest {
                 mlsMessageApi.sendCommitBundle(mlsCommitBundleMapper.toDTO(bundle))
             }.flatMap { response ->
@@ -544,7 +544,7 @@ internal class MLSConversationDataSource(
             kaliumLogger.w("send migration commits after key rotations")
             kaliumLogger.w("rotate bundles: ${rotateBundle.commits.size}")
             rotateBundle.commits.map {
-                sendCommitBundle(GroupID(it.key), it.value, clientId)
+                sendCommitBundle(GroupID(it.key), it.value)
             }.foldToEitherWhileRight(Unit) { value, _ -> value }.fold({ return Either.Left(it) }, { })
         }
     }

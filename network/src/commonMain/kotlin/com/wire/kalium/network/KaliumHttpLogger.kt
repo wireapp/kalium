@@ -61,12 +61,35 @@ internal class KaliumHttpLogger(
 
         val content = request.body as OutgoingContent
 
+        when {
+            level.info -> {
                 val obfuscatedHeaders = obfuscatedHeaders(request.headers.entries().map { it.key to it.value }).toMutableMap()
                 content.contentLength?.let { obfuscatedHeaders[HttpHeaders.ContentLength] = it.toString() }
                 content.contentType?.let { obfuscatedHeaders[HttpHeaders.ContentType] = it.toString() }
                 obfuscatedHeaders.putAll(obfuscatedHeaders(content.headers.entries().map { it.key to it.value }))
 
-                requestLog["headers"] = obfuscatedHeaders.toJsonElement().toString()
+                requestLog["headers"] = obfuscatedJsonMessage(obfuscatedHeaders.toJsonElement().toString())
+            }
+
+            level.headers -> {
+
+                val obfuscatedHeaders = obfuscatedHeaders(request.headers.entries().map { it.key to it.value }).toMutableMap()
+                content.contentLength?.let { obfuscatedHeaders[HttpHeaders.ContentLength] = it.toString() }
+                content.contentType?.let { obfuscatedHeaders[HttpHeaders.ContentType] = it.toString() }
+                obfuscatedHeaders.putAll(obfuscatedHeaders(content.headers.entries().map { it.key to it.value }))
+
+                requestLog["headers"] = obfuscatedJsonMessage(obfuscatedHeaders.toJsonElement().toString())
+            }
+
+            level.body -> {
+                val obfuscatedHeaders = obfuscatedHeaders(request.headers.entries().map { it.key to it.value }).toMutableMap()
+                content.contentLength?.let { obfuscatedHeaders[HttpHeaders.ContentLength] = it.toString() }
+                content.contentType?.let { obfuscatedHeaders[HttpHeaders.ContentType] = it.toString() }
+                obfuscatedHeaders.putAll(obfuscatedHeaders(content.headers.entries().map { it.key to it.value }))
+
+                requestLog["headers"] = obfuscatedJsonMessage(obfuscatedHeaders.toJsonElement().toString())
+            }
+        }
 
         return null
     }

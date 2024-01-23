@@ -21,9 +21,7 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.notification.PushTokenRepository
@@ -43,7 +41,6 @@ import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs

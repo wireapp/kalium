@@ -59,15 +59,12 @@ internal class RegisterMLSClientUseCaseImpl(
 
     override suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, RegisterMLSClientResult> =
         mlsClientProvider.getMLSClient(clientId).flatMap { mlsClient ->
-            kaliumLogger.e("### get mls client")
             userConfigRepository.getE2EISettings().fold({
-                kaliumLogger.e("### e2ei config: error")
                 Either.Right(mlsClient)
             }, { e2eiSettings ->
                 kaliumLogger.e("### e2ei config: ${e2eiSettings}")
                 if (e2eiSettings.isRequired && !mlsClient.isE2EIEnabled()) {
                     kaliumLogger.i("##### ${clientId.value}")
-                    kaliumLogger.i("##### ${mlsClient.isE2EIEnabled()}")
                     kaliumLogger.i("MLS Client registration stopped: e2ei is required and is not enrolled!")
                     return Either.Right(RegisterMLSClientResult.E2EICertificateRequired(mlsClient))
                 } else Either.Right(mlsClient)

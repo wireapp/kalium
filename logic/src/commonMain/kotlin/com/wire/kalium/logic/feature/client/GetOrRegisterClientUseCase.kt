@@ -56,9 +56,8 @@ internal class GetOrRegisterClientUseCaseImpl(
     ) : GetOrRegisterClientUseCase {
 
     override suspend fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult {
-        syncFeatureConfigsUseCase.invoke().map {
-            kaliumLogger.e("### featureConfig invoked")
-        }
+        syncFeatureConfigsUseCase.invoke()
+
         val result: RegisterClientResult = clientRepository.retainedClientId()
             .nullableFold(
                 {

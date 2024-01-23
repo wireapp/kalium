@@ -104,7 +104,6 @@ internal class SlowSlowSyncCriteriaProviderImpl(
         null
     }
 
-
     /**
      * Handles the current [logoutReason], returning a
      * [MissingRequirement] if appropriate,
