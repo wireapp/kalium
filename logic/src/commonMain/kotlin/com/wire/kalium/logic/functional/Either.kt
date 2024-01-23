@@ -205,3 +205,6 @@ inline fun <T, L, R> Iterable<T>.foldToEitherWhileRight(initialValue: R, fn: (it
         acc.flatMap { accumulatedValue -> fn(item, accumulatedValue) }
     }
 }
+
+inline fun <T> T.right() = Right(this)
+inline fun <T> T.left() = Left(this)
