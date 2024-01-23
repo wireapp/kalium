@@ -15,22 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.feature.client
 
-package com.wire.kalium.logger
+import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.feature.user.screenshotCensoring.ObserveScreenshotCensoringConfigResult
+import kotlinx.coroutines.flow.Flow
 
-private const val START_INDEX = 0
-private const val END_INDEX_ID = 7
-private const val END_INDEX_DOMAIN = 3
-private const val END_INDEX_URL_PATH = 3
-
-fun String.obfuscateId(): String {
-    return this
+interface ObserveIsE2EIRequiredState {
+    suspend operator fun invoke(): Flow<Boolean?>
 }
-
-fun String.obfuscateDomain(): String {
-    return this
-}
-
-fun String.obfuscateUrlPath(): String {
-    return this
+internal class ObserveIsE2EIRequiredStateImpl(
+    val clientRepository: ClientRepository
+): ObserveIsE2EIRequiredState{
+    override suspend fun invoke() = clientRepository.observeIsClientRegistrationBlockedByE2EI()
 }

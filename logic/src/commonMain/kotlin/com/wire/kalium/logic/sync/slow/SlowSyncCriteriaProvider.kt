@@ -75,16 +75,14 @@ internal class SlowSlowSyncCriteriaProviderImpl(
         .onStart { emit(null) }
 
     override suspend fun syncCriteriaFlow(): Flow<SyncCriteriaResolution> =
-        //add e2ei criteria here!
-        //combine with e2ei state flow
-        logoutReasonFlow().combine(clientRepository.observeCurrentClientId()/*add e2ei here*/) { logoutReason, clientId ->
-//             when{
-//                 logoutReason != null ->
-//                     clientId == null -> MissingRequirement("Client is not registered")
-//             }
+        combine(
+            logoutReasonFlow(),
+            clientRepository.observeCurrentClientId(),
+            clientRepository.observeIsClientRegistrationBlockedByE2EI()
+        ) { logoutReason, clientId, isE2ei ->
             handleLogoutReason(logoutReason)
                 ?: handleClientId(clientId)
-                ?: isE2EIRequired()
+                ?: handleIsRegistrationClientBlockedByE2EI(null)
                 // All criteria are satisfied. We're ready to start sync!
                 ?: Ready
         }
@@ -100,9 +98,8 @@ internal class SlowSlowSyncCriteriaProviderImpl(
         null
     }
 
-    val e2eiReuired = true
-    fun isE2EIRequired() = if (e2eiReuired) {
-        MissingRequirement("E2EI is required")
+    private fun handleIsRegistrationClientBlockedByE2EI(isBlocked: Boolean?) = if (isBlocked == null) {
+        MissingRequirement("Client Registration Blocked: E2EI Enrollment Required")
     } else {
         null
     }
@@ -114,13 +111,8 @@ internal class SlowSlowSyncCriteriaProviderImpl(
      * or null otherwise.
      */
     private fun handleLogoutReason(logoutReason: LogoutReason?): MissingRequirement? =
-        when (logoutReason) {
-            LogoutReason.SELF_SOFT_LOGOUT -> "Logout: SELF_SOFT_LOGOUT"
-            LogoutReason.SELF_HARD_LOGOUT -> "Logout: SELF_HARD_LOGOUT"
-            LogoutReason.SESSION_EXPIRED -> "Logout: SESSION_EXPIRED"
-            LogoutReason.REMOVED_CLIENT -> "Logout: REMOVED_CLIENT"
-            LogoutReason.DELETED_ACCOUNT -> "Logout: DELETED_ACCOUNT"
-            null -> null
-        }?.let { MissingRequirement(it) }
+        logoutReason?.let {
+            MissingRequirement("Logout: $it")
+        }
 
 }

@@ -25,10 +25,7 @@ import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.ClientType
-import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.RegisterClientParam
-import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
-import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -39,7 +36,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.authenticationCodeFailure
@@ -129,7 +125,7 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
     private val userRepository: UserRepository,
     private val secondFactorVerificationRepository: SecondFactorVerificationRepository,
     private val registerMLSClientUseCase: RegisterMLSClientUseCase,
-    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl,
 ) : RegisterClientUseCase {
 
     @OptIn(DelicateKaliumApi::class)

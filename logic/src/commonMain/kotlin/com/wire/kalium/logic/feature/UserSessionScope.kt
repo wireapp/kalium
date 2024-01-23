@@ -426,6 +426,7 @@ import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.firstOrNull
@@ -654,7 +655,7 @@ class UserSessionScope internal constructor(
         )
     }
 
-    val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2eiRepository)
+    val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2eiRepository, clientRepository, registerMLSClientUseCase)
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
 
@@ -1368,6 +1369,8 @@ class UserSessionScope internal constructor(
     val observeLegalHoldStateForUser: ObserveLegalHoldStateForUserUseCase
         get() = ObserveLegalHoldStateForUserUseCaseImpl(clientRepository)
 
+    suspend fun observerE2EiBlocked(): Flow<Boolean?> = clientRepository.observeIsClientRegistrationBlockedByE2EI()
+
     val observeLegalHoldForSelfUser: ObserveLegalHoldForSelfUserUseCase
         get() = ObserveLegalHoldForSelfUserUseCaseImpl(userId, observeLegalHoldStateForUser)
 
@@ -1702,7 +1705,9 @@ class UserSessionScope internal constructor(
             e2eiRepository,
             mlsConversationRepository,
             team.isSelfATeamMember,
-            updateSupportedProtocols
+            updateSupportedProtocols,
+            clientRepository,
+            registerMLSClientUseCase
         )
 
     val search: SearchScope

@@ -116,8 +116,7 @@ interface MLSConversationRepository {
     suspend fun rotateKeysAndMigrateConversations(
         clientId: ClientId,
         e2eiClient: E2EIClient,
-        certificateChain: String,
-        newClient: Boolean
+        certificateChain: String
     ): Either<CoreFailure, Unit>
 
     suspend fun getClientIdentity(clientId: ClientId): Either<CoreFailure, WireIdentity>
@@ -529,8 +528,7 @@ internal class MLSConversationDataSource(
     override suspend fun rotateKeysAndMigrateConversations(
         clientId: ClientId,
         e2eiClient: E2EIClient,
-        certificateChain: String,
-        newClient: Boolean
+        certificateChain: String
     ) = mlsClientProvider.getMLSClient(clientId).flatMap { mlsClient ->
         wrapMLSRequest {
             // todo: remove hardcoded keypackages count
@@ -538,7 +536,7 @@ internal class MLSConversationDataSource(
         }.map { rotateBundle ->
             // todo: store keypackages to drop, later drop them again
             kaliumLogger.w("upload new keypackages and drop old ones")
-            if (!newClient)
+//             if (!newClient)
                 keyPackageRepository.replaceKeyPackages(clientId, rotateBundle.newKeyPackages).flatMapLeft {
                     return Either.Left(it)
                 }

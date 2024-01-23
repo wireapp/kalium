@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
@@ -42,6 +43,7 @@ import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetAvatarAssetUseCaseImpl
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCase
 import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
+import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.conversation.GetAllContactsNotInConversationUseCase
 import com.wire.kalium.logic.feature.e2ei.PemCertificateDecoderImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
@@ -93,6 +95,8 @@ class UserScope internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
     private val isSelfATeamMember: IsSelfATeamMemberUseCase,
     private val updateSupportedProtocolsUseCase: UpdateSupportedProtocolsUseCase,
+    private val clientRepository: ClientRepository,
+    private val registerMLSClientUseCase: RegisterMLSClientUseCase
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCaseImpl(userRepository)
@@ -102,7 +106,7 @@ class UserScope internal constructor(
 
     private val pemCertificateDecoderImpl by lazy { PemCertificateDecoderImpl() }
     val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository, userRepository)
-    val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2EIRepository)
+    val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2EIRepository, clientRepository, registerMLSClientUseCase)
     val getE2EICertificate: GetE2eiCertificateUseCase
         get() = GetE2eiCertificateUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,

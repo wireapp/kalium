@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.feature.CachedClientIdClearer
@@ -39,8 +38,6 @@ interface GetOrRegisterClientUseCase {
     suspend operator fun invoke(
         registerClientParam: RegisterClientUseCase.RegisterClientParam
     ): RegisterClientResult
-
-    suspend operator fun invoke(clientId: ClientId)
 }
 
 @Suppress("LongParameterList")
@@ -53,8 +50,10 @@ internal class GetOrRegisterClientUseCaseImpl(
     private val verifyExistingClientUseCase: VerifyExistingClientUseCase,
     private val upgradeCurrentSessionUseCase: UpgradeCurrentSessionUseCase,
     private val cachedClientIdClearer: CachedClientIdClearer,
-    private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
-) : GetOrRegisterClientUseCase {
+    private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase,
+    private val registerMLSClientUseCase: RegisterMLSClientUseCase,
+
+    ) : GetOrRegisterClientUseCase {
 
     override suspend fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult {
         syncFeatureConfigsUseCase.invoke().map {
@@ -77,6 +76,13 @@ internal class GetOrRegisterClientUseCaseImpl(
                 }
             ) ?: registerClient(registerClientParam)
 
+        if (result is RegisterClientResult.E2EICertificateRequired) {
+            clientRepository.setClientRegistrationBlockedByE2EI()
+            upgradeCurrentSessionUseCase(result.client.id).flatMap {
+                clientRepository.persistClientId(result.client.id)
+            }
+        }
+
         if (result is RegisterClientResult.Success) {
             upgradeCurrentSessionUseCase(result.client.id).flatMap {
                 clientRepository.persistClientId(result.client.id)
@@ -84,12 +90,6 @@ internal class GetOrRegisterClientUseCaseImpl(
         }
 
         return result
-    }
-
-    override suspend fun invoke(clientId: ClientId) {
-        upgradeCurrentSessionUseCase(clientId).flatMap {
-            clientRepository.persistClientId(clientId)
-        }
     }
 
     private suspend fun clearOldClientRelatedData() {
