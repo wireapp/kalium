@@ -15,28 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.testservice.models
 
-package com.wire.kalium.model
-
-import com.wire.kalium.api.json.ValidJsonProvider
-import com.wire.kalium.network.api.base.authenticated.client.MLSPublicKeyTypeDTO
-import com.wire.kalium.network.api.base.authenticated.client.UpdateClientMlsPublicKeysRequest
-import io.ktor.util.encodeBase64
-
-object UpdateClientRequestJson {
-
-    val valid = ValidJsonProvider(
-        UpdateClientMlsPublicKeysRequest(
-            mapOf(Pair(MLSPublicKeyTypeDTO.ED25519, "publickey"))
-        )
-    ) {
-        """
-        | {
-        |   "mls_public_keys": {
-        |     "ed25519": "${it.mlsPublicKeys.values.first().encodeBase64()}}"
-        |   }
-        | }
-        """.trimMargin()
-    }
-
-}
+data class SendButtonActionRequest(
+    val conversationDomain: String = "staging.zinfra.io",
+    val conversationId: String = "",
+    val buttonId: String = "",
+    val referenceMessageId: String = ""
+)

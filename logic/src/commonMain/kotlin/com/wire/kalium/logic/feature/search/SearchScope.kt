@@ -15,28 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.feature.search
 
-package com.wire.kalium.model
+import com.wire.kalium.logic.data.publicuser.SearchUserRepository
+import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.user.UserId
 
-import com.wire.kalium.api.json.ValidJsonProvider
-import com.wire.kalium.network.api.base.authenticated.client.MLSPublicKeyTypeDTO
-import com.wire.kalium.network.api.base.authenticated.client.UpdateClientMlsPublicKeysRequest
-import io.ktor.util.encodeBase64
+class SearchScope internal constructor(
+    private val searchUserRepository: SearchUserRepository,
+    private val sessionRepository: SessionRepository,
+    private val selfUserId: UserId
+) {
+    val searchUsersUseCase: SearchUsersUseCase get() = SearchUsersUseCase(searchUserRepository, selfUserId)
 
-object UpdateClientRequestJson {
-
-    val valid = ValidJsonProvider(
-        UpdateClientMlsPublicKeysRequest(
-            mapOf(Pair(MLSPublicKeyTypeDTO.ED25519, "publickey"))
-        )
-    ) {
-        """
-        | {
-        |   "mls_public_keys": {
-        |     "ed25519": "${it.mlsPublicKeys.values.first().encodeBase64()}}"
-        |   }
-        | }
-        """.trimMargin()
-    }
-
+    val federatedSearchParser: FederatedSearchParser get() = FederatedSearchParser(sessionRepository, selfUserId)
 }
