@@ -116,8 +116,7 @@ interface MLSConversationRepository {
     suspend fun rotateKeysAndMigrateConversations(
         clientId: ClientId,
         e2eiClient: E2EIClient,
-        certificateChain: String,
-        newClient: Boolean
+        certificateChain: String
     ): Either<CoreFailure, Unit>
 
     suspend fun getClientIdentity(clientId: ClientId): Either<CoreFailure, WireIdentity>
@@ -313,8 +312,8 @@ internal class MLSConversationDataSource(
         }
     }
 
-    private suspend fun sendCommitBundle(groupID: GroupID, bundle: CommitBundle, clientId: ClientId? = null): Either<CoreFailure, Unit> {
-        return mlsClientProvider.getMLSClient(clientId).flatMap { mlsClient ->
+    private suspend fun sendCommitBundle(groupID: GroupID, bundle: CommitBundle): Either<CoreFailure, Unit> {
+        return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapApiRequest {
                 mlsMessageApi.sendCommitBundle(mlsCommitBundleMapper.toDTO(bundle))
             }.flatMap { response ->
@@ -529,8 +528,7 @@ internal class MLSConversationDataSource(
     override suspend fun rotateKeysAndMigrateConversations(
         clientId: ClientId,
         e2eiClient: E2EIClient,
-        certificateChain: String,
-        newClient: Boolean
+        certificateChain: String
     ) = mlsClientProvider.getMLSClient(clientId).flatMap { mlsClient ->
         wrapMLSRequest {
             // todo: remove hardcoded keypackages count
@@ -538,7 +536,7 @@ internal class MLSConversationDataSource(
         }.map { rotateBundle ->
             // todo: store keypackages to drop, later drop them again
             kaliumLogger.w("upload new keypackages and drop old ones")
-            if (!newClient)
+//             if (!newClient)
                 keyPackageRepository.replaceKeyPackages(clientId, rotateBundle.newKeyPackages).flatMapLeft {
                     return Either.Left(it)
                 }
@@ -546,7 +544,7 @@ internal class MLSConversationDataSource(
             kaliumLogger.w("send migration commits after key rotations")
             kaliumLogger.w("rotate bundles: ${rotateBundle.commits.size}")
             rotateBundle.commits.map {
-                sendCommitBundle(GroupID(it.key), it.value, clientId)
+                sendCommitBundle(GroupID(it.key), it.value)
             }.foldToEitherWhileRight(Unit) { value, _ -> value }.fold({ return Either.Left(it) }, { })
         }
     }

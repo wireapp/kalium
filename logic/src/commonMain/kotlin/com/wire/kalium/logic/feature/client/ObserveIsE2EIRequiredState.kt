@@ -15,25 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.feature.client
 
-package com.wire.kalium.logic.data.publicuser.model
+import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.feature.user.screenshotCensoring.ObserveScreenshotCensoringConfigResult
+import kotlinx.coroutines.flow.Flow
 
-import com.wire.kalium.logic.data.user.AssetId
-import com.wire.kalium.logic.data.user.ConnectionState
-import com.wire.kalium.logic.data.user.OtherUser
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.user.type.UserType
-import kotlin.jvm.JvmInline
-
-@JvmInline
-value class UserSearchResult(val result: List<OtherUser>)
-
-data class UserSearchDetails(
-    val id: UserId,
-    val name: String?,
-    val handle: String?,
-    val completeAssetId: AssetId?,
-    val previewAssetId: AssetId?,
-    val type: UserType,
-    val connectionStatus: ConnectionState
-)
+interface ObserveIsE2EIRequiredState {
+    suspend operator fun invoke(): Flow<Boolean?>
+}
+internal class ObserveIsE2EIRequiredStateImpl(
+    val clientRepository: ClientRepository
+): ObserveIsE2EIRequiredState{
+    override suspend fun invoke() = clientRepository.observeIsClientRegistrationBlockedByE2EI()
+}

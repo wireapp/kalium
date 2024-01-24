@@ -89,6 +89,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.keypackage.KeyPackageDataSource
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProviderImpl
@@ -265,6 +266,7 @@ import com.wire.kalium.logic.feature.proteus.ProteusSyncWorker
 import com.wire.kalium.logic.feature.proteus.ProteusSyncWorkerImpl
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelectorImpl
+import com.wire.kalium.logic.feature.search.SearchScope
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveTeamSettingsSelfDeletingStatusUseCase
@@ -413,6 +415,7 @@ import com.wire.kalium.logic.sync.slow.SlowSyncWorkerImpl
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProviderImpl
 import com.wire.kalium.logic.util.MessageContentEncoder
+import com.wire.kalium.logic.wrapStorageNullableRequest
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
@@ -423,8 +426,10 @@ import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
 import kotlin.coroutines.CoroutineContext
@@ -514,9 +519,13 @@ class UserSessionScope internal constructor(
     private var _teamId: Either<CoreFailure, TeamId?> = Either.Left(CoreFailure.Unknown(Throwable("NotInitialized")))
 
     private suspend fun teamId(): Either<CoreFailure, TeamId?> = if (_teamId.isRight()) _teamId else {
-        userRepository.userById(userId).map {
-            _teamId = Either.Right(it.teamId)
-            it.teamId
+        // this can depend directly on DAO it will make it easier to user
+        // and remove any circular dependency when using this inside user repository
+        wrapStorageNullableRequest {
+            userStorage.database.userDAO.observeUserDetailsByQualifiedID(userId.toDao()).firstOrNull()
+        }.map { userDetailsEntity ->
+            _teamId = Either.Right(userDetailsEntity?.team?.let { TeamId(it) })
+            userDetailsEntity?.team?.let { TeamId(it) }
         }
     }
 
@@ -646,7 +655,7 @@ class UserSessionScope internal constructor(
         )
     }
 
-    val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2eiRepository)
+    val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2eiRepository, clientRepository, registerMLSClientUseCase)
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
 
@@ -752,19 +761,18 @@ class UserSessionScope internal constructor(
 
     private val userSearchApiWrapper: UserSearchApiWrapper = UserSearchApiWrapperImpl(
         authenticatedNetworkContainer.userSearchApi,
-        userStorage.database.conversationDAO,
         userStorage.database.memberDAO,
-        userStorage.database.userDAO,
-        userStorage.database.metadataDAO
+        userId
     )
 
-    private val publicUserRepository: SearchUserRepository
+    private val searchUserRepository: SearchUserRepository
         get() = SearchUserRepositoryImpl(
             userStorage.database.userDAO,
-            userStorage.database.metadataDAO,
+            userStorage.database.searchDAO,
             authenticatedNetworkContainer.userDetailsApi,
-            authenticatedNetworkContainer.teamsApi,
-            userSearchApiWrapper
+            userSearchApiWrapper,
+            userId,
+            selfTeamId
         )
 
     val backup: BackupScope
@@ -1361,6 +1369,8 @@ class UserSessionScope internal constructor(
     val observeLegalHoldStateForUser: ObserveLegalHoldStateForUserUseCase
         get() = ObserveLegalHoldStateForUserUseCaseImpl(clientRepository)
 
+    suspend fun observerE2EiBlocked(): Flow<Boolean?> = clientRepository.observeIsClientRegistrationBlockedByE2EI()
+
     val observeLegalHoldForSelfUser: ObserveLegalHoldForSelfUserUseCase
         get() = ObserveLegalHoldForSelfUserUseCaseImpl(userId, observeLegalHoldStateForUser)
 
@@ -1679,7 +1689,7 @@ class UserSessionScope internal constructor(
         get() = UserScope(
             userRepository,
             accountRepository,
-            publicUserRepository,
+            searchUserRepository,
             syncManager,
             assetRepository,
             teamRepository,
@@ -1695,11 +1705,22 @@ class UserSessionScope internal constructor(
             e2eiRepository,
             mlsConversationRepository,
             team.isSelfATeamMember,
-            updateSupportedProtocols
+            updateSupportedProtocols,
+            clientRepository,
+            registerMLSClientUseCase
         )
+
+    val search: SearchScope
+        get() = SearchScope(
+            searchUserRepository = searchUserRepository,
+            selfUserId = userId,
+            sessionRepository = globalScope.sessionRepository
+        )
+
     private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(userStorage)
 
-    val validateAssetMimeType: ValidateAssetMimeTypeUseCase get() = ValidateAssetMimeTypeUseCaseImpl()
+    private val validateAssetMimeType: ValidateAssetMimeTypeUseCase get() = ValidateAssetMimeTypeUseCaseImpl()
+
     val logout: LogoutUseCase
         get() = LogoutUseCaseImpl(
             logoutRepository,

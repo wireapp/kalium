@@ -76,7 +76,7 @@ internal class MLSClientManagerImpl(
     }
 
     private suspend fun registerMLSClientIfNeeded() {
-        clientRepository.value.hasRegisteredMLSClient().flatMap { it ->
+        clientRepository.value.hasRegisteredMLSClient().flatMap {
             if (!it) {
                 currentClientIdProvider().flatMap { clientId ->
                     kaliumLogger.i("No existing MLS Client, registering..")
