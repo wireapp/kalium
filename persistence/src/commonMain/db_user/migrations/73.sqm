@@ -2,6 +2,8 @@ import kotlinx.datetime.Instant;
 
 ALTER TABLE Message ADD COLUMN self_deletion_end_date INTEGER AS Instant DEFAULT(NULL);
 
+CREATE INDEX message_self_deletion_end_date ON Message(self_deself_deletion_end_date);
+
 DROP VIEW IF EXISTS MessageDetailsView;
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
