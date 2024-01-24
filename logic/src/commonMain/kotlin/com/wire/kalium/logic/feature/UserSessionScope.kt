@@ -209,8 +209,6 @@ import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
-import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateForCurrentClientUseCase
-import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateForCurrentClientUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.FeatureFlagSyncWorkerImpl
 import com.wire.kalium.logic.feature.featureConfig.FeatureFlagsSyncWorker
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
@@ -1877,12 +1875,6 @@ class UserSessionScope internal constructor(
             mlsClientProvider = mlsClientProvider,
             mLSConversationsVerificationStatusesHandler = mlsConversationsVerificationStatusesHandler
         )
-    val observeCertificateForCurrentClient: ObserveCertificateForCurrentClientUseCase
-        get() = ObserveCertificateForCurrentClientUseCaseImpl(
-            e2EIRepository = e2eiRepository,
-            userConfigRepository = userConfigRepository,
-            checkRevocationList = checkRevocationList
-        )
 
     init {
         launch {
@@ -1938,10 +1930,6 @@ class UserSessionScope internal constructor(
 
         launch {
             updateSelfClientCapabilityToLegalHoldConsent()
-        }
-
-        launch {
-            observeCertificateForCurrentClient()
         }
     }
 
