@@ -1670,6 +1670,7 @@ class UserSessionScope internal constructor(
     val users: UserScope
         get() = UserScope(
             userRepository,
+            userConfigRepository,
             accountRepository,
             publicUserRepository,
             syncManager,
@@ -1914,6 +1915,10 @@ class UserSessionScope internal constructor(
 
         launch {
             updateSelfClientCapabilityToLegalHoldConsent()
+        }
+
+        launch {
+            users.observeCertificateRevocationForSelfClient()
         }
     }
 
