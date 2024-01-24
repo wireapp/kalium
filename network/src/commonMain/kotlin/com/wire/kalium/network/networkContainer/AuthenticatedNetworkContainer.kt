@@ -109,7 +109,7 @@ interface AuthenticatedNetworkContainer {
 
     companion object {
 
-        @Suppress("LongParameterList")
+        @Suppress("LongParameterList", "LongMethod")
         fun create(
             networkStateObserver: NetworkStateObserver,
             sessionManager: SessionManager,
