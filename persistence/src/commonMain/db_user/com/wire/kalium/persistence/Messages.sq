@@ -26,6 +26,7 @@ CREATE TABLE Message (
       expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0),
       expire_after_millis INTEGER DEFAULT(NULL),
       self_deletion_start_date INTEGER AS Instant DEFAULT(NULL),
+      self_deletion_end_date INTEGER AS Instant DEFAULT(NULL),
 
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE,
       FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
@@ -566,6 +567,18 @@ markSelfDeletionStartDate:
 UPDATE Message
 SET self_deletion_start_date = ?
 WHERE  conversation_id = ? AND id = ?;
+
+markSelfDeletionEndDate:
+UPDATE Message
+SET self_deletion_end_date = ?
+WHERE conversation_id = ? AND id = ?;
+
+selectAllEphemeralMessageMarkedForEndDeletion:
+SELECT * FROM MessageDetailsView
+WHERE expireAfterMillis NOT NULL
+AND selfDeletionEndDate NOT NULL
+AND visibility = "VISIBLE"
+AND selfDeletionEndDate <= STRFTIME('%s', 'now') * 1000; -- Checks if message end date is lower than current time in millis
 
 insertMessageRecipientsFailure:
 INSERT OR IGNORE INTO MessageRecipientFailure(message_id, conversation_id, recipient_failure_list, recipient_failure_type)
