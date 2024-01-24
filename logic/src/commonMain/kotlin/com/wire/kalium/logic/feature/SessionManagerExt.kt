@@ -19,10 +19,14 @@ package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.session.SessionManager
 
-internal fun SessionManager.getProxyCredentials(): ProxyCredentials? =
-    MapperProvider.sessionMapper().fromDTOToProxyCredentialsModel(proxyCredentials())
+internal fun SessionManager.getProxyCredentials(): ProxyCredentials? {
+    val cred = proxyCredentials()
+    kaliumLogger.d("getProxyCredentials: $cred")
+    return MapperProvider.sessionMapper().fromDTOToProxyCredentialsModel(cred)
+}
 
 internal fun SessionManager.getServerConfig() =
     MapperProvider.serverConfigMapper().fromDTO(serverConfig())

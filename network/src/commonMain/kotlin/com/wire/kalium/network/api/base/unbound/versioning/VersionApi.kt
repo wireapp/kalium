@@ -20,7 +20,7 @@ package com.wire.kalium.network.api.base.unbound.versioning
 
 import com.wire.kalium.network.BackendMetaDataUtil
 import com.wire.kalium.network.BackendMetaDataUtilImpl
-import com.wire.kalium.network.UnboundNetworkClient
+import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
@@ -37,11 +37,12 @@ interface VersionApi {
 
 class VersionApiImpl internal constructor(
     private val httpClient: HttpClient,
-    private val util: BackendMetaDataUtil = BackendMetaDataUtilImpl,
-    private val developmentApiEnabled: Boolean
+    private val developmentApiEnabled: Boolean,
+    private val util: BackendMetaDataUtil = BackendMetaDataUtilImpl
 ) : VersionApi {
-    internal constructor(unboundNetworkClient: UnboundNetworkClient, developmentApiEnabled: Boolean) : this(
-        unboundNetworkClient.httpClient,
+
+    internal constructor(unauthenticatedNetworkClient: UnauthenticatedNetworkClient, developmentApiEnabled: Boolean) : this(
+        unauthenticatedNetworkClient.httpClient,
         developmentApiEnabled = developmentApiEnabled
     )
 

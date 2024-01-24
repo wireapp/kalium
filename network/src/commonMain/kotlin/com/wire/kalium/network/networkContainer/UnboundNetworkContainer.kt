@@ -24,14 +24,11 @@ import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApiImpl
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApiImpl
-import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
-import com.wire.kalium.network.api.base.unbound.versioning.VersionApiImpl
 import com.wire.kalium.network.defaultHttpEngine
 import io.ktor.client.engine.HttpClientEngine
 
 interface UnboundNetworkContainer {
     val serverConfigApi: ServerConfigApi
-    val remoteVersion: VersionApi
     val acmeApi: ACMEApi
 }
 
@@ -41,10 +38,13 @@ private interface UnboundNetworkClientProvider {
 
 internal class UnboundNetworkClientProviderImpl(
     networkStateObserver: NetworkStateObserver,
-    val developmentApiEnabled: Boolean,
     userAgent: String,
     private val ignoreSSLCertificates: Boolean,
-    engine: HttpClientEngine = defaultHttpEngine(ignoreSSLCertificates = ignoreSSLCertificates)
+    engine: HttpClientEngine = defaultHttpEngine(
+        serverConfigDTOApiProxy = null,
+        proxyCredentials = null,
+        ignoreSSLCertificates = ignoreSSLCertificates
+    )
 ) : UnboundNetworkClientProvider {
 
     init {
@@ -58,17 +58,14 @@ internal class UnboundNetworkClientProviderImpl(
 
 class UnboundNetworkContainerCommon(
     networkStateObserver: NetworkStateObserver,
-    private val developmentApiEnabled: Boolean,
     userAgent: String,
     private val ignoreSSLCertificates: Boolean,
 ) : UnboundNetworkContainer,
     UnboundNetworkClientProvider by UnboundNetworkClientProviderImpl(
         networkStateObserver,
-        developmentApiEnabled,
         userAgent,
         ignoreSSLCertificates
     ) {
     override val serverConfigApi: ServerConfigApi get() = ServerConfigApiImpl(unboundNetworkClient)
-    override val remoteVersion: VersionApi get() = VersionApiImpl(unboundNetworkClient, developmentApiEnabled)
     override val acmeApi: ACMEApi get() = ACMEApiImpl(unboundNetworkClient)
 }

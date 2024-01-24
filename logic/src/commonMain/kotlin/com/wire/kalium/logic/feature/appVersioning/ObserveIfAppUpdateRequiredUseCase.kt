@@ -18,17 +18,19 @@
 
 package com.wire.kalium.logic.feature.appVersioning
 
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.appVersioning.ObserveIfAppUpdateRequiredUseCaseImpl.Companion.CHECK_APP_VERSION_FREQUENCY_MS
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.intervalFlow
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.NetworkStateObserver
+import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
@@ -53,10 +55,12 @@ interface ObserveIfAppUpdateRequiredUseCase {
 }
 
 class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
-    private val serverConfigRepository: ServerConfigRepository,
+    private val customServerConfigRepository: CustomServerConfigRepository,
     private val authenticationScopeProvider: AuthenticationScopeProvider,
     private val userSessionScopeProvider: UserSessionScopeProvider,
-    private val networkStateObserver: NetworkStateObserver
+    private val networkStateObserver: NetworkStateObserver,
+    private val globalDatabaseProvider: GlobalDatabaseProvider,
+    private val kaliumConfigs: KaliumConfigs
 ) : ObserveIfAppUpdateRequiredUseCase {
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -66,7 +70,7 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
 
         return intervalFlow(CHECK_APP_VERSION_FREQUENCY_MS)
             .flatMapLatest {
-                serverConfigRepository.getServerConfigsWithUserIdAfterTheDate(dateForChecking)
+                customServerConfigRepository.getServerConfigsWithUserIdAfterTheDate(dateForChecking)
                     .onFailure { kaliumLogger.e("$TAG: error while getting configs for checking $it") }
                     .getOrElse(flowOf(listOf()))
             }
@@ -98,7 +102,7 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
                         withContext(coroutineContext) {
                             async {
                                 val isUpdateRequired = authenticationScopeProvider
-                                    .provide(serverConfig, proxyCredentials, serverConfigRepository, networkStateObserver)
+                                    .provide(serverConfig, proxyCredentials, networkStateObserver, globalDatabaseProvider, kaliumConfigs)
                                     .checkIfUpdateRequired(currentAppVersion, serverConfig.links.blackList)
                                 serverConfig.id to isUpdateRequired
                             }
@@ -112,7 +116,7 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
                     .toSet()
 
                 if (noUpdateRequiredConfigIds.isNotEmpty()) {
-                    serverConfigRepository.updateAppBlackListCheckDate(noUpdateRequiredConfigIds, currentDate)
+                    customServerConfigRepository.updateAppBlackListCheckDate(noUpdateRequiredConfigIds, currentDate)
                 }
 
                 configIdWithFreshFlag.any { (_, isUpdateRequired) -> isUpdateRequired }
