@@ -23,10 +23,11 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.functional.map
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
 import kotlinx.datetime.Clock
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.hours
 
 /**
  * Represents an interface for a CheckCrlWorker,
@@ -57,7 +58,7 @@ internal class CheckCrlWorkerImpl(
      * Check the CRLs and update the expiration time if needed.
      */
     override suspend fun execute() {
-        crlRepository.lastCrlCheckInstantFlow().collect { lastCheck ->
+        crlRepository.lastCrlCheckInstantFlow().collectLatest { lastCheck ->
             val now = Clock.System.now()
             val nextCheckTime = lastCheck?.plus(minIntervalBetweenRefills) ?: now
             val delayUntilNextCheck = nextCheckTime - now
@@ -84,6 +85,6 @@ internal class CheckCrlWorkerImpl(
     }
 
     private companion object {
-        val MIN_INTERVAL_BETWEEN_REFILLS = 1.days
+        val MIN_INTERVAL_BETWEEN_REFILLS = 24.hours
     }
 }
