@@ -1510,7 +1510,11 @@ class UserSessionScope internal constructor(
             userStorage.database.metadataDAO,
         )
     private val crlRepository: CrlRepository
-        get() = CrlRepositoryDataSource(userStorage.database.metadataDAO)
+        get() = CrlRepositoryDataSource(
+            acmeApi = globalScope.unboundNetworkContainer.acmeApi,
+            metadataDAO = userStorage.database.metadataDAO,
+            userConfigRepository = userConfigRepository
+        )
 
     private val proteusPreKeyRefiller: ProteusPreKeyRefiller
         get() = ProteusPreKeyRefillerImpl(preKeyRepository)
@@ -1884,7 +1888,7 @@ class UserSessionScope internal constructor(
 
     private val checkRevocationList: CheckRevocationListUseCase
         get() = CheckRevocationListUseCaseImpl(
-            e2EIRepository = e2eiRepository,
+            crlRepository = crlRepository,
             currentClientIdProvider = clientIdProvider,
             mlsClientProvider = mlsClientProvider,
             mLSConversationsVerificationStatusesHandler = mlsConversationsVerificationStatusesHandler

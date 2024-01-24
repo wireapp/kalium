@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.kaliumLogger
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 internal interface MLSConversationsRecoveryManager {
     suspend fun invoke()
@@ -39,6 +40,7 @@ internal class MLSConversationsRecoveryManagerImpl(
 ) : MLSConversationsRecoveryManager {
 
     @Suppress("ComplexCondition")
+    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun invoke() {
         // wait until incremental sync is done
         incrementalSyncRepository.incrementalSyncState.collect { syncState ->
