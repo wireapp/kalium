@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.e2ei.CrlRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.conversation.MLSConversationsVerificationStatusesHandler
@@ -34,13 +35,13 @@ interface CheckRevocationListUseCase {
 }
 
 internal class CheckRevocationListUseCaseImpl(
-    private val e2EIRepository: E2EIRepository,
+    private val crlRepository: CrlRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val mlsClientProvider: MLSClientProvider,
     private val mLSConversationsVerificationStatusesHandler: MLSConversationsVerificationStatusesHandler
 ) : CheckRevocationListUseCase {
     override suspend fun invoke(url: String): Either<CoreFailure, ULong?> {
-        return e2EIRepository.getClientDomainCRL(url).flatMap {
+        return crlRepository.getClientDomainCRL(url).flatMap {
             currentClientIdProvider().flatMap { clientId ->
                 mlsClientProvider.getMLSClient(clientId).map { mlsClient ->
                     mlsClient.registerCrl(url, it).run {

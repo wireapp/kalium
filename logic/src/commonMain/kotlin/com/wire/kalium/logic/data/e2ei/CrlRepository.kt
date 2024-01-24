@@ -17,11 +17,18 @@
  */
 package com.wire.kalium.logic.data.e2ei
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.dao.MetadataDAO
+import io.ktor.http.Url
+import io.ktor.http.protocolWithAuthority
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
@@ -52,10 +59,14 @@ interface CrlRepository {
     suspend fun setLastCRLCheckInstant(instant: Instant): Either<StorageFailure, Unit>
 
     suspend fun updateCRLs(url: String, timestamp: ULong)
+    suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String>
+    suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray>
 }
 
 internal class CrlRepositoryDataSource(
-    private val metadataDAO: MetadataDAO
+    private val acmeApi: ACMEApi,
+    private val metadataDAO: MetadataDAO,
+    private val userConfigRepository: UserConfigRepository
 ) : CrlRepository {
 
     override suspend fun lastCrlCheckInstantFlow(): Flow<Instant?> =
@@ -85,6 +96,16 @@ internal class CrlRepositoryDataSource(
             )
         }
     }
+
+    override suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String> =
+        userConfigRepository.getE2EISettings().map {
+            (Url(it.discoverUrl).protocolWithAuthority)
+        }
+
+    override suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray> =
+        wrapApiRequest {
+            acmeApi.getClientDomainCRL(url)
+        }
 
     companion object {
         private const val CRL_LIST_KEY = "crl_list_key"
