@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
+import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageEndDateUseCase
 import com.wire.kalium.logic.functional.Either
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.first
@@ -43,6 +44,7 @@ interface NotifyConversationIsOpenUseCase {
 internal class NotifyConversationIsOpenUseCaseImpl(
     private val oneOnOneResolver: OneOnOneResolver,
     private val conversationRepository: ConversationRepository,
+    private val deleteEphemeralMessageEndDate: DeleteEphemeralMessageEndDateUseCase,
     private val kaliumLogger: KaliumLogger
 ) : NotifyConversationIsOpenUseCase {
 
@@ -61,5 +63,8 @@ internal class NotifyConversationIsOpenUseCaseImpl(
             )
             oneOnOneResolver.resolveOneOnOneConversationWithUser(conversation.otherUser)
         }
+
+        // Delete Ephemeral Messages that has passed the end date
+        deleteEphemeralMessageEndDate()
     }
 }
