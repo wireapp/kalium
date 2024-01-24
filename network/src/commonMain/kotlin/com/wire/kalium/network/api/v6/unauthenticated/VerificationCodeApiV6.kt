@@ -18,8 +18,8 @@
 package com.wire.kalium.network.api.v6.unauthenticated
 
 import com.wire.kalium.network.UnauthenticatedNetworkClient
-import com.wire.kalium.network.api.v4.unauthenticated.VerificationCodeApiV4
+import com.wire.kalium.network.api.v5.unauthenticated.VerificationCodeApiV5
 
 internal open class VerificationCodeApiV6 internal constructor(
     unauthenticatedNetworkClient: UnauthenticatedNetworkClient
-) : VerificationCodeApiV4(unauthenticatedNetworkClient)
+) : VerificationCodeApiV5(unauthenticatedNetworkClient)
