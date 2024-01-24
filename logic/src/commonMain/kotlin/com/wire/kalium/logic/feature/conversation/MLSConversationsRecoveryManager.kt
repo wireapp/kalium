@@ -40,7 +40,6 @@ internal class MLSConversationsRecoveryManagerImpl(
 ) : MLSConversationsRecoveryManager {
 
     @Suppress("ComplexCondition")
-    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun invoke() {
         // wait until incremental sync is done
         incrementalSyncRepository.incrementalSyncState.collect { syncState ->

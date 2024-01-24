@@ -77,6 +77,8 @@ import com.wire.kalium.logic.data.conversation.ProposalTimer
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProviderImpl
+import com.wire.kalium.logic.data.e2ei.CrlRepository
+import com.wire.kalium.logic.data.e2ei.CrlRepositoryDataSource
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryImpl
 import com.wire.kalium.logic.data.event.EventDataSource
@@ -205,6 +207,8 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolverImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorker
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorkerImpl
+import com.wire.kalium.logic.feature.e2ei.CheckCrlWorker
+import com.wire.kalium.logic.feature.e2ei.CheckCrlWorkerImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
@@ -1505,6 +1509,8 @@ class UserSessionScope internal constructor(
             userStorage.database.clientDAO,
             userStorage.database.metadataDAO,
         )
+    private val crlRepository: CrlRepository
+        get() = CrlRepositoryDataSource(userStorage.database.metadataDAO)
 
     private val proteusPreKeyRefiller: ProteusPreKeyRefiller
         get() = ProteusPreKeyRefillerImpl(preKeyRepository)
@@ -1514,6 +1520,14 @@ class UserSessionScope internal constructor(
             incrementalSyncRepository = incrementalSyncRepository,
             proteusPreKeyRefiller = proteusPreKeyRefiller,
             preKeyRepository = preKeyRepository
+        )
+    }
+
+    private val checkCrlWorker: CheckCrlWorker by lazy {
+        CheckCrlWorkerImpl(
+            crlRepository = crlRepository,
+            incrementalSyncRepository = incrementalSyncRepository,
+            checkRevocationList = checkRevocationList,
         )
     }
 
@@ -1906,6 +1920,10 @@ class UserSessionScope internal constructor(
 
         launch {
             proteusSyncWorker.execute()
+        }
+
+        launch {
+            checkCrlWorker.execute()
         }
 
         launch {

@@ -52,9 +52,6 @@ interface UserConfigDAO {
     suspend fun observeLegalHoldChangeNotified(): Flow<Boolean?>
     suspend fun setShouldUpdateClientLegalHoldCapability(shouldUpdate: Boolean)
     suspend fun shouldUpdateClientLegalHoldCapability(): Boolean
-    suspend fun setCRLExpirationTime(url: String, timestamp: ULong)
-    suspend fun getCRLsPerDomain(url: String): ULong?
-    suspend fun observeCertificateExpirationTime(url: String): Flow<ULong?>
 }
 
 @Suppress("TooManyFunctions")
@@ -153,19 +150,6 @@ internal class UserConfigDAOImpl internal constructor(
 
     override suspend fun shouldUpdateClientLegalHoldCapability(): Boolean =
         metadataDAO.valueByKey(SHOULD_UPDATE_CLIENT_LEGAL_HOLD_CAPABILITY)?.toBoolean() ?: true
-
-    override suspend fun setCRLExpirationTime(url: String, timestamp: ULong) {
-        metadataDAO.insertValue(
-            key = url,
-            value = timestamp.toString()
-        )
-    }
-
-    override suspend fun getCRLsPerDomain(url: String): ULong? =
-        metadataDAO.valueByKey(url)?.toULongOrNull()
-
-    override suspend fun observeCertificateExpirationTime(url: String): Flow<ULong?> =
-        metadataDAO.valueByKeyFlow(url).map { it?.toULongOrNull() }
 
     private companion object {
         private const val SELF_DELETING_MESSAGES_KEY = "SELF_DELETING_MESSAGES"
