@@ -57,6 +57,8 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCaseImpl
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonMessageUseCase
+import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageEndDateUseCase
+import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageEndDateUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletionUseCase
@@ -154,6 +156,10 @@ class MessageScope internal constructor(
         get() = DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl(messageRepository)
 
     val enqueueMessageSelfDeletion: EnqueueMessageSelfDeletionUseCase = EnqueueMessageSelfDeletionUseCaseImpl(
+        ephemeralMessageDeletionHandler = ephemeralMessageDeletionHandler
+    )
+
+    val deleteEphemeralMessageEndDate: DeleteEphemeralMessageEndDateUseCase = DeleteEphemeralMessageEndDateUseCaseImpl(
         ephemeralMessageDeletionHandler = ephemeralMessageDeletionHandler
     )
 
