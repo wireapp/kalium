@@ -260,7 +260,7 @@ class CheckRevocationListUseCaseTest {
     }
 
     companion object {
-        const val DUMMY_URL = "https://dummy.url"
-        val EXPIRATION = 10.toULong()
+        private const val DUMMY_URL = "https://dummy.url"
+        private val EXPIRATION = 10.toULong()
     }
 }

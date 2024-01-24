@@ -227,11 +227,11 @@ data class LastPreKey(
 
 @Serializable
 data class CRLUrlExpirationList(
-    @SerialName("crl_with_expiration_list") val cRLUrlExpirationList: List<CRLUrlExpiration>
+    @SerialName("crl_with_expiration_list") val cRLWithExpirationList: List<CRLWithExpiration>
 )
 
 @Serializable
-data class CRLUrlExpiration(
+data class CRLWithExpiration(
     @SerialName("url") val url: String,
     @SerialName("expiration") val expiration: ULong
 )

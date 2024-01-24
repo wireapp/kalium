@@ -26,6 +26,7 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
+import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.dao.MetadataDAO
 import io.ktor.http.Url
 import io.ktor.http.protocolWithAuthority
@@ -58,7 +59,7 @@ interface CrlRepository {
      */
     suspend fun setLastCRLCheckInstant(instant: Instant): Either<StorageFailure, Unit>
 
-    suspend fun updateCRLs(url: String, timestamp: ULong)
+    suspend fun addOrUpdateCRL(url: String, timestamp: ULong)
     suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String>
     suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray>
 }
@@ -82,19 +83,34 @@ internal class CrlRepositoryDataSource(
     override suspend fun getCRLs(): CRLUrlExpirationList? =
         metadataDAO.getSerializable(CRL_LIST_KEY, CRLUrlExpirationList.serializer())
 
-    override suspend fun updateCRLs(url: String, timestamp: ULong) {
-        metadataDAO.getSerializable(CRL_LIST_KEY, CRLUrlExpirationList.serializer())?.let { list ->
-            val crls = list.cRLUrlExpirationList.map { crlUrlExpiration ->
-                crlUrlExpiration.takeIf { url == it.url }?.copy(expiration = timestamp)
-                    ?: crlUrlExpiration
-            }
+    override suspend fun addOrUpdateCRL(url: String, timestamp: ULong) {
 
-            metadataDAO.putSerializable(
-                CRL_LIST_KEY,
-                CRLUrlExpirationList(crls),
-                CRLUrlExpirationList.serializer()
-            )
-        }
+        metadataDAO.getSerializable(CRL_LIST_KEY, CRLUrlExpirationList.serializer())
+            ?.let { crlExpirationList ->
+                val crlWithExpiration = crlExpirationList.cRLWithExpirationList.find {
+                    it.url == url
+                }
+                val newCRLs = crlWithExpiration?.let { item ->
+                    crlExpirationList.cRLWithExpirationList.map { current ->
+                        if (current.url == url) {
+                            return@map item.copy(expiration = timestamp)
+                        } else {
+                            return@map current
+                        }
+                    }
+                } ?: run {
+                    // add new CRL
+                    crlExpirationList.cRLWithExpirationList.plus(
+                        CRLWithExpiration(url, timestamp)
+                    )
+                }
+
+                metadataDAO.putSerializable(
+                    CRL_LIST_KEY,
+                    CRLUrlExpirationList(newCRLs),
+                    CRLUrlExpirationList.serializer()
+                )
+            }
     }
 
     override suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String> =
@@ -108,7 +124,7 @@ internal class CrlRepositoryDataSource(
         }
 
     companion object {
-        private const val CRL_LIST_KEY = "crl_list_key"
+        const val CRL_LIST_KEY = "crl_list_key"
         const val CRL_CHECK_INSTANT_KEY = "crl_check_instant_key"
     }
 }

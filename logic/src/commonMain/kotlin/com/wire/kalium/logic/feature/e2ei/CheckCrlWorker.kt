@@ -42,7 +42,7 @@ internal interface CheckCrlWorker {
  * Base implementation of [CheckCrlWorker].
  * @param crlRepository The CRL repository.
  * @param incrementalSyncRepository The incremental sync repository.
- * @param checkRevocationListUseCase The check revocation list use case.
+ * @param checkRevocationList The check revocation list use case.
  * @param minIntervalBetweenRefills The minimum interval between CRL checks.
  *
  */
@@ -71,11 +71,11 @@ internal class CheckCrlWorkerImpl(
         incrementalSyncRepository.incrementalSyncState
             .filter { it is IncrementalSyncStatus.Live }
             .collect {
-                crlRepository.getCRLs()?.cRLUrlExpirationList?.forEach { crl ->
+                crlRepository.getCRLs()?.cRLWithExpirationList?.forEach { crl ->
                     if (crl.expiration < Clock.System.now().epochSeconds.toULong()) {
                         checkRevocationList(crl.url).map { newExpirationTime ->
                             newExpirationTime?.let {
-                                crlRepository.updateCRLs(crl.url, it)
+                                crlRepository.addOrUpdateCRL(crl.url, it)
                             }
                         }
                     }
