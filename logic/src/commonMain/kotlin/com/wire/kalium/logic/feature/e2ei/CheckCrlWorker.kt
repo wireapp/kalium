@@ -38,7 +38,6 @@ internal interface CheckCrlWorker {
     suspend fun execute()
 }
 
-
 /**
  * Base implementation of [CheckCrlWorker].
  * @param crlRepository The CRL repository.

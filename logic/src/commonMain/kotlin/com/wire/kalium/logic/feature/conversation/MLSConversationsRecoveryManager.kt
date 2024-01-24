@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.kaliumLogger
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 
 internal interface MLSConversationsRecoveryManager {
     suspend fun invoke()
