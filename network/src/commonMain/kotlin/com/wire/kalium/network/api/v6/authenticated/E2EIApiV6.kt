@@ -18,19 +18,7 @@
 package com.wire.kalium.network.api.v6.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.base.authenticated.e2ei.AccessTokenResponse
 import com.wire.kalium.network.api.v5.authenticated.E2EIApiV5
-import com.wire.kalium.network.serialization.JoseJson
-import com.wire.kalium.network.utils.CustomErrors
-import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.network.utils.handleUnsuccessfulResponse
-import com.wire.kalium.network.utils.wrapKaliumResponse
-import io.ktor.client.request.post
-import io.ktor.client.request.prepareHead
-import io.ktor.client.statement.HttpResponse
-import io.ktor.http.ContentType
-import io.ktor.http.contentType
-import io.ktor.http.isSuccess
 
 internal open class E2EIApiV6 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient
