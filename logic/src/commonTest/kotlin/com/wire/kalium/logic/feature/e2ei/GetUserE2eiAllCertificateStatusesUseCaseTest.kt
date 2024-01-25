@@ -70,7 +70,6 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
 
         val result = getUserE2eiAllCertificateStatuses(userId)
 
-//         assertEquals(3, result.size)
         assertEquals(CertificateStatus.VALID, result[ClientId(identity1.clientId)]?.status)
         assertEquals(CertificateStatus.EXPIRED, result[ClientId(identity2.clientId)]?.status)
         assertEquals(CertificateStatus.REVOKED, result[ClientId(identity3.clientId)]?.status)
@@ -98,7 +97,7 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
 
         private val userId = UserId("value", "domain")
         private val WIRE_IDENTITY =
-            WireIdentity("id", "user_handle", "User Test", "domain.com", "certificate", CryptoCertificateStatus.VALID)
+            WireIdentity("id", "user_handle", "User Test", "domain.com", "certificate", CryptoCertificateStatus.VALID, "thumbprint")
         private val E2EI_CERTIFICATE =
             E2eiCertificate(issuer = "issue", status = CertificateStatus.VALID, serialNumber = "number", certificateDetail = "details")
     }
