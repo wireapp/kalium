@@ -254,7 +254,7 @@ class AssetRepositoryTest {
         with(arrangement) {
             result.shouldSucceed()
             val expectedPath = fakeKaliumFileSystem.providePersistentAssetPath("${assetKey.value}.${assetName.fileExtension()}")
-            val realPath = result.value
+            val realPath = (result as Either.Right<Path>).value
             assertEquals(expectedPath, realPath)
             verify(assetDAO).suspendFunction(assetDAO::getAssetByKey)
                 .with(eq(assetKey.value))
@@ -346,7 +346,8 @@ class AssetRepositoryTest {
             // Then
             with(arrangement) {
                 result.shouldSucceed()
-                assertEquals(assetPath, result.value)
+                val realPath = (result as Either.Right<Path>).value
+                assertEquals(assetPath, realPath)
                 verify(assetDAO).suspendFunction(assetDAO::getAssetByKey)
                     .with(eq(assetKey.value))
                     .wasInvoked(exactly = once)
