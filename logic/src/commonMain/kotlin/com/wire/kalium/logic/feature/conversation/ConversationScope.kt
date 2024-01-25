@@ -61,6 +61,7 @@ import com.wire.kalium.logic.feature.conversation.messagetimer.UpdateMessageTime
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.SendConfirmationUseCase
+import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessagesAfterEndDateUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
@@ -90,6 +91,7 @@ class ConversationScope internal constructor(
     private val serverConfigRepository: ServerConfigRepository,
     private val userStorage: UserStorage,
     userPropertyRepository: UserPropertyRepository,
+    private val deleteEphemeralMessageEndDate: DeleteEphemeralMessagesAfterEndDateUseCase,
     private val oneOnOneResolver: OneOnOneResolver,
     private val scope: CoroutineScope,
     private val kaliumLogger: KaliumLogger
@@ -123,6 +125,7 @@ class ConversationScope internal constructor(
         get() = NotifyConversationIsOpenUseCaseImpl(
             oneOnOneResolver,
             conversationRepository,
+            deleteEphemeralMessageEndDate,
             kaliumLogger
         )
 
