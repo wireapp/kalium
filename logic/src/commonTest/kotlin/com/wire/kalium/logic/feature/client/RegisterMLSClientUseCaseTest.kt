@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
@@ -77,6 +78,8 @@ class RegisterMLSClientUseCaseTest {
 
         @Mock
         val keyPackageLimitsProvider = mock(classOf<KeyPackageLimitsProvider>())
+        @Mock
+        val userConfigRepository = mock(classOf<UserConfigRepository>())
 
         fun withRegisterMLSClient(result: Either<CoreFailure, Unit>) = apply {
             given(clientRepository)
@@ -115,7 +118,8 @@ class RegisterMLSClientUseCaseTest {
             mlsClientProvider,
             clientRepository,
             keyPackageRepository,
-            keyPackageLimitsProvider
+            keyPackageLimitsProvider,
+            userConfigRepository
         )
 
         companion object {

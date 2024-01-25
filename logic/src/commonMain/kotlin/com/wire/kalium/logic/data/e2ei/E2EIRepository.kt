@@ -30,9 +30,11 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.e2ei.usecase.E2EIEnrollmentResult
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrFail
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
@@ -56,6 +58,12 @@ interface E2EIRepository {
     suspend fun createNewAccount(prevNonce: String, createAccountEndpoint: String): Either<CoreFailure, String>
     suspend fun createNewOrder(prevNonce: String, createOrderEndpoint: String): Either<CoreFailure, Triple<NewAcmeOrder, String, String>>
     suspend fun createAuthorization(prevNonce: String, endpoint: String): Either<CoreFailure, AcmeAuthorization>
+
+    suspend fun getAuthorizations(
+        prevNonce: String,
+        authorizationsEndpoints: List<String>
+    ): Either<CoreFailure, Pair<Map<AuthorizationChallengeType, NewAcmeAuthz>, String>>
+
     suspend fun getWireNonce(): Either<CoreFailure, String>
     suspend fun getWireAccessToken(dpopToken: String): Either<CoreFailure, AccessTokenResponse>
     suspend fun getDPoPToken(wireNonce: String): Either<CoreFailure, String>
@@ -164,6 +172,23 @@ class E2EIRepositoryImpl(
                 Either.Right(acmeMapper.fromDto(apiResponse, response))
             }
         }
+
+    override suspend fun getAuthorizations(
+        prevNonce: String,
+        authorizationsEndpoints: List<String>
+    ): Either<CoreFailure, Pair<Map<AuthorizationChallengeType, NewAcmeAuthz>, String>> {
+        var nonce = prevNonce
+        val challenges = mutableMapOf<AuthorizationChallengeType, NewAcmeAuthz>()
+
+        authorizationsEndpoints.forEach { endPoint ->
+            val authorizationResponse = createAuthorization(nonce, endPoint).getOrFail {
+                return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNewAuthz, it).toEitherLeft()
+            }
+            nonce = authorizationResponse.nonce
+            challenges[authorizationResponse.challengeType] = authorizationResponse.newAcmeAuthz
+        }
+        return Either.Right(challenges to nonce)
+    }
 
     override suspend fun getWireNonce() = currentClientIdProvider().flatMap { clientId ->
         wrapApiRequest {

@@ -49,9 +49,8 @@ internal class GetOrRegisterClientUseCaseImpl(
     private val verifyExistingClientUseCase: VerifyExistingClientUseCase,
     private val upgradeCurrentSessionUseCase: UpgradeCurrentSessionUseCase,
     private val cachedClientIdClearer: CachedClientIdClearer,
-    private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase,
-    private val registerMLSClientUseCase: RegisterMLSClientUseCase,
-    ) : GetOrRegisterClientUseCase {
+    private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
+) : GetOrRegisterClientUseCase {
 
     override suspend fun invoke(registerClientParam: RegisterClientUseCase.RegisterClientParam): RegisterClientResult {
         syncFeatureConfigsUseCase.invoke()

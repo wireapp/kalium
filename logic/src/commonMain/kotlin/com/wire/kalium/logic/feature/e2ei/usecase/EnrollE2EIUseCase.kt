@@ -78,29 +78,24 @@ class EnrollE2EIUseCaseImpl internal constructor(
 
         prevNonce = newOrderResponse.second
 
-        val firstAuthorizationResponse = e2EIRepository.createAuthorization(prevNonce, newOrderResponse.first.authorizations[0]).getOrFail {
+        val authorizations = e2EIRepository.getAuthorizations(prevNonce, newOrderResponse.first.authorizations).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNewAuthz, it).toEitherLeft()
         }
-        prevNonce = firstAuthorizationResponse.nonce
-        val secondAuthorizationResponse =
-            e2EIRepository.createAuthorization(prevNonce, newOrderResponse.first.authorizations[1]).getOrFail {
-                return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNewAuthz, it).toEitherLeft()
-            }
 
-        var oidcAuthz = if (firstAuthorizationResponse.challengeType == AuthorizationChallengeType.OIDC)
-            firstAuthorizationResponse else secondAuthorizationResponse
-        var dPopAuthz= if (firstAuthorizationResponse.challengeType == AuthorizationChallengeType.DPoP)
-            firstAuthorizationResponse else secondAuthorizationResponse
+        prevNonce = authorizations.second
+        val oidcAuthorizations= authorizations.first[AuthorizationChallengeType.OIDC]!!
+        val dPopAuthorizations = authorizations.first[AuthorizationChallengeType.DPoP]!!
+
 
         val oAuthState = e2EIRepository.getOAuthRefreshToken().getOrNull()
 
         val initializationResult = E2EIEnrollmentResult.Initialized(
-            idpTarget = oidcAuthz.newAcmeAuthz.challenge.target,
+            idpTarget = oidcAuthorizations.challenge.target,
             oAuthState = oAuthState,
-            oAuthClaims = getOAuthClaims(oidcAuthz.newAcmeAuthz.keyAuth.toString(), oidcAuthz.newAcmeAuthz.challenge.url),
-            dpopAuthz = dPopAuthz.newAcmeAuthz,
-            oidcAuthz = oidcAuthz.newAcmeAuthz,
-            lastNonce = secondAuthorizationResponse.nonce,
+            oAuthClaims = getOAuthClaims(oidcAuthorizations.keyAuth.toString(), oidcAuthorizations.challenge.url),
+            dPopAuthorizations = dPopAuthorizations,
+            oidcAuthorizations = dPopAuthorizations,
+            lastNonce = prevNonce,
             orderLocation = newOrderResponse.third,
             isNewClientRegistration = isNewClientRegistration
         )
@@ -125,8 +120,8 @@ class EnrollE2EIUseCaseImpl internal constructor(
     ): Either<E2EIFailure, E2EIEnrollmentResult> {
 
         var prevNonce = initializationResult.lastNonce
-        val dpopAuthz = initializationResult.dpopAuthz
-        val oidcAuthz = initializationResult.oidcAuthz
+        val dPopAuthorizations = initializationResult.dPopAuthorizations
+        val oidcAuthorizations = initializationResult.oidcAuthorizations
         val orderLocation = initializationResult.orderLocation
 
         val wireNonce = e2EIRepository.getWireNonce().getOrFail {
@@ -142,7 +137,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
         }
 
         val dpopChallengeResponse = e2EIRepository.validateDPoPChallenge(
-            wireAccessToken.token, prevNonce, dpopAuthz.challenge
+            wireAccessToken.token, prevNonce, dPopAuthorizations.challenge
         ).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.DPoPChallenge, it).toEitherLeft()
         }
@@ -150,7 +145,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
         prevNonce = dpopChallengeResponse.nonce
 
         val oidcChallengeResponse = e2EIRepository.validateOIDCChallenge(
-            idToken, oAuthState, prevNonce, oidcAuthz.challenge
+            idToken, oAuthState, prevNonce, oidcAuthorizations.challenge
         ).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.OIDCChallenge, it).toEitherLeft()
         }
@@ -229,8 +224,8 @@ sealed interface E2EIEnrollmentResult {
         val idpTarget: String,
         val oAuthState: String?,
         val oAuthClaims: JsonObject,
-        val dpopAuthz: NewAcmeAuthz,
-        val oidcAuthz: NewAcmeAuthz,
+        val dPopAuthorizations: NewAcmeAuthz,
+        val oidcAuthorizations: NewAcmeAuthz,
         val lastNonce: String,
         val orderLocation: String,
         val isNewClientRegistration: Boolean = false

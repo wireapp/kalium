@@ -1038,7 +1038,7 @@ class E2EIRepositoryTest {
             given(acmeApi)
                 .suspendFunction(acmeApi::getACMEFederation)
                 .whenInvokedWith(any())
-                .thenReturn(NetworkResponse.Success(CertificateChain(""), mapOf(), 200))
+                .thenReturn(NetworkResponse.Success("", mapOf(), 200))
         }
 
         fun withAcmeFederationApiFails() = apply {
@@ -1059,7 +1059,7 @@ class E2EIRepositoryTest {
             given(acmeApi)
                 .suspendFunction(acmeApi::getTrustAnchors)
                 .whenInvokedWith(any())
-                .thenReturn(NetworkResponse.Success(CertificateChain(""), mapOf(), 200))
+                .thenReturn(NetworkResponse.Success(RANDOM_BYTE_ARRAY, mapOf(), 200))
         }
 
         fun withRegisterIntermediateCABag() = apply {
@@ -1164,8 +1164,7 @@ class E2EIRepositoryTest {
             val ACME_AUTHZ = NewAcmeAuthz(
                 identifier = "identifier",
                 keyAuth = "keyauth",
-                wireOidcChallenge = ACME_CHALLENGE,
-                wireDpopChallenge = ACME_CHALLENGE
+                challenge = ACME_CHALLENGE
             )
 
             val ACME_CHALLENGE_RESPONSE = ChallengeResponse(
@@ -1173,6 +1172,7 @@ class E2EIRepositoryTest {
                 url = "url",
                 status = "status",
                 token = "token",
+                target = "target",
                 nonce = "nonce"
             )
 

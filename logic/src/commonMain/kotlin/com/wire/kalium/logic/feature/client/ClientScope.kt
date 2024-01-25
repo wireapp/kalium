@@ -140,8 +140,7 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
             verifyExistingClientUseCase,
             upgradeCurrentSessionUseCase,
             cachedClientIdClearer,
-            syncFeatureConfigsUseCase,
-            registerMLSClientUseCase
+            syncFeatureConfigsUseCase
         )
 
     val remoteClientFingerPrint: ClientFingerprintUseCase get() = ClientFingerprintUseCaseImpl(proteusClientProvider, preKeyRepository)

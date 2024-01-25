@@ -22,6 +22,7 @@ import com.wire.kalium.cryptography.AcmeDirectory
 import com.wire.kalium.cryptography.NewAcmeAuthz
 import com.wire.kalium.cryptography.NewAcmeOrder
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.e2ei.AuthorizationChallengeType
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.feature.e2ei.usecase.E2EIEnrollmentResult
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
@@ -83,7 +84,7 @@ class EnrollE2EICertificateUseCaseTest {
             .with()
             .wasNotInvoked()
         verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createAuthorization)
+            .function(arrangement.e2EIRepository::getAuthorizations)
             .with()
             .wasNotInvoked()
         verify(arrangement.e2EIRepository)
@@ -165,7 +166,7 @@ class EnrollE2EICertificateUseCaseTest {
             .with()
             .wasNotInvoked()
         verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createAuthorization)
+            .function(arrangement.e2EIRepository::getAuthorizations)
             .with()
             .wasNotInvoked()
         verify(arrangement.e2EIRepository)
@@ -249,7 +250,7 @@ class EnrollE2EICertificateUseCaseTest {
             .with()
             .wasNotInvoked()
         verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createAuthorization)
+            .function(arrangement.e2EIRepository::getAuthorizations)
             .with()
             .wasNotInvoked()
         verify(arrangement.e2EIRepository)
@@ -335,7 +336,7 @@ class EnrollE2EICertificateUseCaseTest {
             .with()
             .wasNotInvoked()
         verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createAuthorization)
+            .function(arrangement.e2EIRepository::getAuthorizations)
             .with()
             .wasNotInvoked()
         verify(arrangement.e2EIRepository)
@@ -423,7 +424,7 @@ class EnrollE2EICertificateUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createAuthorization)
+            .function(arrangement.e2EIRepository::getAuthorizations)
             .with()
             .wasNotInvoked()
         verify(arrangement.e2EIRepository)
@@ -469,7 +470,7 @@ class EnrollE2EICertificateUseCaseTest {
     }
 
     @Test
-    fun givenUseCase_whenCreateAuthzFailing_thenReturnFailure() = runTest {
+    fun givenUseCase_whenCreateAuthorizationsFailing_thenReturnFailure() = runTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
 
         // given
@@ -478,7 +479,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewOrderResulting(Either.Right(Triple(ACME_ORDER, RANDOM_NONCE, RANDOM_LOCATION)))
-        arrangement.withCreateAuthzResulting(TEST_EITHER_LEFT)
+        arrangement.withGettingChallenges(TEST_EITHER_LEFT)
 
         // when
         val result = enrollE2EICertificateUseCase.initialEnrollment()
@@ -512,7 +513,7 @@ class EnrollE2EICertificateUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createAuthorization)
+            .function(arrangement.e2EIRepository::getAuthorizations)
             .with(any<String>(), any<String>())
             .wasInvoked(exactly = once)
 
@@ -568,7 +569,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewOrderResulting(Either.Right(Triple(ACME_ORDER, RANDOM_NONCE, RANDOM_LOCATION)))
-        arrangement.withCreateAuthzResulting(Either.Right(Triple(ACME_AUTHZ, RANDOM_NONCE, RANDOM_LOCATION)))
+        arrangement.withGettingChallenges(Either.Right(AUTHORIZATIONS to RANDOM_NONCE))
         arrangement.withGetWireNonceResulting(TEST_EITHER_LEFT)
 
         // when
@@ -633,7 +634,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewOrderResulting(Either.Right(Triple(ACME_ORDER, RANDOM_NONCE, RANDOM_LOCATION)))
-        arrangement.withCreateAuthzResulting(Either.Right(Triple(ACME_AUTHZ, RANDOM_NONCE, RANDOM_LOCATION)))
+        arrangement.withGettingChallenges(Either.Right(AUTHORIZATIONS to RANDOM_NONCE))
         arrangement.withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withGetDPoPTokenResulting(TEST_EITHER_LEFT)
 
@@ -701,7 +702,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewOrderResulting(Either.Right(Triple(ACME_ORDER, RANDOM_NONCE, RANDOM_LOCATION)))
-        arrangement.withCreateAuthzResulting(Either.Right(Triple(ACME_AUTHZ, RANDOM_NONCE, RANDOM_LOCATION)))
+        arrangement.withGettingChallenges(Either.Right(AUTHORIZATIONS to RANDOM_NONCE))
         arrangement.withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
         arrangement.withGetWireAccessTokenResulting(TEST_EITHER_LEFT)
@@ -770,7 +771,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewOrderResulting(Either.Right(Triple(ACME_ORDER, RANDOM_NONCE, RANDOM_LOCATION)))
-        arrangement.withCreateAuthzResulting(Either.Right(Triple(ACME_AUTHZ, RANDOM_NONCE, RANDOM_LOCATION)))
+        arrangement.withGettingChallenges(Either.Right(AUTHORIZATIONS to RANDOM_NONCE))
         arrangement.withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
         arrangement.withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
@@ -841,7 +842,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewOrderResulting(Either.Right(Triple(ACME_ORDER, RANDOM_NONCE, RANDOM_LOCATION)))
-        arrangement.withCreateAuthzResulting(Either.Right(Triple(ACME_AUTHZ, RANDOM_NONCE, RANDOM_LOCATION)))
+        arrangement.withGettingChallenges(Either.Right(AUTHORIZATIONS to RANDOM_NONCE))
         arrangement.withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
         arrangement.withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
@@ -907,7 +908,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewOrderResulting(Either.Right(Triple(ACME_ORDER, RANDOM_NONCE, RANDOM_LOCATION)))
-        arrangement.withCreateAuthzResulting(Either.Right(Triple(ACME_AUTHZ, RANDOM_NONCE, RANDOM_LOCATION)))
+        arrangement.withGettingChallenges(Either.Right(AUTHORIZATIONS to RANDOM_NONCE))
         arrangement.withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
         arrangement.withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
@@ -972,7 +973,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewOrderResulting(Either.Right(Triple(ACME_ORDER, RANDOM_NONCE, RANDOM_LOCATION)))
-        arrangement.withCreateAuthzResulting(Either.Right(Triple(ACME_AUTHZ, RANDOM_NONCE, RANDOM_LOCATION)))
+        arrangement.withGettingChallenges(Either.Right(AUTHORIZATIONS to RANDOM_NONCE))
         arrangement.withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
         arrangement.withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
@@ -1030,7 +1031,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewOrderResulting(Either.Right(Triple(ACME_ORDER, RANDOM_NONCE, RANDOM_LOCATION)))
-        arrangement.withCreateAuthzResulting(Either.Right(Triple(ACME_AUTHZ, RANDOM_NONCE, RANDOM_LOCATION)))
+        arrangement.withGettingChallenges(Either.Right(AUTHORIZATIONS to RANDOM_NONCE))
         arrangement.withGettingRefreshTokenSucceeding()
         arrangement.withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
@@ -1096,7 +1097,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewOrderResulting(Either.Right(Triple(ACME_ORDER, RANDOM_NONCE, RANDOM_LOCATION)))
-        arrangement.withCreateAuthzResulting(Either.Right(Triple(ACME_AUTHZ, RANDOM_NONCE, RANDOM_LOCATION)))
+        arrangement.withGettingChallenges(Either.Right(AUTHORIZATIONS to RANDOM_NONCE))
         arrangement.withGettingRefreshTokenSucceeding()
         arrangement.withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
@@ -1168,7 +1169,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewOrderResulting(Either.Right(Triple(ACME_ORDER, RANDOM_NONCE, RANDOM_LOCATION)))
-        arrangement.withCreateAuthzResulting(Either.Right(Triple(ACME_AUTHZ, RANDOM_NONCE, RANDOM_LOCATION)))
+        arrangement.withGettingChallenges(Either.Right(AUTHORIZATIONS to RANDOM_NONCE))
         arrangement.withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
         arrangement.withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
@@ -1276,9 +1277,9 @@ class EnrollE2EICertificateUseCaseTest {
                 .thenReturn(result)
         }
 
-        fun withCreateAuthzResulting(result: Either<CoreFailure, Triple<NewAcmeAuthz, String, String>>) = apply {
+        fun withGettingChallenges(result: Either<CoreFailure, Pair<Map<AuthorizationChallengeType, NewAcmeAuthz>, String>>) = apply {
             given(e2EIRepository)
-                .suspendFunction(e2EIRepository::createAuthorization)
+                .suspendFunction(e2EIRepository::getAuthorizations)
                 .whenInvokedWith(any(), any())
                 .thenReturn(result)
         }
@@ -1400,8 +1401,12 @@ class EnrollE2EICertificateUseCaseTest {
         val ACME_AUTHZ = NewAcmeAuthz(
             identifier = "identifier",
             keyAuth = "keyauth",
-            wireOidcChallenge = ACME_CHALLENGE,
-            wireDpopChallenge = ACME_CHALLENGE
+            challenge = ACME_CHALLENGE
+        )
+
+        val AUTHORIZATIONS = mapOf<AuthorizationChallengeType, NewAcmeAuthz>(
+            AuthorizationChallengeType.DPoP to ACME_AUTHZ,
+            AuthorizationChallengeType.OIDC to ACME_AUTHZ
         )
 
         val WIRE_ACCESS_TOKEN = AccessTokenResponse(
@@ -1415,6 +1420,7 @@ class EnrollE2EICertificateUseCaseTest {
             url = "url",
             status = "status",
             token = "token",
+            target = "target",
             nonce = "nonce"
         )
 
@@ -1427,7 +1433,8 @@ class EnrollE2EICertificateUseCaseTest {
         val INITIALIZATION_RESULT = E2EIEnrollmentResult.Initialized(
             idpTarget = ACME_CHALLENGE.target,
             oAuthState = REFRESH_TOKEN,
-            dpopAuthz = ACME_AUTHZ,
+            dPopAuthorizations = ACME_AUTHZ,
+            oidcAuthorizations = ACME_AUTHZ,
             oAuthClaims = OAUTH_CLAIMS,
             lastNonce = RANDOM_NONCE,
             orderLocation = RANDOM_LOCATION
