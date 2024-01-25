@@ -94,6 +94,9 @@ data class OtherUserClient(
     val isProteusVerified: Boolean
 )
 
+data class UpdateClientCapabilitiesParam(
+    val capabilities: List<ClientCapability>
+)
 /**
  * True if the client is considered to be in active use.
  *

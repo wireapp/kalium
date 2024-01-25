@@ -63,6 +63,7 @@ import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.UserProfileDTO
 import com.wire.kalium.network.api.base.model.isTeamMember
 import com.wire.kalium.persistence.dao.ConnectionEntity
+import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -111,9 +112,9 @@ interface UserRepository {
      */
     suspend fun getAllRecipients(): Either<CoreFailure, Pair<List<Recipient>, List<Recipient>>>
     suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit>
-    suspend fun markUserAsDeletedAndRemoveFromGroupConversations(userId: UserId): Either<CoreFailure, Unit>
+    suspend fun markUserAsDeletedAndRemoveFromGroupConversations(userId: UserId): Either<CoreFailure, List<ConversationId>>
 
-    suspend fun markUserAsDeletedAndRemoveFromGroupConversations(userId: List<UserId>): Either<CoreFailure, Unit>
+    suspend fun markAsDeleted(userId: List<UserId>): Either<StorageFailure, Unit>
 
     /**
      * Marks federated user as defederated in order to hold conversation history
@@ -404,7 +405,7 @@ internal class UserDataSource internal constructor(
             .map { userMapper.fromUpdateRequestToPartialUserEntity(updateRequest, selfUserId) }
             .flatMap { partialUserEntity ->
                 wrapStorageRequest {
-                    userDAO.updateUser(selfUserId.toDao(), partialUserEntity)
+                    userDAO.updateUser(partialUserEntity)
                 }
             }.map { }
     }
@@ -433,7 +434,6 @@ internal class UserDataSource internal constructor(
     override suspend fun observeUser(userId: UserId): Flow<User?> =
         userDAO.observeUserDetailsByQualifiedID(qualifiedID = userId.toDao())
             .map { userEntity ->
-                // TODO: cache SelfUserId so it's not fetched from DB every single time
                 if (userId == selfUserId) {
                     userEntity?.let { userMapper.fromUserDetailsEntityToSelfUser(userEntity) }
                 } else {
@@ -442,12 +442,10 @@ internal class UserDataSource internal constructor(
             }
 
     override suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser> =
-        wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }.flatMap { userProfileDTO ->
-            getSelfUser()?.let { selfUser ->
-                Either.Right(
-                    userMapper.fromUserProfileDtoToOtherUser(userProfileDTO, selfUser)
-                )
-            } ?: Either.Left(StorageFailure.DataNotFound)
+        selfTeamIdProvider().flatMap { selfTeamId ->
+            wrapApiRequest { userDetailsApi.getUserInfo(userId.toApi()) }.map { userProfileDTO ->
+                userMapper.fromUserProfileDtoToOtherUser(userProfileDTO, selfUserId, selfTeamId)
+            }
         }
 
     override suspend fun updateOtherUserAvailabilityStatus(userId: UserId, status: UserAvailabilityStatus) {
@@ -502,7 +500,7 @@ internal class UserDataSource internal constructor(
         }
 
     override suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit> = wrapStorageRequest {
-        userDAO.updateUser(event.userId.toDao(), userMapper.fromUserUpdateEventToPartialUserEntity(event))
+        userDAO.updateUser(userMapper.fromUserUpdateEventToPartialUserEntity(event))
     }.flatMap { updated ->
         if (!updated) {
             Either.Left(StorageFailure.DataNotFound)
@@ -511,14 +509,16 @@ internal class UserDataSource internal constructor(
         }
     }
 
-    override suspend fun markUserAsDeletedAndRemoveFromGroupConversations(userId: UserId): Either<CoreFailure, Unit> = wrapStorageRequest {
-        userDAO.markUserAsDeletedAndRemoveFromGroupConv(userId.toDao())
-    }
-
-    override suspend fun markUserAsDeletedAndRemoveFromGroupConversations(userId: List<UserId>): Either<CoreFailure, Unit> =
+    override suspend fun markUserAsDeletedAndRemoveFromGroupConversations(
+        userId: UserId
+    ): Either<CoreFailure, List<ConversationId>> =
         wrapStorageRequest {
-            userDAO.markUserAsDeletedAndRemoveFromGroupConv(userId.map { it.toDao() })
-        }
+            userDAO.markUserAsDeletedAndRemoveFromGroupConv(userId.toDao())
+        }.map { it.map(ConversationIDEntity::toModel) }
+
+    override suspend fun markAsDeleted(userId: List<UserId>): Either<StorageFailure, Unit> = wrapStorageRequest {
+        userDAO.markAsDeleted(userId.map { it.toDao() })
+    }
 
     override suspend fun defederateUser(userId: UserId): Either<CoreFailure, Unit> {
         return wrapStorageRequest {

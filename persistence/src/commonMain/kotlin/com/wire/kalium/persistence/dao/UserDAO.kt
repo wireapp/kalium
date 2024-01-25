@@ -142,6 +142,7 @@ data class BotIdEntity(
 )
 
 data class PartialUserEntity(
+    val id: QualifiedIDEntity,
     val name: String? = null,
     val handle: String? = null,
     val email: String? = null,
@@ -213,7 +214,9 @@ interface UserDAO {
      *
      * @return true if the user was updated
      */
-    suspend fun updateUser(id: UserIDEntity, update: PartialUserEntity): Boolean
+    suspend fun updateUser(update: PartialUserEntity): Boolean
+
+    suspend fun updateUser(users: List<PartialUserEntity>)
 
     /**
      * This will update all columns (or insert a new record), except:
@@ -266,8 +269,8 @@ interface UserDAO {
     suspend fun getUsersWithOneOnOneConversation(): List<UserEntity>
 
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
-    suspend fun markUserAsDeletedAndRemoveFromGroupConv(qualifiedID: QualifiedIDEntity)
-    suspend fun markUserAsDeletedAndRemoveFromGroupConv(qualifiedID: List<QualifiedIDEntity>)
+    suspend fun markUserAsDeletedAndRemoveFromGroupConv(qualifiedID: QualifiedIDEntity): List<ConversationIDEntity>
+    suspend fun markAsDeleted(userId: List<UserIDEntity>)
     suspend fun markUserAsDefederated(qualifiedID: QualifiedIDEntity)
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
     suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)

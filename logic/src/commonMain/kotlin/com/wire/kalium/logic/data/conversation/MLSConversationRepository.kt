@@ -29,11 +29,13 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.Event.Conversation.MLSWelcome
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toCrypto
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapper
@@ -118,6 +120,11 @@ interface MLSConversationRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun getClientIdentity(clientId: ClientId): Either<CoreFailure, WireIdentity>
+    suspend fun getUserIdentity(userId: UserId): Either<CoreFailure, List<WireIdentity>>
+    suspend fun getMembersIdentities(
+        conversationId: ConversationId,
+        userIds: List<UserId>
+    ): Either<CoreFailure, Map<UserId, List<WireIdentity>>>
 }
 
 private enum class CommitStrategy {
@@ -547,6 +554,41 @@ internal class MLSConversationDataSource(
                         it.mlsGroupId,
                         listOf(CryptoQualifiedClientId(it.clientId, it.userId.toModel().toCrypto()))
                     ).first() // todo: ask if it's possible that's a client has more than one identity?
+                }
+            }
+        }
+
+    override suspend fun getUserIdentity(userId: UserId) =
+        wrapStorageRequest { conversationDAO.getMLSGroupIdByUserId(userId.toDao()) }.flatMap { mlsGroupId ->
+            mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+                wrapMLSRequest {
+                    mlsClient.getUserIdentities(
+                        mlsGroupId,
+                        listOf(userId.toCrypto())
+                    )[userId.value]!!
+                }
+            }
+        }
+
+    override suspend fun getMembersIdentities(
+        conversationId: ConversationId,
+        userIds: List<UserId>
+    ): Either<CoreFailure, Map<UserId, List<WireIdentity>>> =
+        wrapStorageRequest {
+            conversationDAO.getMLSGroupIdByConversationId(conversationId.toDao())
+        }.flatMap { mlsGroupId ->
+            mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+                wrapMLSRequest {
+                    val userIdsAndIdentity = mutableMapOf<UserId, List<WireIdentity>>()
+
+                    mlsClient.getUserIdentities(mlsGroupId, userIds.map { it.toCrypto() })
+                        .forEach { (userIdValue, identities) ->
+                            userIds.firstOrNull { it.value == userIdValue }?.also {
+                                userIdsAndIdentity[it] = identities
+                            }
+                        }
+
+                    userIdsAndIdentity
                 }
             }
         }

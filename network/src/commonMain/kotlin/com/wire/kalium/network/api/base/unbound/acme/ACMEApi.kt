@@ -36,19 +36,25 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 
 interface ACMEApi {
-    suspend fun getACMEDirectories(baseUrl: String): NetworkResponse<AcmeDirectoriesResponse>
+    suspend fun getTrustAnchors(acmeUrl: String): NetworkResponse<CertificateChain>
+    suspend fun getACMEDirectories(discoveryUrl: String): NetworkResponse<AcmeDirectoriesResponse>
     suspend fun getACMENonce(url: String): NetworkResponse<String>
     suspend fun sendACMERequest(url: String, body: ByteArray? = null): NetworkResponse<ACMEResponse>
     suspend fun sendChallengeRequest(url: String, body: ByteArray): NetworkResponse<ChallengeResponse>
-
+    suspend fun getACMEFederation(baseUrl: String): NetworkResponse<CertificateChain>
 }
 
 class ACMEApiImpl internal constructor(
     private val unboundNetworkClient: UnboundNetworkClient
 ) : ACMEApi {
     private val httpClient get() = unboundNetworkClient.httpClient
-    override suspend fun getACMEDirectories(baseUrl: String): NetworkResponse<AcmeDirectoriesResponse> = wrapKaliumResponse {
-        httpClient.get("$baseUrl/$PATH_ACME_DIRECTORIES")
+
+    override suspend fun getTrustAnchors(acmeUrl: String): NetworkResponse<CertificateChain> = wrapKaliumResponse {
+        httpClient.get("$acmeUrl/$PATH_ACME_ROOTS_PEM")
+    }
+
+    override suspend fun getACMEDirectories(discoveryUrl: String): NetworkResponse<AcmeDirectoriesResponse> = wrapKaliumResponse {
+        httpClient.get(discoveryUrl)
     }
 
     override suspend fun getACMENonce(url: String): NetworkResponse<String> =
@@ -113,8 +119,13 @@ class ACMEApiImpl internal constructor(
             }
         }
 
+    override suspend fun getACMEFederation(baseUrl: String): NetworkResponse<CertificateChain> = wrapKaliumResponse {
+        httpClient.get("$baseUrl/$PATH_ACME_FEDERATION")
+    }
+
     private companion object {
-        const val PATH_ACME_DIRECTORIES = "directory"
+        const val PATH_ACME_FEDERATION = "federation"
+        const val PATH_ACME_ROOTS_PEM = "roots.pem"
 
         const val NONCE_HEADER_KEY = "Replay-Nonce"
         const val LOCATION_HEADER_KEY = "location"

@@ -25,30 +25,31 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.shouldFail
+import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
 import io.mockative.configure
 import io.mockative.given
+import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class SendTextMessageCaseTest {
 
     @Test
@@ -67,18 +68,21 @@ class SendTextMessageCaseTest {
         val result = sendTextMessage(TestConversation.ID, "some-text")
 
         // Then
-        assertTrue(result is Either.Right)
+        result.shouldSucceed()
 
         verify(arrangement.userPropertyRepository)
             .suspendFunction(arrangement.userPropertyRepository::getReadReceiptsStatus)
             .wasInvoked(once)
         verify(arrangement.persistMessage)
             .suspendFunction(arrangement.persistMessage::invoke)
-            .with(any())
+            .with(matching { message -> message.content is MessageContent.Text })
             .wasInvoked(once)
         verify(arrangement.messageSender)
             .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(any(), any())
+            .with(
+                matching { message -> message.content is MessageContent.Text },
+                any()
+            )
             .wasInvoked(once)
         verify(arrangement.messageSendFailureHandler)
             .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
@@ -102,7 +106,7 @@ class SendTextMessageCaseTest {
         val result = sendTextMessage(TestConversation.ID, "some-text")
 
         // Then
-        assertTrue(result is Either.Left)
+        result.shouldFail()
 
         verify(arrangement.userPropertyRepository)
             .suspendFunction(arrangement.userPropertyRepository::getReadReceiptsStatus)
@@ -150,24 +154,28 @@ class SendTextMessageCaseTest {
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
         }
+
         fun withSendMessageFailure() = apply {
             given(messageSender)
                 .suspendFunction(messageSender::sendMessage)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Left(NetworkFailure.NoNetworkConnection(null)))
         }
+
         fun withCurrentClientProviderSuccess(clientId: ClientId = TestClient.CLIENT_ID) = apply {
             given(currentClientIdProvider)
                 .suspendFunction(currentClientIdProvider::invoke)
                 .whenInvoked()
                 .thenReturn(Either.Right(clientId))
         }
+
         fun withPersistMessageSuccess() = apply {
             given(persistMessage)
                 .suspendFunction(persistMessage::invoke)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
+
         fun withSlowSyncStatusComplete() = apply {
             val stateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
             given(slowSyncRepository)
@@ -175,6 +183,7 @@ class SendTextMessageCaseTest {
                 .whenInvoked()
                 .thenReturn(stateFlow)
         }
+
         fun withToggleReadReceiptsStatus(enabled: Boolean = false) = apply {
             given(userPropertyRepository)
                 .suspendFunction(userPropertyRepository::getReadReceiptsStatus)
@@ -182,7 +191,7 @@ class SendTextMessageCaseTest {
                 .thenReturn(enabled)
         }
 
-        fun  withMessageTimer(result: SelfDeletionTimer) = apply {
+        fun withMessageTimer(result: SelfDeletionTimer) = apply {
             given(observeSelfDeletionTimerSettingsForConversation)
                 .suspendFunction(observeSelfDeletionTimerSettingsForConversation::invoke)
                 .whenInvokedWith(any())

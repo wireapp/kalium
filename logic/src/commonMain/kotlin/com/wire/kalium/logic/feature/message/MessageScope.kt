@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
+import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -44,7 +45,6 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapperImpl
 import com.wire.kalium.logic.feature.asset.GetImageAssetMessagesForConversationUseCase
 import com.wire.kalium.logic.feature.asset.GetImageAssetMessagesForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
@@ -55,7 +55,9 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCa
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCaseImpl
+import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
+import com.wire.kalium.logic.feature.message.composite.SendButtonMessageUseCase
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletionUseCase
@@ -295,6 +297,17 @@ class MessageScope internal constructor(
             observeSelfDeletingMessages
         )
 
+    val sendLocation: SendLocationUseCase
+        get() = SendLocationUseCase(
+            persistMessage,
+            selfUserId,
+            currentClientIdProvider,
+            slowSyncRepository,
+            messageSender,
+            messageSendFailureHandler,
+            observeSelfDeletingMessages
+        )
+
     val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase
         get() = MarkMessagesAsNotifiedUseCase(conversationRepository)
 
@@ -333,6 +346,14 @@ class MessageScope internal constructor(
     val resetSession: ResetSessionUseCase
         get() = ResetSessionUseCaseImpl(proteusClientProvider, sessionResetSender, messageRepository)
 
+    val sendButtonActionConfirmationMessage: SendButtonActionConfirmationMessageUseCase
+        get() = SendButtonActionConfirmationMessageUseCase(
+            syncManager = syncManager,
+            messageSender = messageSender,
+            selfUserId = selfUserId,
+            currentClientIdProvider = currentClientIdProvider
+        )
+
     val sendButtonActionMessage: SendButtonActionMessageUseCase
         get() = SendButtonActionMessageUseCase(
             syncManager = syncManager,
@@ -341,6 +362,19 @@ class MessageScope internal constructor(
             currentClientIdProvider = currentClientIdProvider,
             messageMetadataRepository = messageMetadataRepository
         )
+
+    val sendButtonMessage: SendButtonMessageUseCase
+        get() = SendButtonMessageUseCase(
+            persistMessage = persistMessage,
+            selfUserId = selfUserId,
+            provideClientId = currentClientIdProvider,
+            slowSyncRepository = slowSyncRepository,
+            messageSender = messageSender,
+            messageSendFailureHandler = messageSendFailureHandler,
+            userPropertyRepository = userPropertyRepository,
+            scope = scope
+        )
+
     private val deleteEphemeralMessageForSelfUserAsReceiver: DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
         get() = DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
             messageRepository = messageRepository,

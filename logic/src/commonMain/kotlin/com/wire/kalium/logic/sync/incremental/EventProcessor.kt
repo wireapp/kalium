@@ -94,9 +94,9 @@ internal class EventProcessorImpl(
                 Either.Right(Unit)
             }
 
-            is Event.Team -> teamEventReceiver.onEvent(event)
             is Event.UserProperty -> userPropertiesEventReceiver.onEvent(event)
             is Event.Federation -> federationEventReceiver.onEvent(event)
+            is Event.Team.MemberLeave -> teamEventReceiver.onEvent(event)
         }.onSuccess {
             val logMap = mapOf<String, Any>(
                 "event" to event.toLogMap()

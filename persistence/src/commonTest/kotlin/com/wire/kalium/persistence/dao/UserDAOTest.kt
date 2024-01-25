@@ -828,11 +828,11 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenAnExistingUser_whenPerformingPartialUpdate_thenChangedFieldIsUpdatedOthersAreUnchanged() = runTest(dispatcher) {
         // given
         val expectedName = "new name"
-        val update = PartialUserEntity(name = expectedName)
+        val update = PartialUserEntity(name = expectedName, id = user1.id)
         db.userDAO.upsertUser(user1)
 
         // when
-        db.userDAO.updateUser(user1.id, update)
+        db.userDAO.updateUser(update)
 
         // then
         val persistedUser = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()

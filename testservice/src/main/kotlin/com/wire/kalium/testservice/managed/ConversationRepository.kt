@@ -28,6 +28,9 @@ import com.wire.kalium.logic.feature.conversation.ClearConversationContentUseCas
 import com.wire.kalium.logic.feature.debug.BrokenState
 import com.wire.kalium.logic.feature.debug.SendBrokenAssetMessageResult
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
+import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
@@ -48,6 +51,7 @@ import kotlin.time.toDuration
 
 sealed class ConversationRepository {
 
+    @Suppress("TooManyFunctions")
     companion object {
         private val log = LoggerFactory.getLogger(ConversationRepository::class.java.name)
 
@@ -120,6 +124,67 @@ sealed class ConversationRepository {
                 }
             }
 
+        suspend fun sendButtonAction(
+            instance: Instance,
+            conversationId: ConversationId,
+            referenceMessageId: String,
+            buttonId: String
+        ): Response = instance.coreLogic.globalScope {
+            when (val session = session.currentSession()) {
+                is CurrentSessionResult.Success -> {
+                    instance.coreLogic.sessionScope(session.accountInfo.userId) {
+                        log.info("Instance ${instance.instanceId}: Send button action for button $buttonId")
+                        when (val result = messages.sendButtonActionMessage(conversationId, referenceMessageId, buttonId)) {
+                            is SendButtonActionMessageUseCase.Result.Failure ->
+                                Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(result).build()
+
+                            else -> {
+                                Response.status(Response.Status.OK)
+                                    .entity(SendTextResponse(instance.instanceId, "", "")).build()
+                            }
+                        }
+                    }
+                }
+
+                is CurrentSessionResult.Failure -> {
+                    Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Session failure").build()
+                }
+            }
+        }
+
+        suspend fun sendButtonActionConfirmation(
+            instance: Instance,
+            conversationId: ConversationId,
+            referenceMessageId: String,
+            buttonId: String,
+            userIds: List<UserId>
+        ): Response = instance.coreLogic.globalScope {
+            when (val session = session.currentSession()) {
+                is CurrentSessionResult.Success -> {
+                    instance.coreLogic.sessionScope(session.accountInfo.userId) {
+                        log.info("Instance ${instance.instanceId}: Send button action confirmation for button $buttonId")
+                        when (val result = messages.sendButtonActionConfirmationMessage(
+                            conversationId,
+                            referenceMessageId,
+                            buttonId,
+                            userIds
+                        )) {
+                            is SendButtonActionConfirmationMessageUseCase.Result.Failure -> Response
+                                .status(Response.Status.INTERNAL_SERVER_ERROR).entity(result).build()
+
+                            else -> {
+                                Response.status(Response.Status.OK).entity(SendTextResponse(instance.instanceId, "", "")).build()
+                            }
+                        }
+                    }
+                }
+
+                is CurrentSessionResult.Failure -> {
+                    Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Session failure").build()
+                }
+            }
+        }
+
         suspend fun sendReaction(
             instance: Instance,
             conversationId: ConversationId,
@@ -152,24 +217,25 @@ sealed class ConversationRepository {
             text: String?,
             mentions: List<MessageMention>,
             messageTimer: Int?,
-            quotedMessageId: String?
+            quotedMessageId: String?,
+            buttons: List<String> = listOf()
         ): Response = instance.coreLogic.globalScope {
             return when (val session = session.currentSession()) {
                 is CurrentSessionResult.Success -> {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
                         if (text != null) {
-                            val newSelfDeletionTimer = if (messageTimer != 0 && messageTimer != null) {
-                                log.info("Instance ${instance.instanceId}: Enable self deletion timer")
-                                SelfDeletionTimer.Enabled(messageTimer.toDuration(DurationUnit.MILLISECONDS))
-                            } else {
-                                log.info("Instance ${instance.instanceId}: Disable self deletion timer")
-                                SelfDeletionTimer.Disabled
-                            }
-                            persistNewSelfDeletionStatus.invoke(conversationId, newSelfDeletionTimer)
+                            setMessageTimer(instance, conversationId, messageTimer)
                             log.info("Instance ${instance.instanceId}: Send text message '$text'")
-                            messages.sendTextMessage(
-                                conversationId, text, mentions, quotedMessageId
-                            ).fold({
+                            val result = if (buttons.isEmpty()) {
+                                messages.sendTextMessage(
+                                    conversationId, text, mentions, quotedMessageId
+                                )
+                            } else {
+                                messages.sendButtonMessage(
+                                    conversationId, text, mentions, quotedMessageId, buttons
+                                )
+                            }
+                            result.fold({
                                 Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
                             }, {
                                 Response.status(Response.Status.OK)
@@ -200,14 +266,7 @@ sealed class ConversationRepository {
                 is CurrentSessionResult.Success -> {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
                         if (text != null) {
-                            val newSelfDeletionTimer = if (messageTimer != 0 && messageTimer != null) {
-                                log.info("Instance ${instance.instanceId}: Enable self deletion timer")
-                                SelfDeletionTimer.Enabled(messageTimer.toDuration(DurationUnit.MILLISECONDS))
-                            } else {
-                                log.info("Instance ${instance.instanceId}: Disable self deletion timer")
-                                SelfDeletionTimer.Disabled
-                            }
-                            persistNewSelfDeletionStatus.invoke(conversationId, newSelfDeletionTimer)
+                            setMessageTimer(instance, conversationId, messageTimer)
                             log.info("Instance ${instance.instanceId}: Send text message '$text'")
                             messages.sendEditTextMessage(
                                 conversationId, firstMessageId, text, mentions
@@ -220,6 +279,35 @@ sealed class ConversationRepository {
                         } else {
                             Response.status(Response.Status.EXPECTATION_FAILED).entity("No text to send").build()
                         }
+                    }
+                }
+
+                is CurrentSessionResult.Failure -> {
+                    Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Session failure").build()
+                }
+            }
+        }
+
+        @Suppress("LongParameterList")
+        suspend fun sendLocation(
+            instance: Instance,
+            conversationId: ConversationId,
+            latitude: Float,
+            longitude: Float,
+            name: String,
+            zoom: Int,
+            messageTimer: Int?
+        ): Response = instance.coreLogic.globalScope {
+            when (val session = session.currentSession()) {
+                is CurrentSessionResult.Success -> {
+                    instance.coreLogic.sessionScope(session.accountInfo.userId) {
+                        setMessageTimer(instance, conversationId, messageTimer)
+                        log.info("Instance ${instance.instanceId}: Send ping")
+                        messages.sendLocation(conversationId, latitude, longitude, name, zoom).fold({
+                            Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
+                        }, {
+                            Response.status(Response.Status.OK).build()
+                        })
                     }
                 }
 
@@ -297,14 +385,7 @@ sealed class ConversationRepository {
                             syncManager.waitUntilLiveOrFailure().onFailure {
                                 log.info("Instance ${instance.instanceId}: Sync failed with $it")
                             }
-                            val newSelfDeletionTimer = if (messageTimer != 0 && messageTimer != null) {
-                                log.info("Instance ${instance.instanceId}: Enable self deletion timer")
-                                SelfDeletionTimer.Enabled(messageTimer.toDuration(DurationUnit.MILLISECONDS))
-                            } else {
-                                log.info("Instance ${instance.instanceId}: Disable self deletion timer")
-                                SelfDeletionTimer.Disabled
-                            }
-                            persistNewSelfDeletionStatus.invoke(conversationId, newSelfDeletionTimer)
+                            setMessageTimer(instance, conversationId, messageTimer)
                             val sendResult = if (invalidHash || otherAlgorithm || otherHash) {
                                 val brokenState = BrokenState(invalidHash, otherHash, otherAlgorithm)
                                 @Suppress("IMPLICIT_CAST_TO_ANY")
@@ -392,14 +473,7 @@ sealed class ConversationRepository {
                             syncManager.waitUntilLiveOrFailure().onFailure {
                                 log.info("Instance ${instance.instanceId}: Sync failed with $it")
                             }
-                            val newSelfDeletionTimer = if (messageTimer != 0 && messageTimer != null) {
-                                log.info("Instance ${instance.instanceId}: Enable self deletion timer")
-                                SelfDeletionTimer.Enabled(messageTimer.toDuration(DurationUnit.MILLISECONDS))
-                            } else {
-                                log.info("Instance ${instance.instanceId}: Disable self deletion timer")
-                                SelfDeletionTimer.Disabled
-                            }
-                            persistNewSelfDeletionStatus.invoke(conversationId, newSelfDeletionTimer)
+                            setMessageTimer(instance, conversationId, messageTimer)
                             val sendResult = messages.sendAssetMessage(
                                 conversationId,
                                 temp.toOkioPath(),
@@ -421,6 +495,29 @@ sealed class ConversationRepository {
                             } else {
                                 Response.status(Response.Status.OK).build()
                             }
+                        }
+                    }
+
+                    is CurrentSessionResult.Failure -> {
+                        Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Session failure").build()
+                    }
+                }
+            }
+        }
+
+        private suspend fun setMessageTimer(instance: Instance, conversationId: ConversationId, messageTimer: Int?) {
+            instance.coreLogic.globalScope {
+                when (val session = session.currentSession()) {
+                    is CurrentSessionResult.Success -> {
+                        instance.coreLogic.sessionScope(session.accountInfo.userId) {
+                            val newSelfDeletionTimer = if (messageTimer != 0 && messageTimer != null) {
+                                log.info("Instance ${instance.instanceId}: Enable self deletion timer")
+                                SelfDeletionTimer.Enabled(messageTimer.toDuration(DurationUnit.MILLISECONDS))
+                            } else {
+                                log.info("Instance ${instance.instanceId}: Disable self deletion timer")
+                                SelfDeletionTimer.Disabled
+                            }
+                            persistNewSelfDeletionStatus.invoke(conversationId, newSelfDeletionTimer)
                         }
                     }
 

@@ -63,8 +63,6 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
-import com.wire.kalium.logic.feature.team.GetSelfTeamUseCase
-import com.wire.kalium.logic.feature.team.GetSelfTeamUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdateHandlerImpl
@@ -96,12 +94,6 @@ class ConversationScope internal constructor(
     private val scope: CoroutineScope,
     private val kaliumLogger: KaliumLogger
 ) {
-
-    val getSelfTeamUseCase: GetSelfTeamUseCase
-        get() = GetSelfTeamUseCaseImpl(
-            userRepository = userRepository,
-            teamRepository = teamRepository,
-        )
 
     val getConversations: GetConversationsUseCase
         get() = GetConversationsUseCase(conversationRepository)
@@ -138,7 +130,7 @@ class ConversationScope internal constructor(
         get() = ObserveIsSelfUserMemberUseCaseImpl(conversationRepository, selfUserId)
 
     val observeConversationInteractionAvailabilityUseCase: ObserveConversationInteractionAvailabilityUseCase
-        get() = ObserveConversationInteractionAvailabilityUseCase(conversationRepository)
+        get() = ObserveConversationInteractionAvailabilityUseCase(conversationRepository, userRepository)
 
     val deleteTeamConversation: DeleteTeamConversationUseCase
         get() = DeleteTeamConversationUseCaseImpl(selfTeamIdProvider, teamRepository, conversationRepository)

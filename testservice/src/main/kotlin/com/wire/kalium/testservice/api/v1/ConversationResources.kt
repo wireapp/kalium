@@ -28,10 +28,13 @@ import com.wire.kalium.testservice.managed.InstanceService
 import com.wire.kalium.testservice.models.ClearConversationRequest
 import com.wire.kalium.testservice.models.DeleteMessageRequest
 import com.wire.kalium.testservice.models.GetMessagesRequest
+import com.wire.kalium.testservice.models.SendButtonActionConfirmationRequest
+import com.wire.kalium.testservice.models.SendButtonActionRequest
 import com.wire.kalium.testservice.models.SendConfirmationReadRequest
 import com.wire.kalium.testservice.models.SendEphemeralConfirmationDeliveredRequest
 import com.wire.kalium.testservice.models.SendFileRequest
 import com.wire.kalium.testservice.models.SendImageRequest
+import com.wire.kalium.testservice.models.SendLocationRequest
 import com.wire.kalium.testservice.models.SendPingRequest
 import com.wire.kalium.testservice.models.SendReactionRequest
 import com.wire.kalium.testservice.models.SendTextRequest
@@ -257,8 +260,26 @@ class ConversationResources(private val instanceService: InstanceService) {
         }
     }
 
-    // POST /api/v1/instance/{instanceId}/sendLocation
-    // Send a location to a conversation.
+    @POST
+    @Path("/instance/{id}/sendLocation")
+    @Operation(summary = "Send a location to a conversation")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun sendLocation(@PathParam("id") id: String, @Valid sendLocationRequest: SendLocationRequest): Response {
+        val instance = instanceService.getInstanceOrThrow(id)
+        return with(sendLocationRequest) {
+            runBlocking {
+                ConversationRepository.sendLocation(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    latitude,
+                    longitude,
+                    locationName,
+                    zoom,
+                    messageTimer
+                )
+            }
+        }
+    }
 
     @POST
     @Path("/instance/{id}/sendPing")
@@ -278,9 +299,42 @@ class ConversationResources(private val instanceService: InstanceService) {
 
     // POST /api/v1/instance/{instanceId}/sendButtonAction
     // Send a button action to a poll.
+    @POST
+    @Path("/instance/{id}/sendButtonAction")
+    @Operation(summary = "Send a button action to a poll.")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun sendButtonActionConfirmation(@PathParam("id") id: String, @Valid request: SendButtonActionRequest): Response {
+        val instance = instanceService.getInstanceOrThrow(id)
+        return with(request) {
+            runBlocking {
+                ConversationRepository.sendButtonAction(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    referenceMessageId,
+                    buttonId
+                )
+            }
+        }
+    }
 
-    // POST /api/v1/instance/{instanceId}/sendButtonActionConfirmation
-    // Send a confirmation to a button action.
+    @POST
+    @Path("/instance/{id}/sendButtonActionConfirmation")
+    @Operation(summary = "Send a confirmation to a button action.")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun sendButtonActionConfirmation(@PathParam("id") id: String, @Valid request: SendButtonActionConfirmationRequest): Response {
+        val instance = instanceService.getInstanceOrThrow(id)
+        return with(request) {
+            runBlocking {
+                ConversationRepository.sendButtonActionConfirmation(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    referenceMessageId,
+                    buttonId,
+                    userIds.map { UserId(it, conversationDomain) }
+                )
+            }
+        }
+    }
 
     @POST
     @Path("/instance/{id}/sendReaction")
@@ -309,7 +363,7 @@ class ConversationResources(private val instanceService: InstanceService) {
     @Consumes(MediaType.APPLICATION_JSON)
     fun sendText(@PathParam("id") id: String, @Valid sendTextRequest: SendTextRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
-        // TODO Implement buttons and link previews here
+        // TODO Implement link previews here
         val quotedMessageId = sendTextRequest.quote?.quotedMessageId
         val mentions = when (sendTextRequest.mentions.size) {
             0 -> emptyList<MessageMention>()
@@ -332,7 +386,8 @@ class ConversationResources(private val instanceService: InstanceService) {
                     text,
                     mentions,
                     messageTimer,
-                    quotedMessageId
+                    quotedMessageId,
+                    buttons
                 )
             }
         }
