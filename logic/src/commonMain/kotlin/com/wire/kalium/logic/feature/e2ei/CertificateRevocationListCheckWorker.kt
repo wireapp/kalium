@@ -17,74 +17,50 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
-import com.wire.kalium.logic.data.e2ei.CrlRepository
+import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.functional.map
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.collectLatest
+import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.filter
 import kotlinx.datetime.Clock
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.hours
 
 /**
- * Represents an interface for a CheckCrlWorker,
- * which is should keep the [CrlRepository] healthy.
+ * This worker will wait until the sync is done and then check the CRLs if needed.
  *
- * It will wait until the incremental sync is live and then check the CRLs if needed.
  */
-internal interface CheckCrlWorker {
+internal interface CertificateRevocationListCheckWorker {
     suspend fun execute()
 }
 
 /**
- * Base implementation of [CheckCrlWorker].
- * @param crlRepository The CRL repository.
+ * Base implementation of [CertificateRevocationListCheckWorker].
+ * @param certificateRevocationListRepository The CRL repository.
  * @param incrementalSyncRepository The incremental sync repository.
  * @param checkRevocationList The check revocation list use case.
- * @param minIntervalBetweenRefills The minimum interval between CRL checks.
  *
  */
-internal class CheckCrlWorkerImpl(
-    private val crlRepository: CrlRepository,
+internal class CertificateRevocationListCheckWorkerImpl(
+    private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
-    private val checkRevocationList: CheckRevocationListUseCase,
-    private val minIntervalBetweenRefills: Duration = MIN_INTERVAL_BETWEEN_REFILLS
-) : CheckCrlWorker {
+    private val checkRevocationList: CheckRevocationListUseCase
+) : CertificateRevocationListCheckWorker {
 
-    /**
-     * Check the CRLs and update the expiration time if needed.
-     */
     override suspend fun execute() {
-        crlRepository.lastCrlCheckInstantFlow().collectLatest { lastCheck ->
-            val now = Clock.System.now()
-            val nextCheckTime = lastCheck?.plus(minIntervalBetweenRefills) ?: now
-            val delayUntilNextCheck = nextCheckTime - now
-            delay(delayUntilNextCheck)
-            waitUntilLiveAndCheckCRLs()
-            crlRepository.setLastCRLCheckInstant(Clock.System.now())
-        }
-    }
-
-    private suspend fun waitUntilLiveAndCheckCRLs() {
         incrementalSyncRepository.incrementalSyncState
             .filter { it is IncrementalSyncStatus.Live }
             .collect {
-                crlRepository.getCRLs()?.cRLWithExpirationList?.forEach { crl ->
+                kaliumLogger.i("Checking certificate revocation list (CRL)..")
+                certificateRevocationListRepository.getCRLs()?.cRLWithExpirationList?.forEach { crl ->
                     if (crl.expiration < Clock.System.now().epochSeconds.toULong()) {
                         checkRevocationList(crl.url).map { newExpirationTime ->
                             newExpirationTime?.let {
-                                crlRepository.addOrUpdateCRL(crl.url, it)
+                                certificateRevocationListRepository.addOrUpdateCRL(crl.url, it)
                             }
                         }
                     }
                 }
             }
-    }
-
-    private companion object {
-        val MIN_INTERVAL_BETWEEN_REFILLS = 24.hours
     }
 }

@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.data.e2ei
 
 import com.wire.kalium.logic.configuration.UserConfigRepository
-import com.wire.kalium.logic.data.e2ei.CrlRepositoryDataSource.Companion.CRL_LIST_KEY
+import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepositoryDataSource.Companion.CRL_LIST_KEY
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
@@ -32,7 +32,7 @@ import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-class CrlRepositoryTest {
+class CertificateRevocationListRepositoryTest {
 
     @Test
     fun givenAnEmptyStoredList_whenUpdatingCRLs_thenAddNewCRL() = runTest {
@@ -101,7 +101,7 @@ class CrlRepositoryTest {
         @Mock
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
-        fun arrange() = this to CrlRepositoryDataSource(acmeApi, metadataDAO, userConfigRepository)
+        fun arrange() = this to CertificateRevocationListRepositoryDataSource(acmeApi, metadataDAO, userConfigRepository)
 
         suspend fun withEmptyList() = apply {
             given(metadataDAO).coroutine {

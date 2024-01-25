@@ -18,23 +18,18 @@
 package com.wire.kalium.logic.data.e2ei
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.dao.MetadataDAO
 import io.ktor.http.Url
 import io.ktor.http.protocolWithAuthority
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
-import kotlinx.datetime.Instant
 
-interface CrlRepository {
+interface CertificateRevocationListRepository {
 
     /**
      * Returns CRLs with expiration time.
@@ -42,44 +37,16 @@ interface CrlRepository {
      * @return the [CRLUrlExpirationList] representing a list of CRLs with expiration time.
      */
     suspend fun getCRLs(): CRLUrlExpirationList?
-
-    /**
-     * Observes the last CRL check instant.
-     *
-     * @return A [Flow] of [Instant] objects representing the last CRL check instant.
-     * It emits `null` if no CRL check has occurred.
-     */
-    suspend fun lastCrlCheckInstantFlow(): Flow<Instant?>
-
-    /**
-     * Sets the last CRL check date.
-     *
-     * @param instant The instant representing the date and time of the last CRL check.
-     * @return Either a [StorageFailure] if the operation fails, or [Unit] if successful.
-     */
-    suspend fun setLastCRLCheckInstant(instant: Instant): Either<StorageFailure, Unit>
-
     suspend fun addOrUpdateCRL(url: String, timestamp: ULong)
     suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String>
     suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray>
 }
 
-internal class CrlRepositoryDataSource(
+internal class CertificateRevocationListRepositoryDataSource(
     private val acmeApi: ACMEApi,
     private val metadataDAO: MetadataDAO,
     private val userConfigRepository: UserConfigRepository
-) : CrlRepository {
-
-    override suspend fun lastCrlCheckInstantFlow(): Flow<Instant?> =
-        metadataDAO.valueByKeyFlow(CRL_CHECK_INSTANT_KEY).map { instant ->
-            instant?.let { Instant.parse(it) }
-        }
-
-    override suspend fun setLastCRLCheckInstant(instant: Instant): Either<StorageFailure, Unit> =
-        wrapStorageRequest {
-            metadataDAO.insertValue(instant.toString(), CRL_CHECK_INSTANT_KEY)
-        }
-
+) : CertificateRevocationListRepository {
     override suspend fun getCRLs(): CRLUrlExpirationList? =
         metadataDAO.getSerializable(CRL_LIST_KEY, CRLUrlExpirationList.serializer())
 
@@ -125,6 +92,5 @@ internal class CrlRepositoryDataSource(
 
     companion object {
         const val CRL_LIST_KEY = "crl_list_key"
-        const val CRL_CHECK_INSTANT_KEY = "crl_check_instant_key"
     }
 }
