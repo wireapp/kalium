@@ -15,12 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.testservice.models
 
-package com.wire.kalium.network.api.v5.authenticated
-
-import com.wire.kalium.network.api.v4.authenticated.AccessTokenApiV4
-import io.ktor.client.HttpClient
-
-internal open class AccessTokenApiV5 internal constructor(
-    private val httpClient: HttpClient
-) : AccessTokenApiV4(httpClient)
+data class SendButtonActionRequest(
+    val conversationDomain: String = "staging.zinfra.io",
+    val conversationId: String = "",
+    val buttonId: String = "",
+    val referenceMessageId: String = ""
+)
