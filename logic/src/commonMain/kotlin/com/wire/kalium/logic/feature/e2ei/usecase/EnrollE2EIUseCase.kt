@@ -26,6 +26,8 @@ import com.wire.kalium.logic.functional.getOrFail
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * Issue an E2EI certificate and re-initiate the MLSClient
@@ -53,9 +55,9 @@ class EnrollE2EIUseCaseImpl internal constructor(
 
         e2EIRepository.initE2EIClient(isNewClient = isNewClientRegistration)
 
-        e2EIRepository.fetchTrustAnchors().onFailure {
-            return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.TrustAnchors, it).toEitherLeft()
-        }
+//         e2EIRepository.fetchTrustAnchors().onFailure {
+//             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.TrustAnchors, it).toEitherLeft()
+//         }
 
         val acmeDirectories = e2EIRepository.loadACMEDirectories().getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeDirectories, it).toEitherLeft()
@@ -84,8 +86,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
         val initializationResult = E2EIEnrollmentResult.Initialized(
             target = authzResponse.first.wireOidcChallenge.target,
             oAuthState = oAuthState,
-            acmeAud = authzResponse.first.wireOidcChallenge.url,
-            keyAuth = authzResponse.first.keyAuth,
+            oAuthClaims = getOAuthClaims(authzResponse.first.keyAuth, authzResponse.first.wireOidcChallenge.url),
             authz = authzResponse.first,
             lastNonce = authzResponse.second,
             orderLocation = newOrderResponse.third,
@@ -170,6 +171,25 @@ class EnrollE2EIUseCaseImpl internal constructor(
         return Either.Right(E2EIEnrollmentResult.Finalized(certificateRequest.response.decodeToString()))
     }
 
+    private fun getOAuthClaims(keyAuth: String, acmeAud: String) = JsonObject(
+        mapOf(
+            ID_TOKEN to JsonObject(
+                mapOf(
+                    KEY_AUTH to JsonObject(
+                        mapOf(ESSENTIAL to JsonPrimitive(true), VALUE to JsonPrimitive(keyAuth))
+                    ), ACME_AUD to JsonObject(mapOf(ESSENTIAL to JsonPrimitive(true), VALUE to JsonPrimitive(acmeAud)))
+                )
+            )
+        )
+    )
+
+    companion object {
+        private const val ID_TOKEN = "id_token"
+        private const val KEY_AUTH = "keyauth"
+        private const val ESSENTIAL = "essential"
+        private const val VALUE = "value"
+        private const val ACME_AUD = "acme_aud"
+    }
 }
 
 sealed interface E2EIEnrollmentResult {
@@ -195,8 +215,7 @@ sealed interface E2EIEnrollmentResult {
     class Initialized(
         val target: String,
         val oAuthState: String?,
-        val keyAuth: String,
-        val acmeAud: String,
+        val oAuthClaims: JsonObject,
         val authz: NewAcmeAuthz,
         val lastNonce: String,
         val orderLocation: String,
