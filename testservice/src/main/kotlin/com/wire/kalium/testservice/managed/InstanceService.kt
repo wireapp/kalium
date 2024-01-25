@@ -284,14 +284,20 @@ class InstanceService(
                     // close the stream
                     files.close()
                 } catch (e: IOException) {
-                    log.warn("Instance ${instance.instanceId}: Could not delete directory ${instance.instancePath}: "
-                            + e.message)
+                    log.warn(
+                        "Instance ${instance.instanceId}: Could not delete directory ${instance.instancePath}: "
+                                + e.message
+                    )
                 }
             }
         }, deleteLocalFilesTimeoutInMinutes.toMinutes(), TimeUnit.MINUTES)
     }
 
-    private suspend fun provideVersionedAuthenticationScope(coreLogic: CoreLogic, serverLinks: ServerConfig.Links, proxyCredentials: ProxyCredentials?): AuthenticationScope =
+    private suspend fun provideVersionedAuthenticationScope(
+        coreLogic: CoreLogic,
+        serverLinks: ServerConfig.Links,
+        proxyCredentials: ProxyCredentials?
+    ): AuthenticationScope =
         when (val result = coreLogic.versionedAuthenticationScope(serverLinks).invoke(proxyCredentials)) {
             is AutoVersionAuthScopeUseCase.Result.Failure.Generic ->
                 throw WebApplicationException("failed to create authentication scope: ${result.genericFailure}")
