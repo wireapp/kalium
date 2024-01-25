@@ -1610,6 +1610,7 @@ class UserSessionScope internal constructor(
             globalScope.serverConfigRepository,
             userStorage,
             userPropertyRepository,
+            messages.deleteEphemeralMessageEndDate,
             oneOnOneResolver,
             this,
             userScopedLogger
