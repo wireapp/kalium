@@ -201,10 +201,19 @@ internal interface MessageRepository {
     ): Either<CoreFailure, Unit>
 
     suspend fun getEphemeralMessagesMarkedForDeletion(): Either<CoreFailure, List<Message>>
+
+    suspend fun getEphemeralMessagesMarkedForEndDeletion(): Either<CoreFailure, List<Message>>
+
     suspend fun markSelfDeletionStartDate(
         conversationId: ConversationId,
         messageUuid: String,
         deletionStartDate: Instant
+    ): Either<CoreFailure, Unit>
+
+    suspend fun markSelfDeletionEndDate(
+        conversationId: ConversationId,
+        messageUuid: String,
+        deletionEndDate: Instant
     ): Either<CoreFailure, Unit>
 
     suspend fun observeMessageVisibility(
@@ -614,6 +623,13 @@ internal class MessageDataSource internal constructor (
             messageDAO.getEphemeralMessagesMarkedForDeletion().map(messageMapper::fromEntityToMessage)
         }
 
+    override suspend fun getEphemeralMessagesMarkedForEndDeletion(): Either<CoreFailure, List<Message>> =
+        wrapStorageRequest {
+            messageDAO
+                .getEphemeralMessagedMarkedForEndDeletion()
+                .map(messageMapper::fromEntityToMessage)
+        }
+
     override suspend fun markSelfDeletionStartDate(
         conversationId: ConversationId,
         messageUuid: String,
@@ -621,6 +637,16 @@ internal class MessageDataSource internal constructor (
     ): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
             messageDAO.updateSelfDeletionStartDate(conversationId.toDao(), messageUuid, deletionStartDate)
+        }
+    }
+
+    override suspend fun markSelfDeletionEndDate(
+        conversationId: ConversationId,
+        messageUuid: String,
+        deletionEndDate: Instant
+    ): Either<CoreFailure, Unit> {
+        return wrapStorageRequest {
+            messageDAO.updateSelfDeletionEndDate(conversationId.toDao(), messageUuid, deletionEndDate)
         }
     }
 
