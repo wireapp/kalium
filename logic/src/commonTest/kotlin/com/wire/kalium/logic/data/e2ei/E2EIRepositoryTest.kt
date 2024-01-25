@@ -1163,6 +1163,7 @@ class E2EIRepositoryTest {
 
             val ACME_AUTHZ = NewAcmeAuthz(
                 identifier = "identifier",
+                keyAuth = "keyauth",
                 wireOidcChallenge = ACME_CHALLENGE,
                 wireDpopChallenge = ACME_CHALLENGE
             )
