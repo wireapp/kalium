@@ -46,7 +46,7 @@ class MLSClientImpl(
     private val keyRotationDuration: Duration = 30.toDuration(DurationUnit.DAYS)
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration.toJavaDuration(), MlsWirePolicy.PLAINTEXT)
     private val defaultCiphersuite = Ciphersuites.DEFAULT.lower().first()
-    private val defaultE2EIExpiry: UInt = 90U
+    private val defaultE2EIExpiry: UInt = 90U //todo: change to seconds
     override suspend fun close() {
         coreCrypto.close()
     }

@@ -83,7 +83,7 @@ class EnrollE2EICertificateUseCaseTest {
             .with()
             .wasNotInvoked()
         verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createAuthz)
+            .function(arrangement.e2EIRepository::createAuthorization)
             .with()
             .wasNotInvoked()
         verify(arrangement.e2EIRepository)
@@ -165,7 +165,7 @@ class EnrollE2EICertificateUseCaseTest {
             .with()
             .wasNotInvoked()
         verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createAuthz)
+            .function(arrangement.e2EIRepository::createAuthorization)
             .with()
             .wasNotInvoked()
         verify(arrangement.e2EIRepository)
@@ -249,7 +249,7 @@ class EnrollE2EICertificateUseCaseTest {
             .with()
             .wasNotInvoked()
         verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createAuthz)
+            .function(arrangement.e2EIRepository::createAuthorization)
             .with()
             .wasNotInvoked()
         verify(arrangement.e2EIRepository)
@@ -335,7 +335,7 @@ class EnrollE2EICertificateUseCaseTest {
             .with()
             .wasNotInvoked()
         verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createAuthz)
+            .function(arrangement.e2EIRepository::createAuthorization)
             .with()
             .wasNotInvoked()
         verify(arrangement.e2EIRepository)
@@ -423,7 +423,7 @@ class EnrollE2EICertificateUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createAuthz)
+            .function(arrangement.e2EIRepository::createAuthorization)
             .with()
             .wasNotInvoked()
         verify(arrangement.e2EIRepository)
@@ -512,7 +512,7 @@ class EnrollE2EICertificateUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createAuthz)
+            .function(arrangement.e2EIRepository::createAuthorization)
             .with(any<String>(), any<String>())
             .wasInvoked(exactly = once)
 
@@ -1278,7 +1278,7 @@ class EnrollE2EICertificateUseCaseTest {
 
         fun withCreateAuthzResulting(result: Either<CoreFailure, Triple<NewAcmeAuthz, String, String>>) = apply {
             given(e2EIRepository)
-                .suspendFunction(e2EIRepository::createAuthz)
+                .suspendFunction(e2EIRepository::createAuthorization)
                 .whenInvokedWith(any(), any())
                 .thenReturn(result)
         }
@@ -1425,9 +1425,9 @@ class EnrollE2EICertificateUseCaseTest {
         )
 
         val INITIALIZATION_RESULT = E2EIEnrollmentResult.Initialized(
-            target = ACME_CHALLENGE.target,
+            idpTarget = ACME_CHALLENGE.target,
             oAuthState = REFRESH_TOKEN,
-            authz = ACME_AUTHZ,
+            dpopAuthz = ACME_AUTHZ,
             oAuthClaims = OAUTH_CLAIMS,
             lastNonce = RANDOM_NONCE,
             orderLocation = RANDOM_LOCATION

@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 import com.wire.kalium.cryptography.NewAcmeAuthz
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
+import com.wire.kalium.logic.data.e2ei.AuthorizationChallengeType
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.getOrFail
@@ -55,9 +56,9 @@ class EnrollE2EIUseCaseImpl internal constructor(
 
         e2EIRepository.initE2EIClient(isNewClient = isNewClientRegistration)
 
-//         e2EIRepository.fetchTrustAnchors().onFailure {
-//             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.TrustAnchors, it).toEitherLeft()
-//         }
+        e2EIRepository.fetchTrustAnchors().onFailure {
+            //
+        }
 
         val acmeDirectories = e2EIRepository.loadACMEDirectories().getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeDirectories, it).toEitherLeft()
@@ -77,18 +78,29 @@ class EnrollE2EIUseCaseImpl internal constructor(
 
         prevNonce = newOrderResponse.second
 
-        val authzResponse = e2EIRepository.createAuthz(prevNonce, newOrderResponse.first.authorizations[0]).getOrFail {
+        val firstAuthorizationResponse = e2EIRepository.createAuthorization(prevNonce, newOrderResponse.first.authorizations[0]).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNewAuthz, it).toEitherLeft()
         }
+        prevNonce = firstAuthorizationResponse.nonce
+        val secondAuthorizationResponse =
+            e2EIRepository.createAuthorization(prevNonce, newOrderResponse.first.authorizations[1]).getOrFail {
+                return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNewAuthz, it).toEitherLeft()
+            }
+
+        var oidcAuthz = if (firstAuthorizationResponse.challengeType == AuthorizationChallengeType.OIDC)
+            firstAuthorizationResponse else secondAuthorizationResponse
+        var dPopAuthz= if (firstAuthorizationResponse.challengeType == AuthorizationChallengeType.DPoP)
+            firstAuthorizationResponse else secondAuthorizationResponse
 
         val oAuthState = e2EIRepository.getOAuthRefreshToken().getOrNull()
 
         val initializationResult = E2EIEnrollmentResult.Initialized(
-            target = authzResponse.first.wireOidcChallenge.target,
+            idpTarget = oidcAuthz.newAcmeAuthz.challenge.target,
             oAuthState = oAuthState,
-            oAuthClaims = getOAuthClaims(authzResponse.first.keyAuth, authzResponse.first.wireOidcChallenge.url),
-            authz = authzResponse.first,
-            lastNonce = authzResponse.second,
+            oAuthClaims = getOAuthClaims(oidcAuthz.newAcmeAuthz.keyAuth.toString(), oidcAuthz.newAcmeAuthz.challenge.url),
+            dpopAuthz = dPopAuthz.newAcmeAuthz,
+            oidcAuthz = oidcAuthz.newAcmeAuthz,
+            lastNonce = secondAuthorizationResponse.nonce,
             orderLocation = newOrderResponse.third,
             isNewClientRegistration = isNewClientRegistration
         )
@@ -113,7 +125,8 @@ class EnrollE2EIUseCaseImpl internal constructor(
     ): Either<E2EIFailure, E2EIEnrollmentResult> {
 
         var prevNonce = initializationResult.lastNonce
-        val authz = initializationResult.authz
+        val dpopAuthz = initializationResult.dpopAuthz
+        val oidcAuthz = initializationResult.oidcAuthz
         val orderLocation = initializationResult.orderLocation
 
         val wireNonce = e2EIRepository.getWireNonce().getOrFail {
@@ -129,7 +142,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
         }
 
         val dpopChallengeResponse = e2EIRepository.validateDPoPChallenge(
-            wireAccessToken.token, prevNonce, authz.wireDpopChallenge
+            wireAccessToken.token, prevNonce, dpopAuthz.challenge
         ).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.DPoPChallenge, it).toEitherLeft()
         }
@@ -137,7 +150,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
         prevNonce = dpopChallengeResponse.nonce
 
         val oidcChallengeResponse = e2EIRepository.validateOIDCChallenge(
-            idToken, oAuthState, prevNonce, authz.wireOidcChallenge
+            idToken, oAuthState, prevNonce, oidcAuthz.challenge
         ).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.OIDCChallenge, it).toEitherLeft()
         }
@@ -213,10 +226,11 @@ sealed interface E2EIEnrollmentResult {
     }
 
     class Initialized(
-        val target: String,
+        val idpTarget: String,
         val oAuthState: String?,
         val oAuthClaims: JsonObject,
-        val authz: NewAcmeAuthz,
+        val dpopAuthz: NewAcmeAuthz,
+        val oidcAuthz: NewAcmeAuthz,
         val lastNonce: String,
         val orderLocation: String,
         val isNewClientRegistration: Boolean = false

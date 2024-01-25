@@ -297,7 +297,7 @@ class E2EIRepositoryTest {
             .arrange()
 
         // When
-        val result = e2eiRepository.createAuthz(RANDOM_NONCE, RANDOM_URL)
+        val result = e2eiRepository.createAuthorization(RANDOM_NONCE, RANDOM_URL)
 
         // Then
         result.shouldSucceed()
@@ -329,7 +329,7 @@ class E2EIRepositoryTest {
             .arrange()
 
         // When
-        val result = e2eiRepository.createAuthz(RANDOM_NONCE, RANDOM_URL)
+        val result = e2eiRepository.createAuthorization(RANDOM_NONCE, RANDOM_URL)
 
         // Then
         result.shouldFail()

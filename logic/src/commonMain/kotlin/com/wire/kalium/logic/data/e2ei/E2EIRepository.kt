@@ -55,7 +55,7 @@ interface E2EIRepository {
     suspend fun getACMENonce(endpoint: String): Either<CoreFailure, String>
     suspend fun createNewAccount(prevNonce: String, createAccountEndpoint: String): Either<CoreFailure, String>
     suspend fun createNewOrder(prevNonce: String, createOrderEndpoint: String): Either<CoreFailure, Triple<NewAcmeOrder, String, String>>
-    suspend fun createAuthz(prevNonce: String, authzEndpoint: String): Either<CoreFailure, Triple<NewAcmeAuthz, String, String>>
+    suspend fun createAuthorization(prevNonce: String, endpoint: String): Either<CoreFailure, AcmeAuthorization>
     suspend fun getWireNonce(): Either<CoreFailure, String>
     suspend fun getWireAccessToken(dpopToken: String): Either<CoreFailure, AccessTokenResponse>
     suspend fun getDPoPToken(wireNonce: String): Either<CoreFailure, String>
@@ -91,7 +91,8 @@ class E2EIRepositoryImpl(
     private val mlsClientProvider: MLSClientProvider,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val mlsConversationRepository: MLSConversationRepository,
-    private val userConfigRepository: UserConfigRepository
+    private val userConfigRepository: UserConfigRepository,
+    private val acmeMapper: AcmeMapper = AcmeMapper()
 ) : E2EIRepository {
 
     override suspend fun initE2EIClient(clientId: ClientId?, isNewClient: Boolean): Either<CoreFailure, Unit> =
@@ -153,14 +154,14 @@ class E2EIRepositoryImpl(
             }
         }
 
-    override suspend fun createAuthz(prevNonce: String, authzEndpoint: String) =
+    override suspend fun createAuthorization(prevNonce: String, endpoint: String) =
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
-            val authzRequest = e2eiClient.getNewAuthzRequest(authzEndpoint, prevNonce)
+            val request = e2eiClient.getNewAuthzRequest(endpoint, prevNonce)
             wrapApiRequest {
-                acmeApi.sendACMERequest(authzEndpoint, authzRequest)
+                acmeApi.sendAuthorizationRequest(endpoint, request)
             }.flatMap { apiResponse ->
-                val authzResponse = e2eiClient.setAuthzResponse(apiResponse.response)
-                Either.Right(Triple(authzResponse, apiResponse.nonce, apiResponse.location))
+                val response = e2eiClient.setAuthzResponse(apiResponse.response)
+                Either.Right(acmeMapper.fromDto(apiResponse, response))
             }
         }
 

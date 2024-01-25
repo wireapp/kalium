@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.network.api.base.unbound.acme
 
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmInline
 
@@ -45,8 +46,35 @@ data class ChallengeResponse(
     val url: String,
     val status: String,
     val token: String,
+    val target: String,
     val nonce: String = ""
 )
+@Suppress("EnforceSerializableFields")
+@Serializable
+data class ACMEAuthorizationResponse(
+    val nonce: String,
+    val location: String?,
+    val response: ByteArray,
+    val challengeType: AuthorizationChallengeType
+)
+@Suppress("EnforceSerializableFields")
+@Serializable
+data class AuthorizationResponse(
+    val challenges: List<AuthorizationChallenge>,
+)
+
+@Suppress("EnforceSerializableFields")
+@Serializable
+data class AuthorizationChallenge(
+    val type: AuthorizationChallengeType,
+)
+
+enum class AuthorizationChallengeType{
+    @SerialName("wire-dpop-01")
+    DPoP,
+    @SerialName("wire-oidc-01")
+    OIDC
+}
 
 @JvmInline
 value class CertificateChain(val value: String)
