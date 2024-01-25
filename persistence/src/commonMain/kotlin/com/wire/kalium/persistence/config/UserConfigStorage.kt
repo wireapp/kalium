@@ -226,6 +226,17 @@ data class LastPreKey(
 )
 
 @Serializable
+data class CRLUrlExpirationList(
+    @SerialName("crl_with_expiration_list") val cRLWithExpirationList: List<CRLWithExpiration>
+)
+
+@Serializable
+data class CRLWithExpiration(
+    @SerialName("url") val url: String,
+    @SerialName("expiration") val expiration: ULong
+)
+
+@Serializable
 sealed class SelfDeletionTimerEntity {
 
     @Serializable
