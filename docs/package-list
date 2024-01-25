@@ -472,6 +472,7 @@ com.wire.kalium.logic.feature.session.token
 com.wire.kalium.logic.feature.sessionreset
 com.wire.kalium.logic.feature.team
 com.wire.kalium.logic.feature.user
+com.wire.kalium.logic.feature.user.e2ei
 com.wire.kalium.logic.feature.user.guestroomlink
 com.wire.kalium.logic.feature.user.readReceipts
 com.wire.kalium.logic.feature.user.screenshotCensoring
