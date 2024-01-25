@@ -24,6 +24,7 @@ import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -166,7 +167,7 @@ class InstanceService(
         }
 
         log.info("Instance $instanceId: Login with ${instanceRequest.email} on ${instanceRequest.backend}")
-        val loginResult = provideVersionedAuthenticationScope(coreLogic, serverConfig)
+        val loginResult = provideVersionedAuthenticationScope(coreLogic, serverConfig, null)
             .login(
                 instanceRequest.email, instanceRequest.password, true,
                 secondFactorVerificationCode = instanceRequest.verificationCode
@@ -290,8 +291,8 @@ class InstanceService(
         }, deleteLocalFilesTimeoutInMinutes.toMinutes(), TimeUnit.MINUTES)
     }
 
-    private suspend fun provideVersionedAuthenticationScope(coreLogic: CoreLogic, serverLinks: ServerConfig.Links): AuthenticationScope =
-        when (val result = coreLogic.versionedAuthenticationScope(serverLinks).invoke()) {
+    private suspend fun provideVersionedAuthenticationScope(coreLogic: CoreLogic, serverLinks: ServerConfig.Links, proxyCredentials: ProxyCredentials?): AuthenticationScope =
+        when (val result = coreLogic.versionedAuthenticationScope(serverLinks).invoke(proxyCredentials)) {
             is AutoVersionAuthScopeUseCase.Result.Failure.Generic ->
                 throw WebApplicationException("failed to create authentication scope: ${result.genericFailure}")
 
