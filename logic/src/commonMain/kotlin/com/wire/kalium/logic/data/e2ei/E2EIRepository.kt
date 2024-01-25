@@ -27,11 +27,14 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapE2EIRequest
 import com.wire.kalium.logic.wrapMLSRequest
@@ -46,6 +49,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 interface E2EIRepository {
+    suspend fun initE2EIClient(clientId: ClientId? = null, isNewClient: Boolean = false): Either<CoreFailure, Unit>
     suspend fun fetchTrustAnchors(): Either<CoreFailure, Unit>
     suspend fun loadACMEDirectories(): Either<CoreFailure, AcmeDirectory>
     suspend fun getACMENonce(endpoint: String): Either<CoreFailure, String>
@@ -53,7 +57,7 @@ interface E2EIRepository {
     suspend fun createNewOrder(prevNonce: String, createOrderEndpoint: String): Either<CoreFailure, Triple<NewAcmeOrder, String, String>>
     suspend fun createAuthz(prevNonce: String, authzEndpoint: String): Either<CoreFailure, Triple<NewAcmeAuthz, String, String>>
     suspend fun getWireNonce(): Either<CoreFailure, String>
-    suspend fun getWireAccessToken(wireNonce: String): Either<CoreFailure, AccessTokenResponse>
+    suspend fun getWireAccessToken(dpopToken: String): Either<CoreFailure, AccessTokenResponse>
     suspend fun getDPoPToken(wireNonce: String): Either<CoreFailure, String>
     suspend fun validateDPoPChallenge(
         accessToken: String,
@@ -73,7 +77,7 @@ interface E2EIRepository {
     suspend fun finalize(location: String, prevNonce: String): Either<CoreFailure, Pair<ACMEResponse, String>>
     suspend fun checkOrderRequest(location: String, prevNonce: String): Either<CoreFailure, Pair<ACMEResponse, String>>
     suspend fun certificateRequest(location: String, prevNonce: String): Either<CoreFailure, ACMEResponse>
-    suspend fun rotateKeysAndMigrateConversations(certificateChain: String): Either<CoreFailure, Unit>
+    suspend fun rotateKeysAndMigrateConversations(certificateChain: String, isNewClient: Boolean = false): Either<CoreFailure, Unit>
     suspend fun getOAuthRefreshToken(): Either<CoreFailure, String?>
     suspend fun nukeE2EIClient()
     suspend fun fetchFederationCertificates(): Either<CoreFailure, Unit>
@@ -89,6 +93,15 @@ class E2EIRepositoryImpl(
     private val mlsConversationRepository: MLSConversationRepository,
     private val userConfigRepository: UserConfigRepository
 ) : E2EIRepository {
+
+    override suspend fun initE2EIClient(clientId: ClientId?, isNewClient: Boolean): Either<CoreFailure, Unit> =
+        e2EIClientProvider.getE2EIClient(clientId, isNewClient).fold({
+            kaliumLogger.w("E2EI client initialization failed: $it")
+            Either.Left(it)
+        }, {
+            kaliumLogger.w("E2EI client initialized for enrollment")
+            Either.Right(Unit)
+        })
 
     override suspend fun fetchTrustAnchors(): Either<CoreFailure, Unit> = userConfigRepository.getE2EISettings().flatMap {
         wrapApiRequest {
@@ -233,10 +246,10 @@ class E2EIRepositoryImpl(
             }.map { it }
         }
 
-    override suspend fun rotateKeysAndMigrateConversations(certificateChain: String) =
+    override suspend fun rotateKeysAndMigrateConversations(certificateChain: String, isNewClient: Boolean) =
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
             currentClientIdProvider().flatMap { clientId ->
-                mlsConversationRepository.rotateKeysAndMigrateConversations(clientId, e2eiClient, certificateChain)
+                mlsConversationRepository.rotateKeysAndMigrateConversations(clientId, e2eiClient, certificateChain, isNewClient)
             }
         }
 

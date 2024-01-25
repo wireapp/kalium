@@ -633,7 +633,8 @@ class UserSessionScope internal constructor(
             mlsPublicKeysRepository,
             commitBundleEventReceiver,
             epochsFlow,
-            proposalTimersFlow
+            proposalTimersFlow,
+            keyPackageLimitsProvider
         )
 
     private val e2eiRepository: E2EIRepository
@@ -655,7 +656,7 @@ class UserSessionScope internal constructor(
         )
     }
 
-    val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2eiRepository, clientRepository, registerMLSClientUseCase)
+    val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2eiRepository)
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
 
@@ -1369,7 +1370,7 @@ class UserSessionScope internal constructor(
     val observeLegalHoldStateForUser: ObserveLegalHoldStateForUserUseCase
         get() = ObserveLegalHoldStateForUserUseCaseImpl(clientRepository)
 
-    suspend fun observerE2EiBlocked(): Flow<Boolean?> = clientRepository.observeIsClientRegistrationBlockedByE2EI()
+    suspend fun observeIfE2EIRequiredDuringLogin(): Flow<Boolean?> = clientRepository.observeIsClientRegistrationBlockedByE2EI()
 
     val observeLegalHoldForSelfUser: ObserveLegalHoldForSelfUserUseCase
         get() = ObserveLegalHoldForSelfUserUseCaseImpl(userId, observeLegalHoldStateForUser)
@@ -1707,7 +1708,7 @@ class UserSessionScope internal constructor(
             team.isSelfATeamMember,
             updateSupportedProtocols,
             clientRepository,
-            registerMLSClientUseCase
+            joinExistingMLSConversations
         )
 
     val search: SearchScope

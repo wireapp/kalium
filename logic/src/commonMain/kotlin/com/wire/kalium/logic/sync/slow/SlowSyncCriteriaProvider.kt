@@ -82,7 +82,7 @@ internal class SlowSlowSyncCriteriaProviderImpl(
         ) { logoutReason, clientId, isE2ei ->
             handleLogoutReason(logoutReason)
                 ?: handleClientId(clientId)
-                ?: handleIsRegistrationClientBlockedByE2EI(null)
+                ?: handleIsRegistrationClientBlockedByE2EI(isE2ei)
                 // All criteria are satisfied. We're ready to start sync!
                 ?: Ready
         }
@@ -98,7 +98,7 @@ internal class SlowSlowSyncCriteriaProviderImpl(
         null
     }
 
-    private fun handleIsRegistrationClientBlockedByE2EI(isBlocked: Boolean?) = if (isBlocked == null) {
+    private fun handleIsRegistrationClientBlockedByE2EI(isBlocked: Boolean?) = if (isBlocked == true) {
         MissingRequirement("Client Registration Blocked: E2EI Enrollment Required")
     } else {
         null
@@ -110,8 +110,13 @@ internal class SlowSlowSyncCriteriaProviderImpl(
      * or null otherwise.
      */
     private fun handleLogoutReason(logoutReason: LogoutReason?): MissingRequirement? =
-        logoutReason?.let {
-            MissingRequirement("Logout: $it")
-        }
+        when (logoutReason) {
+            LogoutReason.SELF_SOFT_LOGOUT -> "Logout: SELF_SOFT_LOGOUT"
+            LogoutReason.SELF_HARD_LOGOUT -> "Logout: SELF_HARD_LOGOUT"
+            LogoutReason.SESSION_EXPIRED -> "Logout: SESSION_EXPIRED"
+            LogoutReason.REMOVED_CLIENT -> "Logout: REMOVED_CLIENT"
+            LogoutReason.DELETED_ACCOUNT -> "Logout: DELETED_ACCOUNT"
+            null -> null
+        }?.let { MissingRequirement(it) }
 
 }

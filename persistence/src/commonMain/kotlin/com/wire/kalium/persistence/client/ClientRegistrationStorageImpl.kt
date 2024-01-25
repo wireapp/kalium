@@ -58,11 +58,10 @@ class ClientRegistrationStorageImpl(private val metadataDAO: MetadataDAO) : Clie
     override suspend fun setHasRegisteredMLSClient() = metadataDAO.insertValue(true.toString(), HAS_REGISTERED_MLS_CLIENT_KEY)
     override suspend fun observeIsClientRegistrationBlockedByE2EI(): Flow<Boolean> =
         metadataDAO.valueByKeyFlow(CLIENT_REGISTRATION_BLOCKED_BY_E2EI).map {
-            it.isNullOrEmpty() || it.toBoolean()
+            it.toBoolean() && !it.isNullOrEmpty()
         }
 
     override suspend fun isBlockedByE2EI(): Boolean = metadataDAO.valueByKey(CLIENT_REGISTRATION_BLOCKED_BY_E2EI).toBoolean()
-
 
     override suspend fun setClientRegistrationBlockedByE2EI() =
         metadataDAO.insertValue(true.toString(), CLIENT_REGISTRATION_BLOCKED_BY_E2EI)

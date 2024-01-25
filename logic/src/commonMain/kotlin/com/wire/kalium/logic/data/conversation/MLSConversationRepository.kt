@@ -37,6 +37,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapper
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
@@ -116,9 +117,9 @@ interface MLSConversationRepository {
     suspend fun rotateKeysAndMigrateConversations(
         clientId: ClientId,
         e2eiClient: E2EIClient,
-        certificateChain: String
+        certificateChain: String,
+        isNewClient: Boolean = false
     ): Either<CoreFailure, Unit>
-
     suspend fun getClientIdentity(clientId: ClientId): Either<CoreFailure, WireIdentity>
     suspend fun getUserIdentity(userId: UserId): Either<CoreFailure, List<WireIdentity>>
     suspend fun getMembersIdentities(
@@ -171,6 +172,7 @@ internal class MLSConversationDataSource(
     private val commitBundleEventReceiver: CommitBundleEventReceiver,
     private val epochsFlow: MutableSharedFlow<GroupID>,
     private val proposalTimersFlow: MutableSharedFlow<ProposalTimer>,
+    private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
     private val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper(),
@@ -528,18 +530,18 @@ internal class MLSConversationDataSource(
     override suspend fun rotateKeysAndMigrateConversations(
         clientId: ClientId,
         e2eiClient: E2EIClient,
-        certificateChain: String
+        certificateChain: String,
+        isNewClient: Boolean
     ) = mlsClientProvider.getMLSClient(clientId).flatMap { mlsClient ->
         wrapMLSRequest {
-            // todo: remove hardcoded keypackages count
-            mlsClient.e2eiRotateAll(e2eiClient, certificateChain, 10U)
+            mlsClient.e2eiRotateAll(e2eiClient, certificateChain, keyPackageLimitsProvider.refillAmount().toUInt())
         }.map { rotateBundle ->
-            // todo: store keypackages to drop, later drop them again
-            kaliumLogger.w("upload new keypackages and drop old ones")
-//             if (!newClient)
+            if (!isNewClient) {
+                kaliumLogger.w("enrollment for existing client: upload new keypackages and drop old ones")
                 keyPackageRepository.replaceKeyPackages(clientId, rotateBundle.newKeyPackages).flatMapLeft {
                     return Either.Left(it)
                 }
+            }
 
             kaliumLogger.w("send migration commits after key rotations")
             kaliumLogger.w("rotate bundles: ${rotateBundle.commits.size}")
