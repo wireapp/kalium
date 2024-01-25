@@ -431,7 +431,7 @@ internal class MessageDAOImpl internal constructor(
 
     override suspend fun getEphemeralMessagedMarkedForEndDeletion(): List<MessageEntity> {
         return withContext(coroutineContext) {
-            queries.selectAllEphemeralMessageMarkedForEndDeletion(mapper::toEntityMessageFromView).executeAsList()
+            queries.selectAllEphemeralMessagesMarkedForEndDeletion(mapper::toEntityMessageFromView).executeAsList()
         }
     }
 

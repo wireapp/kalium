@@ -574,7 +574,7 @@ UPDATE Message
 SET self_deletion_end_date = ?
 WHERE conversation_id = ? AND id = ?;
 
-selectAllEphemeralMessageMarkedForEndDeletion:
+selectAllEphemeralMessagesMarkedForEndDeletion:
 SELECT * FROM MessageDetailsView
 WHERE expireAfterMillis NOT NULL
 AND selfDeletionEndDate NOT NULL
