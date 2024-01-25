@@ -449,8 +449,6 @@ internal class UserConfigDataSource internal constructor(
 
     override suspend fun observeCertificateExpirationTime(url: String): Flow<Either<StorageFailure, ULong>> =
         userConfigDAO.observeCertificateExpirationTime(url).wrapStorageRequest()
-
-
     override suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean) {
         userConfigDAO.setShouldNotifyForRevokedCertificate(shouldNotify)
     }
