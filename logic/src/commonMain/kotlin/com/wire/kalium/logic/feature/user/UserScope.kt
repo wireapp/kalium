@@ -19,6 +19,7 @@
 
 package com.wire.kalium.logic.feature.user
 
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
@@ -52,8 +53,13 @@ import com.wire.kalium.logic.feature.e2ei.usecase.GetMembersE2EICertificateStatu
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMembersE2EICertificateStatusesUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificatesUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificatesUseCaseImpl
+<<<<<<< HEAD
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificateStatusUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificateStatusUseCaseImpl
+=======
+import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateRevocationForSelfClientUseCase
+import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateRevocationForSelfClientUseCaseImpl
+>>>>>>> 35d3229ed7 (feat: Observe self client certificate revocation (WPB-6145) (#2384))
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCase
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCaseImpl
@@ -75,6 +81,7 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 @Suppress("LongParameterList")
 class UserScope internal constructor(
     private val userRepository: UserRepository,
+    private val userConfigRepository: UserConfigRepository,
     private val accountRepository: AccountRepository,
     private val searchUserRepository: SearchUserRepository,
     private val syncManager: SyncManager,
@@ -176,4 +183,11 @@ class UserScope internal constructor(
     val deleteAccount: DeleteAccountUseCase get() = DeleteAccountUseCase(accountRepository)
 
     val updateSupportedProtocols: UpdateSupportedProtocolsUseCase get() = updateSupportedProtocolsUseCase
+
+    val observeCertificateRevocationForSelfClient: ObserveCertificateRevocationForSelfClientUseCase
+        get() = ObserveCertificateRevocationForSelfClientUseCaseImpl(
+            userConfigRepository = userConfigRepository,
+            currentClientIdProvider = clientIdProvider,
+            getE2eiCertificate = getE2EICertificate
+        )
 }
