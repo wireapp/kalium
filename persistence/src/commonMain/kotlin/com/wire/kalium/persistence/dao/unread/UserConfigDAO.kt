@@ -20,7 +20,6 @@
 
 package com.wire.kalium.persistence.dao.unread
 
-import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.LastPreKey
 import com.wire.kalium.persistence.config.LegalHoldRequestEntity
 import com.wire.kalium.persistence.config.MLSMigrationEntity
@@ -53,13 +52,14 @@ interface UserConfigDAO {
     suspend fun observeLegalHoldChangeNotified(): Flow<Boolean?>
     suspend fun setShouldUpdateClientLegalHoldCapability(shouldUpdate: Boolean)
     suspend fun shouldUpdateClientLegalHoldCapability(): Boolean
-    suspend fun setCRLExpirationTime(domain: String, url: String, timestamp: ULong)
-    suspend fun getCRLsPerDomain(domain: String): CRLUrlExpirationList?
-    suspend fun observeCRLsPerDomain(domain: String): Flow<CRLUrlExpirationList?>
+    suspend fun setCRLExpirationTime(url: String, timestamp: ULong)
+    suspend fun getCRLsPerDomain(url: String): ULong?
+    suspend fun observeCertificateExpirationTime(url: String): Flow<ULong?>
     suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean)
     suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Boolean?>
 }
 
+@Suppress("TooManyFunctions")
 internal class UserConfigDAOImpl internal constructor(
     private val metadataDAO: MetadataDAO
 ) : UserConfigDAO {
@@ -156,30 +156,18 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun shouldUpdateClientLegalHoldCapability(): Boolean =
         metadataDAO.valueByKey(SHOULD_UPDATE_CLIENT_LEGAL_HOLD_CAPABILITY)?.toBoolean() ?: true
 
-    override suspend fun setCRLExpirationTime(domain: String, url: String, timestamp: ULong) {
+    override suspend fun setCRLExpirationTime(url: String, timestamp: ULong) {
         metadataDAO.insertValue(
-            key = domain,
+            key = url,
             value = timestamp.toString()
         )
-
-        metadataDAO.getSerializable(domain, CRLUrlExpirationList.serializer())?.let { list ->
-            val res = list.cRLUrlExpirationList.map { crlUrlExpiration ->
-                crlUrlExpiration.takeIf { url == it.url }?.copy(expiration = timestamp)
-                    ?: crlUrlExpiration
-            }
-            metadataDAO.putSerializable(
-                domain,
-                CRLUrlExpirationList(res),
-                CRLUrlExpirationList.serializer()
-            )
-        }
     }
 
-    override suspend fun getCRLsPerDomain(domain: String): CRLUrlExpirationList? =
-        metadataDAO.getSerializable(domain, CRLUrlExpirationList.serializer())
+    override suspend fun getCRLsPerDomain(url: String): ULong? =
+        metadataDAO.valueByKey(url)?.toULongOrNull()
 
-    override suspend fun observeCRLsPerDomain(domain: String): Flow<CRLUrlExpirationList?> =
-        metadataDAO.observeSerializable(domain, CRLUrlExpirationList.serializer())
+    override suspend fun observeCertificateExpirationTime(url: String): Flow<ULong?> =
+        metadataDAO.valueByKeyFlow(url).map { it?.toULongOrNull() }
 
     override suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean) {
         metadataDAO.insertValue(shouldNotify.toString(), SHOULD_NOTIFY_FOR_REVOKED_CERTIFICATE)

@@ -77,7 +77,7 @@ interface E2EIRepository {
     suspend fun getOAuthRefreshToken(): Either<CoreFailure, String?>
     suspend fun nukeE2EIClient()
     suspend fun fetchFederationCertificates(): Either<CoreFailure, Unit>
-    suspend fun getCurrentClientDomainCRL(): Either<CoreFailure, ByteArray> // TODO remove
+    suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String>
     suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray>
 }
 
@@ -262,11 +262,9 @@ class E2EIRepositoryImpl(
         e2EIClientProvider.nuke()
     }
 
-    override suspend fun getCurrentClientDomainCRL(): Either<CoreFailure, ByteArray> =
-        userConfigRepository.getE2EISettings().flatMap {
-            wrapApiRequest {
-                acmeApi.getClientDomainCRL(it.discoverUrl)
-            }
+    override suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String> =
+        userConfigRepository.getE2EISettings().map {
+            (Url(it.discoverUrl).protocolWithAuthority)
         }
 
     override suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray> =

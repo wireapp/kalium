@@ -40,7 +40,6 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.wrapFlowStorageRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.config.UserConfigStorage
@@ -123,8 +122,9 @@ interface UserConfigRepository {
     suspend fun observeLegalHoldChangeNotified(): Flow<Either<StorageFailure, Boolean>>
     suspend fun setShouldUpdateClientLegalHoldCapability(shouldUpdate: Boolean): Either<StorageFailure, Unit>
     suspend fun shouldUpdateClientLegalHoldCapability(): Boolean
-    suspend fun setCRLExpirationTime(domain: String, url: String, timestamp: ULong)
-    suspend fun getCRLExpirationTime(domain: String, url: String): CRLUrlExpirationList?
+    suspend fun setCRLExpirationTime(url: String, timestamp: ULong)
+    suspend fun getCRLExpirationTime(url: String): ULong?
+    suspend fun observeCertificateExpirationTime(url: String): Flow<Either<StorageFailure, ULong>>
     suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean)
     suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Either<StorageFailure, Boolean>>
 }
@@ -440,12 +440,16 @@ internal class UserConfigDataSource internal constructor(
     override suspend fun shouldUpdateClientLegalHoldCapability(): Boolean =
         userConfigDAO.shouldUpdateClientLegalHoldCapability()
 
-    override suspend fun setCRLExpirationTime(domain: String, url: String, timestamp: ULong) {
-        userConfigDAO.setCRLExpirationTime(domain, url, timestamp)
+    override suspend fun setCRLExpirationTime(url: String, timestamp: ULong) {
+        userConfigDAO.setCRLExpirationTime(url, timestamp)
     }
 
-    override suspend fun getCRLExpirationTime(domain: String, url: String): CRLUrlExpirationList? =
-        userConfigDAO.getCRLsPerDomain(domain)
+    override suspend fun getCRLExpirationTime(url: String): ULong? =
+        userConfigDAO.getCRLsPerDomain(url)
+
+    override suspend fun observeCertificateExpirationTime(url: String): Flow<Either<StorageFailure, ULong>> =
+        userConfigDAO.observeCertificateExpirationTime(url).wrapStorageRequest()
+
 
     override suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean) {
         userConfigDAO.setShouldNotifyForRevokedCertificate(shouldNotify)
