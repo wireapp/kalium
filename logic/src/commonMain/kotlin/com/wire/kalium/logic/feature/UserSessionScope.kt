@@ -1942,7 +1942,6 @@ class UserSessionScope internal constructor(
         launch {
             updateSelfClientCapabilityToLegalHoldConsent()
         }
-
         launch {
             users.observeCertificateRevocationForSelfClient()
         }
