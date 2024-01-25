@@ -20,13 +20,13 @@ package com.wire.kalium.logic.feature.message.ephemeral
 /**
  * This use case deletes ephemeral [Message] that have an end date set and it has passed current time
  */
-interface DeleteEphemeralMessageEndDateUseCase {
+interface DeleteEphemeralMessagesAfterEndDateUseCase {
     suspend operator fun invoke()
 }
 
-internal class DeleteEphemeralMessageEndDateUseCaseImpl(
+internal class DeleteEphemeralMessagesAfterEndDateUseCaseImpl(
     private val ephemeralMessageDeletionHandler: EphemeralMessageDeletionHandler
-) : DeleteEphemeralMessageEndDateUseCase {
+) : DeleteEphemeralMessagesAfterEndDateUseCase {
 
     override suspend fun invoke() {
         ephemeralMessageDeletionHandler.deleteSelfDeletionMessagesFromEndDate()

@@ -25,7 +25,7 @@ import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-class DeleteEphemeralMessageEndDateUseCaseTest {
+class DeleteEphemeralMessagesAfterEndDateUseCaseTest {
 
     @Test
     fun givenDeleteEphemeralMessagesUseCase_whenInvoking_ThenEphemeralHandlerIsCalled() = runTest {
@@ -54,7 +54,7 @@ class DeleteEphemeralMessageEndDateUseCaseTest {
                 .thenReturn(Unit)
         }
 
-        fun arrange() = this to DeleteEphemeralMessageEndDateUseCaseImpl(
+        fun arrange() = this to DeleteEphemeralMessagesAfterEndDateUseCaseImpl(
             ephemeralMessageDeletionHandler = ephemeralMessageDeletionHandler
         )
     }

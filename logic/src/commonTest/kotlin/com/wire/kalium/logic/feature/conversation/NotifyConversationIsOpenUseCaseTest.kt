@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageEndDateUseCase
+import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessagesAfterEndDateUseCase
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
@@ -101,7 +101,7 @@ class NotifyConversationIsOpenUseCaseTest {
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
 
         @Mock
-        private val deleteEphemeralMessageEndDate = mock(classOf<DeleteEphemeralMessageEndDateUseCase>())
+        private val deleteEphemeralMessageEndDate = mock(classOf<DeleteEphemeralMessagesAfterEndDateUseCase>())
 
         fun withDeleteEphemeralMessageEndDateSuccess() {
             given(deleteEphemeralMessageEndDate)
