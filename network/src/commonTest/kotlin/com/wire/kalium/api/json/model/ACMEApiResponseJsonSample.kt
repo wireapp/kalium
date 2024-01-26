@@ -79,8 +79,9 @@ object ACMEApiResponseJsonSample {
         |  "type": "${serializable.type}",
         |  "url": "${serializable.url}",
         |  "status": "${serializable.status}",
-        |  "token": "${serializable.token}"
-        |  "nonce": "${serializable.nonce}"
+        |  "token": "${serializable.token}",
+        |  "nonce": "${serializable.nonce}",
+        |  "target":"${serializable.target}
         |}
         """.trimMargin()
     }
