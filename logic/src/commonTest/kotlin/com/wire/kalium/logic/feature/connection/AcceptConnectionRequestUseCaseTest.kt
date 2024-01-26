@@ -139,7 +139,7 @@ class AcceptConnectionRequestUseCaseTest {
                 connectionRepository = connectionRepository,
                 conversationRepository = conversationRepository,
                 oneOnOneResolver = oneOnOneResolver,
-                newGroupConversationSystemMessagesCreator = newGroupConversationSystemMessagesCreator
+                systemMessageInserter = systemMessageInserter
             )
         }
     }

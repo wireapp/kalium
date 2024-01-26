@@ -21,8 +21,17 @@ import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
+import com.wire.kalium.persistence.dao.ConversationIDEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.message.LocalId
 import com.wire.kalium.util.DateTimeUtil
 
 internal interface SystemMessageInserter {
@@ -31,19 +40,45 @@ internal interface SystemMessageInserter {
         senderUserId: UserId,
         protocol: Conversation.Protocol
     )
+
     suspend fun insertProtocolChangedDuringACallSystemMessage(
         conversationId: ConversationId,
         senderUserId: UserId
     )
+
     suspend fun insertHistoryLostProtocolChangedSystemMessage(
         conversationId: ConversationId
     )
 
     suspend fun insertLostCommitSystemMessage(conversationId: ConversationId, dateIso: String): Either<CoreFailure, Unit>
+
+    suspend fun insertConversationStarted(conversation: ConversationEntity): Either<CoreFailure, Unit>
+    suspend fun insertConversationStarted(creatorId: UserId, conversation: ConversationResponse): Either<CoreFailure, Unit>
+    suspend fun insertReadReceiptStatus(conversation: Conversation): Either<CoreFailure, Unit>
+    suspend fun insertReadReceiptStatus(conversation: ConversationResponse): Either<CoreFailure, Unit>
+    suspend fun insertStartedWithMembersAddedAndFailed(
+        conversationId: ConversationIDEntity,
+        validUsers: List<UserId>,
+        failedUsersList: List<UserId> = emptyList()
+    ): Either<CoreFailure, Unit>
+
+    suspend fun insertFailedToAddMembers(
+        conversationId: ConversationId,
+        userIdList: Set<UserId>
+    ): Either<CoreFailure, Unit>
+
+    suspend fun insertMembersAdded(
+        conversationId: ConversationId,
+        userIdList: List<UserId>
+    ): Either<CoreFailure, Unit>
+
+    suspend fun insertConversationStartedUnverifiedWarning(conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
 internal class SystemMessageInserterImpl(
     private val selfUserId: UserId,
+    private val selfTeamIdProvider: SelfTeamIdProvider,
+    private val qualifiedIdMapper: QualifiedIdMapper,
     private val persistMessage: PersistMessageUseCase
 ) : SystemMessageInserter {
     override suspend fun insertProtocolChangedSystemMessage(
@@ -114,4 +149,172 @@ internal class SystemMessageInserterImpl(
         )
         return persistMessage(mlsEpochWarningMessage)
     }
+
+    override suspend fun insertConversationStarted(conversation: ConversationEntity) = run {
+        if (conversation.type != ConversationEntity.Type.GROUP) {
+            return Either.Right(Unit)
+        }
+        persistConversationStartedSystemMessage(
+            conversation.creatorId.let { qualifiedIdMapper.fromStringToQualifiedID(it) },
+            conversation.id.toModel()
+        )
+    }
+
+    override suspend fun insertConversationStarted(creatorId: UserId, conversation: ConversationResponse) = run {
+        if (conversation.type != ConversationResponse.Type.GROUP) {
+            return Either.Right(Unit)
+        }
+        persistConversationStartedSystemMessage(
+            creatorId,
+            conversation.id.toModel()
+        )
+    }
+
+    private suspend fun persistConversationStartedSystemMessage(creatorId: UserId, conversationId: ConversationId) = persistMessage(
+        Message.System(
+            id = uuid4().toString(),
+            content = MessageContent.ConversationCreated,
+            conversationId = conversationId,
+            date = DateTimeUtil.currentIsoDateTimeString(),
+            senderUserId = creatorId,
+            status = Message.Status.Sent,
+            visibility = Message.Visibility.VISIBLE,
+            expirationData = null
+        )
+    )
+
+    override suspend fun insertReadReceiptStatus(conversation: Conversation) = run {
+        if (conversation.type != Conversation.Type.GROUP || !isSelfATeamMember()) {
+            return Either.Right(Unit)
+        }
+
+        persistReadReceiptSystemMessage(
+            conversationId = conversation.id,
+            creatorId = conversation.creatorId?.let { qualifiedIdMapper.fromStringToQualifiedID(it) } ?: selfUserId,
+            receiptMode = conversation.receiptMode == Conversation.ReceiptMode.ENABLED
+        )
+    }
+
+    override suspend fun insertReadReceiptStatus(conversation: ConversationResponse) = run {
+        if (conversation.type != ConversationResponse.Type.GROUP || !isSelfATeamMember()) {
+            return Either.Right(Unit)
+        }
+
+        persistReadReceiptSystemMessage(
+            conversationId = conversation.id.toModel(),
+            creatorId = conversation.creator?.let { qualifiedIdMapper.fromStringToQualifiedID(it) } ?: selfUserId,
+            receiptMode = conversation.receiptMode == ReceiptMode.ENABLED
+        )
+    }
+
+    private suspend fun persistReadReceiptSystemMessage(
+        conversationId: ConversationId,
+        creatorId: UserId,
+        receiptMode: Boolean
+    ) = persistMessage(
+        Message.System(
+            id = uuid4().toString(),
+            content = MessageContent.NewConversationReceiptMode(receiptMode = receiptMode),
+            conversationId = conversationId,
+            date = DateTimeUtil.currentIsoDateTimeString(),
+            senderUserId = creatorId,
+            status = Message.Status.Sent,
+            visibility = Message.Visibility.VISIBLE,
+            expirationData = null
+        )
+    )
+
+    override suspend fun insertStartedWithMembersAddedAndFailed(
+        conversationId: ConversationIDEntity,
+        validUsers: List<UserId>,
+        failedUsersList: List<UserId>
+    ): Either<CoreFailure, Unit> = run {
+        if (validUsers.isNotEmpty()) {
+            persistMessage(
+                Message.System(
+                    id = uuid4().toString(),
+                    content = MessageContent.MemberChange.CreationAdded(validUsers.toList()),
+                    conversationId = conversationId.toModel(),
+                    date = DateTimeUtil.currentIsoDateTimeString(),
+                    senderUserId = selfUserId,
+                    status = Message.Status.Sent,
+                    visibility = Message.Visibility.VISIBLE,
+                    expirationData = null
+                )
+            )
+        }
+        createFailedToAddSystemMessage(conversationId, failedUsersList)
+        Either.Right(Unit)
+    }
+
+    override suspend fun insertFailedToAddMembers(
+        conversationId: ConversationId,
+        userIdList: Set<UserId>
+    ): Either<CoreFailure, Unit> = run {
+        if (userIdList.isNotEmpty()) {
+            persistMessage(
+                Message.System(
+                    uuid4().toString(),
+                    MessageContent.MemberChange.FailedToAdd(userIdList.toList()),
+                    conversationId,
+                    DateTimeUtil.currentIsoDateTimeString(),
+                    selfUserId,
+                    Message.Status.Sent,
+                    Message.Visibility.VISIBLE,
+                    expirationData = null
+                )
+            )
+        }
+        Either.Right(Unit)
+    }
+
+    override suspend fun insertMembersAdded(conversationId: ConversationId, userIdList: List<UserId>): Either<CoreFailure, Unit> = run {
+        if (userIdList.isNotEmpty()) {
+            val messageStartedWithFailedMembers = Message.System(
+                LocalId.generate(),
+                MessageContent.MemberChange.Added(userIdList),
+                conversationId,
+                DateTimeUtil.currentIsoDateTimeString(),
+                selfUserId,
+                Message.Status.Sent,
+                Message.Visibility.VISIBLE,
+                expirationData = null
+            )
+            persistMessage(messageStartedWithFailedMembers)
+        }
+        Either.Right(Unit)
+    }
+
+    private suspend fun createFailedToAddSystemMessage(conversationId: ConversationIDEntity, failedUsersList: List<UserId>) {
+        if (failedUsersList.isNotEmpty()) {
+            val messageStartedWithFailedMembers = Message.System(
+                uuid4().toString(),
+                MessageContent.MemberChange.FailedToAdd(failedUsersList),
+                conversationId.toModel(),
+                DateTimeUtil.currentIsoDateTimeString(),
+                selfUserId,
+                Message.Status.Sent,
+                Message.Visibility.VISIBLE,
+                expirationData = null
+            )
+            persistMessage(messageStartedWithFailedMembers)
+        }
+
+    }
+
+    override suspend fun insertConversationStartedUnverifiedWarning(conversationId: ConversationId): Either<CoreFailure, Unit> =
+        persistMessage(
+            Message.System(
+                uuid4().toString(),
+                MessageContent.ConversationStartedUnverifiedWarning,
+                conversationId,
+                DateTimeUtil.currentIsoDateTimeString(),
+                selfUserId,
+                Message.Status.Sent,
+                Message.Visibility.VISIBLE,
+                expirationData = null
+            )
+        )
+
+    private suspend fun isSelfATeamMember() = selfTeamIdProvider().fold({ false }, { it != null })
 }

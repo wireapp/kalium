@@ -301,8 +301,6 @@ import com.wire.kalium.logic.feature.user.ObserveE2EIRequiredUseCase
 import com.wire.kalium.logic.feature.user.ObserveE2EIRequiredUseCaseImpl
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCaseImpl
-import com.wire.kalium.logic.feature.user.e2ei.ObserveShouldNotifyForRevokedCertificateUseCase
-import com.wire.kalium.logic.feature.user.e2ei.ObserveShouldNotifyForRevokedCertificateUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
@@ -314,6 +312,8 @@ import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCaseImpl
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.feature.user.e2ei.MarkNotifyForRevokedCertificateAsNotifiedUseCase
 import com.wire.kalium.logic.feature.user.e2ei.MarkNotifyForRevokedCertificateAsNotifiedUseCaseImpl
+import com.wire.kalium.logic.feature.user.e2ei.ObserveShouldNotifyForRevokedCertificateUseCase
+import com.wire.kalium.logic.feature.user.e2ei.ObserveShouldNotifyForRevokedCertificateUseCaseImpl
 import com.wire.kalium.logic.feature.user.guestroomlink.MarkGuestLinkFeatureFlagAsNotChangedUseCase
 import com.wire.kalium.logic.feature.user.guestroomlink.MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl
 import com.wire.kalium.logic.feature.user.guestroomlink.ObserveGuestRoomLinkFeatureFlagUseCase
@@ -693,7 +693,7 @@ class UserSessionScope internal constructor(
             userStorage.database.conversationDAO,
             authenticatedNetworkContainer.conversationApi,
             newConversationMembersRepository,
-            lazy { conversations.newGroupConversationSystemMessagesCreator },
+            systemMessageInserter,
             userId,
             selfTeamId
         )
@@ -701,7 +701,7 @@ class UserSessionScope internal constructor(
     private val newConversationMembersRepository: NewConversationMembersRepository
         get() = NewConversationMembersRepositoryImpl(
             userStorage.database.memberDAO,
-            lazy { conversations.newGroupConversationSystemMessagesCreator }
+            systemMessageInserter
         )
 
     private val messageRepository: MessageRepository
@@ -1208,7 +1208,7 @@ class UserSessionScope internal constructor(
 
     private val messageEncoder get() = MessageContentEncoder()
 
-    private val systemMessageInserter get() = SystemMessageInserterImpl(userId, persistMessage)
+    private val systemMessageInserter by lazy { SystemMessageInserterImpl(userId, selfTeamId, qualifiedIdMapper, persistMessage) }
 
     private val receiptMessageHandler
         get() = ReceiptMessageHandlerImpl(
@@ -1280,7 +1280,7 @@ class UserSessionScope internal constructor(
             conversationRepository,
             userRepository,
             selfTeamId,
-            conversations.newGroupConversationSystemMessagesCreator,
+            systemMessageInserter,
             oneOnOneResolver,
         )
     private val deletedConversationHandler: DeletedConversationEventHandler
@@ -1444,7 +1444,7 @@ class UserSessionScope internal constructor(
             oneOnOneResolver,
             userId,
             clientIdProvider,
-            lazy { conversations.newGroupConversationSystemMessagesCreator },
+            systemMessageInserter,
             legalHoldRequestHandler,
             legalHoldHandler
         )
@@ -1636,6 +1636,7 @@ class UserSessionScope internal constructor(
             userPropertyRepository,
             messages.deleteEphemeralMessageEndDate,
             oneOnOneResolver,
+            systemMessageInserter,
             this,
             userScopedLogger
         )
@@ -1762,11 +1763,11 @@ class UserSessionScope internal constructor(
     val observeFileSharingStatus: ObserveFileSharingStatusUseCase
         get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
 
-   val observeShouldNotifyForRevokedCertificate: ObserveShouldNotifyForRevokedCertificateUseCase
-         by lazy { ObserveShouldNotifyForRevokedCertificateUseCaseImpl(userConfigRepository) }
+    val observeShouldNotifyForRevokedCertificate: ObserveShouldNotifyForRevokedCertificateUseCase
+            by lazy { ObserveShouldNotifyForRevokedCertificateUseCaseImpl(userConfigRepository) }
 
-   val markNotifyForRevokedCertificateAsNotified: MarkNotifyForRevokedCertificateAsNotifiedUseCase
-         by lazy { MarkNotifyForRevokedCertificateAsNotifiedUseCaseImpl(userConfigRepository) }
+    val markNotifyForRevokedCertificateAsNotified: MarkNotifyForRevokedCertificateAsNotifiedUseCase
+            by lazy { MarkNotifyForRevokedCertificateAsNotifiedUseCaseImpl(userConfigRepository) }
 
     val markGuestLinkFeatureFlagAsNotChanged: MarkGuestLinkFeatureFlagAsNotChangedUseCase
         get() = MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)
@@ -1857,7 +1858,7 @@ class UserSessionScope internal constructor(
             conversationRepository,
             userRepository,
             oneOnOneResolver,
-            conversations.newGroupConversationSystemMessagesCreator
+            systemMessageInserter
         )
 
     val observeSecurityClassificationLabel: ObserveSecurityClassificationLabelUseCase

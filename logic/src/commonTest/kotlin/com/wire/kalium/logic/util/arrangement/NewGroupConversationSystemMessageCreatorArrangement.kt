@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.util.arrangement
 
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -26,21 +26,21 @@ import io.mockative.given
 import io.mockative.mock
 
 internal interface NewGroupConversationSystemMessageCreatorArrangement {
-    val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
+    val systemMessageInserter: SystemMessageInserter
 
     fun withPersistUnverifiedWarningMessageSuccess(): NewGroupConversationSystemMessageCreatorArrangement
 }
 
 internal class NewGroupConversationSystemMessageCreatorArrangementImpl : NewGroupConversationSystemMessageCreatorArrangement {
-    override val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator =
-        mock(NewGroupConversationSystemMessagesCreator::class)
+    override val systemMessageInserter: SystemMessageInserter =
+        mock(SystemMessageInserter::class)
 
     @Mock
     val persistMessage = mock(PersistMessageUseCase::class)
 
     override fun withPersistUnverifiedWarningMessageSuccess() = apply {
-        given(newGroupConversationSystemMessagesCreator)
-            .suspendFunction(newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
+        given(systemMessageInserter)
+            .suspendFunction(systemMessageInserter::insertConversationStartedUnverifiedWarning)
             .whenInvokedWith(any())
             .then { Either.Right(Unit) }
     }

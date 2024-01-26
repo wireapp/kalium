@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -58,8 +59,8 @@ class NewConversationMembersRepositoryTest {
             .with(any())
             .wasInvoked(exactly = once)
 
-        verify(arrangement.newGroupConversationSystemMessagesCreator)
-            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
+        verify(arrangement.systemMessageInserter)
+            .suspendFunction(arrangement.systemMessageInserter::insertStartedWithMembersAddedAndFailed)
             .with(any())
             .wasInvoked(once)
     }
@@ -88,18 +89,19 @@ class NewConversationMembersRepositoryTest {
         MemberDAOArrangement by MemberDAOArrangementImpl() {
 
         @Mock
-        val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
+        val systemMessageInserter = mock(SystemMessageInserter::class)
 
         fun withPersistResolvedMembersSystemMessageSuccess() = apply {
-            given(newGroupConversationSystemMessagesCreator)
-                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
+            given(systemMessageInserter)
+                .suspendFunction(systemMessageInserter::insertStartedWithMembersAddedAndFailed)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
         }
 
         fun arrange() = this to NewConversationMembersRepositoryImpl(
             memberDAO,
-            lazy { newGroupConversationSystemMessagesCreator })
+            systemMessageInserter
+        )
     }
 
     private companion object {

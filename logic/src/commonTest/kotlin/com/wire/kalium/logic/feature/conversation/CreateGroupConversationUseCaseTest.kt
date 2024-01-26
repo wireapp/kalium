@@ -26,8 +26,8 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -184,7 +184,7 @@ class CreateGroupConversationUseCaseTest {
 
         // then
         verify(arrangement.newGroupConversationSystemMessagesCreator)
-            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationReadReceiptStatus, fun1<Conversation>())
+            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::insertReadReceiptStatus, fun1<Conversation>())
             .with(any())
             .wasInvoked(exactly = once)
     }
@@ -206,7 +206,7 @@ class CreateGroupConversationUseCaseTest {
         }
 
         @Mock
-        val newGroupConversationSystemMessagesCreator = mock(classOf<NewGroupConversationSystemMessagesCreator>())
+        val newGroupConversationSystemMessagesCreator = mock(classOf<SystemMessageInserter>())
 
         private val createGroupConversation = CreateGroupConversationUseCase(
             conversationRepository,
@@ -256,7 +256,7 @@ class CreateGroupConversationUseCaseTest {
 
         fun withPersistingReadReceiptsSystemMessage() = apply {
             given(newGroupConversationSystemMessagesCreator)
-                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationReadReceiptStatus, fun1<Conversation>())
+                .suspendFunction(newGroupConversationSystemMessagesCreator::insertReadReceiptStatus, fun1<Conversation>())
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }

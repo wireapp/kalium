@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
@@ -94,7 +95,7 @@ internal class ConversationGroupRepositoryImpl(
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
     private val newConversationMembersRepository: NewConversationMembersRepository,
-    private val newGroupConversationSystemMessagesCreator: Lazy<NewGroupConversationSystemMessagesCreator>,
+    private val systemMessageInserter: SystemMessageInserter,
     private val selfUserId: UserId,
     private val teamIdProvider: SelfTeamIdProvider,
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
@@ -142,7 +143,7 @@ internal class ConversationGroupRepositoryImpl(
                     wrapStorageRequest {
                         conversationDAO.insertConversation(conversationEntity)
                     }.flatMap {
-                        newGroupConversationSystemMessagesCreator.value.conversationStarted(conversationEntity)
+                        systemMessageInserter.insertConversationStarted(conversationEntity)
                     }.flatMap {
                         newConversationMembersRepository.persistMembersAdditionToTheConversation(
                             conversationEntity.id, conversationResponse, failedUsersList
@@ -157,7 +158,7 @@ internal class ConversationGroupRepositoryImpl(
                         }
                     }.flatMap {
                         wrapStorageRequest {
-                            newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
+                            systemMessageInserter.insertConversationStartedUnverifiedWarning(
                                 conversationEntity.id.toModel()
                             )
                         }
@@ -253,7 +254,7 @@ internal class ConversationGroupRepositoryImpl(
             }
 
             else -> {
-                newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
+                systemMessageInserter.insertFailedToAddMembers(
                     conversationId, (failedUsersList + userIdList)
                 ).flatMap {
                     Either.Left(this)
@@ -267,11 +268,14 @@ internal class ConversationGroupRepositoryImpl(
         userIdList: List<UserId>,
         failedUsersList: Set<UserId>
     ): Either<CoreFailure, Unit> {
-        return newGroupConversationSystemMessagesCreator.value.conversationResolvedMembersAddedAndFailed(
-            conversationId.toDao(), userIdList, failedUsersList.toList()
-        ).flatMap {
-            Either.Right(Unit)
-        }
+        // todo. this should persist added only with localid.generate, then failed.
+        return systemMessageInserter.insertMembersAdded(conversationId, userIdList)
+            .flatMap {
+                if (failedUsersList.isNotEmpty()) {
+                    systemMessageInserter.insertFailedToAddMembers(conversationId, failedUsersList)
+                }
+                Either.Right(Unit)
+            }
     }
 
     override suspend fun addService(serviceId: ServiceId, conversationId: ConversationId): Either<CoreFailure, Unit> =
@@ -333,7 +337,7 @@ internal class ConversationGroupRepositoryImpl(
             eventMapper.conversationMemberJoin(LocalId.generate(), apiResult.value.event, true, false)
         ).flatMap {
             if (failedUsersList.isNotEmpty()) {
-                newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(conversationId, failedUsersList)
+                systemMessageInserter.insertFailedToAddMembers(conversationId, failedUsersList)
             }
             Either.Right(Unit)
         }
@@ -356,7 +360,7 @@ internal class ConversationGroupRepositoryImpl(
             when (failedUsers.isNotEmpty()) {
                 true -> tryAddMembersToCloudAndStorage(validUsers, conversationId, failedUsers.toSet())
                 false -> {
-                    newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
+                    systemMessageInserter.insertFailedToAddMembers(
                         conversationId,
                         (validUsers + failedUsers).toSet()
                     ).flatMap {
@@ -365,7 +369,7 @@ internal class ConversationGroupRepositoryImpl(
                 }
             }
         } else {
-            newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
+            systemMessageInserter.insertFailedToAddMembers(
                 conversationId,
                 failedUsersList + userIdList
             ).flatMap {

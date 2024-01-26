@@ -21,7 +21,7 @@ package com.wire.kalium.logic.feature.connection
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
@@ -48,7 +48,7 @@ internal class AcceptConnectionRequestUseCaseImpl(
     private val connectionRepository: ConnectionRepository,
     private val conversationRepository: ConversationRepository,
     private val oneOnOneResolver: OneOnOneResolver,
-    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
+    private val systemMessageInserter: SystemMessageInserter
 ) : AcceptConnectionRequestUseCase {
 
     override suspend fun invoke(userId: UserId): AcceptConnectionRequestUseCaseResult {
@@ -65,7 +65,7 @@ internal class AcceptConnectionRequestUseCaseImpl(
                             connection.qualifiedToId
                         ).map { }
                     }.flatMap {
-                        newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
+                        systemMessageInserter.insertConversationStartedUnverifiedWarning(
                             connection.qualifiedConversationId
                         )
                     }

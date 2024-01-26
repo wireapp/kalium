@@ -26,8 +26,6 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreatorImpl
 import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepositoryImpl
 import com.wire.kalium.logic.data.conversation.TypingIndicatorOutgoingRepositoryImpl
 import com.wire.kalium.logic.data.conversation.TypingIndicatorSenderHandler
@@ -37,6 +35,7 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
@@ -93,6 +92,7 @@ class ConversationScope internal constructor(
     userPropertyRepository: UserPropertyRepository,
     private val deleteEphemeralMessageEndDate: DeleteEphemeralMessagesAfterEndDateUseCase,
     private val oneOnOneResolver: OneOnOneResolver,
+    private val systemMessageInserter: SystemMessageInserter,
     private val scope: CoroutineScope,
     private val kaliumLogger: KaliumLogger
 ) {
@@ -144,15 +144,7 @@ class ConversationScope internal constructor(
             conversationGroupRepository,
             syncManager,
             currentClientIdProvider,
-            newGroupConversationSystemMessagesCreator
-        )
-
-    internal val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
-        get() = NewGroupConversationSystemMessagesCreatorImpl(
-            persistMessage,
-            selfTeamIdProvider,
-            qualifiedIdMapper,
-            selfUserId
+            systemMessageInserter
         )
 
     val addMemberToConversationUseCase: AddMemberToConversationUseCase

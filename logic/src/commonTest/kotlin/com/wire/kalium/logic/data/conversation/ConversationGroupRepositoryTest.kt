@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConversation
@@ -437,8 +438,8 @@ class ConversationGroupRepositoryTest {
             .with(anything())
             .wasNotInvoked()
 
-        verify(arrangement.newGroupConversationSystemMessagesCreator)
-            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+        verify(arrangement.systemMessageInserter)
+            .suspendFunction(arrangement.systemMessageInserter::insertFailedToAddMembers)
             .with(anything(), matching {
                 it.containsAll(expectedInitialUsers)
             })
@@ -1072,8 +1073,8 @@ class ConversationGroupRepositoryTest {
                 .with(anything())
                 .wasInvoked(exactly = once)
 
-            verify(arrangement.newGroupConversationSystemMessagesCreator)
-                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+            verify(arrangement.systemMessageInserter)
+                .suspendFunction(arrangement.systemMessageInserter::insertFailedToAddMembers)
                 .with(anything(), matching { it.size == expectedValidUsersCount })
                 .wasInvoked(exactly = once)
         }
@@ -1109,8 +1110,8 @@ class ConversationGroupRepositoryTest {
                 .with(anything())
                 .wasNotInvoked()
 
-            verify(arrangement.newGroupConversationSystemMessagesCreator)
-                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+            verify(arrangement.systemMessageInserter)
+                .suspendFunction(arrangement.systemMessageInserter::insertFailedToAddMembers)
                 .with(anything(), matching {
                     it.containsAll(expectedInitialUsers)
                 })
@@ -1147,8 +1148,8 @@ class ConversationGroupRepositoryTest {
                 .with(anything())
                 .wasNotInvoked()
 
-            verify(arrangement.newGroupConversationSystemMessagesCreator)
-                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+            verify(arrangement.systemMessageInserter)
+                .suspendFunction(arrangement.systemMessageInserter::insertFailedToAddMembers)
                 .with(anything(), matching {
                     it.containsAll(expectedInitialUsersNotFromUnreachableInformed)
                 })
@@ -1181,8 +1182,8 @@ class ConversationGroupRepositoryTest {
                 .with(anything())
                 .wasInvoked(once)
 
-            verify(newGroupConversationSystemMessagesCreator)
-                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
+            verify(systemMessageInserter)
+                .suspendFunction(systemMessageInserter::insertConversationStartedUnverifiedWarning)
                 .with(anything())
                 .wasInvoked(once)
         }
@@ -1222,8 +1223,8 @@ class ConversationGroupRepositoryTest {
                 it.size == expectedValidUsersWithKeyPackagesCount && it.first() == TestConversation.USER_1
             }).wasInvoked(exactly = once)
 
-        verify(arrangement.newGroupConversationSystemMessagesCreator)
-            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
+        verify(arrangement.systemMessageInserter)
+            .suspendFunction(arrangement.systemMessageInserter::insertStartedWithMembersAddedAndFailed)
             .with(anything(), matching { it.size == 1 }, matching { it.size == 1 })
             .wasInvoked(exactly = once)
     }
@@ -1262,8 +1263,8 @@ class ConversationGroupRepositoryTest {
                 it.size == expectedValidUsersWithKeyPackagesCount && it.first() == TestConversation.USER_1
             }).wasInvoked(exactly = once)
 
-        verify(arrangement.newGroupConversationSystemMessagesCreator)
-            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
+        verify(arrangement.systemMessageInserter)
+            .suspendFunction(arrangement.systemMessageInserter::insertStartedWithMembersAddedAndFailed)
             .with(anything(), matching { it.size == 1 }, matching { it.size == 1 })
             .wasInvoked(exactly = once)
     }
@@ -1306,8 +1307,8 @@ class ConversationGroupRepositoryTest {
                 it.size == initialCountUsers - 2  // removed 1 failed user with commit bundle federated error
             }).wasInvoked(exactly = once)
 
-        verify(arrangement.newGroupConversationSystemMessagesCreator)
-            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+        verify(arrangement.systemMessageInserter)
+            .suspendFunction(arrangement.systemMessageInserter::insertFailedToAddMembers)
             .with(anything(), matching { it.size == 3 })
             .wasInvoked(exactly = once)
     }
@@ -1346,7 +1347,7 @@ class ConversationGroupRepositoryTest {
         val newConversationMembersRepository = mock(NewConversationMembersRepository::class)
 
         @Mock
-        val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
+        val systemMessageInserter = mock(SystemMessageInserter::class)
 
         @Mock
         val joinExistingMLSConversation: JoinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
@@ -1361,7 +1362,7 @@ class ConversationGroupRepositoryTest {
                 conversationDAO,
                 conversationApi,
                 newConversationMembersRepository,
-                lazy { newGroupConversationSystemMessagesCreator },
+                systemMessageInserter,
                 TestUser.SELF.id,
                 selfTeamIdProvider
             )
@@ -1655,8 +1656,8 @@ class ConversationGroupRepositoryTest {
         }
 
         fun withSuccessfulNewConversationGroupStartedHandled() = apply {
-            given(newGroupConversationSystemMessagesCreator)
-                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationStarted, fun1<ConversationEntity>())
+            given(systemMessageInserter)
+                .suspendFunction(systemMessageInserter::insertConversationStarted, fun1<ConversationEntity>())
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
@@ -1700,15 +1701,15 @@ class ConversationGroupRepositoryTest {
         }
 
         fun withInsertFailedToAddSystemMessageSuccess(): Arrangement = apply {
-            given(newGroupConversationSystemMessagesCreator)
-                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+            given(systemMessageInserter)
+                .suspendFunction(systemMessageInserter::insertFailedToAddMembers)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(Either.Right(Unit))
         }
 
         fun withInsertAddedAndFailedSystemMessageSuccess(): Arrangement = apply {
-            given(newGroupConversationSystemMessagesCreator)
-                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
+            given(systemMessageInserter)
+                .suspendFunction(systemMessageInserter::insertStartedWithMembersAddedAndFailed)
                 .whenInvokedWith(anything(), anything(), anything())
                 .thenReturn(Either.Right(Unit))
         }
@@ -1722,8 +1723,8 @@ class ConversationGroupRepositoryTest {
             }
 
         fun withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled() = apply {
-            given(newGroupConversationSystemMessagesCreator)
-                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
+            given(systemMessageInserter)
+                .suspendFunction(systemMessageInserter::insertConversationStartedUnverifiedWarning)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }

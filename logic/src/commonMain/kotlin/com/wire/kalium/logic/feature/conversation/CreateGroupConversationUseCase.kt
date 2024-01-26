@@ -24,9 +24,9 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.message.SystemMessageInserter
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.conversation.CreateGroupConversationUseCase.Result
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -45,7 +45,7 @@ class CreateGroupConversationUseCase internal constructor(
     private val conversationGroupRepository: ConversationGroupRepository,
     private val syncManager: SyncManager,
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
+    private val systemMessageInserter: SystemMessageInserter
 ) {
 
     /**
@@ -77,7 +77,7 @@ class CreateGroupConversationUseCase internal constructor(
                 }
             }
         }, {
-            newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(it)
+            systemMessageInserter.insertReadReceiptStatus(it)
             Result.Success(it)
         })
 

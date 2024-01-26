@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.toConversationType
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
@@ -28,6 +27,7 @@ import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.functional.Either
@@ -48,7 +48,7 @@ internal class NewConversationEventHandlerImpl(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val selfTeamIdProvider: SelfTeamIdProvider,
-    private val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator,
+    private val systemMessageInserter: SystemMessageInserter,
     private val oneOnOneResolver: OneOnOneResolver,
 ) : NewConversationEventHandler {
 
@@ -91,13 +91,13 @@ internal class NewConversationEventHandlerImpl(
         event: Event.Conversation.NewConversation
     ) {
         if (isNewUnhandledConversation) {
-            newGroupConversationSystemMessagesCreator.conversationStarted(event.senderUserId, event.conversation)
-            newGroupConversationSystemMessagesCreator.conversationResolvedMembersAddedAndFailed(
+            systemMessageInserter.insertConversationStarted(event.senderUserId, event.conversation)
+            systemMessageInserter.insertStartedWithMembersAddedAndFailed(
                 event.conversationId.toDao(),
                 event.conversation.members.otherMembers.map { it.id.toModel() }
             )
-            newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(event.conversation)
-            newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(event.conversation.id.toModel())
+            systemMessageInserter.insertReadReceiptStatus(event.conversation)
+            systemMessageInserter.insertConversationStartedUnverifiedWarning(event.conversation.id.toModel())
         }
     }
 }

@@ -22,9 +22,9 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.logout.LogoutReason
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
@@ -265,7 +265,7 @@ class UserEventReceiverTest {
             eventReceiver.onEvent(event)
             // then
             verify(arrangement.newGroupConversationSystemMessagesCreator)
-                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
+                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::insertConversationStartedUnverifiedWarning)
                 .with(eq(event.connection.qualifiedConversationId))
                 .wasInvoked(exactly = once)
         }
@@ -285,7 +285,7 @@ class UserEventReceiverTest {
             eventReceiver.onEvent(event)
             // then
             verify(arrangement.newGroupConversationSystemMessagesCreator)
-                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
+                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::insertConversationStartedUnverifiedWarning)
                 .with(eq(event.connection.qualifiedConversationId))
                 .wasNotInvoked()
         }
@@ -306,7 +306,7 @@ class UserEventReceiverTest {
         val clientRepository = mock(classOf<ClientRepository>())
 
         @Mock
-        val newGroupConversationSystemMessagesCreator = mock(classOf<NewGroupConversationSystemMessagesCreator>())
+        val newGroupConversationSystemMessagesCreator = mock(classOf<SystemMessageInserter>())
 
         @Mock
         val legalHoldRequestHandler = mock(classOf<LegalHoldRequestHandler>())
@@ -322,7 +322,7 @@ class UserEventReceiverTest {
             oneOnOneResolver,
             SELF_USER_ID,
             currentClientIdProvider,
-            lazy { newGroupConversationSystemMessagesCreator },
+            newGroupConversationSystemMessagesCreator,
             legalHoldRequestHandler,
             legalHoldHandler
         )
@@ -340,7 +340,7 @@ class UserEventReceiverTest {
 
         fun withPersistUnverifiedWarningMessageSuccess() = apply {
             given(newGroupConversationSystemMessagesCreator)
-                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
+                .suspendFunction(newGroupConversationSystemMessagesCreator::insertConversationStartedUnverifiedWarning)
                 .whenInvokedWith(any())
                 .then { Either.Right(Unit) }
         }

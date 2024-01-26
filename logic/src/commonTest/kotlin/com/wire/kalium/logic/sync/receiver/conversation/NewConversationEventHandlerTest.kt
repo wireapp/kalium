@@ -21,7 +21,6 @@ package com.wire.kalium.logic.sync.receiver.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -30,6 +29,7 @@ import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
@@ -158,27 +158,27 @@ class NewConversationEventHandlerTest {
         // then
         verify(arrangement.newGroupConversationSystemMessagesCreator)
             .suspendFunction(
-                arrangement.newGroupConversationSystemMessagesCreator::conversationStarted,
+                arrangement.newGroupConversationSystemMessagesCreator::insertConversationStarted,
                 fun2<UserId, ConversationResponse>()
             )
             .with(any(), eq(event.conversation))
             .wasInvoked(exactly = once)
 
         verify(arrangement.newGroupConversationSystemMessagesCreator)
-            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
+            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::insertStartedWithMembersAddedAndFailed)
             .with(eq(event.conversationId.toDao()), eq(event.conversation.members.otherMembers.map { it.id.toModel() }), any())
             .wasInvoked(exactly = once)
 
         verify(arrangement.newGroupConversationSystemMessagesCreator)
             .suspendFunction(
-                arrangement.newGroupConversationSystemMessagesCreator::conversationReadReceiptStatus,
+                arrangement.newGroupConversationSystemMessagesCreator::insertReadReceiptStatus,
                 fun1<ConversationResponse>()
             )
             .with(eq(event.conversation))
             .wasInvoked(exactly = once)
 
         verify(arrangement.newGroupConversationSystemMessagesCreator)
-            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
+            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::insertConversationStartedUnverifiedWarning)
             .with(eq(event.conversation.id.toModel()))
             .wasInvoked(exactly = once)
     }
@@ -217,20 +217,20 @@ class NewConversationEventHandlerTest {
             // then
             verify(arrangement.newGroupConversationSystemMessagesCreator)
                 .suspendFunction(
-                    arrangement.newGroupConversationSystemMessagesCreator::conversationStarted,
+                    arrangement.newGroupConversationSystemMessagesCreator::insertConversationStarted,
                     fun2<UserId, ConversationResponse>()
                 )
                 .with(any(), eq(event.conversation))
                 .wasNotInvoked()
 
             verify(arrangement.newGroupConversationSystemMessagesCreator)
-                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
+                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::insertStartedWithMembersAddedAndFailed)
                 .with(eq(event.conversationId.toDao()), eq(event.conversation))
                 .wasNotInvoked()
 
             verify(arrangement.newGroupConversationSystemMessagesCreator)
                 .suspendFunction(
-                    arrangement.newGroupConversationSystemMessagesCreator::conversationReadReceiptStatus,
+                    arrangement.newGroupConversationSystemMessagesCreator::insertReadReceiptStatus,
                     fun1<ConversationResponse>()
                 )
                 .with(eq(event.conversation))
@@ -320,7 +320,7 @@ class NewConversationEventHandlerTest {
         val selfTeamIdProvider = mock(classOf<SelfTeamIdProvider>())
 
         @Mock
-        val newGroupConversationSystemMessagesCreator = mock(classOf<NewGroupConversationSystemMessagesCreator>())
+        val newGroupConversationSystemMessagesCreator = mock(classOf<SystemMessageInserter>())
 
         @Mock
         private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
@@ -354,7 +354,7 @@ class NewConversationEventHandlerTest {
         fun withConversationStartedSystemMessage() = apply {
             given(newGroupConversationSystemMessagesCreator)
                 .suspendFunction(
-                    newGroupConversationSystemMessagesCreator::conversationStarted,
+                    newGroupConversationSystemMessagesCreator::insertConversationStarted,
                     fun2<UserId, ConversationResponse>()
                 )
                 .whenInvokedWith(any(), any())
@@ -364,7 +364,7 @@ class NewConversationEventHandlerTest {
         fun withConversationResolvedMembersSystemMessage() = apply {
             given(newGroupConversationSystemMessagesCreator)
                 .suspendFunction(
-                    newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed
+                    newGroupConversationSystemMessagesCreator::insertStartedWithMembersAddedAndFailed
                 )
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
@@ -372,7 +372,7 @@ class NewConversationEventHandlerTest {
 
         fun withConversationUnverifiedWarningSystemMessage() = apply {
             given(newGroupConversationSystemMessagesCreator)
-                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
+                .suspendFunction(newGroupConversationSystemMessagesCreator::insertConversationStartedUnverifiedWarning)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
@@ -393,7 +393,7 @@ class NewConversationEventHandlerTest {
 
         fun withReadReceiptsSystemMessage() = apply {
             given(newGroupConversationSystemMessagesCreator)
-                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationReadReceiptStatus, fun1<ConversationResponse>())
+                .suspendFunction(newGroupConversationSystemMessagesCreator::insertReadReceiptStatus, fun1<ConversationResponse>())
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
         }
