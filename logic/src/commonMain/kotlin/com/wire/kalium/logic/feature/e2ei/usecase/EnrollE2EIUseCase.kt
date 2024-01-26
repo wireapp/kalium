@@ -124,6 +124,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
      *
      * @return [Either] [CoreFailure] or [E2EIEnrollmentResult]
      */
+    @Suppress("LongMethod")
     override suspend fun finalizeEnrollment(
         idToken: String,
         oAuthState: String,

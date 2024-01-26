@@ -29,6 +29,7 @@ import com.wire.crypto.MlsGroupInfoEncryptionType
 import com.wire.crypto.MlsRatchetTreeType
 import com.wire.crypto.MlsWirePolicy
 import com.wire.crypto.client.Ciphersuites
+import com.wire.kalium.cryptography.exceptions.CryptographyException
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import kotlin.time.Duration
@@ -296,7 +297,7 @@ class MLSClientImpl(
     override suspend fun registerTrustAnchors(pem: CertificateChain) {
         try {
             coreCrypto.e2eiRegisterAcmeCa(pem)
-        } catch (e: Exception) {
+        } catch (e: CryptographyException) {
             kaliumLogger.i("Registering TrustAnchors failed: $e")
         }
     }

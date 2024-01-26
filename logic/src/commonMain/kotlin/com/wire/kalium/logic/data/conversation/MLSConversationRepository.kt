@@ -234,7 +234,7 @@ internal class MLSConversationDataSource(
                                 welcomeBundle.groupId
                             )
                             kaliumLogger.i("Updated conversation from welcome message (groupID = ${welcomeBundle.groupId})")
-                            //todo: process crlDps from welcomeBundle
+                            // TODO: process crlDps from welcomeBundle
                         }
                     }
                 }
@@ -277,7 +277,7 @@ internal class MLSConversationDataSource(
             wrapMLSRequest {
                 mlsClient.joinByExternalCommit(groupInfo)
             }.flatMap { commitBundle ->
-                //todo: process crlDps from decryptMessage
+                // TODO: process crlDps from decryptMessage
                 sendCommitBundleForExternalCommit(groupID, commitBundle)
             }.onSuccess {
                 conversationDAO.updateConversationGroupState(

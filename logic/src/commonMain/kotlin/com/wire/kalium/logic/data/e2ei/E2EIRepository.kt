@@ -177,6 +177,7 @@ class E2EIRepositoryImpl(
             }
         }
 
+    @Suppress("ReturnCount")
     override suspend fun getAuthorizations(
         prevNonce: Nonce,
         authorizationsEndpoints: List<String>
