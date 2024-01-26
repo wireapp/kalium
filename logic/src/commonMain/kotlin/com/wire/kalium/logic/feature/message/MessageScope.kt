@@ -56,7 +56,6 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCa
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCaseImpl
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
-import com.wire.kalium.logic.feature.message.composite.SendButtonMessageUseCase
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessagesAfterEndDateUseCase
@@ -359,19 +358,6 @@ class MessageScope internal constructor(
             currentClientIdProvider = currentClientIdProvider,
             messageMetadataRepository = messageMetadataRepository
         )
-
-    val sendButtonMessage: SendButtonMessageUseCase
-        get() = SendButtonMessageUseCase(
-            persistMessage = persistMessage,
-            selfUserId = selfUserId,
-            provideClientId = currentClientIdProvider,
-            slowSyncRepository = slowSyncRepository,
-            messageSender = messageSender,
-            messageSendFailureHandler = messageSendFailureHandler,
-            userPropertyRepository = userPropertyRepository,
-            scope = scope
-        )
-
     private val deleteEphemeralMessageForSelfUserAsReceiver: DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
         get() = DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
             messageRepository = messageRepository,

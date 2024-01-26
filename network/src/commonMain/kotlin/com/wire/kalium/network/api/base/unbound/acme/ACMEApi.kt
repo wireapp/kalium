@@ -36,12 +36,12 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 
 interface ACMEApi {
-    suspend fun getTrustAnchors(acmeUrl: String): NetworkResponse<CertificateChain>
+    suspend fun getTrustAnchors(acmeUrl: String): NetworkResponse<ByteArray>
     suspend fun getACMEDirectories(discoveryUrl: String): NetworkResponse<AcmeDirectoriesResponse>
     suspend fun getACMENonce(url: String): NetworkResponse<String>
     suspend fun sendACMERequest(url: String, body: ByteArray? = null): NetworkResponse<ACMEResponse>
     suspend fun sendChallengeRequest(url: String, body: ByteArray): NetworkResponse<ChallengeResponse>
-    suspend fun getACMEFederation(baseUrl: String): NetworkResponse<CertificateChain>
+    suspend fun getACMEFederation(baseUrl: String): NetworkResponse<String>
     suspend fun getClientDomainCRL(discoveryUrl: String): NetworkResponse<ByteArray>
 }
 
@@ -50,7 +50,7 @@ class ACMEApiImpl internal constructor(
 ) : ACMEApi {
     private val httpClient get() = unboundNetworkClient.httpClient
 
-    override suspend fun getTrustAnchors(acmeUrl: String): NetworkResponse<CertificateChain> = wrapKaliumResponse {
+    override suspend fun getTrustAnchors(acmeUrl: String): NetworkResponse<ByteArray> = wrapKaliumResponse {
         httpClient.get("$acmeUrl/$PATH_ACME_ROOTS_PEM")
     }
 
@@ -120,7 +120,7 @@ class ACMEApiImpl internal constructor(
             }
         }
 
-    override suspend fun getACMEFederation(baseUrl: String): NetworkResponse<CertificateChain> = wrapKaliumResponse {
+    override suspend fun getACMEFederation(baseUrl: String): NetworkResponse<String> = wrapKaliumResponse {
         httpClient.get("$baseUrl/$PATH_ACME_FEDERATION")
     }
 
