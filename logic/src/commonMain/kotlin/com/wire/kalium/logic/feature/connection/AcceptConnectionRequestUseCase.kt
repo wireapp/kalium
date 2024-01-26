@@ -62,7 +62,8 @@ internal class AcceptConnectionRequestUseCaseImpl(
                         )
                     }.flatMap {
                         oneOnOneResolver.resolveOneOnOneConversationWithUserId(
-                            connection.qualifiedToId
+                            userId = connection.qualifiedToId,
+                            invalidateCurrentKnownProtocols = true
                         ).map { }
                     }.flatMap {
                         newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(

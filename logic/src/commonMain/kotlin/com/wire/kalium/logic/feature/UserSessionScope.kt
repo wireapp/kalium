@@ -309,8 +309,8 @@ import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCaseImpl
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCaseImpl
-import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCase
-import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCaseImpl
+import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCase
+import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCaseImpl
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.feature.user.e2ei.MarkNotifyForRevokedCertificateAsNotifiedUseCase
 import com.wire.kalium.logic.feature.user.e2ei.MarkNotifyForRevokedCertificateAsNotifiedUseCaseImpl
@@ -967,8 +967,8 @@ class UserSessionScope internal constructor(
             incrementalSyncRepository
         )
 
-    private val updateSupportedProtocols: UpdateSupportedProtocolsUseCase
-        get() = UpdateSupportedProtocolsUseCaseImpl(
+    private val updateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase
+        get() = UpdateSelfUserSupportedProtocolsUseCaseImpl(
             clientRepository,
             userRepository,
             userConfigRepository,
