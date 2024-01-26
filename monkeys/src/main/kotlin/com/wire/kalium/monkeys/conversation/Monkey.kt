@@ -51,6 +51,7 @@ sealed class MonkeyType {
     }
 }
 
+@Suppress("TooManyFunctions")
 abstract class Monkey(val monkeyType: MonkeyType, val internalId: MonkeyId) {
     companion object {
         // this means there are users within the team not managed by IM
@@ -103,7 +104,10 @@ abstract class Monkey(val monkeyType: MonkeyType, val internalId: MonkeyId) {
     abstract suspend fun pendingConnectionRequests(): List<ConversationDetails.Connection>
 
     abstract suspend fun createConversation(
-        name: String, monkeyList: List<Monkey>, protocol: ConversationOptions.Protocol, isDestroyable: Boolean = true
+        name: String,
+        monkeyList: List<Monkey>,
+        protocol: ConversationOptions.Protocol,
+        isDestroyable: Boolean = true
     ): MonkeyConversation
 
     abstract suspend fun leaveConversation(conversationId: ConversationId)
@@ -117,6 +121,7 @@ abstract class Monkey(val monkeyType: MonkeyType, val internalId: MonkeyId) {
     abstract suspend fun sendDirectMessageTo(anotherMonkey: Monkey, message: String)
 
     abstract suspend fun sendMessageTo(conversationId: ConversationId, message: String)
+    @Suppress("LongParameterList")
     abstract suspend fun createPrefixedConversation(
         name: String,
         protocol: ConversationOptions.Protocol,

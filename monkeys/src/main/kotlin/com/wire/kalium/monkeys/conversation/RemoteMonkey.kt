@@ -56,6 +56,7 @@ import io.ktor.http.ContentType
 import io.ktor.http.Url
 import io.ktor.http.contentType
 
+@Suppress("TooManyFunctions")
 class RemoteMonkey(private val httpClient: HttpClient, private val baseUrl: String, monkeyType: MonkeyType, internalId: MonkeyId) :
     Monkey(monkeyType, internalId) {
     private fun url(endpoint: String): Url {
@@ -129,7 +130,10 @@ class RemoteMonkey(private val httpClient: HttpClient, private val baseUrl: Stri
     }
 
     override suspend fun createConversation(
-        name: String, monkeyList: List<Monkey>, protocol: ConversationOptions.Protocol, isDestroyable: Boolean
+        name: String,
+        monkeyList: List<Monkey>,
+        protocol: ConversationOptions.Protocol,
+        isDestroyable: Boolean
     ): MonkeyConversation {
         return post(
             CREATE_CONVERSATION,

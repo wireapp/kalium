@@ -21,6 +21,7 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 
+@Suppress("LongMethod")
 fun Application.configureRoutes(monkey: Monkey, core: CoreLogic) {
     install(ContentNegotiation) {
         json()

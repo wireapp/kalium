@@ -75,7 +75,9 @@ object ConversationPool {
     }
 
     private suspend fun createDynamicConversation(
-        creator: Monkey, protocol: ConversationOptions.Protocol, monkeyList: List<Monkey>
+        creator: Monkey,
+        protocol: ConversationOptions.Protocol,
+        monkeyList: List<Monkey>
     ): ConversationDef {
         val name = "By monkey ${creator.monkeyType.userId()} - $protocol - ${Random.nextUInt()}"
         val conversation = creator.createConversation(name, monkeyList, protocol)
@@ -84,7 +86,9 @@ object ConversationPool {
     }
 
     suspend fun createDynamicConversation(
-        userCount: UserCount, protocol: ConversationOptions.Protocol, monkeyPool: MonkeyPool
+        userCount: UserCount,
+        protocol: ConversationOptions.Protocol,
+        monkeyPool: MonkeyPool
     ): ConversationDef {
         val creator = monkeyPool.randomLoggedInMonkeys(UserCount.single())[0]
         val members = creator.randomPeers(userCount, monkeyPool)
@@ -92,7 +96,10 @@ object ConversationPool {
     }
 
     suspend fun createDynamicConversation(
-        team: String, userCount: UserCount, protocol: ConversationOptions.Protocol, monkeyPool: MonkeyPool
+        team: String,
+        userCount: UserCount,
+        protocol: ConversationOptions.Protocol,
+        monkeyPool: MonkeyPool
     ): ConversationDef {
         val creator = monkeyPool.randomLoggedInMonkeysFromTeam(team, UserCount.single()).first()
         val members = creator.randomPeers(userCount, monkeyPool)

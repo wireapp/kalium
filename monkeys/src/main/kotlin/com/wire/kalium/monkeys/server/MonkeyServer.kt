@@ -90,7 +90,6 @@ class MonkeyServer : CliktCommand() {
         Monkey.internal(userData, MonkeyId.dummy())
     }
 
-
     override fun run() {
         if (logOutputFile != null) {
             CoreLogger.init(KaliumLogger.Config(logLevel, listOf(fileLogger)))

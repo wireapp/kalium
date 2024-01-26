@@ -185,7 +185,10 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
     }
 
     override suspend fun createConversation(
-        name: String, monkeyList: List<Monkey>, protocol: ConversationOptions.Protocol, isDestroyable: Boolean
+        name: String,
+        monkeyList: List<Monkey>,
+        protocol: ConversationOptions.Protocol,
+        isDestroyable: Boolean
     ): MonkeyConversation {
         val self = this
         return this.monkeyState.readyThen {
