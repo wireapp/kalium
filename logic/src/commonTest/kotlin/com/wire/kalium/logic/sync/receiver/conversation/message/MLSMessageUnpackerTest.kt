@@ -26,7 +26,9 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.DecryptedMessageBundle
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
+import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
@@ -45,6 +47,7 @@ import io.mockative.given
 import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -138,10 +141,48 @@ class MLSMessageUnpackerTest {
         val messageEvent = TestEvent.newMLSMessageEvent(eventTimestamp)
         mlsUnpacker.unpackMlsMessage(messageEvent)
 
+        verify(arrangement.checkRevocationList)
+            .suspendFunction(arrangement.checkRevocationList::invoke)
+            .with(eq(DECRYPTED_MESSAGE_BUNDLE))
+            .wasNotInvoked()
+
         verify(arrangement.mlsConversationRepository)
             .suspendFunction(arrangement.mlsConversationRepository::decryptMessage)
             .with(matching { it.contentEquals(messageEvent.content.decodeBase64Bytes()) }, eq(TestConversation.GROUP_ID))
             .wasInvoked(once)
+    }
+
+    @Test
+    fun givenNewMLSMessageEventWithCrlNewDistributionPoints_whenUnpacking_thenCheckRevocationList() = runTest {
+        val eventTimestamp = DateTimeUtil.currentInstant()
+        val decryptedMessageBundleWithDistributionPoints = DECRYPTED_MESSAGE_BUNDLE.copy(
+            crlNewDistributionPoints = listOf("https://crl.wire.com/crl.pem", "https://crl2.wire.com/crl.pem")
+        )
+        val (arrangement, mlsUnpacker) = Arrangement()
+            .withMLSClientProviderReturningClient()
+            .withGetConversationProtocolInfoSuccessful(TestConversation.MLS_CONVERSATION.protocol)
+            .withDecryptMessageReturning(Either.Right(listOf(decryptedMessageBundleWithDistributionPoints)))
+            .withCheckRevocationListReturning()
+            .arrange()
+
+        val messageEvent = TestEvent.newMLSMessageEvent(eventTimestamp)
+
+        mlsUnpacker.unpackMlsMessage(messageEvent)
+
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::decryptMessage)
+            .with(matching { it.contentEquals(messageEvent.content.decodeBase64Bytes()) }, eq(TestConversation.GROUP_ID))
+            .wasInvoked(once)
+
+        verify(arrangement.checkRevocationList)
+            .suspendFunction(arrangement.checkRevocationList::invoke)
+            .with(any())
+            .wasInvoked(twice)
+
+        verify(arrangement.certificateRevocationListRepository)
+            .suspendFunction(arrangement.certificateRevocationListRepository::addOrUpdateCRL)
+            .with(any(), any())
+            .wasInvoked(twice)
     }
 
     private class Arrangement {
@@ -164,12 +205,20 @@ class MLSMessageUnpackerTest {
         @Mock
         val subconversationRepository = mock(classOf<SubconversationRepository>())
 
+        @Mock
+        val checkRevocationList = mock(classOf<CheckRevocationListUseCase>())
+
+        @Mock
+        val certificateRevocationListRepository = mock(classOf<CertificateRevocationListRepository>())
+
         private val mlsMessageUnpacker = MLSMessageUnpackerImpl(
             conversationRepository,
             subconversationRepository,
             mlsConversationRepository,
             pendingProposalScheduler,
-            SELF_USER_ID
+            SELF_USER_ID,
+            checkRevocationList,
+            certificateRevocationListRepository
         )
 
         fun withMLSClientProviderReturningClient() = apply {
@@ -184,6 +233,12 @@ class MLSMessageUnpackerTest {
                 .suspendFunction(mlsConversationRepository::decryptMessage)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(result)
+        }
+        fun withCheckRevocationListReturning() = apply {
+            given(checkRevocationList)
+                .suspendFunction(checkRevocationList::invoke)
+                .whenInvokedWith(anything())
+                .thenReturn(Either.Right(ULong.MIN_VALUE))
         }
 
         fun withScheduleCommitSucceeding() = apply {
@@ -208,7 +263,8 @@ class MLSMessageUnpackerTest {
             groupID = TestConversation.GROUP_ID,
             applicationMessage = null,
             commitDelay = null,
-            identity = null
+            identity = null,
+            crlNewDistributionPoints = null
         )
     }
 }

@@ -1198,6 +1198,8 @@ class UserSessionScope internal constructor(
             subconversationRepository = subconversationRepository,
             mlsConversationRepository = mlsConversationRepository,
             pendingProposalScheduler = pendingProposalScheduler,
+            checkRevocationList = checkRevocationList,
+            certificateRevocationListRepository = certificateRevocationListRepository,
             selfUserId = userId
         )
 

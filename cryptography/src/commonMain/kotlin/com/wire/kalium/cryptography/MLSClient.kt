@@ -65,7 +65,8 @@ class DecryptedMessageBundle(
     val commitDelay: Long?,
     val senderClientId: CryptoQualifiedClientId?,
     val hasEpochChanged: Boolean,
-    val identity: WireIdentity?
+    val identity: WireIdentity?,
+    val crlNewDistributionPoints: List<String>?
 )
 
 @JvmInline

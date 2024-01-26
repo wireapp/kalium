@@ -387,7 +387,8 @@ class MLSClientImpl(
             value.commitDelay?.toLong(),
             value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(String(it)) },
             value.hasEpochChanged,
-            value.identity?.let { toIdentity(it) }
+            value.identity?.let { toIdentity(it) },
+            value.crlNewDistributionPoints
         )
 
         fun toDecryptedMessageBundle(value: BufferedDecryptedMessage) = DecryptedMessageBundle(
@@ -395,7 +396,8 @@ class MLSClientImpl(
             value.commitDelay?.toLong(),
             value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(String(it)) },
             value.hasEpochChanged,
-            value.identity?.let { toIdentity(it) }
+            value.identity?.let { toIdentity(it) },
+            value.crlNewDistributionPoints
         )
 
         fun toCredentialType(value: CredentialType) = when (value) {

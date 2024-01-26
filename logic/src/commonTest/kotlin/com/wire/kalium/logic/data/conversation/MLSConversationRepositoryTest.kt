@@ -1651,7 +1651,8 @@ class MLSConversationRepositoryTest {
                 commitDelay = null,
                 senderClientId = null,
                 hasEpochChanged = true,
-                identity = null
+                identity = null,
+                crlNewDistributionPoints = null
             )
             val MEMBER_JOIN_EVENT = EventContentDTO.Conversation.MemberJoinDTO(
                 TestConversation.NETWORK_ID,

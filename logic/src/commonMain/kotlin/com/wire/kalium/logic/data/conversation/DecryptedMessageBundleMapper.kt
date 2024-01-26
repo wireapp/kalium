@@ -22,8 +22,8 @@ import com.wire.kalium.logic.data.id.toModel
 
 fun com.wire.kalium.cryptography.DecryptedMessageBundle.toModel(groupID: GroupID): DecryptedMessageBundle =
     DecryptedMessageBundle(
-        groupID,
-        message?.let { message ->
+        groupID = groupID,
+        applicationMessage = message?.let { message ->
             // We will always have senderClientId together with an application message
             // but CoreCrypto API doesn't express this
             ApplicationMessage(
@@ -32,13 +32,14 @@ fun com.wire.kalium.cryptography.DecryptedMessageBundle.toModel(groupID: GroupID
                 senderClientID = senderClientId!!.toModel().clientId
             )
         },
-        commitDelay,
-        identity?.let { identity ->
+        commitDelay = commitDelay,
+        identity = identity?.let { identity ->
             E2EIdentity(
                 identity.clientId,
                 identity.handle,
                 identity.displayName,
                 identity.domain
             )
-        }
+        },
+        crlNewDistributionPoints = crlNewDistributionPoints
     )

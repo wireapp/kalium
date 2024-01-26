@@ -88,7 +88,8 @@ data class DecryptedMessageBundle(
     val groupID: GroupID,
     val applicationMessage: ApplicationMessage?,
     val commitDelay: Long?,
-    val identity: E2EIdentity?
+    val identity: E2EIdentity?,
+    val crlNewDistributionPoints: List<String>?
 )
 
 data class E2EIdentity(val clientId: String, val handle: String, val displayName: String, val domain: String)
