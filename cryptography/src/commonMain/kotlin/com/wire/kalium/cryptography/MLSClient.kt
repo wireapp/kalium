@@ -48,25 +48,91 @@ open class GroupInfoBundle(
     var payload: ByteArray
 )
 
-open class CommitBundle(
+data class CommitBundle(
     val commit: ByteArray,
     val welcome: ByteArray?,
+<<<<<<< HEAD
     val groupInfoBundle: GroupInfoBundle
+=======
+    val groupInfoBundle: GroupInfoBundle,
+    val crlNewDistributionPoints: List<String>?
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as CommitBundle
+
+        if (!commit.contentEquals(other.commit)) return false
+        if (welcome != null) {
+            if (other.welcome == null) return false
+            if (!welcome.contentEquals(other.welcome)) return false
+        } else if (other.welcome != null) return false
+        if (groupInfoBundle != other.groupInfoBundle) return false
+        return crlNewDistributionPoints == other.crlNewDistributionPoints
+    }
+
+    override fun hashCode(): Int {
+        var result = commit.contentHashCode()
+        result = 31 * result + (welcome?.contentHashCode() ?: 0)
+        result = 31 * result + groupInfoBundle.hashCode()
+        result = 31 * result + (crlNewDistributionPoints?.hashCode() ?: 0)
+        return result
+    }
+}
+
+data class WelcomeBundle(
+    val groupId: MLSGroupId,
+    val crlNewDistributionPoints: List<String>?
+>>>>>>> cf92a57444 (feat: Trigger CheckRevocationList use case (WPB-3243) (#2415))
 )
 
-open class RotateBundle(
+data class RotateBundle(
     var commits: Map<MLSGroupId, CommitBundle>,
     var newKeyPackages: List<ByteArray>,
     var keyPackageRefsToRemove: List<ByteArray>
 )
 
-class DecryptedMessageBundle(
+data class DecryptedMessageBundle(
     val message: ByteArray?,
     val commitDelay: Long?,
     val senderClientId: CryptoQualifiedClientId?,
     val hasEpochChanged: Boolean,
+<<<<<<< HEAD
     val identity: WireIdentity?
 )
+=======
+    val identity: WireIdentity?,
+    val crlNewDistributionPoints: List<String>?
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as DecryptedMessageBundle
+
+        if (message != null) {
+            if (other.message == null) return false
+            if (!message.contentEquals(other.message)) return false
+        } else if (other.message != null) return false
+        if (commitDelay != other.commitDelay) return false
+        if (senderClientId != other.senderClientId) return false
+        if (hasEpochChanged != other.hasEpochChanged) return false
+        if (identity != other.identity) return false
+        return crlNewDistributionPoints == other.crlNewDistributionPoints
+    }
+
+    override fun hashCode(): Int {
+        var result = message?.contentHashCode() ?: 0
+        result = 31 * result + (commitDelay?.hashCode() ?: 0)
+        result = 31 * result + (senderClientId?.hashCode() ?: 0)
+        result = 31 * result + hasEpochChanged.hashCode()
+        result = 31 * result + (identity?.hashCode() ?: 0)
+        result = 31 * result + (crlNewDistributionPoints?.hashCode() ?: 0)
+        return result
+    }
+}
+>>>>>>> cf92a57444 (feat: Trigger CheckRevocationList use case (WPB-3243) (#2415))
 
 @JvmInline
 value class Ed22519Key(

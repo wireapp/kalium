@@ -641,7 +641,14 @@ class UserSessionScope internal constructor(
             mlsPublicKeysRepository,
             commitBundleEventReceiver,
             epochsFlow,
+<<<<<<< HEAD
             proposalTimersFlow
+=======
+            proposalTimersFlow,
+            keyPackageLimitsProvider,
+            checkRevocationList,
+            certificateRevocationListRepository
+>>>>>>> cf92a57444 (feat: Trigger CheckRevocationList use case (WPB-3243) (#2415))
         )
 
     private val e2eiRepository: E2EIRepository
@@ -1301,8 +1308,14 @@ class UserSessionScope internal constructor(
         )
     private val mlsWelcomeHandler: MLSWelcomeEventHandler
         get() = MLSWelcomeEventHandlerImpl(
-            mlsClientProvider, conversationRepository, oneOnOneResolver, client.refillKeyPackages
+            mlsClientProvider = mlsClientProvider,
+            conversationRepository = conversationRepository,
+            oneOnOneResolver = oneOnOneResolver,
+            refillKeyPackages = client.refillKeyPackages,
+            checkRevocationList = checkRevocationList,
+            certificateRevocationListRepository = certificateRevocationListRepository
         )
+
     private val renamedConversationHandler: RenamedConversationEventHandler
         get() = RenamedConversationEventHandlerImpl(
             userStorage.database.conversationDAO, persistMessage

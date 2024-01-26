@@ -27,6 +27,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.Event.Conversation.MLSWelcome
 import com.wire.kalium.logic.data.id.ConversationId
@@ -42,6 +43,7 @@ import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapper
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
@@ -171,6 +173,12 @@ internal class MLSConversationDataSource(
     private val commitBundleEventReceiver: CommitBundleEventReceiver,
     private val epochsFlow: MutableSharedFlow<GroupID>,
     private val proposalTimersFlow: MutableSharedFlow<ProposalTimer>,
+<<<<<<< HEAD
+=======
+    private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
+    private val checkRevocationList: CheckRevocationListUseCase,
+    private val certificateRevocationListRepository: CertificateRevocationListRepository,
+>>>>>>> cf92a57444 (feat: Trigger CheckRevocationList use case (WPB-3243) (#2415))
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
     private val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper(),
@@ -209,12 +217,22 @@ internal class MLSConversationDataSource(
                         kaliumLogger.d("Epoch changed for groupID = ${groupID.value.obfuscateId()}")
                         epochsFlow.emit(groupID)
                     }
+<<<<<<< HEAD
                     messages.map { it.toModel(groupID) }
+=======
+                    messages.map {
+                        it.crlNewDistributionPoints?.let { newDistributionPoints ->
+                            checkRevocationList(newDistributionPoints)
+                        }
+                        it.toModel(groupID)
+                    }
+>>>>>>> cf92a57444 (feat: Trigger CheckRevocationList use case (WPB-3243) (#2415))
                 }
             }
         }
     }
 
+    // Todo: Used only in test, should we remove it ?
     override suspend fun establishMLSGroupFromWelcome(welcomeEvent: MLSWelcome): Either<CoreFailure, Unit> =
         mlsClientProvider.getMLSClient().flatMap { client ->
             wrapMLSRequest { client.processWelcomeMessage(welcomeEvent.message.decodeBase64Bytes()) }
@@ -228,7 +246,14 @@ internal class MLSConversationDataSource(
                                 ConversationEntity.GroupState.ESTABLISHED,
                                 groupID
                             )
+<<<<<<< HEAD
                             kaliumLogger.i("Updated conversation from welcome message (groupID = $groupID)")
+=======
+                            kaliumLogger.i("Updated conversation from welcome message (groupID = ${welcomeBundle.groupId})")
+                            welcomeBundle.crlNewDistributionPoints?.let { newDistributionPoints ->
+                                checkRevocationList(newDistributionPoints)
+                            }
+>>>>>>> cf92a57444 (feat: Trigger CheckRevocationList use case (WPB-3243) (#2415))
                         }
                     }
                 }
@@ -271,6 +296,12 @@ internal class MLSConversationDataSource(
             wrapMLSRequest {
                 mlsClient.joinByExternalCommit(groupInfo)
             }.flatMap { commitBundle ->
+<<<<<<< HEAD
+=======
+                commitBundle.crlNewDistributionPoints?.let {
+                    checkRevocationList(it)
+                }
+>>>>>>> cf92a57444 (feat: Trigger CheckRevocationList use case (WPB-3243) (#2415))
                 sendCommitBundleForExternalCommit(groupID, commitBundle)
             }.onSuccess {
                 conversationDAO.updateConversationGroupState(
@@ -368,6 +399,12 @@ internal class MLSConversationDataSource(
                 wrapMLSRequest {
                     mlsClient.commitPendingProposals(idMapper.toCryptoModel(groupID))
                 }.flatMap { commitBundle ->
+<<<<<<< HEAD
+=======
+                    commitBundle?.crlNewDistributionPoints?.let {
+                        checkRevocationList(it)
+                    }
+>>>>>>> cf92a57444 (feat: Trigger CheckRevocationList use case (WPB-3243) (#2415))
                     commitBundle?.let { sendCommitBundle(groupID, it) } ?: Either.Right(Unit)
                 }.flatMap {
                     wrapStorageRequest {
@@ -418,6 +455,12 @@ internal class MLSConversationDataSource(
                                 mlsClient.addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)
                             }
                         }.flatMap { commitBundle ->
+<<<<<<< HEAD
+=======
+                            commitBundle?.crlNewDistributionPoints?.let {
+                                checkRevocationList(it)
+                            }
+>>>>>>> cf92a57444 (feat: Trigger CheckRevocationList use case (WPB-3243) (#2415))
                             commitBundle?.let {
                                 sendCommitBundle(groupID, it)
                             } ?: Either.Right(Unit)
@@ -533,10 +576,21 @@ internal class MLSConversationDataSource(
         wrapMLSRequest {
             mlsClient.e2eiRotateAll(e2eiClient, certificateChain, 10U)
         }.map { rotateBundle ->
+<<<<<<< HEAD
             // todo: store keypackages to drop, later drop them again
             kaliumLogger.w("upload new keypackages and drop old ones")
             keyPackageRepository.replaceKeyPackages(clientId, rotateBundle.newKeyPackages).flatMapLeft {
                 return Either.Left(it)
+=======
+            rotateBundle.crlNewDistributionPoints?.let {
+                checkRevocationList(it)
+            }
+            if (!isNewClient) {
+                kaliumLogger.w("enrollment for existing client: upload new keypackages and drop old ones")
+                keyPackageRepository.replaceKeyPackages(clientId, rotateBundle.newKeyPackages).flatMapLeft {
+                    return Either.Left(it)
+                }
+>>>>>>> cf92a57444 (feat: Trigger CheckRevocationList use case (WPB-3243) (#2415))
             }
 
             kaliumLogger.w("send migration commits after key rotations")
@@ -677,6 +731,16 @@ internal class MLSConversationDataSource(
                 kaliumLogger.e("Discarding pending commit failed: $error")
             }
             Either.Right(Unit)
+        }
+    }
+
+    private suspend fun checkRevocationList(crlNewDistributionPoints: List<String>) {
+        crlNewDistributionPoints.forEach { url ->
+            checkRevocationList(url).map { newExpiration ->
+                newExpiration?.let {
+                    certificateRevocationListRepository.addOrUpdateCRL(url, it)
+                }
+            }
         }
     }
 }
