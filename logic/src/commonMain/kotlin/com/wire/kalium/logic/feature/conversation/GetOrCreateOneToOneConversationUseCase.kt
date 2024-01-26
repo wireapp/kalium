@@ -69,7 +69,10 @@ internal class GetOrCreateOneToOneConversationUseCaseImpl(
     private suspend fun resolveOneOnOneConversationWithUser(otherUserId: UserId): Either<CoreFailure, Conversation> =
         (userRepository.getKnownUser(otherUserId).first()?.let { otherUser ->
             // TODO support lazily establishing mls group for team 1-1
-            oneOnOneResolver.resolveOneOnOneConversationWithUser(otherUser).flatMap {
+            oneOnOneResolver.resolveOneOnOneConversationWithUser(
+                user = otherUser,
+                invalidateCurrentKnownProtocols = true
+            ).flatMap {
                 conversationRepository.getConversationById(it)?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
             }
         } ?: Either.Left(StorageFailure.DataNotFound))
