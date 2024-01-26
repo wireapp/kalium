@@ -61,7 +61,10 @@ internal class NotifyConversationIsOpenUseCaseImpl(
             kaliumLogger.v(
                 "Reevaluating protocol for 1:1 conversation with ID: ${conversationId.toLogString()}"
             )
-            oneOnOneResolver.resolveOneOnOneConversationWithUser(conversation.otherUser)
+            oneOnOneResolver.resolveOneOnOneConversationWithUser(
+                user = conversation.otherUser,
+                invalidateCurrentKnownProtocols = true
+            )
         }
 
         // Delete Ephemeral Messages that has passed the end date

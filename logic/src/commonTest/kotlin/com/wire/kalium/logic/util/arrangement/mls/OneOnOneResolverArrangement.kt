@@ -23,6 +23,7 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import kotlinx.coroutines.Job
@@ -52,7 +53,7 @@ class OneOnOneResolverArrangementImpl : OneOnOneResolverArrangement {
     override fun withResolveOneOnOneConversationWithUserIdReturning(result: Either<CoreFailure, ConversationId>) {
         given(oneOnOneResolver)
             .suspendFunction(oneOnOneResolver::resolveOneOnOneConversationWithUserId)
-            .whenInvokedWith(any())
+            .whenInvokedWith(any(), eq(true))
             .thenReturn(result)
     }
 
