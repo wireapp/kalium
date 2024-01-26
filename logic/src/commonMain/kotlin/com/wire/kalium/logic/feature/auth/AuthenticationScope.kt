@@ -139,4 +139,8 @@ class AuthenticationScope internal constructor(
             serverConfigApi = unauthenticatedNetworkContainer.serverConfigApi,
             ssoLoginRepository = ssoLoginRepository
         )
+
+    val currentServerConfig: () -> ServerConfig = {
+        serverConfig
+    }
 }
