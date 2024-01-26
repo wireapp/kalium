@@ -48,12 +48,35 @@ open class GroupInfoBundle(
     var payload: ByteArray
 )
 
-open class CommitBundle(
+data class CommitBundle(
     val commit: ByteArray,
     val welcome: ByteArray?,
     val groupInfoBundle: GroupInfoBundle,
     val crlNewDistributionPoints: List<String>?
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as CommitBundle
+
+        if (!commit.contentEquals(other.commit)) return false
+        if (welcome != null) {
+            if (other.welcome == null) return false
+            if (!welcome.contentEquals(other.welcome)) return false
+        } else if (other.welcome != null) return false
+        if (groupInfoBundle != other.groupInfoBundle) return false
+        return crlNewDistributionPoints == other.crlNewDistributionPoints
+    }
+
+    override fun hashCode(): Int {
+        var result = commit.contentHashCode()
+        result = 31 * result + (welcome?.contentHashCode() ?: 0)
+        result = 31 * result + groupInfoBundle.hashCode()
+        result = 31 * result + (crlNewDistributionPoints?.hashCode() ?: 0)
+        return result
+    }
+}
 
 data class WelcomeBundle(
     val groupId :MLSGroupId,

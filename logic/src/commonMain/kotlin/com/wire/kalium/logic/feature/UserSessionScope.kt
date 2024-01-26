@@ -644,7 +644,9 @@ class UserSessionScope internal constructor(
             commitBundleEventReceiver,
             epochsFlow,
             proposalTimersFlow,
-            keyPackageLimitsProvider
+            keyPackageLimitsProvider,
+            checkRevocationList,
+            certificateRevocationListRepository
         )
 
     private val e2eiRepository: E2EIRepository

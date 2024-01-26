@@ -34,9 +34,11 @@ import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.COMMIT_BUNDLE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.E2EI_CONVERSATION_CLIENT_INFO_ENTITY
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.TEST_FAILURE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.WIRE_IDENTITY
+import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedClientID
@@ -47,6 +49,7 @@ import com.wire.kalium.logic.data.mlspublickeys.KeyType
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKey
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -506,6 +509,37 @@ class MLSConversationRepositoryTest {
             .suspendFunction(arrangement.conversationDAO::updateConversationGroupState)
             .with(eq(ConversationEntity.GroupState.ESTABLISHED), eq(Arrangement.RAW_GROUP_ID))
             .wasInvoked(once)
+
+        verify(arrangement.checkRevocationList)
+            .suspendFunction(arrangement.checkRevocationList::invoke)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenMlsClientReturnsNewCrlDistributionPoints_whenJoiningGroupByExternalCommit_thenCheckRevocationList() = runTest {
+        val commitBundleWithDistributionPoints = COMMIT_BUNDLE.copy(crlNewDistributionPoints = listOf("url"))
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withJoinConversationSuccessful()
+            .withCheckRevocationListResult()
+            .withSendMLSMessageSuccessful()
+            .withSendCommitBundleSuccessful()
+            .withJoinByExternalCommitSuccessful(commitBundleWithDistributionPoints)
+            .withMergePendingGroupFromExternalCommitSuccessful()
+            .arrange()
+
+        mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
+
+        verify(arrangement.checkRevocationList)
+            .suspendFunction(arrangement.checkRevocationList::invoke)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.certificateRevocationListRepository)
+            .suspendFunction(arrangement.certificateRevocationListRepository::addOrUpdateCRL)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -1371,6 +1405,12 @@ class MLSConversationRepositoryTest {
         @Mock
         val keyPackageLimitsProvider = mock(classOf<KeyPackageLimitsProvider>())
 
+        @Mock
+        val checkRevocationList = mock(classOf<CheckRevocationListUseCase>())
+
+        @Mock
+        val certificateRevocationListRepository = mock(classOf<CertificateRevocationListRepository>())
+
         val epochsFlow = MutableSharedFlow<GroupID>()
 
         val proposalTimersFlow = MutableSharedFlow<ProposalTimer>()
@@ -1378,6 +1418,23 @@ class MLSConversationRepositoryTest {
         init {
             withCommitBundleEventReceiverSucceeding()
         }
+
+        fun arrange() = this to MLSConversationDataSource(
+            TestUser.SELF.id,
+            keyPackageRepository,
+            mlsClientProvider,
+            mlsMessageApi,
+            conversationDAO,
+            clientApi,
+            syncManager,
+            mlsPublicKeysRepository,
+            commitBundleEventReceiver,
+            epochsFlow,
+            proposalTimersFlow,
+            keyPackageLimitsProvider,
+            checkRevocationList,
+            certificateRevocationListRepository
+        )
 
         fun withCommitBundleEventReceiverSucceeding() = apply {
             given(commitBundleEventReceiver)
@@ -1488,11 +1545,11 @@ class MLSConversationRepositoryTest {
                 .thenReturn(COMMIT)
         }
 
-        fun withJoinByExternalCommitSuccessful() = apply {
+        fun withJoinByExternalCommitSuccessful(commitBundle: CommitBundle = COMMIT_BUNDLE) = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::joinByExternalCommit)
                 .whenInvokedWith(anything())
-                .thenReturn(COMMIT_BUNDLE)
+                .thenReturn(commitBundle)
         }
 
         fun withMergePendingGroupFromExternalCommitSuccessful() = apply {
@@ -1546,6 +1603,13 @@ class MLSConversationRepositoryTest {
                 .suspendFunction(mlsMessageApi::sendCommitBundle)
                 .whenInvokedWith(matching { invocationCounter += 1; invocationCounter <= times })
                 .then { NetworkResponse.Error(failure) }
+        }
+
+        fun withCheckRevocationListResult() = apply {
+            given(checkRevocationList)
+                .suspendFunction(checkRevocationList::invoke)
+                .whenInvokedWith(anything())
+                .thenReturn(Either.Right(1uL))
         }
 
         fun withSendMLSMessageSuccessful(events: List<EventContentDTO> = emptyList()) = apply {
@@ -1610,21 +1674,6 @@ class MLSConversationRepositoryTest {
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(identitiesMap)
         }
-
-        fun arrange() = this to MLSConversationDataSource(
-            TestUser.SELF.id,
-            keyPackageRepository,
-            mlsClientProvider,
-            mlsMessageApi,
-            conversationDAO,
-            clientApi,
-            syncManager,
-            mlsPublicKeysRepository,
-            commitBundleEventReceiver,
-            epochsFlow,
-            proposalTimersFlow,
-            keyPackageLimitsProvider
-        )
 
         companion object {
             val TEST_FAILURE = Either.Left(CoreFailure.Unknown(Throwable("an error")))
