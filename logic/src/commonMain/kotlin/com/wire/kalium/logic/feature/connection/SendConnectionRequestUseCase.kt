@@ -63,17 +63,17 @@ internal class SendConnectionRequestUseCaseImpl(
         })
     }
 
-    private fun handleServerMissCommunicationError(coreFailure: NetworkFailure.ServerMiscommunication): SendConnectionRequestResult.Failure =
-        when (coreFailure.kaliumException) {
+    private fun handleServerMissCommunicationError(failure: NetworkFailure.ServerMiscommunication): SendConnectionRequestResult.Failure =
+        when (failure.kaliumException) {
             is KaliumException.InvalidRequestError -> {
-                with(coreFailure.kaliumException) {
+                with(failure.kaliumException) {
                     when {
                         isMissingLegalHoldConsent() -> SendConnectionRequestResult.Failure.MissingLegalHoldConsent
-                        else -> SendConnectionRequestResult.Failure.GenericFailure(coreFailure)
+                        else -> SendConnectionRequestResult.Failure.GenericFailure(failure)
                     }
                 }
             }
-            else -> SendConnectionRequestResult.Failure.GenericFailure(coreFailure)
+            else -> SendConnectionRequestResult.Failure.GenericFailure(failure)
         }
 }
 
