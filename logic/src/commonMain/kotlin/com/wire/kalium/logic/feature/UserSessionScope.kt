@@ -77,6 +77,8 @@ import com.wire.kalium.logic.data.conversation.ProposalTimer
 import com.wire.kalium.logic.data.conversation.SubconversationRepositoryImpl
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProviderImpl
+import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
+import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepositoryDataSource
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryImpl
 import com.wire.kalium.logic.data.event.EventDataSource
@@ -205,6 +207,8 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolverImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorker
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorkerImpl
+import com.wire.kalium.logic.feature.e2ei.CertificateRevocationListCheckWorker
+import com.wire.kalium.logic.feature.e2ei.CertificateRevocationListCheckWorkerImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
@@ -1509,6 +1513,12 @@ class UserSessionScope internal constructor(
             userStorage.database.clientDAO,
             userStorage.database.metadataDAO,
         )
+    private val certificateRevocationListRepository: CertificateRevocationListRepository
+        get() = CertificateRevocationListRepositoryDataSource(
+            acmeApi = globalScope.unboundNetworkContainer.acmeApi,
+            metadataDAO = userStorage.database.metadataDAO,
+            userConfigRepository = userConfigRepository
+        )
 
     private val proteusPreKeyRefiller: ProteusPreKeyRefiller
         get() = ProteusPreKeyRefillerImpl(preKeyRepository)
@@ -1518,6 +1528,14 @@ class UserSessionScope internal constructor(
             incrementalSyncRepository = incrementalSyncRepository,
             proteusPreKeyRefiller = proteusPreKeyRefiller,
             preKeyRepository = preKeyRepository
+        )
+    }
+
+    private val certificateRevocationListCheckWorker: CertificateRevocationListCheckWorker by lazy {
+        CertificateRevocationListCheckWorkerImpl(
+            certificateRevocationListRepository = certificateRevocationListRepository,
+            incrementalSyncRepository = incrementalSyncRepository,
+            checkRevocationList = checkRevocationList,
         )
     }
 
@@ -1882,7 +1900,7 @@ class UserSessionScope internal constructor(
 
     private val checkRevocationList: CheckRevocationListUseCase
         get() = CheckRevocationListUseCaseImpl(
-            e2EIRepository = e2eiRepository,
+            certificateRevocationListRepository = certificateRevocationListRepository,
             currentClientIdProvider = clientIdProvider,
             mlsClientProvider = mlsClientProvider,
             mLSConversationsVerificationStatusesHandler = mlsConversationsVerificationStatusesHandler
@@ -1918,6 +1936,10 @@ class UserSessionScope internal constructor(
 
         launch {
             proteusSyncWorker.execute()
+        }
+
+        launch {
+            certificateRevocationListCheckWorker.execute()
         }
 
         launch {
