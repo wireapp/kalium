@@ -55,7 +55,6 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCa
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCaseImpl
-import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonMessageUseCase
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
@@ -351,14 +350,6 @@ class MessageScope internal constructor(
 
     val resetSession: ResetSessionUseCase
         get() = ResetSessionUseCaseImpl(proteusClientProvider, sessionResetSender, messageRepository)
-
-    val sendButtonActionConfirmationMessage: SendButtonActionConfirmationMessageUseCase
-        get() = SendButtonActionConfirmationMessageUseCase(
-            syncManager = syncManager,
-            messageSender = messageSender,
-            selfUserId = selfUserId,
-            currentClientIdProvider = currentClientIdProvider
-        )
 
     val sendButtonActionMessage: SendButtonActionMessageUseCase
         get() = SendButtonActionMessageUseCase(
