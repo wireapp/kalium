@@ -1066,7 +1066,7 @@ class E2EIRepositoryTest {
             given(mlsClient)
                 .suspendFunction(mlsClient::registerIntermediateCa)
                 .whenInvokedWith(any())
-                .thenReturn(Unit)
+                .thenDoNothing()
         }
 
         fun withRegisterTrustAnchors() = apply {
