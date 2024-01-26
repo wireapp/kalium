@@ -216,7 +216,9 @@ internal class MLSConversationDataSource(
                         epochsFlow.emit(groupID)
                     }
                     messages.map {
-                        // TODO: process crlDps from decryptMessage
+                        it.crlNewDistributionPoints?.let { newDistributionPoints ->
+                            checkRevocationList(newDistributionPoints)
+                        }
                         it.toModel(groupID)
                     }
                 }

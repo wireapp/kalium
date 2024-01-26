@@ -90,14 +90,41 @@ data class RotateBundle(
     val crlNewDistributionPoints: List<String>?
 )
 
-class DecryptedMessageBundle(
+data class DecryptedMessageBundle(
     val message: ByteArray?,
     val commitDelay: Long?,
     val senderClientId: CryptoQualifiedClientId?,
     val hasEpochChanged: Boolean,
     val identity: WireIdentity?,
     val crlNewDistributionPoints: List<String>?
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as DecryptedMessageBundle
+
+        if (message != null) {
+            if (other.message == null) return false
+            if (!message.contentEquals(other.message)) return false
+        } else if (other.message != null) return false
+        if (commitDelay != other.commitDelay) return false
+        if (senderClientId != other.senderClientId) return false
+        if (hasEpochChanged != other.hasEpochChanged) return false
+        if (identity != other.identity) return false
+        return crlNewDistributionPoints == other.crlNewDistributionPoints
+    }
+
+    override fun hashCode(): Int {
+        var result = message?.contentHashCode() ?: 0
+        result = 31 * result + (commitDelay?.hashCode() ?: 0)
+        result = 31 * result + (senderClientId?.hashCode() ?: 0)
+        result = 31 * result + hasEpochChanged.hashCode()
+        result = 31 * result + (identity?.hashCode() ?: 0)
+        result = 31 * result + (crlNewDistributionPoints?.hashCode() ?: 0)
+        return result
+    }
+}
 
 @JvmInline
 value class Ed22519Key(

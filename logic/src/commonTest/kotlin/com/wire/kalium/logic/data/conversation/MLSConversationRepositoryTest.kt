@@ -120,6 +120,37 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
+    fun givenCommitMessageWithNewDistributionPoints_whenDecryptingMessage_thenCheckRevocationList() = runTest(TestKaliumDispatcher.default) {
+        val messageWithNewDistributionPoints = Arrangement.DECRYPTED_MESSAGE_BUNDLE.copy(
+            crlNewDistributionPoints = listOf("url")
+        )
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withDecryptMLSMessageSuccessful(messageWithNewDistributionPoints)
+            .withCheckRevocationListResult()
+            .arrange()
+
+        val epochChange = async(TestKaliumDispatcher.default) {
+            arrangement.epochsFlow.first()
+        }
+        yield()
+
+        mlsConversationRepository.decryptMessage(Arrangement.COMMIT, Arrangement.GROUP_ID)
+
+        verify(arrangement.checkRevocationList)
+            .suspendFunction(arrangement.checkRevocationList::invoke)
+            .with(any())
+            .wasInvoked(once)
+
+        verify(arrangement.certificateRevocationListRepository)
+            .suspendFunction(arrangement.certificateRevocationListRepository::addOrUpdateCRL)
+            .with(any(), any())
+            .wasInvoked(once)
+
+        assertEquals(Arrangement.GROUP_ID, epochChange.await())
+    }
+
+    @Test
     fun givenSuccessfulResponses_whenCallingEstablishMLSGroup_thenGroupIsCreatedAndCommitBundleIsSentAndAccepted() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
