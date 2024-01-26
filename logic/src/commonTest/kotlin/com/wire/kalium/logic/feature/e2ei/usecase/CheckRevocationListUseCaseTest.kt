@@ -22,7 +22,7 @@ import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
-import com.wire.kalium.logic.data.e2ei.E2EIRepository
+import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.conversation.MLSConversationsVerificationStatusesHandler
 import com.wire.kalium.logic.framework.TestClient
@@ -54,8 +54,8 @@ class CheckRevocationListUseCaseTest {
             val result = checkRevocationList.invoke(DUMMY_URL)
 
             result.shouldFail()
-            verify(arrangement.e2EIRepository)
-                .suspendFunction(arrangement.e2EIRepository::getClientDomainCRL)
+            verify(arrangement.certificateRevocationListRepository)
+                .suspendFunction(arrangement.certificateRevocationListRepository::getClientDomainCRL)
                 .with(any())
                 .wasInvoked(once)
 
@@ -76,8 +76,8 @@ class CheckRevocationListUseCaseTest {
             val result = checkRevocationList.invoke(DUMMY_URL)
 
             result.shouldFail()
-            verify(arrangement.e2EIRepository)
-                .suspendFunction(arrangement.e2EIRepository::getClientDomainCRL)
+            verify(arrangement.certificateRevocationListRepository)
+                .suspendFunction(arrangement.certificateRevocationListRepository::getClientDomainCRL)
                 .with(any())
                 .wasInvoked(once)
 
@@ -178,7 +178,7 @@ class CheckRevocationListUseCaseTest {
     internal class Arrangement {
 
         @Mock
-        val e2EIRepository = mock(classOf<E2EIRepository>())
+        val certificateRevocationListRepository = mock(classOf<CertificateRevocationListRepository>())
 
         @Mock
         val mlsClient = mock(classOf<MLSClient>())
@@ -196,22 +196,22 @@ class CheckRevocationListUseCaseTest {
             mock(classOf<MLSClientProvider>())
 
         fun arrange() = this to CheckRevocationListUseCaseImpl(
-            e2EIRepository = e2EIRepository,
+            certificateRevocationListRepository = certificateRevocationListRepository,
             currentClientIdProvider = currentClientIdProvider,
             mlsClientProvider = mlsClientProvider,
             mLSConversationsVerificationStatusesHandler = mLSConversationsVerificationStatusesHandler
         )
 
         fun withE2EIRepositoryFailure() = apply {
-            given(e2EIRepository)
-                .suspendFunction(e2EIRepository::getClientDomainCRL)
+            given(certificateRevocationListRepository)
+                .suspendFunction(certificateRevocationListRepository::getClientDomainCRL)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Left(E2EIFailure.Generic(Exception())))
         }
 
         fun withE2EIRepositorySuccess() = apply {
-            given(e2EIRepository)
-                .suspendFunction(e2EIRepository::getClientDomainCRL)
+            given(certificateRevocationListRepository)
+                .suspendFunction(certificateRevocationListRepository::getClientDomainCRL)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right("result".toByteArray()))
         }
@@ -260,7 +260,7 @@ class CheckRevocationListUseCaseTest {
     }
 
     companion object {
-        const val DUMMY_URL = "https://dummy.url"
-        val EXPIRATION = 10.toULong()
+        private const val DUMMY_URL = "https://dummy.url"
+        private val EXPIRATION = 10.toULong()
     }
 }
