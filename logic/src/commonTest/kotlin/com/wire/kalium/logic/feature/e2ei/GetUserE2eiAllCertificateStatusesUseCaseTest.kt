@@ -97,7 +97,7 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
 
         private val userId = UserId("value", "domain")
         private val WIRE_IDENTITY =
-            WireIdentity("id", "user_handle", "User Test", "domain.com", "certificate", CryptoCertificateStatus.VALID)
+            WireIdentity("id", "user_handle", "User Test", "domain.com", "certificate", CryptoCertificateStatus.VALID, "thumbprint")
         private val E2EI_CERTIFICATE =
             E2eiCertificate(issuer = "issue", status = CertificateStatus.VALID, serialNumber = "number", certificateDetail = "details")
     }
