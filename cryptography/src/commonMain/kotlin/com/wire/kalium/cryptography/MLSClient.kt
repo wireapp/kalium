@@ -55,7 +55,7 @@ open class CommitBundle(
     val crlNewDistributionPoints: List<String>?
 )
 
-open class WelcomeBundle(
+data class WelcomeBundle(
     val groupId :MLSGroupId,
     val crlNewDistributionPoints: List<String>?
 )
