@@ -165,6 +165,7 @@ class UpdateApiVersionUseCaseTest {
             advanceUntilIdle()
         }
 
+        assertEquals(1, arrangement.serverConfigProviderCalledCount)
         verify(arrangement.tokenStorage)
             .suspendFunction(arrangement.tokenStorage::proxyCredentials)
             .with(any<UserIDEntity>())
@@ -214,6 +215,7 @@ class UpdateApiVersionUseCaseTest {
             advanceUntilIdle()
         }
 
+        assertEquals(2, arrangement.serverConfigProviderCalledCount)
         verify(arrangement.tokenStorage)
             .suspendFunction(arrangement.tokenStorage::proxyCredentials)
             .with(eq(userId2.toDao()))
