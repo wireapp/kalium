@@ -18,6 +18,24 @@
 
 package com.wire.kalium.logic.feature.server
 
+import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.data.auth.login.ProxyCredentials
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.session.SessionMapper
+import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.functional.getOrElse
+import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.wrapStorageNullableRequest
+import com.wire.kalium.persistence.client.AuthTokenStorage
+import io.ktor.util.collections.ConcurrentSet
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
+
 /**
  * Iterates over all locally stored server configs and update each api version
  */
@@ -25,14 +43,42 @@ interface UpdateApiVersionsUseCase {
     suspend operator fun invoke()
 }
 
-class UpdateApiVersionsUseCaseImpl internal constructor() : UpdateApiVersionsUseCase {
+class UpdateApiVersionsUseCaseImpl internal constructor(
+    private val sessionRepository: SessionRepository,
+    private val tokenStorage: AuthTokenStorage,
+    private val serverConfigRepoProvider: (serverConfig: ServerConfig, proxyCredentials: ProxyCredentials?) -> ServerConfigRepository,
+    private val sessionMapper: SessionMapper = MapperProvider.sessionMapper()
+) : UpdateApiVersionsUseCase {
     override suspend operator fun invoke() {
-        // TODO: reimplement this in a safe way
-//
-//         configRepository.configList().onSuccess { configList ->
-//             configList.forEach {
-//                 configRepository.updateConfigApiVersion(it.id)
-//             }
-//         }
+        coroutineScope {
+            val updatedServerId = ConcurrentSet<String>()
+            sessionRepository.validSessionsWithServerConfig().getOrElse {
+                return@coroutineScope
+            }.map { (userId, serverConfig) ->
+                launch {
+                    if (updatedServerId.contains(serverConfig.id)) {
+                        return@launch
+                    }
+                    updatedServerId.add(serverConfig.id)
+                    updateApiForUser(userId, serverConfig)
+                }
+            }.joinAll()
+        }
+    }
+
+    private suspend fun updateApiForUser(userId: UserId, serverConfig: ServerConfig) {
+        val proxyCredentials: ProxyCredentials? = if (serverConfig.links.apiProxy?.needsAuthentication == true) {
+            wrapStorageNullableRequest {
+                tokenStorage.proxyCredentials(userId.toDao())
+            }.map {
+                it?.let { sessionMapper.formEntityToProxyModel(it) }
+            }.getOrElse {
+                kaliumLogger.d("No proxy credentials found for user ${userId.toLogString()}}")
+                return
+            }
+        } else {
+            null
+        }
+        serverConfigRepoProvider(serverConfig, proxyCredentials).updateConfigApiVersion(serverConfig)
     }
 }
