@@ -46,6 +46,7 @@ interface ACMEApi {
     suspend fun sendAuthorizationRequest(url: String, body: ByteArray? = null): NetworkResponse<ACMEAuthorizationResponse>
     suspend fun sendChallengeRequest(url: String, body: ByteArray): NetworkResponse<ChallengeResponse>
     suspend fun getACMEFederation(baseUrl: String): NetworkResponse<String>
+    suspend fun getClientDomainCRL(discoveryUrl: String): NetworkResponse<ByteArray>
 }
 
 class ACMEApiImpl internal constructor(
@@ -160,12 +161,17 @@ class ACMEApiImpl internal constructor(
         httpClient.get("$baseUrl/$PATH_ACME_FEDERATION")
     }
 
+    override suspend fun getClientDomainCRL(discoveryUrl: String): NetworkResponse<ByteArray> = wrapKaliumResponse {
+        httpClient.get("${discoveryUrl.replace("https", "http")}/$PATH_CRL")
+    }
+
     private companion object {
         const val PATH_ACME_FEDERATION = "federation"
         const val PATH_ACME_ROOTS_PEM = "roots.pem"
 
         const val NONCE_HEADER_KEY = "Replay-Nonce"
         const val LOCATION_HEADER_KEY = "location"
+        const val PATH_CRL = "crl"
     }
 
 }

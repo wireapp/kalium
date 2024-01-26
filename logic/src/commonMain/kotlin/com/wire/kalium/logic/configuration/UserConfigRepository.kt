@@ -122,6 +122,11 @@ interface UserConfigRepository {
     suspend fun observeLegalHoldChangeNotified(): Flow<Either<StorageFailure, Boolean>>
     suspend fun setShouldUpdateClientLegalHoldCapability(shouldUpdate: Boolean): Either<StorageFailure, Unit>
     suspend fun shouldUpdateClientLegalHoldCapability(): Boolean
+    suspend fun setCRLExpirationTime(url: String, timestamp: ULong)
+    suspend fun getCRLExpirationTime(url: String): ULong?
+    suspend fun observeCertificateExpirationTime(url: String): Flow<Either<StorageFailure, ULong>>
+    suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean)
+    suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Either<StorageFailure, Boolean>>
 }
 
 @Suppress("TooManyFunctions")
@@ -434,4 +439,20 @@ internal class UserConfigDataSource internal constructor(
 
     override suspend fun shouldUpdateClientLegalHoldCapability(): Boolean =
         userConfigDAO.shouldUpdateClientLegalHoldCapability()
+
+    override suspend fun setCRLExpirationTime(url: String, timestamp: ULong) {
+        userConfigDAO.setCRLExpirationTime(url, timestamp)
+    }
+
+    override suspend fun getCRLExpirationTime(url: String): ULong? =
+        userConfigDAO.getCRLsPerDomain(url)
+
+    override suspend fun observeCertificateExpirationTime(url: String): Flow<Either<StorageFailure, ULong>> =
+        userConfigDAO.observeCertificateExpirationTime(url).wrapStorageRequest()
+    override suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean) {
+        userConfigDAO.setShouldNotifyForRevokedCertificate(shouldNotify)
+    }
+
+    override suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Either<StorageFailure, Boolean>> =
+        userConfigDAO.observeShouldNotifyForRevokedCertificate().wrapStorageRequest()
 }
