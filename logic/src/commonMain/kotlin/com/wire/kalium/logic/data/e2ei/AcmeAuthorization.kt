@@ -18,15 +18,32 @@
 package com.wire.kalium.logic.data.e2ei
 
 import com.wire.kalium.cryptography.NewAcmeAuthz
+import kotlin.jvm.JvmInline
 
 data class AcmeAuthorization(
-    val nonce: String,
+    val nonce: Nonce,
     val location: String?,
     val response: ByteArray,
     val challengeType: AuthorizationChallengeType,
     val newAcmeAuthz: NewAcmeAuthz
 )
 
+@JvmInline
+value class Nonce(val value: String)
+
+data class AuthorizationResult(
+    val oidcAuthorization: NewAcmeAuthz,
+    val dpopAuthorization: NewAcmeAuthz,
+    val nonce: Nonce
+)
+
 enum class AuthorizationChallengeType {
-    DPoP, OIDC
+    /**
+     * Data Protection on Demand
+     */
+    DPoP,
+    /**
+     * OpenID Connect
+     */
+    OIDC
 }

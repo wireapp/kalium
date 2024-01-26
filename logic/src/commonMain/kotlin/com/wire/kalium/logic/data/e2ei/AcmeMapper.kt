@@ -22,7 +22,7 @@ import com.wire.kalium.network.api.base.unbound.acme.ACMEAuthorizationResponse
 
 class AcmeMapper {
     fun fromDto(dto: ACMEAuthorizationResponse, newAcmeAuthz: NewAcmeAuthz) = AcmeAuthorization(
-        nonce = dto.nonce,
+        nonce = Nonce(dto.nonce),
         location = dto.location,
         response = dto.response,
         challengeType = fromDto(dto.challengeType),
