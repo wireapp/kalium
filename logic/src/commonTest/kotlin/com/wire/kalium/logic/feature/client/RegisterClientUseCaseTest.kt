@@ -497,19 +497,20 @@ class RegisterClientUseCaseTest {
         @Mock
         val userRepository = mock(classOf<UserRepository>())
 
+        @Mock
+        val registerMLSClient = mock(classOf<RegisterMLSClientUseCase>())
+
         val secondFactorVerificationRepository: SecondFactorVerificationRepository = FakeSecondFactorVerificationRepository()
 
         private val registerClient: RegisterClientUseCase = RegisterClientUseCaseImpl(
             isAllowedToRegisterMLSClient,
             clientRepository,
             preKeyRepository,
-            keyPackageRepository,
-            keyPackageLimitsProvider,
-            mlsClientProvider,
             sessionRepository,
             SELF_USER_ID,
             userRepository,
-            secondFactorVerificationRepository
+            secondFactorVerificationRepository,
+            registerMLSClient
         )
 
         init {
