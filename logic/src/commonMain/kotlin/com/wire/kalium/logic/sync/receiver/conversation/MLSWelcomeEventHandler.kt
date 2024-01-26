@@ -103,7 +103,7 @@ internal class MLSWelcomeEventHandlerImpl(
     private suspend fun markConversationAsEstablished(groupID: GroupID): Either<CoreFailure, Unit> =
         conversationRepository.updateConversationGroupState(groupID, Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED)
 
-    private suspend fun checkRevocationList(crlNewDistributionPoints : List<String>) {
+    private suspend fun checkRevocationList(crlNewDistributionPoints: List<String>) {
         crlNewDistributionPoints.forEach { url ->
             checkRevocationList(url).map { newExpiration ->
                 newExpiration?.let {

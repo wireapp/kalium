@@ -224,7 +224,7 @@ internal class MLSConversationDataSource(
         }
     }
 
-    //todo: Used only in test, should we remove it ?
+    // Todo: Used only in test, should we remove it ?
     override suspend fun establishMLSGroupFromWelcome(welcomeEvent: MLSWelcome): Either<CoreFailure, Unit> =
         mlsClientProvider.getMLSClient().flatMap { client ->
             wrapMLSRequest { client.processWelcomeMessage(welcomeEvent.message.decodeBase64Bytes()) }
@@ -382,7 +382,9 @@ internal class MLSConversationDataSource(
                 wrapMLSRequest {
                     mlsClient.commitPendingProposals(idMapper.toCryptoModel(groupID))
                 }.flatMap { commitBundle ->
-                    // TODO: process crlDps from decryptMessage
+                    commitBundle?.crlNewDistributionPoints?.let {
+                        checkRevocationList(it)
+                    }
                     commitBundle?.let { sendCommitBundle(groupID, it) } ?: Either.Right(Unit)
                 }.flatMap {
                     wrapStorageRequest {
@@ -704,7 +706,7 @@ internal class MLSConversationDataSource(
         }
     }
 
-    private suspend fun checkRevocationList(crlNewDistributionPoints : List<String>) {
+    private suspend fun checkRevocationList(crlNewDistributionPoints: List<String>) {
         crlNewDistributionPoints.forEach { url ->
             checkRevocationList(url).map { newExpiration ->
                 newExpiration?.let {
