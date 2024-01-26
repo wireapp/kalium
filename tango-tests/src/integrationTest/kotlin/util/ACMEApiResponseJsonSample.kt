@@ -68,7 +68,8 @@ object ACMEApiResponseJsonSample {
         url = "https://example.com/acme/chall/prV_B7yEyA4",
         status = "valid",
         token = "LoqXcYV8q5ONbJQxbmR7SCTNo3tiAXDfowyjxAjEuX0",
-        nonce = "random-nonce"
+        nonce = "random-nonce",
+        target = "random-target"
     )
 
     private val jsonProviderAcmeChallenge = { serializable: ChallengeResponse ->

@@ -60,8 +60,9 @@ internal class MLSWelcomeEventHandlerImpl(
                 }
             }.flatMap { groupID ->
                 conversationRepository.fetchConversationIfUnknown(event.conversationId).map { groupID }
-            }.flatMap { groupID ->
-                markConversationAsEstablished(GroupID(groupID))
+            }.flatMap { welcomeBundle ->
+                markConversationAsEstablished(GroupID(welcomeBundle.groupId))
+                // TODO: process crlDps from welcomeBundle
             }.flatMap {
                 resolveConversationIfOneOnOne(event.conversationId)
             }
