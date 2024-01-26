@@ -343,7 +343,8 @@ class MLSClientImpl(
             value.displayName,
             value.domain,
             value.certificate,
-            toDeviceStatus(value.status)
+            toDeviceStatus(value.status),
+            value.thumbprint
         )
 
         fun toDeviceStatus(value: com.wire.crypto.DeviceStatus) = when (value) {
