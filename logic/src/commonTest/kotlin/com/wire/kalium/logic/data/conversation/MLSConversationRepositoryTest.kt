@@ -26,6 +26,7 @@ import com.wire.kalium.cryptography.E2EIConversationState
 import com.wire.kalium.cryptography.GroupInfoBundle
 import com.wire.kalium.cryptography.GroupInfoEncryptionType
 import com.wire.kalium.cryptography.MLSClient
+import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.cryptography.RatchetTreeType
 import com.wire.kalium.cryptography.RotateBundle
 import com.wire.kalium.cryptography.WelcomeBundle

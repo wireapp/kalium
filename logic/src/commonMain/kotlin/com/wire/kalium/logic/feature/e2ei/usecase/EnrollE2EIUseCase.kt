@@ -98,7 +98,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
         val oAuthState = e2EIRepository.getOAuthRefreshToken().getOrNull()
 
         val initializationResult = E2EIEnrollmentResult.Initialized(
-            idpTarget = oidcAuthorizations.challenge.target,
+            target = oidcAuthorizations.challenge.target,
             oAuthState = oAuthState,
             oAuthClaims = getOAuthClaims(
                 oidcAuthorizations.keyAuth.toString(),
@@ -255,7 +255,7 @@ sealed interface E2EIEnrollmentResult {
 
     @Suppress("LongParameterList")
     class Initialized(
-        val idpTarget: String,
+        val target: String,
         val oAuthState: String?,
         val oAuthClaims: JsonObject,
         val dPopAuthorizations: NewAcmeAuthz,
