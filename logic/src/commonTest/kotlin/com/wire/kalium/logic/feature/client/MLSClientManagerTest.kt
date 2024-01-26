@@ -136,7 +136,8 @@ class MLSClientManagerTest {
             given(registerMLSClient)
                 .suspendFunction(registerMLSClient::invoke)
                 .whenInvokedWith(anything())
-                .thenReturn(Either.Right(Unit))
+                .thenReturn(Either.Right(RegisterMLSClientResult.Success))
+            //todo: cover all cases
         }
 
         fun withIsAllowedToRegisterMLSClient(enabled: Boolean) = apply {

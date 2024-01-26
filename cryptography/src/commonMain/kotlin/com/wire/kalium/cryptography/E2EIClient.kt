@@ -39,8 +39,9 @@ data class AcmeChallenge(
 
 data class NewAcmeAuthz(
     var identifier: String,
-    var wireOidcChallenge: AcmeChallenge?,
-    var wireDpopChallenge: AcmeChallenge?
+    var keyAuth: String,
+    var wireOidcChallenge: AcmeChallenge,
+    var wireDpopChallenge: AcmeChallenge
 )
 
 @Suppress("TooManyFunctions")

@@ -50,6 +50,22 @@ class CertificateRevocationListRepositoryTest {
             )
         }.wasInvoked(once)
     }
+    @Test
+    fun givenNoStoredList_whenUpdatingCRLs_thenAddNewCRL() = runTest {
+        val (arrangement, crlRepository) = Arrangement()
+            .withNullCRLResult()
+            .arrange()
+
+        crlRepository.addOrUpdateCRL(DUMMY_URL, TIMESTAMP)
+
+        verify(arrangement.metadataDAO).coroutine {
+            putSerializable(
+                CRL_LIST_KEY,
+                CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP))),
+                CRLUrlExpirationList.serializer()
+            )
+        }.wasInvoked(once)
+    }
 
     @Test
     fun givenPassedCRLExistsInStoredList_whenUpdatingCRLs_thenUpdateCurrentCRL() = runTest {
@@ -110,6 +126,14 @@ class CertificateRevocationListRepositoryTest {
                     CRLUrlExpirationList.serializer()
                 )
             }.thenReturn(CRLUrlExpirationList(listOf()))
+        }
+        suspend fun withNullCRLResult() = apply {
+            given(metadataDAO).coroutine {
+                metadataDAO.getSerializable(
+                    CRL_LIST_KEY,
+                    CRLUrlExpirationList.serializer()
+                )
+            }.thenReturn(null)
         }
 
         suspend fun withCRLs() = apply {

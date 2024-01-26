@@ -31,7 +31,7 @@ import com.wire.kalium.logic.feature.legalhold.FetchLegalHoldForSelfUserFromRemo
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
-import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsUseCase
+import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
@@ -62,7 +62,7 @@ internal class SlowSyncWorkerImpl(
     private val eventRepository: EventRepository,
     private val syncSelfUser: SyncSelfUserUseCase,
     private val syncFeatureConfigs: SyncFeatureConfigsUseCase,
-    private val updateSupportedProtocols: UpdateSupportedProtocolsUseCase,
+    private val updateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase,
     private val syncConversations: SyncConversationsUseCase,
     private val syncConnections: SyncConnectionsUseCase,
     private val syncSelfTeam: SyncSelfTeamUseCase,

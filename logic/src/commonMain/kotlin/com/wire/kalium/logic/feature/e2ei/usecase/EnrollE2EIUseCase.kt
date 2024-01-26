@@ -26,12 +26,14 @@ import com.wire.kalium.logic.functional.getOrFail
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 
 /**
  * Issue an E2EI certificate and re-initiate the MLSClient
  */
 interface EnrollE2EIUseCase {
-    suspend fun initialEnrollment(): Either<CoreFailure, E2EIEnrollmentResult>
+    suspend fun initialEnrollment(isNewClientRegistration: Boolean = false): Either<CoreFailure, E2EIEnrollmentResult>
     suspend fun finalizeEnrollment(
         idToken: String,
         oAuthState: String,
@@ -41,19 +43,21 @@ interface EnrollE2EIUseCase {
 
 @Suppress("ReturnCount")
 class EnrollE2EIUseCaseImpl internal constructor(
-    private val e2EIRepository: E2EIRepository,
+    private val e2EIRepository: E2EIRepository
 ) : EnrollE2EIUseCase {
     /**
      * Operation to initial E2EI certificate enrollment
      *
      * @return [Either] [CoreFailure] or [E2EIEnrollmentResult]
      */
-    override suspend fun initialEnrollment(): Either<CoreFailure, E2EIEnrollmentResult> {
+    override suspend fun initialEnrollment(isNewClientRegistration: Boolean): Either<CoreFailure, E2EIEnrollmentResult> {
         kaliumLogger.i("start E2EI Enrollment Initialization")
 
-        e2EIRepository.fetchTrustAnchors().onFailure {
-            return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.TrustAnchors, it).toEitherLeft()
-        }
+        e2EIRepository.initE2EIClient(isNewClient = isNewClientRegistration)
+
+//         e2EIRepository.fetchTrustAnchors().onFailure {
+//             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.TrustAnchors, it).toEitherLeft()
+//         }
 
         val acmeDirectories = e2EIRepository.loadACMEDirectories().getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeDirectories, it).toEitherLeft()
@@ -76,17 +80,17 @@ class EnrollE2EIUseCaseImpl internal constructor(
         val authzResponse = e2EIRepository.createAuthz(prevNonce, newOrderResponse.first.authorizations[0]).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNewAuthz, it).toEitherLeft()
         }
-        kaliumLogger.i("getoAuth")
 
         val oAuthState = e2EIRepository.getOAuthRefreshToken().getOrNull()
-        kaliumLogger.i("oAuthStAte: $oAuthState")
 
         val initializationResult = E2EIEnrollmentResult.Initialized(
-            target = authzResponse.first.wireOidcChallenge!!.target,
+            target = authzResponse.first.wireOidcChallenge.target,
             oAuthState = oAuthState,
+            oAuthClaims = getOAuthClaims(authzResponse.first.keyAuth, authzResponse.first.wireOidcChallenge.url),
             authz = authzResponse.first,
             lastNonce = authzResponse.second,
-            orderLocation = newOrderResponse.third
+            orderLocation = newOrderResponse.third,
+            isNewClientRegistration = isNewClientRegistration
         )
 
         kaliumLogger.i("E2EI Enrollment Initialization Result: $initializationResult")
@@ -125,7 +129,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
         }
 
         val dpopChallengeResponse = e2EIRepository.validateDPoPChallenge(
-            wireAccessToken.token, prevNonce, authz.wireDpopChallenge!!
+            wireAccessToken.token, prevNonce, authz.wireDpopChallenge
         ).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.DPoPChallenge, it).toEitherLeft()
         }
@@ -133,7 +137,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
         prevNonce = dpopChallengeResponse.nonce
 
         val oidcChallengeResponse = e2EIRepository.validateOIDCChallenge(
-            idToken, oAuthState, prevNonce, authz.wireOidcChallenge!!
+            idToken, oAuthState, prevNonce, authz.wireOidcChallenge
         ).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.OIDCChallenge, it).toEitherLeft()
         }
@@ -156,7 +160,9 @@ class EnrollE2EIUseCaseImpl internal constructor(
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.Certificate, it).toEitherLeft()
         }
 
-        e2EIRepository.rotateKeysAndMigrateConversations(certificateRequest.response.decodeToString()).onFailure {
+        e2EIRepository
+            .rotateKeysAndMigrateConversations(certificateRequest.response.decodeToString(), initializationResult.isNewClientRegistration)
+            .onFailure {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.ConversationMigration, it).toEitherLeft()
         }
 
@@ -165,6 +171,25 @@ class EnrollE2EIUseCaseImpl internal constructor(
         return Either.Right(E2EIEnrollmentResult.Finalized(certificateRequest.response.decodeToString()))
     }
 
+    private fun getOAuthClaims(keyAuth: String, acmeAud: String) = JsonObject(
+        mapOf(
+            ID_TOKEN to JsonObject(
+                mapOf(
+                    KEY_AUTH to JsonObject(
+                        mapOf(ESSENTIAL to JsonPrimitive(true), VALUE to JsonPrimitive(keyAuth))
+                    ), ACME_AUD to JsonObject(mapOf(ESSENTIAL to JsonPrimitive(true), VALUE to JsonPrimitive(acmeAud)))
+                )
+            )
+        )
+    )
+
+    companion object {
+        private const val ID_TOKEN = "id_token"
+        private const val KEY_AUTH = "keyauth"
+        private const val ESSENTIAL = "essential"
+        private const val VALUE = "value"
+        private const val ACME_AUD = "acme_aud"
+    }
 }
 
 sealed interface E2EIEnrollmentResult {
@@ -186,13 +211,15 @@ sealed interface E2EIEnrollmentResult {
         ConversationMigration,
         Certificate
     }
-
+    @Suppress("LongParameterList")
     class Initialized(
         val target: String,
         val oAuthState: String?,
+        val oAuthClaims: JsonObject,
         val authz: NewAcmeAuthz,
         val lastNonce: String,
-        val orderLocation: String
+        val orderLocation: String,
+        val isNewClientRegistration: Boolean = false
     ) : E2EIEnrollmentResult
 
     class Finalized(val certificate: String) : E2EIEnrollmentResult

@@ -250,6 +250,8 @@ class InstanceService(
 
                             return@runBlocking instance
                         }
+                        is RegisterClientResult.E2EICertificateRequired ->
+                            throw WebApplicationException("Instance $instanceId: Client registration blocked by e2ei")
                         is RegisterClientResult.Failure.TooManyClients ->
                             throw WebApplicationException("Instance $instanceId: Client registration failed, too many clients")
                         is RegisterClientResult.Failure.InvalidCredentials.Invalid2FA ->

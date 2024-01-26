@@ -21,7 +21,9 @@ package com.wire.kalium.persistence.client
 import com.wire.kalium.persistence.dao.MetadataDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 
+@Suppress("LongParameterList", "TooManyFunctions")
 interface ClientRegistrationStorage {
     suspend fun getRegisteredClientId(): String?
     suspend fun setRegisteredClientId(registeredClientId: String)
@@ -32,9 +34,14 @@ interface ClientRegistrationStorage {
     suspend fun clearRetainedClientId()
     suspend fun hasRegisteredMLSClient(): Boolean
     suspend fun setHasRegisteredMLSClient()
+    suspend fun observeIsClientRegistrationBlockedByE2EI(): Flow<Boolean>
+    suspend fun setClientRegistrationBlockedByE2EI()
+    suspend fun clearClientRegistrationBlockedByE2EI()
     suspend fun clearHasRegisteredMLSClient()
+    suspend fun isBlockedByE2EI(): Boolean
 }
 
+@Suppress("LongParameterList", "TooManyFunctions")
 class ClientRegistrationStorageImpl(private val metadataDAO: MetadataDAO) : ClientRegistrationStorage {
 
     override suspend fun getRegisteredClientId(): String? = observeRegisteredClientId().first()
@@ -51,11 +58,24 @@ class ClientRegistrationStorageImpl(private val metadataDAO: MetadataDAO) : Clie
     override suspend fun clearRetainedClientId() = metadataDAO.deleteValue(RETAINED_CLIENT_ID_KEY)
     override suspend fun hasRegisteredMLSClient(): Boolean = metadataDAO.valueByKey(HAS_REGISTERED_MLS_CLIENT_KEY).toBoolean()
     override suspend fun setHasRegisteredMLSClient() = metadataDAO.insertValue(true.toString(), HAS_REGISTERED_MLS_CLIENT_KEY)
+    override suspend fun observeIsClientRegistrationBlockedByE2EI(): Flow<Boolean> =
+        metadataDAO.valueByKeyFlow(CLIENT_REGISTRATION_BLOCKED_BY_E2EI).map {
+            it.toBoolean() && !it.isNullOrEmpty()
+        }
+
+    override suspend fun isBlockedByE2EI(): Boolean = metadataDAO.valueByKey(CLIENT_REGISTRATION_BLOCKED_BY_E2EI).toBoolean()
+
+    override suspend fun setClientRegistrationBlockedByE2EI() =
+        metadataDAO.insertValue(true.toString(), CLIENT_REGISTRATION_BLOCKED_BY_E2EI)
+
+    override suspend fun clearClientRegistrationBlockedByE2EI() = metadataDAO.deleteValue(CLIENT_REGISTRATION_BLOCKED_BY_E2EI)
+
     override suspend fun clearHasRegisteredMLSClient() = metadataDAO.deleteValue(HAS_REGISTERED_MLS_CLIENT_KEY)
 
     companion object {
         private const val REGISTERED_CLIENT_ID_KEY = "registered_client_id"
         const val RETAINED_CLIENT_ID_KEY = "retained_client_id"
         private const val HAS_REGISTERED_MLS_CLIENT_KEY = "has_registered_mls_client"
+        private const val CLIENT_REGISTRATION_BLOCKED_BY_E2EI = "client_registration_blocked_by_e2ei"
     }
 }

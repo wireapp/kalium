@@ -131,5 +131,4 @@ internal class AuthenticatedNetworkContainerV6 internal constructor(
     override val mlsPublicKeyApi: MLSPublicKeyApi get() = MLSPublicKeyApiV6(networkClient)
 
     override val propertiesApi: PropertiesApi get() = PropertiesApiV6(networkClient)
-
 }

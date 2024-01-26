@@ -353,7 +353,7 @@ class UpdateSupportedProtocolsUseCaseTest {
                 .thenReturn(Either.Right(clients))
         }
 
-        fun arrange() = this to UpdateSupportedProtocolsUseCaseImpl(
+        fun arrange() = this to UpdateSelfUserSupportedProtocolsUseCaseImpl(
             clientRepository,
             userRepository,
             userConfigRepository,
