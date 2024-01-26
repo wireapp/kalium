@@ -1352,7 +1352,7 @@ class EnrollE2EICertificateUseCaseTest {
         )
 
         val INITIALIZATION_RESULT = E2EIEnrollmentResult.Initialized(
-            idpTarget = ACME_CHALLENGE.target,
+            target = ACME_CHALLENGE.target,
             oAuthState = REFRESH_TOKEN,
             dPopAuthorizations = ACME_AUTHZ,
             oidcAuthorizations = ACME_AUTHZ,
