@@ -26,7 +26,6 @@ import com.wire.kalium.cryptography.E2EIConversationState
 import com.wire.kalium.cryptography.GroupInfoBundle
 import com.wire.kalium.cryptography.GroupInfoEncryptionType
 import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.cryptography.RatchetTreeType
 import com.wire.kalium.cryptography.RotateBundle
 import com.wire.kalium.cryptography.WelcomeBundle
@@ -36,6 +35,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.COMMIT_BUNDLE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.E2EI_CONVERSATION_CLIENT_INFO_ENTITY
+import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.ROTATE_BUNDLE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.TEST_FAILURE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.WIRE_IDENTITY
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
@@ -1217,6 +1217,38 @@ class MLSConversationRepositoryTest {
             .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
             .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
             .wasInvoked(once)
+
+        verify(arrangement.checkRevocationList)
+            .suspendFunction(arrangement.checkRevocationList::invoke)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenNewDistributionsCRL_whenRotatingKeys_thenCheckRevocationList() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withRotateAllSuccessful(ROTATE_BUNDLE.copy(crlNewDistributionPoints = listOf("url")))
+            .withSendCommitBundleSuccessful()
+            .withKeyPackageLimits(10)
+            .withReplaceKeyPackagesReturning(Either.Right(Unit))
+            .withCheckRevocationListResult()
+            .arrange()
+
+        assertEquals(
+            Either.Right(Unit),
+            mlsConversationRepository.rotateKeysAndMigrateConversations(TestClient.CLIENT_ID, arrangement.e2eiClient, "")
+        )
+
+        verify(arrangement.checkRevocationList)
+            .suspendFunction(arrangement.checkRevocationList::invoke)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.certificateRevocationListRepository)
+            .suspendFunction(arrangement.certificateRevocationListRepository::addOrUpdateCRL)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -1541,11 +1573,11 @@ class MLSConversationRepositoryTest {
                 .then { Either.Left(failure) }
         }
 
-        fun withRotateAllSuccessful() = apply {
+        fun withRotateAllSuccessful(rotateBundle: RotateBundle = ROTATE_BUNDLE) = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::e2eiRotateAll)
                 .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(ROTATE_BUNDLE)
+                .thenReturn(rotateBundle)
         }
 
         fun withGetDeviceIdentitiesReturn(identities: List<WireIdentity>) = apply {

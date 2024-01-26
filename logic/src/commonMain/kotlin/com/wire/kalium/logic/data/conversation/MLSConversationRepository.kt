@@ -552,6 +552,9 @@ internal class MLSConversationDataSource(
         wrapMLSRequest {
             mlsClient.e2eiRotateAll(e2eiClient, certificateChain, keyPackageLimitsProvider.refillAmount().toUInt())
         }.map { rotateBundle ->
+            rotateBundle.crlNewDistributionPoints?.let {
+                checkRevocationList(it)
+            }
             if (!isNewClient) {
                 kaliumLogger.w("enrollment for existing client: upload new keypackages and drop old ones")
                 keyPackageRepository.replaceKeyPackages(clientId, rotateBundle.newKeyPackages).flatMapLeft {

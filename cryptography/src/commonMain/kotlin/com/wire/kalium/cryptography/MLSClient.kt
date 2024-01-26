@@ -83,7 +83,7 @@ data class WelcomeBundle(
     val crlNewDistributionPoints: List<String>?
 )
 
-open class RotateBundle(
+data class RotateBundle(
     var commits: Map<MLSGroupId, CommitBundle>,
     var newKeyPackages: List<ByteArray>,
     var keyPackageRefsToRemove: List<ByteArray>,
