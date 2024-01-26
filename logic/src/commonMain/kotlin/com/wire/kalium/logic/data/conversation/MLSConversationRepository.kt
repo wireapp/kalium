@@ -209,7 +209,10 @@ internal class MLSConversationDataSource(
                         kaliumLogger.d("Epoch changed for groupID = ${groupID.value.obfuscateId()}")
                         epochsFlow.emit(groupID)
                     }
-                    messages.map { it.toModel(groupID) }
+                    messages.map {
+                        // TODO: process crlDps from decryptMessage
+                        it.toModel(groupID)
+                    }
                 }
             }
         }
@@ -218,17 +221,18 @@ internal class MLSConversationDataSource(
     override suspend fun establishMLSGroupFromWelcome(welcomeEvent: MLSWelcome): Either<CoreFailure, Unit> =
         mlsClientProvider.getMLSClient().flatMap { client ->
             wrapMLSRequest { client.processWelcomeMessage(welcomeEvent.message.decodeBase64Bytes()) }
-                .flatMap { groupID ->
-                    kaliumLogger.i("Created conversation from welcome message (groupID = $groupID)")
+                .flatMap { welcomeBundle ->
+                    kaliumLogger.i("Created conversation from welcome message (groupID = ${welcomeBundle.groupId})")
 
                     wrapStorageRequest {
-                        if (conversationDAO.observeConversationByGroupID(groupID).first() != null) {
+                        if (conversationDAO.observeConversationByGroupID(welcomeBundle.groupId).first() != null) {
                             // Welcome arrived after the conversation create event, updating existing conversation.
                             conversationDAO.updateConversationGroupState(
                                 ConversationEntity.GroupState.ESTABLISHED,
-                                groupID
+                                welcomeBundle.groupId
                             )
-                            kaliumLogger.i("Updated conversation from welcome message (groupID = $groupID)")
+                            kaliumLogger.i("Updated conversation from welcome message (groupID = ${welcomeBundle.groupId})")
+                            // TODO: process crlDps from welcomeBundle
                         }
                     }
                 }
@@ -271,6 +275,7 @@ internal class MLSConversationDataSource(
             wrapMLSRequest {
                 mlsClient.joinByExternalCommit(groupInfo)
             }.flatMap { commitBundle ->
+                // TODO: process crlDps from decryptMessage
                 sendCommitBundleForExternalCommit(groupID, commitBundle)
             }.onSuccess {
                 conversationDAO.updateConversationGroupState(
@@ -368,6 +373,7 @@ internal class MLSConversationDataSource(
                 wrapMLSRequest {
                     mlsClient.commitPendingProposals(idMapper.toCryptoModel(groupID))
                 }.flatMap { commitBundle ->
+                    // TODO: process crlDps from decryptMessage
                     commitBundle?.let { sendCommitBundle(groupID, it) } ?: Either.Right(Unit)
                 }.flatMap {
                     wrapStorageRequest {
@@ -418,6 +424,7 @@ internal class MLSConversationDataSource(
                                 mlsClient.addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)
                             }
                         }.flatMap { commitBundle ->
+                            // TODO: process crlDps from commitBundle
                             commitBundle?.let {
                                 sendCommitBundle(groupID, it)
                             } ?: Either.Right(Unit)
