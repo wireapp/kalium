@@ -155,6 +155,44 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
+    fun givenNewCrlDistributionPoints_whenEstablishingMLSGroup_thenCheckRevocationList() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsReturningNothing()
+            .withClaimKeyPackagesSuccessful()
+            .withGetMLSClientSuccessful()
+            .withGetPublicKeysSuccessful()
+            .withAddMLSMemberSuccessful()
+            .withSendCommitBundleSuccessful()
+            .arrange()
+
+    }
+
+    @Test
+    fun givenNewCrlDistributionPoints_whenAddingMemberToMLSGroup_thenCheckRevocationList() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsReturningNothing()
+            .withClaimKeyPackagesSuccessful()
+            .withGetMLSClientSuccessful()
+            .withGetPublicKeysSuccessful()
+            .withAddMLSMemberSuccessful(COMMIT_BUNDLE.copy(crlNewDistributionPoints = listOf("url")))
+            .withCheckRevocationListResult()
+            .withSendCommitBundleSuccessful()
+            .arrange()
+
+        mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1))
+
+        verify(arrangement.checkRevocationList)
+            .suspendFunction(arrangement.checkRevocationList::invoke)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.certificateRevocationListRepository)
+            .suspendFunction(arrangement.certificateRevocationListRepository::addOrUpdateCRL)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
     fun givenMlsClientMismatchError_whenCallingEstablishMLSGroup_thenClearCommitAndRetry() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
@@ -1524,11 +1562,11 @@ class MLSConversationRepositoryTest {
                 .thenReturn(e2eiInfo)
         }
 
-        fun withAddMLSMemberSuccessful() = apply {
+        fun withAddMLSMemberSuccessful(commitBundle: CommitBundle = COMMIT_BUNDLE) = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::addMember)
                 .whenInvokedWith(anything(), anything())
-                .thenReturn(COMMIT_BUNDLE)
+                .thenReturn(commitBundle)
         }
 
         fun withGetGroupEpochReturn(epoch: ULong) = apply {
@@ -1582,11 +1620,11 @@ class MLSConversationRepositoryTest {
                 .thenReturn(null)
         }
 
-        fun withUpdateKeyingMaterialSuccessful() = apply {
+        fun withUpdateKeyingMaterialSuccessful(commitBundle: CommitBundle = COMMIT_BUNDLE) = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::updateKeyingMaterial)
                 .whenInvokedWith(anything())
-                .thenReturn(COMMIT_BUNDLE)
+                .thenReturn(commitBundle)
         }
 
         fun withSendCommitBundleSuccessful(events: List<EventContentDTO> = emptyList()) = apply {

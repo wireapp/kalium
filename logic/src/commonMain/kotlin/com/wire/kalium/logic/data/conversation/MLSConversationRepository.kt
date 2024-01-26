@@ -433,7 +433,9 @@ internal class MLSConversationDataSource(
                                 mlsClient.addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)
                             }
                         }.flatMap { commitBundle ->
-                            //todo: process crlDps from commitBundle
+                            commitBundle?.crlNewDistributionPoints?.let {
+                                checkRevocationList(it)
+                            }
                             commitBundle?.let {
                                 sendCommitBundle(groupID, it)
                             } ?: Either.Right(Unit)
