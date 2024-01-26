@@ -51,13 +51,12 @@ internal class CertificateRevocationListRepositoryDataSource(
         metadataDAO.getSerializable(CRL_LIST_KEY, CRLUrlExpirationList.serializer())
 
     override suspend fun addOrUpdateCRL(url: String, timestamp: ULong) {
-
-        metadataDAO.getSerializable(CRL_LIST_KEY, CRLUrlExpirationList.serializer())
+        val newCRLUrls = metadataDAO.getSerializable(CRL_LIST_KEY, CRLUrlExpirationList.serializer())
             ?.let { crlExpirationList ->
                 val crlWithExpiration = crlExpirationList.cRLWithExpirationList.find {
                     it.url == url
                 }
-                val newCRLs = crlWithExpiration?.let { item ->
+                crlWithExpiration?.let { item ->
                     crlExpirationList.cRLWithExpirationList.map { current ->
                         if (current.url == url) {
                             return@map item.copy(expiration = timestamp)
@@ -72,12 +71,15 @@ internal class CertificateRevocationListRepositoryDataSource(
                     )
                 }
 
-                metadataDAO.putSerializable(
-                    CRL_LIST_KEY,
-                    CRLUrlExpirationList(newCRLs),
-                    CRLUrlExpirationList.serializer()
-                )
-            }
+            } ?: run {
+            // add new CRL
+            listOf(CRLWithExpiration(url, timestamp))
+        }
+        metadataDAO.putSerializable(
+            CRL_LIST_KEY,
+            CRLUrlExpirationList(newCRLUrls),
+            CRLUrlExpirationList.serializer()
+        )
     }
 
     override suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String> =
