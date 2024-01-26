@@ -19,18 +19,20 @@ package com.wire.kalium.logic.data.e2ei
 
 import com.wire.kalium.cryptography.NewAcmeAuthz
 import com.wire.kalium.network.api.base.unbound.acme.ACMEAuthorizationResponse
+import com.wire.kalium.network.api.base.unbound.acme.DtoAuthorizationChallengeType
 
 class AcmeMapper {
     fun fromDto(dto: ACMEAuthorizationResponse, newAcmeAuthz: NewAcmeAuthz) = AcmeAuthorization(
-        nonce = dto.nonce,
+        nonce = Nonce(dto.nonce),
         location = dto.location,
         response = dto.response,
         challengeType = fromDto(dto.challengeType),
         newAcmeAuthz
     )
 
-    private fun fromDto(dto: com.wire.kalium.network.api.base.unbound.acme.AuthorizationChallengeType): AuthorizationChallengeType = when (dto) {
-        com.wire.kalium.network.api.base.unbound.acme.AuthorizationChallengeType.DPoP -> AuthorizationChallengeType.DPoP
-        com.wire.kalium.network.api.base.unbound.acme.AuthorizationChallengeType.OIDC -> AuthorizationChallengeType.OIDC
-    }
+    private fun fromDto(dto: DtoAuthorizationChallengeType): AuthorizationChallengeType =
+        when (dto) {
+            DtoAuthorizationChallengeType.DPoP -> AuthorizationChallengeType.DPoP
+            DtoAuthorizationChallengeType.OIDC -> AuthorizationChallengeType.OIDC
+        }
 }

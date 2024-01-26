@@ -34,7 +34,6 @@ import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.Button
 import com.wire.kalium.protobuf.messages.ButtonAction
-import com.wire.kalium.protobuf.messages.ButtonActionConfirmation
 import com.wire.kalium.protobuf.messages.Calling
 import com.wire.kalium.protobuf.messages.Cleared
 import com.wire.kalium.protobuf.messages.ClientAction
@@ -133,7 +132,7 @@ class ProtoContentMapperImpl(
             is MessageContent.Composite -> packComposite(readableContent, expectsReadConfirmation, legalHoldStatus)
             is MessageContent.ButtonAction -> packButtonAction(readableContent)
 
-            is MessageContent.ButtonActionConfirmation -> packButtonActionConfirmation(readableContent)
+            is MessageContent.ButtonActionConfirmation -> TODO()
             is MessageContent.Location -> packLocation(readableContent, expectsReadConfirmation, legalHoldStatus)
         }
     }
@@ -161,16 +160,6 @@ class ProtoContentMapperImpl(
     ): GenericMessage.Content.ButtonAction =
         GenericMessage.Content.ButtonAction(
             ButtonAction(
-                buttonId = readableContent.buttonId,
-                referenceMessageId = readableContent.referencedMessageId
-            )
-        )
-
-    private fun packButtonActionConfirmation(
-        readableContent: MessageContent.ButtonActionConfirmation
-    ): GenericMessage.Content.ButtonActionConfirmation =
-        GenericMessage.Content.ButtonActionConfirmation(
-            ButtonActionConfirmation(
                 buttonId = readableContent.buttonId,
                 referenceMessageId = readableContent.referencedMessageId
             )

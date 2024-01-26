@@ -49,14 +49,16 @@ data class ChallengeResponse(
     val target: String,
     val nonce: String = ""
 )
+
 @Suppress("EnforceSerializableFields")
 @Serializable
 data class ACMEAuthorizationResponse(
     val nonce: String,
     val location: String?,
     val response: ByteArray,
-    val challengeType: AuthorizationChallengeType
+    val challengeType: DtoAuthorizationChallengeType
 )
+
 @Suppress("EnforceSerializableFields")
 @Serializable
 data class AuthorizationResponse(
@@ -66,12 +68,13 @@ data class AuthorizationResponse(
 @Suppress("EnforceSerializableFields")
 @Serializable
 data class AuthorizationChallenge(
-    val type: AuthorizationChallengeType,
+    val type: DtoAuthorizationChallengeType,
 )
 
-enum class AuthorizationChallengeType{
+enum class DtoAuthorizationChallengeType {
     @SerialName("wire-dpop-01")
     DPoP,
+
     @SerialName("wire-oidc-01")
     OIDC
 }

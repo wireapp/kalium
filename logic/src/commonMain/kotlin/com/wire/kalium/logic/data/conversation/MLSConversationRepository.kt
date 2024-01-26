@@ -216,7 +216,7 @@ internal class MLSConversationDataSource(
                         epochsFlow.emit(groupID)
                     }
                     messages.map {
-                        //todo: process crlDps from decryptMessage
+                        // TODO: process crlDps from decryptMessage
                         it.toModel(groupID)
                     }
                 }
@@ -239,7 +239,7 @@ internal class MLSConversationDataSource(
                                 welcomeBundle.groupId
                             )
                             kaliumLogger.i("Updated conversation from welcome message (groupID = ${welcomeBundle.groupId})")
-                            //todo: process crlDps from welcomeBundle
+                            // TODO: process crlDps from welcomeBundle
                         }
                     }
                 }
@@ -382,7 +382,7 @@ internal class MLSConversationDataSource(
                 wrapMLSRequest {
                     mlsClient.commitPendingProposals(idMapper.toCryptoModel(groupID))
                 }.flatMap { commitBundle ->
-                    //todo: process crlDps from decryptMessage
+                    // TODO: process crlDps from decryptMessage
                     commitBundle?.let { sendCommitBundle(groupID, it) } ?: Either.Right(Unit)
                 }.flatMap {
                     wrapStorageRequest {

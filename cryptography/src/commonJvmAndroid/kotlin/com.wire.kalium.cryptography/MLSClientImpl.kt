@@ -29,9 +29,11 @@ import com.wire.crypto.MlsGroupInfoEncryptionType
 import com.wire.crypto.MlsRatchetTreeType
 import com.wire.crypto.MlsWirePolicy
 import com.wire.crypto.client.Ciphersuites
+import com.wire.kalium.cryptography.exceptions.CryptographyException
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 import kotlin.time.toJavaDuration
@@ -46,7 +48,7 @@ class MLSClientImpl(
     private val keyRotationDuration: Duration = 30.toDuration(DurationUnit.DAYS)
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration.toJavaDuration(), MlsWirePolicy.PLAINTEXT)
     private val defaultCiphersuite = Ciphersuites.DEFAULT.lower().first()
-    private val defaultE2EIExpiry: UInt = 90U //todo: change to seconds
+    private val defaultE2EIExpiry = 90.days.inWholeSeconds.toUInt()
     override suspend fun close() {
         coreCrypto.close()
     }
@@ -121,7 +123,6 @@ class MLSClientImpl(
 
     override suspend fun processWelcomeMessage(message: WelcomeMessage) =
         toWelcomeBundle(coreCrypto.processWelcomeMessage(message, defaultGroupConfiguration))
-
 
     override suspend fun encryptMessage(groupId: MLSGroupId, message: PlainMessage): ApplicationMessage {
         val applicationMessage =
@@ -294,7 +295,11 @@ class MLSClientImpl(
     }
 
     override suspend fun registerTrustAnchors(pem: CertificateChain) {
-        coreCrypto.e2eiRegisterAcmeCa(pem)
+        try {
+            coreCrypto.e2eiRegisterAcmeCa(pem)
+        } catch (e: CryptographyException) {
+            kaliumLogger.i("Registering TrustAnchors failed: $e")
+        }
     }
 
     override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration {
