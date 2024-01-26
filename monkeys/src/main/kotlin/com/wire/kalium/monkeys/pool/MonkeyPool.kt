@@ -26,6 +26,7 @@ import com.wire.kalium.monkeys.model.MonkeyId
 import com.wire.kalium.monkeys.model.Team
 import com.wire.kalium.monkeys.model.UserCount
 import com.wire.kalium.monkeys.model.UserData
+import io.ktor.client.HttpClient
 import io.micrometer.core.instrument.Tag
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -33,8 +34,13 @@ import kotlinx.coroutines.coroutineScope
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.roundToInt
 
+sealed class MonkeyConfig {
+    data object Internal : MonkeyConfig()
+    data class Remote(val httpClient: HttpClient, val addressResolver: (UserData, MonkeyId) -> String) : MonkeyConfig()
+}
+
 @Suppress("TooManyFunctions")
-class MonkeyPool(users: List<UserData>, testCase: String) {
+class MonkeyPool(users: List<UserData>, testCase: String, config: MonkeyConfig) {
     // all the teams by name
     private val teams: ConcurrentHashMap<String, Team> = ConcurrentHashMap()
 
@@ -52,7 +58,11 @@ class MonkeyPool(users: List<UserData>, testCase: String) {
 
     init {
         users.forEachIndexed { index, userData ->
-            val monkey = Monkey.internal(userData, MonkeyId(index, userData.team.name, testCase.hashCode()))
+            val monkeyId = MonkeyId(index, userData.team.name, testCase.hashCode())
+            val monkey = when (config) {
+                is MonkeyConfig.Remote -> Monkey.remote(config.httpClient, config.addressResolver(userData, monkeyId), userData, monkeyId)
+                is MonkeyConfig.Internal -> Monkey.internal(userData, monkeyId)
+            }
             this.pool.getOrPut(userData.team.name) { mutableListOf() }.add(monkey)
             this.poolLoggedOut.getOrPut(userData.team.name) { ConcurrentHashMap() }[userData.userId] = monkey
             this.poolById[userData.userId] = monkey
@@ -76,8 +86,7 @@ class MonkeyPool(users: List<UserData>, testCase: String) {
         // this is needed to create key packages for clients at least once
         poolById.values.map {
             async {
-                it.login(core) {}
-                it.logout {}
+                it.warmUp(core)
             }
         }.awaitAll()
     }

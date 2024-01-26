@@ -75,9 +75,7 @@ object ConversationPool {
     }
 
     private suspend fun createDynamicConversation(
-        creator: Monkey,
-        protocol: ConversationOptions.Protocol,
-        monkeyList: List<Monkey>
+        creator: Monkey, protocol: ConversationOptions.Protocol, monkeyList: List<Monkey>
     ): ConversationDef {
         val name = "By monkey ${creator.monkeyType.userId()} - $protocol - ${Random.nextUInt()}"
         val conversation = creator.createConversation(name, monkeyList, protocol)
@@ -86,9 +84,7 @@ object ConversationPool {
     }
 
     suspend fun createDynamicConversation(
-        userCount: UserCount,
-        protocol: ConversationOptions.Protocol,
-        monkeyPool: MonkeyPool
+        userCount: UserCount, protocol: ConversationOptions.Protocol, monkeyPool: MonkeyPool
     ): ConversationDef {
         val creator = monkeyPool.randomLoggedInMonkeys(UserCount.single())[0]
         val members = creator.randomPeers(userCount, monkeyPool)
@@ -96,10 +92,7 @@ object ConversationPool {
     }
 
     suspend fun createDynamicConversation(
-        team: String,
-        userCount: UserCount,
-        protocol: ConversationOptions.Protocol,
-        monkeyPool: MonkeyPool
+        team: String, userCount: UserCount, protocol: ConversationOptions.Protocol, monkeyPool: MonkeyPool
     ): ConversationDef {
         val creator = monkeyPool.randomLoggedInMonkeysFromTeam(team, UserCount.single()).first()
         val members = creator.randomPeers(userCount, monkeyPool)
@@ -135,11 +128,7 @@ object ConversationPool {
                 monkeyPool.randomMonkeys(UserCount.single())[0]
             }
             val name = "Prefixed $prefix by monkey ${creator.monkeyType.userId()} - $protocol - $groupIndex"
-            val conversation = creator.makeReadyThen(coreLogic, monkeyPool) {
-                val participants =
-                    preset?.initialMembers?.map { monkeyPool.getFromTeam(it.team, it.index) } ?: creator.randomPeers(userCount, monkeyPool)
-                createConversation(name, participants, protocol, false)
-            }
+            val conversation = creator.createPrefixedConversation(name, protocol, userCount, coreLogic, monkeyPool, preset)
             this.addToPool(conversation)
             if (preset != null) {
                 this.oldPool[preset.id] = conversation.conversation.id

@@ -233,7 +233,7 @@ private suspend fun HttpClient.invite(teamId: String, email: String, name: Strin
         ?: error("Could not retrieve user invitation")
 }
 
-private fun basicHttpClient(backendConfig: BackendConfig, tokenProvider: () -> BearerTokens? = { token }) = HttpClient(OkHttp.create()) {
+internal fun basicHttpClient(backendConfig: BackendConfig, tokenProvider: () -> BearerTokens? = { token }) = HttpClient(OkHttp.create()) {
     val excludedPaths = listOf("register", "login", "activate")
     defaultRequest {
         url(backendConfig.api)

@@ -41,7 +41,7 @@ class MonkeyConversation(val creator: Monkey, val conversation: Conversation, va
      * Return a [count] number of random [Monkey] from the conversation.
      * It returns only logged-in users, if there are none an empty list will be returned
      */
-    fun randomMonkeys(userCount: UserCount): List<Monkey> {
+    suspend fun randomMonkeys(userCount: UserCount): List<Monkey> {
         val count = resolveUserCount(userCount, this.participants.count().toUInt())
         val tempList = participants.toMutableList()
         tempList.shuffle()

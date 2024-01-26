@@ -38,7 +38,7 @@ open class LeaveConversationAction(val config: ActionType.LeaveConversation, sen
         }
     }
 
-    open fun leavers(monkeyPool: MonkeyPool): List<Pair<MonkeyConversation, List<Monkey>>> {
+    open suspend fun leavers(monkeyPool: MonkeyPool): List<Pair<MonkeyConversation, List<Monkey>>> {
         return ConversationPool.randomDynamicConversations(this.config.countGroups.toInt()).map {
             val leavers = it.randomMonkeys(this.config.userCount)
             Pair(it, leavers)

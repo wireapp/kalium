@@ -41,11 +41,11 @@ import com.wire.kalium.logic.feature.publicuser.GetAllContactsResult
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.monkeys.logger
 import com.wire.kalium.monkeys.model.Backend
+import com.wire.kalium.monkeys.model.ConversationDef
 import com.wire.kalium.monkeys.model.MonkeyId
 import com.wire.kalium.monkeys.model.UserCount
 import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
-import com.wire.kalium.monkeys.pool.resolveUserCount
 import kotlinx.coroutines.flow.first
 
 /**
@@ -57,7 +57,7 @@ import kotlinx.coroutines.flow.first
 class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyType, internalId) {
     private var monkeyState: MonkeyState = MonkeyState.NotReady
 
-    override fun isSessionActive(): Boolean {
+    override suspend fun isSessionActive(): Boolean {
         return monkeyState is MonkeyState.Ready
     }
 
@@ -87,9 +87,7 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
         }
         val sessionScope = coreLogic.getSessionScope(loginResult.authData.userId)
         val registerClientParam = RegisterClientUseCase.RegisterClientParam(
-            password = this.monkeyType.userData().password,
-            capabilities = emptyList(),
-            clientType = ClientType.Temporary
+            password = this.monkeyType.userData().password, capabilities = emptyList(), clientType = ClientType.Temporary
         )
         val registerResult = sessionScope.client.getOrRegister(registerClientParam)
         if (registerResult is RegisterClientResult.Failure) {
@@ -105,12 +103,13 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
                     logger.w("Failed logging in: ${state.cause}. Retrying? ${state.cause.isRetryable}")
                     isFinished = !state.cause.isRetryable
                 }
-                is SyncState.GatheringPendingEvents,
-                is SyncState.Live -> {
+
+                is SyncState.GatheringPendingEvents, is SyncState.Live -> {
                     this.monkeyState = MonkeyState.Ready(sessionScope)
                     callback(this)
                     isFinished = true
                 }
+
                 else -> error("This should have been done")
             }
         } while (!isFinished)
@@ -132,16 +131,6 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
         this.monkeyState.readyThen { logout(LogoutReason.SELF_SOFT_LOGOUT) }
         this.monkeyState = MonkeyState.NotReady
         callback(this)
-    }
-
-    override suspend fun randomPeer(monkeyPool: MonkeyPool): Monkey {
-        return monkeyPool.get(this.connectedMonkeys().randomOrNull() ?: error("Monkey ${this.monkeyType.userId()} not connected to anyone"))
-    }
-
-    override suspend fun randomPeers(userCount: UserCount, monkeyPool: MonkeyPool, filterOut: List<UserId>): List<Monkey> {
-        val connectedMonkeys = this.connectedMonkeys()
-        val count = resolveUserCount(userCount, connectedMonkeys.count().toUInt())
-        return connectedMonkeys.filterNot { filterOut.contains(it) }.shuffled().map(monkeyPool::get).take(count.toInt())
     }
 
     override suspend fun sendRequest(anotherMonkey: Monkey) {
@@ -168,18 +157,35 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
         }
     }
 
-    override suspend fun <T> makeReadyThen(coreLogic: CoreLogic, monkeyPool: MonkeyPool, func: suspend Monkey.() -> T): T {
+    private suspend fun <T> makeReadyThen(coreLogic: CoreLogic, monkeyPool: MonkeyPool, func: suspend Monkey.() -> T): T {
         if (this.monkeyState is MonkeyState.NotReady) {
             this.login(coreLogic, monkeyPool::loggedIn)
         }
         return this.func()
     }
 
-    override suspend fun createConversation(
+    override suspend fun createPrefixedConversation(
         name: String,
-        monkeyList: List<Monkey>,
         protocol: ConversationOptions.Protocol,
-        isDestroyable: Boolean
+        userCount: UserCount,
+        coreLogic: CoreLogic,
+        monkeyPool: MonkeyPool,
+        preset: ConversationDef?
+    ): MonkeyConversation {
+        return this.makeReadyThen(coreLogic, monkeyPool) {
+            val participants =
+                preset?.initialMembers?.map { monkeyPool.getFromTeam(it.team, it.index) } ?: this.randomPeers(userCount, monkeyPool)
+            createConversation(name, participants, protocol, false)
+        }
+    }
+
+    override suspend fun warmUp(core: CoreLogic) {
+        login(core) {}
+        logout {}
+    }
+
+    override suspend fun createConversation(
+        name: String, monkeyList: List<Monkey>, protocol: ConversationOptions.Protocol, isDestroyable: Boolean
     ): MonkeyConversation {
         val self = this
         return this.monkeyState.readyThen {
@@ -191,7 +197,7 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
             } else {
                 if (result is CreateGroupConversationUseCase.Result.UnknownFailure) {
                     val cause = result.cause
-                    if(cause is MLSFailure.Generic) {
+                    if (cause is MLSFailure.Generic) {
                         error("${self.monkeyType.userId()} could not create group $name: ${cause.rootCause}")
                     } else {
                         error("${self.monkeyType.userId()} could not create group $name: ${result.cause}")
@@ -252,7 +258,7 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
         this.monkeyState.readyThen {
             val result = messages.sendTextMessage(conversationId, message)
             if (result is Either.Left) {
-               error("Error sending message: ${result.value}")
+                error("Error sending message: ${result.value}")
             }
         }
     }

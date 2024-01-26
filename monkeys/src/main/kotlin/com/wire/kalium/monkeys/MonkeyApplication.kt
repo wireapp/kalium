@@ -34,6 +34,7 @@ import com.wire.kalium.monkeys.model.EventType
 import com.wire.kalium.monkeys.model.TestData
 import com.wire.kalium.monkeys.model.TestDataImporter
 import com.wire.kalium.monkeys.pool.ConversationPool
+import com.wire.kalium.monkeys.pool.MonkeyConfig
 import com.wire.kalium.monkeys.pool.MonkeyPool
 import com.wire.kalium.monkeys.storage.DummyEventStorage
 import com.wire.kalium.monkeys.storage.EventStorage
@@ -118,7 +119,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
     private suspend fun runMonkeys(testData: TestData, eventStorage: EventStorage) {
         val users = TestDataImporter.generateUserData(testData.backends)
         testData.testCases.forEachIndexed { index, testCase ->
-            val monkeyPool = MonkeyPool(users, testCase.name)
+            val monkeyPool = MonkeyPool(users, testCase.name, MonkeyConfig.Internal)
             val coreLogic = coreLogic("$HOME_DIRECTORY/.kalium/${testCase.name.replace(' ', '_')}")
             // the first one creates the preset groups and logs everyone in so keypackages are created
             val eventChannel = Channel<Event>(Channel.UNLIMITED)

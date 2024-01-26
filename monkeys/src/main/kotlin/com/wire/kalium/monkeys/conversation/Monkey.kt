@@ -22,10 +22,13 @@ import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.monkeys.model.ConversationDef
 import com.wire.kalium.monkeys.model.MonkeyId
 import com.wire.kalium.monkeys.model.UserCount
 import com.wire.kalium.monkeys.model.UserData
 import com.wire.kalium.monkeys.pool.MonkeyPool
+import com.wire.kalium.monkeys.pool.resolveUserCount
+import io.ktor.client.HttpClient
 
 sealed class MonkeyType {
     data class Internal(val user: UserData) : MonkeyType()
@@ -39,7 +42,7 @@ sealed class MonkeyType {
     }
 
     /**
-     * Ensures that the monkey type is internal and return its user data
+     * Ensures that the monkey type is internal or remote and return its user data
      */
     fun userData(): UserData = when (this) {
         is External -> error("This is an external Monkey and can't perform this operation")
@@ -55,6 +58,8 @@ abstract class Monkey(val monkeyType: MonkeyType, val internalId: MonkeyId) {
         // MonkeyId is irrelevant for external users as we will never be able to act on their behalf
         fun external(userId: UserId) = LocalMonkey(MonkeyType.External(userId), MonkeyId(-1, "", -1))
         fun internal(user: UserData, monkeyId: MonkeyId) = LocalMonkey(MonkeyType.Internal(user), monkeyId)
+        fun remote(httpClient: HttpClient, baseUrl: String, user: UserData, monkeyId: MonkeyId) =
+            RemoteMonkey(httpClient, baseUrl, MonkeyType.Remote(user), monkeyId)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -68,7 +73,7 @@ abstract class Monkey(val monkeyType: MonkeyType, val internalId: MonkeyId) {
         return this.monkeyType.userId().hashCode()
     }
 
-    abstract fun isSessionActive(): Boolean
+    abstract suspend fun isSessionActive(): Boolean
 
     /**
      * Logs user in and register client (if not registered)
@@ -79,9 +84,15 @@ abstract class Monkey(val monkeyType: MonkeyType, val internalId: MonkeyId) {
 
     abstract suspend fun logout(callback: (Monkey) -> Unit)
 
-    abstract suspend fun randomPeer(monkeyPool: MonkeyPool): Monkey
+    suspend fun randomPeer(monkeyPool: MonkeyPool): Monkey {
+        return monkeyPool.get(this.connectedMonkeys().randomOrNull() ?: error("Monkey ${this.monkeyType.userId()} not connected to anyone"))
+    }
 
-    abstract suspend fun randomPeers(userCount: UserCount, monkeyPool: MonkeyPool, filterOut: List<UserId> = listOf()): List<Monkey>
+    suspend fun randomPeers(userCount: UserCount, monkeyPool: MonkeyPool, filterOut: List<UserId> = listOf()): List<Monkey> {
+        val connectedMonkeys = this.connectedMonkeys()
+        val count = resolveUserCount(userCount, connectedMonkeys.count().toUInt())
+        return connectedMonkeys.filterNot { filterOut.contains(it) }.shuffled().map(monkeyPool::get).take(count.toInt())
+    }
 
     abstract suspend fun sendRequest(anotherMonkey: Monkey)
 
@@ -90,8 +101,6 @@ abstract class Monkey(val monkeyType: MonkeyType, val internalId: MonkeyId) {
     abstract suspend fun rejectRequest(anotherMonkey: Monkey)
 
     abstract suspend fun pendingConnectionRequests(): List<ConversationDetails.Connection>
-
-    abstract suspend fun <T> makeReadyThen(coreLogic: CoreLogic, monkeyPool: MonkeyPool, func: suspend Monkey.() -> T): T
 
     abstract suspend fun createConversation(
         name: String, monkeyList: List<Monkey>, protocol: ConversationOptions.Protocol, isDestroyable: Boolean = true
@@ -108,4 +117,14 @@ abstract class Monkey(val monkeyType: MonkeyType, val internalId: MonkeyId) {
     abstract suspend fun sendDirectMessageTo(anotherMonkey: Monkey, message: String)
 
     abstract suspend fun sendMessageTo(conversationId: ConversationId, message: String)
+    abstract suspend fun createPrefixedConversation(
+        name: String,
+        protocol: ConversationOptions.Protocol,
+        userCount: UserCount,
+        coreLogic: CoreLogic,
+        monkeyPool: MonkeyPool,
+        preset: ConversationDef?
+    ): MonkeyConversation
+
+    abstract suspend fun warmUp(core: CoreLogic)
 }
