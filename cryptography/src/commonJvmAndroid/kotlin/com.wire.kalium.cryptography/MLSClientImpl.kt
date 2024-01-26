@@ -123,7 +123,6 @@ class MLSClientImpl(
     override suspend fun processWelcomeMessage(message: WelcomeMessage) =
         toWelcomeBundle(coreCrypto.processWelcomeMessage(message, defaultGroupConfiguration))
 
-
     override suspend fun encryptMessage(groupId: MLSGroupId, message: PlainMessage): ApplicationMessage {
         val applicationMessage =
             coreCrypto.encryptMessage(groupId.decodeBase64Bytes(), message)

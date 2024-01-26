@@ -212,7 +212,7 @@ internal class MLSConversationDataSource(
                         epochsFlow.emit(groupID)
                     }
                     messages.map {
-                        //todo: process crlDps from decryptMessage
+                        // TODO: process crlDps from decryptMessage
                         it.toModel(groupID)
                     }
                 }
@@ -375,7 +375,7 @@ internal class MLSConversationDataSource(
                 wrapMLSRequest {
                     mlsClient.commitPendingProposals(idMapper.toCryptoModel(groupID))
                 }.flatMap { commitBundle ->
-                    //todo: process crlDps from decryptMessage
+                    // TODO: process crlDps from decryptMessage
                     commitBundle?.let { sendCommitBundle(groupID, it) } ?: Either.Right(Unit)
                 }.flatMap {
                     wrapStorageRequest {
@@ -426,7 +426,7 @@ internal class MLSConversationDataSource(
                                 mlsClient.addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)
                             }
                         }.flatMap { commitBundle ->
-                            //todo: process crlDps from commitBundle
+                            // TODO: process crlDps from commitBundle
                             commitBundle?.let {
                                 sendCommitBundle(groupID, it)
                             } ?: Either.Right(Unit)

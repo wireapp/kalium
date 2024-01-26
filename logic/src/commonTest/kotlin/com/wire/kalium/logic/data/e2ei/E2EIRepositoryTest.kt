@@ -50,7 +50,7 @@ import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEAuthorizationResponse
 import com.wire.kalium.network.api.base.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.base.unbound.acme.AcmeDirectoriesResponse
-import com.wire.kalium.network.api.base.unbound.acme.AuthorizationChallengeType
+import com.wire.kalium.network.api.base.unbound.acme.DtoAuthorizationChallengeType
 import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -1215,7 +1215,7 @@ class E2EIRepositoryTest {
                 nonce = RANDOM_NONCE.value,
                 location = RANDOM_URL,
                 response = RANDOM_BYTE_ARRAY,
-                challengeType = AuthorizationChallengeType.DPoP
+                challengeType = DtoAuthorizationChallengeType.DPoP
             )
 
             val E2EI_TEAM_SETTINGS = E2EISettings(

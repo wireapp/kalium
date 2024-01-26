@@ -94,7 +94,7 @@ class ACMEApiImpl internal constructor(
             }
         }.flatMap { challengeResponse -> // this is the json response as string
             runCatching {
-                val type: AuthorizationChallengeType =
+                val type: DtoAuthorizationChallengeType =
                     KtxSerializer.json.decodeFromString<AuthorizationResponse>(challengeResponse.value).let {
                         it.challenges.firstOrNull()?.type
                     } ?: return@flatMap CustomErrors.MISSING_CHALLENGE
