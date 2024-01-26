@@ -39,16 +39,16 @@ import kotlinx.datetime.Instant
 /**
  * Updates the supported protocols of the current user.
  */
-interface UpdateSupportedProtocolsUseCase {
+interface UpdateSelfUserSupportedProtocolsUseCase {
     suspend operator fun invoke(): Either<CoreFailure, Boolean>
 }
 
-internal class UpdateSupportedProtocolsUseCaseImpl(
+internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
     private val clientsRepository: ClientRepository,
     private val userRepository: UserRepository,
     private val userConfigRepository: UserConfigRepository,
     private val featureSupport: FeatureSupport
-) : UpdateSupportedProtocolsUseCase {
+) : UpdateSelfUserSupportedProtocolsUseCase {
 
     override suspend operator fun invoke(): Either<CoreFailure, Boolean> {
         return if (!featureSupport.isMLSSupported) {

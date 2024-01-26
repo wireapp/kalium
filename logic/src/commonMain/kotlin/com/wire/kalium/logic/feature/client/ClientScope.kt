@@ -50,7 +50,7 @@ import com.wire.kalium.util.DelicateKaliumApi
 
 @Suppress("LongParameterList")
 class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
-     val clientRepository: ClientRepository,
+    val clientRepository: ClientRepository,
     private val pushTokenRepository: PushTokenRepository,
     private val logoutRepository: LogoutRepository,
     private val preKeyRepository: PreKeyRepository,
@@ -61,7 +61,7 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     private val clientRemoteRepository: ClientRemoteRepository,
     private val proteusClientProvider: ProteusClientProvider,
     private val sessionRepository: SessionRepository,
-     val upgradeCurrentSessionUseCase: UpgradeCurrentSessionUseCase,
+    private val upgradeCurrentSessionUseCase: UpgradeCurrentSessionUseCase,
     private val selfUserId: UserId,
     private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
     private val clientIdProvider: CurrentClientIdProvider,
@@ -70,7 +70,7 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     private val slowSyncRepository: SlowSyncRepository,
     private val cachedClientIdClearer: CachedClientIdClearer,
     private val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase,
-    val registerMLSClientUseCase: RegisterMLSClientUseCase,
+    private val registerMLSClientUseCase: RegisterMLSClientUseCase,
     private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
 ) {
     @OptIn(DelicateKaliumApi::class)

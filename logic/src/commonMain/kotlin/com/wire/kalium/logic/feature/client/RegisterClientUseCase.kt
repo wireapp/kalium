@@ -140,7 +140,7 @@ class RegisterClientUseCaseImpl @OptIn(DelicateKaliumApi::class) internal constr
                 RegisterClientResult.Failure.Generic(it)
             }, { registerClientParam ->
                 clientRepository.registerClient(registerClientParam)
-                   //todo? separate this in mls client usesCase register! separate everything
+                    // todo? separate this in mls client usesCase register! separate everything
                     .flatMap { registeredClient ->
                         if (isAllowedToRegisterMLSClient()) {
                             registerMLSClientUseCase.invoke(clientId = registeredClient.id).flatMap {

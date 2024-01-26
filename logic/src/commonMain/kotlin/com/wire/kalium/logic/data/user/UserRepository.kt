@@ -228,7 +228,6 @@ internal class UserDataSource internal constructor(
 
     override suspend fun fetchAllOtherUsers(): Either<CoreFailure, Unit> {
         val ids = userDAO.allOtherUsersId().map(UserIDEntity::toModel).toSet()
-
         return fetchUsersByIds(ids)
     }
 
