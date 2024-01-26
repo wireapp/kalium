@@ -211,7 +211,7 @@ sealed interface E2EIEnrollmentResult {
         ConversationMigration,
         Certificate
     }
-
+    @Suppress("LongParameterList")
     class Initialized(
         val target: String,
         val oAuthState: String?,

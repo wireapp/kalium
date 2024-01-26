@@ -18,14 +18,11 @@
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.feature.user.screenshotCensoring.ObserveScreenshotCensoringConfigResult
 import kotlinx.coroutines.flow.Flow
 
 interface ObserveIsE2EIRequiredState {
     suspend operator fun invoke(): Flow<Boolean?>
 }
-internal class ObserveIsE2EIRequiredStateImpl(
-    val clientRepository: ClientRepository
-): ObserveIsE2EIRequiredState{
+internal class ObserveIsE2EIRequiredStateImpl(val clientRepository: ClientRepository) : ObserveIsE2EIRequiredState {
     override suspend fun invoke() = clientRepository.observeIsClientRegistrationBlockedByE2EI()
 }
