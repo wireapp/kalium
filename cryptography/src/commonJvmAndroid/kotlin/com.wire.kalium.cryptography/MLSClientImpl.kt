@@ -119,10 +119,9 @@ class MLSClientImpl(
         coreCrypto.wipeConversation(groupId.decodeBase64Bytes())
     }
 
-    override suspend fun processWelcomeMessage(message: WelcomeMessage): MLSGroupId {
-        val conversationId = coreCrypto.processWelcomeMessage(message, defaultGroupConfiguration)
-        return conversationId.encodeBase64()
-    }
+    override suspend fun processWelcomeMessage(message: WelcomeMessage) =
+        toWelcomeBundle(coreCrypto.processWelcomeMessage(message, defaultGroupConfiguration))
+
 
     override suspend fun encryptMessage(groupId: MLSGroupId, message: PlainMessage): ApplicationMessage {
         val applicationMessage =
@@ -311,22 +310,30 @@ class MLSClientImpl(
         fun toUByteList(value: String): List<UByte> = value.encodeToByteArray().asUByteArray().asList()
         fun toByteArray(value: List<UByte>) = value.toUByteArray().asByteArray()
 
+        fun toWelcomeBundle(value: com.wire.crypto.WelcomeBundle) = WelcomeBundle(
+            groupId = value.id.encodeBase64(),
+            crlNewDistributionPoints = value.crlNewDistributionPoints
+        )
+
         fun toCommitBundle(value: com.wire.crypto.MemberAddedMessages) = CommitBundle(
             value.commit,
             value.welcome,
-            toGroupInfoBundle(value.groupInfo)
+            toGroupInfoBundle(value.groupInfo),
+            value.crlNewDistributionPoints
         )
 
         fun toCommitBundle(value: com.wire.crypto.CommitBundle) = CommitBundle(
             value.commit,
             value.welcome,
-            toGroupInfoBundle(value.groupInfo)
+            toGroupInfoBundle(value.groupInfo),
+            null
         )
 
         fun toCommitBundle(value: com.wire.crypto.ConversationInitBundle) = CommitBundle(
             value.commit,
             null,
-            toGroupInfoBundle(value.groupInfo)
+            toGroupInfoBundle(value.groupInfo),
+            value.crlNewDistributionPoints
         )
 
         fun toRotateBundle(value: com.wire.crypto.RotateBundle) = RotateBundle(
@@ -334,7 +341,8 @@ class MLSClientImpl(
                 toGroupId(groupId) to toCommitBundle(commitBundle)
             }.toMap(),
             value.newKeyPackages,
-            value.keyPackageRefsToRemove
+            value.keyPackageRefsToRemove,
+            value.crlNewDistributionPoints
         )
 
         fun toIdentity(value: com.wire.crypto.WireIdentity) = WireIdentity(
@@ -388,7 +396,8 @@ class MLSClientImpl(
             value.commitDelay?.toLong(),
             value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(String(it)) },
             value.hasEpochChanged,
-            value.identity?.let { toIdentity(it) }
+            value.identity?.let { toIdentity(it) },
+            value.crlNewDistributionPoints
         )
 
         fun toDecryptedMessageBundle(value: BufferedDecryptedMessage) = DecryptedMessageBundle(
@@ -396,7 +405,8 @@ class MLSClientImpl(
             value.commitDelay?.toLong(),
             value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString(String(it)) },
             value.hasEpochChanged,
-            value.identity?.let { toIdentity(it) }
+            value.identity?.let { toIdentity(it) },
+            value.crlNewDistributionPoints
         )
 
         fun toCredentialType(value: CredentialType) = when (value) {

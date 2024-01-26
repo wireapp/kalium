@@ -51,13 +51,20 @@ open class GroupInfoBundle(
 open class CommitBundle(
     val commit: ByteArray,
     val welcome: ByteArray?,
-    val groupInfoBundle: GroupInfoBundle
+    val groupInfoBundle: GroupInfoBundle,
+    val crlNewDistributionPoints: List<String>?
+)
+
+open class WelcomeBundle(
+    val groupId :MLSGroupId,
+    val crlNewDistributionPoints: List<String>?
 )
 
 open class RotateBundle(
     var commits: Map<MLSGroupId, CommitBundle>,
     var newKeyPackages: List<ByteArray>,
-    var keyPackageRefsToRemove: List<ByteArray>
+    var keyPackageRefsToRemove: List<ByteArray>,
+    val crlNewDistributionPoints:List<String>?
 )
 
 class DecryptedMessageBundle(
@@ -65,7 +72,8 @@ class DecryptedMessageBundle(
     val commitDelay: Long?,
     val senderClientId: CryptoQualifiedClientId?,
     val hasEpochChanged: Boolean,
-    val identity: WireIdentity?
+    val identity: WireIdentity?,
+    val crlNewDistributionPoints:List<String>?
 )
 
 @JvmInline
@@ -199,7 +207,7 @@ interface MLSClient {
      * @param message the incoming welcome message
      * @return MLS group ID
      */
-    suspend fun processWelcomeMessage(message: WelcomeMessage): MLSGroupId
+    suspend fun processWelcomeMessage(message: WelcomeMessage): WelcomeBundle
 
     /**
      * Signal that last sent commit was accepted by the distribution service
