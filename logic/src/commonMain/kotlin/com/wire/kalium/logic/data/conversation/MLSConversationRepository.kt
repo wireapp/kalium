@@ -241,7 +241,9 @@ internal class MLSConversationDataSource(
                                 welcomeBundle.groupId
                             )
                             kaliumLogger.i("Updated conversation from welcome message (groupID = ${welcomeBundle.groupId})")
-                            // TODO: process crlDps from welcomeBundle
+                            welcomeBundle.crlNewDistributionPoints?.let { newDistributionPoints ->
+                                checkRevocationList(newDistributionPoints)
+                            }
                         }
                     }
                 }
