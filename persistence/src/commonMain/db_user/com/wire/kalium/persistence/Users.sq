@@ -211,20 +211,20 @@ WHERE NOT EXISTS (SELECT user FROM Member AS member WHERE member.conversation ==
 AND  (name LIKE ('%' || :searchQuery || '%')
 OR  handle LIKE  ('%' || :searchQuery || '%')
 OR  email LIKE  ('%' || :searchQuery || '%'))
-AND connection_status = "ACCEPTED"
+AND connection_status = 'ACCEPTED'
 AND defederated = 0;
 
 getUsersNotInConversationByHandle:
 SELECT * FROM UserDetails AS user
 WHERE NOT EXISTS (SELECT user FROM Member AS member WHERE member.conversation == :converastion_id AND user.qualified_id == member.user)
 AND handle LIKE ('%' || :searchQuery || '%')
-AND connection_status = "ACCEPTED"
+AND connection_status = 'ACCEPTED'
 AND defederated = 0;
 
 getUsersNotPartOfTheConversation:
 SELECT * FROM UserDetails AS user
  WHERE NOT EXISTS (SELECT user FROM Member AS member WHERE member.conversation == :converastion_id AND user.qualified_id == member.user)
- AND connection_status = "ACCEPTED"
+ AND connection_status = 'ACCEPTED'
  AND defederated = 0;
 
 updateUserDisplayName:
