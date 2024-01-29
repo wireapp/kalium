@@ -1,6 +1,6 @@
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity;
 
-ALTER TABLE Conversation ADD COLUMN legal_hold_status TEXT AS ConversationEntity.LegalHoldStatus NOT NULL DEFAULT "DISABLED";
+ALTER TABLE Conversation ADD COLUMN legal_hold_status TEXT AS ConversationEntity.LegalHoldStatus NOT NULL DEFAULT 'DISABLED';
 
 DROP VIEW IF EXISTS ConversationDetails;
 
