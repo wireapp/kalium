@@ -14,7 +14,7 @@ CREATE TABLE Conversation (
     mls_epoch INTEGER DEFAULT 0 NOT NULL,
     mls_proposal_timer TEXT,
     protocol TEXT AS ConversationEntity.Protocol NOT NULL,
-    muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT 'ALL_ALLOWED' NOT NULL,
+    muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT "ALL_ALLOWED" NOT NULL,
     muted_time INTEGER DEFAULT 0 NOT NULL,
     creator_id TEXT NOT NULL,
     -- when even a conversation event is received, last_modified_date is updated for specific events
@@ -44,7 +44,7 @@ CREATE TABLE Conversation (
     verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT 'NOT_VERIFIED',
     proteus_verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT 'NOT_VERIFIED',
     degraded_conversation_notified INTEGER AS Boolean NOT NULL DEFAULT 1,
-    legal_hold_status TEXT AS ConversationEntity.LegalHoldStatus NOT NULL DEFAULT 'DISABLED'
+    legal_hold_status TEXT AS ConversationEntity.LegalHoldStatus NOT NULL DEFAULT "DISABLED"
 );
 
 CREATE TABLE ConversationLegalHoldStatusChangeNotified (
