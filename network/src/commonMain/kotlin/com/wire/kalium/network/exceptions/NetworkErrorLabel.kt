@@ -59,6 +59,7 @@ internal object NetworkErrorLabel {
     object KaliumCustom {
         const val MISSING_REFRESH_TOKEN = "missing-refresh_token"
         const val MISSING_NONCE = "missing-nonce"
+        const val MISSING_CHALLENGE_TYPE = "missing-challenge-type"
     }
 
 }

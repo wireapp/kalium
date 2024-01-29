@@ -112,9 +112,9 @@ class MLSClientImpl(
         coreCrypto.wipeConversation(toUByteList(groupId.decodeBase64Bytes()))
     }
 
-    override suspend fun processWelcomeMessage(message: WelcomeMessage): MLSGroupId {
+    override suspend fun processWelcomeMessage(message: WelcomeMessage): WelcomeBundle {
         val conversationId = coreCrypto.processWelcomeMessage(toUByteList(message), defaultGroupConfiguration)
-        return toByteArray(conversationId).encodeBase64()
+        return WelcomeBundle(groupId = toByteArray(conversationId).encodeBase64(), null)
     }
 
     override suspend fun encryptMessage(groupId: MLSGroupId, message: PlainMessage): ApplicationMessage {
@@ -252,19 +252,22 @@ class MLSClientImpl(
         fun toCommitBundle(value: com.wire.crypto.MemberAddedMessages) = CommitBundle(
             toByteArray(value.commit),
             toByteArray(value.welcome),
-            toPublicGroupStateBundle(value.publicGroupState)
+            toPublicGroupStateBundle(value.publicGroupState),
+            null
         )
 
         fun toCommitBundle(value: com.wire.crypto.CommitBundle) = CommitBundle(
             toByteArray(value.commit),
             value.welcome?.let { toByteArray(it) },
-            toPublicGroupStateBundle(value.publicGroupState)
+            toPublicGroupStateBundle(value.publicGroupState),
+            null
         )
 
         fun toCommitBundle(value: com.wire.crypto.ConversationInitBundle) = CommitBundle(
             toByteArray(value.commit),
             null,
-            toPublicGroupStateBundle(value.publicGroupState)
+            toPublicGroupStateBundle(value.publicGroupState),
+            null
         )
 
         fun toPublicGroupStateBundle(value: com.wire.crypto.PublicGroupStateBundle) = GroupInfoBundle(
@@ -289,7 +292,8 @@ class MLSClientImpl(
             value.commitDelay?.toLong(),
             value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString((toByteArray(it).commonToUtf8String())) },
             value.hasEpochChanged,
-            identity = null
+            identity = null,
+            crlNewDistributionPoints = null
         )
     }
 
