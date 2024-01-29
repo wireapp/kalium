@@ -31,7 +31,7 @@ CREATE TABLE Conversation (
     access_role_list TEXT AS List<ConversationEntity.AccessRole> NOT NULL,
     mls_last_keying_material_update_date INTEGER AS Instant DEFAULT 0 NOT NULL,
     mls_cipher_suite TEXT AS ConversationEntity.CipherSuite NOT NULL,
-    receipt_mode TEXT AS ConversationEntity.ReceiptMode DEFAULT 'DISABLED' NOT NULL,
+    receipt_mode TEXT AS ConversationEntity.ReceiptMode DEFAULT "DISABLED" NOT NULL,
     guest_room_link TEXT,
     message_timer INTEGER DEFAULT(NULL),
     user_message_timer INTEGER DEFAULT(NULL),
@@ -44,7 +44,7 @@ CREATE TABLE Conversation (
     verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT 'NOT_VERIFIED',
     proteus_verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT 'NOT_VERIFIED',
     degraded_conversation_notified INTEGER AS Boolean NOT NULL DEFAULT 1,
-    legal_hold_status TEXT AS ConversationEntity.LegalHoldStatus NOT NULL DEFAULT "DISABLED"
+    legal_hold_status TEXT AS ConversationEntity.LegalHoldStatus NOT NULL DEFAULT 'DISABLED'
 );
 
 CREATE TABLE ConversationLegalHoldStatusChangeNotified (
