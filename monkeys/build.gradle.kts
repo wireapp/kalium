@@ -87,6 +87,7 @@ sourceSets {
             implementation(libs.ktor.serverCallId)
             implementation(libs.ktor.serverMetrics)
             implementation(libs.ktor.serverContentNegotiation)
+            implementation(libs.ktor.statusPages)
             implementation(libs.okhttp.loggingInterceptor)
             implementation(libs.micrometer)
             implementation(libs.slf4js)

@@ -20,29 +20,23 @@ package com.wire.kalium.monkeys.server
 import co.touchlab.kermit.LogWriter
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.groups.mutuallyExclusiveOptions
-import com.github.ajalt.clikt.parameters.groups.required
 import com.github.ajalt.clikt.parameters.options.convert
 import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.enum
 import com.github.ajalt.clikt.parameters.types.file
+import com.github.ajalt.clikt.parameters.types.int
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreLogger
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.monkeys.conversation.Monkey
 import com.wire.kalium.monkeys.coreLogic
 import com.wire.kalium.monkeys.fileLogger
 import com.wire.kalium.monkeys.homeDirectory
-import com.wire.kalium.monkeys.model.Backend
 import com.wire.kalium.monkeys.model.BackendConfig
-import com.wire.kalium.monkeys.model.MonkeyId
-import com.wire.kalium.monkeys.model.Team
-import com.wire.kalium.monkeys.model.UserData
-import com.wire.kalium.monkeys.model.basicHttpClient
 import com.wire.kalium.monkeys.server.routes.configureAdministration
 import com.wire.kalium.monkeys.server.routes.configureMonitoring
 import com.wire.kalium.monkeys.server.routes.configureRoutes
+import com.wire.kalium.monkeys.server.routes.initMonkey
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -50,6 +44,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 
 class MonkeyServer : CliktCommand() {
+    private val port by option("-p", "--port", help = "Port to bind the http server").int().default(8080)
     private val logLevel by option("-l", "--log-level", help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.INFO)
     private val logOutputFile by option("-o", "--log-file", help = "output file for logs")
     private val fileLogger: LogWriter by lazy { fileLogger(logOutputFile ?: "kalium.log") }
@@ -66,29 +61,8 @@ class MonkeyServer : CliktCommand() {
         ).file(mustExist = true, mustBeReadable = true).convert {
             Json.decodeFromStream(it.inputStream())
         },
-    ).required()
+    )
     val coreLogic = coreLogic("${homeDirectory()}/.kalium/monkey")
-    val monkey: Monkey by lazy {
-        val presetTeam = backendConfig.presetTeam ?: error("Preset team must contain exact one user")
-        val httpClient = basicHttpClient(backendConfig)
-        val backend = Backend.fromConfig(backendConfig)
-        val team = Team(
-            backendConfig.teamName,
-            presetTeam.id,
-            backend,
-            presetTeam.owner.email,
-            backendConfig.passwordForUsers,
-            UserId(presetTeam.owner.unqualifiedId, backendConfig.domain),
-            httpClient
-        )
-        val userData = presetTeam.users.map { user ->
-            UserData(
-                user.email, backendConfig.passwordForUsers, UserId(user.unqualifiedId, backendConfig.domain), team
-            )
-        }.single()
-        // currently the monkey id is not necessary in the server since the coordinator will be the one handling events for the replayer
-        Monkey.internal(userData, MonkeyId.dummy())
-    }
 
     override fun run() {
         if (logOutputFile != null) {
@@ -96,10 +70,11 @@ class MonkeyServer : CliktCommand() {
         } else {
             CoreLogger.init(KaliumLogger.Config(logLevel))
         }
-        embeddedServer(Netty, port = 8080, host = "0.0.0.0", module = {
+        backendConfig?.let { initMonkey(it) }
+        embeddedServer(Netty, port = port, host = "0.0.0.0", module = {
             configureMonitoring()
             configureAdministration()
-            configureRoutes(monkey, coreLogic)
+            configureRoutes(coreLogic)
         }).start(wait = true)
     }
 }

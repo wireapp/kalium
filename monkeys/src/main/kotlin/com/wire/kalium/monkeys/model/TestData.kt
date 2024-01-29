@@ -27,6 +27,13 @@ data class TestData(
     @SerialName("testCases") val testCases: List<TestCase>,
     @SerialName("backends") val backends: List<BackendConfig>,
     @SerialName("eventStorage") val eventStorage: EventStorage? = null,
+    @SerialName("externalMonkey") val externalMonkey: ExternalMonkey? = null
+)
+
+@Serializable
+data class ExternalMonkey(
+    @SerialName("startCommand") val startCommand: String,
+    @SerialName("addressTemplate") val addressTemplate: String
 )
 
 @Serializable

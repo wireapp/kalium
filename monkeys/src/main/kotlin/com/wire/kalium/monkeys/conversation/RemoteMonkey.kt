@@ -55,6 +55,9 @@ import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.Url
 import io.ktor.http.contentType
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.retry
 
 @Suppress("TooManyFunctions")
 class RemoteMonkey(private val httpClient: HttpClient, private val baseUrl: String, monkeyType: MonkeyType, internalId: MonkeyId) :
@@ -64,14 +67,18 @@ class RemoteMonkey(private val httpClient: HttpClient, private val baseUrl: Stri
     }
 
     private suspend inline fun <reified T> get(endpoint: String): T {
-        return httpClient.get(url(endpoint)).body()
+        return flow<T> {
+            httpClient.get(url(endpoint)).body()
+        }.retry(3).first()
     }
 
     private suspend inline fun <reified T, reified B> post(endpoint: String, body: B): T {
-        return httpClient.post(url(endpoint)) {
-            contentType(ContentType.Application.Json)
-            setBody(body)
-        }.body()
+        return flow<T> {
+            httpClient.post(url(endpoint)) {
+                contentType(ContentType.Application.Json)
+                setBody(body)
+            }.body()
+        }.retry(3).first()
     }
 
     private suspend inline fun emptyPost(endpoint: String) {
@@ -130,14 +137,10 @@ class RemoteMonkey(private val httpClient: HttpClient, private val baseUrl: Stri
     }
 
     override suspend fun createConversation(
-        name: String,
-        monkeyList: List<Monkey>,
-        protocol: ConversationOptions.Protocol,
-        isDestroyable: Boolean
+        name: String, monkeyList: List<Monkey>, protocol: ConversationOptions.Protocol, isDestroyable: Boolean
     ): MonkeyConversation {
         return post(
-            CREATE_CONVERSATION,
-            CreateConversationRequest(name, monkeyList.map { it.monkeyType.userId() }, protocol, isDestroyable)
+            CREATE_CONVERSATION, CreateConversationRequest(name, monkeyList.map { it.monkeyType.userId() }, protocol, isDestroyable)
         )
     }
 

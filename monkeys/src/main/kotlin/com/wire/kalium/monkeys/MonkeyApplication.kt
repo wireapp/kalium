@@ -55,7 +55,16 @@ import kotlinx.coroutines.runBlocking
 import sun.misc.Signal
 import sun.misc.SignalHandler
 import java.io.File
+import java.util.concurrent.TimeUnit
 import kotlin.system.exitProcess
+
+fun String.runSysCommand() {
+    ProcessBuilder(*split(" ").toTypedArray())
+        .redirectOutput(ProcessBuilder.Redirect.INHERIT)
+        .redirectError(ProcessBuilder.Redirect.INHERIT)
+        .start()
+        .waitFor(10, TimeUnit.SECONDS)
+}
 
 fun CoroutineScope.stopIM() {
     logger.i("Stopping Infinite Monkeys")
@@ -118,6 +127,11 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
     private suspend fun runMonkeys(testData: TestData, eventStorage: EventStorage) {
         val users = TestDataImporter.generateUserData(testData.backends)
+        if(testData.externalMonkey != null) {
+            users.forEach {
+                testData.externalMonkey.startCommand.runSysCommand()
+            }
+        }
         testData.testCases.forEachIndexed { index, testCase ->
             val monkeyPool = MonkeyPool(users, testCase.name, MonkeyConfig.Internal)
             val coreLogic = coreLogic("$HOME_DIRECTORY/.kalium/${testCase.name.replace(' ', '_')}")

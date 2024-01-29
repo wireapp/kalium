@@ -4,6 +4,12 @@ import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.monkeys.conversation.Monkey
+import com.wire.kalium.monkeys.model.Backend
+import com.wire.kalium.monkeys.model.BackendConfig
+import com.wire.kalium.monkeys.model.MonkeyId
+import com.wire.kalium.monkeys.model.Team
+import com.wire.kalium.monkeys.model.UserData
+import com.wire.kalium.monkeys.model.basicHttpClient
 import com.wire.kalium.monkeys.server.model.AddMonkeysRequest
 import com.wire.kalium.monkeys.server.model.CreateConversationRequest
 import com.wire.kalium.monkeys.server.model.RemoveMonkeyRequest
@@ -21,12 +27,41 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.post
 import io.ktor.server.routing.routing
 
+private lateinit var monkey: Monkey
+
+fun initMonkey(backendConfig: BackendConfig) {
+    val presetTeam = backendConfig.presetTeam ?: error("Preset team must contain exact one user")
+    val httpClient = basicHttpClient(backendConfig)
+    val backend = Backend.fromConfig(backendConfig)
+    val team = Team(
+        backendConfig.teamName,
+        presetTeam.id,
+        backend,
+        presetTeam.owner.email,
+        backendConfig.passwordForUsers,
+        UserId(presetTeam.owner.unqualifiedId, backendConfig.domain),
+        httpClient
+    )
+    val userData = presetTeam.users.map { user ->
+        UserData(
+            user.email, backendConfig.passwordForUsers, UserId(user.unqualifiedId, backendConfig.domain), team
+        )
+    }.single()
+    // currently the monkey id is not necessary in the server since the coordinator will be the one handling events for the replayer
+    monkey = Monkey.internal(userData, MonkeyId.dummy())
+}
+
 @Suppress("LongMethod")
-fun Application.configureRoutes(monkey: Monkey, core: CoreLogic) {
+fun Application.configureRoutes(core: CoreLogic) {
     install(ContentNegotiation) {
         json()
     }
     routing {
+        post("/set") {
+            val backendConfig = call.receive<BackendConfig>()
+            initMonkey(backendConfig)
+            call.respond(HttpStatusCode.OK)
+        }
         get("/$IS_SESSION_ACTIVE") {
             call.respond(HttpStatusCode.OK, monkey.isSessionActive())
         }
