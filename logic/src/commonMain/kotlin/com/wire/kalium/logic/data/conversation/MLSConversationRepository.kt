@@ -68,6 +68,7 @@ import com.wire.kalium.network.exceptions.isMlsCommitMissingReferences
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.message.LocalId
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -367,7 +368,7 @@ internal class MLSConversationDataSource(
 
     private suspend fun processCommitBundleEvents(events: List<EventContentDTO>) {
         events.forEach { eventContentDTO ->
-            val event = MapperProvider.eventMapper(selfUserId).fromEventContentDTO("", eventContentDTO, true, false)
+            val event = MapperProvider.eventMapper(selfUserId).fromEventContentDTO(LocalId.generate(), eventContentDTO, true, false)
             if (event is Event.Conversation) {
                 commitBundleEventReceiver.onEvent(event)
             }
