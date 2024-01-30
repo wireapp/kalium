@@ -57,16 +57,17 @@ import sun.misc.Signal
 import sun.misc.SignalHandler
 import java.io.File
 import java.util.Optional
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.system.exitProcess
 
 fun CoroutineScope.stopIM() {
     logger.i("Stopping Infinite Monkeys")
     this.cancel("Stopping Infinite Monkeys")
+    MonkeyApplication.isActive.set(false)
 }
 
 class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
-
     private val dataFilePath by argument(help = "path to the test data file")
     private val logLevel by option("-l", "--log-level", help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.INFO)
     private val logOutputFile by option("-f", "--log-file", help = "output file for logs")
@@ -116,6 +117,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
             }
         } finally {
             if (testData.externalMonkey != null) {
+                logger.i("Shutting down remote monkeys")
                 RemoteMonkey.tearDown()
             }
             eventProcessor.releaseResources()
@@ -164,5 +166,6 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
     companion object {
         val HOME_DIRECTORY: String = homeDirectory()
+        val isActive = AtomicBoolean(true)
     }
 }

@@ -66,6 +66,9 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
 import io.ktor.http.contentType
 import io.ktor.serialization.kotlinx.json.json
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.retry
@@ -101,18 +104,20 @@ class RemoteMonkey(private val monkeyConfig: MonkeyConfig.Remote, monkeyType: Mo
         }
 
         @Suppress("TooGenericExceptionCaught")
-        suspend fun tearDown() {
-            servers.forEach {
-                flow<Unit> {
-                    try {
-                        httpClient.post("$it/shutdown")
-                        emit(Unit)
-                    } catch (e: Exception) {
-                        logger.d("Failed stopping $it: $e")
-                        throw e
-                    }
-                }.retry(RETRY_COUNT).first()
-            }
+        suspend fun tearDown() = coroutineScope {
+            servers.map {
+                async {
+                    flow {
+                        try {
+                            val code = httpClient.get("$it/shutdown").status
+                            emit(code)
+                        } catch (e: Exception) {
+                            logger.e("Failed stopping $it: $e")
+                            throw e
+                        }
+                    }.retry(RETRY_COUNT).first()
+                }
+            }.awaitAll()
         }
     }
 

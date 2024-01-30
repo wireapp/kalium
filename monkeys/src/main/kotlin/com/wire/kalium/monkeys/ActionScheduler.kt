@@ -65,7 +65,7 @@ suspend fun start(
                     MetricsCollector.count("c_errors", tags.plusElement(Tag.of("action", actionName)))
                 }
                 delay(actionConfig.repeatInterval.toLong())
-            } while (this.isActive && actionConfig.repeatInterval > 0u)
+            } while (MonkeyApplication.isActive.get() && actionConfig.repeatInterval > 0u)
             logger.i("Task for action $actionName finished")
         }
     }
