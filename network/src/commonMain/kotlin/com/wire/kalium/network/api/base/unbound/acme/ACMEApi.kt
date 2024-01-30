@@ -18,13 +18,16 @@
 package com.wire.kalium.network.api.base.unbound.acme
 
 import com.wire.kalium.network.UnboundNetworkClient
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.serialization.JoseJson
+import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.handleUnsuccessfulResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.call.body
+import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.prepareHead
@@ -36,12 +39,14 @@ import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 
 interface ACMEApi {
-    suspend fun getTrustAnchors(acmeUrl: String): NetworkResponse<CertificateChain>
+    suspend fun getTrustAnchors(acmeUrl: String): NetworkResponse<ByteArray>
     suspend fun getACMEDirectories(discoveryUrl: String): NetworkResponse<AcmeDirectoriesResponse>
     suspend fun getACMENonce(url: String): NetworkResponse<String>
     suspend fun sendACMERequest(url: String, body: ByteArray? = null): NetworkResponse<ACMEResponse>
+    suspend fun sendAuthorizationRequest(url: String, body: ByteArray? = null): NetworkResponse<ACMEAuthorizationResponse>
     suspend fun sendChallengeRequest(url: String, body: ByteArray): NetworkResponse<ChallengeResponse>
-    suspend fun getACMEFederation(baseUrl: String): NetworkResponse<CertificateChain>
+    suspend fun getACMEFederation(baseUrl: String): NetworkResponse<String>
+    suspend fun getClientDomainCRL(discoveryUrl: String): NetworkResponse<ByteArray>
 }
 
 class ACMEApiImpl internal constructor(
@@ -49,7 +54,7 @@ class ACMEApiImpl internal constructor(
 ) : ACMEApi {
     private val httpClient get() = unboundNetworkClient.httpClient
 
-    override suspend fun getTrustAnchors(acmeUrl: String): NetworkResponse<CertificateChain> = wrapKaliumResponse {
+    override suspend fun getTrustAnchors(acmeUrl: String): NetworkResponse<ByteArray> = wrapKaliumResponse {
         httpClient.get("$acmeUrl/$PATH_ACME_ROOTS_PEM")
     }
 
@@ -78,6 +83,38 @@ class ACMEApiImpl internal constructor(
             body?.let { setBody(body) }
         }.execute { httpResponse ->
             handleACMERequestResponse(httpResponse)
+        }
+
+    override suspend fun sendAuthorizationRequest(url: String, body: ByteArray?): NetworkResponse<ACMEAuthorizationResponse> =
+        wrapKaliumResponse<String> {
+            httpClient.post(url) {
+                contentType(ContentType.Application.JoseJson)
+                setBody(body)
+                accept(ContentType.Application.Json)
+            }
+        }.flatMap { challengeResponse -> // this is the json response as string
+            runCatching {
+                val type: DtoAuthorizationChallengeType =
+                    KtxSerializer.json.decodeFromString<AuthorizationResponse>(challengeResponse.value).let {
+                        it.challenges.firstOrNull()?.type
+                    } ?: return@flatMap CustomErrors.MISSING_CHALLENGE
+
+                challengeResponse.headers[NONCE_HEADER_KEY.lowercase()]?.let { nonce ->
+                    NetworkResponse.Success(
+                        ACMEAuthorizationResponse(
+                            nonce = nonce,
+                            location = challengeResponse.headers[LOCATION_HEADER_KEY],
+                            response = challengeResponse.value.encodeToByteArray(),
+                            challengeType = type
+                        ), challengeResponse.headers, challengeResponse.httpCode
+                    )
+                } ?: run {
+                    CustomErrors.MISSING_NONCE
+                }
+            }.getOrElse { unhandledException ->
+                // since we are handling manually our network exceptions for this endpoint, handle ie: no host exception
+                NetworkResponse.Error(KaliumException.GenericError(unhandledException))
+            }
         }
 
     private suspend fun handleACMERequestResponse(httpResponse: HttpResponse): NetworkResponse<ACMEResponse> =
@@ -111,6 +148,7 @@ class ACMEApiImpl internal constructor(
                         url = challengeResponse.value.url,
                         status = challengeResponse.value.status,
                         token = challengeResponse.value.token,
+                        target = challengeResponse.value.target,
                         nonce = nonce
                     ), challengeResponse.headers, challengeResponse.httpCode
                 )
@@ -119,8 +157,12 @@ class ACMEApiImpl internal constructor(
             }
         }
 
-    override suspend fun getACMEFederation(baseUrl: String): NetworkResponse<CertificateChain> = wrapKaliumResponse {
+    override suspend fun getACMEFederation(baseUrl: String): NetworkResponse<String> = wrapKaliumResponse {
         httpClient.get("$baseUrl/$PATH_ACME_FEDERATION")
+    }
+
+    override suspend fun getClientDomainCRL(discoveryUrl: String): NetworkResponse<ByteArray> = wrapKaliumResponse {
+        httpClient.get("${discoveryUrl.replace("https", "http")}/$PATH_CRL")
     }
 
     private companion object {
@@ -129,6 +171,7 @@ class ACMEApiImpl internal constructor(
 
         const val NONCE_HEADER_KEY = "Replay-Nonce"
         const val LOCATION_HEADER_KEY = "location"
+        const val PATH_CRL = "crl"
     }
 
 }

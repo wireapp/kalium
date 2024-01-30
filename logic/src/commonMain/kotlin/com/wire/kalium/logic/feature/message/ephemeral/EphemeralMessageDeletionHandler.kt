@@ -41,6 +41,8 @@ internal interface EphemeralMessageDeletionHandler {
     fun startSelfDeletion(conversationId: ConversationId, messageId: String)
     fun enqueueSelfDeletion(message: Message, expirationData: Message.ExpirationData)
     suspend fun enqueuePendingSelfDeletionMessages()
+
+    suspend fun deleteSelfDeletionMessagesFromEndDate()
 }
 
 internal class EphemeralMessageDeletionHandlerImpl(
@@ -195,6 +197,13 @@ internal class EphemeralMessageDeletionHandlerImpl(
                     deletionStartDate = deletionStartMark
                 )
 
+                val deletionEndDate = deletionStartMark + expireAfter
+                messageRepository.markSelfDeletionEndDate(
+                    conversationId = message.conversationId,
+                    messageUuid = message.id,
+                    deletionEndDate = deletionEndDate
+                )
+
                 SelfDeletionEventLogger.log(
                     LoggingSelfDeletionEvent.MarkingSelfSelfDeletionStartDate(
                         message,
@@ -233,6 +242,21 @@ internal class EphemeralMessageDeletionHandlerImpl(
                         )
                     }
                 }
+            }
+    }
+
+    override suspend fun deleteSelfDeletionMessagesFromEndDate() {
+        messageRepository.getEphemeralMessagesMarkedForEndDeletion()
+            .onSuccess { ephemeralMessages ->
+                ephemeralMessages.forEach { ephemeralMessage ->
+                    ephemeralMessage.expirationData?.let { expirationData ->
+                        deleteMessage(
+                            message = ephemeralMessage,
+                            expirationData = expirationData
+                        )
+                    }
+                }
+
             }
     }
 }
