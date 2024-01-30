@@ -49,6 +49,8 @@ import com.wire.kalium.logic.data.conversation.ProtocolInfoMapper
 import com.wire.kalium.logic.data.conversation.ProtocolInfoMapperImpl
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapperImpl
+import com.wire.kalium.logic.data.e2ei.AcmeMapper
+import com.wire.kalium.logic.data.e2ei.AcmeMapperImpl
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapperImpl
@@ -171,4 +173,5 @@ internal object MapperProvider {
     fun sendMessagePartialFailureMapper(): SendMessagePartialFailureMapper = SendMessagePartialFailureMapperImpl()
     fun serviceMapper(): ServiceMapper = ServiceMapper()
     fun legalHoldStatusMapper(): LegalHoldStatusMapper = LegalHoldStatusMapperImpl
+    fun acmeMapper(): AcmeMapper = AcmeMapperImpl()
 }
