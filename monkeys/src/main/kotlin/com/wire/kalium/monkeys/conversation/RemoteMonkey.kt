@@ -76,7 +76,7 @@ import kotlinx.coroutines.flow.retry
 private const val RETRY_COUNT = 3L
 
 @Suppress("TooManyFunctions")
-class RemoteMonkey(private val monkeyConfig: MonkeyConfig.Remote, monkeyType: MonkeyType, internalId: MonkeyId) :
+class RemoteMonkey(monkeyConfig: MonkeyConfig.Remote, monkeyType: MonkeyType, internalId: MonkeyId) :
     Monkey(monkeyType, internalId) {
     private val baseUrl: String
 
@@ -154,7 +154,7 @@ class RemoteMonkey(private val monkeyConfig: MonkeyConfig.Remote, monkeyType: Mo
     @Suppress("TooGenericExceptionCaught")
     private suspend inline fun <reified B> postNoBody(endpoint: String, body: B): HttpStatusCode {
         try {
-            return flow<HttpStatusCode> {
+            return flow {
                 emit(httpClient.post(url(endpoint)) {
                     contentType(ContentType.Application.Json)
                     setBody(body)
@@ -169,7 +169,7 @@ class RemoteMonkey(private val monkeyConfig: MonkeyConfig.Remote, monkeyType: Mo
     @Suppress("TooGenericExceptionCaught")
     private suspend inline fun post(endpoint: String) {
         try {
-            flow<Unit> {
+            flow {
                 httpClient.post(url(endpoint))
                 emit(Unit)
             }.retry(RETRY_COUNT).first()
