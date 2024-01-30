@@ -69,6 +69,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.E2EIConversationClientInfoEntity
+import com.wire.kalium.persistence.dao.message.LocalId
 import com.wire.kalium.util.DateTimeUtil
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
@@ -316,7 +317,7 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenSuccessfulResponses_whenCallingAddMemberToMLSGroup_thenMemberJoinEventIsProcessed() = runTest {
+    fun givenSuccessfulResponses_whenCallingAddMemberToMLSGroup_thenMemberJoinEventIsProcessedWithLocalId() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
@@ -330,7 +331,7 @@ class MLSConversationRepositoryTest {
 
         verify(arrangement.commitBundleEventReceiver)
             .suspendFunction(arrangement.commitBundleEventReceiver::onEvent)
-            .with(anyInstanceOf(Event.Conversation.MemberJoin::class))
+            .with(matching { it is Event.Conversation.MemberJoin && LocalId.check(it.id) })
             .wasInvoked(once)
     }
 
@@ -645,7 +646,7 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenSuccessfulResponses_whenCallingRemoveMemberFromGroup_thenMemberLeaveEventIsProcessed() = runTest {
+    fun givenSuccessfulResponses_whenCallingRemoveMemberFromGroup_thenMemberLeaveEventIsProcessedWithLocalId() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()
             .withGetMLSClientSuccessful()
@@ -660,7 +661,7 @@ class MLSConversationRepositoryTest {
 
         verify(arrangement.commitBundleEventReceiver)
             .suspendFunction(arrangement.commitBundleEventReceiver::onEvent)
-            .with(anyInstanceOf(Event.Conversation.MemberLeave::class))
+            .with(matching { it is Event.Conversation.MemberLeave && LocalId.check(it.id) })
             .wasInvoked(once)
     }
 
