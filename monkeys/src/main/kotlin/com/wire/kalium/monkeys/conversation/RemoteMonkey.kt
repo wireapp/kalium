@@ -18,7 +18,6 @@
 package com.wire.kalium.monkeys.conversation
 
 import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
@@ -101,6 +100,7 @@ class RemoteMonkey(private val monkeyConfig: MonkeyConfig.Remote, monkeyType: Mo
             }
         }
 
+        @Suppress("TooGenericExceptionCaught")
         suspend fun tearDown() {
             servers.forEach {
                 flow<Unit> {
@@ -120,6 +120,7 @@ class RemoteMonkey(private val monkeyConfig: MonkeyConfig.Remote, monkeyType: Mo
         return Url("$baseUrl/$endpoint")
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend inline fun <reified T> get(endpoint: String): T {
         try {
             return flow<T> {
@@ -131,6 +132,7 @@ class RemoteMonkey(private val monkeyConfig: MonkeyConfig.Remote, monkeyType: Mo
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend inline fun <reified T, reified B> post(endpoint: String, body: B): T {
         try {
             return flow<T> {
@@ -145,6 +147,7 @@ class RemoteMonkey(private val monkeyConfig: MonkeyConfig.Remote, monkeyType: Mo
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend inline fun <reified B> postNoBody(endpoint: String, body: B): HttpStatusCode {
         try {
             return flow<HttpStatusCode> {
@@ -159,6 +162,7 @@ class RemoteMonkey(private val monkeyConfig: MonkeyConfig.Remote, monkeyType: Mo
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend inline fun post(endpoint: String) {
         try {
             flow<Unit> {
@@ -227,7 +231,10 @@ class RemoteMonkey(private val monkeyConfig: MonkeyConfig.Remote, monkeyType: Mo
     }
 
     override suspend fun createConversation(
-        name: String, monkeyList: List<Monkey>, protocol: ConversationOptions.Protocol, isDestroyable: Boolean
+        name: String,
+        monkeyList: List<Monkey>,
+        protocol: ConversationOptions.Protocol,
+        isDestroyable: Boolean
     ): MonkeyConversation {
         val result: ConversationId = post(
             CREATE_CONVERSATION, CreateConversationRequest(name, monkeyList.map { it.monkeyType.userId() }, protocol, isDestroyable)

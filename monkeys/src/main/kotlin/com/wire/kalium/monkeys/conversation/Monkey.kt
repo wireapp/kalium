@@ -18,7 +18,6 @@
 package com.wire.kalium.monkeys.conversation
 
 import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
@@ -59,7 +58,8 @@ abstract class Monkey(val monkeyType: MonkeyType, val internalId: MonkeyId) {
         // MonkeyId is irrelevant for external users as we will never be able to act on their behalf
         fun external(userId: UserId) = LocalMonkey(MonkeyType.External(userId), MonkeyId(-1, "", -1))
         fun internal(user: UserData, monkeyId: MonkeyId) = LocalMonkey(MonkeyType.Internal(user), monkeyId)
-        fun remote(monkeyConfig: MonkeyConfig.Remote, user: UserData, monkeyId: MonkeyId) = RemoteMonkey(monkeyConfig, MonkeyType.Remote(user), monkeyId)
+        fun remote(monkeyConfig: MonkeyConfig.Remote, user: UserData, monkeyId: MonkeyId) =
+            RemoteMonkey(monkeyConfig, MonkeyType.Remote(user), monkeyId)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -103,7 +103,10 @@ abstract class Monkey(val monkeyType: MonkeyType, val internalId: MonkeyId) {
     abstract suspend fun pendingConnectionRequests(): List<UserId>
 
     abstract suspend fun createConversation(
-        name: String, monkeyList: List<Monkey>, protocol: ConversationOptions.Protocol, isDestroyable: Boolean = true
+        name: String,
+        monkeyList: List<Monkey>,
+        protocol: ConversationOptions.Protocol,
+        isDestroyable: Boolean = true
     ): MonkeyConversation
 
     abstract suspend fun leaveConversation(conversationId: ConversationId)

@@ -29,7 +29,12 @@ import io.micrometer.core.instrument.Tag
  * This is a shallow wrapper over the conversation (it contains only details), since the operations need to be done on the
  * user scope, they're done inside the [Monkey] class.
  */
-class MonkeyConversation(val creator: Monkey, val conversationId: ConversationId, val isDestroyable: Boolean = true, monkeyList: List<Monkey>) {
+class MonkeyConversation(
+    val creator: Monkey,
+    val conversationId: ConversationId,
+    val isDestroyable: Boolean = true,
+    monkeyList: List<Monkey>
+) {
     private var participants: MutableSet<Monkey>
 
     init {
