@@ -107,18 +107,14 @@ class RemoteMonkey(private val monkeyConfig: MonkeyConfig.Remote, monkeyType: Mo
         suspend fun tearDown() = coroutineScope {
             servers.map {
                 async {
-                    flow {
-                        try {
-                            val code = httpClient.config { expectSuccess = false }.get("$it/shutdown").status
-                            if (code != HttpStatusCode.Gone) {
-                                error("Failed shutting down remote monkey")
-                            }
-                            emit(code)
-                        } catch (e: Exception) {
-                            logger.e("Failed stopping $it: $e")
-                            throw e
+                    try {
+                        val code = httpClient.config { expectSuccess = false }.get("$it/shutdown").status
+                        if (code != HttpStatusCode.Gone) {
+                            error("Failed shutting down remote monkey")
                         }
-                    }.retry(RETRY_COUNT).first()
+                    } catch (e: Exception) {
+                        logger.e("Failed stopping $it: $e")
+                    }
                 }
             }.awaitAll()
         }
