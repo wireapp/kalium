@@ -198,6 +198,8 @@ import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.TypingIndicatorSyncManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
+import com.wire.kalium.logic.feature.conversation.mls.ConversationVerificationStatusCheckerImpl
+import com.wire.kalium.logic.feature.conversation.mls.EpochChangesObserverImpl
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolverImpl
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigrator
@@ -629,6 +631,14 @@ class UserSessionScope internal constructor(
             memberJoinHandler, memberLeaveHandler
         )
 
+    private val checkRevocationList: CheckRevocationListUseCase
+        get() = CheckRevocationListUseCaseImpl(
+            certificateRevocationListRepository = certificateRevocationListRepository,
+            currentClientIdProvider = clientIdProvider,
+            mlsClientProvider = mlsClientProvider,
+            mLSConversationsVerificationStatusesHandler = mlsConversationsVerificationStatusesHandler
+        )
+
     private val mlsConversationRepository: MLSConversationRepository
         get() = MLSConversationDataSource(
             userId,
@@ -816,6 +826,7 @@ class UserSessionScope internal constructor(
             leaveSubconversation = leaveSubconversationUseCase,
             mlsClientProvider = mlsClientProvider,
             userRepository = userRepository,
+            epochChangesObserver = epochChangesObserver,
             teamRepository = teamRepository,
             persistMessage = persistMessage,
             callMapper = callMapper,
@@ -1891,20 +1902,21 @@ class UserSessionScope internal constructor(
         clientRepository, notificationTokenRepository, pushTokenRepository
     )
 
+    private val epochChangesObserver by lazy { EpochChangesObserverImpl(epochsFlow) }
+    private val conversationVerificationStatusChecker by lazy { ConversationVerificationStatusCheckerImpl(mlsClientProvider) }
+
     private val mlsConversationsVerificationStatusesHandler: MLSConversationsVerificationStatusesHandler by lazy {
-        MLSConversationsVerificationStatusesHandlerImpl(conversationRepository, persistMessage, mlsConversationRepository, userId)
+        MLSConversationsVerificationStatusesHandlerImpl(
+            conversationRepository,
+            persistMessage,
+            conversationVerificationStatusChecker,
+            epochChangesObserver,
+            userId
+        )
     }
 
     private val typingIndicatorSyncManager: TypingIndicatorSyncManager =
         TypingIndicatorSyncManager(lazy { conversations.typingIndicatorIncomingRepository }, observeSyncState)
-
-    private val checkRevocationList: CheckRevocationListUseCase
-        get() = CheckRevocationListUseCaseImpl(
-            certificateRevocationListRepository = certificateRevocationListRepository,
-            currentClientIdProvider = clientIdProvider,
-            mlsClientProvider = mlsClientProvider,
-            mLSConversationsVerificationStatusesHandler = mlsConversationsVerificationStatusesHandler
-        )
 
     init {
         launch {

@@ -112,8 +112,6 @@ interface MLSConversationRepository {
     suspend fun commitPendingProposals(groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun setProposalTimer(timer: ProposalTimer, inMemory: Boolean = false)
     suspend fun observeProposalTimers(): Flow<ProposalTimer>
-    suspend fun observeEpochChanges(): Flow<GroupID>
-    suspend fun getConversationVerificationStatus(groupID: GroupID): Either<CoreFailure, Conversation.VerificationStatus>
     suspend fun rotateKeysAndMigrateConversations(
         clientId: ClientId,
         e2eiClient: E2EIClient,
@@ -391,10 +389,6 @@ internal class MLSConversationDataSource(
             conversationDAO.getProposalTimers().map { it.map(conversationMapper::fromDaoModel) }.flatten()
         )
 
-    override suspend fun observeEpochChanges(): Flow<GroupID> {
-        return epochsFlow
-    }
-
     override suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =
         internalAddMemberToMLSGroup(groupID, userIdList, retryOnStaleMessage = true)
 
@@ -520,11 +514,6 @@ internal class MLSConversationDataSource(
             }
         }
     }
-
-    override suspend fun getConversationVerificationStatus(groupID: GroupID): Either<CoreFailure, Conversation.VerificationStatus> =
-        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            wrapMLSRequest { mlsClient.isGroupVerified(idMapper.toCryptoModel(groupID)) }
-        }.map { it.toModel() }
 
     override suspend fun rotateKeysAndMigrateConversations(
         clientId: ClientId,
