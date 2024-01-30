@@ -49,6 +49,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
 import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
+import com.wire.kalium.logic.feature.conversation.mls.EpochChangesObserver
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.getOrNull
@@ -135,6 +136,7 @@ internal class CallDataSource(
     private val callDAO: CallDAO,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
+    private val epochChangesObserver: EpochChangesObserver,
     private val subconversationRepository: SubconversationRepository,
     private val userRepository: UserRepository,
     private val teamRepository: TeamRepository,
@@ -614,7 +616,6 @@ internal class CallDataSource(
             }
         }
 
-    @OptIn(FlowPreview::class)
     override suspend fun observeEpochInfo(conversationId: ConversationId): Either<CoreFailure, Flow<EpochInfo>> =
         conversationRepository.getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
             when (protocolInfo) {
@@ -625,7 +626,7 @@ internal class CallDataSource(
                     createEpochInfo(protocolInfo.groupId, subconversationGroupId).map { initialEpochInfo ->
                         flowOf(
                             flowOf(initialEpochInfo),
-                            mlsConversationRepository.observeEpochChanges()
+                            epochChangesObserver.observe()
                                 .filter { it == protocolInfo.groupId || it == subconversationGroupId }
                                 .mapNotNull { createEpochInfo(protocolInfo.groupId, subconversationGroupId).getOrNull() }
                         ).flattenConcat()
