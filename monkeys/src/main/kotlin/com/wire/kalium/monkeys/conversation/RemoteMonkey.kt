@@ -109,7 +109,10 @@ class RemoteMonkey(private val monkeyConfig: MonkeyConfig.Remote, monkeyType: Mo
                 async {
                     flow {
                         try {
-                            val code = httpClient.get("$it/shutdown").status
+                            val code = httpClient.config { expectSuccess = false }.get("$it/shutdown").status
+                            if (code != HttpStatusCode.Gone) {
+                                error("Failed shutting down remote monkey")
+                            }
                             emit(code)
                         } catch (e: Exception) {
                             logger.e("Failed stopping $it: $e")

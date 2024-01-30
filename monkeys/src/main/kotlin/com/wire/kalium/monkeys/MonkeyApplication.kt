@@ -50,16 +50,17 @@ import io.ktor.server.routing.get
 import io.ktor.server.routing.routing
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 import sun.misc.Signal
 import sun.misc.SignalHandler
 import java.io.File
 import java.util.Optional
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.coroutines.cancellation.CancellationException
-import kotlin.system.exitProcess
 
 fun CoroutineScope.stopIM() {
     logger.i("Stopping Infinite Monkeys")
@@ -76,54 +77,59 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
     private val monkeyFileLogger: LogWriter by lazy { fileLogger(monkeysLogOutputFile ?: "monkeys.log") }
 
     @Suppress("TooGenericExceptionCaught")
-    override fun run() = runBlocking(Dispatchers.Default) {
-        val signalHandler = SignalHandler { this.stopIM() }
-        // stop on ctrl + c
-        Signal.handle(Signal("INT"), signalHandler)
-        // stop when parent process sends signal
-        Signal.handle(Signal("HUP"), signalHandler)
-        Signal.handle(Signal("TERM"), signalHandler)
+    override fun run() = try {
+        runBlocking(Dispatchers.Default) {
+            val signalHandler = SignalHandler { this.stopIM() }
+            // stop on ctrl + c
+            Signal.handle(Signal("INT"), signalHandler)
+            // stop when parent process sends signal
+            Signal.handle(Signal("HUP"), signalHandler)
+            Signal.handle(Signal("TERM"), signalHandler)
 
-        if (logOutputFile != null) {
-            CoreLogger.init(KaliumLogger.Config(logLevel, listOf(fileLogger)))
-        } else {
-            CoreLogger.init(KaliumLogger.Config(logLevel))
-        }
-        MonkeyLogger.init(KaliumLogger.Config(logLevel, listOf(monkeyFileLogger)))
+            if (logOutputFile != null) {
+                CoreLogger.init(KaliumLogger.Config(logLevel, listOf(fileLogger)))
+            } else {
+                CoreLogger.init(KaliumLogger.Config(logLevel))
+            }
+            MonkeyLogger.init(KaliumLogger.Config(logLevel, listOf(monkeyFileLogger)))
 
-        logger.i("Initializing Metrics Endpoint")
-        embeddedServer(Netty, port = 9090) {
-            routing {
-                get("/") {
-                    call.respondText(MetricsCollector.metrics())
+            logger.i("Initializing Metrics Endpoint")
+            embeddedServer(Netty, port = 9090) {
+                routing {
+                    get("/") {
+                        call.respondText(MetricsCollector.metrics())
+                    }
+                }
+            }.start(false).stopServerOnCancellation()
+
+            logger.i("Initializing Infinite Monkeys")
+            val testData = TestDataImporter.importFromFile(dataFilePath)
+            val eventProcessor = when (testData.eventStorage) {
+                is com.wire.kalium.monkeys.model.EventStorage.FileStorage -> FileStorage(testData.eventStorage)
+                is com.wire.kalium.monkeys.model.EventStorage.PostgresStorage -> PostgresStorage(testData.eventStorage)
+                null -> DummyEventStorage()
+            }
+            eventProcessor.storeBackends(testData.backends)
+            val kaliumCacheFolders = testData.testCases.map { it.name.replace(' ', '_') }
+            try {
+                runMonkeys(testData, eventProcessor)
+            } catch (e: Throwable) {
+                if (e !is CancellationException) {
+                    logger.e("Error running Infinite Monkeys", e)
+                }
+            } finally {
+                withContext(NonCancellable) {
+                    if (testData.externalMonkey != null) {
+                        logger.i("Shutting down remote monkeys")
+                        RemoteMonkey.tearDown()
+                    }
+                    eventProcessor.releaseResources()
+                    kaliumCacheFolders.forEach { File(it).deleteRecursively() }
                 }
             }
-        }.start(false).stopServerOnCancellation()
-
-        logger.i("Initializing Infinite Monkeys")
-        val testData = TestDataImporter.importFromFile(dataFilePath)
-        val eventProcessor = when (testData.eventStorage) {
-            is com.wire.kalium.monkeys.model.EventStorage.FileStorage -> FileStorage(testData.eventStorage)
-            is com.wire.kalium.monkeys.model.EventStorage.PostgresStorage -> PostgresStorage(testData.eventStorage)
-            null -> DummyEventStorage()
         }
-        eventProcessor.storeBackends(testData.backends)
-        val kaliumCacheFolders = testData.testCases.map { it.name.replace(' ', '_') }
-        try {
-            runMonkeys(testData, eventProcessor)
-        } catch (e: Throwable) {
-            if (e !is CancellationException) {
-                logger.e("Error running Infinite Monkeys", e)
-            }
-        } finally {
-            if (testData.externalMonkey != null) {
-                logger.i("Shutting down remote monkeys")
-                RemoteMonkey.tearDown()
-            }
-            eventProcessor.releaseResources()
-            kaliumCacheFolders.forEach { File(it).deleteRecursively() }
-            exitProcess(0)
-        }
+    } catch (e: CancellationException) {
+        logger.i("Infinite Monkeys finished successfully")
     }
 
     private suspend fun runMonkeys(testData: TestData, eventStorage: EventStorage) {
