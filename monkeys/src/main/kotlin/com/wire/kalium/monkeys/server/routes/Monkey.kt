@@ -9,7 +9,7 @@ import com.wire.kalium.monkeys.model.BackendConfig
 import com.wire.kalium.monkeys.model.MonkeyId
 import com.wire.kalium.monkeys.model.Team
 import com.wire.kalium.monkeys.model.UserData
-import com.wire.kalium.monkeys.model.basicHttpClient
+import com.wire.kalium.monkeys.model.httpClient
 import com.wire.kalium.monkeys.server.model.AddMonkeysRequest
 import com.wire.kalium.monkeys.server.model.CreateConversationRequest
 import com.wire.kalium.monkeys.server.model.RemoveMonkeyRequest
@@ -31,7 +31,7 @@ private lateinit var monkey: Monkey
 
 fun initMonkey(backendConfig: BackendConfig) {
     val presetTeam = backendConfig.presetTeam ?: error("Preset team must contain exact one user")
-    val httpClient = basicHttpClient(backendConfig)
+    val httpClient = httpClient(backendConfig)
     val backend = Backend.fromConfig(backendConfig)
     val team = Team(
         backendConfig.teamName,
@@ -57,7 +57,7 @@ fun Application.configureRoutes(core: CoreLogic) {
         json()
     }
     routing {
-        post("/set") {
+        post("/$SET_MONKEY") {
             val backendConfig = call.receive<BackendConfig>()
             initMonkey(backendConfig)
             call.respond(HttpStatusCode.OK)
@@ -102,7 +102,7 @@ fun Application.configureRoutes(core: CoreLogic) {
             val request = call.receive<CreateConversationRequest>()
             val result =
                 monkey.createConversation(request.name, request.monkeys.map(Monkey::external), request.protocol, request.isDestroyable)
-            call.respond(HttpStatusCode.OK, result)
+            call.respond(HttpStatusCode.OK, result.conversationId)
         }
         post("/$LEAVE_CONVERSATION") {
             val request = call.receive<ConversationId>()
@@ -137,6 +137,7 @@ fun Application.configureRoutes(core: CoreLogic) {
     }
 }
 
+const val SET_MONKEY = "set"
 const val IS_SESSION_ACTIVE = "session-active"
 const val LOGIN = "login"
 const val LOGOUT = "logout"

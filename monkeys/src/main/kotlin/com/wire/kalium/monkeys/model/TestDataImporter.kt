@@ -87,7 +87,7 @@ object TestDataImporter {
 
     suspend fun generateUserData(backends: List<BackendConfig>): List<UserData> {
         return backends.flatMap { backendConfig ->
-            val httpClient = basicHttpClient(backendConfig)
+            val httpClient = httpClient(backendConfig)
             if (backendConfig.presetTeam != null) {
                 val backend = Backend.fromConfig(backendConfig)
                 val team = Team(
@@ -171,7 +171,7 @@ private suspend fun HttpClient.createTeam(backendConfig: BackendConfig): Team {
 
 private suspend fun setUserHandle(backendConfig: BackendConfig, userData: UserData) {
     lateinit var token: BearerTokens
-    val httpClient = basicHttpClient(backendConfig) { token }
+    val httpClient = httpClient(backendConfig) { token }
     httpClient.login(userData.email, userData.password) { accessToken ->
         token = BearerTokens(accessToken, "")
     }
@@ -233,7 +233,7 @@ private suspend fun HttpClient.invite(teamId: String, email: String, name: Strin
         ?: error("Could not retrieve user invitation")
 }
 
-internal fun basicHttpClient(backendConfig: BackendConfig, tokenProvider: () -> BearerTokens? = { token }) = HttpClient(OkHttp.create()) {
+internal fun httpClient(backendConfig: BackendConfig, tokenProvider: () -> BearerTokens? = { token }) = HttpClient(OkHttp.create()) {
     val excludedPaths = listOf("register", "login", "activate")
     defaultRequest {
         url(backendConfig.api)

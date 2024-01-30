@@ -29,6 +29,7 @@ import com.github.ajalt.clikt.parameters.types.enum
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreLogger
+import com.wire.kalium.monkeys.conversation.RemoteMonkey
 import com.wire.kalium.monkeys.model.Event
 import com.wire.kalium.monkeys.model.EventType
 import com.wire.kalium.monkeys.model.TestData
@@ -55,16 +56,9 @@ import kotlinx.coroutines.runBlocking
 import sun.misc.Signal
 import sun.misc.SignalHandler
 import java.io.File
-import java.util.concurrent.TimeUnit
+import java.util.Optional
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.system.exitProcess
-
-fun String.runSysCommand() {
-    ProcessBuilder(*split(" ").toTypedArray())
-        .redirectOutput(ProcessBuilder.Redirect.INHERIT)
-        .redirectError(ProcessBuilder.Redirect.INHERIT)
-        .start()
-        .waitFor(10, TimeUnit.SECONDS)
-}
 
 fun CoroutineScope.stopIM() {
     logger.i("Stopping Infinite Monkeys")
@@ -117,8 +111,13 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
         try {
             runMonkeys(testData, eventProcessor)
         } catch (e: Throwable) {
-            logger.e("Error running Infinite Monkeys", e)
+            if (e !is CancellationException) {
+                logger.e("Error running Infinite Monkeys", e)
+            }
         } finally {
+            if (testData.externalMonkey != null) {
+                RemoteMonkey.tearDown()
+            }
             eventProcessor.releaseResources()
             kaliumCacheFolders.forEach { File(it).deleteRecursively() }
             exitProcess(0)
@@ -127,13 +126,19 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
     private suspend fun runMonkeys(testData: TestData, eventStorage: EventStorage) {
         val users = TestDataImporter.generateUserData(testData.backends)
-        if(testData.externalMonkey != null) {
-            users.forEach {
-                testData.externalMonkey.startCommand.runSysCommand()
-            }
-        }
         testData.testCases.forEachIndexed { index, testCase ->
-            val monkeyPool = MonkeyPool(users, testCase.name, MonkeyConfig.Internal)
+            val monkeyConfig = if (testData.externalMonkey != null) {
+                logger.i("Starting ${users.size} external monkeys")
+                MonkeyConfig.Remote(
+                    testData.externalMonkey.startCommand,
+                    testData.externalMonkey.addressTemplate::renderMonkeyTemplate,
+                    Optional.ofNullable(testData.externalMonkey.waitForProcess)
+                )
+            } else {
+                MonkeyConfig.Internal
+            }
+            val monkeyPool = MonkeyPool(users, testCase.name, monkeyConfig)
+            monkeyPool.suspendInit()
             val coreLogic = coreLogic("$HOME_DIRECTORY/.kalium/${testCase.name.replace(' ', '_')}")
             // the first one creates the preset groups and logs everyone in so keypackages are created
             val eventChannel = Channel<Event>(Channel.UNLIMITED)

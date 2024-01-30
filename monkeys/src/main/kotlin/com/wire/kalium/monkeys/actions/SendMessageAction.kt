@@ -157,8 +157,8 @@ private suspend fun MonkeyConversation.sendMessage(monkeys: List<Monkey>, sender
     }
     monkeys.forEach { monkey ->
         val message = randomMessage()
-        monkey.sendMessageTo(this.conversation.id, message)
-        sender(Event(monkey.internalId, EventType.SendMessage(this.conversation.id)))
+        monkey.sendMessageTo(this.conversationId, message)
+        sender(Event(monkey.internalId, EventType.SendMessage(this.conversationId)))
     }
 }
 

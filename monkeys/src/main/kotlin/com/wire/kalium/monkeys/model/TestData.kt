@@ -33,7 +33,8 @@ data class TestData(
 @Serializable
 data class ExternalMonkey(
     @SerialName("startCommand") val startCommand: String,
-    @SerialName("addressTemplate") val addressTemplate: String
+    @SerialName("addressTemplate") val addressTemplate: String,
+    @SerialName("waitTime") val waitForProcess: Long? = null
 )
 
 @Serializable

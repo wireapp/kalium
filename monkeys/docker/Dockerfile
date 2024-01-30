@@ -8,5 +8,3 @@ FROM wirebot/cryptobox:1.4.0
 
 RUN mkdir /opt/app
 COPY --from=jdk-build /monkeys /opt/app
-ENTRYPOINT ["/opt/app/bin/monkeys"]
-CMD ["/config.json"]

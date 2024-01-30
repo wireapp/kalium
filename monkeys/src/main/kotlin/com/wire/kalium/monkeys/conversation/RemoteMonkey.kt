@@ -22,10 +22,14 @@ import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.monkeys.logger
 import com.wire.kalium.monkeys.model.ConversationDef
 import com.wire.kalium.monkeys.model.MonkeyId
 import com.wire.kalium.monkeys.model.UserCount
+import com.wire.kalium.monkeys.pool.MonkeyConfig
 import com.wire.kalium.monkeys.pool.MonkeyPool
+import com.wire.kalium.monkeys.renderMonkeyTemplate
+import com.wire.kalium.monkeys.runSysCommand
 import com.wire.kalium.monkeys.server.model.AddMonkeysRequest
 import com.wire.kalium.monkeys.server.model.CreateConversationRequest
 import com.wire.kalium.monkeys.server.model.RemoveMonkeyRequest
@@ -46,43 +50,129 @@ import com.wire.kalium.monkeys.server.routes.REMOVE_MONKEY_FROM_CONVERSATION
 import com.wire.kalium.monkeys.server.routes.SEND_DM
 import com.wire.kalium.monkeys.server.routes.SEND_MESSAGE
 import com.wire.kalium.monkeys.server.routes.SEND_REQUEST
+import com.wire.kalium.monkeys.server.routes.SET_MONKEY
 import com.wire.kalium.monkeys.server.routes.WARM_UP
+import com.wire.kalium.network.KaliumKtorCustomLogging
+import com.wire.kalium.network.tools.KtxSerializer
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
+import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.UserAgent
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
+import io.ktor.http.HttpStatusCode
 import io.ktor.http.Url
 import io.ktor.http.contentType
+import io.ktor.serialization.kotlinx.json.json
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.retry
 
+private const val RETRY_COUNT = 3L
+
 @Suppress("TooManyFunctions")
-class RemoteMonkey(private val httpClient: HttpClient, private val baseUrl: String, monkeyType: MonkeyType, internalId: MonkeyId) :
+class RemoteMonkey(private val monkeyConfig: MonkeyConfig.Remote, monkeyType: MonkeyType, internalId: MonkeyId) :
     Monkey(monkeyType, internalId) {
+    private val baseUrl: String
+
+    init {
+        baseUrl = monkeyConfig.addressResolver(monkeyType.userData(), internalId)
+        logger.i("Starting monkey server for ${this.monkeyType.userId()}")
+        monkeyConfig.startCommand.renderMonkeyTemplate(monkeyType.userData(), internalId).runSysCommand(monkeyConfig.wait)
+        servers.add(baseUrl)
+    }
+
+    companion object {
+        private val servers = mutableListOf<String>()
+        private val httpClient by lazy {
+
+            HttpClient(OkHttp.create()) {
+                expectSuccess = true
+                install(KaliumKtorCustomLogging)
+                install(UserAgent) {
+                    agent = "Wire Infinite Monkeys"
+                }
+                install(ContentNegotiation) {
+                    json(KtxSerializer.json)
+                }
+            }
+        }
+
+        suspend fun tearDown() {
+            servers.forEach {
+                flow<Unit> {
+                    try {
+                        httpClient.post("$it/shutdown")
+                        emit(Unit)
+                    } catch (e: Exception) {
+                        logger.d("Failed stopping $it: $e")
+                        throw e
+                    }
+                }.retry(RETRY_COUNT).first()
+            }
+        }
+    }
+
     private fun url(endpoint: String): Url {
         return Url("$baseUrl/$endpoint")
     }
 
     private suspend inline fun <reified T> get(endpoint: String): T {
-        return flow<T> {
-            httpClient.get(url(endpoint)).body()
-        }.retry(3).first()
+        try {
+            return flow<T> {
+                emit(httpClient.get(url(endpoint)).body())
+            }.retry(RETRY_COUNT).first()
+        } catch (e: Exception) {
+            logger.e("Error $endpoint: $e")
+            throw e
+        }
     }
 
     private suspend inline fun <reified T, reified B> post(endpoint: String, body: B): T {
-        return flow<T> {
-            httpClient.post(url(endpoint)) {
-                contentType(ContentType.Application.Json)
-                setBody(body)
-            }.body()
-        }.retry(3).first()
+        try {
+            return flow<T> {
+                emit(httpClient.post(url(endpoint)) {
+                    contentType(ContentType.Application.Json)
+                    setBody(body)
+                }.body())
+            }.retry(RETRY_COUNT).first()
+        } catch (e: Exception) {
+            logger.e("Error $endpoint: $e")
+            throw e
+        }
     }
 
-    private suspend inline fun emptyPost(endpoint: String) {
-        httpClient.post(url(endpoint))
+    private suspend inline fun <reified B> postNoBody(endpoint: String, body: B): HttpStatusCode {
+        try {
+            return flow<HttpStatusCode> {
+                emit(httpClient.post(url(endpoint)) {
+                    contentType(ContentType.Application.Json)
+                    setBody(body)
+                }.status)
+            }.retry(RETRY_COUNT).first()
+        } catch (e: Exception) {
+            logger.e("Error $endpoint: $e")
+            throw e
+        }
+    }
+
+    private suspend inline fun post(endpoint: String) {
+        try {
+            flow<Unit> {
+                httpClient.post(url(endpoint))
+                emit(Unit)
+            }.retry(RETRY_COUNT).first()
+        } catch (e: Exception) {
+            logger.e("Error $endpoint: $e")
+            throw e
+        }
+    }
+
+    suspend fun setMonkey() {
+        postNoBody(SET_MONKEY, monkeyType.userData().backendConfig())
     }
 
     override suspend fun isSessionActive(): Boolean {
@@ -90,7 +180,7 @@ class RemoteMonkey(private val httpClient: HttpClient, private val baseUrl: Stri
     }
 
     override suspend fun login(coreLogic: CoreLogic, callback: (Monkey) -> Unit) {
-        emptyPost(LOGIN)
+        post(LOGIN)
         callback(this)
     }
 
@@ -99,7 +189,7 @@ class RemoteMonkey(private val httpClient: HttpClient, private val baseUrl: Stri
     }
 
     override suspend fun logout(callback: (Monkey) -> Unit) {
-        emptyPost(LOGOUT)
+        post(LOGOUT)
         callback(this)
     }
 
@@ -115,7 +205,7 @@ class RemoteMonkey(private val httpClient: HttpClient, private val baseUrl: Stri
         return post(REJECT_REQUEST, anotherMonkey.monkeyType.userId())
     }
 
-    override suspend fun pendingConnectionRequests(): List<ConversationDetails.Connection> {
+    override suspend fun pendingConnectionRequests(): List<UserId> {
         return get(PENDING_CONNECTIONS)
     }
 
@@ -133,38 +223,39 @@ class RemoteMonkey(private val httpClient: HttpClient, private val baseUrl: Stri
     }
 
     override suspend fun warmUp(core: CoreLogic) {
-        emptyPost(WARM_UP)
+        post(WARM_UP)
     }
 
     override suspend fun createConversation(
         name: String, monkeyList: List<Monkey>, protocol: ConversationOptions.Protocol, isDestroyable: Boolean
     ): MonkeyConversation {
-        return post(
+        val result: ConversationId = post(
             CREATE_CONVERSATION, CreateConversationRequest(name, monkeyList.map { it.monkeyType.userId() }, protocol, isDestroyable)
         )
+        return MonkeyConversation(this, result, isDestroyable, monkeyList)
     }
 
     override suspend fun leaveConversation(conversationId: ConversationId) {
-        return post(LEAVE_CONVERSATION, conversationId)
+        postNoBody(LEAVE_CONVERSATION, conversationId)
     }
 
     override suspend fun destroyConversation(conversationId: ConversationId) {
-        return post(DESTROY_CONVERSATION, conversationId)
+        postNoBody(DESTROY_CONVERSATION, conversationId)
     }
 
     override suspend fun addMonkeysToConversation(conversationId: ConversationId, monkeys: List<Monkey>) {
-        return post(ADD_MONKEY_TO_CONVERSATION, AddMonkeysRequest(conversationId, monkeys.map { it.monkeyType.userId() }))
+        postNoBody(ADD_MONKEY_TO_CONVERSATION, AddMonkeysRequest(conversationId, monkeys.map { it.monkeyType.userId() }))
     }
 
     override suspend fun removeMonkeyFromConversation(id: ConversationId, monkey: Monkey) {
-        return post(REMOVE_MONKEY_FROM_CONVERSATION, RemoveMonkeyRequest(id, monkey.monkeyType.userId()))
+        postNoBody(REMOVE_MONKEY_FROM_CONVERSATION, RemoveMonkeyRequest(id, monkey.monkeyType.userId()))
     }
 
     override suspend fun sendDirectMessageTo(anotherMonkey: Monkey, message: String) {
-        return post(SEND_DM, SendDMRequest(anotherMonkey.monkeyType.userId(), message))
+        postNoBody(SEND_DM, SendDMRequest(anotherMonkey.monkeyType.userId(), message))
     }
 
     override suspend fun sendMessageTo(conversationId: ConversationId, message: String) {
-        return post(SEND_MESSAGE, SendMessageRequest(conversationId, message))
+        postNoBody(SEND_MESSAGE, SendMessageRequest(conversationId, message))
     }
 }

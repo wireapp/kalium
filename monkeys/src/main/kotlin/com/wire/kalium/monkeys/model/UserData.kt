@@ -25,7 +25,28 @@ data class UserData(
     val password: String,
     val userId: UserId,
     val team: Team,
-)
+) {
+    fun backendConfig() = BackendConfig(
+        this.team.backend.api,
+        this.team.backend.accounts,
+        this.team.backend.webSocket,
+        this.team.backend.blackList,
+        this.team.backend.teams,
+        this.team.backend.website,
+        this.team.backend.title,
+        this.password,
+        this.team.backend.domain,
+        this.team.name,
+        "",
+        "",
+        1u,
+        presetTeam = TeamConfig(
+            this.team.id,
+            UserAccount(this.team.owner.email, this.team.owner.userId.value),
+            users = listOf(UserAccount(this.email, this.userId.value))
+        )
+    )
+}
 
 @Suppress("LongParameterList")
 class Team(

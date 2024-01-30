@@ -22,21 +22,27 @@ import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.monkeys.MetricsCollector
 import com.wire.kalium.monkeys.conversation.Monkey
+import com.wire.kalium.monkeys.conversation.RemoteMonkey
+import com.wire.kalium.monkeys.logger
 import com.wire.kalium.monkeys.model.MonkeyId
 import com.wire.kalium.monkeys.model.Team
 import com.wire.kalium.monkeys.model.UserCount
 import com.wire.kalium.monkeys.model.UserData
-import io.ktor.client.HttpClient
 import io.micrometer.core.instrument.Tag
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
+import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.math.roundToInt
 
 sealed class MonkeyConfig {
     data object Internal : MonkeyConfig()
-    data class Remote(val httpClient: HttpClient, val addressResolver: (UserData, MonkeyId) -> String) : MonkeyConfig()
+    data class Remote(
+        val startCommand: String,
+        val addressResolver: (UserData, MonkeyId) -> String,
+        val wait: Optional<Long> = Optional.empty()
+    ) : MonkeyConfig()
 }
 
 @Suppress("TooManyFunctions")
@@ -60,7 +66,7 @@ class MonkeyPool(users: List<UserData>, testCase: String, config: MonkeyConfig) 
         users.forEachIndexed { index, userData ->
             val monkeyId = MonkeyId(index, userData.team.name, testCase.hashCode())
             val monkey = when (config) {
-                is MonkeyConfig.Remote -> Monkey.remote(config.httpClient, config.addressResolver(userData, monkeyId), userData, monkeyId)
+                is MonkeyConfig.Remote -> Monkey.remote(config, userData, monkeyId)
                 is MonkeyConfig.Internal -> Monkey.internal(userData, monkeyId)
             }
             this.pool.getOrPut(userData.team.name) { mutableListOf() }.add(monkey)
@@ -80,6 +86,15 @@ class MonkeyPool(users: List<UserData>, testCase: String, config: MonkeyConfig) 
                 "g_loggedInUsers", listOf(Tag.of("domain", domain), Tag.of("testCase", testCase)), usersById
             )
         }
+    }
+
+    suspend fun suspendInit() = coroutineScope {
+        poolById.values.filterIsInstance<RemoteMonkey>().map {
+            async {
+                logger.i("Setting remote instance ${it.monkeyType.userId()}")
+                it.setMonkey()
+            }
+        }.awaitAll()
     }
 
     suspend fun warmUp(core: CoreLogic) = coroutineScope {
@@ -113,7 +128,7 @@ class MonkeyPool(users: List<UserData>, testCase: String, config: MonkeyConfig) 
         return backendUsers.take(count.toInt())
     }
 
-    suspend fun randomMonkeysWithConnectionRequests(userCount: UserCount): Map<Monkey, List<ConversationDetails.Connection>> {
+    suspend fun randomMonkeysWithConnectionRequests(userCount: UserCount): Map<Monkey, List<UserId>> {
         val monkeysWithPendingRequests = this.poolLoggedIn.values.flatMap { idToMonkey ->
             idToMonkey.values.map { it to it.pendingConnectionRequests() }.filter { it.second.isNotEmpty() }
         }.shuffled()

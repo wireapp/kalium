@@ -52,7 +52,7 @@ object ConversationPool {
     }
 
     private fun addToPool(monkeyConversation: MonkeyConversation) {
-        this.pool[monkeyConversation.conversation.id] = monkeyConversation
+        this.pool[monkeyConversation.conversationId] = monkeyConversation
     }
 
     fun conversationCreator(conversationId: ConversationId): Monkey? {
@@ -70,8 +70,8 @@ object ConversationPool {
 
     suspend fun destroyRandomConversation() {
         val conversation = this.pool.values.filter { it.isDestroyable }.random()
-        conversation.creator.destroyConversation(conversation.conversation.id)
-        this.pool.remove(conversation.conversation.id)
+        conversation.creator.destroyConversation(conversation.conversationId)
+        this.pool.remove(conversation.conversationId)
     }
 
     private suspend fun createDynamicConversation(
@@ -82,7 +82,7 @@ object ConversationPool {
         val name = "By monkey ${creator.monkeyType.userId()} - $protocol - ${Random.nextUInt()}"
         val conversation = creator.createConversation(name, monkeyList, protocol)
         this.addToPool(conversation)
-        return ConversationDef(conversation.conversation.id, creator.internalId, monkeyList.map { it.internalId }, protocol)
+        return ConversationDef(conversation.conversationId, creator.internalId, monkeyList.map { it.internalId }, protocol)
     }
 
     suspend fun createDynamicConversation(
@@ -138,11 +138,11 @@ object ConversationPool {
             val conversation = creator.createPrefixedConversation(name, protocol, userCount, coreLogic, monkeyPool, preset)
             this.addToPool(conversation)
             if (preset != null) {
-                this.oldPool[preset.id] = conversation.conversation.id
+                this.oldPool[preset.id] = conversation.conversationId
             }
-            this.prefixedConversations.getOrPut(prefix) { mutableListOf() }.add(conversation.conversation.id)
+            this.prefixedConversations.getOrPut(prefix) { mutableListOf() }.add(conversation.conversationId)
             ConversationDef(
-                conversation.conversation.id, creator.internalId, conversation.members().map { it.internalId }, protocol
+                conversation.conversationId, creator.internalId, conversation.members().map { it.internalId }, protocol
             )
         }
     }

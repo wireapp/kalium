@@ -26,9 +26,9 @@ import com.wire.kalium.monkeys.model.ConversationDef
 import com.wire.kalium.monkeys.model.MonkeyId
 import com.wire.kalium.monkeys.model.UserCount
 import com.wire.kalium.monkeys.model.UserData
+import com.wire.kalium.monkeys.pool.MonkeyConfig
 import com.wire.kalium.monkeys.pool.MonkeyPool
 import com.wire.kalium.monkeys.pool.resolveUserCount
-import io.ktor.client.HttpClient
 
 sealed class MonkeyType {
     data class Internal(val user: UserData) : MonkeyType()
@@ -59,8 +59,7 @@ abstract class Monkey(val monkeyType: MonkeyType, val internalId: MonkeyId) {
         // MonkeyId is irrelevant for external users as we will never be able to act on their behalf
         fun external(userId: UserId) = LocalMonkey(MonkeyType.External(userId), MonkeyId(-1, "", -1))
         fun internal(user: UserData, monkeyId: MonkeyId) = LocalMonkey(MonkeyType.Internal(user), monkeyId)
-        fun remote(httpClient: HttpClient, baseUrl: String, user: UserData, monkeyId: MonkeyId) =
-            RemoteMonkey(httpClient, baseUrl, MonkeyType.Remote(user), monkeyId)
+        fun remote(monkeyConfig: MonkeyConfig.Remote, user: UserData, monkeyId: MonkeyId) = RemoteMonkey(monkeyConfig, MonkeyType.Remote(user), monkeyId)
     }
 
     override fun equals(other: Any?): Boolean {
@@ -101,13 +100,10 @@ abstract class Monkey(val monkeyType: MonkeyType, val internalId: MonkeyId) {
 
     abstract suspend fun rejectRequest(anotherMonkey: Monkey)
 
-    abstract suspend fun pendingConnectionRequests(): List<ConversationDetails.Connection>
+    abstract suspend fun pendingConnectionRequests(): List<UserId>
 
     abstract suspend fun createConversation(
-        name: String,
-        monkeyList: List<Monkey>,
-        protocol: ConversationOptions.Protocol,
-        isDestroyable: Boolean = true
+        name: String, monkeyList: List<Monkey>, protocol: ConversationOptions.Protocol, isDestroyable: Boolean = true
     ): MonkeyConversation
 
     abstract suspend fun leaveConversation(conversationId: ConversationId)
@@ -121,6 +117,7 @@ abstract class Monkey(val monkeyType: MonkeyType, val internalId: MonkeyId) {
     abstract suspend fun sendDirectMessageTo(anotherMonkey: Monkey, message: String)
 
     abstract suspend fun sendMessageTo(conversationId: ConversationId, message: String)
+
     @Suppress("LongParameterList")
     abstract suspend fun createPrefixedConversation(
         name: String,

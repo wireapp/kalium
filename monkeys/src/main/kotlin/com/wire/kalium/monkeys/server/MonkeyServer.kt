@@ -43,8 +43,10 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.decodeFromStream
 
+private const val DEFAULT_PORT = 8080
+
 class MonkeyServer : CliktCommand() {
-    private val port by option("-p", "--port", help = "Port to bind the http server").int().default(8080)
+    private val port by option("-p", "--port", help = "Port to bind the http server").int().default(DEFAULT_PORT)
     private val logLevel by option("-l", "--log-level", help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.INFO)
     private val logOutputFile by option("-o", "--log-file", help = "output file for logs")
     private val fileLogger: LogWriter by lazy { fileLogger(logOutputFile ?: "kalium.log") }

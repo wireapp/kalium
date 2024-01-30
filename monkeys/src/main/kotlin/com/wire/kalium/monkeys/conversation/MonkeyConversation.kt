@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.monkeys.conversation
 
-import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.monkeys.MetricsCollector
 import com.wire.kalium.monkeys.model.UserCount
@@ -29,12 +29,12 @@ import io.micrometer.core.instrument.Tag
  * This is a shallow wrapper over the conversation (it contains only details), since the operations need to be done on the
  * user scope, they're done inside the [Monkey] class.
  */
-class MonkeyConversation(val creator: Monkey, val conversation: Conversation, val isDestroyable: Boolean = true, monkeyList: List<Monkey>) {
+class MonkeyConversation(val creator: Monkey, val conversationId: ConversationId, val isDestroyable: Boolean = true, monkeyList: List<Monkey>) {
     private var participants: MutableSet<Monkey>
 
     init {
         this.participants = mutableSetOf(creator).also { it.addAll(monkeyList) }
-        MetricsCollector.gaugeCollection("g_conversationMembers", listOf(Tag.of("id", conversation.id.toString())), this.participants)
+        MetricsCollector.gaugeCollection("g_conversationMembers", listOf(Tag.of("id", conversationId.toString())), this.participants)
     }
 
     /**
@@ -50,17 +50,17 @@ class MonkeyConversation(val creator: Monkey, val conversation: Conversation, va
 
     suspend fun addMonkeys(monkeys: List<Monkey>) {
         this.participants.addAll(monkeys)
-        this.creator.addMonkeysToConversation(conversation.id, monkeys)
+        this.creator.addMonkeysToConversation(conversationId, monkeys)
     }
 
     suspend fun removeMonkey(monkey: Monkey) {
         this.participants.remove(monkey)
-        this.creator.removeMonkeyFromConversation(conversation.id, monkey)
+        this.creator.removeMonkeyFromConversation(conversationId, monkey)
     }
 
     suspend fun destroy() {
-        this.creator.destroyConversation(this.conversation.id)
-        ConversationPool.conversationDestroyed(this.conversation.id)
+        this.creator.destroyConversation(this.conversationId)
+        ConversationPool.conversationDestroyed(this.conversationId)
     }
 
     fun membersIds(): List<UserId> {

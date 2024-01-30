@@ -21,7 +21,6 @@ import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.client.ClientType
-import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.logout.LogoutReason
@@ -151,9 +150,10 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
         }
     }
 
-    override suspend fun pendingConnectionRequests(): List<ConversationDetails.Connection> {
+    override suspend fun pendingConnectionRequests(): List<UserId> {
         return this.monkeyState.readyThen {
             conversations.observePendingConnectionRequests().first().filter { it.connection.status == ConnectionState.PENDING }
+                .map { it.otherUser?.id ?: error("Cannot get other user id from connection request") }
         }
     }
 
@@ -185,10 +185,7 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
     }
 
     override suspend fun createConversation(
-        name: String,
-        monkeyList: List<Monkey>,
-        protocol: ConversationOptions.Protocol,
-        isDestroyable: Boolean
+        name: String, monkeyList: List<Monkey>, protocol: ConversationOptions.Protocol, isDestroyable: Boolean
     ): MonkeyConversation {
         val self = this
         return this.monkeyState.readyThen {
@@ -196,7 +193,7 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
                 name, monkeyList.map { it.monkeyType.userId() }, ConversationOptions(protocol = protocol)
             )
             if (result is CreateGroupConversationUseCase.Result.Success) {
-                MonkeyConversation(self, result.conversation, isDestroyable, monkeyList)
+                MonkeyConversation(self, result.conversation.id, isDestroyable, monkeyList)
             } else {
                 if (result is CreateGroupConversationUseCase.Result.UnknownFailure) {
                     val cause = result.cause
