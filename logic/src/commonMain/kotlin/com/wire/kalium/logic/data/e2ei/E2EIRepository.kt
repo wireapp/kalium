@@ -31,7 +31,6 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.e2ei.usecase.E2EIEnrollmentResult
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -192,7 +191,7 @@ class E2EIRepositoryImpl(
 
         authorizationsEndpoints.forEach { endPoint ->
             val authorizationResponse = createAuthorization(nonce, endPoint).getOrFail {
-                return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNewAuthz, it).toEitherLeft()
+                return Either.Left(CoreFailure.Unknown(Throwable("Failed to get required authorizations from ACME")))
             }
             nonce = authorizationResponse.nonce
             challenges[authorizationResponse.challengeType] = authorizationResponse.newAcmeAuthz
