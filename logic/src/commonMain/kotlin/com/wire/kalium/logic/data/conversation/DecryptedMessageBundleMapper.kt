@@ -38,7 +38,10 @@ fun com.wire.kalium.cryptography.DecryptedMessageBundle.toModel(groupID: GroupID
                 identity.clientId,
                 identity.handle,
                 identity.displayName,
-                identity.domain
+                identity.domain,
+                identity.certificate,
+                identity.status,
+                identity.thumbprint
             )
         }
     )
