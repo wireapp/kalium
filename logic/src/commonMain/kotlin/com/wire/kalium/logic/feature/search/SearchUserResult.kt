@@ -21,7 +21,7 @@ import com.wire.kalium.logic.data.publicuser.model.UserSearchDetails
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 
-data class SearchUserResult (
+data class SearchUserResult(
     val connected: List<UserSearchDetails>,
     val notConnected: List<UserSearchDetails>
 ) {

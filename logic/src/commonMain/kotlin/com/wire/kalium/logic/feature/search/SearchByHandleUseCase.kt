@@ -28,6 +28,9 @@ import com.wire.kalium.logic.functional.map
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
+/**
+ * Result of a search by handle.
+ */
 class SearchByHandleUseCase internal constructor(
     private val searchUserRepository: SearchUserRepository,
     private val selfUserId: UserId,
@@ -89,4 +92,3 @@ class SearchByHandleUseCase internal constructor(
         SearchUserResult.resolveLocalAndRemoteResult(localSearchResult, remoteResults)
     }
 }
-

@@ -17,11 +17,7 @@
  */
 package com.wire.kalium.persistence.dao
 
-import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.SearchQueries
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
