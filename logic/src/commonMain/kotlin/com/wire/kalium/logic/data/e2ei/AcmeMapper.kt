@@ -23,6 +23,7 @@ import com.wire.kalium.network.api.base.unbound.acme.DtoAuthorizationChallengeTy
 
 interface AcmeMapper {
     fun fromDto(dto: ACMEAuthorizationResponse, newAcmeAuthz: NewAcmeAuthz): AcmeAuthorization
+    fun fromDto(dto: DtoAuthorizationChallengeType): AuthorizationChallengeType
 }
 
 class AcmeMapperImpl : AcmeMapper {
@@ -34,7 +35,7 @@ class AcmeMapperImpl : AcmeMapper {
         newAcmeAuthz
     )
 
-    private fun fromDto(dto: DtoAuthorizationChallengeType): AuthorizationChallengeType =
+    override fun fromDto(dto: DtoAuthorizationChallengeType): AuthorizationChallengeType =
         when (dto) {
             DtoAuthorizationChallengeType.DPoP -> AuthorizationChallengeType.DPoP
             DtoAuthorizationChallengeType.OIDC -> AuthorizationChallengeType.OIDC
