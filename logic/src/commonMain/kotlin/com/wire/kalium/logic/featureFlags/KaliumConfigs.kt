@@ -46,6 +46,7 @@ data class KaliumConfigs(
     // Interval between attempts to advance the proteus to MLS migration
     val mlsMigrationInterval: Duration = 24.hours,
     val fetchAllTeamMembersEagerly: Boolean = false,
+    val maxRemoteSearchResultCount: Int = 30
 )
 
 sealed interface BuildFileRestrictionState {

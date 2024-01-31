@@ -17,7 +17,11 @@
  */
 package com.wire.kalium.persistence.dao
 
+import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.SearchQueries
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
@@ -59,6 +63,11 @@ interface SearchDAO {
     suspend fun searchList(query: String): List<UserSearchEntity>
     suspend fun getKnownContactsExcludingAConversation(conversationId: ConversationIDEntity): List<UserSearchEntity>
     suspend fun searchListExcludingAConversation(conversationId: ConversationIDEntity, query: String): List<UserSearchEntity>
+    suspend fun handleSearch(searchQuery: String): List<UserSearchEntity>
+    suspend fun handleSearchExcludingAConversation(
+        searchQuery: String,
+        conversationId: ConversationIDEntity
+    ): List<UserSearchEntity>
 }
 
 internal class SearchDAOImpl internal constructor(
@@ -88,6 +97,24 @@ internal class SearchDAOImpl internal constructor(
     ): List<UserSearchEntity> = withContext(coroutineContext) {
         searchQueries.searchMyNameExcludingAConversation(
             query,
+            conversationId,
+            mapper = UserSearchEntityMapper::map
+        ).executeAsList()
+    }
+
+    override suspend fun handleSearch(searchQuery: String): List<UserSearchEntity> = withContext(coroutineContext) {
+        searchQueries.searchByHandle(
+            searchQuery,
+            mapper = UserSearchEntityMapper::map
+        ).executeAsList()
+    }
+
+    override suspend fun handleSearchExcludingAConversation(
+        searchQuery: String,
+        conversationId: ConversationIDEntity
+    ): List<UserSearchEntity> = withContext(coroutineContext) {
+        searchQueries.searchByHandleExcludingAConversation(
+            searchQuery,
             conversationId,
             mapper = UserSearchEntityMapper::map
         ).executeAsList()

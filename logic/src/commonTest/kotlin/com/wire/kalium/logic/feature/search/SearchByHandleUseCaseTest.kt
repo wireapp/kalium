@@ -40,10 +40,10 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class SearchUseCaseTest {
+class SearchByHandleUseCaseTest {
 
     @Test
-    fun givenEmptySearchQueryAndNoExcludedConversation_whenInvokingSearch_thenRespondWithAllKnownContacts() = runTest {
+    fun givenEmptySearchQueryAndNoExcludedConversation_whenInvokingSearch_thenReturnEmptySearchResult() = runTest {
 
         val (arrangement, searchUseCase) = Arrangement().arrange {
             withGetKnownContacts(
@@ -53,34 +53,41 @@ class SearchUseCaseTest {
         }
 
         val result = searchUseCase(
-            searchQuery = "",
-            excludingMembersOfConversation = null,
+            searchHandle = "",
+            excludingConversation = null,
             customDomain = null
         )
 
         assertEquals(
             expected = emptyList<UserSearchDetails>(),
             actual = result.connected
+        )
+
+
+        assertEquals(
+            expected = emptyList<UserSearchDetails>(),
+            actual = result.notConnected
         )
         verify(arrangement.searchUserRepository)
             .suspendFunction(arrangement.searchUserRepository::getKnownContacts)
             .with(eq(null))
-            .wasInvoked(exactly = once)
+            .wasNotInvoked()
+
+        verify(arrangement.searchUserRepository)
+            .suspendFunction(arrangement.searchUserRepository::searchUserRemoteDirectory)
+            .with(any(), anything())
+            .wasNotInvoked()
     }
 
     @Test
-    fun givenEmptySearchQueryAndExcludedConversation_whenInvokingSearch_thenRespondWithAllKnownContacts() = runTest {
+    fun givenEmptySearchQueryWithExcludedConversation_whenInvokingSearch_thenReturnEmptySearchResult() = runTest {
 
         val conversationId = ConversationId("conversationId", "conversationDomain")
-        val (arrangement, searchUseCase) = Arrangement().arrange {
-            withGetKnownContacts(
-                result = emptyList<UserSearchDetails>().right()
-            )
-        }
+        val (arrangement, searchUseCase) = Arrangement().arrange { }
 
         val result = searchUseCase(
-            searchQuery = "",
-            excludingMembersOfConversation = conversationId,
+            searchHandle = "",
+            excludingConversation = conversationId,
             customDomain = null
         )
 
@@ -88,17 +95,28 @@ class SearchUseCaseTest {
             expected = emptyList<UserSearchDetails>(),
             actual = result.connected
         )
+
+        assertEquals(
+            expected = emptyList<UserSearchDetails>(),
+            actual = result.notConnected
+        )
+
         verify(arrangement.searchUserRepository)
             .suspendFunction(arrangement.searchUserRepository::getKnownContacts)
-            .with(eq(conversationId))
-            .wasInvoked(exactly = once)
+            .with(any())
+            .wasNotInvoked()
+
+        verify(arrangement.searchUserRepository)
+            .suspendFunction(arrangement.searchUserRepository::searchUserRemoteDirectory)
+            .with(any(), anything())
+            .wasNotInvoked()
     }
 
     @Test
     fun givenNonEmptySearchQueryAndNoExcludedConversation_whenInvokingSearch_thenRespondWithAllKnownContacts() = runTest {
 
         val (arrangement, searchUseCase) = Arrangement().arrange {
-            withSearchLocalByName(
+            withSearchByHandle(
                 result = emptyList<UserSearchDetails>().right(),
             )
             withSearchUserRemoteDirectory(
@@ -107,8 +125,8 @@ class SearchUseCaseTest {
         }
 
         val result = searchUseCase(
-            searchQuery = "searchQuery",
-            excludingMembersOfConversation = null,
+            searchHandle = "searchQuery",
+            excludingConversation = null,
             customDomain = null
         )
 
@@ -153,15 +171,15 @@ class SearchUseCaseTest {
                 result = UserSearchResult(remoteSearchResult).right(),
                 searchQuery = eq("searchquery"),
             )
-            withSearchLocalByName(
+            withSearchByHandle(
                 result = localSearchResult.right(),
                 searchQuery = eq("searchquery"),
             )
         }
 
         val result = searchUseCase(
-            searchQuery = "searchQuery",
-            excludingMembersOfConversation = null,
+            searchHandle = "searchQuery",
+            excludingConversation = null,
             customDomain = null
         )
 
@@ -174,49 +192,48 @@ class SearchUseCaseTest {
             .with(eq("searchquery"), any(), any(), any())
             .wasInvoked(exactly = once)
         verify(arrangement.searchUserRepository)
-            .suspendFunction(arrangement.searchUserRepository::searchLocalByName)
+            .suspendFunction(arrangement.searchUserRepository::searchLocalByHandle)
             .with(eq("searchquery"), anything())
             .wasInvoked(exactly = once)
     }
 
     @Test
     fun givenSearchQuery_whenDoingSearch_thenCallTheSearchFunctionsWithCleanQuery() = runTest {
-            val searchQuery = "    search Query     "
-            val cleanQuery = "search query"
-            val (arrangement, searchUseCase) = Arrangement().arrange {
-                withSearchUserRemoteDirectory(
-                    result = UserSearchResult(emptyList()).right(),
-                    searchQuery = eq(cleanQuery),
-                )
-                withSearchLocalByName(
-                    result = emptyList<UserSearchDetails>().right(),
-                    searchQuery = eq(cleanQuery),
-                )
-            }
-
-            val result = searchUseCase(
-                searchQuery = searchQuery,
-                excludingMembersOfConversation = null,
-                customDomain = null
+        val searchQuery = "    search Query     "
+        val cleanQuery = "search query"
+        val (arrangement, searchUseCase) = Arrangement().arrange {
+            withSearchUserRemoteDirectory(
+                result = UserSearchResult(emptyList()).right(),
+                searchQuery = eq(cleanQuery),
             )
-
-            assertEquals(
-                expected = emptyList<UserSearchDetails>(),
-                actual = result.connected
+            withSearchByHandle(
+                result = emptyList<UserSearchDetails>().right(),
+                searchQuery = eq(cleanQuery),
             )
-            verify(arrangement.searchUserRepository)
-                .suspendFunction(arrangement.searchUserRepository::searchUserRemoteDirectory)
-                .with(eq(cleanQuery), any(), any(), any())
-                .wasInvoked(exactly = once)
-            verify(arrangement.searchUserRepository)
-                .suspendFunction(arrangement.searchUserRepository::searchLocalByName)
-                .with(eq(cleanQuery), anything())
-                .wasInvoked(exactly = once)
+        }
+
+        val result = searchUseCase(
+            searchHandle = searchQuery,
+            excludingConversation = null,
+            customDomain = null
+        )
+
+        assertEquals(
+            expected = emptyList<UserSearchDetails>(),
+            actual = result.connected
+        )
+        verify(arrangement.searchUserRepository)
+            .suspendFunction(arrangement.searchUserRepository::searchUserRemoteDirectory)
+            .with(eq(cleanQuery), any(), any(), any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.searchUserRepository)
+            .suspendFunction(arrangement.searchUserRepository::searchLocalByHandle)
+            .with(eq(cleanQuery), anything())
+            .wasInvoked(exactly = once)
     }
 
     private companion object {
-
-        val selfUserID = UserId("searchUserID", "searchUserDomain")
+        val selfUserId = UserId("self", "domain")
 
         fun newOtherUser(id: String) = OtherUser(
             UserId(id, "otherDomain"),
@@ -250,14 +267,16 @@ class SearchUseCaseTest {
     }
 
     private class Arrangement : SearchRepositoryArrangement by SearchRepositoryArrangementImpl() {
+        private val useCase: SearchByHandleUseCase by lazy {
+            SearchByHandleUseCase(
+                searchUserRepository = searchUserRepository,
+                selfUserId = selfUserId,
+                maxRemoteSearchResultCount = 30
+            )
+        }
 
-        private val searchUseCase: SearchUsersUseCase = SearchUsersUseCase(
-            searchUserRepository = searchUserRepository,
-            selfUserId = selfUserID,
-            maxRemoteSearchResultCount = 30
-        )
-
-        fun arrange(block: Arrangement.() -> Unit) = apply(block)
-            .run { this to searchUseCase }
+        suspend fun arrange(block: Arrangement.() -> Unit) = apply(block).let {
+            this to useCase
+        }
     }
 }
