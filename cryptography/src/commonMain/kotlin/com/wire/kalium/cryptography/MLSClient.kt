@@ -329,7 +329,7 @@ interface MLSClient {
     /**
      * Init MLSClient after enrollment
      */
-    suspend fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain)
+    suspend fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain): List<String>?
 
     /**
      * The E2EI State for the current MLS Client

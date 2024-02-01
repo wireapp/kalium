@@ -200,7 +200,7 @@ class MLSClientImpl(
         TODO("Not yet implemented")
     }
 
-    override suspend fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain) {
+    override suspend fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain): List<String>? {
         TODO("Not yet implemented")
     }
 
