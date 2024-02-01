@@ -322,8 +322,8 @@ internal class MessageSenderImpl internal constructor(
      *
      * Will handle re-trying on "mls-stale-message" after we are live again or fail if we are not syncing.
      */
-    private suspend fun attemptToSendWithMLS(groupId: GroupID, message: Message.Sendable): Either<CoreFailure, String> =
-        mlsConversationRepository.commitPendingProposals(groupId).flatMap {
+    private suspend fun attemptToSendWithMLS(groupId: GroupID, message: Message.Sendable): Either<CoreFailure, String> {
+        return mlsConversationRepository.commitPendingProposals(groupId).flatMap {
             mlsMessageCreator.createOutgoingMLSMessage(groupId, message).flatMap { mlsMessage ->
                 messageRepository.sendMLSMessage(message.conversationId, mlsMessage).fold({
                     if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
@@ -339,12 +339,14 @@ internal class MessageSenderImpl internal constructor(
                     }
                     Either.Left(it)
                 }, { messageSent ->
+                    logger.i("Message Send Success: { \"message\" : \"${message.toLogString()}\", \"protocol\" : \"${ConversationOptions.Protocol.MLS}\" }")
                     handleMlsRecipientsDeliveryFailure(message, messageSent).flatMap {
                         Either.Right(messageSent.time)
                     }
                 })
             }
         }
+    }
 
     /**
      * Attempts to send a Proteus envelope
@@ -371,7 +373,7 @@ internal class MessageSenderImpl internal constructor(
                     attemptToSendWithProteus(message, messageTarget, remainingAttempts)
                 }
             }, { messageSent ->
-                logger.i("Message Send Success: { \"message\" : \"${message.toLogString()}\" }")
+                logger.i("Message Send Success: { \"message\" : \"${message.toLogString()}\", \"protocol\" : \"${ConversationOptions.Protocol.PROTEUS}\" }")
                 handleRecipientsDeliveryFailure(envelope, message, messageSent).flatMap {
                     Either.Right(messageSent.time)
                 }
