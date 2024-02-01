@@ -792,6 +792,70 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Test
+    fun givenGettingE2EITeamSettingsFails_whenFetchATrustAnchors_thenItFail() = runTest {
+        // Given
+
+        val (arrangement, e2eiRepository) = Arrangement()
+            .withGettingE2EISettingsReturns(Either.Left(StorageFailure.DataNotFound))
+            .withFetchAcmeTrustAnchorsApiFails()
+            .withGetMLSClientSuccessful()
+            .arrange()
+
+        // When
+        val result = e2eiRepository.fetchTrustAnchors()
+
+        // Then
+        result.shouldFail()
+
+        verify(arrangement.userConfigRepository)
+            .suspendFunction(arrangement.userConfigRepository::getE2EISettings)
+            .with()
+            .wasInvoked(once)
+
+        verify(arrangement.acmeApi)
+            .suspendFunction(arrangement.acmeApi::getACMEFederation)
+            .with(any())
+            .wasNotInvoked()
+
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::registerIntermediateCa)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenACMETrustAnchorsApiSucceed_whenFetchACMETrustAnchors_thenItSucceed() = runTest {
+        // Given
+
+        val (arrangement, e2eiRepository) = Arrangement()
+            .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(discoverUrl = RANDOM_URL+"/random/path")))
+            .withFetchAcmeTrustAnchorsApiSucceed()
+            .withGetMLSClientSuccessful()
+            .withRegisterTrustAnchors()
+            .arrange()
+
+        // When
+        val result = e2eiRepository.fetchTrustAnchors()
+
+        // Then
+        result.shouldSucceed()
+
+        verify(arrangement.userConfigRepository)
+            .suspendFunction(arrangement.userConfigRepository::getE2EISettings)
+            .with()
+            .wasInvoked(once)
+
+        verify(arrangement.acmeApi)
+            .suspendFunction(arrangement.acmeApi::getTrustAnchors)
+            .with(eq(RANDOM_URL))
+            .wasInvoked(once)
+
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::registerTrustAnchors)
+            .with(eq(""))
+            .wasInvoked(once)
+    }
     private class Arrangement {
 
         fun withGetE2EIClientSuccessful() = apply {
@@ -984,9 +1048,30 @@ class E2EIRepositoryTest {
                 .thenReturn(NetworkResponse.Error(INVALID_REQUEST_ERROR))
         }
 
+        fun withFetchAcmeTrustAnchorsApiFails() = apply {
+            given(acmeApi)
+                .suspendFunction(acmeApi::getTrustAnchors)
+                .whenInvokedWith(any())
+                .thenReturn(NetworkResponse.Error(INVALID_REQUEST_ERROR))
+        }
+
+        fun withFetchAcmeTrustAnchorsApiSucceed() = apply {
+            given(acmeApi)
+                .suspendFunction(acmeApi::getTrustAnchors)
+                .whenInvokedWith(any())
+                .thenReturn(NetworkResponse.Success(CertificateChain(""), mapOf(), 200))
+        }
+
         fun withRegisterIntermediateCABag() = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::registerIntermediateCa)
+                .whenInvokedWith(any())
+                .thenDoNothing()
+        }
+
+        fun withRegisterTrustAnchors() = apply {
+            given(mlsClient)
+                .suspendFunction(mlsClient::registerTrustAnchors)
                 .whenInvokedWith(any())
                 .thenReturn(Unit)
         }
@@ -1078,6 +1163,7 @@ class E2EIRepositoryTest {
 
             val ACME_AUTHZ = NewAcmeAuthz(
                 identifier = "identifier",
+                keyAuth = "keyauth",
                 wireOidcChallenge = ACME_CHALLENGE,
                 wireDpopChallenge = ACME_CHALLENGE
             )

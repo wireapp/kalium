@@ -40,10 +40,13 @@ import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
+import io.ktor.http.Url
+import io.ktor.http.protocolWithAuthority
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 interface E2EIRepository {
+    suspend fun fetchTrustAnchors(): Either<CoreFailure, Unit>
     suspend fun loadACMEDirectories(): Either<CoreFailure, AcmeDirectory>
     suspend fun getACMENonce(endpoint: String): Either<CoreFailure, String>
     suspend fun createNewAccount(prevNonce: String, createAccountEndpoint: String): Either<CoreFailure, String>
@@ -74,6 +77,8 @@ interface E2EIRepository {
     suspend fun getOAuthRefreshToken(): Either<CoreFailure, String?>
     suspend fun nukeE2EIClient()
     suspend fun fetchFederationCertificates(): Either<CoreFailure, Unit>
+    suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String>
+    suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray>
 }
 
 @Suppress("LongParameterList")
@@ -86,6 +91,18 @@ class E2EIRepositoryImpl(
     private val mlsConversationRepository: MLSConversationRepository,
     private val userConfigRepository: UserConfigRepository
 ) : E2EIRepository {
+
+    override suspend fun fetchTrustAnchors(): Either<CoreFailure, Unit> = userConfigRepository.getE2EISettings().flatMap {
+        wrapApiRequest {
+            acmeApi.getTrustAnchors(Url(it.discoverUrl).protocolWithAuthority)
+        }.flatMap { trustAnchors ->
+            mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+                wrapE2EIRequest {
+                    mlsClient.registerTrustAnchors(trustAnchors.value)
+                }
+            }
+        }
+    }
 
     override suspend fun loadACMEDirectories(): Either<CoreFailure, AcmeDirectory> = userConfigRepository.getE2EISettings().flatMap {
         wrapApiRequest {
@@ -231,7 +248,7 @@ class E2EIRepositoryImpl(
 
     override suspend fun fetchFederationCertificates(): Either<CoreFailure, Unit> = userConfigRepository.getE2EISettings().flatMap {
         wrapApiRequest {
-            acmeApi.getACMEFederation(it.discoverUrl)
+            acmeApi.getACMEFederation(Url(it.discoverUrl).host)
         }.flatMap { data ->
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
@@ -244,4 +261,14 @@ class E2EIRepositoryImpl(
     override suspend fun nukeE2EIClient() {
         e2EIClientProvider.nuke()
     }
+
+    override suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String> =
+        userConfigRepository.getE2EISettings().map {
+            (Url(it.discoverUrl).protocolWithAuthority)
+        }
+
+    override suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray> =
+        wrapApiRequest {
+            acmeApi.getClientDomainCRL(url)
+         }
 }

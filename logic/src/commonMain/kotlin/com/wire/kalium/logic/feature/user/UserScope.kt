@@ -19,11 +19,13 @@
 
 package com.wire.kalium.logic.feature.user
 
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
@@ -32,7 +34,6 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.TimestampKeyRepositoryImpl
 import com.wire.kalium.logic.feature.asset.DeleteAssetUseCase
 import com.wire.kalium.logic.feature.asset.DeleteAssetUseCaseImpl
@@ -50,10 +51,12 @@ import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMembersE2EICertificateStatusesUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMembersE2EICertificateStatusesUseCaseImpl
-import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificatesUseCase
-import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificatesUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificateStatusUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificateStatusUseCaseImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificatesUseCase
+import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificatesUseCaseImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateRevocationForSelfClientUseCase
+import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateRevocationForSelfClientUseCaseImpl
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCase
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsUseCaseImpl
@@ -61,10 +64,6 @@ import com.wire.kalium.logic.feature.publicuser.GetKnownUserUseCase
 import com.wire.kalium.logic.feature.publicuser.GetKnownUserUseCaseImpl
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCaseImpl
-import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCase
-import com.wire.kalium.logic.feature.publicuser.search.SearchKnownUsersUseCaseImpl
-import com.wire.kalium.logic.feature.publicuser.search.SearchPublicUsersUseCase
-import com.wire.kalium.logic.feature.publicuser.search.SearchPublicUsersUseCaseImpl
 import com.wire.kalium.logic.feature.user.readReceipts.ObserveReadReceiptsEnabledUseCase
 import com.wire.kalium.logic.feature.user.readReceipts.ObserveReadReceiptsEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.readReceipts.PersistReadReceiptsStatusConfigUseCase
@@ -79,6 +78,7 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 @Suppress("LongParameterList")
 class UserScope internal constructor(
     private val userRepository: UserRepository,
+    private val userConfigRepository: UserConfigRepository,
     private val accountRepository: AccountRepository,
     private val searchUserRepository: SearchUserRepository,
     private val syncManager: SyncManager,
@@ -96,25 +96,13 @@ class UserScope internal constructor(
     private val e2EIRepository: E2EIRepository,
     private val mlsConversationRepository: MLSConversationRepository,
     private val isSelfATeamMember: IsSelfATeamMemberUseCase,
-    private val updateSupportedProtocolsUseCase: UpdateSupportedProtocolsUseCase,
+    private val updateSelfUserSupportedProtocolsUseCase: UpdateSelfUserSupportedProtocolsUseCase,
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCaseImpl(userRepository)
     val getSelfUserWithTeam: ObserveSelfUserWithTeamUseCase get() = ObserveSelfUserWithTeamUseCaseImpl(userRepository)
     val observeUserInfo: ObserveUserInfoUseCase get() = ObserveUserInfoUseCaseImpl(userRepository, teamRepository)
     val uploadUserAvatar: UploadUserAvatarUseCase get() = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
-    val searchUsers: SearchPublicUsersUseCase
-        get() = SearchPublicUsersUseCaseImpl(
-            searchUserRepository,
-            connectionRepository,
-            qualifiedIdMapper
-        )
-    val searchKnownUsers: SearchKnownUsersUseCase
-        get() = SearchKnownUsersUseCaseImpl(
-            searchUserRepository,
-            userRepository,
-            qualifiedIdMapper
-        )
 
     private val pemCertificateDecoderImpl by lazy { PemCertificateDecoderImpl() }
     val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository, userRepository)
@@ -191,5 +179,12 @@ class UserScope internal constructor(
 
     val deleteAccount: DeleteAccountUseCase get() = DeleteAccountUseCase(accountRepository)
 
-    val updateSupportedProtocols: UpdateSupportedProtocolsUseCase get() = updateSupportedProtocolsUseCase
+    val updateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase get() = updateSelfUserSupportedProtocolsUseCase
+
+    val observeCertificateRevocationForSelfClient: ObserveCertificateRevocationForSelfClientUseCase
+        get() = ObserveCertificateRevocationForSelfClientUseCaseImpl(
+            userConfigRepository = userConfigRepository,
+            currentClientIdProvider = clientIdProvider,
+            getE2eiCertificate = getE2EICertificate
+        )
 }
