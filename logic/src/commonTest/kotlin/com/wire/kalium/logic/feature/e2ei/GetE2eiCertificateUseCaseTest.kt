@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.e2ei
 
 import com.wire.kalium.cryptography.CryptoCertificateStatus
+import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCaseImpl
@@ -33,6 +34,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.id.toCrypto
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.usecase.GetE2EICertificateUseCaseResult
 import kotlinx.coroutines.test.runTest
 
@@ -113,9 +116,12 @@ class GetE2eiCertificateUseCaseTest {
 
     companion object {
         val CLIENT_ID = ClientId("client-id")
+        private val USER_ID = UserId("value", "domain")
+        private val CRYPTO_QUALIFIED_CLIENT_ID = CryptoQualifiedClientId("clientId", USER_ID.toCrypto())
+
         val e2eiCertificate = E2eiCertificate("certificate")
         val identity = WireIdentity(
-            CLIENT_ID.value,
+            CRYPTO_QUALIFIED_CLIENT_ID,
             handle = "alic_test",
             displayName = "Alice Test",
             domain = "test.com",

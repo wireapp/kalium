@@ -280,7 +280,7 @@ class MLSClientImpl(
         val clientIds = clients.map {
             it.toString().encodeToByteArray()
         }
-        return coreCrypto.getDeviceIdentities(groupId.decodeBase64Bytes(), clientIds).map {
+        return coreCrypto.getDeviceIdentities(groupId.decodeBase64Bytes(), clientIds).mapNotNull {
             toIdentity(it)
         }
     }
@@ -290,7 +290,7 @@ class MLSClientImpl(
             it.value
         }
         return coreCrypto.getUserIdentities(groupId.decodeBase64Bytes(), usersIds).mapValues {
-            it.value.map { identity -> toIdentity(identity) }
+            it.value.mapNotNull { identity -> toIdentity(identity) }
         }
     }
 
@@ -337,6 +337,7 @@ class MLSClientImpl(
             value.keyPackageRefsToRemove
         )
 
+<<<<<<< HEAD
         fun toIdentity(value: com.wire.crypto.WireIdentity) = WireIdentity(
             value.clientId,
             value.handle,
@@ -345,6 +346,22 @@ class MLSClientImpl(
             value.certificate,
             toDeviceStatus(value.status)
         )
+=======
+        fun toIdentity(value: com.wire.crypto.WireIdentity): WireIdentity? {
+            val clientId = CryptoQualifiedClientId.fromEncodedString(value.clientId)
+            return clientId?.let {
+                WireIdentity(
+                    CryptoQualifiedClientId.fromEncodedString(value.clientId)!!,
+                    value.handle,
+                    value.displayName,
+                    value.domain,
+                    value.certificate,
+                    toDeviceStatus(value.status),
+                    value.thumbprint
+                )
+            }
+        }
+>>>>>>> 00a3b741fb (fix(e2ei): get my clients state (WPB-6345) (#2436))
 
         fun toDeviceStatus(value: com.wire.crypto.DeviceStatus) = when (value) {
             com.wire.crypto.DeviceStatus.VALID -> CryptoCertificateStatus.VALID
