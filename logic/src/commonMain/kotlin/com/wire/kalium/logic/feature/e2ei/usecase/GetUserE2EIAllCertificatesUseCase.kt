@@ -41,9 +41,8 @@ class GetUserE2eiCertificatesUseCaseImpl internal constructor(
         mlsConversationRepository.getUserIdentity(userId).map { identities ->
             val result = mutableMapOf<String, E2eiCertificate>()
             identities.forEach {
-                result[it.clientId] = pemCertificateDecoder.decode(it.certificate, it.status)
+                result[it.clientId.value] = pemCertificateDecoder.decode(it.certificate, it.status)
             }
             result
         }.getOrElse(mapOf())
-
 }
