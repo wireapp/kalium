@@ -54,7 +54,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
     override suspend fun initialEnrollment(isNewClientRegistration: Boolean): Either<CoreFailure, E2EIEnrollmentResult> {
         kaliumLogger.i("start E2EI Enrollment Initialization")
 
-        e2EIRepository.initE2EIClient(isNewClient = isNewClientRegistration)
+        e2EIRepository.initFreshE2EIClient(isNewClient = isNewClientRegistration)
 
         e2EIRepository.fetchAndSetTrustAnchors()
 
@@ -97,7 +97,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
                 oidcAuthorizations.challenge.url
             ),
             dPopAuthorizations = dPopAuthorizations,
-            oidcAuthorizations = dPopAuthorizations,
+            oidcAuthorizations = oidcAuthorizations,
             lastNonce = prevNonce,
             orderLocation = newOrderResponse.third,
             isNewClientRegistration = isNewClientRegistration
@@ -187,8 +187,6 @@ class EnrollE2EIUseCaseImpl internal constructor(
                 return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.ConversationMigration, it).toEitherLeft()
             }
 
-        e2EIRepository.nukeE2EIClient()
-
         return Either.Right(E2EIEnrollmentResult.Finalized(certificateRequest.response.decodeToString()))
     }
 
@@ -221,7 +219,6 @@ class EnrollE2EIUseCaseImpl internal constructor(
 
 sealed interface E2EIEnrollmentResult {
     enum class E2EIStep {
-        TrustAnchors,
         AcmeNonce,
         AcmeDirectories,
         AcmeNewAccount,
@@ -240,7 +237,7 @@ sealed interface E2EIEnrollmentResult {
     }
 
     @Suppress("LongParameterList")
-    class Initialized(
+    data class Initialized(
         val target: String,
         val oAuthState: String?,
         val oAuthClaims: JsonObject,
