@@ -66,7 +66,6 @@ jobs:
                     target: google_apis
                     emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
                     cores: 2
-                    arch: x86_64
                     ram-size: 4096M
                     heap-size: 2048M
                     disable-animations: false
@@ -80,7 +79,6 @@ jobs:
                     target: google_apis
                     emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
                     cores: 2
-                    arch: x86_64
                     ram-size: 4096M
                     heap-size: 2048M
                     script: ./gradlew connectedAndroidOnlyAffectedTest
