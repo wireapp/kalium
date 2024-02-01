@@ -306,8 +306,6 @@ class RegisterClientUseCaseTest {
 
         val (arrangement, registerClient) = Arrangement()
             .withRegisterClient(Either.Right(registeredClient))
-            .withMLSClient(Either.Right(MLS_CLIENT))
-            .withGetMLSPublicKey(MLS_PUBLIC_KEY)
             .withRegisterMLSClient(Either.Left(TEST_FAILURE))
             .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
@@ -320,6 +318,7 @@ class RegisterClientUseCaseTest {
             .wasNotInvoked()
     }
 
+<<<<<<< HEAD
     @Test
     fun givenKeyPackageUploadFails_whenRegistering_thenNoPersistenceShouldBeDone() = runTest {
         val registeredClient = CLIENT
@@ -341,16 +340,15 @@ class RegisterClientUseCaseTest {
             .wasNotInvoked()
     }
 
+=======
+>>>>>>> 182e89c593 (fix(e2ei): pass challenges to usecase and add tests (WPB-6286) (#2434))
     @Test
     fun givenRegisteringSucceedsAndPersistingClientIdSucceeds_whenRegistering_thenSuccessShouldBePropagated() = runTest {
         val registeredClient = CLIENT
 
         val (arrangement, registerClient) = Arrangement()
             .withRegisterClient(Either.Right(registeredClient))
-            .withMLSClient(Either.Right(MLS_CLIENT))
-            .withGetMLSPublicKey(MLS_PUBLIC_KEY)
-            .withRegisterMLSClient(Either.Right(Unit))
-            .withUploadNewKeyPackages(Either.Right(Unit))
+            .withRegisterMLSClient(Either.Right(RegisterMLSClientResult.Success))
             .withUpdateOTRLastPreKeyId(Either.Right(Unit))
             .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
             .arrange()
@@ -414,27 +412,9 @@ class RegisterClientUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
-    @Test
-    fun givenWeAreNotAllowedToRegisterMLSClient_whenRegistering_thenMLSClientIsNotRegistered() = runTest {
-        val registeredClient = CLIENT
-
-        val (arrangement, registerClient) = Arrangement()
-            .withIsAllowedToRegisterMLSClient(false)
-            .withRegisterClient(Either.Right(registeredClient))
-            .withUpdateOTRLastPreKeyId(Either.Right(Unit))
-            .withSelfCookieLabel(Either.Right(TEST_COOKIE_LABEL))
-            .arrange()
-
-        val result = registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
-
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::registerMLSClient)
-            .with(any(), any())
-            .wasNotInvoked()
-
-        assertIs<RegisterClientResult.Success>(result)
-        assertEquals(registeredClient, result.client)
-    }
+    //mls returns e2ei is required
+    //make sure we invoked the team settings fetched
+    //finalizing the client registration
 
     private companion object {
         const val KEY_PACKAGE_LIMIT = 100
@@ -481,12 +461,6 @@ class RegisterClientUseCaseTest {
 
         @Mock
         val preKeyRepository = mock(classOf<PreKeyRepository>())
-
-        @Mock
-        val keyPackageRepository = mock(classOf<KeyPackageRepository>())
-
-        @Mock
-        val mlsClientProvider = mock(classOf<MLSClientProvider>())
 
         @Mock
         val keyPackageLimitsProvider = mock(classOf<KeyPackageLimitsProvider>())
@@ -549,32 +523,11 @@ class RegisterClientUseCaseTest {
                 .then { result }
         }
 
-        fun withMLSClient(result: Either<CoreFailure, MLSClient>) = apply {
-            given(mlsClientProvider)
-                .suspendFunction(mlsClientProvider::getMLSClient)
+        fun withRegisterMLSClient(result: Either<CoreFailure, RegisterMLSClientResult>) = apply {
+            given(registerMLSClient)
+                .suspendFunction(registerMLSClient::invoke)
                 .whenInvokedWith(eq(CLIENT.id))
                 .then { result }
-        }
-
-        fun withGetMLSPublicKey(result: ByteArray) = apply {
-            given(MLS_CLIENT)
-                .suspendFunction(MLS_CLIENT::getPublicKey)
-                .whenInvoked()
-                .thenReturn(result)
-        }
-
-        fun withRegisterMLSClient(result: Either<CoreFailure, Unit>) = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::registerMLSClient)
-                .whenInvokedWith(eq(CLIENT.id), eq(MLS_PUBLIC_KEY))
-                .thenReturn(result)
-        }
-
-        fun withUploadNewKeyPackages(result: Either<CoreFailure, Unit>) = apply {
-            given(keyPackageRepository)
-                .suspendFunction(keyPackageRepository::uploadNewKeyPackages)
-                .whenInvokedWith(anything(), eq(100))
-                .thenReturn(result)
         }
 
         fun withGenerateNewPreKeys(result: Either<CoreFailure, List<PreKeyCrypto>>) = apply {

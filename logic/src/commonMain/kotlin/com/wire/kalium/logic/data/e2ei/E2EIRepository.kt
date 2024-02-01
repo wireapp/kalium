@@ -29,6 +29,10 @@ import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+<<<<<<< HEAD
+=======
+import com.wire.kalium.logic.di.MapperProvider
+>>>>>>> 182e89c593 (fix(e2ei): pass challenges to usecase and add tests (WPB-6286) (#2434))
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
@@ -46,7 +50,12 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 interface E2EIRepository {
+<<<<<<< HEAD
     suspend fun fetchTrustAnchors(): Either<CoreFailure, Unit>
+=======
+    suspend fun initFreshE2EIClient(clientId: ClientId? = null, isNewClient: Boolean = false): Either<CoreFailure, Unit>
+    suspend fun fetchAndSetTrustAnchors(): Either<CoreFailure, Unit>
+>>>>>>> 182e89c593 (fix(e2ei): pass challenges to usecase and add tests (WPB-6286) (#2434))
     suspend fun loadACMEDirectories(): Either<CoreFailure, AcmeDirectory>
     suspend fun getACMENonce(endpoint: String): Either<CoreFailure, String>
     suspend fun createNewAccount(prevNonce: String, createAccountEndpoint: String): Either<CoreFailure, String>
@@ -89,10 +98,29 @@ class E2EIRepositoryImpl(
     private val mlsClientProvider: MLSClientProvider,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val mlsConversationRepository: MLSConversationRepository,
+<<<<<<< HEAD
     private val userConfigRepository: UserConfigRepository
 ) : E2EIRepository {
 
     override suspend fun fetchTrustAnchors(): Either<CoreFailure, Unit> = userConfigRepository.getE2EISettings().flatMap {
+=======
+    private val userConfigRepository: UserConfigRepository,
+    private val acmeMapper: AcmeMapper = MapperProvider.acmeMapper()
+) : E2EIRepository {
+
+    override suspend fun initFreshE2EIClient(clientId: ClientId?, isNewClient: Boolean): Either<CoreFailure, Unit> {
+        nukeE2EIClient()
+        return e2EIClientProvider.getE2EIClient(clientId, isNewClient).fold({
+            kaliumLogger.w("E2EI client initialization failed: $it")
+            Either.Left(it)
+        }, {
+            kaliumLogger.w("E2EI client initialized for enrollment")
+            Either.Right(Unit)
+        })
+    }
+
+    override suspend fun fetchAndSetTrustAnchors(): Either<CoreFailure, Unit> = userConfigRepository.getE2EISettings().flatMap {
+>>>>>>> 182e89c593 (fix(e2ei): pass challenges to usecase and add tests (WPB-6286) (#2434))
         wrapApiRequest {
             acmeApi.getTrustAnchors(Url(it.discoverUrl).protocolWithAuthority)
         }.flatMap { trustAnchors ->
@@ -153,6 +181,36 @@ class E2EIRepositoryImpl(
             }
         }
 
+<<<<<<< HEAD
+=======
+    @Suppress("ReturnCount")
+    override suspend fun getAuthorizations(
+        prevNonce: Nonce,
+        authorizationsEndpoints: List<String>
+    ): Either<CoreFailure, AuthorizationResult> {
+        var nonce = prevNonce
+        val challenges = mutableMapOf<AuthorizationChallengeType, NewAcmeAuthz>()
+        var oidcAuthorization: NewAcmeAuthz? = null
+        var dpopAuthorization: NewAcmeAuthz? = null
+
+        authorizationsEndpoints.forEach { endPoint ->
+            val authorizationResponse = createAuthorization(nonce, endPoint).getOrFail {
+                return Either.Left(CoreFailure.Unknown(Throwable("Failed to get required authorizations from ACME")))
+            }
+            nonce = authorizationResponse.nonce
+            challenges[authorizationResponse.challengeType] = authorizationResponse.newAcmeAuthz
+        }
+
+        oidcAuthorization = challenges[AuthorizationChallengeType.OIDC]
+        dpopAuthorization = challenges[AuthorizationChallengeType.DPoP]
+
+        if (oidcAuthorization == null || dpopAuthorization == null)
+            return Either.Left(CoreFailure.Unknown(Throwable("Missing ACME Challenges")))
+
+        return Either.Right(AuthorizationResult(oidcAuthorization, dpopAuthorization, nonce))
+    }
+
+>>>>>>> 182e89c593 (fix(e2ei): pass challenges to usecase and add tests (WPB-6286) (#2434))
     override suspend fun getWireNonce() = currentClientIdProvider().flatMap { clientId ->
         wrapApiRequest {
             e2EIApi.getWireNonce(clientId.value)

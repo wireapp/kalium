@@ -43,15 +43,36 @@ import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.base.unbound.acme.AcmeDirectoriesResponse
+<<<<<<< HEAD
 import com.wire.kalium.network.api.base.unbound.acme.CertificateChain
+=======
+>>>>>>> 182e89c593 (fix(e2ei): pass challenges to usecase and add tests (WPB-6286) (#2434))
 import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
+import com.wire.kalium.network.api.base.unbound.acme.DtoAuthorizationChallengeType
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.util.DateTimeUtil
+<<<<<<< HEAD
 import io.mockative.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+=======
+import io.mockative.Mock
+import io.mockative.any
+import io.mockative.anyInstanceOf
+import io.mockative.anything
+import io.mockative.classOf
+import io.mockative.eq
+import io.mockative.given
+import io.mockative.mock
+import io.mockative.once
+import io.mockative.thenDoNothing
+import io.mockative.time
+import io.mockative.verify
+>>>>>>> 182e89c593 (fix(e2ei): pass challenges to usecase and add tests (WPB-6286) (#2434))
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 class E2EIRepositoryTest {
     @Test
@@ -286,14 +307,24 @@ class E2EIRepositoryTest {
     }
 
     @Test
-    fun givenSendAcmeRequestSucceed_whenCallingCreateAuthz_thenItSucceed() = runTest {
+    fun givenSendAuthorizationRequestSucceed_whenCallingCreateAuthz_thenItSucceed() = runTest {
         // Given
         val (arrangement, e2eiRepository) = Arrangement()
+<<<<<<< HEAD
             .withSendAcmeRequestApiSucceed()
             .withGetE2EIClientSuccessful()
             .withGetMLSClientSuccessful()
             .withGetNewAuthzRequestSuccessful()
             .withSetAuthzResponseSuccessful()
+=======
+            .withGetNewAuthzRequestSuccessful()
+            .withSendAuthorizationRequestSucceed(url = RANDOM_URL ,DtoAuthorizationChallengeType.DPoP)
+            .withSendAcmeRequestApiSucceed()
+            .withSetAuthzResponseSuccessful()
+            .withSendAcmeRequestApiSucceed()
+            .withGetE2EIClientSuccessful()
+            .withGetMLSClientSuccessful()
+>>>>>>> 182e89c593 (fix(e2ei): pass challenges to usecase and add tests (WPB-6286) (#2434))
             .arrange()
 
         // When
@@ -308,7 +339,7 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::sendACMERequest)
+            .suspendFunction(arrangement.acmeApi::sendAuthorizationRequest)
             .with(anyInstanceOf(String::class), any())
             .wasInvoked(once)
 
@@ -319,9 +350,10 @@ class E2EIRepositoryTest {
     }
 
     @Test
-    fun givenSendAcmeRequestFails_whenCallingCreateAuthz_thenItFail() = runTest {
+    fun givenSendAuthorizationRequestFails_whenCallingCreateAuthz_thenItFail() = runTest {
         // Given
         val (arrangement, e2eiRepository) = Arrangement()
+<<<<<<< HEAD
             .withSendAcmeRequestApiFails()
             .withGetE2EIClientSuccessful()
             .withGetMLSClientSuccessful()
@@ -330,6 +362,19 @@ class E2EIRepositoryTest {
 
         // When
         val result = e2eiRepository.createAuthz(RANDOM_NONCE, RANDOM_URL)
+=======
+            .withGetNewAuthzRequestSuccessful()
+            .withSendAuthorizationRequestFails()
+            .withSendAcmeRequestApiSucceed()
+            .withSetAuthzResponseSuccessful()
+            .withSendAcmeRequestApiSucceed()
+            .withGetE2EIClientSuccessful()
+            .withGetMLSClientSuccessful()
+            .arrange()
+
+        // When
+        val result = e2eiRepository.createAuthorization(RANDOM_NONCE, RANDOM_URL)
+>>>>>>> 182e89c593 (fix(e2ei): pass challenges to usecase and add tests (WPB-6286) (#2434))
 
         // Then
         result.shouldFail()
@@ -348,6 +393,83 @@ class E2EIRepositoryTest {
             .suspendFunction(arrangement.e2eiClient::setAuthzResponse)
             .with(anyInstanceOf(ByteArray::class))
             .wasNotInvoked()
+<<<<<<< HEAD
+=======
+    }
+
+    @Test
+    fun givenSendAuthorizationRequestFails_whenCallingGetAuthorizations_thenItFail() = runTest {
+        val authorizationsUrls = listOf(RANDOM_URL, RANDOM_URL)
+        // Given
+        val (arrangement, e2eiRepository) = Arrangement()
+            .withSendAuthorizationRequestFails()
+            .withGetE2EIClientSuccessful()
+            .withGetMLSClientSuccessful()
+            .withGetNewAuthzRequestSuccessful()
+            .withSetAuthzResponseSuccessful()
+            .arrange()
+
+        // When
+        val result = e2eiRepository.getAuthorizations(RANDOM_NONCE, authorizationsUrls)
+
+        // Then
+        result.shouldFail()
+
+        verify(arrangement.e2eiClient)
+            .suspendFunction(arrangement.e2eiClient::getNewAuthzRequest)
+            .with(anyInstanceOf(String::class))
+            .wasInvoked(once)
+
+        verify(arrangement.acmeApi)
+            .suspendFunction(arrangement.acmeApi::sendAuthorizationRequest)
+            .with(anyInstanceOf(String::class), any())
+            .wasInvoked(once)
+
+        verify(arrangement.e2eiClient)
+            .suspendFunction(arrangement.e2eiClient::setAuthzResponse)
+            .with(anyInstanceOf(ByteArray::class))
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenSendAuthorizationRequestSucceed_whenCallingGetAuthorizations_thenItSucceed() = runTest {
+        val authorizationsUrls = listOf("$RANDOM_URL/oidc", "$RANDOM_URL/dpop")
+        val expected = Arrangement.AUTHORIZATIONS_RESULT
+        // Given
+        val (arrangement, e2eiRepository) = Arrangement()
+            .withSendAuthorizationRequestSucceed(url = authorizationsUrls[0],DtoAuthorizationChallengeType.DPoP)
+            .withSendAuthorizationRequestSucceed(url = authorizationsUrls[1], DtoAuthorizationChallengeType.OIDC)
+            .withGetE2EIClientSuccessful()
+            .withGetMLSClientSuccessful()
+            .withGetNewAuthzRequestSuccessful()
+            .withSetAuthzResponseSuccessful()
+            .arrange()
+
+        // When
+        val result = e2eiRepository.getAuthorizations(RANDOM_NONCE, authorizationsUrls)
+
+        // Then
+        result.shouldSucceed()
+
+        assertIs<AuthorizationResult>(result.value)
+
+        assertEquals(expected, result.value as AuthorizationResult)
+
+        verify(arrangement.e2eiClient)
+            .suspendFunction(arrangement.e2eiClient::getNewAuthzRequest)
+            .with(anyInstanceOf(String::class))
+            .wasInvoked(authorizationsUrls.size.time)
+
+        verify(arrangement.acmeApi)
+            .suspendFunction(arrangement.acmeApi::sendAuthorizationRequest)
+            .with(anyInstanceOf(String::class), any())
+            .wasInvoked(authorizationsUrls.size.time)
+
+        verify(arrangement.e2eiClient)
+            .suspendFunction(arrangement.e2eiClient::setAuthzResponse)
+            .with(anyInstanceOf(ByteArray::class))
+            .wasInvoked(authorizationsUrls.size.time)
+>>>>>>> 182e89c593 (fix(e2ei): pass challenges to usecase and add tests (WPB-6286) (#2434))
     }
 
     @Test
@@ -695,7 +817,6 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenCertificate_whenCallingRotateKeysAndMigrateConversationFails_thenReturnFailure() = runTest {
         // Given
@@ -853,7 +974,7 @@ class E2EIRepositoryTest {
 
         verify(arrangement.mlsClient)
             .suspendFunction(arrangement.mlsClient::registerTrustAnchors)
-            .with(eq(""))
+            .with(eq(Arrangement.RANDOM_BYTE_ARRAY.decodeToString()))
             .wasInvoked(once)
     }
     private class Arrangement {
@@ -935,7 +1056,6 @@ class E2EIRepositoryTest {
                 .thenReturn(Either.Right(TestClient.CLIENT_ID))
         }
 
-
         fun withFinalizeResponseSuccessful() = apply {
             given(e2eiClient)
                 .suspendFunction(e2eiClient::finalizeResponse)
@@ -975,7 +1095,7 @@ class E2EIRepositoryTest {
             given(e2eiClient)
                 .suspendFunction(e2eiClient::setAuthzResponse)
                 .whenInvokedWith(anything())
-                .thenReturn(ACME_AUTHZ)
+                .thenReturn(OIDC_AUTHZ)
         }
 
         fun withGetMLSClientSuccessful() = apply {
@@ -1005,7 +1125,6 @@ class E2EIRepositoryTest {
                 .thenReturn(NetworkResponse.Error(INVALID_REQUEST_ERROR))
         }
 
-
         fun withSendAcmeRequestApiSucceed() = apply {
             given(acmeApi)
                 .suspendFunction(acmeApi::sendACMERequest)
@@ -1020,6 +1139,27 @@ class E2EIRepositoryTest {
                 .thenReturn(NetworkResponse.Error(INVALID_REQUEST_ERROR))
         }
 
+<<<<<<< HEAD
+=======
+        fun withSendAuthorizationRequestSucceed(url: String, challengeType: DtoAuthorizationChallengeType) = apply {
+            given(acmeApi).suspendFunction(acmeApi::sendAuthorizationRequest).whenInvokedWith(eq(url), any())
+                .thenReturn(
+                    NetworkResponse.Success(
+                        ACME_AUTHORIZATION_RESPONSE.copy(challengeType = challengeType),
+                        headers = HEADERS,
+                        200
+                    )
+                )
+        }
+
+        fun withSendAuthorizationRequestFails() = apply {
+            given(acmeApi)
+                .suspendFunction(acmeApi::sendAuthorizationRequest)
+                .whenInvokedWith(any(), any())
+                .thenReturn(NetworkResponse.Error(INVALID_REQUEST_ERROR))
+        }
+
+>>>>>>> 182e89c593 (fix(e2ei): pass challenges to usecase and add tests (WPB-6286) (#2434))
         fun withSendChallengeRequestApiSucceed() = apply {
             given(acmeApi)
                 .suspendFunction(acmeApi::sendChallengeRequest)
@@ -1129,7 +1269,6 @@ class E2EIRepositoryTest {
 
             val ACME_BASE_URL = "https://balderdash.hogwash.work:9000"
 
-
             val ACME_DIRECTORIES_RESPONSE = AcmeDirectoriesResponse(
                 newNonce = "$ACME_BASE_URL/acme/wire/new-nonce",
                 newAccount = "$ACME_BASE_URL/acme/wire/new-account",
@@ -1161,7 +1300,13 @@ class E2EIRepositoryTest {
                 target = RANDOM_URL
             )
 
-            val ACME_AUTHZ = NewAcmeAuthz(
+            val OIDC_AUTHZ = NewAcmeAuthz(
+                identifier = "identifier",
+                keyAuth = "keyauth",
+                challenge = ACME_CHALLENGE
+            )
+
+            val DPOP_AUTHZ = NewAcmeAuthz(
                 identifier = "identifier",
                 keyAuth = "keyauth",
                 wireOidcChallenge = ACME_CHALLENGE,
@@ -1176,6 +1321,25 @@ class E2EIRepositoryTest {
                 nonce = "nonce"
             )
 
+<<<<<<< HEAD
+=======
+            val ACME_AUTHORIZATION_RESPONSE = ACMEAuthorizationResponse(
+                nonce = RANDOM_NONCE.value,
+                location = RANDOM_URL,
+                response = RANDOM_BYTE_ARRAY,
+                challengeType = DtoAuthorizationChallengeType.DPoP
+            )
+
+            val AUTHORIZATIONS_RESULT = AuthorizationResult(
+                oidcAuthorization = OIDC_AUTHZ,
+                dpopAuthorization = DPOP_AUTHZ,
+                nonce = RANDOM_NONCE
+            )
+            const val NONCE_HEADER_KEY = "Replay-Nonce"
+            const val LOCATION_HEADER_KEY = "location"
+            val HEADERS = mapOf(NONCE_HEADER_KEY to RANDOM_NONCE.value, LOCATION_HEADER_KEY to RANDOM_URL)
+
+>>>>>>> 182e89c593 (fix(e2ei): pass challenges to usecase and add tests (WPB-6286) (#2434))
             val E2EI_TEAM_SETTINGS = E2EISettings(
                 true, RANDOM_URL, DateTimeUtil.currentInstant()
             )

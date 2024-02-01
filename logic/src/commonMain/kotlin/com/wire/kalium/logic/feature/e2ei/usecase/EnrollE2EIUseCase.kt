@@ -53,9 +53,15 @@ class EnrollE2EIUseCaseImpl internal constructor(
     override suspend fun initialEnrollment(): Either<CoreFailure, E2EIEnrollmentResult> {
         kaliumLogger.i("start E2EI Enrollment Initialization")
 
+<<<<<<< HEAD
         e2EIRepository.fetchTrustAnchors().onFailure {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.TrustAnchors, it).toEitherLeft()
         }
+=======
+        e2EIRepository.initFreshE2EIClient(isNewClient = isNewClientRegistration)
+
+        e2EIRepository.fetchAndSetTrustAnchors()
+>>>>>>> 182e89c593 (fix(e2ei): pass challenges to usecase and add tests (WPB-6286) (#2434))
 
         val acmeDirectories = e2EIRepository.loadACMEDirectories().getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeDirectories, it).toEitherLeft()
@@ -86,10 +92,22 @@ class EnrollE2EIUseCaseImpl internal constructor(
         val initializationResult = E2EIEnrollmentResult.Initialized(
             target = authzResponse.first.wireOidcChallenge.target,
             oAuthState = oAuthState,
+<<<<<<< HEAD
             oAuthClaims = getOAuthClaims(authzResponse.first.keyAuth, authzResponse.first.wireOidcChallenge.url),
             authz = authzResponse.first,
             lastNonce = authzResponse.second,
             orderLocation = newOrderResponse.third
+=======
+            oAuthClaims = getOAuthClaims(
+                oidcAuthorizations.keyAuth.toString(),
+                oidcAuthorizations.challenge.url
+            ),
+            dPopAuthorizations = dPopAuthorizations,
+            oidcAuthorizations = oidcAuthorizations,
+            lastNonce = prevNonce,
+            orderLocation = newOrderResponse.third,
+            isNewClientRegistration = isNewClientRegistration
+>>>>>>> 182e89c593 (fix(e2ei): pass challenges to usecase and add tests (WPB-6286) (#2434))
         )
 
         kaliumLogger.i("E2EI Enrollment Initialization Result: $initializationResult")
@@ -163,8 +181,6 @@ class EnrollE2EIUseCaseImpl internal constructor(
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.ConversationMigration, it).toEitherLeft()
         }
 
-        e2EIRepository.nukeE2EIClient()
-
         return Either.Right(E2EIEnrollmentResult.Finalized(certificateRequest.response.decodeToString()))
     }
 
@@ -191,7 +207,6 @@ class EnrollE2EIUseCaseImpl internal constructor(
 
 sealed interface E2EIEnrollmentResult {
     enum class E2EIStep {
-        TrustAnchors,
         AcmeNonce,
         AcmeDirectories,
         AcmeNewAccount,
@@ -209,7 +224,12 @@ sealed interface E2EIEnrollmentResult {
         Certificate
     }
 
+<<<<<<< HEAD
     class Initialized(
+=======
+    @Suppress("LongParameterList")
+    data class Initialized(
+>>>>>>> 182e89c593 (fix(e2ei): pass challenges to usecase and add tests (WPB-6286) (#2434))
         val target: String,
         val oAuthState: String?,
         val oAuthClaims: JsonObject,
