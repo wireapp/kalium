@@ -53,13 +53,11 @@ class HandleExternalRequestAction(val config: ActionType.HandleExternalRequest) 
         val monkeys = monkeyPool.randomMonkeysWithConnectionRequests(config.userCount)
         monkeys.forEach { (monkey, pendingConnections) ->
             if (config.shouldAccept) {
-                val otherUser =
-                    Monkey.external(pendingConnections.random().otherUser?.id ?: error("Cannot get other user id from connection request"))
+                val otherUser = Monkey.external(pendingConnections.random())
                 monkey.acceptRequest(otherUser)
                 monkey.sendDirectMessageTo(otherUser, config.greetMessage.ifBlank { DIRECT_MESSAGES.random() })
-                // TODO: event send
             } else {
-                monkey.rejectRequest(Monkey.external(pendingConnections.random().connection.qualifiedToId))
+                monkey.rejectRequest(Monkey.external(pendingConnections.random()))
             }
         }
     }

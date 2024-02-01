@@ -29,6 +29,7 @@ plugins {
 }
 val mainFunctionClassName = "com.wire.kalium.monkeys.MainKt"
 val replayerMainFunctionClassName = "com.wire.kalium.monkeys.ReplayerKt"
+val monkeyMainFunctionClassName = "com.wire.kalium.monkeys.MonkeyKt"
 
 application {
     mainClass.set(mainFunctionClassName)
@@ -40,27 +41,23 @@ java {
     }
 }
 
-val replayerJar by tasks.register("replayerJar", Jar::class) {
-    manifest.attributes["Main-Class"] = replayerMainFunctionClassName
-    archiveBaseName.set("replayer")
-    val dependencies = configurations
-        .runtimeClasspath
-        .get()
-        .map(::zipTree)
-    from(dependencies)
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
-    with(tasks.jar.get())
+val replayerScripts by tasks.register("replayerScripts", CreateStartScripts::class) {
+    mainClass.set(replayerMainFunctionClassName)
+    outputDir = tasks.startScripts.get().outputDir
+    classpath = tasks.startScripts.get().classpath
+    applicationName = "replayer"
 }
 
-tasks.jar {
-    dependsOn(replayerJar)
-    manifest.attributes["Main-Class"] = mainFunctionClassName
-    val dependencies = configurations
-        .runtimeClasspath
-        .get()
-        .map(::zipTree)
-    from(dependencies)
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+val serverScripts by tasks.register("serverScripts", CreateStartScripts::class) {
+    mainClass.set(monkeyMainFunctionClassName)
+    outputDir = tasks.startScripts.get().outputDir
+    classpath = tasks.startScripts.get().classpath
+    applicationName = "monkey-server"
+}
+
+tasks.startScripts {
+    dependsOn(replayerScripts)
+    dependsOn(serverScripts)
 }
 
 sourceSets {
@@ -86,8 +83,14 @@ sourceSets {
             implementation(libs.ktor.authClient)
             implementation(libs.ktor.server)
             implementation(libs.ktor.serverNetty)
+            implementation(libs.ktor.serverLogging)
+            implementation(libs.ktor.serverCallId)
+            implementation(libs.ktor.serverMetrics)
+            implementation(libs.ktor.serverContentNegotiation)
+            implementation(libs.ktor.statusPages)
             implementation(libs.okhttp.loggingInterceptor)
             implementation(libs.micrometer)
+            implementation(libs.slf4js)
 
             implementation(libs.faker)
 
