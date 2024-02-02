@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
@@ -30,7 +31,9 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrElse
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.logStructuredJson
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureHandler
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureResolution
 import com.wire.kalium.logic.wrapApiRequest
@@ -84,7 +87,16 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             .flatMapLeft { failure ->
                 if (failure is NetworkFailure.ServerMiscommunication && failure.kaliumException is KaliumException.InvalidRequestError) {
                     if (failure.kaliumException.isMlsStaleMessage()) {
-                        kaliumLogger.w("Epoch out of date for conversation ${conversation.id}, re-fetching and re-trying")
+                        kaliumLogger.logStructuredJson(
+                            level = KaliumLogLevel.WARN,
+                            leadingMessage = "Join-Establish MLS Group Stale",
+                            jsonStringKeyValues = mapOf(
+                                "conversationId" to conversation.id.toLogString(),
+                                "protocol" to ConversationOptions.Protocol.MLS,
+                                "protocolInfo" to conversation.protocol.toLogString(),
+                                "errorInfo" to failure
+                            )
+                        )
                         // Re-fetch current epoch and try again
                         if (conversation.type == Conversation.Type.ONE_ON_ONE) {
                             conversationRepository.getConversationMembers(conversation.id).flatMap {
@@ -125,28 +137,81 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                         groupInfo
                     ).flatMapLeft {
                         if (MLSMessageFailureHandler.handleFailure(it) is MLSMessageFailureResolution.Ignore) {
+                            kaliumLogger.logStructuredJson(
+                                level = KaliumLogLevel.WARN,
+                                leadingMessage = "Join Group external commit Ignored",
+                                jsonStringKeyValues = mapOf(
+                                    "conversationId" to conversation.id.toLogString(),
+                                    "conversationType" to type,
+                                    "protocol" to ConversationOptions.Protocol.MLS,
+                                    "protocolInfo" to conversation.protocol.toLogString(),
+                                    "errorInfo" to it
+                                )
+                            )
                             Either.Right(Unit)
                         } else {
+                            kaliumLogger.logStructuredJson(
+                                level = KaliumLogLevel.ERROR,
+                                leadingMessage = "Join Group external commit Failure",
+                                jsonStringKeyValues = mapOf(
+                                    "conversationId" to conversation.id.toLogString(),
+                                    "conversationType" to type,
+                                    "protocol" to ConversationOptions.Protocol.MLS,
+                                    "protocolInfo" to conversation.protocol.toLogString(),
+                                    "errorInfo" to it
+                                )
+                            )
                             Either.Left(it)
                         }
                     }
+                }.onSuccess {
+                    kaliumLogger.logStructuredJson(
+                        level = KaliumLogLevel.INFO,
+                        leadingMessage = "Join Group external commit Success",
+                        jsonStringKeyValues = mapOf(
+                            "conversationId" to conversation.id.toLogString(),
+                            "conversationType" to type,
+                            "protocol" to ConversationOptions.Protocol.MLS,
+                            "protocolInfo" to conversation.protocol.toLogString(),
+                        )
+                    )
                 }
             }
 
             type == Conversation.Type.SELF -> {
-                kaliumLogger.i("Establish group for ${conversation.type}")
                 mlsConversationRepository.establishMLSGroup(
                     protocol.groupId,
                     emptyList()
-                )
+                ).onSuccess {
+                    kaliumLogger.logStructuredJson(
+                        level = KaliumLogLevel.INFO,
+                        leadingMessage = "Establish Group",
+                        jsonStringKeyValues = mapOf(
+                            "conversationId" to conversation.id.toLogString(),
+                            "conversationType" to type,
+                            "protocol" to ConversationOptions.Protocol.MLS,
+                            "protocolInfo" to conversation.protocol.toLogString(),
+                        )
+                    )
+                }
             }
 
             type == Conversation.Type.ONE_ON_ONE -> {
-                kaliumLogger.i("Establish group for ${conversation.type}")
                 conversationRepository.getConversationMembers(conversation.id).flatMap { members ->
                     mlsConversationRepository.establishMLSGroup(
                         protocol.groupId,
                         members
+                    )
+                }.onSuccess {
+                    kaliumLogger.logStructuredJson(
+                        level = KaliumLogLevel.INFO,
+                        leadingMessage = "Establish Group",
+                        jsonStringKeyValues = mapOf(
+                            "conversationId" to conversation.id.toLogString(),
+                            "conversationType" to type,
+                            "protocol" to ConversationOptions.Protocol.MLS,
+                            "protocolInfo" to conversation.protocol.toLogString(),
+                        )
                     )
                 }
             }
