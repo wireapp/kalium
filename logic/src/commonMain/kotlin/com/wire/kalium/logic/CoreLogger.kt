@@ -52,21 +52,21 @@ object CoreLogger {
  *
  * Example:
  * ```
- * "leadingMessage": {map of key-value pairs represented as JSON}
+ * leadingMessage: {map of key-value pairs represented as JSON}
  * ```
- * @param severity the severity of the log message
+ * @param level the severity of the log message
  * @param leadingMessage the leading message useful for later grok parsing
- * @param flatJsonStringKeyValues the map of key-value pairs to be logged in a valid flat JSON format
+ * @param jsonStringKeyValues the map of key-value pairs to be logged in a valid JSON format
  */
 internal fun KaliumLogger.logStructuredJson(
-    severity: KaliumLogLevel,
+    level: KaliumLogLevel,
     leadingMessage: String,
-    flatJsonStringKeyValues: Map<String, Any>
+    jsonStringKeyValues: Map<String, Any>
 ) {
-    val logJson = flatJsonStringKeyValues.toJsonElement()
+    val logJson = jsonStringKeyValues.toJsonElement()
     val sanitizedLeadingMessage = if (leadingMessage.endsWith(":")) leadingMessage else "$leadingMessage:"
     val logMessage = "$sanitizedLeadingMessage $logJson"
-    when (severity) {
+    when (level) {
         KaliumLogLevel.DEBUG -> d(logMessage)
         KaliumLogLevel.INFO -> i(logMessage)
         KaliumLogLevel.WARN -> w(logMessage)
