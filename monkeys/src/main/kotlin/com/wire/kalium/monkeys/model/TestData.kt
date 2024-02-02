@@ -188,6 +188,7 @@ data class BackendConfig(
     @SerialName("authUser") val authUser: String,
     @SerialName("authPassword") val authPassword: String,
     @SerialName("userCount") val userCount: ULong,
+    @SerialName("2FAEnabled") val secondFactorAuth : Boolean = false,
     @SerialName("dumpUsers") val dumpUsers: Boolean = false,
     @SerialName("presetTeam") val presetTeam: TeamConfig? = null
 )

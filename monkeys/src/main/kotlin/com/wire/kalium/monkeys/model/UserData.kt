@@ -37,15 +37,20 @@ data class UserData(
         this.password,
         this.team.backend.domain,
         this.team.name,
-        "",
-        "",
+        this.team.backend.authUser,
+        this.team.backend.authPassword,
         1u,
+        this.team.backend.secondFactorAuthEnabled,
         presetTeam = TeamConfig(
             this.team.id,
             UserAccount(this.team.owner.email, this.team.owner.userId.value),
             users = listOf(UserAccount(this.email, this.userId.value))
         )
     )
+
+    suspend fun request2FA(): String? {
+        return if (this.team.backend.secondFactorAuthEnabled) this.team.request2FA(this.email, this.userId) else null
+    }
 }
 
 @Suppress("LongParameterList")
@@ -66,6 +71,8 @@ class Team(
 
     suspend fun usersFromTeam(): List<UserId> = this.client.teamParticipants(this)
 
+    internal suspend fun request2FA(email: String, userId: UserId) = this.client.request2FA(email, userId)
+
     override fun equals(other: Any?): Boolean {
         return other != null && other is Team && other.id == this.id
     }
@@ -84,10 +91,13 @@ data class Backend(
     val website: String,
     val title: String,
     val domain: String,
+    val secondFactorAuthEnabled: Boolean,
+    val authUser: String,
+    val authPassword: String,
 ) {
     companion object {
         fun fromConfig(config: BackendConfig): Backend = with(config) {
-            Backend(api, accounts, webSocket, blackList, teams, website, title, domain)
+            Backend(api, accounts, webSocket, blackList, teams, website, title, domain, secondFactorAuth, authUser, authPassword)
         }
     }
 }

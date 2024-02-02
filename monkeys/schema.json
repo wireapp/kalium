@@ -18,7 +18,7 @@
             ],
             "properties": {
                 "startCommand": {
-                    "description": "The command to start the process. For example kubectl to start a pod or docker to start a container. It can be templated with the following fields: teamName, email, userId, teamId, monkeyIndex, monkeyClientId",
+                    "description": "The command to start the process. For example kubectl to start a pod or docker to start a container. It can be templated with the following fields: teamName, email, userId, teamId, monkeyIndex, monkeyClientId, internalUser, internalPassword",
                     "type": "string",
                     "examples": [
                         "/opt/app/monkeys/bin/monkey-server -p 80{{monkeyIndex}}",
@@ -26,7 +26,7 @@
                     ]
                 },
                 "addressTemplate": {
-                    "description": "The template to resolve the address of the individual monkey. It can be templated with the following fields: teamName, email, userId, teamId, monkeyIndex, monkeyClientId",
+                    "description": "The template to resolve the address of the individual monkey. It can be templated with the following fields: teamName, email, userId, teamId, monkeyIndex, monkeyClientId, internalUser, internalPassword",
                     "type": "string",
                     "examples": [
                         "http://localhost:80{{monkeyIndex}}",
@@ -147,7 +147,8 @@
                     "domain",
                     "authUser",
                     "authPassword",
-                    "userCount"
+                    "userCount",
+                    "2FAEnabled"
                 ],
                 "properties": {
                     "api": {
@@ -197,6 +198,11 @@
                     "userCount": {
                         "description": "How many users should be created in this team",
                         "type": "integer"
+                    },
+                    "2FAEnabled": {
+                        "description": "Does this server required 2FA authentication?",
+                        "type": "boolean",
+                        "default": false
                     },
                     "dumpUsers": {
                         "description": "Should the application dump the users created into a file",
