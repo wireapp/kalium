@@ -120,6 +120,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                 }
             }
 
+    @Suppress("LongMethod")
     private suspend fun joinOrEstablishMLSGroup(conversation: Conversation): Either<CoreFailure, Unit> {
         val protocol = conversation.protocol
         val type = conversation.type
