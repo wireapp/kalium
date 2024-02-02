@@ -82,12 +82,10 @@ class UserDAOTest : BaseDatabaseTest() {
             assertEquals(user1, (awaitItem() as UserDetailsEntity).toSimpleEntity())
 
             // when
-
-            val userIsUpdated = db.userDAO.updateUser(updatedUser)
+            db.userDAO.updateUser(updatedUser)
 
             // then
             val newItem = (awaitItem() as UserDetailsEntity)
-            assertEquals(true, userIsUpdated)
             assertEquals(updatedUser.previewAssetId, newItem.previewAssetId)
             assertEquals(updatedUser.completeAssetId, newItem.completeAssetId)
             cancelAndIgnoreRemainingEvents()
