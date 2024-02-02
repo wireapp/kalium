@@ -61,7 +61,7 @@ INSERT OR IGNORE INTO User(qualified_id, name, handle, email, phone, accent_id, 
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 updateUser:
-UPDATE User
+UPDATE OR FAIL User
 SET
 name = coalesce(:name, name),
 handle = coalesce(:handle, handle),
@@ -196,9 +196,6 @@ UPDATE User SET handle = ? WHERE qualified_id = ?;
 
 updateUserAsset:
 UPDATE User SET complete_asset_id = ?, preview_asset_id = ? WHERE complete_asset_id = ?;
-
-selectChanges:
-SELECT changes();
 
 updateUserAvailabilityStatus:
 UPDATE User SET user_availability_status = ? WHERE qualified_id = ?;
