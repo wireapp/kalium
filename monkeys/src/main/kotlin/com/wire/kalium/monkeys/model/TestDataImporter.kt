@@ -173,7 +173,7 @@ private suspend fun HttpClient.createTeam(backendConfig: BackendConfig): Team {
 private suspend fun setUserHandle(backendConfig: BackendConfig, userData: UserData) {
     lateinit var token: BearerTokens
     val httpClient = httpClient(backendConfig) { token }
-    val secondFactor = httpClient.request2FA(userData.email, userData.userId)
+    val secondFactor = if (backendConfig.secondFactorAuth) httpClient.request2FA(userData.email, userData.userId) else null
     httpClient.login(userData.email, userData.password, secondFactor) { accessToken ->
         token = BearerTokens(accessToken, "")
     }

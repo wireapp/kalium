@@ -18,7 +18,7 @@
             ],
             "properties": {
                 "startCommand": {
-                    "description": "The command to start the process. For example kubectl to start a pod or docker to start a container. It can be templated with the following fields: teamName, email, userId, teamId, monkeyIndex, monkeyClientId, internalUser, internalPassword",
+                    "description": "The command to start the process. For example kubectl to start a pod or docker to start a container. It can be templated with the following fields: teamName, email, userId, teamId, monkeyIndex, monkeyClientId",
                     "type": "string",
                     "examples": [
                         "/opt/app/monkeys/bin/monkey-server -p 80{{monkeyIndex}}",
@@ -26,7 +26,7 @@
                     ]
                 },
                 "addressTemplate": {
-                    "description": "The template to resolve the address of the individual monkey. It can be templated with the following fields: teamName, email, userId, teamId, monkeyIndex, monkeyClientId, internalUser, internalPassword",
+                    "description": "The template to resolve the address of the individual monkey. It can be templated with the following fields: teamName, email, userId, teamId, monkeyIndex, monkeyClientId",
                     "type": "string",
                     "examples": [
                         "http://localhost:80{{monkeyIndex}}",
@@ -147,8 +147,7 @@
                     "domain",
                     "authUser",
                     "authPassword",
-                    "userCount",
-                    "2FAEnabled"
+                    "userCount"
                 ],
                 "properties": {
                     "api": {
@@ -200,7 +199,7 @@
                         "type": "integer"
                     },
                     "2FAEnabled": {
-                        "description": "Does this server required 2FA authentication?",
+                        "description": "Does this server require 2FA authentication?",
                         "type": "boolean",
                         "default": false
                     },
