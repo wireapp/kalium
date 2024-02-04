@@ -335,6 +335,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.network.ApiMigrationManager
@@ -1448,6 +1449,7 @@ class UserSessionScope internal constructor(
             clientRemoteRepository = clientRemoteRepository,
             userConfigRepository = userConfigRepository,
             selfClientIdProvider = clientIdProvider,
+            incrementalSyncRepository = incrementalSyncRepository
         )
 
     private val legalHoldHandler = LegalHoldHandlerImpl(
