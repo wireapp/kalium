@@ -51,10 +51,14 @@ val FEDERATION_REGEX = """[^@.]+@[^@.]+\.[^@]+""".toRegex()
 typealias ConversationId = QualifiedID
 
 @JvmInline
-value class GroupID(val value: String)
+value class GroupID(val value: String) {
+    fun toLogString() = value.obfuscateId()
+}
 
 @JvmInline
-value class SubconversationId(val value: String)
+value class SubconversationId(val value: String) {
+    fun toLogString() = value.obfuscateId()
+}
 
 data class QualifiedClientID(
     val clientId: ClientId,
