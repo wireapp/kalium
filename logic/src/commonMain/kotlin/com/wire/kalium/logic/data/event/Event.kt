@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.event
 
 import com.wire.kalium.cryptography.utils.EncryptedData
+import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
@@ -43,6 +44,7 @@ import com.wire.kalium.logic.data.legalhold.LastPreKey
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.logStructuredJson
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.serialization.toJsonElement
@@ -815,6 +817,10 @@ internal enum class EventLoggingStatus {
     SKIPPED
 }
 
+/**
+ * Logs event processing.
+ * Underlying implementation detail is using the common [KaliumLogger.logStructuredJson] to log structured JSON.
+ */
 internal fun KaliumLogger.logEventProcessing(
     status: EventLoggingStatus,
     event: Event,
@@ -826,29 +832,25 @@ internal fun KaliumLogger.logEventProcessing(
         EventLoggingStatus.SUCCESS -> {
             val finalMap = logMap.toMutableMap()
             finalMap["outcome"] = "success"
-            val logJson = finalMap.toJsonElement()
-            i("Success handling event: $logJson")
+            logStructuredJson(KaliumLogLevel.INFO, "Success handling event", finalMap)
         }
 
         EventLoggingStatus.FAILURE -> {
             val finalMap = logMap.toMutableMap()
             finalMap["outcome"] = "failure"
-            val logJson = finalMap.toJsonElement()
-            e("Failure handling event: $logJson")
+            logStructuredJson(KaliumLogLevel.ERROR, "Failure handling event", finalMap)
         }
 
         EventLoggingStatus.SKIPPED -> {
             val finalMap = logMap.toMutableMap()
             finalMap["outcome"] = "skipped"
-            val logJson = finalMap.toJsonElement()
-            w("Skipped handling event: $logJson")
+            logStructuredJson(KaliumLogLevel.WARN, "Skipped handling event", finalMap)
         }
 
         else -> {
             val finalMap = logMap.toMutableMap()
             finalMap["outcome"] = "unknown"
-            val logJson = finalMap.toJsonElement()
-            w("Unknown outcome of event handling: $logJson")
+            logStructuredJson(KaliumLogLevel.WARN, "Unknown outcome of event handling", finalMap)
         }
     }
 }
