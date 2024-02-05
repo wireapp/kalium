@@ -49,6 +49,7 @@ internal object NetworkErrorLabel {
     const val ACCESS_DENIED = "access-denied"
     const val WRONG_CONVERSATION_PASSWORD = "invalid-conversation-password"
     const val NOT_FOUND = "not-found"
+    const val MISSING_LEGALHOLD_CONSENT = "missing-legalhold-consent"
 
     // Federation
     const val FEDERATION_FAILURE = "federation-remote-error"

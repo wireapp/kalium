@@ -41,6 +41,7 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_EMAIL
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_HANDLE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.KEY_EXISTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_AUTH
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_LEGALHOLD_CONSENT
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_CLIENT_MISMATCH
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_COMMIT_MISSING_REFERENCES
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_MISSING_GROUP_INFO
@@ -231,3 +232,4 @@ val KaliumException.InvalidRequestError.authenticationCodeFailure: Authenticatio
 
 fun KaliumException.FederationError.isFederationDenied() = errorResponse.label == FEDERATION_DENIED
 fun KaliumException.FederationError.isFederationNotEnabled() = errorResponse.label == FEDERATION_NOT_ENABLED
+fun KaliumException.InvalidRequestError.isMissingLegalHoldConsent(): Boolean = errorResponse.label == MISSING_LEGALHOLD_CONSENT

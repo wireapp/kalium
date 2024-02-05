@@ -34,7 +34,7 @@ open class AddUserToConversationAction(val config: ActionType.AddUsersToConversa
             this.sender(
                 Event(
                     monkeyConversation.creator.internalId,
-                    EventType.AddUsersToConversation(monkeyConversation.conversation.id, participants.map { it.internalId })
+                    EventType.AddUsersToConversation(monkeyConversation.conversationId, participants.map { it.internalId })
                 )
             )
         }
