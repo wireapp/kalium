@@ -42,7 +42,7 @@ class FederatedIdMapperImpl internal constructor(
     private val sessionRepository: SessionRepository,
 ) : FederatedIdMapper {
 
-    private fun isFederationEnabled() = sessionRepository.isFederated(selfUserId).fold(
+    private suspend fun isFederationEnabled() = sessionRepository.isFederated(selfUserId).fold(
         { false },
         { it }
     )

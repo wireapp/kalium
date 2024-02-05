@@ -73,7 +73,7 @@ interface SessionRepository {
     suspend fun ssoId(userId: UserId): Either<StorageFailure, SsoIdEntity?>
     suspend fun updatePersistentWebSocketStatus(userId: UserId, isPersistentWebSocketEnabled: Boolean): Either<StorageFailure, Unit>
     suspend fun updateSsoIdAndScimInfo(userId: UserId, ssoId: SsoId?, managedBy: ManagedByDTO?): Either<StorageFailure, Unit>
-    fun isFederated(userId: UserId): Either<StorageFailure, Boolean>
+    suspend fun isFederated(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun getAllValidAccountPersistentWebSocketStatus(): Either<StorageFailure, Flow<List<PersistentWebSocketStatus>>>
     suspend fun persistentWebSocketStatus(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun cookieLabel(userId: UserId): Either<StorageFailure, String?>
@@ -195,7 +195,7 @@ internal class SessionDataSource internal constructor(
             accountsDAO.updateSsoIdAndScimInfo(userId.toDao(), idMapper.toSsoIdEntity(ssoId), managedBy?.toDao())
         }
 
-    override fun isFederated(userId: UserId): Either<StorageFailure, Boolean> = wrapStorageRequest {
+    override suspend fun isFederated(userId: UserId): Either<StorageFailure, Boolean> = wrapStorageRequest {
         accountsDAO.isFederated(userId.toDao())
     }
 
