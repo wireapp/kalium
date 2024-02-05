@@ -18,8 +18,10 @@
 package com.wire.kalium.logic.feature.e2ei
 
 import com.wire.kalium.cryptography.CryptoCertificateStatus
+import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.MLSFailure
+import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificateStatusResult
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificateStatusUseCaseImpl
@@ -43,7 +45,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
             withUserIdentity(Either.Left(MLSFailure.WrongEpoch))
         }
 
-        val result = getUserE2eiCertificateStatus(userId)
+        val result = getUserE2eiCertificateStatus(USER_ID)
 
         assertEquals(GetUserE2eiCertificateStatusResult.Failure.NotActivated, result)
     }
@@ -54,7 +56,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
             withUserIdentity(Either.Right(listOf()))
         }
 
-        val result = getUserE2eiCertificateStatus(userId)
+        val result = getUserE2eiCertificateStatus(USER_ID)
 
         assertEquals(GetUserE2eiCertificateStatusResult.Failure.NotActivated, result)
     }
@@ -65,7 +67,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
             withUserIdentity(Either.Right(listOf(WIRE_IDENTITY, WIRE_IDENTITY.copy(status = CryptoCertificateStatus.EXPIRED))))
         }
 
-        val result = getUserE2eiCertificateStatus(userId)
+        val result = getUserE2eiCertificateStatus(USER_ID)
 
         assertTrue { result is GetUserE2eiCertificateStatusResult.Success }
         assertEquals(CertificateStatus.EXPIRED, (result as GetUserE2eiCertificateStatusResult.Success).status)
@@ -77,7 +79,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
             withUserIdentity(Either.Right(listOf(WIRE_IDENTITY, WIRE_IDENTITY.copy(status = CryptoCertificateStatus.REVOKED))))
         }
 
-        val result = getUserE2eiCertificateStatus(userId)
+        val result = getUserE2eiCertificateStatus(USER_ID)
 
         assertTrue { result is GetUserE2eiCertificateStatusResult.Success }
         assertEquals(CertificateStatus.REVOKED, (result as GetUserE2eiCertificateStatusResult.Success).status)
@@ -96,7 +98,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
             )
         }
 
-        val result = getUserE2eiCertificateStatus(userId)
+        val result = getUserE2eiCertificateStatus(USER_ID)
 
         assertTrue { result is GetUserE2eiCertificateStatusResult.Success }
         assertEquals(CertificateStatus.REVOKED, (result as GetUserE2eiCertificateStatusResult.Success).status)
@@ -122,9 +124,18 @@ class GetUserE2eiCertificateStatusUseCaseTest {
     private companion object {
         fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
-        private val userId = UserId("value", "domain")
+        private val USER_ID = UserId("value", "domain")
+        private val CRYPTO_QUALIFIED_CLIENT_ID = CryptoQualifiedClientId("clientId", USER_ID.toCrypto())
         private val WIRE_IDENTITY =
-            WireIdentity("id", "user_handle", "User Test", "domain.com", "certificate", CryptoCertificateStatus.VALID)
+            WireIdentity(
+                CRYPTO_QUALIFIED_CLIENT_ID,
+                "user_handle",
+                "User Test",
+                "domain.com",
+                "certificate",
+                CryptoCertificateStatus.VALID,
+                "thumbprint"
+            )
         private val E2EI_CERTIFICATE =
             E2eiCertificate(issuer = "issue", status = CertificateStatus.VALID, serialNumber = "number", certificateDetail = "details")
     }

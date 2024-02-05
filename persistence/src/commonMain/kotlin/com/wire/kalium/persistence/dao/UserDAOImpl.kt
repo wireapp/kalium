@@ -193,16 +193,19 @@ class UserDAOImpl internal constructor(
     }
 
     override suspend fun updateUser(update: PartialUserEntity) = withContext(queriesContext) {
-        userQueries.updateUser(
-            name = update.name,
-            handle = update.handle,
-            email = update.email,
-            accent_id = update.accentId?.toLong(),
-            preview_asset_id = update.previewAssetId,
-            complete_asset_id = update.completeAssetId,
-            supported_protocols = update.supportedProtocols,
-            update.id
-        ).executeAsOne() > 0
+        userQueries.transactionWithResult {
+            userQueries.updateUser(
+                name = update.name,
+                handle = update.handle,
+                email = update.email,
+                accent_id = update.accentId?.toLong(),
+                preview_asset_id = update.previewAssetId,
+                complete_asset_id = update.completeAssetId,
+                supported_protocols = update.supportedProtocols,
+                update.id
+            )
+            userQueries.selectChanges().executeAsOne() > 0
+        }
     }
 
     override suspend fun updateUser(users: List<PartialUserEntity>) = withContext(queriesContext) {

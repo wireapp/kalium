@@ -452,7 +452,7 @@ class ConversationGroupRepositoryTest {
             .withProtocolInfoById(MLS_PROTOCOL_INFO)
             .withAddMemberAPISucceedChanged()
             .withSuccessfulAddMemberToMLSGroup()
-            .withInsertAddedAndFailedSystemMessageSuccess()
+            .withInsertFailedToAddSystemMessageSuccess()
             .arrange()
 
         conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
@@ -1201,7 +1201,7 @@ class ConversationGroupRepositoryTest {
                 KEY_PACKAGES_NOT_AVAILABLE_FAILURE,
                 Either.Right(Unit)
             )
-            .withInsertAddedAndFailedSystemMessageSuccess()
+            .withInsertFailedToAddSystemMessageSuccess()
             .arrange()
 
         // when
@@ -1223,8 +1223,8 @@ class ConversationGroupRepositoryTest {
             }).wasInvoked(exactly = once)
 
         verify(arrangement.newGroupConversationSystemMessagesCreator)
-            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
-            .with(anything(), matching { it.size == 1 }, matching { it.size == 1 })
+            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+            .with(anything(), matching { it.size == 1 })
             .wasInvoked(exactly = once)
     }
 
@@ -1241,7 +1241,7 @@ class ConversationGroupRepositoryTest {
                 buildCommitBundleFederatedFailure("otherDomain"),
                 Either.Right(Unit)
             )
-            .withInsertAddedAndFailedSystemMessageSuccess()
+            .withInsertFailedToAddSystemMessageSuccess()
             .arrange()
 
         // when
@@ -1263,8 +1263,8 @@ class ConversationGroupRepositoryTest {
             }).wasInvoked(exactly = once)
 
         verify(arrangement.newGroupConversationSystemMessagesCreator)
-            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
-            .with(anything(), matching { it.size == 1 }, matching { it.size == 1 })
+            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+            .with(anything(), matching { it.size == 1 })
             .wasInvoked(exactly = once)
     }
 

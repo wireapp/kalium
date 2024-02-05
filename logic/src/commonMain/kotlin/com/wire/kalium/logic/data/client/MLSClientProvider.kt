@@ -59,7 +59,6 @@ class MLSClientProviderImpl(
     override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> = withContext(dispatchers.io) {
         val currentClientId = clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
         val cryptoUserId = CryptoUserID(value = userId.value, domain = userId.domain)
-
         return@withContext mlsClient?.let {
             Either.Right(it)
         } ?: run {

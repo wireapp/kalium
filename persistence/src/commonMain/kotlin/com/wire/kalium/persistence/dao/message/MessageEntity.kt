@@ -207,7 +207,37 @@ sealed interface MessageEntity {
     }
 
     enum class MemberChangeType {
-        ADDED, REMOVED, CREATION_ADDED, FAILED_TO_ADD, FEDERATION_REMOVED, REMOVED_FROM_TEAM;
+        /**
+         * A member(s) was added to the conversation.
+         */
+        ADDED,
+
+        /**
+         * A member(s) was removed from the conversation.
+         */
+        REMOVED,
+
+        /**
+         * A member(s) was added to the conversation while the conversation was being created.
+         * Note: This is only valid for the creator of the conversation, local-only.
+         */
+        CREATION_ADDED,
+
+        /**
+         * A member(s) was not added to the conversation.
+         * Note: This is only valid for the creator of the conversation, local-only.
+         */
+        FAILED_TO_ADD,
+
+        /**
+         * Member(s) removed from the conversation, due to some backend stopped to federate between them, or us.
+         */
+        FEDERATION_REMOVED,
+
+        /**
+         * A member(s) was removed from the team.
+         */
+        REMOVED_FROM_TEAM;
     }
 
     enum class FederationType {
@@ -343,6 +373,7 @@ sealed class MessageEntityContent {
     data object MissedCall : System()
     data object CryptoSessionReset : System()
     data class ConversationRenamed(val conversationName: String) : System()
+
     @Deprecated("not maintained and will be deleted")
     data class TeamMemberRemoved(val userName: String) : System()
     data class NewConversationReceiptMode(val receiptMode: Boolean) : System()
@@ -423,6 +454,7 @@ sealed class MessagePreviewEntityContent {
         val otherUserIdList: List<UserIDEntity>,
         val isContainSelfUserId: Boolean,
     ) : MessagePreviewEntityContent()
+
     data class TeamMembersRemoved(
         val senderName: String?,
         val otherUserIdList: List<UserIDEntity>,

@@ -429,9 +429,25 @@ internal class MessageDAOImpl internal constructor(
         }
     }
 
+    override suspend fun getEphemeralMessagedMarkedForEndDeletion(): List<MessageEntity> {
+        return withContext(coroutineContext) {
+            queries.selectAllEphemeralMessagesMarkedForEndDeletion(mapper::toEntityMessageFromView).executeAsList()
+        }
+    }
+
     override suspend fun updateSelfDeletionStartDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionStartDate: Instant) {
         return withContext(coroutineContext) {
             queries.markSelfDeletionStartDate(selfDeletionStartDate, conversationId, messageId)
+        }
+    }
+
+    override suspend fun updateSelfDeletionEndDate(
+        conversationId: QualifiedIDEntity,
+        messageId: String,
+        selfDeletionEndDate: Instant
+    ) {
+        return withContext(coroutineContext) {
+            queries.markSelfDeletionEndDate(selfDeletionEndDate, conversationId, messageId)
         }
     }
 

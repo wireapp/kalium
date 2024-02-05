@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -44,6 +45,7 @@ import com.wire.kalium.network.api.base.model.UserProfileDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConnectionDAO
+import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -284,18 +286,26 @@ class ConnectionRepositoryTest {
     @Test
     fun givenConversationId_WhenDeletingConnection_thenDeleteConnectionDataAndConversationShouldBeTriggered() = runTest {
         // given
-        val conversationId = com.wire.kalium.logic.data.id.QualifiedID("conversation_id", "domain_id")
+        val conversationId = TestConversation.ID
         val (arrangement, connectionRepository) = Arrangement().arrange()
         arrangement.withDeleteConnectionDataAndConversation(conversationId.toDao())
+        val connection = TestConnection.CONNECTION.copy(
+            conversationId = conversationId.value,
+            qualifiedConversationId = conversationId,
+        )
 
         // when
-        val result = connectionRepository.deleteConnection(conversationId)
+        val result = connectionRepository.deleteConnection(connection)
 
         // then
         result.shouldSucceed()
         verify(arrangement.connectionDAO)
             .suspendFunction(arrangement.connectionDAO::deleteConnectionDataAndConversation)
             .with(eq(conversationId.toDao()))
+            .wasInvoked(once)
+        verify(arrangement.userDAO)
+            .suspendFunction(arrangement.userDAO::upsertConnectionStatuses)
+            .with(eq(mapOf(connection.qualifiedToId.toDao() to ConnectionEntity.State.CANCELLED)))
             .wasInvoked(once)
     }
 

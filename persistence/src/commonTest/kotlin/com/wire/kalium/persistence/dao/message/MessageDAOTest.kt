@@ -2007,6 +2007,53 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertEquals(message0.date, result[0].date)
     }
 
+    @Test
+    fun givenMessagesAreInserted_whenGettingEphemeraMessagesForEndDeletion_thenOnlyRelevantMessagesAreReturned() = runTest {
+        insertInitialData()
+
+        val expectedMessages = listOf(
+            newRegularMessageEntity(
+                "1",
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.SENT,
+                senderName = userEntity1.name!!,
+                selfDeletionStartDate = Instant.DISTANT_PAST,
+                expireAfterMs = 1.seconds.inWholeSeconds
+            )
+        )
+
+        val allMessages = expectedMessages + listOf(
+            newRegularMessageEntity(
+                "2",
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.SENT,
+                senderName = userEntity1.name!!
+            ),
+            newRegularMessageEntity(
+                "3",
+                conversationId = conversationEntity2.id,
+                senderUserId = userEntity2.id,
+                status = MessageEntity.Status.SENT,
+                senderName = userEntity2.name!!
+            )
+        )
+
+        messageDAO.insertOrIgnoreMessages(allMessages)
+
+        messageDAO.updateSelfDeletionEndDate(
+            conversationId = conversationEntity1.id,
+            messageId = "1",
+            selfDeletionEndDate = Instant.DISTANT_PAST.plus(1.seconds)
+        )
+
+        val result = messageDAO.getEphemeralMessagedMarkedForEndDeletion()
+
+        assertEquals(result.size, 1)
+        assertEquals(result.first().id, "1")
+    }
+
     private suspend fun insertInitialData() {
         userDAO.upsertUsers(listOf(userEntity1, userEntity2))
         conversationDAO.insertConversation(

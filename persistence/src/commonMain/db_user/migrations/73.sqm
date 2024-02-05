@@ -1,4 +1,8 @@
-import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import kotlinx.datetime.Instant;
+
+ALTER TABLE Message ADD COLUMN self_deletion_end_date INTEGER AS Instant DEFAULT(NULL);
+
+CREATE INDEX message_self_deletion_end_date ON Message(self_deletion_end_date);
 
 DROP VIEW IF EXISTS MessageDetailsView;
 
@@ -16,7 +20,8 @@ Message.visibility AS visibility,
 Message.expects_read_confirmation AS expectsReadConfirmation,
 Message.expire_after_millis AS expireAfterMillis,
 Message.self_deletion_start_date AS selfDeletionStartDate,
-IFNULL ((SELECT COUNT (*) FROM Receipt WHERE message_id = Message.id AND type = "READ"), 0) AS readCount,
+Message.self_deletion_end_date AS selfDeletionEndDate,
+IFNULL ((SELECT COUNT (*) FROM Receipt WHERE message_id = Message.id AND type = 'READ'), 0) AS readCount,
 User.name AS senderName,
 User.handle AS senderHandle,
 User.email AS senderEmail,
@@ -30,10 +35,6 @@ User.user_availability_status AS senderAvailabilityStatus,
 User.user_type AS senderUserType,
 User.bot_service AS senderBotService,
 User.deleted AS senderIsDeleted,
-User.expires_at AS senderExpiresAt,
-User.defederated AS senderDefederated,
-User.supported_protocols AS senderSupportedProtocols,
-User.active_one_on_one_conversation_id AS senderActiveOneOnOneConversationId,
 (Message.sender_user_id == SelfUser.id) AS isSelfMessage,
 TextContent.text_body AS text,
 TextContent.is_quoting_self AS isQuotingSelfUser,

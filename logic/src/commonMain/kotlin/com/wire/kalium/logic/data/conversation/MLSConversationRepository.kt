@@ -15,10 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+@file:Suppress("konsist.repositoriesShouldNotAccessFeaturePackageClasses")
 
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.cryptography.CommitBundle
+import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.WireIdentity
@@ -27,6 +29,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.Event.Conversation.MLSWelcome
 import com.wire.kalium.logic.data.id.ConversationId
@@ -37,11 +40,13 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapper
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
@@ -65,6 +70,7 @@ import com.wire.kalium.network.exceptions.isMlsCommitMissingReferences
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.message.LocalId
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -91,7 +97,15 @@ data class DecryptedMessageBundle(
     val identity: E2EIdentity?
 )
 
-data class E2EIdentity(val clientId: String, val handle: String, val displayName: String, val domain: String)
+data class E2EIdentity(
+    val clientId: CryptoQualifiedClientId,
+    val handle: String,
+    val displayName: String,
+    val domain: String,
+    val certificate: String,
+    val status: CryptoCertificateStatus,
+    val thumbprint: String
+)
 
 @Suppress("TooManyFunctions", "LongParameterList")
 interface MLSConversationRepository {
@@ -111,12 +125,11 @@ interface MLSConversationRepository {
     suspend fun commitPendingProposals(groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun setProposalTimer(timer: ProposalTimer, inMemory: Boolean = false)
     suspend fun observeProposalTimers(): Flow<ProposalTimer>
-    suspend fun observeEpochChanges(): Flow<GroupID>
-    suspend fun getConversationVerificationStatus(groupID: GroupID): Either<CoreFailure, Conversation.VerificationStatus>
     suspend fun rotateKeysAndMigrateConversations(
         clientId: ClientId,
         e2eiClient: E2EIClient,
-        certificateChain: String
+        certificateChain: String,
+        isNewClient: Boolean = false
     ): Either<CoreFailure, Unit>
 
     suspend fun getClientIdentity(clientId: ClientId): Either<CoreFailure, WireIdentity>
@@ -171,6 +184,9 @@ internal class MLSConversationDataSource(
     private val commitBundleEventReceiver: CommitBundleEventReceiver,
     private val epochsFlow: MutableSharedFlow<GroupID>,
     private val proposalTimersFlow: MutableSharedFlow<ProposalTimer>,
+    private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
+    private val checkRevocationList: CheckRevocationListUseCase,
+    private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
     private val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper(),
@@ -209,26 +225,35 @@ internal class MLSConversationDataSource(
                         kaliumLogger.d("Epoch changed for groupID = ${groupID.value.obfuscateId()}")
                         epochsFlow.emit(groupID)
                     }
-                    messages.map { it.toModel(groupID) }
+                    messages.map {
+                        it.crlNewDistributionPoints?.let { newDistributionPoints ->
+                            checkRevocationList(newDistributionPoints)
+                        }
+                        it.toModel(groupID)
+                    }
                 }
             }
         }
     }
 
+    // Todo: Used only in test, should we remove it ?
     override suspend fun establishMLSGroupFromWelcome(welcomeEvent: MLSWelcome): Either<CoreFailure, Unit> =
         mlsClientProvider.getMLSClient().flatMap { client ->
             wrapMLSRequest { client.processWelcomeMessage(welcomeEvent.message.decodeBase64Bytes()) }
-                .flatMap { groupID ->
-                    kaliumLogger.i("Created conversation from welcome message (groupID = $groupID)")
+                .flatMap { welcomeBundle ->
+                    kaliumLogger.i("Created conversation from welcome message (groupID = ${welcomeBundle.groupId})")
 
                     wrapStorageRequest {
-                        if (conversationDAO.observeConversationByGroupID(groupID).first() != null) {
+                        if (conversationDAO.observeConversationByGroupID(welcomeBundle.groupId).first() != null) {
                             // Welcome arrived after the conversation create event, updating existing conversation.
                             conversationDAO.updateConversationGroupState(
                                 ConversationEntity.GroupState.ESTABLISHED,
-                                groupID
+                                welcomeBundle.groupId
                             )
-                            kaliumLogger.i("Updated conversation from welcome message (groupID = $groupID)")
+                            kaliumLogger.i("Updated conversation from welcome message (groupID = ${welcomeBundle.groupId})")
+                            welcomeBundle.crlNewDistributionPoints?.let { newDistributionPoints ->
+                                checkRevocationList(newDistributionPoints)
+                            }
                         }
                     }
                 }
@@ -271,6 +296,9 @@ internal class MLSConversationDataSource(
             wrapMLSRequest {
                 mlsClient.joinByExternalCommit(groupInfo)
             }.flatMap { commitBundle ->
+                commitBundle.crlNewDistributionPoints?.let {
+                    checkRevocationList(it)
+                }
                 sendCommitBundleForExternalCommit(groupID, commitBundle)
             }.onSuccess {
                 conversationDAO.updateConversationGroupState(
@@ -349,7 +377,7 @@ internal class MLSConversationDataSource(
 
     private suspend fun processCommitBundleEvents(events: List<EventContentDTO>) {
         events.forEach { eventContentDTO ->
-            val event = MapperProvider.eventMapper(selfUserId).fromEventContentDTO("", eventContentDTO, true, false)
+            val event = MapperProvider.eventMapper(selfUserId).fromEventContentDTO(LocalId.generate(), eventContentDTO, true, false)
             if (event is Event.Conversation) {
                 commitBundleEventReceiver.onEvent(event)
             }
@@ -368,6 +396,9 @@ internal class MLSConversationDataSource(
                 wrapMLSRequest {
                     mlsClient.commitPendingProposals(idMapper.toCryptoModel(groupID))
                 }.flatMap { commitBundle ->
+                    commitBundle?.crlNewDistributionPoints?.let {
+                        checkRevocationList(it)
+                    }
                     commitBundle?.let { sendCommitBundle(groupID, it) } ?: Either.Right(Unit)
                 }.flatMap {
                     wrapStorageRequest {
@@ -389,10 +420,6 @@ internal class MLSConversationDataSource(
             proposalTimersFlow,
             conversationDAO.getProposalTimers().map { it.map(conversationMapper::fromDaoModel) }.flatten()
         )
-
-    override suspend fun observeEpochChanges(): Flow<GroupID> {
-        return epochsFlow
-    }
 
     override suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =
         internalAddMemberToMLSGroup(groupID, userIdList, retryOnStaleMessage = true)
@@ -418,6 +445,9 @@ internal class MLSConversationDataSource(
                                 mlsClient.addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)
                             }
                         }.flatMap { commitBundle ->
+                            commitBundle?.crlNewDistributionPoints?.let {
+                                checkRevocationList(it)
+                            }
                             commitBundle?.let {
                                 sendCommitBundle(groupID, it)
                             } ?: Either.Right(Unit)
@@ -520,26 +550,27 @@ internal class MLSConversationDataSource(
         }
     }
 
-    override suspend fun getConversationVerificationStatus(groupID: GroupID): Either<CoreFailure, Conversation.VerificationStatus> =
-        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            wrapMLSRequest { mlsClient.isGroupVerified(idMapper.toCryptoModel(groupID)) }
-        }.map { it.toModel() }
-
     override suspend fun rotateKeysAndMigrateConversations(
         clientId: ClientId,
         e2eiClient: E2EIClient,
-        certificateChain: String
-    ) = mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+        certificateChain: String,
+        isNewClient: Boolean
+    ) = mlsClientProvider.getMLSClient(clientId).flatMap { mlsClient ->
         wrapMLSRequest {
-            mlsClient.e2eiRotateAll(e2eiClient, certificateChain, 10U)
+            mlsClient.e2eiRotateAll(e2eiClient, certificateChain, keyPackageLimitsProvider.refillAmount().toUInt())
         }.map { rotateBundle ->
-            // todo: store keypackages to drop, later drop them again
-            kaliumLogger.w("upload new keypackages and drop old ones")
-            keyPackageRepository.replaceKeyPackages(clientId, rotateBundle.newKeyPackages).flatMapLeft {
-                return Either.Left(it)
+            rotateBundle.crlNewDistributionPoints?.let {
+                checkRevocationList(it)
+            }
+            if (!isNewClient) {
+                kaliumLogger.w("enrollment for existing client: upload new keypackages and drop old ones")
+                keyPackageRepository.replaceKeyPackages(clientId, rotateBundle.newKeyPackages).flatMapLeft {
+                    return Either.Left(it)
+                }
             }
 
             kaliumLogger.w("send migration commits after key rotations")
+            kaliumLogger.w("rotate bundles: ${rotateBundle.commits.size}")
             rotateBundle.commits.map {
                 sendCommitBundle(GroupID(it.key), it.value)
             }.foldToEitherWhileRight(Unit) { value, _ -> value }.fold({ return Either.Left(it) }, { })
@@ -553,19 +584,26 @@ internal class MLSConversationDataSource(
                     mlsClient.getDeviceIdentities(
                         it.mlsGroupId,
                         listOf(CryptoQualifiedClientId(it.clientId, it.userId.toModel().toCrypto()))
-                    ).first() // todo: ask if it's possible that's a client has more than one identity?
+                    ).first()
                 }
             }
         }
 
     override suspend fun getUserIdentity(userId: UserId) =
-        wrapStorageRequest { conversationDAO.getMLSGroupIdByUserId(userId.toDao()) }.flatMap { mlsGroupId ->
+        wrapStorageRequest {
+            if (userId == selfUserId) {
+                val selfConversationId = conversationDAO.getSelfConversationId(ConversationEntity.Protocol.MLS)
+                conversationDAO.getMLSGroupIdByConversationId(selfConversationId!!)
+            } else {
+                conversationDAO.getMLSGroupIdByUserId(userId.toDao())
+            }
+        }.flatMap { mlsGroupId ->
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
                     mlsClient.getUserIdentities(
                         mlsGroupId,
                         listOf(userId.toCrypto())
-                    )[userId.value]!!
+                    )[userId.value] ?: emptyList()
                 }
             }
         }
@@ -575,7 +613,7 @@ internal class MLSConversationDataSource(
         userIds: List<UserId>
     ): Either<CoreFailure, Map<UserId, List<WireIdentity>>> =
         wrapStorageRequest {
-            conversationDAO.getMLSGroupIdByConversationId(conversationId.toDao())!!
+            conversationDAO.getMLSGroupIdByConversationId(conversationId.toDao())
         }.flatMap { mlsGroupId ->
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
@@ -677,6 +715,16 @@ internal class MLSConversationDataSource(
                 kaliumLogger.e("Discarding pending commit failed: $error")
             }
             Either.Right(Unit)
+        }
+    }
+
+    private suspend fun checkRevocationList(crlNewDistributionPoints: List<String>) {
+        crlNewDistributionPoints.forEach { url ->
+            checkRevocationList(url).map { newExpiration ->
+                newExpiration?.let {
+                    certificateRevocationListRepository.addOrUpdateCRL(url, it)
+                }
+            }
         }
     }
 }
