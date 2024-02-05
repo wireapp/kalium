@@ -94,7 +94,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                                 "conversationId" to conversation.id.toLogString(),
                                 "protocol" to ConversationOptions.Protocol.MLS.name,
                                 "protocolInfo" to conversation.protocol.toLogMap(),
-                                "errorInfo" to failure
+                                "errorInfo" to "$failure"
                             )
                         )
                         // Re-fetch current epoch and try again
@@ -136,8 +136,8 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                     mlsConversationRepository.joinGroupByExternalCommit(
                         protocol.groupId,
                         groupInfo
-                    ).flatMapLeft {
-                        if (MLSMessageFailureHandler.handleFailure(it) is MLSMessageFailureResolution.Ignore) {
+                    ).flatMapLeft { failure ->
+                        if (MLSMessageFailureHandler.handleFailure(failure) is MLSMessageFailureResolution.Ignore) {
                             kaliumLogger.logStructuredJson(
                                 level = KaliumLogLevel.WARN,
                                 leadingMessage = "Join Group external commit Ignored",
@@ -146,7 +146,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                                     "conversationType" to type.name,
                                     "protocol" to ConversationOptions.Protocol.MLS.name,
                                     "protocolInfo" to conversation.protocol.toLogMap(),
-                                    "errorInfo" to it
+                                    "errorInfo" to "$failure"
                                 )
                             )
                             Either.Right(Unit)
@@ -159,10 +159,10 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                                     "conversationType" to type.name,
                                     "protocol" to ConversationOptions.Protocol.MLS.name,
                                     "protocolInfo" to conversation.protocol.toLogMap(),
-                                    "errorInfo" to it
+                                    "errorInfo" to "$failure"
                                 )
                             )
-                            Either.Left(it)
+                            Either.Left(failure)
                         }
                     }
                 }.onSuccess {

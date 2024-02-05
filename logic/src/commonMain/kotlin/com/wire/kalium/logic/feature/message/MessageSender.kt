@@ -339,7 +339,7 @@ internal class MessageSenderImpl internal constructor(
                                     "message" to message.toLogString(),
                                     "protocolInfo" to protocolInfo.toLogMap(),
                                     "protocol" to ConversationOptions.Protocol.MLS.name,
-                                    "errorInfo" to it
+                                    "errorInfo" to "$it"
                                 )
                             )
                             return staleEpochVerifier.verifyEpoch(message.conversationId)
@@ -365,7 +365,7 @@ internal class MessageSenderImpl internal constructor(
                     "message" to message.toLogString(),
                     "protocolInfo" to protocolInfo.toLogMap(),
                     "protocol" to ConversationOptions.Protocol.MLS.name,
-                    "errorInfo" to it
+                    "errorInfo" to "$it"
                 )
             )
         }.onSuccess {
