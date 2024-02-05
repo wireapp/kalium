@@ -134,30 +134,13 @@ class UserRepositoryTest {
     @Test
     fun givenAUserEvent_whenPersistingTheUser_thenShouldSucceed() = runTest {
         val (arrangement, userRepository) = Arrangement()
-            .withUpdateUserReturning(true)
+            .withUpdateUserReturning()
             .arrange()
 
         val result = userRepository.updateUserFromEvent(TestEvent.updateUser(userId = SELF_USER.id))
 
         with(result) {
             shouldSucceed()
-            verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::updateUser, KFunction1<PartialUserEntity>())
-                .with(any())
-                .wasInvoked(exactly = once)
-        }
-    }
-
-    @Test
-    fun givenAUserEvent_whenPersistingTheUserAndNotExists_thenShouldFail() = runTest {
-        val (arrangement, userRepository) = Arrangement()
-            .withUpdateUserReturning(false)
-            .arrange()
-
-        val result = userRepository.updateUserFromEvent(TestEvent.updateUser(userId = SELF_USER.id))
-
-        with(result) {
-            shouldFail()
             verify(arrangement.userDAO)
                 .suspendFunction(arrangement.userDAO::updateUser, KFunction1<PartialUserEntity>())
                 .with(any())
@@ -770,11 +753,11 @@ class UserRepositoryTest {
                 .thenReturn(flowOf(userEntities))
         }
 
-        fun withUpdateUserReturning(updated: Boolean) = apply {
+        fun withUpdateUserReturning() = apply {
             given(userDAO)
                 .suspendFunction(userDAO::updateUser, KFunction1<PartialUserEntity>())
                 .whenInvokedWith(any())
-                .thenReturn(updated)
+                .thenReturn(Unit)
         }
 
         fun withSuccessfulGetUsersInfo(result: UserProfileDTO = TestUser.USER_PROFILE_DTO) = apply {
