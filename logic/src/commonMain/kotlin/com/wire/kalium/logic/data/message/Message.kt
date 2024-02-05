@@ -22,6 +22,7 @@ import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement
@@ -40,6 +41,7 @@ sealed interface Message {
     val senderUserId: UserId
     val status: Status
     val expirationData: ExpirationData?
+    val sender: User?
 
     /**
      * Messages that can be sent from one client to another.
@@ -78,6 +80,7 @@ sealed interface Message {
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
         override val senderUserName: String? = null,
+        override val sender: User? = null,
         override val isSelfMessage: Boolean,
         override val senderClientId: ClientId,
         val editStatus: EditStatus,
@@ -170,7 +173,8 @@ sealed interface Message {
         override val status: Status,
         override val senderUserName: String? = null,
         override val isSelfMessage: Boolean,
-        override val expirationData: ExpirationData?
+        override val expirationData: ExpirationData?,
+        override val sender: User? = null
     ) : Sendable {
         @Suppress("LongMethod")
         override fun toLogString(): String {
@@ -262,6 +266,7 @@ sealed interface Message {
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
         override val expirationData: ExpirationData?,
+        override val sender: User? = null,
         // TODO(refactor): move senderName to inside the specific `content`
         //                 instead of having it nullable in all system messages
         val senderUserName: String? = null

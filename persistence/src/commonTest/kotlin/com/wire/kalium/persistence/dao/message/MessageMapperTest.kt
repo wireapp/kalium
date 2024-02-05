@@ -21,6 +21,7 @@ import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -128,6 +129,10 @@ class MessageMapperTest {
             senderUserType: UserTypeEntity = UserTypeEntity.STANDARD,
             senderBotService: BotIdEntity? = null,
             senderIsDeleted: Boolean = false,
+            senderExpiresAt: Instant? = null,
+            senderDefederated: Boolean = false,
+            senderSupportedProtocols: Set<SupportedProtocolEntity>? = null,
+            senderActiveOneOnOneConversationId: QualifiedIDEntity? = null,
             isSelfMessage: Boolean = false,
             text: String? = null,
             isQuotingSelfUser: Boolean? = null,
@@ -215,6 +220,10 @@ class MessageMapperTest {
                 senderUserType,
                 senderBotService,
                 senderIsDeleted,
+                senderExpiresAt,
+                senderDefederated,
+                senderSupportedProtocols,
+                senderActiveOneOnOneConversationId,
                 isSelfMessage,
                 text,
                 isQuotingSelfUser,
