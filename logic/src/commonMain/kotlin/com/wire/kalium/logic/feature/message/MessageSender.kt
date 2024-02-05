@@ -337,8 +337,8 @@ internal class MessageSenderImpl internal constructor(
                                 leadingMessage = "Message Send Stale",
                                 jsonStringKeyValues = mapOf(
                                     "message" to message.toLogString(),
-                                    "protocolInfo" to protocolInfo.toLogString(),
-                                    "protocol" to ConversationOptions.Protocol.MLS,
+                                    "protocolInfo" to protocolInfo.toLogMap(),
+                                    "protocol" to ConversationOptions.Protocol.MLS.name,
                                     "errorInfo" to it
                                 )
                             )
@@ -363,8 +363,8 @@ internal class MessageSenderImpl internal constructor(
                 leadingMessage = "Message Send Failure",
                 jsonStringKeyValues = mapOf(
                     "message" to message.toLogString(),
-                    "protocolInfo" to protocolInfo.toLogString(),
-                    "protocol" to ConversationOptions.Protocol.MLS,
+                    "protocolInfo" to protocolInfo.toLogMap(),
+                    "protocol" to ConversationOptions.Protocol.MLS.name,
                     "errorInfo" to it
                 )
             )
@@ -374,8 +374,8 @@ internal class MessageSenderImpl internal constructor(
                 leadingMessage = "Message Send Success",
                 jsonStringKeyValues = mapOf(
                     "message" to message.toLogString(),
-                    "protocolInfo" to protocolInfo.toLogString(),
-                    "protocol" to ConversationOptions.Protocol.MLS,
+                    "protocolInfo" to protocolInfo.toLogMap(),
+                    "protocol" to ConversationOptions.Protocol.MLS.name,
                 )
             )
         }
@@ -415,7 +415,7 @@ internal class MessageSenderImpl internal constructor(
                     leadingMessage = "Message Send Success",
                     jsonStringKeyValues = mapOf(
                         "message" to message.toLogString(),
-                        "protocol" to ConversationOptions.Protocol.PROTEUS
+                        "protocol" to ConversationOptions.Protocol.PROTEUS.name
                     )
                 )
             }
@@ -449,7 +449,7 @@ internal class MessageSenderImpl internal constructor(
                     leadingMessage = "Message Broadcast Success",
                     jsonStringKeyValues = mapOf(
                         "message" to message.toLogString(),
-                        "protocol" to ConversationOptions.Protocol.PROTEUS
+                        "protocol" to ConversationOptions.Protocol.PROTEUS.name
                     )
                 )
             }

@@ -92,8 +92,8 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                             leadingMessage = "Join-Establish MLS Group Stale",
                             jsonStringKeyValues = mapOf(
                                 "conversationId" to conversation.id.toLogString(),
-                                "protocol" to ConversationOptions.Protocol.MLS,
-                                "protocolInfo" to conversation.protocol.toLogString(),
+                                "protocol" to ConversationOptions.Protocol.MLS.name,
+                                "protocolInfo" to conversation.protocol.toLogMap(),
                                 "errorInfo" to failure
                             )
                         )
@@ -143,9 +143,9 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                                 leadingMessage = "Join Group external commit Ignored",
                                 jsonStringKeyValues = mapOf(
                                     "conversationId" to conversation.id.toLogString(),
-                                    "conversationType" to type,
-                                    "protocol" to ConversationOptions.Protocol.MLS,
-                                    "protocolInfo" to conversation.protocol.toLogString(),
+                                    "conversationType" to type.name,
+                                    "protocol" to ConversationOptions.Protocol.MLS.name,
+                                    "protocolInfo" to conversation.protocol.toLogMap(),
                                     "errorInfo" to it
                                 )
                             )
@@ -156,9 +156,9 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                                 leadingMessage = "Join Group external commit Failure",
                                 jsonStringKeyValues = mapOf(
                                     "conversationId" to conversation.id.toLogString(),
-                                    "conversationType" to type,
-                                    "protocol" to ConversationOptions.Protocol.MLS,
-                                    "protocolInfo" to conversation.protocol.toLogString(),
+                                    "conversationType" to type.name,
+                                    "protocol" to ConversationOptions.Protocol.MLS.name,
+                                    "protocolInfo" to conversation.protocol.toLogMap(),
                                     "errorInfo" to it
                                 )
                             )
@@ -171,9 +171,9 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                         leadingMessage = "Join Group external commit Success",
                         jsonStringKeyValues = mapOf(
                             "conversationId" to conversation.id.toLogString(),
-                            "conversationType" to type,
-                            "protocol" to ConversationOptions.Protocol.MLS,
-                            "protocolInfo" to conversation.protocol.toLogString(),
+                            "conversationType" to type.name,
+                            "protocol" to ConversationOptions.Protocol.MLS.name,
+                            "protocolInfo" to conversation.protocol.toLogMap(),
                         )
                     )
                 }
@@ -189,9 +189,9 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                         leadingMessage = "Establish Group",
                         jsonStringKeyValues = mapOf(
                             "conversationId" to conversation.id.toLogString(),
-                            "conversationType" to type,
-                            "protocol" to ConversationOptions.Protocol.MLS,
-                            "protocolInfo" to conversation.protocol.toLogString(),
+                            "conversationType" to type.name,
+                            "protocol" to ConversationOptions.Protocol.MLS.name,
+                            "protocolInfo" to conversation.protocol.toLogMap(),
                         )
                     )
                 }
@@ -209,9 +209,9 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                         leadingMessage = "Establish Group",
                         jsonStringKeyValues = mapOf(
                             "conversationId" to conversation.id.toLogString(),
-                            "conversationType" to type,
-                            "protocol" to ConversationOptions.Protocol.MLS,
-                            "protocolInfo" to conversation.protocol.toLogString(),
+                            "conversationType" to type.name,
+                            "protocol" to ConversationOptions.Protocol.MLS.name,
+                            "protocolInfo" to conversation.protocol.toLogMap(),
                         )
                     )
                 }
