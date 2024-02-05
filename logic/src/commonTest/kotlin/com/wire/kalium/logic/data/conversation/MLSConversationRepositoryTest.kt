@@ -38,6 +38,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arr
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedClientID
+import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.mlspublickeys.Ed25519Key
 import com.wire.kalium.logic.data.mlspublickeys.KeyType
@@ -1120,6 +1121,7 @@ class MLSConversationRepositoryTest {
             .withGetMLSClientSuccessful()
             .withRotateAllSuccessful()
             .withSendCommitBundleSuccessful()
+            .withKeyPackageLimits(10)
             .withReplaceKeyPackagesReturning(Either.Right(Unit))
             .arrange()
 
@@ -1149,6 +1151,7 @@ class MLSConversationRepositoryTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withRotateAllSuccessful()
+            .withKeyPackageLimits(10)
             .withReplaceKeyPackagesReturning(TEST_FAILURE)
             .withSendCommitBundleSuccessful()
             .arrange()
@@ -1179,6 +1182,7 @@ class MLSConversationRepositoryTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withRotateAllSuccessful()
+            .withKeyPackageLimits(10)
             .withReplaceKeyPackagesReturning(Either.Right(Unit))
             .withSendCommitBundleFailing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
             .arrange()
@@ -1363,6 +1367,9 @@ class MLSConversationRepositoryTest {
         @Mock
         val syncManager = mock(SyncManager::class)
 
+        @Mock
+        val keyPackageLimitsProvider = mock(classOf<KeyPackageLimitsProvider>())
+
         val epochsFlow = MutableSharedFlow<GroupID>()
 
         val proposalTimersFlow = MutableSharedFlow<ProposalTimer>()
@@ -1405,7 +1412,11 @@ class MLSConversationRepositoryTest {
                 .whenInvokedWith(anything())
                 .then { Either.Right(keyPackages) }
         }
-
+        fun withKeyPackageLimits(refillAmount: Int) = apply {
+            given(keyPackageLimitsProvider).function(keyPackageLimitsProvider::refillAmount)
+                .whenInvoked()
+                .thenReturn(refillAmount)
+        }
         fun withReplaceKeyPackagesReturning(result: Either<CoreFailure, Unit>) = apply {
             given(keyPackageRepository)
                 .suspendFunction(keyPackageRepository::replaceKeyPackages)
@@ -1610,7 +1621,8 @@ class MLSConversationRepositoryTest {
             mlsPublicKeysRepository,
             commitBundleEventReceiver,
             epochsFlow,
-            proposalTimersFlow
+            proposalTimersFlow,
+            keyPackageLimitsProvider
         )
 
         companion object {
@@ -1644,7 +1656,7 @@ class MLSConversationRepositoryTest {
             )
             val COMMIT_BUNDLE = CommitBundle(COMMIT, WELCOME, PUBLIC_GROUP_STATE_BUNDLE)
             val ROTATE_BUNDLE = RotateBundle(mapOf(RAW_GROUP_ID to COMMIT_BUNDLE), emptyList(), emptyList())
-            val WIRE_IDENTITY = WireIdentity("id", "user_handle", "User Test", "domain.com", "certificate", CryptoCertificateStatus.VALID)
+            val WIRE_IDENTITY = WireIdentity("id", "user_handle", "User Test", "domain.com", "certificate", CryptoCertificateStatus.VALID, thumbprint = "thumbprint")
             val E2EI_CONVERSATION_CLIENT_INFO_ENTITY =
                 E2EIConversationClientInfoEntity(UserIDEntity(uuid4().toString(), "domain.com"), "clientId", "groupId")
             val DECRYPTED_MESSAGE_BUNDLE = com.wire.kalium.cryptography.DecryptedMessageBundle(
