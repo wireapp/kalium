@@ -669,10 +669,11 @@ object MessageMapper {
             userType = senderUserType,
             botService = senderBotService,
             deleted = senderIsDeleted,
-            expiresAt = null,
-            defederated = false,
-            supportedProtocols = null,
-            activeOneOnOneConversationId = null
+            expiresAt = senderExpiresAt,
+            defederated = senderDefederated,
+            supportedProtocols = senderSupportedProtocols,
+            activeOneOnOneConversationId = senderActiveOneOnOneConversationId,
+            connectionStatus = senderConnectionStatus
         )
 
         return createMessageEntity(
