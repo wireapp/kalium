@@ -384,9 +384,7 @@ class TeamRepositoryTest {
             .suspendFunction(arrangement.teamDAO::updateTeam)
             .with(eq(TestTeam.TEAM_ENTITY))
             .wasInvoked(exactly = once)
-
     }
-
 
     private class Arrangement {
         @Mock
