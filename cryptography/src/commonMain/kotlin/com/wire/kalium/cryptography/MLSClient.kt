@@ -19,6 +19,7 @@
 package com.wire.kalium.cryptography
 
 import kotlin.jvm.JvmInline
+import kotlin.time.Duration
 
 typealias WelcomeMessage = ByteArray
 typealias HandshakeMessage = ByteArray
@@ -351,18 +352,6 @@ interface MLSClient {
     suspend fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray
 
     /**
-     * Enroll Wire E2EIdentity Client for E2EI before MLSClient Initialization
-     *
-     * @return wire end to end identity client
-     */
-    suspend fun newAcmeEnrollment(
-        clientId: CryptoQualifiedClientId,
-        displayName: String,
-        handle: String,
-        teamId: String?
-    ): E2EIClient
-
-    /**
      * Enroll Wire E2EIdentity Client for E2EI when MLSClient already initialized
      *
      * @return wire end to end identity client
@@ -370,7 +359,8 @@ interface MLSClient {
     suspend fun e2eiNewActivationEnrollment(
         displayName: String,
         handle: String,
-        teamId: String?
+        teamId: String?,
+        expiry: Duration
     ): E2EIClient
 
     /**
@@ -381,7 +371,8 @@ interface MLSClient {
     suspend fun e2eiNewRotateEnrollment(
         displayName: String?,
         handle: String?,
-        teamId: String?
+        teamId: String?,
+        expiry: Duration
     ): E2EIClient
 
     /**

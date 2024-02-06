@@ -40,6 +40,8 @@ import kotlinx.coroutines.withContext
 interface MLSClientProvider {
     suspend fun getMLSClient(clientId: ClientId? = null): Either<CoreFailure, MLSClient>
 
+    suspend fun getE2EIMLSClient()
+
     suspend fun getCoreCrypto(clientId: ClientId? = null): Either<CoreFailure, CoreCryptoCentral>
 
     suspend fun clearLocalFiles()
@@ -72,6 +74,11 @@ class MLSClientProviderImpl(
         }
     }
 
+    override suspend fun getE2EIMLSClient() {
+        //todo: impl for initializing mls client with e2ei cert
+        TODO("Not yet implemented")
+    }
+
     override suspend fun clearLocalFiles() {
         mlsClient?.close()
         mlsClient = null
@@ -99,6 +106,12 @@ class MLSClientProviderImpl(
     }
 
     private suspend fun mlsClient(userId: CryptoUserID, clientId: ClientId): Either<CoreFailure, MLSClient> {
+        return getCoreCrypto(clientId).map {
+            it.mlsClient(CryptoQualifiedClientId(clientId.value, userId))
+        }
+    }
+
+    private suspend fun e2eiMLSClient(userId: CryptoUserID, clientId: ClientId): Either<CoreFailure, MLSClient> {
         return getCoreCrypto(clientId).map {
             it.mlsClient(CryptoQualifiedClientId(clientId.value, userId))
         }

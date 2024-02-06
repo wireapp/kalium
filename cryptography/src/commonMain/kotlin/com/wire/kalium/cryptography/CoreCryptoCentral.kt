@@ -17,9 +17,27 @@
  */
 package com.wire.kalium.cryptography
 
+import kotlin.time.Duration
+
 interface CoreCryptoCentral {
     suspend fun mlsClient(clientId: CryptoQualifiedClientId): MLSClient
+
+    suspend fun mlsClient(enrollment: E2EIClient, certificateChain: CertificateChain, newMLSKeyPackageCount: UInt): MLSClient
+
     suspend fun proteusClient(): ProteusClient
+
+    /**
+     * Enroll Wire E2EIdentity Client for E2EI before MLSClient Initialization
+     *
+     * @return wire end to end identity client
+     */
+    suspend fun newAcmeEnrollment(
+        clientId: CryptoQualifiedClientId,
+        displayName: String,
+        handle: String,
+        teamId: String?,
+        expiry: Duration
+    ): E2EIClient
 }
 
 expect suspend fun coreCryptoCentral(rootDir: String, databaseKey: String): CoreCryptoCentral

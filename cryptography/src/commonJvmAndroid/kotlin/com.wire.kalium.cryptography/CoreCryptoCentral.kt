@@ -67,8 +67,41 @@ class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: Str
         return MLSClientImpl(cc)
     }
 
+    override suspend fun mlsClient(
+        enrollment: E2EIClient,
+        certificateChain: CertificateChain,
+        newMLSKeyPackageCount: UInt
+    ): MLSClient {
+        //todo: use DPs list from here, and return alongside with the mls client
+        cc.e2eiMlsInitOnly(
+            (enrollment as E2EIClientImpl).wireE2eIdentity,
+            certificateChain, newMLSKeyPackageCount
+        )
+        return MLSClientImpl(cc)
+    }
+
     override suspend fun proteusClient(): ProteusClient {
         return ProteusClientCoreCryptoImpl(cc, rootDir)
+    }
+
+    override suspend fun newAcmeEnrollment(
+        clientId: CryptoQualifiedClientId,
+        displayName: String,
+        handle: String,
+        teamId: String?,
+        expiry: kotlin.time.Duration
+    ): E2EIClient {
+        return E2EIClientImpl(
+            cc.e2eiNewEnrollment(
+                clientId.toString(),
+                displayName,
+                handle,
+                teamId,
+                expiry.inWholeSeconds.toUInt(),
+                Ciphersuites.DEFAULT.lower().first()
+            )
+
+        )
     }
 
     companion object {

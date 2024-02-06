@@ -33,7 +33,6 @@ import com.wire.kalium.cryptography.exceptions.CryptographyException
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.days
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 import kotlin.time.toJavaDuration
@@ -48,7 +47,6 @@ class MLSClientImpl(
     private val keyRotationDuration: Duration = 30.toDuration(DurationUnit.DAYS)
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration.toJavaDuration(), MlsWirePolicy.PLAINTEXT)
     private val defaultCiphersuite = Ciphersuites.DEFAULT.lower().first()
-    private val defaultE2EIExpiry = 90.days.inWholeSeconds.toUInt()
     override suspend fun close() {
         coreCrypto.close()
     }
@@ -197,35 +195,18 @@ class MLSClientImpl(
         return coreCrypto.exportSecretKey(groupId.decodeBase64Bytes(), keyLength)
     }
 
-    override suspend fun newAcmeEnrollment(
-        clientId: CryptoQualifiedClientId,
-        displayName: String,
-        handle: String,
-        teamId: String?
-    ): E2EIClient {
-        return E2EIClientImpl(
-            coreCrypto.e2eiNewEnrollment(
-                clientId.toString(),
-                displayName,
-                handle,
-                teamId,
-                defaultE2EIExpiry,
-                defaultCiphersuite
-            )
-        )
-    }
-
     override suspend fun e2eiNewActivationEnrollment(
         displayName: String,
         handle: String,
-        teamId: String?
+        teamId: String?,
+        expiry: Duration
     ): E2EIClient {
         return E2EIClientImpl(
             coreCrypto.e2eiNewActivationEnrollment(
                 displayName,
                 handle,
                 teamId,
-                defaultE2EIExpiry,
+                expiry.inWholeSeconds.toUInt(),
                 defaultCiphersuite
             )
         )
@@ -234,14 +215,15 @@ class MLSClientImpl(
     override suspend fun e2eiNewRotateEnrollment(
         displayName: String?,
         handle: String?,
-        teamId: String?
+        teamId: String?,
+        expiry: Duration
     ): E2EIClient {
         return E2EIClientImpl(
             coreCrypto.e2eiNewRotateEnrollment(
                 displayName,
                 handle,
                 teamId,
-                defaultE2EIExpiry,
+                expiry.inWholeSeconds.toUInt(),
                 defaultCiphersuite
             )
         )

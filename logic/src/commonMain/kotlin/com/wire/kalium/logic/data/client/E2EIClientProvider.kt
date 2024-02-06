@@ -32,6 +32,7 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
+import kotlin.time.Duration.Companion.days
 
 interface E2EIClientProvider {
     suspend fun getE2EIClient(clientId: ClientId? = null, isNewClient: Boolean = false): Either<CoreFailure, E2EIClient>
@@ -46,7 +47,7 @@ internal class EI2EIClientProviderImpl(
 ) : E2EIClientProvider {
 
     private var e2EIClient: E2EIClient? = null
-
+    private val defaultE2EIExpiry = 90.days
     override suspend fun getE2EIClient(clientId: ClientId?, isNewClient: Boolean): Either<CoreFailure, E2EIClient> =
         withContext(dispatchers.io) {
             val currentClientId =
@@ -56,25 +57,44 @@ internal class EI2EIClientProviderImpl(
                 Either.Right(it)
             } ?: run {
                 getSelfUserInfo().flatMap { selfUser ->
-                    // TODO: use e2eiNewEnrollment for new clients, when CC fix the issues in it
+                    if (isNewClient) {
+                        mlsClientProvider.getCoreCrypto(currentClientId).flatMap {
+                            val cryptoQualifiedClientId = CryptoQualifiedClientId(
+                                clientId!!.value,
+                                selfUser.id.toCrypto()
+                            )
+                            val newE2EIClient2 = it.newAcmeEnrollment(
+                                cryptoQualifiedClientId,
+                                selfUser.name!!,
+                                selfUser.handle!!,
+                                selfUser.teamId?.value,
+                                defaultE2EIExpiry
+                            )
+                            e2EIClient = newE2EIClient2
+                            Either.Right(newE2EIClient2)
+                        }
+                    } else {
                     mlsClientProvider.getMLSClient(currentClientId).flatMap {
                         val newE2EIClient = if (it.isE2EIEnabled()) {
                             kaliumLogger.e("initial E2EI client for mls client that already has e2ei enabled")
                             it.e2eiNewRotateEnrollment(
                                 selfUser.name,
                                 selfUser.handle,
-                                selfUser.teamId?.value
+                                selfUser.teamId?.value,
+                                defaultE2EIExpiry
                             )
                         } else {
                             kaliumLogger.e("initial E2EI client for MLS client without e2ei")
                             it.e2eiNewActivationEnrollment(
                                 selfUser.name!!,
                                 selfUser.handle!!,
-                                selfUser.teamId?.value
+                                selfUser.teamId?.value,
+                                defaultE2EIExpiry
                             )
                         }
                         e2EIClient = newE2EIClient
                         Either.Right(newE2EIClient)
+                    }
                     }
                 }
             }
