@@ -34,7 +34,7 @@ class GetUpdatedSelfTeamUseCase internal constructor(
 
     suspend operator fun invoke(): Either<CoreFailure, Team?> {
         return selfTeamIdProvider().flatMap { teamId ->
-            teamId?.let { teamRepository.fetchTeamById(it) }
+            teamId?.let { teamRepository.syncTeam(it) }
                 ?: Either.Right(null)
         }
     }
