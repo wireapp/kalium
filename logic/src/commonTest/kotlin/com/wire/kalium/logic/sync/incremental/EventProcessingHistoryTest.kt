@@ -18,20 +18,24 @@
 
 package com.wire.kalium.logic.sync.incremental
 
+import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.framework.TestEvent
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
+import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.seconds
+import kotlin.time.measureTime
 
-class PendingEventsBufferTest {
+class EventProcessingHistoryTest {
 
-    private lateinit var eventsBuffer: PendingEventsBuffer
+    private lateinit var eventsBuffer: EventProcessingHistory
 
     @BeforeTest
     fun setup() {
-        eventsBuffer = PendingEventsBuffer()
+        eventsBuffer = EventProcessingHistory()
     }
 
     @Test
@@ -143,5 +147,25 @@ class PendingEventsBufferTest {
 
         assertTrue { eventsBuffer.contains(event1) }
         assertTrue { eventsBuffer.contains(event2) }
+    }
+
+    @Test
+    @Ignore // Benchmark
+    fun measureContainsTimeOverLargeAmountOfEvents() = runTest(timeout = 100.seconds) {
+        val allEvents = mutableListOf<Event>()
+        val baseEvent = TestEvent.newConversationEvent()
+        val eventCount = 100_000
+        repeat(eventCount) {
+            val newEvent = baseEvent.copy(id = "test_$it")
+            allEvents.add(newEvent)
+            eventsBuffer.add(newEvent)
+        }
+
+        val timeTaken = measureTime {
+            allEvents.forEach {
+                eventsBuffer.contains(it)
+            }
+        }
+        println("Time taken to check $eventCount events: $timeTaken")
     }
 }

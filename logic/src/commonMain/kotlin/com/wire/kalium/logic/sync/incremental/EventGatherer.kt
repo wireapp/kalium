@@ -82,7 +82,7 @@ internal class EventGathererImpl(
     // TODO: Refactor so currentSource is emitted through the gatherEvents flow, instead of having two separated flows
     override val currentSource: StateFlow<EventSource> get() = _currentSource.asStateFlow()
 
-    private val offlineEventBuffer = PendingEventsBuffer()
+    private val offlineEventBuffer = EventProcessingHistory()
     private val logger = kaliumLogger.withFeatureId(SYNC)
 
     override suspend fun gatherEvents(): Flow<EventEnvelope> = flow {
