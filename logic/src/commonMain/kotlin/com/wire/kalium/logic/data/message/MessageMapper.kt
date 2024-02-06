@@ -177,7 +177,13 @@ class MessageMapperImpl(
                 recipientsFailedDelivery = recipientsFailure.recipientsFailedDelivery.map { it.toModel() }
             )
         },
-        sender = message.sender?.let { userMapper.fromUserEntityToOtherUser(it) }
+        sender = message.sender?.let {
+            if (message.isSelfMessage) {
+                userMapper.fromUserEntityToSelfUser(it)
+            } else {
+                userMapper.fromUserEntityToOtherUser(it)
+            }
+        }
     )
 
     private fun mapSystemMessage(message: MessageEntity.System) = Message.System(
