@@ -247,8 +247,8 @@ class MLSClientImpl(
         )
     }
 
-    override suspend fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain) {
-        coreCrypto.e2eiMlsInitOnly((enrollment as E2EIClientImpl).wireE2eIdentity, certificateChain, null)
+    override suspend fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain): List<String>? {
+        return coreCrypto.e2eiMlsInitOnly((enrollment as E2EIClientImpl).wireE2eIdentity, certificateChain, null)
     }
 
     override suspend fun isE2EIEnabled(): Boolean {
@@ -280,7 +280,7 @@ class MLSClientImpl(
         val clientIds = clients.map {
             it.toString().encodeToByteArray()
         }
-        return coreCrypto.getDeviceIdentities(groupId.decodeBase64Bytes(), clientIds).map {
+        return coreCrypto.getDeviceIdentities(groupId.decodeBase64Bytes(), clientIds).mapNotNull {
             toIdentity(it)
         }
     }
@@ -290,7 +290,7 @@ class MLSClientImpl(
             it.value
         }
         return coreCrypto.getUserIdentities(groupId.decodeBase64Bytes(), usersIds).mapValues {
-            it.value.map { identity -> toIdentity(identity) }
+            it.value.mapNotNull { identity -> toIdentity(identity) }
         }
     }
 
@@ -350,15 +350,20 @@ class MLSClientImpl(
             value.crlNewDistributionPoints
         )
 
-        fun toIdentity(value: com.wire.crypto.WireIdentity) = WireIdentity(
-            value.clientId,
-            value.handle,
-            value.displayName,
-            value.domain,
-            value.certificate,
-            toDeviceStatus(value.status),
-            value.thumbprint
-        )
+        fun toIdentity(value: com.wire.crypto.WireIdentity): WireIdentity? {
+            val clientId = CryptoQualifiedClientId.fromEncodedString(value.clientId)
+            return clientId?.let {
+                WireIdentity(
+                    CryptoQualifiedClientId.fromEncodedString(value.clientId)!!,
+                    value.handle,
+                    value.displayName,
+                    value.domain,
+                    value.certificate,
+                    toDeviceStatus(value.status),
+                    value.thumbprint
+                )
+            }
+        }
 
         fun toDeviceStatus(value: com.wire.crypto.DeviceStatus) = when (value) {
             com.wire.crypto.DeviceStatus.VALID -> CryptoCertificateStatus.VALID
