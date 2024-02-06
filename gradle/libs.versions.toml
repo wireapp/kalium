@@ -37,7 +37,7 @@ pbandk = "0.14.2"
 turbine = "1.0.0"
 avs = "9.6.9"
 jna = "5.14.0"
-core-crypto = "1.0.0-rc.30"
+core-crypto = "1.0.0-rc.34"
 core-crypto-multiplatform = "0.6.0-rc.3-multiplatform-pre1"
 completeKotlin = "1.1.0"
 desugar-jdk = "2.0.4"
@@ -60,6 +60,7 @@ bouncy-castle = "1.70"
 konsist = "0.13.0"
 postgres = "1.0.2.RELEASE"
 r2dbc = "1.0.0.RELEASE"
+slf4js = "2.0.10"
 
 [plugins]
 # Home-made convention plugins
@@ -149,6 +150,11 @@ ktor-iosHttp = { module = "io.ktor:ktor-client-ios", version.ref = "ktor" }
 ktor-encoding = { module = "io.ktor:ktor-client-encoding", version.ref = "ktor" }
 ktor-server = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 ktor-serverNetty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
+ktor-serverLogging = { module = "io.ktor:ktor-server-call-logging-jvm", version.ref = "ktor" }
+ktor-serverContentNegotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
+ktor-serverCallId = { module = "io.ktor:ktor-server-call-id-jvm", version.ref = "ktor" }
+ktor-serverMetrics = { module = "io.ktor:ktor-server-metrics-micrometer-jvm", version.ref = "ktor" }
+ktor-statusPages = { module = "io.ktor:ktor-server-status-pages", version.ref = "ktor" }
 
 # okio
 okio-core = { module = "com.squareup.okio:okio", version.ref = "okio" }
@@ -204,6 +210,7 @@ jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 # logging
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 micrometer = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "micrometer" }
+slf4js = { module = "org.slf4j:slf4j-simple", version.ref = "slf4js" }
 
 # bouncy castle
 bouncy-castle = { module = "org.bouncycastle:bcprov-jdk15on", version.ref = "bouncy-castle" }

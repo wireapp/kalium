@@ -120,7 +120,8 @@ class GetE2eiCertificateUseCaseTest {
             displayName = "Alice Test",
             domain = "test.com",
             certificate = "certificate",
-            status = CryptoCertificateStatus.EXPIRED
+            status = CryptoCertificateStatus.EXPIRED,
+            thumbprint = "thumbprint"
         )
     }
 }

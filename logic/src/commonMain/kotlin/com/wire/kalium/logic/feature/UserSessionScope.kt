@@ -176,6 +176,7 @@ import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.IsAllowedToRegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.client.MLSClientManager
 import com.wire.kalium.logic.feature.client.MLSClientManagerImpl
+import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCase
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseImpl
 import com.wire.kalium.logic.feature.connection.ConnectionScope
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
@@ -437,6 +438,7 @@ import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.firstOrNull
@@ -500,7 +502,7 @@ class UserSessionScope internal constructor(
             userId, qualifiedIdMapper, globalScope.sessionRepository
         )
 
-    private val clientIdProvider = CurrentClientIdProvider { clientId() }
+    val clientIdProvider = CurrentClientIdProvider { clientId() }
     private val mlsSelfConversationIdProvider: MLSSelfConversationIdProvider by lazy {
         MLSSelfConversationIdProviderImpl(
             conversationRepository
@@ -651,7 +653,8 @@ class UserSessionScope internal constructor(
             mlsPublicKeysRepository,
             commitBundleEventReceiver,
             epochsFlow,
-            proposalTimersFlow
+            proposalTimersFlow,
+            keyPackageLimitsProvider
         )
 
     private val e2eiRepository: E2EIRepository
@@ -922,6 +925,15 @@ class UserSessionScope internal constructor(
             mlsConversationRepository
         )
 
+    private val registerMLSClientUseCase: RegisterMLSClientUseCase
+        get() = RegisterMLSClientUseCaseImpl(
+            mlsClientProvider,
+            clientRepository,
+            keyPackageRepository,
+            keyPackageLimitsProvider,
+            userConfigRepository
+        )
+
     private val recoverMLSConversationsUseCase: RecoverMLSConversationsUseCase
         get() = RecoverMLSConversationsUseCaseImpl(
             featureSupport,
@@ -1113,14 +1125,14 @@ class UserSessionScope internal constructor(
         lazy { conversations.updateMLSGroupsKeyingMaterials },
         lazy { users.timestampKeyRepository })
 
-    internal val mlsClientManager: MLSClientManager = MLSClientManagerImpl(clientIdProvider,
+    val mlsClientManager: MLSClientManager = MLSClientManagerImpl(clientIdProvider,
         isAllowedToRegisterMLSClient,
         incrementalSyncRepository,
         lazy { slowSyncRepository },
         lazy { clientRepository },
         lazy {
             RegisterMLSClientUseCaseImpl(
-                mlsClientProvider, clientRepository, keyPackageRepository, keyPackageLimitsProvider
+                mlsClientProvider, clientRepository, keyPackageRepository, keyPackageLimitsProvider, userConfigRepository
             )
         })
 
@@ -1379,6 +1391,8 @@ class UserSessionScope internal constructor(
     val observeLegalHoldStateForUser: ObserveLegalHoldStateForUserUseCase
         get() = ObserveLegalHoldStateForUserUseCaseImpl(clientRepository)
 
+    suspend fun observeIfE2EIRequiredDuringLogin(): Flow<Boolean?> = clientRepository.observeIsClientRegistrationBlockedByE2EI()
+
     val observeLegalHoldForSelfUser: ObserveLegalHoldForSelfUserUseCase
         get() = ObserveLegalHoldForSelfUserUseCaseImpl(userId, observeLegalHoldStateForUser)
 
@@ -1621,7 +1635,9 @@ class UserSessionScope internal constructor(
             authenticationScope.secondFactorVerificationRepository,
             slowSyncRepository,
             cachedClientIdClearer,
-            updateSupportedProtocolsAndResolveOneOnOnes
+            updateSupportedProtocolsAndResolveOneOnOnes,
+            registerMLSClientUseCase,
+            syncFeatureConfigsUseCase
         )
     val conversations: ConversationScope by lazy {
         ConversationScope(
@@ -1727,7 +1743,9 @@ class UserSessionScope internal constructor(
             e2eiRepository,
             mlsConversationRepository,
             team.isSelfATeamMember,
-            updateSupportedProtocols
+            updateSupportedProtocols,
+            clientRepository,
+            joinExistingMLSConversations
         )
 
     val search: SearchScope

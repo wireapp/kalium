@@ -202,7 +202,7 @@ class UserDAOImpl internal constructor(
             complete_asset_id = update.completeAssetId,
             supported_protocols = update.supportedProtocols,
             update.id
-        ).executeAsOne() > 0
+        )
     }
 
     override suspend fun updateUser(users: List<PartialUserEntity>) = withContext(queriesContext) {

@@ -67,10 +67,10 @@ class MLSClientTest : BaseMLSClientTest() {
         bobClient.createConversation(MLS_CONVERSATION_ID)
         val welcome = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)?.welcome!!
         bobClient.commitAccepted(MLS_CONVERSATION_ID)
-        val conversationId = aliceClient.processWelcomeMessage(welcome)
+        val welcomeBundle = aliceClient.processWelcomeMessage(welcome)
 
         val commit = bobClient.updateKeyingMaterial(MLS_CONVERSATION_ID).commit
-        val result = aliceClient.decryptMessage(conversationId, commit)
+        val result = aliceClient.decryptMessage(welcomeBundle.groupId, commit)
 
         assertNull(result.first().message)
     }
@@ -84,9 +84,9 @@ class MLSClientTest : BaseMLSClientTest() {
         val clientKeyPackageList = listOf(aliceKeyPackage)
         bobClient.createConversation(MLS_CONVERSATION_ID)
         val welcome = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)!!.welcome!!
-        val conversationId = aliceClient.processWelcomeMessage(welcome)
+        val welcomeBundle = aliceClient.processWelcomeMessage(welcome)
 
-        assertEquals(MLS_CONVERSATION_ID, conversationId)
+        assertEquals(MLS_CONVERSATION_ID, welcomeBundle.groupId)
     }
 
     @Test
@@ -105,9 +105,9 @@ class MLSClientTest : BaseMLSClientTest() {
         bobClient.decryptMessage(MLS_CONVERSATION_ID, proposal)
         val welcome = bobClient.commitPendingProposals(MLS_CONVERSATION_ID)?.welcome
         bobClient.commitAccepted(MLS_CONVERSATION_ID)
-        val conversationId = alice2Client.processWelcomeMessage(welcome!!)
+        val welcomeBundle = alice2Client.processWelcomeMessage(welcome!!)
 
-        assertEquals(MLS_CONVERSATION_ID, conversationId)
+        assertEquals(MLS_CONVERSATION_ID, welcomeBundle.groupId)
     }
 
     @Test
@@ -120,10 +120,10 @@ class MLSClientTest : BaseMLSClientTest() {
         bobClient.createConversation(MLS_CONVERSATION_ID)
         val welcome = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)?.welcome!!
         bobClient.commitAccepted(MLS_CONVERSATION_ID)
-        val conversationId = aliceClient.processWelcomeMessage(welcome)
+        val welcomeBundle = aliceClient.processWelcomeMessage(welcome)
 
-        val applicationMessage = aliceClient.encryptMessage(conversationId, PLAIN_TEXT.encodeToByteArray())
-        val plainMessage = bobClient.decryptMessage(conversationId, applicationMessage).first().message
+        val applicationMessage = aliceClient.encryptMessage(welcomeBundle.groupId, PLAIN_TEXT.encodeToByteArray())
+        val plainMessage = bobClient.decryptMessage(welcomeBundle.groupId, applicationMessage).first().message
 
         assertEquals(PLAIN_TEXT, plainMessage?.decodeToString())
     }
@@ -138,9 +138,9 @@ class MLSClientTest : BaseMLSClientTest() {
         bobClient.createConversation(MLS_CONVERSATION_ID)
         val welcome = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)?.welcome!!
         bobClient.commitAccepted((MLS_CONVERSATION_ID))
-        val conversationId = aliceClient.processWelcomeMessage(welcome)
+        val welcomeBundle = aliceClient.processWelcomeMessage(welcome)
 
-        assertEquals(MLS_CONVERSATION_ID, conversationId)
+        assertEquals(MLS_CONVERSATION_ID, welcomeBundle.groupId)
     }
 
     @Test
@@ -179,12 +179,12 @@ class MLSClientTest : BaseMLSClientTest() {
         bobClient.createConversation(MLS_CONVERSATION_ID)
         val welcome = bobClient.addMember(MLS_CONVERSATION_ID, clientKeyPackageList)?.welcome!!
         bobClient.commitAccepted(MLS_CONVERSATION_ID)
-        val conversationId = aliceClient.processWelcomeMessage(welcome)
+        val welcomeBundle = aliceClient.processWelcomeMessage(welcome)
 
         val clientRemovalList = listOf(CAROL1.qualifiedClientId)
-        val commit = bobClient.removeMember(conversationId, clientRemovalList).commit
+        val commit = bobClient.removeMember(welcomeBundle.groupId, clientRemovalList).commit
 
-        assertNull(aliceClient.decryptMessage(conversationId, commit).first().message)
+        assertNull(aliceClient.decryptMessage(welcomeBundle.groupId, commit).first().message)
     }
 
     companion object {

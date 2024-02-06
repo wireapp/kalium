@@ -50,6 +50,8 @@ import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapRight
+import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -500,12 +502,10 @@ internal class UserDataSource internal constructor(
 
     override suspend fun updateUserFromEvent(event: Event.User.Update): Either<CoreFailure, Unit> = wrapStorageRequest {
         userDAO.updateUser(userMapper.fromUserUpdateEventToPartialUserEntity(event))
-    }.flatMap { updated ->
-        if (!updated) {
-            Either.Left(StorageFailure.DataNotFound)
-        } else {
-            Either.Right(Unit)
-        }
+    }.onFailure {
+        Either.Left(StorageFailure.DataNotFound)
+    }.onSuccess {
+        Either.Right(Unit)
     }
 
     override suspend fun markUserAsDeletedAndRemoveFromGroupConversations(
