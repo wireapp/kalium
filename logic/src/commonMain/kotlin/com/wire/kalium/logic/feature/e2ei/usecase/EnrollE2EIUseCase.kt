@@ -34,7 +34,7 @@ import kotlinx.serialization.json.JsonPrimitive
  * Issue an E2EI certificate and re-initiate the MLSClient
  */
 interface EnrollE2EIUseCase {
-    suspend fun initialEnrollment(): Either<CoreFailure, E2EIEnrollmentResult>
+    suspend fun initialEnrollment(isNewClientRegistration: Boolean = false): Either<CoreFailure, E2EIEnrollmentResult>
     suspend fun finalizeEnrollment(
         idToken: String,
         oAuthState: String,
@@ -44,69 +44,48 @@ interface EnrollE2EIUseCase {
 
 @Suppress("ReturnCount")
 class EnrollE2EIUseCaseImpl internal constructor(
-    private val e2EIRepository: E2EIRepository,
+    private val e2EIRepository: E2EIRepository
 ) : EnrollE2EIUseCase {
     /**
      * Operation to initial E2EI certificate enrollment
      *
      * @return [Either] [CoreFailure] or [E2EIEnrollmentResult]
      */
-    override suspend fun initialEnrollment(): Either<CoreFailure, E2EIEnrollmentResult> {
+    override suspend fun initialEnrollment(isNewClientRegistration: Boolean): Either<CoreFailure, E2EIEnrollmentResult> {
         kaliumLogger.i("start E2EI Enrollment Initialization")
 
-<<<<<<< HEAD
-        e2EIRepository.fetchTrustAnchors().onFailure {
-            return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.TrustAnchors, it).toEitherLeft()
-        }
-=======
         e2EIRepository.initE2EIClient(isNewClient = isNewClientRegistration)
 
         e2EIRepository.fetchAndSetTrustAnchors()
->>>>>>> 4b49e7e88f (feat(e2ei): upgrade corecrypto to RC34 (WPB-6272) (#2411))
 
         val acmeDirectories = e2EIRepository.loadACMEDirectories().getOrFail {
-            return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeDirectories, it)
-                .toEitherLeft()
+            return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeDirectories, it).toEitherLeft()
         }
 
         var prevNonce = e2EIRepository.getACMENonce(acmeDirectories.newNonce).getOrFail {
-            return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNonce, it)
-                .toEitherLeft()
+            return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNonce, it).toEitherLeft()
         }
 
-        prevNonce =
-            e2EIRepository.createNewAccount(prevNonce, acmeDirectories.newAccount).getOrFail {
-                return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNewAccount, it)
-                    .toEitherLeft()
-            }
+        prevNonce = e2EIRepository.createNewAccount(prevNonce, acmeDirectories.newAccount).getOrFail {
+            return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNewAccount, it).toEitherLeft()
+        }
 
-        val newOrderResponse =
-            e2EIRepository.createNewOrder(prevNonce, acmeDirectories.newOrder).getOrFail {
-                return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNewOrder, it)
-                    .toEitherLeft()
-            }
+        val newOrderResponse = e2EIRepository.createNewOrder(prevNonce, acmeDirectories.newOrder).getOrFail {
+            return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNewOrder, it).toEitherLeft()
+        }
 
         prevNonce = newOrderResponse.second
-
-<<<<<<< HEAD
-        val authzResponse = e2EIRepository.createAuthz(prevNonce, newOrderResponse.first.authorizations[0]).getOrFail {
-            return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNewAuthz, it).toEitherLeft()
-        }
-        kaliumLogger.i("getoAuth")
-=======
-        val authorizations =
-            e2EIRepository.getAuthorizations(prevNonce, newOrderResponse.first.authorizations)
-                .getOrFail {
-                    return E2EIEnrollmentResult.Failed(
-                        E2EIEnrollmentResult.E2EIStep.AcmeNewAuthz,
-                        it
-                    ).toEitherLeft()
-                }
+        val authorizations = e2EIRepository.getAuthorizations(prevNonce, newOrderResponse.first.authorizations)
+            .getOrFail {
+                return E2EIEnrollmentResult.Failed(
+                    E2EIEnrollmentResult.E2EIStep.AcmeNewAuthz,
+                    it
+                ).toEitherLeft()
+            }
 
         prevNonce = authorizations.nonce
         val oidcAuthorizations = authorizations.oidcAuthorization
         val dPopAuthorizations = authorizations.dpopAuthorization
->>>>>>> 4b49e7e88f (feat(e2ei): upgrade corecrypto to RC34 (WPB-6272) (#2411))
 
         val oAuthState = e2EIRepository.getOAuthRefreshToken().getOrNull()
         kaliumLogger.i("oAuthStAte: $oAuthState")
@@ -114,12 +93,6 @@ class EnrollE2EIUseCaseImpl internal constructor(
         val initializationResult = E2EIEnrollmentResult.Initialized(
             target = oidcAuthorizations.challenge.target,
             oAuthState = oAuthState,
-<<<<<<< HEAD
-            oAuthClaims = getOAuthClaims(authzResponse.first.keyAuth, authzResponse.first.wireOidcChallenge.url),
-            authz = authzResponse.first,
-            lastNonce = authzResponse.second,
-            orderLocation = newOrderResponse.third
-=======
             oAuthClaims = getOAuthClaims(
                 oidcAuthorizations.keyAuth.toString(),
                 oidcAuthorizations.challenge.url
@@ -127,9 +100,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
             dPopAuthorizations = dPopAuthorizations,
             oidcAuthorizations = dPopAuthorizations,
             lastNonce = prevNonce,
-            orderLocation = newOrderResponse.third,
-            isNewClientRegistration = isNewClientRegistration
->>>>>>> 4b49e7e88f (feat(e2ei): upgrade corecrypto to RC34 (WPB-6272) (#2411))
+            orderLocation = newOrderResponse.third
         )
 
         kaliumLogger.i("E2EI Enrollment Initialization Result: $initializationResult")
@@ -173,11 +144,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
         }
 
         val dpopChallengeResponse = e2EIRepository.validateDPoPChallenge(
-<<<<<<< HEAD
-            wireAccessToken.token, prevNonce, authz.wireDpopChallenge!!
-=======
             wireAccessToken.token, prevNonce, dPopAuthorizations.challenge
->>>>>>> 4b49e7e88f (feat(e2ei): upgrade corecrypto to RC34 (WPB-6272) (#2411))
         ).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.DPoPChallenge, it)
                 .toEitherLeft()
@@ -186,11 +153,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
         prevNonce = Nonce(dpopChallengeResponse.nonce)
 
         val oidcChallengeResponse = e2EIRepository.validateOIDCChallenge(
-<<<<<<< HEAD
-            idToken, oAuthState, prevNonce, authz.wireOidcChallenge!!
-=======
             idToken, oAuthState, prevNonce, oidcAuthorizations.challenge
->>>>>>> 4b49e7e88f (feat(e2ei): upgrade corecrypto to RC34 (WPB-6272) (#2411))
         ).getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.OIDCChallenge, it)
                 .toEitherLeft()
@@ -218,23 +181,14 @@ class EnrollE2EIUseCaseImpl internal constructor(
                     .toEitherLeft()
             }
 
-<<<<<<< HEAD
-        e2EIRepository.rotateKeysAndMigrateConversations(certificateRequest.response.decodeToString()).onFailure {
-            return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.ConversationMigration, it).toEitherLeft()
-        }
-=======
         e2EIRepository
-            .rotateKeysAndMigrateConversations(
-                certificateRequest.response.decodeToString(),
-                initializationResult.isNewClientRegistration
-            )
+            .rotateKeysAndMigrateConversations(certificateRequest.response.decodeToString())
             .onFailure {
                 return E2EIEnrollmentResult.Failed(
                     E2EIEnrollmentResult.E2EIStep.ConversationMigration,
                     it
                 ).toEitherLeft()
             }
->>>>>>> 4b49e7e88f (feat(e2ei): upgrade corecrypto to RC34 (WPB-6272) (#2411))
 
         e2EIRepository.nukeE2EIClient()
 
@@ -288,25 +242,15 @@ sealed interface E2EIEnrollmentResult {
         Certificate
     }
 
-<<<<<<< HEAD
-=======
     @Suppress("LongParameterList")
->>>>>>> 4b49e7e88f (feat(e2ei): upgrade corecrypto to RC34 (WPB-6272) (#2411))
     class Initialized(
         val target: String,
         val oAuthState: String?,
         val oAuthClaims: JsonObject,
-<<<<<<< HEAD
-        val authz: NewAcmeAuthz,
-        val lastNonce: String,
-        val orderLocation: String
-=======
-        val dPopAuthorizations: NewAcmeAuthz,
-        val oidcAuthorizations: NewAcmeAuthz,
         val lastNonce: Nonce,
         val orderLocation: String,
-        val isNewClientRegistration: Boolean = false
->>>>>>> 4b49e7e88f (feat(e2ei): upgrade corecrypto to RC34 (WPB-6272) (#2411))
+        val dPopAuthorizations: NewAcmeAuthz,
+        val oidcAuthorizations: NewAcmeAuthz,
     ) : E2EIEnrollmentResult
 
     class Finalized(val certificate: String) : E2EIEnrollmentResult

@@ -22,7 +22,6 @@ import com.wire.kalium.cryptography.AcmeDirectory
 import com.wire.kalium.cryptography.NewAcmeAuthz
 import com.wire.kalium.cryptography.NewAcmeOrder
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.e2ei.AuthorizationChallengeType
 import com.wire.kalium.logic.data.e2ei.AuthorizationResult
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.Nonce
@@ -34,7 +33,6 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.e2ei.AccessTokenResponse
 import com.wire.kalium.network.api.base.unbound.acme.ACMEResponse
-import com.wire.kalium.network.api.base.unbound.acme.AuthorizationResponse
 import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
 import io.mockative.Mock
 import io.mockative.any
@@ -52,89 +50,6 @@ import kotlin.test.Test
 
 @ExperimentalCoroutinesApi
 class EnrollE2EICertificateUseCaseTest {
-<<<<<<< HEAD
-    @Test
-    fun givenLoadTrustAnchorsFails_whenInvokeUseCase_thenReturnFailure() = runTest {
-        val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
-
-        // given
-        arrangement.withLoadTrustAnchorsResulting(TEST_EITHER_LEFT)
-
-        // when
-        val result = enrollE2EICertificateUseCase.initialEnrollment()
-
-        // then
-        result.shouldFail()
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::fetchTrustAnchors)
-            .with()
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::loadACMEDirectories)
-            .with()
-            .wasNotInvoked()
-
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getACMENonce)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewAccount)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewOrder)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createAuthz)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireNonce)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getDPoPToken)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireAccessToken)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateDPoPChallenge)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateOIDCChallenge)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::checkOrderRequest)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::checkOrderRequest)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::finalize)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::certificateRequest)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
-            .with()
-            .wasNotInvoked()
-    }
-=======
->>>>>>> 4b49e7e88f (feat(e2ei): upgrade corecrypto to RC34 (WPB-6272) (#2411))
 
     @Test
     fun givenLoadACMEDirectoriesFails_whenInvokeUseCase_thenReturnFailure() = runTest {

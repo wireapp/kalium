@@ -50,18 +50,16 @@ import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEAuthorizationResponse
 import com.wire.kalium.network.api.base.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.base.unbound.acme.AcmeDirectoriesResponse
-<<<<<<< HEAD
 import com.wire.kalium.network.api.base.unbound.acme.CertificateChain
-=======
-import com.wire.kalium.network.api.base.unbound.acme.DtoAuthorizationChallengeType
->>>>>>> 4b49e7e88f (feat(e2ei): upgrade corecrypto to RC34 (WPB-6272) (#2411))
 import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
+import com.wire.kalium.network.api.base.unbound.acme.DtoAuthorizationChallengeType
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.*
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlin.test.Ignore
 import kotlin.test.Test
 
 class E2EIRepositoryTest {

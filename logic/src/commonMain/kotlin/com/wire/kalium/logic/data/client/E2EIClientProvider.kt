@@ -22,9 +22,9 @@ import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.SelfUser
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -34,7 +34,7 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
 interface E2EIClientProvider {
-    suspend fun getE2EIClient(clientId: ClientId? = null): Either<CoreFailure, E2EIClient>
+    suspend fun getE2EIClient(clientId: ClientId? = null, isNewClient: Boolean = false): Either<CoreFailure, E2EIClient>
     suspend fun nuke()
 }
 
@@ -47,7 +47,7 @@ internal class EI2EIClientProviderImpl(
 
     private var e2EIClient: E2EIClient? = null
 
-    override suspend fun getE2EIClient(clientId: ClientId?): Either<CoreFailure, E2EIClient> =
+    override suspend fun getE2EIClient(clientId: ClientId?, isNewClient: Boolean): Either<CoreFailure, E2EIClient> =
         withContext(dispatchers.io) {
             val currentClientId =
                 clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })

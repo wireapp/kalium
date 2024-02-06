@@ -31,13 +31,12 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.e2ei.usecase.E2EIEnrollmentResult
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.functional.flatMap
-<<<<<<< HEAD
-=======
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrFail
->>>>>>> 4b49e7e88f (feat(e2ei): upgrade corecrypto to RC34 (WPB-6272) (#2411))
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapE2EIRequest
 import com.wire.kalium.logic.wrapMLSRequest
@@ -52,19 +51,9 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 interface E2EIRepository {
-<<<<<<< HEAD
-    suspend fun fetchTrustAnchors(): Either<CoreFailure, Unit>
-    suspend fun loadACMEDirectories(): Either<CoreFailure, AcmeDirectory>
-    suspend fun getACMENonce(endpoint: String): Either<CoreFailure, String>
-    suspend fun createNewAccount(prevNonce: String, createAccountEndpoint: String): Either<CoreFailure, String>
-    suspend fun createNewOrder(prevNonce: String, createOrderEndpoint: String): Either<CoreFailure, Triple<NewAcmeOrder, String, String>>
-    suspend fun createAuthz(prevNonce: String, authzEndpoint: String): Either<CoreFailure, Triple<NewAcmeAuthz, String, String>>
-    suspend fun getWireNonce(): Either<CoreFailure, String>
-    suspend fun getWireAccessToken(wireNonce: String): Either<CoreFailure, AccessTokenResponse>
-    suspend fun getDPoPToken(wireNonce: String): Either<CoreFailure, String>
-=======
-    suspend fun initE2EIClient(clientId: ClientId? = null, isNewClient: Boolean = false): Either<CoreFailure, Unit>
     suspend fun fetchAndSetTrustAnchors(): Either<CoreFailure, Unit>
+    suspend fun getWireAccessToken(wireNonce: String): Either<CoreFailure, AccessTokenResponse>
+    suspend fun initE2EIClient(clientId: ClientId? = null, isNewClient: Boolean = false): Either<CoreFailure, Unit>
     suspend fun loadACMEDirectories(): Either<CoreFailure, AcmeDirectory>
     suspend fun getACMENonce(endpoint: String): Either<CoreFailure, Nonce>
     suspend fun createNewAccount(prevNonce: Nonce, createAccountEndpoint: String): Either<CoreFailure, Nonce>
@@ -77,9 +66,7 @@ interface E2EIRepository {
     ): Either<CoreFailure, AuthorizationResult>
 
     suspend fun getWireNonce(): Either<CoreFailure, Nonce>
-    suspend fun getWireAccessToken(dpopToken: String): Either<CoreFailure, AccessTokenResponse>
     suspend fun getDPoPToken(wireNonce: Nonce): Either<CoreFailure, String>
->>>>>>> 4b49e7e88f (feat(e2ei): upgrade corecrypto to RC34 (WPB-6272) (#2411))
     suspend fun validateDPoPChallenge(
         accessToken: String,
         prevNonce: Nonce,
@@ -95,18 +82,11 @@ interface E2EIRepository {
 
     suspend fun setDPoPChallengeResponse(challengeResponse: ChallengeResponse): Either<CoreFailure, Unit>
     suspend fun setOIDCChallengeResponse(challengeResponse: ChallengeResponse): Either<CoreFailure, Unit>
-<<<<<<< HEAD
-    suspend fun finalize(location: String, prevNonce: String): Either<CoreFailure, Pair<ACMEResponse, String>>
-    suspend fun checkOrderRequest(location: String, prevNonce: String): Either<CoreFailure, Pair<ACMEResponse, String>>
-    suspend fun certificateRequest(location: String, prevNonce: String): Either<CoreFailure, ACMEResponse>
-    suspend fun rotateKeysAndMigrateConversations(certificateChain: String): Either<CoreFailure, Unit>
-=======
     suspend fun finalize(location: String, prevNonce: Nonce): Either<CoreFailure, Pair<ACMEResponse, String>>
     suspend fun checkOrderRequest(location: String, prevNonce: Nonce): Either<CoreFailure, Pair<ACMEResponse, String>>
     suspend fun certificateRequest(location: String, prevNonce: Nonce): Either<CoreFailure, ACMEResponse>
-    suspend fun rotateKeysAndMigrateConversations(certificateChain: String, isNewClient: Boolean = false): Either<CoreFailure, Unit>
->>>>>>> 4b49e7e88f (feat(e2ei): upgrade corecrypto to RC34 (WPB-6272) (#2411))
     suspend fun getOAuthRefreshToken(): Either<CoreFailure, String?>
+    suspend fun rotateKeysAndMigrateConversations(certificateChain: String): Either<CoreFailure, Unit>
     suspend fun nukeE2EIClient()
     suspend fun fetchFederationCertificates(): Either<CoreFailure, Unit>
     suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String>
@@ -125,9 +105,6 @@ class E2EIRepositoryImpl(
     private val acmeMapper: AcmeMapper = AcmeMapper()
 ) : E2EIRepository {
 
-<<<<<<< HEAD
-    override suspend fun fetchTrustAnchors(): Either<CoreFailure, Unit> = userConfigRepository.getE2EISettings().flatMap {
-=======
     override suspend fun initE2EIClient(clientId: ClientId?, isNewClient: Boolean): Either<CoreFailure, Unit> =
         e2EIClientProvider.getE2EIClient(clientId, isNewClient).fold({
             kaliumLogger.w("E2EI client initialization failed: $it")
@@ -138,7 +115,6 @@ class E2EIRepositoryImpl(
         })
 
     override suspend fun fetchAndSetTrustAnchors(): Either<CoreFailure, Unit> = userConfigRepository.getE2EISettings().flatMap {
->>>>>>> 4b49e7e88f (feat(e2ei): upgrade corecrypto to RC34 (WPB-6272) (#2411))
         wrapApiRequest {
             acmeApi.getTrustAnchors(Url(it.discoverUrl).protocolWithAuthority)
         }.flatMap { trustAnchors ->

@@ -26,7 +26,6 @@ import com.wire.kalium.cryptography.E2EIConversationState
 import com.wire.kalium.cryptography.GroupInfoBundle
 import com.wire.kalium.cryptography.GroupInfoEncryptionType
 import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.cryptography.RatchetTreeType
 import com.wire.kalium.cryptography.RotateBundle
 import com.wire.kalium.cryptography.WelcomeBundle
@@ -1619,7 +1618,7 @@ class MLSConversationRepositoryTest {
             const val EPOCH = 5UL
             const val RAW_GROUP_ID = "groupId"
             val GROUP_ID = GroupID(RAW_GROUP_ID)
-            val WELCOME_BUNDLE = WelcomeBundle(RAW_GROUP_ID,null)
+            val WELCOME_BUNDLE = WelcomeBundle(RAW_GROUP_ID, null)
             val TIME = DateTimeUtil.currentIsoDateTimeString()
             val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(ErrorResponse(405, "", ""))
             val MLS_STALE_MESSAGE_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-stale-message"))
@@ -1644,16 +1643,10 @@ class MLSConversationRepositoryTest {
                 RatchetTreeType.FULL,
                 PUBLIC_GROUP_STATE
             )
-<<<<<<< HEAD
-            val COMMIT_BUNDLE = CommitBundle(COMMIT, WELCOME, PUBLIC_GROUP_STATE_BUNDLE)
-            val ROTATE_BUNDLE = RotateBundle(mapOf(RAW_GROUP_ID to COMMIT_BUNDLE), emptyList(), emptyList())
-            val WIRE_IDENTITY = WireIdentity("id", "user_handle", "User Test", "domain.com", "certificate", CryptoCertificateStatus.VALID)
-=======
             val COMMIT_BUNDLE = CommitBundle(COMMIT, WELCOME, PUBLIC_GROUP_STATE_BUNDLE, null)
             val ROTATE_BUNDLE = RotateBundle(mapOf(RAW_GROUP_ID to COMMIT_BUNDLE), emptyList(), emptyList(), null)
             val WIRE_IDENTITY =
-                WireIdentity("id", "user_handle", "User Test", "domain.com", "certificate", CryptoCertificateStatus.VALID, thumbprint = "thumbprint")
->>>>>>> 4b49e7e88f (feat(e2ei): upgrade corecrypto to RC34 (WPB-6272) (#2411))
+                WireIdentity("id", "user_handle", "User Test", "domain.com", "certificate", CryptoCertificateStatus.VALID)
             val E2EI_CONVERSATION_CLIENT_INFO_ENTITY =
                 E2EIConversationClientInfoEntity(UserIDEntity(uuid4().toString(), "domain.com"), "clientId", "groupId")
             val DECRYPTED_MESSAGE_BUNDLE = com.wire.kalium.cryptography.DecryptedMessageBundle(
