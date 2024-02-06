@@ -27,11 +27,11 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.e2ei.usecase.E2EIEnrollmentResult
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrFail
@@ -51,9 +51,9 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 interface E2EIRepository {
+    suspend fun initE2EIClient(clientId: ClientId? = null, isNewClient: Boolean = false): Either<CoreFailure, Unit>
     suspend fun fetchAndSetTrustAnchors(): Either<CoreFailure, Unit>
     suspend fun getWireAccessToken(wireNonce: String): Either<CoreFailure, AccessTokenResponse>
-    suspend fun initE2EIClient(clientId: ClientId? = null, isNewClient: Boolean = false): Either<CoreFailure, Unit>
     suspend fun loadACMEDirectories(): Either<CoreFailure, AcmeDirectory>
     suspend fun getACMENonce(endpoint: String): Either<CoreFailure, Nonce>
     suspend fun createNewAccount(prevNonce: Nonce, createAccountEndpoint: String): Either<CoreFailure, Nonce>
@@ -85,8 +85,8 @@ interface E2EIRepository {
     suspend fun finalize(location: String, prevNonce: Nonce): Either<CoreFailure, Pair<ACMEResponse, String>>
     suspend fun checkOrderRequest(location: String, prevNonce: Nonce): Either<CoreFailure, Pair<ACMEResponse, String>>
     suspend fun certificateRequest(location: String, prevNonce: Nonce): Either<CoreFailure, ACMEResponse>
+    suspend fun rotateKeysAndMigrateConversations(certificateChain: String, isNewClient: Boolean = false): Either<CoreFailure, Unit>
     suspend fun getOAuthRefreshToken(): Either<CoreFailure, String?>
-    suspend fun rotateKeysAndMigrateConversations(certificateChain: String): Either<CoreFailure, Unit>
     suspend fun nukeE2EIClient()
     suspend fun fetchFederationCertificates(): Either<CoreFailure, Unit>
     suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String>
@@ -120,7 +120,7 @@ class E2EIRepositoryImpl(
         }.flatMap { trustAnchors ->
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapE2EIRequest {
-                    mlsClient.registerTrustAnchors(trustAnchors.value)
+                    mlsClient.registerTrustAnchors(trustAnchors.decodeToString())
                 }
             }
         }
@@ -140,9 +140,7 @@ class E2EIRepositoryImpl(
 
     override suspend fun getACMENonce(endpoint: String) = wrapApiRequest {
         acmeApi.getACMENonce(endpoint)
-    }.flatMap {
-        Either.Right(Nonce(it))
-    }
+    }.map { Nonce(it) }
 
     override suspend fun createNewAccount(prevNonce: Nonce, createAccountEndpoint: String) =
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
@@ -285,10 +283,10 @@ class E2EIRepositoryImpl(
             }.map { it }
         }
 
-    override suspend fun rotateKeysAndMigrateConversations(certificateChain: String) =
+    override suspend fun rotateKeysAndMigrateConversations(certificateChain: String, isNewClient: Boolean) =
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
             currentClientIdProvider().flatMap { clientId ->
-                mlsConversationRepository.rotateKeysAndMigrateConversations(clientId, e2eiClient, certificateChain)
+                mlsConversationRepository.rotateKeysAndMigrateConversations(clientId, e2eiClient, certificateChain, isNewClient)
             }
         }
 
@@ -298,11 +296,11 @@ class E2EIRepositoryImpl(
 
     override suspend fun fetchFederationCertificates(): Either<CoreFailure, Unit> = userConfigRepository.getE2EISettings().flatMap {
         wrapApiRequest {
-            acmeApi.getACMEFederation(Url(it.discoverUrl).host)
+            acmeApi.getACMEFederation(Url(it.discoverUrl).protocolWithAuthority)
         }.flatMap { data ->
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
-                    mlsClient.registerIntermediateCa(data.value)
+                    mlsClient.registerIntermediateCa(data)
                 }
             }
         }
@@ -320,5 +318,5 @@ class E2EIRepositoryImpl(
     override suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray> =
         wrapApiRequest {
             acmeApi.getClientDomainCRL(url)
-         }
+        }
 }

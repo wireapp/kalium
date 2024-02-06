@@ -207,7 +207,7 @@ internal class ConversationGroupRepositoryImpl(
         remainingAttempts: Int = 2
     ): Either<CoreFailure, Unit> {
         return when (val addingMemberResult = mlsConversationRepository.addMemberToMLSGroup(GroupID(groupId), userIdList)) {
-            is Either.Right -> handleMLSMembersAdded(conversationId, userIdList, failedUsersList)
+            is Either.Right -> handleMLSMembersNotAdded(conversationId, failedUsersList)
             is Either.Left -> {
                 addingMemberResult.value.handleMLSMembersFailed(
                     conversationId = conversationId,
@@ -262,13 +262,12 @@ internal class ConversationGroupRepositoryImpl(
         }
     }
 
-    private suspend fun handleMLSMembersAdded(
+    private suspend fun handleMLSMembersNotAdded(
         conversationId: ConversationId,
-        userIdList: List<UserId>,
         failedUsersList: Set<UserId>
     ): Either<CoreFailure, Unit> {
-        return newGroupConversationSystemMessagesCreator.value.conversationResolvedMembersAddedAndFailed(
-            conversationId.toDao(), userIdList, failedUsersList.toList()
+        return newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
+            conversationId, failedUsersList
         ).flatMap {
             Either.Right(Unit)
         }

@@ -56,6 +56,7 @@ internal class EI2EIClientProviderImpl(
                 Either.Right(it)
             } ?: run {
                 getSelfUserInfo().flatMap { selfUser ->
+                    // TODO: use e2eiNewEnrollment for new clients, when CC fix the issues in it
                     mlsClientProvider.getMLSClient(currentClientId).flatMap {
                         val newE2EIClient = if (it.isE2EIEnabled()) {
                             kaliumLogger.e("initial E2EI client for mls client that already has e2ei enabled")

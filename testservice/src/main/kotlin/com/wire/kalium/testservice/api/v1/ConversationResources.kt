@@ -363,7 +363,7 @@ class ConversationResources(private val instanceService: InstanceService) {
     @Consumes(MediaType.APPLICATION_JSON)
     fun sendText(@PathParam("id") id: String, @Valid sendTextRequest: SendTextRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
-        // TODO Implement link previews here
+        // TODO Implement buttons and link previews here
         val quotedMessageId = sendTextRequest.quote?.quotedMessageId
         val mentions = when (sendTextRequest.mentions.size) {
             0 -> emptyList<MessageMention>()
@@ -386,8 +386,7 @@ class ConversationResources(private val instanceService: InstanceService) {
                     text,
                     mentions,
                     messageTimer,
-                    quotedMessageId,
-                    buttons
+                    quotedMessageId
                 )
             }
         }

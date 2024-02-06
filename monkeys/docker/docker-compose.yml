@@ -9,6 +9,8 @@ services:
             - postgres
         volumes:
             - ./config:/config
+        entrypoint:
+            - /opt/app/bin/monkeys
         command:
             - /config/${CONFIG:-config.json}
     postgres:

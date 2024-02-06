@@ -88,7 +88,6 @@ class EnrollE2EIUseCaseImpl internal constructor(
         val dPopAuthorizations = authorizations.dpopAuthorization
 
         val oAuthState = e2EIRepository.getOAuthRefreshToken().getOrNull()
-        kaliumLogger.i("oAuthStAte: $oAuthState")
 
         val initializationResult = E2EIEnrollmentResult.Initialized(
             target = oidcAuthorizations.challenge.target,
@@ -100,7 +99,8 @@ class EnrollE2EIUseCaseImpl internal constructor(
             dPopAuthorizations = dPopAuthorizations,
             oidcAuthorizations = dPopAuthorizations,
             lastNonce = prevNonce,
-            orderLocation = newOrderResponse.third
+            orderLocation = newOrderResponse.third,
+            isNewClientRegistration = isNewClientRegistration
         )
 
         kaliumLogger.i("E2EI Enrollment Initialization Result: $initializationResult")
@@ -184,10 +184,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
         e2EIRepository
             .rotateKeysAndMigrateConversations(certificateRequest.response.decodeToString())
             .onFailure {
-                return E2EIEnrollmentResult.Failed(
-                    E2EIEnrollmentResult.E2EIStep.ConversationMigration,
-                    it
-                ).toEitherLeft()
+                return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.ConversationMigration, it).toEitherLeft()
             }
 
         e2EIRepository.nukeE2EIClient()
@@ -251,6 +248,7 @@ sealed interface E2EIEnrollmentResult {
         val orderLocation: String,
         val dPopAuthorizations: NewAcmeAuthz,
         val oidcAuthorizations: NewAcmeAuthz,
+        val isNewClientRegistration: Boolean = false
     ) : E2EIEnrollmentResult
 
     class Finalized(val certificate: String) : E2EIEnrollmentResult

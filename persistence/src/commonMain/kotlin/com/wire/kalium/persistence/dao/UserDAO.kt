@@ -214,7 +214,7 @@ interface UserDAO {
      *
      * @return true if the user was updated
      */
-    suspend fun updateUser(update: PartialUserEntity): Boolean
+    suspend fun updateUser(update: PartialUserEntity)
 
     suspend fun updateUser(users: List<PartialUserEntity>)
 
