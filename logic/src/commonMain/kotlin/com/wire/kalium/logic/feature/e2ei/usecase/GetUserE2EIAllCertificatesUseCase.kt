@@ -17,32 +17,37 @@
  */
 package com.wire.kalium.logic.feature.e2ei.usecase
 
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.E2eiCertificate
 import com.wire.kalium.logic.feature.e2ei.PemCertificateDecoder
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.data.conversation.ClientId
 
 /**
  * This use case is used to get all e2ei certificates of the user.
- * Returns Map<String, E2eiCertificate> where key is value of [ClientId] and [E2eiCertificate] is certificate itself
+ * Returns [UsersE2eiCertificates] which might be used to get [E2eiCertificate] by [ClientId]
  */
 interface GetUserE2eiCertificatesUseCase {
-    suspend operator fun invoke(userId: UserId): Map<String, E2eiCertificate>
+    suspend operator fun invoke(userId: UserId): UsersE2eiCertificates
 }
 
 class GetUserE2eiCertificatesUseCaseImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
     private val pemCertificateDecoder: PemCertificateDecoder
 ) : GetUserE2eiCertificatesUseCase {
-    override suspend operator fun invoke(userId: UserId): Map<String, E2eiCertificate> =
+    override suspend operator fun invoke(userId: UserId): UsersE2eiCertificates =
         mlsConversationRepository.getUserIdentity(userId).map { identities ->
             val result = mutableMapOf<String, E2eiCertificate>()
             identities.forEach {
                 result[it.clientId.value] = pemCertificateDecoder.decode(it.certificate, it.status)
             }
-            result
-        }.getOrElse(mapOf())
+            UsersE2eiCertificates(userId, result)
+        }.getOrElse(UsersE2eiCertificates(userId, mapOf()))
+}
+
+data class UsersE2eiCertificates(private val userId: UserId, private val map: Map<String, E2eiCertificate>) {
+    operator fun get(clientId: ClientId): E2eiCertificate? = map["${userId.value}:${clientId.value}@${userId.domain}"]
+    fun isEmpty() = map.isEmpty()
 }

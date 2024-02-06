@@ -21,6 +21,7 @@ import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.MLSFailure
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificatesUseCaseImpl
@@ -71,10 +72,9 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
 
         val result = getUserE2eiAllCertificateStatuses(USER_ID)
 
-        assertEquals(3, result.size)
-        assertEquals(CertificateStatus.VALID, result[identity1.clientId.value]?.status)
-        assertEquals(CertificateStatus.EXPIRED, result[identity2.clientId.value]?.status)
-        assertEquals(CertificateStatus.REVOKED, result[identity3.clientId.value]?.status)
+        assertEquals(CertificateStatus.VALID, result[ClientId(identity1.clientId.value)]?.status)
+        assertEquals(CertificateStatus.EXPIRED, result[ClientId(identity2.clientId.value)]?.status)
+        assertEquals(CertificateStatus.REVOKED, result[ClientId(identity3.clientId.value)]?.status)
     }
 
     private class Arrangement(private val block: Arrangement.() -> Unit) :
