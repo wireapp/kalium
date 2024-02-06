@@ -130,7 +130,9 @@ class EventDataSource(
                 hasMore = notificationsPageResult.value.hasMore
                 lastFetchedNotificationId = notificationsPageResult.value.notifications.lastOrNull()?.id
 
-                notificationsPageResult.value.notifications.flatMap{eventMapper.fromDTO(it, isLive = false)}.forEach { event ->
+                notificationsPageResult.value.notifications.flatMap {
+                    eventMapper.fromDTO(it, isLive = false)
+                }.forEach { event ->
                     if (!coroutineContext.isActive) {
                         return@flow
                     }
