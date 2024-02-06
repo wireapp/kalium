@@ -65,7 +65,8 @@ class DatabaseExporterTest : BaseDatabaseTest() {
     @Test
     fun givenSelfDeletingMessages_whenBackup_thenTheyAreNotIncludedInTheGeneratedBackup() = runTest {
         val selfDeleteMessage = OTHER_MESSAGE.copy(id = "selfDelete", expireAfterMs = 10000)
-        val normalMessage = OTHER_MESSAGE.copy(id = "normal",expireAfterMs = null)
+        val normalMessage = OTHER_MESSAGE.copy(id = "normal",expireAfterMs = null, sender = OTHER_USER)
+
         localDB.messageDAO.insertOrIgnoreMessages(listOf(selfDeleteMessage, normalMessage))
 
         localDB.messageDAO.getMessageById(selfDeleteMessage.id, selfDeleteMessage.conversationId)?.also {
