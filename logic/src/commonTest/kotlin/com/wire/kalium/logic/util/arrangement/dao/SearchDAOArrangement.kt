@@ -50,7 +50,7 @@ internal interface SearchDAOArrangement {
         query: Matcher<String> = any()
     )
 
-    fun withSearchBuHandle(
+    fun withSearchByHandle(
         result: List<UserSearchEntity>,
         handle: Matcher<String> = any()
     )
@@ -104,7 +104,7 @@ internal class SearchDAOArrangementImpl : SearchDAOArrangement {
             .thenReturn(result)
     }
 
-    override fun withSearchBuHandle(result: List<UserSearchEntity>, handle: Matcher<String>) {
+    override fun withSearchByHandle(result: List<UserSearchEntity>, handle: Matcher<String>) {
         given(searchDAO)
             .suspendFunction(searchDAO::handleSearch)
             .whenInvokedWith(handle)

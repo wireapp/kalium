@@ -470,7 +470,7 @@ class SearchUserRepositoryTest {
     fun givenSearchQueryAndNullForConversation_thenSearchingByHandle_thenCorrectDaoFunctionIsCalled() = runTest {
         val (arrangement, searchUserRepository) = Arrangement()
             .arrange {
-                withSearchBuHandle(emptyList())
+                withSearchByHandle(emptyList())
             }
 
         searchUserRepository.searchLocalByHandle("handle", null).shouldSucceed()
