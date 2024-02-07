@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.cryptography.CommitBundle
+import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.WireIdentity
@@ -93,7 +94,15 @@ data class DecryptedMessageBundle(
     val identity: E2EIdentity?
 )
 
-data class E2EIdentity(val clientId: String, val handle: String, val displayName: String, val domain: String)
+data class E2EIdentity(
+    val clientId: CryptoQualifiedClientId,
+    val handle: String,
+    val displayName: String,
+    val domain: String,
+    val certificate: String,
+    val status: CryptoCertificateStatus,
+    val thumbprint: String
+)
 
 @Suppress("TooManyFunctions", "LongParameterList")
 interface MLSConversationRepository {
@@ -556,19 +565,26 @@ internal class MLSConversationDataSource(
                     mlsClient.getDeviceIdentities(
                         it.mlsGroupId,
                         listOf(CryptoQualifiedClientId(it.clientId, it.userId.toModel().toCrypto()))
-                    ).first() // todo: ask if it's possible that's a client has more than one identity?
+                    ).first()
                 }
             }
         }
 
     override suspend fun getUserIdentity(userId: UserId) =
-        wrapStorageRequest { conversationDAO.getMLSGroupIdByUserId(userId.toDao()) }.flatMap { mlsGroupId ->
+        wrapStorageRequest {
+            if (userId == selfUserId) {
+                val selfConversationId = conversationDAO.getSelfConversationId(ConversationEntity.Protocol.MLS)
+                conversationDAO.getMLSGroupIdByConversationId(selfConversationId!!)
+            } else {
+                conversationDAO.getMLSGroupIdByUserId(userId.toDao())
+            }
+        }.flatMap { mlsGroupId ->
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
                     mlsClient.getUserIdentities(
                         mlsGroupId,
                         listOf(userId.toCrypto())
-                    )[userId.value]!!
+                    )[userId.value] ?: emptyList()
                 }
             }
         }
