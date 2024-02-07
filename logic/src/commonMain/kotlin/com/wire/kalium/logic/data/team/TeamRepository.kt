@@ -19,12 +19,12 @@
 package com.wire.kalium.logic.data.team
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.service.ServiceMapper
+import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
@@ -54,8 +54,7 @@ interface TeamRepository {
     suspend fun fetchMembersByTeamId(teamId: TeamId, userDomain: String): Either<CoreFailure, Unit>
     suspend fun getTeam(teamId: TeamId): Flow<Team?>
     suspend fun deleteConversation(conversationId: ConversationId, teamId: TeamId): Either<CoreFailure, Unit>
-    suspend fun updateMemberRole(teamId: String, userId: String, permissionCode: Int?): Either<CoreFailure, Unit>
-    suspend fun updateTeam(team: Team): Either<CoreFailure, Unit>
+    suspend fun syncTeam(teamId: TeamId): Either<CoreFailure, Team>
     suspend fun syncServices(teamId: TeamId): Either<CoreFailure, Unit>
     suspend fun approveLegalHoldRequest(teamId: TeamId, password: String?): Either<CoreFailure, Unit>
     suspend fun fetchLegalHoldStatus(teamId: TeamId): Either<CoreFailure, LegalHoldStatus>
@@ -136,19 +135,15 @@ internal class TeamDataSource(
         }
     }
 
-    override suspend fun updateMemberRole(teamId: String, userId: String, permissionCode: Int?): Either<CoreFailure, Unit> {
-        return wrapStorageRequest {
-            userDAO.upsertTeamMemberUserTypes(
-                mapOf(
-                    QualifiedIDEntity(userId, selfUserId.domain) to userTypeEntityTypeMapper.teamRoleCodeToUserType(permissionCode)
-                )
-            )
-        }
-    }
-
-    override suspend fun updateTeam(team: Team): Either<CoreFailure, Unit> {
-        return wrapStorageRequest {
-            teamDAO.updateTeam(teamMapper.fromModelToEntity(team))
+    override suspend fun syncTeam(teamId: TeamId): Either<CoreFailure, Team> = wrapApiRequest {
+        teamsApi.getTeamInfo(teamId = teamId.value)
+    }.map { teamDTO ->
+        teamMapper.fromDtoToEntity(teamDTO)
+    }.flatMap { teamEntity ->
+        wrapStorageRequest {
+            teamDAO.updateTeam(teamEntity)
+        }.map {
+            teamMapper.fromDaoModelToTeam(teamEntity)
         }
     }
 
