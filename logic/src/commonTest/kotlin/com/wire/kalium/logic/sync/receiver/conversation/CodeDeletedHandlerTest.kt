@@ -41,8 +41,6 @@ class CodeDeletedHandlerTest {
         val event = Event.Conversation.CodeDeleted(
             conversationId = ConversationId("conversationId", "domain"),
             id = "event-id",
-            transient = false,
-            live = false
         )
 
         handler.handle(event)
