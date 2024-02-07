@@ -30,6 +30,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.Event.Conversation.MLSWelcome
+import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
@@ -55,6 +56,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -365,9 +367,9 @@ internal class MLSConversationDataSource(
 
     private suspend fun processCommitBundleEvents(events: List<EventContentDTO>) {
         events.forEach { eventContentDTO ->
-            val event = MapperProvider.eventMapper(selfUserId).fromEventContentDTO(LocalId.generate(), eventContentDTO, true, false)
+            val event = MapperProvider.eventMapper(selfUserId).fromEventContentDTO(LocalId.generate(), eventContentDTO)
             if (event is Event.Conversation) {
-                commitBundleEventReceiver.onEvent(event)
+                commitBundleEventReceiver.onEvent(event, EventDeliveryInfo(isTransient = true, source = EventSource.LIVE))
             }
         }
     }
