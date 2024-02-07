@@ -127,6 +127,7 @@ class LoginCommand : CliktCommand(name = "login") {
             when (client.getOrRegister(RegisterClientUseCase.RegisterClientParam(password, emptyList()))) {
                 is RegisterClientResult.Failure -> throw PrintMessage("Client registration failed")
                 is RegisterClientResult.Success -> echo("Login successful")
+                is RegisterClientResult.E2EICertificateRequired -> echo("Login successful and e2ei is required")
             }
         }
 

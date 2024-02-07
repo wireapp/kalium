@@ -21,12 +21,13 @@ import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.data.conversation.Conversation.VerificationStatus
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.conversation.mls.ConversationVerificationStatusChecker
+import com.wire.kalium.logic.feature.conversation.mls.EpochChangesObserver
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.util.DateTimeUtil
@@ -43,13 +44,13 @@ internal interface MLSConversationsVerificationStatusesHandler {
 internal class MLSConversationsVerificationStatusesHandlerImpl(
     private val conversationRepository: ConversationRepository,
     private val persistMessage: PersistMessageUseCase,
-    private val mlsConversationRepository: MLSConversationRepository,
+    private val conversationVerificationStatusChecker: ConversationVerificationStatusChecker,
+    private val epochChangesObserver: EpochChangesObserver,
     private val selfUserId: UserId,
 ) : MLSConversationsVerificationStatusesHandler {
 
     override suspend fun invoke() =
-        mlsConversationRepository.observeEpochChanges()
-            .mapLatest { groupId -> mlsConversationRepository.getConversationVerificationStatus(groupId).map { groupId to it } }
+        epochChangesObserver.observe().mapLatest { groupId -> conversationVerificationStatusChecker.check(groupId).map { groupId to it } }
             .onlyRight()
             .collect { (groupId, newStatus) ->
                 conversationRepository.getConversationDetailsByMLSGroupId(groupId)

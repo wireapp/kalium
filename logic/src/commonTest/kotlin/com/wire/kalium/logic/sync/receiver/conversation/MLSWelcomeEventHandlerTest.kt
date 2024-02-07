@@ -19,6 +19,7 @@ package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.MLSGroupId
+import com.wire.kalium.cryptography.WelcomeBundle
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
@@ -260,7 +261,7 @@ class MLSWelcomeEventHandlerTest {
             given(mlsClient)
                 .suspendFunction(mlsClient::processWelcomeMessage)
                 .whenInvokedWith(any())
-                .thenReturn(mlsGroupId)
+                .thenReturn(WELCOME_BUNDLE)
         }
 
         fun withRefillKeyPackagesReturning(result: RefillKeyPackagesResult) = apply {
@@ -298,5 +299,6 @@ class MLSWelcomeEventHandlerTest {
             WELCOME.encodeBase64(),
             timestampIso = "2022-03-30T15:36:00.000Z"
         )
+        val WELCOME_BUNDLE = WelcomeBundle(MLS_GROUP_ID, null)
     }
 }
