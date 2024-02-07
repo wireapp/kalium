@@ -145,7 +145,7 @@ internal class EventGathererImpl(
         val envelope = webSocketEvent.payload
         val obfuscatedId = envelope.event.id.obfuscateId()
         if (offlineEventBuffer.contains(envelope.event)) {
-            if (offlineEventBuffer.clearBufferIfLastEventEquals(envelope.event)) {
+            if (offlineEventBuffer.clearHistoryIfLastEventEquals(envelope.event)) {
                 // Really live
                 logger.d("Removed most recent event from offlineEventBuffer: '$obfuscatedId'")
             } else {

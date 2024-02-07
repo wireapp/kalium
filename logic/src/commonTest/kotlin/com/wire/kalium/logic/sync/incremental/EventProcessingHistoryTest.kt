@@ -93,7 +93,7 @@ class EventProcessingHistoryTest {
         eventsBuffer.add(event1)
         eventsBuffer.add(event2)
 
-        val result = eventsBuffer.clearBufferIfLastEventEquals(event2)
+        val result = eventsBuffer.clearHistoryIfLastEventEquals(event2)
 
         assertTrue(result)
     }
@@ -105,7 +105,7 @@ class EventProcessingHistoryTest {
         eventsBuffer.add(event1)
         eventsBuffer.add(event2)
 
-        eventsBuffer.clearBufferIfLastEventEquals(event2)
+        eventsBuffer.clearHistoryIfLastEventEquals(event2)
 
         assertFalse { eventsBuffer.contains(event1) }
         assertFalse { eventsBuffer.contains(event2) }
@@ -131,7 +131,7 @@ class EventProcessingHistoryTest {
         eventsBuffer.add(event1)
         eventsBuffer.add(event2)
 
-        val result = eventsBuffer.clearBufferIfLastEventEquals(event1)
+        val result = eventsBuffer.clearHistoryIfLastEventEquals(event1)
 
         assertFalse(result)
     }
@@ -143,7 +143,7 @@ class EventProcessingHistoryTest {
         eventsBuffer.add(event1)
         eventsBuffer.add(event2)
 
-        eventsBuffer.clearBufferIfLastEventEquals(event1)
+        eventsBuffer.clearHistoryIfLastEventEquals(event1)
 
         assertTrue { eventsBuffer.contains(event1) }
         assertTrue { eventsBuffer.contains(event2) }

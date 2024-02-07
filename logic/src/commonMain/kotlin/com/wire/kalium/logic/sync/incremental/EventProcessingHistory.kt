@@ -61,7 +61,7 @@ internal class EventProcessingHistory {
      * @return True if this [event] was the one added most recently and the storage was cleared.
      *         False otherwise.
      */
-    suspend fun clearBufferIfLastEventEquals(event: Event): Boolean = mutex.withLock {
+    suspend fun clearHistoryIfLastEventEquals(event: Event): Boolean = mutex.withLock {
         if (event == lastAddedEvent) {
             events.clear()
             lastAddedEvent = null
