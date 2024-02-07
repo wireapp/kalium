@@ -29,7 +29,6 @@ import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.event.Event.Conversation.MLSWelcome
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
@@ -77,7 +76,6 @@ import io.ktor.util.decodeBase64Bytes
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.withContext
