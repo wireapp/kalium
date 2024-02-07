@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-@file:Suppress("konsist.repositoriesShouldNotAccessFeaturePackageClasses", "TooManyFunctions")
+@file:Suppress("TooManyFunctions")
 
 package com.wire.kalium.logic.data.e2ei
 
