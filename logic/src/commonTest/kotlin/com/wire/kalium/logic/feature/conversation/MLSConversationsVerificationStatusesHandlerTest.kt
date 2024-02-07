@@ -179,7 +179,6 @@ class MLSConversationsVerificationStatusesHandlerTest {
         PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl() {
 
-
         init {
             withUpdateVerificationStatus(Either.Right(Unit))
             withPersistingMessage(Either.Right(Unit))
@@ -189,7 +188,8 @@ class MLSConversationsVerificationStatusesHandlerTest {
             this@Arrangement to MLSConversationsVerificationStatusesHandlerImpl(
                 conversationRepository = conversationRepository,
                 persistMessage = persistMessageUseCase,
-                mlsConversationRepository = mlsConversationRepository,
+                conversationVerificationStatusChecker = conversationVerificationStatusChecker,
+                epochChangesObserver = epochChangesObserver,
                 selfUserId = TestUser.USER_ID
             )
         }

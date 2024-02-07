@@ -19,8 +19,9 @@ package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.feature.conversation.mls.ConversationVerificationStatusChecker
+import com.wire.kalium.logic.feature.conversation.mls.EpochChangesObserver
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -29,26 +30,33 @@ import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
 
 internal interface MLSConversationRepositoryArrangement {
-    val mlsConversationRepository: MLSConversationRepository
+    val epochChangesObserver: EpochChangesObserver
+    val conversationVerificationStatusChecker: ConversationVerificationStatusChecker
 
     fun withObserveEpochChanges(result: Flow<GroupID>)
     fun withMLSConversationVerificationStatus(result: Either<CoreFailure, Conversation.VerificationStatus>)
 }
 
-internal open class MLSConversationRepositoryArrangementImpl : MLSConversationRepositoryArrangement {
+internal open class MLSConversationRepositoryArrangementImpl :
+    MLSConversationRepositoryArrangement {
+
     @Mock
-    override val mlsConversationRepository: MLSConversationRepository = mock(MLSConversationRepository::class)
+    override val epochChangesObserver: EpochChangesObserver = mock(EpochChangesObserver::class)
+
+    @Mock
+    override val conversationVerificationStatusChecker =
+        mock(ConversationVerificationStatusChecker::class)
 
     override fun withObserveEpochChanges(result: Flow<GroupID>) {
-        given(mlsConversationRepository)
-            .suspendFunction(mlsConversationRepository::observeEpochChanges)
+        given(epochChangesObserver)
+            .function(epochChangesObserver::observe)
             .whenInvoked()
             .thenReturn(result)
     }
 
     override fun withMLSConversationVerificationStatus(result: Either<CoreFailure, Conversation.VerificationStatus>) {
-        given(mlsConversationRepository)
-            .suspendFunction(mlsConversationRepository::getConversationVerificationStatus)
+        given(conversationVerificationStatusChecker)
+            .suspendFunction(conversationVerificationStatusChecker::check)
             .whenInvokedWith(any())
             .thenReturn(result)
     }
