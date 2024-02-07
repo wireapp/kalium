@@ -563,6 +563,10 @@ internal class CallDataSource(
             callJobs[conversationId] = scope.launch {
                 observeEpochInfo(conversationId).onSuccess {
                     it.collectLatest { epochInfo ->
+                        callingLogger.i(
+                            "[CallRepository] Received epoch change for conversation = " +
+                                    conversationId.toLogString() + " | epoch = " + epochInfo.epoch
+                        )
                         onEpochChange(conversationId, epochInfo)
                     }
                 }
