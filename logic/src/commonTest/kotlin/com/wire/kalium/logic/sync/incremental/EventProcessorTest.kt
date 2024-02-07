@@ -56,7 +56,7 @@ class EventProcessorTest {
             .arrange()
 
         // When
-        eventProcessor.processEvent(event, TestEvent.liveDeliveryInfo)
+        eventProcessor.processEvent(event.wrapInEnvelope())
 
         // Then
         verify(arrangement.eventRepository)
@@ -75,7 +75,7 @@ class EventProcessorTest {
             .arrange()
 
         // When
-        eventProcessor.processEvent(event, TestEvent.liveDeliveryInfo)
+        eventProcessor.processEvent(event.wrapInEnvelope())
 
         // Then
         verify(arrangement.conversationEventReceiver)
@@ -96,7 +96,7 @@ class EventProcessorTest {
             .arrange()
 
         // When
-        eventProcessor.processEvent(event, TestEvent.liveDeliveryInfo)
+        eventProcessor.processEvent(event.wrapInEnvelope())
             .shouldFail { assertEquals(failure, it) }
 
         // Then
@@ -116,7 +116,7 @@ class EventProcessorTest {
             .arrange()
 
         // When
-        eventProcessor.processEvent(event, TestEvent.liveDeliveryInfo)
+        eventProcessor.processEvent(event.wrapInEnvelope())
 
         // Then
         verify(arrangement.userEventReceiver)
@@ -137,7 +137,7 @@ class EventProcessorTest {
             .arrange()
 
         // When
-        eventProcessor.processEvent(event, TestEvent.liveDeliveryInfo)
+        eventProcessor.processEvent(event.wrapInEnvelope())
             .shouldFail { assertEquals(failure, it) }
 
         // Then
@@ -157,7 +157,7 @@ class EventProcessorTest {
             .arrange()
 
         // When
-        eventProcessor.processEvent(envelope.event, TestEvent.liveDeliveryInfo)
+        eventProcessor.processEvent(envelope.event.wrapInEnvelope())
 
         // Then
         verify(arrangement.eventRepository)
@@ -169,13 +169,13 @@ class EventProcessorTest {
     @Test
     fun givenTransientEvent_whenProcessingEvent_thenLastProcessedEventIdIsNotUpdated() = runTest {
         // Given
-        val event = TestEvent.newConnection()
+        val event = TestEvent.newConnection().wrapInEnvelope(isTransient = true)
 
         val (arrangement, eventProcessor) = Arrangement()
             .arrange()
 
         // When
-        eventProcessor.processEvent(event, TestEvent.liveDeliveryInfo.copy(isTransient = true))
+        eventProcessor.processEvent(event)
 
         // Then
         verify(arrangement.eventRepository)
@@ -193,7 +193,7 @@ class EventProcessorTest {
             .withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
             .arrange()
 
-        eventProcessor.processEvent(event, TestEvent.liveDeliveryInfo)
+        eventProcessor.processEvent(event.wrapInEnvelope())
 
         verify(arrangement.userPropertiesEventReceiver)
             .suspendFunction(arrangement.userPropertiesEventReceiver::onEvent)
@@ -213,7 +213,7 @@ class EventProcessorTest {
             .arrange()
 
         // When
-        eventProcessor.processEvent(event, TestEvent.liveDeliveryInfo)
+        eventProcessor.processEvent(event.wrapInEnvelope())
             .shouldFail { assertEquals(failure, it) }
 
         // Then

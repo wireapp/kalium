@@ -57,7 +57,18 @@ import kotlinx.serialization.json.JsonNull
 data class EventEnvelope(
     val event: Event,
     val deliveryInfo: EventDeliveryInfo,
-)
+) {
+    override fun toString(): String {
+        return super.toString()
+    }
+
+    fun toLogString(): String = toLogMap().toJsonElement().toString()
+
+    fun toLogMap(): Map<String, Any?> = mapOf(
+        "event" to event.toLogMap(),
+        "deliveryInfo" to deliveryInfo.toLogMap()
+    )
+}
 
 /**
  * Data class representing information about the delivery of an event.
@@ -72,7 +83,12 @@ data class EventEnvelope(
 data class EventDeliveryInfo(
     val isTransient: Boolean,
     val source: EventSource,
-)
+) {
+    fun toLogMap(): Map<String, Any?> = mapOf(
+        "isTransient" to isTransient,
+        "source" to source.name
+    )
+}
 
 /**
  * Represents an event.

@@ -56,7 +56,7 @@ internal class IncrementalSyncWorkerImpl(
         launch {
             eventGatherer.gatherEvents().cancellable().collect {
                 // TODO make sure that event process is not cancel in a midway
-                eventProcessor.processEvent(it.event, it.deliveryInfo).onFailure { failure ->
+                eventProcessor.processEvent(it).onFailure { failure ->
                     throw KaliumSyncException("Failed to process event. Aborting Sync for a retry", failure)
                 }
             }

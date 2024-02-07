@@ -63,7 +63,7 @@ class IncrementalSyncWorkerTest {
         // Then
         verify(arrangement.eventProcessor)
             .suspendFunction(arrangement.eventProcessor::processEvent)
-            .with(eq(envelope.event), eq(envelope.deliveryInfo))
+            .with(eq(envelope))
             .wasInvoked(exactly = once)
     }
 
