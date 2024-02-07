@@ -119,6 +119,7 @@ interface MLSConversationRepository {
         certificateChain: String,
         isNewClient: Boolean = false
     ): Either<CoreFailure, Unit>
+
     suspend fun getClientIdentity(clientId: ClientId): Either<CoreFailure, WireIdentity>
     suspend fun getUserIdentity(userId: UserId): Either<CoreFailure, List<WireIdentity>>
     suspend fun getMembersIdentities(
