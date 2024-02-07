@@ -29,37 +29,26 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 
 /**
- * Use case for searching users.
- * @param searchQuery The search query.
- * @param excludingMembersOfConversation The conversation to exclude its members from the search.
- * @param customDomain The custom domain to search in if null the search will be on the self user domain.
+ * Result of a search by handle.
  */
-class SearchUsersUseCase internal constructor(
+class SearchByHandleUseCase internal constructor(
     private val searchUserRepository: SearchUserRepository,
     private val selfUserId: UserId,
     private val maxRemoteSearchResultCount: Int
 ) {
     suspend operator fun invoke(
-        searchQuery: String,
-        excludingMembersOfConversation: ConversationId?,
-        customDomain: String?
-    ): SearchUserResult {
-        return if (searchQuery.isBlank()) {
-            SearchUserResult(
-                connected = searchUserRepository.getKnownContacts(excludingMembersOfConversation).getOrElse(emptyList()),
-                notConnected = emptyList()
-            )
-        } else {
-            handleSearch(searchQuery, excludingMembersOfConversation, customDomain)
-        }
-    }
-
-    private suspend fun handleSearch(
-        searchQuery: String,
+        searchHandle: String,
         excludingConversation: ConversationId?,
         customDomain: String?
     ): SearchUserResult = coroutineScope {
-        val cleanSearchQuery = searchQuery.trim().lowercase()
+        val cleanSearchQuery = searchHandle
+            .trim()
+            .removePrefix("@")
+            .lowercase()
+
+        if (cleanSearchQuery.isBlank()) {
+            return@coroutineScope SearchUserResult(emptyList(), emptyList())
+        }
 
         val remoteResultsDeferred = async {
             searchUserRepository.searchUserRemoteDirectory(
@@ -89,8 +78,10 @@ class SearchUsersUseCase internal constructor(
         }
 
         val localSearchResultDeferred = async {
-            searchUserRepository.searchLocalByName(cleanSearchQuery, excludingConversation)
-                .getOrElse(emptyList())
+            searchUserRepository.searchLocalByHandle(
+                cleanSearchQuery,
+                excludingConversation
+            ).getOrElse(emptyList())
                 .associateBy { it.id }
                 .toMutableMap()
         }
