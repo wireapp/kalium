@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestConversationDetails
+import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
@@ -107,13 +108,11 @@ class FederationEventReceiverTest {
         // When
         val event = Event.Federation.Delete(
             "id",
-            true,
-            false,
             defederatedDomain
         )
 
         // Then
-        useCase.onEvent(event).shouldSucceed()
+        useCase.onEvent(event, TestEvent.liveDeliveryInfo).shouldSucceed()
 
         verify(arrangement.connectionRepository)
             .suspendFunction(arrangement.connectionRepository::deleteConnection)
@@ -178,13 +177,11 @@ class FederationEventReceiverTest {
             // When
             val event = Event.Federation.ConnectionRemoved(
                 "id",
-                true,
-                false,
                 listOf(defederatedDomain, defederatedDomainTwo)
             )
 
             // Then
-            useCase.onEvent(event).shouldSucceed()
+            useCase.onEvent(event, TestEvent.liveDeliveryInfo).shouldSucceed()
 
             verify(arrangement.memberDAO)
                 .suspendFunction(arrangement.memberDAO::deleteMembersByQualifiedID)
