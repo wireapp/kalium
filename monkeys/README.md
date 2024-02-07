@@ -104,6 +104,10 @@ The `waitTime` field is optional and determines how long (in seconds) it will wa
 next monkey. This can be important because the next step in the app is assigning each to a user and
 the app must be ready to respond.
 
+**Note**: setting environment variables prior to the command is is not supported. Ex: 
+`INDEX={{monkeyIndex}} ./monkeys/bin/monkey-server -p 50$INDEX`. This is a limitation of the JVM's system command
+runner.
+
 ## Current Limitations (to be fixed in the future)
 
 * The application should run until it receives a `SIGINT` (Ctrl+C) signal. There should be a
