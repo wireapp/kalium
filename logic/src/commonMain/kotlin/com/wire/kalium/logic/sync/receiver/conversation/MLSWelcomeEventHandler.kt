@@ -60,8 +60,9 @@ internal class MLSWelcomeEventHandlerImpl(
                 }
             }.flatMap { groupID ->
                 conversationRepository.fetchConversationIfUnknown(event.conversationId).map { groupID }
-            }.flatMap { groupID ->
-                markConversationAsEstablished(GroupID(groupID))
+            }.flatMap { welcomeBundle ->
+                markConversationAsEstablished(GroupID(welcomeBundle.groupId))
+                // TODO: process crlDps from welcomeBundle
             }.flatMap {
                 resolveConversationIfOneOnOne(event.conversationId)
             }
@@ -101,7 +102,10 @@ internal class MLSWelcomeEventHandlerImpl(
             .first()
             .flatMap {
                 if (it is ConversationDetails.OneOne) {
-                    oneOnOneResolver.resolveOneOnOneConversationWithUser(it.otherUser).map { Unit }
+                    oneOnOneResolver.resolveOneOnOneConversationWithUser(
+                        user = it.otherUser,
+                        invalidateCurrentKnownProtocols = true
+                    ).map { Unit }
                 } else {
                     Either.Right(Unit)
                 }

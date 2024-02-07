@@ -421,6 +421,7 @@ object MessageMapper {
         expectsReadConfirmation: Boolean,
         expireAfterMillis: Long?,
         selfDeletionStartDate: Instant?,
+        selfDeletionEndDate: Instant?,
         readCount: Long,
         senderName: String?,
         senderHandle: String?,

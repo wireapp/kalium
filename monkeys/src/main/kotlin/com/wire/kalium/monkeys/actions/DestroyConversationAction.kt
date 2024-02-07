@@ -30,7 +30,7 @@ open class DestroyConversationAction(val config: ActionType.DestroyConversation,
         val targets = conversationTargets()
         targets.forEach {
             it.destroy()
-            this.sender(Event(it.creator.internalId, EventType.DestroyConversation(it.conversation.id)))
+            this.sender(Event(it.creator.internalId, EventType.DestroyConversation(it.conversationId)))
         }
     }
 

@@ -192,7 +192,7 @@ class UserDAOImpl internal constructor(
         }
     }
 
-    override suspend fun updateUser(id: UserIDEntity, update: PartialUserEntity) = withContext(queriesContext) {
+    override suspend fun updateUser(update: PartialUserEntity) = withContext(queriesContext) {
         userQueries.updateUser(
             name = update.name,
             handle = update.handle,
@@ -201,8 +201,25 @@ class UserDAOImpl internal constructor(
             preview_asset_id = update.previewAssetId,
             complete_asset_id = update.completeAssetId,
             supported_protocols = update.supportedProtocols,
-            id
-        ).executeAsOne() > 0
+            update.id
+        )
+    }
+
+    override suspend fun updateUser(users: List<PartialUserEntity>) = withContext(queriesContext) {
+        userQueries.transaction {
+            for (user: PartialUserEntity in users) {
+                userQueries.updatePartialUserInformation(
+                    name = user.name,
+                    handle = user.handle,
+                    email = user.email,
+                    accent_id = user.accentId?.toLong(),
+                    preview_asset_id = user.previewAssetId,
+                    complete_asset_id = user.completeAssetId,
+                    supported_protocols = user.supportedProtocols,
+                    user.id
+                )
+            }
+        }
     }
 
     override suspend fun upsertUsers(users: List<UserEntity>) = withContext(queriesContext) {

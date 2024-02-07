@@ -76,7 +76,7 @@ class FederationEventReceiverImpl internal constructor(
                     if (conversationDetails is ConversationDetails.Connection
                         && conversationDetails.otherUser?.id?.domain == event.domain
                     ) {
-                        connectionRepository.deleteConnection(conversationDetails.conversationId)
+                        connectionRepository.deleteConnection(conversationDetails.connection)
                     }
                 }
             }

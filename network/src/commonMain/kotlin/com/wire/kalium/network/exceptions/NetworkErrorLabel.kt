@@ -49,6 +49,7 @@ internal object NetworkErrorLabel {
     const val ACCESS_DENIED = "access-denied"
     const val WRONG_CONVERSATION_PASSWORD = "invalid-conversation-password"
     const val NOT_FOUND = "not-found"
+    const val MISSING_LEGALHOLD_CONSENT = "missing-legalhold-consent"
 
     // Federation
     const val FEDERATION_FAILURE = "federation-remote-error"
@@ -59,6 +60,7 @@ internal object NetworkErrorLabel {
     object KaliumCustom {
         const val MISSING_REFRESH_TOKEN = "missing-refresh_token"
         const val MISSING_NONCE = "missing-nonce"
+        const val MISSING_CHALLENGE_TYPE = "missing-challenge-type"
     }
 
 }

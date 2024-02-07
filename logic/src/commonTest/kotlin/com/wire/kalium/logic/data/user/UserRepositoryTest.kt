@@ -22,13 +22,13 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserDataSource.Companion.BATCH_SIZE
 import com.wire.kalium.logic.data.user.UserDataSource.Companion.SELF_USER_ID_KEY
 import com.wire.kalium.logic.failure.SelfUserDeleted
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestTeam
@@ -36,8 +36,8 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.LIST_USERS_DTO
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.test_util.TestNetworkException.federationNotEnabled
+import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
@@ -50,6 +50,7 @@ import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
 import com.wire.kalium.network.api.base.model.UserProfileDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
+import com.wire.kalium.persistence.dao.PartialUserEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDetailsEntity
@@ -57,6 +58,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.http.HttpStatusCode
+import io.mockative.KFunction1
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -132,7 +134,7 @@ class UserRepositoryTest {
     @Test
     fun givenAUserEvent_whenPersistingTheUser_thenShouldSucceed() = runTest {
         val (arrangement, userRepository) = Arrangement()
-            .withUpdateUserReturning(true)
+            .withUpdateUserReturning()
             .arrange()
 
         val result = userRepository.updateUserFromEvent(TestEvent.updateUser(userId = SELF_USER.id))
@@ -140,25 +142,8 @@ class UserRepositoryTest {
         with(result) {
             shouldSucceed()
             verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::updateUser)
-                .with(any(), any())
-                .wasInvoked(exactly = once)
-        }
-    }
-
-    @Test
-    fun givenAUserEvent_whenPersistingTheUserAndNotExists_thenShouldFail() = runTest {
-        val (arrangement, userRepository) = Arrangement()
-            .withUpdateUserReturning(false)
-            .arrange()
-
-        val result = userRepository.updateUserFromEvent(TestEvent.updateUser(userId = SELF_USER.id))
-
-        with(result) {
-            shouldFail()
-            verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::updateUser)
-                .with(any(), any())
+                .suspendFunction(arrangement.userDAO::updateUser, KFunction1<PartialUserEntity>())
+                .with(any())
                 .wasInvoked(exactly = once)
         }
     }
@@ -768,11 +753,11 @@ class UserRepositoryTest {
                 .thenReturn(flowOf(userEntities))
         }
 
-        fun withUpdateUserReturning(updated: Boolean) = apply {
+        fun withUpdateUserReturning() = apply {
             given(userDAO)
-                .suspendFunction(userDAO::updateUser)
-                .whenInvokedWith(any(), any())
-                .thenReturn(updated)
+                .suspendFunction(userDAO::updateUser, KFunction1<PartialUserEntity>())
+                .whenInvokedWith(any())
+                .thenReturn(Unit)
         }
 
         fun withSuccessfulGetUsersInfo(result: UserProfileDTO = TestUser.USER_PROFILE_DTO) = apply {

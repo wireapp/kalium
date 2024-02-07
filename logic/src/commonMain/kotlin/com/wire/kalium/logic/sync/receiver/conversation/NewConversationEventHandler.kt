@@ -76,7 +76,10 @@ internal class NewConversationEventHandlerImpl(
     private suspend fun resolveConversationIfOneOnOne(selfUserTeamId: TeamId?, event: Event.Conversation.NewConversation) =
         if (event.conversation.toConversationType(selfUserTeamId) == ConversationEntity.Type.ONE_ON_ONE) {
             val otherUserId = event.conversation.members.otherMembers.first().id.toModel()
-            oneOnOneResolver.resolveOneOnOneConversationWithUserId(otherUserId).map { Unit }
+            oneOnOneResolver.resolveOneOnOneConversationWithUserId(
+                userId = otherUserId,
+                invalidateCurrentKnownProtocols = true
+            ).map { Unit }
         } else Either.Right(Unit)
 
     /**
