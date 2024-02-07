@@ -110,7 +110,6 @@ data class E2EIdentity(
 interface MLSConversationRepository {
     suspend fun decryptMessage(message: ByteArray, groupID: GroupID): Either<CoreFailure, List<DecryptedMessageBundle>>
     suspend fun establishMLSGroup(groupID: GroupID, members: List<UserId>): Either<CoreFailure, Unit>
-    suspend fun establishMLSGroupFromWelcome(welcomeEvent: MLSWelcome): Either<CoreFailure, Unit>
     suspend fun hasEstablishedMLSGroup(groupID: GroupID): Either<CoreFailure, Boolean>
     suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun removeMembersFromMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
@@ -230,26 +229,6 @@ internal class MLSConversationDataSource(
             }
         }
     }
-
-    override suspend fun establishMLSGroupFromWelcome(welcomeEvent: MLSWelcome): Either<CoreFailure, Unit> =
-        mlsClientProvider.getMLSClient().flatMap { client ->
-            wrapMLSRequest { client.processWelcomeMessage(welcomeEvent.message.decodeBase64Bytes()) }
-                .flatMap { welcomeBundle ->
-                    kaliumLogger.i("Created conversation from welcome message (groupID = ${welcomeBundle.groupId})")
-
-                    wrapStorageRequest {
-                        if (conversationDAO.observeConversationByGroupID(welcomeBundle.groupId).first() != null) {
-                            // Welcome arrived after the conversation create event, updating existing conversation.
-                            conversationDAO.updateConversationGroupState(
-                                ConversationEntity.GroupState.ESTABLISHED,
-                                welcomeBundle.groupId
-                            )
-                            kaliumLogger.i("Updated conversation from welcome message (groupID = ${welcomeBundle.groupId})")
-                            // TODO: process crlDps from welcomeBundle
-                        }
-                    }
-                }
-        }
 
     override suspend fun hasEstablishedMLSGroup(groupID: GroupID): Either<CoreFailure, Boolean> =
         mlsClientProvider.getMLSClient()
