@@ -81,7 +81,7 @@ internal class EventGathererImpl(
     private val _currentSource = MutableStateFlow(EventSource.PENDING)
     override val currentSource: StateFlow<EventSource> get() = _currentSource.asStateFlow()
 
-    private val offlineEventBuffer = PendingEventsBuffer()
+    private val offlineEventBuffer = EventProcessingHistory()
     private val logger = kaliumLogger.withFeatureId(SYNC)
 
     override suspend fun gatherEvents(): Flow<Event> = flow {
@@ -137,9 +137,16 @@ internal class EventGathererImpl(
 
     private suspend fun FlowCollector<Event>.onWebSocketEventReceived(webSocketEvent: WebSocketEvent.BinaryPayloadReceived<Event>) {
         logger.i("Websocket Received binary payload")
+<<<<<<< HEAD
         val event = webSocketEvent.payload
         if (offlineEventBuffer.contains(event)) {
             if (offlineEventBuffer.clearBufferIfLastEventEquals(event)) {
+=======
+        val envelope = webSocketEvent.payload
+        val obfuscatedId = envelope.event.id.obfuscateId()
+        if (offlineEventBuffer.contains(envelope.event)) {
+            if (offlineEventBuffer.clearHistoryIfLastEventEquals(envelope.event)) {
+>>>>>>> b21ace043c (fix: improve pending events check performance (#2468))
                 // Really live
                 logger.d("Removed most recent event from offlineEventBuffer: '${event.id.obfuscateId()}'")
             } else {
