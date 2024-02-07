@@ -60,7 +60,7 @@ class ConversationEventReceiverTest {
 
         val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
 
-        val result = featureConfigEventReceiver.onEvent(newMessageEvent)
+        val result = featureConfigEventReceiver.onEvent(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.newMessageEventHandler)
             .suspendFunction(arrangement.newMessageEventHandler::handleNewProteusMessage)
@@ -76,7 +76,7 @@ class ConversationEventReceiverTest {
 
         val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
 
-        val result = featureConfigEventReceiver.onEvent(newMLSMessageEvent)
+        val result = featureConfigEventReceiver.onEvent(newMLSMessageEvent, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.newMessageEventHandler)
             .suspendFunction(arrangement.newMessageEventHandler::handleNewMLSMessage)
@@ -92,7 +92,7 @@ class ConversationEventReceiverTest {
 
         val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
 
-        val result = featureConfigEventReceiver.onEvent(newConversationEvent)
+        val result = featureConfigEventReceiver.onEvent(newConversationEvent, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.newConversationEventHandler)
             .suspendFunction(arrangement.newConversationEventHandler::handle)
@@ -108,7 +108,7 @@ class ConversationEventReceiverTest {
 
         val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
 
-        val result = featureConfigEventReceiver.onEvent(deletedConversationEvent)
+        val result = featureConfigEventReceiver.onEvent(deletedConversationEvent, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.deletedConversationEventHandler)
             .suspendFunction(arrangement.deletedConversationEventHandler::handle)
@@ -126,7 +126,7 @@ class ConversationEventReceiverTest {
             .withMemberJoinSucceeded()
             .arrange()
 
-        val result = featureConfigEventReceiver.onEvent(memberJoinEvent)
+        val result = featureConfigEventReceiver.onEvent(memberJoinEvent, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.memberJoinEventHandler)
             .suspendFunction(arrangement.memberJoinEventHandler::handle)
@@ -144,7 +144,7 @@ class ConversationEventReceiverTest {
             .withMemberLeaveSucceeded()
             .arrange()
 
-        val result = featureConfigEventReceiver.onEvent(memberLeaveEvent)
+        val result = featureConfigEventReceiver.onEvent(memberLeaveEvent, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.memberLeaveEventHandler)
             .suspendFunction(arrangement.memberLeaveEventHandler::handle)
@@ -161,7 +161,7 @@ class ConversationEventReceiverTest {
 
         val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
 
-        val result = featureConfigEventReceiver.onEvent(memberChangeEvent)
+        val result = featureConfigEventReceiver.onEvent(memberChangeEvent, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.memberChangeEventHandler)
             .suspendFunction(arrangement.memberChangeEventHandler::handle)
@@ -178,7 +178,7 @@ class ConversationEventReceiverTest {
             .withMLSWelcomeEventSucceeded()
             .arrange()
 
-        val result = featureConfigEventReceiver.onEvent(mlsWelcomeEvent)
+        val result = featureConfigEventReceiver.onEvent(mlsWelcomeEvent, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.mlsWelcomeEventHandler)
             .suspendFunction(arrangement.mlsWelcomeEventHandler::handle)
@@ -193,7 +193,7 @@ class ConversationEventReceiverTest {
 
         val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
 
-        val result = featureConfigEventReceiver.onEvent(renamedConversationEvent)
+        val result = featureConfigEventReceiver.onEvent(renamedConversationEvent, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.renamedConversationEventHandler)
             .suspendFunction(arrangement.renamedConversationEventHandler::handle)
@@ -209,7 +209,7 @@ class ConversationEventReceiverTest {
 
             val (arrangement, featureConfigEventReceiver) = Arrangement().arrange()
 
-            val result = featureConfigEventReceiver.onEvent(receiptModeUpdateEvent)
+            val result = featureConfigEventReceiver.onEvent(receiptModeUpdateEvent, TestEvent.liveDeliveryInfo)
 
             verify(arrangement.receiptModeUpdateEventHandler)
                 .suspendFunction(arrangement.receiptModeUpdateEventHandler::handle)
@@ -224,7 +224,7 @@ class ConversationEventReceiverTest {
 
         val (_, featureConfigEventReceiver) = Arrangement().arrange()
 
-        val result = featureConfigEventReceiver.onEvent(accessUpdateEvent)
+        val result = featureConfigEventReceiver.onEvent(accessUpdateEvent, TestEvent.liveDeliveryInfo)
 
         result.shouldSucceed()
     }
@@ -238,7 +238,7 @@ class ConversationEventReceiverTest {
                 .withConversationMessageTimerFailed()
                 .arrange()
 
-            val result = featureConfigEventReceiver.onEvent(conversationMessageTimerEvent)
+            val result = featureConfigEventReceiver.onEvent(conversationMessageTimerEvent, TestEvent.liveDeliveryInfo)
 
             verify(arrangement.conversationMessageTimerEventHandler)
                 .suspendFunction(arrangement.conversationMessageTimerEventHandler::handle)
@@ -257,7 +257,7 @@ class ConversationEventReceiverTest {
                 withHandleCodeUpdatedEvent(Either.Right(Unit))
             }
 
-        val result = featureConfigEventReceiver.onEvent(codeUpdatedEvent)
+        val result = featureConfigEventReceiver.onEvent(codeUpdatedEvent, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.codeUpdatedHandler)
             .suspendFunction(arrangement.codeUpdatedHandler::handle)
@@ -277,7 +277,7 @@ class ConversationEventReceiverTest {
                 withHandleCodeUpdatedEvent(Either.Left(StorageFailure.DataNotFound))
             }
 
-        val result = featureConfigEventReceiver.onEvent(codeUpdatedEvent)
+        val result = featureConfigEventReceiver.onEvent(codeUpdatedEvent, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.codeUpdatedHandler)
             .suspendFunction(arrangement.codeUpdatedHandler::handle)
@@ -297,7 +297,7 @@ class ConversationEventReceiverTest {
                 withHandleCodeDeleteEvent(Either.Right(Unit))
             }
 
-        val result = featureConfigEventReceiver.onEvent(codeUpdatedEvent)
+        val result = featureConfigEventReceiver.onEvent(codeUpdatedEvent, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.codeDeletedHandler)
             .suspendFunction(arrangement.codeDeletedHandler::handle)
@@ -317,7 +317,7 @@ class ConversationEventReceiverTest {
                 withHandleCodeDeleteEvent(Either.Left(StorageFailure.DataNotFound))
             }
 
-        val result = featureConfigEventReceiver.onEvent(codeUpdatedEvent)
+        val result = featureConfigEventReceiver.onEvent(codeUpdatedEvent, TestEvent.liveDeliveryInfo)
 
 
         verify(arrangement.codeDeletedHandler)
@@ -335,7 +335,7 @@ class ConversationEventReceiverTest {
             .withConversationTypingEventSucceeded(Either.Right(Unit))
             .arrange()
 
-        val result = handler.onEvent(typingStarted)
+        val result = handler.onEvent(typingStarted, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.typingIndicatorHandler)
             .suspendFunction(arrangement.typingIndicatorHandler::handle)
@@ -351,7 +351,7 @@ class ConversationEventReceiverTest {
             .withConversationTypingEventSucceeded(Either.Left(StorageFailure.Generic(RuntimeException("some error"))))
             .arrange()
 
-        val result = handler.onEvent(typingStarted)
+        val result = handler.onEvent(typingStarted, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.typingIndicatorHandler)
             .suspendFunction(arrangement.typingIndicatorHandler::handle)
