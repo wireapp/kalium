@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAssetIdEntity
+import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
@@ -47,6 +48,7 @@ sealed interface MessageEntity {
     val isSelfMessage: Boolean
     val expireAfterMs: Long?
     val selfDeletionStartDate: Instant?
+    val sender: UserEntity?
 
     data class Regular(
         override val id: String,
@@ -60,6 +62,7 @@ sealed interface MessageEntity {
         override val readCount: Long,
         override val expireAfterMs: Long? = null,
         override val selfDeletionStartDate: Instant? = null,
+        override val sender: UserEntity? = null,
         val senderName: String?,
         val senderClientId: String,
         val editStatus: EditStatus,
@@ -80,6 +83,7 @@ sealed interface MessageEntity {
         override val readCount: Long,
         override val visibility: Visibility = Visibility.VISIBLE,
         override val isSelfMessage: Boolean = false,
+        override val sender: UserEntity? = null,
         val senderName: String?,
     ) : MessageEntity
 
