@@ -71,7 +71,7 @@ data class CryptoQualifiedClientId(
 }
 
 data class WireIdentity(
-    val clientId: String,
+    val clientId: CryptoQualifiedClientId,
     val handle: String,
     val displayName: String,
     val domain: String,
