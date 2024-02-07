@@ -1448,6 +1448,7 @@ class UserSessionScope internal constructor(
             clientRemoteRepository = clientRemoteRepository,
             userConfigRepository = userConfigRepository,
             selfClientIdProvider = clientIdProvider,
+            incrementalSyncRepository = incrementalSyncRepository
         )
 
     private val legalHoldHandler = LegalHoldHandlerImpl(
