@@ -27,7 +27,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
@@ -65,7 +64,7 @@ suspend fun start(
                     MetricsCollector.count("c_errors", tags.plusElement(Tag.of("action", actionName)))
                 }
                 delay(actionConfig.repeatInterval.toLong())
-            } while (this.isActive && actionConfig.repeatInterval > 0u)
+            } while (MonkeyApplication.isActive.get() && actionConfig.repeatInterval > 0u)
             logger.i("Task for action $actionName finished")
         }
     }

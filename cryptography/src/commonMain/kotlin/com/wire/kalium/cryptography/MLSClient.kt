@@ -51,13 +51,20 @@ open class GroupInfoBundle(
 open class CommitBundle(
     val commit: ByteArray,
     val welcome: ByteArray?,
-    val groupInfoBundle: GroupInfoBundle
+    val groupInfoBundle: GroupInfoBundle,
+    val crlNewDistributionPoints: List<String>?
+)
+
+open class WelcomeBundle(
+    val groupId: MLSGroupId,
+    val crlNewDistributionPoints: List<String>?
 )
 
 open class RotateBundle(
     var commits: Map<MLSGroupId, CommitBundle>,
     var newKeyPackages: List<ByteArray>,
-    var keyPackageRefsToRemove: List<ByteArray>
+    var keyPackageRefsToRemove: List<ByteArray>,
+    val crlNewDistributionPoints: List<String>?
 )
 
 class DecryptedMessageBundle(
@@ -65,7 +72,8 @@ class DecryptedMessageBundle(
     val commitDelay: Long?,
     val senderClientId: CryptoQualifiedClientId?,
     val hasEpochChanged: Boolean,
-    val identity: WireIdentity?
+    val identity: WireIdentity?,
+    val crlNewDistributionPoints: List<String>?
 )
 
 @JvmInline
@@ -199,7 +207,7 @@ interface MLSClient {
      * @param message the incoming welcome message
      * @return MLS group ID
      */
-    suspend fun processWelcomeMessage(message: WelcomeMessage): MLSGroupId
+    suspend fun processWelcomeMessage(message: WelcomeMessage): WelcomeBundle
 
     /**
      * Signal that last sent commit was accepted by the distribution service
@@ -348,7 +356,11 @@ interface MLSClient {
     /**
      * Generate new keypackages after E2EI certificate issued
      */
-    suspend fun e2eiRotateAll(enrollment: E2EIClient, certificateChain: CertificateChain, newMLSKeyPackageCount: UInt): RotateBundle
+    suspend fun e2eiRotateAll(
+        enrollment: E2EIClient,
+        certificateChain: CertificateChain,
+        newMLSKeyPackageCount: UInt
+    ): RotateBundle
 
     /**
      * Conversation E2EI Verification Status
@@ -365,7 +377,10 @@ interface MLSClient {
      *
      * @return the exist identities for requested clients
      */
-    suspend fun getDeviceIdentities(groupId: MLSGroupId, clients: List<CryptoQualifiedClientId>): List<WireIdentity>
+    suspend fun getDeviceIdentities(
+        groupId: MLSGroupId,
+        clients: List<CryptoQualifiedClientId>
+    ): List<WireIdentity>
 
     /**
      * Get the identity of given users in the given conversation
@@ -375,7 +390,10 @@ interface MLSClient {
      *
      * @return the exist identities for requested clients
      */
-    suspend fun getUserIdentities(groupId: MLSGroupId, users: List<CryptoQualifiedID>): Map<String, List<WireIdentity>>
+    suspend fun getUserIdentities(
+        groupId: MLSGroupId,
+        users: List<CryptoQualifiedID>
+    ): Map<String, List<WireIdentity>>
 
     /**
      * Register ACME-CA certificates for E2EI

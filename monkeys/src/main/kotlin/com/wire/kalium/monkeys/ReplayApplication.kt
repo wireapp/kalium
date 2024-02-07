@@ -37,6 +37,7 @@ import com.wire.kalium.monkeys.actions.Action
 import com.wire.kalium.monkeys.model.Event
 import com.wire.kalium.monkeys.model.TestDataImporter
 import com.wire.kalium.monkeys.model.UserData
+import com.wire.kalium.monkeys.pool.MonkeyConfig
 import com.wire.kalium.monkeys.pool.MonkeyPool
 import com.wire.kalium.monkeys.storage.EventStorage
 import com.wire.kalium.monkeys.storage.FileStorage
@@ -108,7 +109,7 @@ class ReplayApplication : CliktCommand(allowMultipleSubcommands = true) {
         events.consumeEach { config ->
             val actionName = config.eventType::class.serializer().descriptor.serialName
             try {
-                val monkeyPool = MonkeyPool(users, "Replayer")
+                val monkeyPool = MonkeyPool(users, "Replayer", MonkeyConfig.Internal)
                 val coreLogic = logicClients.getOrPut(config.monkeyOrigin.clientId) {
                     coreLogic("${homeDirectory()}/.kalium/replayer-${config.monkeyOrigin.clientId}")
                 }
