@@ -52,7 +52,7 @@ import kotlinx.coroutines.launch
 internal interface LegalHoldHandler {
     suspend fun handleEnable(legalHoldEnabled: Event.User.LegalHoldEnabled): Either<CoreFailure, Unit>
     suspend fun handleDisable(legalHoldDisabled: Event.User.LegalHoldDisabled): Either<CoreFailure, Unit>
-    suspend fun handleNewMessage(message: MessageUnpackResult.ApplicationMessage, live: Boolean): Either<CoreFailure, Unit>
+    suspend fun handleNewMessage(message: MessageUnpackResult.ApplicationMessage, isLive: Boolean): Either<CoreFailure, Unit>
     suspend fun handleMessageSendFailure(
         conversationId: ConversationId,
         messageTimestampIso: String,
@@ -120,7 +120,7 @@ internal class LegalHoldHandlerImpl internal constructor(
         return Either.Right(Unit)
     }
 
-    override suspend fun handleNewMessage(message: MessageUnpackResult.ApplicationMessage, live: Boolean): Either<CoreFailure, Unit> {
+    override suspend fun handleNewMessage(message: MessageUnpackResult.ApplicationMessage, isLive: Boolean): Either<CoreFailure, Unit> {
         val systemMessageTimestampIso = minusMilliseconds(message.timestampIso, 1)
         val isStatusChangedForConversation = when (val legalHoldStatus = message.content.legalHoldStatus) {
             Conversation.LegalHoldStatus.ENABLED, Conversation.LegalHoldStatus.DISABLED ->
@@ -128,7 +128,7 @@ internal class LegalHoldHandlerImpl internal constructor(
             else -> false
         }
         if (isStatusChangedForConversation) {
-            if (live) handleUpdatedConversations(listOf(message.conversationId), systemMessageTimestampIso) // handle it right away
+            if (isLive) handleUpdatedConversations(listOf(message.conversationId), systemMessageTimestampIso) // handle it right away
             else bufferedUpdatedConversationIds.add(message.conversationId) // buffer and handle after sync
         }
         return Either.Right(Unit)

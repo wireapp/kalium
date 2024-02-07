@@ -20,8 +20,8 @@ package com.wire.kalium.logic.data.team
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
@@ -34,7 +34,6 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.client.ClientIdDTO
 import com.wire.kalium.network.api.base.authenticated.keypackage.LastPreKeyDTO
-import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
@@ -60,13 +59,11 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.oneOf
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class TeamRepositoryTest {
     @Test
     fun givenSelfUserExists_whenFetchingTeamInfo_thenTeamInfoShouldBeSuccessful() = runTest {
@@ -329,23 +326,23 @@ class TeamRepositoryTest {
 
     @Test
     fun givenTeamIdAndUserIdAndStatusEnabled_whenFetchingLegalHoldStatus_thenItShouldSucceedAndHandleEnabledLegalHold() =
-    testFetchingLegalHoldStatus(
-    response = LegalHoldStatusResponse(LegalHoldStatusDTO.ENABLED, null, null),
-    expected = LegalHoldStatus.ENABLED,
-    ) { arrangement ->
-        verify(arrangement.legalHoldHandler)
-            .suspendFunction(arrangement.legalHoldHandler::handleEnable)
-            .with(any())
-            .wasInvoked()
-        verify(arrangement.legalHoldHandler)
-            .suspendFunction(arrangement.legalHoldHandler::handleDisable)
-            .with(any())
-            .wasNotInvoked()
-        verify(arrangement.legalHoldRequestHandler)
-            .suspendFunction(arrangement.legalHoldRequestHandler::handle)
-            .with(any())
-            .wasNotInvoked()
-    }
+        testFetchingLegalHoldStatus(
+            response = LegalHoldStatusResponse(LegalHoldStatusDTO.ENABLED, null, null),
+            expected = LegalHoldStatus.ENABLED,
+        ) { arrangement ->
+            verify(arrangement.legalHoldHandler)
+                .suspendFunction(arrangement.legalHoldHandler::handleEnable)
+                .with(any())
+                .wasInvoked()
+            verify(arrangement.legalHoldHandler)
+                .suspendFunction(arrangement.legalHoldHandler::handleDisable)
+                .with(any())
+                .wasNotInvoked()
+            verify(arrangement.legalHoldRequestHandler)
+                .suspendFunction(arrangement.legalHoldRequestHandler::handle)
+                .with(any())
+                .wasNotInvoked()
+        }
 
     @Test
     fun givenTeamIdAndUserIdAndStatusDisabled_whenFetchingLegalHoldStatus_thenItShouldSucceedAndHandleDisabledLegalHold() =
@@ -366,6 +363,28 @@ class TeamRepositoryTest {
                 .with(any())
                 .wasNotInvoked()
         }
+
+    @Test
+    fun givenSelfUserExists_whenSyncingTeam_thenTeamInfoShouldBeUpdatedSuccessful() = runTest {
+        // given
+        val (arrangement, teamRepository) = Arrangement()
+            .withApiGetTeamInfoSuccess(TestTeam.TEAM_DTO)
+            .arrange()
+
+        // when
+        val result = teamRepository.syncTeam(teamId = TeamId(TestTeam.TEAM_ID.value))
+
+        // then
+        result.shouldSucceed { returnTeam -> assertEquals(TestTeam.TEAM, returnTeam) }
+        verify(arrangement.teamsApi)
+            .suspendFunction(arrangement.teamsApi::getTeamInfo)
+            .with(any())
+            .wasInvoked(exactly = once)
+        verify(arrangement.teamDAO)
+            .suspendFunction(arrangement.teamDAO::updateTeam)
+            .with(eq(TestTeam.TEAM_ENTITY))
+            .wasInvoked(exactly = once)
+    }
 
     private class Arrangement {
         @Mock

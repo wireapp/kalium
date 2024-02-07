@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.UserSummary
+import com.wire.kalium.logic.data.publicuser.model.UserSearchDetails
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
@@ -46,6 +47,7 @@ import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserEntityMinimized
+import com.wire.kalium.persistence.dao.UserSearchEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import kotlinx.datetime.toInstant
 
@@ -90,6 +92,7 @@ interface UserMapper {
     fun fromUserProfileDtoToOtherUser(userProfile: UserProfileDTO, selfUserId: UserId, selfTeamId: TeamId?): OtherUser
 
     fun fromFailedUserToEntity(userId: NetworkQualifiedId): UserEntity
+    fun fromSearchEntityToUserSearchDetails(searchEntity: UserSearchEntity): UserSearchDetails
 }
 
 @Suppress("TooManyFunctions")
@@ -397,6 +400,16 @@ internal class UserMapperImpl(
             activeOneOnOneConversationId = null
         )
     }
+
+    override fun fromSearchEntityToUserSearchDetails(searchEntity: UserSearchEntity) = UserSearchDetails(
+        id = searchEntity.id.toModel(),
+        name = searchEntity.name,
+        completeAssetId = searchEntity.completeAssetId?.toModel(),
+        previewAssetId = searchEntity.previewAssetId?.toModel(),
+        type = domainUserTypeMapper.fromUserTypeEntity(searchEntity.type),
+        connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(searchEntity.connectionStatus),
+        handle = searchEntity.handle
+    )
 }
 
 fun SupportedProtocol.toApi() = when (this) {

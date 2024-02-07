@@ -50,8 +50,6 @@ class GenerateGuestRoomLinkUseCaseImpl internal constructor(
                     code = it.data.code,
                     id = uuid4().toString(),
                     isPasswordProtected = it.data.hasPassword,
-                    transient = false,
-                    live = false,
                     key = it.data.key,
                     uri = it.data.uri
                 )

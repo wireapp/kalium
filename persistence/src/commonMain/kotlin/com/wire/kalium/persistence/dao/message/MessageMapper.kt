@@ -21,7 +21,9 @@ package com.wire.kalium.persistence.dao.message
 import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
+import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
@@ -325,7 +327,8 @@ object MessageMapper {
         selfDeletionStartDate: Instant?,
         readCount: Long,
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
-        recipientsFailedDeliveryList: List<QualifiedIDEntity>?
+        recipientsFailedDeliveryList: List<QualifiedIDEntity>?,
+        sender: UserEntity
     ): MessageEntity = when (content) {
         is MessageEntityContent.Regular -> {
             MessageEntity.Regular(
@@ -351,7 +354,8 @@ object MessageMapper {
                 deliveryStatus = RecipientDeliveryFailureMapper.toEntity(
                     recipientsFailedWithNoClientsList = recipientsFailedWithNoClientsList,
                     recipientsFailedDeliveryList = recipientsFailedDeliveryList
-                )
+                ),
+                sender = sender
             )
         }
 
@@ -367,7 +371,8 @@ object MessageMapper {
             isSelfMessage = isSelfMessage,
             readCount = readCount,
             expireAfterMs = expireAfterMillis,
-            selfDeletionStartDate = selfDeletionStartDate
+            selfDeletionStartDate = selfDeletionStartDate,
+            sender = sender
         )
     }
 
@@ -436,6 +441,10 @@ object MessageMapper {
         senderUserType: UserTypeEntity,
         senderBotService: BotIdEntity?,
         senderIsDeleted: Boolean,
+        senderExpiresAt: Instant?,
+        senderDefederated: Boolean,
+        senderSupportedProtocols: Set<SupportedProtocolEntity>?,
+        senderActiveOneOnOneConversationId: QualifiedIDEntity?,
         isSelfMessage: Boolean,
         text: String?,
         isQuotingSelfUser: Boolean?,
@@ -646,6 +655,27 @@ object MessageMapper {
             )
         }
 
+        val sender = UserEntity(
+            id = senderUserId,
+            name = senderName,
+            handle = senderHandle,
+            email = senderEmail,
+            phone = senderPhone,
+            accentId = senderAccentId,
+            team = senderTeamId,
+            previewAssetId = senderPreviewAssetId,
+            completeAssetId = senderCompleteAssetId,
+            availabilityStatus = senderAvailabilityStatus,
+            userType = senderUserType,
+            botService = senderBotService,
+            deleted = senderIsDeleted,
+            expiresAt = senderExpiresAt,
+            defederated = senderDefederated,
+            supportedProtocols = senderSupportedProtocols,
+            activeOneOnOneConversationId = senderActiveOneOnOneConversationId,
+            connectionStatus = senderConnectionStatus
+        )
+
         return createMessageEntity(
             id,
             conversationId,
@@ -665,7 +695,8 @@ object MessageMapper {
             selfDeletionStartDate,
             readCount,
             recipientsFailedWithNoClientsList,
-            recipientsFailedDeliveryList
+            recipientsFailedDeliveryList,
+            sender
         )
     }
 
