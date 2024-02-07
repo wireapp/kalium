@@ -30,7 +30,7 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.feature.e2ei.usecase.E2EIEnrollmentResult
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -51,7 +51,7 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 interface E2EIRepository {
-    suspend fun initE2EIClient(clientId: ClientId? = null, isNewClient: Boolean = false): Either<CoreFailure, Unit>
+    suspend fun initFreshE2EIClient(clientId: ClientId? = null, isNewClient: Boolean = false): Either<CoreFailure, Unit>
     suspend fun fetchAndSetTrustAnchors(): Either<CoreFailure, Unit>
     suspend fun getWireAccessToken(wireNonce: String): Either<CoreFailure, AccessTokenResponse>
     suspend fun loadACMEDirectories(): Either<CoreFailure, AcmeDirectory>
@@ -102,17 +102,19 @@ class E2EIRepositoryImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val mlsConversationRepository: MLSConversationRepository,
     private val userConfigRepository: UserConfigRepository,
-    private val acmeMapper: AcmeMapper = AcmeMapper()
+    private val acmeMapper: AcmeMapper = MapperProvider.acmeMapper()
 ) : E2EIRepository {
 
-    override suspend fun initE2EIClient(clientId: ClientId?, isNewClient: Boolean): Either<CoreFailure, Unit> =
-        e2EIClientProvider.getE2EIClient(clientId, isNewClient).fold({
+    override suspend fun initFreshE2EIClient(clientId: ClientId?, isNewClient: Boolean): Either<CoreFailure, Unit> {
+        nukeE2EIClient()
+        return e2EIClientProvider.getE2EIClient(clientId, isNewClient).fold({
             kaliumLogger.w("E2EI client initialization failed: $it")
             Either.Left(it)
         }, {
             kaliumLogger.w("E2EI client initialized for enrollment")
             Either.Right(Unit)
         })
+    }
 
     override suspend fun fetchAndSetTrustAnchors(): Either<CoreFailure, Unit> = userConfigRepository.getE2EISettings().flatMap {
         wrapApiRequest {
@@ -182,16 +184,19 @@ class E2EIRepositoryImpl(
     ): Either<CoreFailure, AuthorizationResult> {
         var nonce = prevNonce
         val challenges = mutableMapOf<AuthorizationChallengeType, NewAcmeAuthz>()
-        val oidcAuthorization: NewAcmeAuthz? = null
-        val dpopAuthorization: NewAcmeAuthz? = null
+        var oidcAuthorization: NewAcmeAuthz? = null
+        var dpopAuthorization: NewAcmeAuthz? = null
 
         authorizationsEndpoints.forEach { endPoint ->
             val authorizationResponse = createAuthorization(nonce, endPoint).getOrFail {
-                return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNewAuthz, it).toEitherLeft()
+                return Either.Left(CoreFailure.Unknown(Throwable("Failed to get required authorizations from ACME")))
             }
             nonce = authorizationResponse.nonce
             challenges[authorizationResponse.challengeType] = authorizationResponse.newAcmeAuthz
         }
+
+        oidcAuthorization = challenges[AuthorizationChallengeType.OIDC]
+        dpopAuthorization = challenges[AuthorizationChallengeType.DPoP]
 
         if (oidcAuthorization == null || dpopAuthorization == null)
             return Either.Left(CoreFailure.Unknown(Throwable("Missing ACME Challenges")))
