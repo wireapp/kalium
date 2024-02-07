@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-@file:Suppress("konsist.repositoriesShouldNotAccessFeaturePackageClasses")
 
 package com.wire.kalium.logic.data.conversation
 
@@ -120,6 +119,7 @@ interface MLSConversationRepository {
         certificateChain: String,
         isNewClient: Boolean = false
     ): Either<CoreFailure, Unit>
+
     suspend fun getClientIdentity(clientId: ClientId): Either<CoreFailure, WireIdentity>
     suspend fun getUserIdentity(userId: UserId): Either<CoreFailure, List<WireIdentity>>
     suspend fun getMembersIdentities(
