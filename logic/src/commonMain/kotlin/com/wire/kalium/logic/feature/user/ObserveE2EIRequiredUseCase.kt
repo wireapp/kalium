@@ -25,7 +25,6 @@ import com.wire.kalium.logic.feature.e2ei.usecase.GetE2EICertificateUseCaseResul
 import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCase
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.util.DateTimeUtil
@@ -34,7 +33,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
@@ -67,19 +65,25 @@ internal class ObserveE2EIRequiredUseCaseImpl(
 
         return userConfigRepository
             .observeE2EINotificationTime()
-            .map { it.getOrNull() }
-            .filterNotNull()
+            .onlyRight()
             .delayUntilNotifyTime()
             .flatMapLatest {
                 observeE2EISettings().map { setting ->
-                    if (!setting.isRequired)
+                    if (!setting.isRequired) {
                         E2EIRequiredResult.NotRequired
-                    else {
+                    } else {
                         currentClientIdProvider()
                             .map { clientId ->
                                 val certificateResult = e2eiCertificate(clientId)
                                 when {
                                     certificateResult.isValid() -> E2EIRequiredResult.NotRequired
+
+                                    // TODO check if it was fixed in CC
+                                    // When user just logged in and app requests the certificate
+                                    // than MLSClient throws ConversationNotFound exception.
+                                    // So we do not ask user to create a certificate in that case
+                                    // as the certificate might be already generated
+                                    (certificateResult is GetE2EICertificateUseCaseResult.Failure) -> E2EIRequiredResult.NotRequired
 
                                     setting.isGracePeriodLeft() -> {
                                         val timeLeft = setting.gracePeriodEnd!!.minus(DateTimeUtil.currentInstant())
