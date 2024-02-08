@@ -20,6 +20,7 @@
 package com.wire.kalium.logic.data.call
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
@@ -58,6 +59,8 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.onlyRight
+import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.logStructuredJson
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -563,6 +566,14 @@ internal class CallDataSource(
             callJobs[conversationId] = scope.launch {
                 observeEpochInfo(conversationId).onSuccess {
                     it.collectLatest { epochInfo ->
+                        kaliumLogger.logStructuredJson(
+                            level = KaliumLogLevel.DEBUG,
+                            leadingMessage = "[CallRepository] Received epoch change",
+                            jsonStringKeyValues = mapOf(
+                                "conversationId" to conversationId.toLogString(),
+                                "epoch" to epochInfo.epoch.toString()
+                            )
+                        )
                         onEpochChange(conversationId, epochInfo)
                     }
                 }
