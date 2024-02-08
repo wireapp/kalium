@@ -23,8 +23,11 @@ import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.UpdateClientCapabilitiesParam
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
+import kotlinx.coroutines.flow.filter
 
 /**
  * Use case that updates the client capabilities of the current user to include the [ClientCapability.LegalHoldImplicitConsent] capability.
@@ -37,16 +40,19 @@ internal interface UpdateSelfClientCapabilityToLegalHoldConsentUseCase {
 internal class UpdateSelfClientCapabilityToLegalHoldConsentUseCaseImpl internal constructor(
     private val clientRemoteRepository: ClientRemoteRepository,
     private val userConfigRepository: UserConfigRepository,
-    private val selfClientIdProvider: CurrentClientIdProvider
+    private val selfClientIdProvider: CurrentClientIdProvider,
+    private val incrementalSyncRepository: IncrementalSyncRepository
 ) : UpdateSelfClientCapabilityToLegalHoldConsentUseCase {
     override suspend fun invoke(): Either<CoreFailure, Unit> {
-        userConfigRepository.shouldUpdateClientLegalHoldCapability().takeIf { it }?.let {
-            selfClientIdProvider().map { clientId ->
-                clientRemoteRepository.updateClientCapabilities(
-                    UpdateClientCapabilitiesParam(listOf(ClientCapability.LegalHoldImplicitConsent)),
-                    clientId.value
-                ).map {
-                    userConfigRepository.setShouldUpdateClientLegalHoldCapability(false)
+        incrementalSyncRepository.incrementalSyncState.filter { it is IncrementalSyncStatus.Live }.collect {
+            userConfigRepository.shouldUpdateClientLegalHoldCapability().takeIf { it }?.let {
+                selfClientIdProvider().map { clientId ->
+                    clientRemoteRepository.updateClientCapabilities(
+                        UpdateClientCapabilitiesParam(listOf(ClientCapability.LegalHoldImplicitConsent)),
+                        clientId.value
+                    ).map {
+                        userConfigRepository.setShouldUpdateClientLegalHoldCapability(false)
+                    }
                 }
             }
         }
