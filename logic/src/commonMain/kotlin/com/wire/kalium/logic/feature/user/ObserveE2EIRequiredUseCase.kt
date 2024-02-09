@@ -69,37 +69,29 @@ internal class ObserveE2EIRequiredUseCaseImpl(
             .delayUntilNotifyTime()
             .flatMapLatest {
                 observeE2EISettings().map { setting ->
-                    if (!setting.isRequired) {
-                        E2EIRequiredResult.NotRequired
-                    } else {
-                        currentClientIdProvider()
-                            .map { clientId ->
-                                val certificateResult = e2eiCertificate(clientId)
-                                when {
-                                    certificateResult.isValid() -> E2EIRequiredResult.NotRequired
+                    if (!setting.isRequired) return@map E2EIRequiredResult.NotRequired
 
-                                    // TODO check if it was fixed in CC
-                                    // When user just logged in and app requests the certificate
-                                    // than MLSClient throws ConversationNotFound exception.
-                                    // So we do not ask user to create a certificate in that case
-                                    // as the certificate might be already generated
-                                    (certificateResult is GetE2EICertificateUseCaseResult.Failure) -> E2EIRequiredResult.NotRequired
+                    return@map currentClientIdProvider().map { clientId ->
+                        when (val certificateResult = e2eiCertificate(clientId)) {
+                            is GetE2EICertificateUseCaseResult.Failure -> E2EIRequiredResult.NotRequired
 
-                                    setting.isGracePeriodLeft() -> {
-                                        val timeLeft = setting.gracePeriodEnd!!.minus(DateTimeUtil.currentInstant())
-                                        if (certificateResult !is GetE2EICertificateUseCaseResult.Failure)
-                                            E2EIRequiredResult.WithGracePeriod.Renew(timeLeft)
-                                        else E2EIRequiredResult.WithGracePeriod.Create(timeLeft)
-                                    }
-
-                                    else -> {
-                                        if (certificateResult !is GetE2EICertificateUseCaseResult.Failure)
-                                            E2EIRequiredResult.NoGracePeriod.Renew
-                                        else E2EIRequiredResult.NoGracePeriod.Create
-                                    }
+                            is GetE2EICertificateUseCaseResult.Success -> {
+                                if (certificateResult.certificate.status == CertificateStatus.VALID) {
+                                    E2EIRequiredResult.NotRequired
+                                } else {
+                                    setting.gracePeriodLeft()?.let { timeLeft ->
+                                        E2EIRequiredResult.WithGracePeriod.Renew(timeLeft)
+                                    } ?: E2EIRequiredResult.NoGracePeriod.Renew
                                 }
-                            }.getOrElse { E2EIRequiredResult.NotRequired }
-                    }
+                            }
+
+                            is GetE2EICertificateUseCaseResult.NotActivated -> {
+                                setting.gracePeriodLeft()?.let { timeLeft ->
+                                    E2EIRequiredResult.WithGracePeriod.Create(timeLeft)
+                                } ?: E2EIRequiredResult.NoGracePeriod.Create
+                            }
+                        }
+                    }.getOrElse { E2EIRequiredResult.NotRequired }
                 }
             }
             .flowOn(dispatcher)
@@ -115,10 +107,10 @@ internal class ObserveE2EIRequiredUseCaseImpl(
         flowOf(instant).onStart { delay(delayMillis) }
     }
 
-    private fun GetE2EICertificateUseCaseResult.isValid(): Boolean =
-        this is GetE2EICertificateUseCaseResult.Success && certificate.status == CertificateStatus.VALID
-
-    private fun E2EISettings.isGracePeriodLeft(): Boolean = gracePeriodEnd != null && gracePeriodEnd > DateTimeUtil.currentInstant()
+    private fun E2EISettings.gracePeriodLeft(): Duration? = gracePeriodEnd?.let {
+        if (gracePeriodEnd <= DateTimeUtil.currentInstant()) null
+        else gracePeriodEnd.minus(DateTimeUtil.currentInstant())
+    }
 
     companion object {
         private const val NO_DELAY_MS = 0L

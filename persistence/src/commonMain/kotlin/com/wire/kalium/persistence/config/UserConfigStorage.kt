@@ -466,8 +466,8 @@ class UserConfigStorageImpl(
         .distinctUntilChanged()
 
     override fun setIfAbsentE2EINotificationTime(timeStamp: Long) {
-        getE2EINotificationTime()?.let { current ->
-            if (current <= 0)
+        getE2EINotificationTime().let { current ->
+            if (current == null || current <= 0)
                 kaliumPreferences.putLong(E2EI_NOTIFICATION_TIME, timeStamp).also { e2EINotificationFlow.tryEmit(Unit) }
         }
     }
