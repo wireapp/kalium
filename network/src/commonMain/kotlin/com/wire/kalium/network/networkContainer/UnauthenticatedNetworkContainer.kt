@@ -27,6 +27,8 @@ import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
 import com.wire.kalium.network.api.base.unauthenticated.VerificationCodeApi
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApi
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
+import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
 import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV0
 import com.wire.kalium.network.api.v2.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV2
 import com.wire.kalium.network.api.v4.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV4
@@ -44,6 +46,8 @@ interface UnauthenticatedNetworkContainer {
     val appVersioningApi: AppVersioningApi
     val verificationCodeApi: VerificationCodeApi
     val domainLookupApi: DomainLookupApi
+    val remoteVersion: VersionApi
+    val serverConfigApi: ServerConfigApi
 
     companion object {
         fun create(
@@ -51,6 +55,7 @@ interface UnauthenticatedNetworkContainer {
             serverConfigDTO: ServerConfigDTO,
             proxyCredentials: ProxyCredentialsDTO?,
             userAgent: String,
+            developmentApiEnabled: Boolean,
             certificatePinning: CertificatePinning,
             mockEngine: HttpClientEngine?
         ): UnauthenticatedNetworkContainer {
@@ -59,6 +64,7 @@ interface UnauthenticatedNetworkContainer {
 
             return when (serverConfigDTO.metaData.commonApiVersion.version) {
                 0 -> UnauthenticatedNetworkContainerV0(
+                    developmentApiEnabled,
                     networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
@@ -67,6 +73,7 @@ interface UnauthenticatedNetworkContainer {
                 )
 
                 1 -> UnauthenticatedNetworkContainerV0(
+                    developmentApiEnabled,
                     networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
@@ -75,6 +82,7 @@ interface UnauthenticatedNetworkContainer {
                 )
 
                 2 -> UnauthenticatedNetworkContainerV2(
+                    developmentApiEnabled,
                     networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
@@ -85,6 +93,7 @@ interface UnauthenticatedNetworkContainer {
                 // this is intentional since we should drop support for api v3
                 // and we default back to v2
                 3 -> UnauthenticatedNetworkContainerV2(
+                    developmentApiEnabled,
                     networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
@@ -93,6 +102,7 @@ interface UnauthenticatedNetworkContainer {
                 )
 
                 4 -> UnauthenticatedNetworkContainerV4(
+                    developmentApiEnabled,
                     networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
@@ -101,6 +111,7 @@ interface UnauthenticatedNetworkContainer {
                 )
 
                 5 -> UnauthenticatedNetworkContainerV5(
+                    developmentApiEnabled,
                     networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,

@@ -19,8 +19,8 @@
 package com.wire.kalium.logic.feature.server
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import io.mockative.Mock
@@ -54,8 +54,8 @@ class StoreServerConfigUseCaseTest {
             assertEquals(expected, it.serverConfig)
         }
 
-        verify(arrangement.configRepository)
-            .coroutine { arrangement.configRepository.storeConfig(links, versionInfo) }
+        verify(arrangement.customServerConfigRepository)
+            .coroutine { arrangement.customServerConfigRepository.storeConfig(links, versionInfo) }
             .wasInvoked(exactly = once)
     }
 
@@ -74,24 +74,24 @@ class StoreServerConfigUseCaseTest {
             assertEquals(expected, it.serverConfig)
         }
 
-        verify(arrangement.configRepository)
-            .coroutine { arrangement.configRepository.storeConfig(expected.links, versionInfo) }
+        verify(arrangement.customServerConfigRepository)
+            .coroutine { arrangement.customServerConfigRepository.storeConfig(expected.links, versionInfo) }
             .wasInvoked(exactly = once)
     }
 
     private class Arrangement {
         @Mock
-        val configRepository = mock(ServerConfigRepository::class)
-        private val useCase = StoreServerConfigUseCaseImpl(configRepository)
+        val customServerConfigRepository = mock(CustomServerConfigRepository::class)
+        private val useCase = StoreServerConfigUseCaseImpl(customServerConfigRepository)
 
         suspend fun withStoreConfig(
             links: ServerConfig.Links,
             versionInfo: ServerConfig.VersionInfo,
             result: Either<StorageFailure, ServerConfig>
         ) = apply {
-            given(configRepository)
+            given(customServerConfigRepository)
                 .suspendFunction(
-                    configRepository::storeConfig,
+                    customServerConfigRepository::storeConfig,
                     fun2<ServerConfig.Links, ServerConfig.VersionInfo>())
                 .whenInvokedWith(eq(links), eq(versionInfo))
                 .thenReturn(result)

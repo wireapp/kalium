@@ -20,7 +20,6 @@
 
 package com.wire.kalium.logic.configuration.server
 
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.tools.ApiVersionDTO
@@ -163,8 +162,7 @@ interface ServerConfigMapper {
 }
 
 class ServerConfigMapperImpl(
-    private val apiVersionMapper: ApiVersionMapper,
-    private val idMapper: IdMapper
+    private val apiVersionMapper: ApiVersionMapper
 ) : ServerConfigMapper {
     override fun toDTO(serverConfig: ServerConfig): ServerConfigDTO = with(serverConfig) {
         ServerConfigDTO(

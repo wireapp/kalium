@@ -18,12 +18,15 @@
 package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.DomainLookupResult
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.stubs.newServerConfig
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.tools.ServerConfigDTO
+import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
@@ -73,14 +76,15 @@ class DomainLookupUseCaseTest {
     fun givenSuccessForDomainLookup_whenLookup_thenFetchServerConfigUsingTheServerConfigUrl() = runTest {
         val userEmail = "cool-person@wire.com"
 
+
         val (arrangement, useCases) = Arrangement()
             .withDomainLookupResult(Either.Right(DomainLookupResult("https://wire.com", "https://wire.com")))
-            .withFetchServerConfigResult(Either.Left(NetworkFailure.NoNetworkConnection(IOException())))
+            .withFetchServerConfigResult(NetworkResponse.Error(KaliumException.NoNetwork()))
             .arrange()
         useCases(userEmail)
 
-        verify(arrangement.serverConfigRepository)
-            .suspendFunction(arrangement.serverConfigRepository::fetchRemoteConfig)
+        verify(arrangement.serverConfigApi)
+            .suspendFunction(arrangement.serverConfigApi::fetchServerConfig)
             .with(eq("https://wire.com"))
             .wasInvoked(exactly = once)
     }
@@ -89,9 +93,13 @@ class DomainLookupUseCaseTest {
     fun givenSuccess_whenLookup_thenSuccessIsPropagated() = runTest {
         val userEmail = "cool-person@wire.com"
         val expectedServerLinks = newServerConfig(1).links
+
+        val expextedDTO = expectedServerLinks.let {
+            MapperProvider.serverConfigMapper().toDTO(it)
+        }
         val (arrangement, useCases) = Arrangement()
             .withDomainLookupResult(Either.Right(DomainLookupResult("https://wire.com", "https://wire.com")))
-            .withFetchServerConfigResult(Either.Right(expectedServerLinks))
+            .withFetchServerConfigResult(NetworkResponse.Success(expextedDTO, emptyMap(), 200,))
             .arrange()
 
         useCases(userEmail).also {
@@ -104,8 +112,8 @@ class DomainLookupUseCaseTest {
             .with(eq("wire.com"))
             .wasInvoked(exactly = once)
 
-        verify(arrangement.serverConfigRepository)
-            .suspendFunction(arrangement.serverConfigRepository::fetchRemoteConfig)
+        verify(arrangement.serverConfigApi)
+            .suspendFunction(arrangement.serverConfigApi::fetchServerConfig)
             .with(eq("https://wire.com"))
             .wasInvoked(exactly = once)
     }
@@ -116,10 +124,10 @@ class DomainLookupUseCaseTest {
         val ssoLoginRepository: SSOLoginRepository = mock(SSOLoginRepository::class)
 
         @Mock
-        val serverConfigRepository: ServerConfigRepository = mock(ServerConfigRepository::class)
+        val serverConfigApi: ServerConfigApi = mock(ServerConfigApi::class)
 
         private val useCases = DomainLookupUseCase(
-            serverConfigRepository,
+            serverConfigApi,
             ssoLoginRepository
         )
 
@@ -130,9 +138,9 @@ class DomainLookupUseCaseTest {
                 .thenReturn(result)
         }
 
-        fun withFetchServerConfigResult(result: Either<NetworkFailure, ServerConfig.Links>) = apply {
-            given(serverConfigRepository)
-                .suspendFunction(serverConfigRepository::fetchRemoteConfig)
+        fun withFetchServerConfigResult(result: NetworkResponse<ServerConfigDTO.Links>) = apply {
+            given(serverConfigApi)
+                .suspendFunction(serverConfigApi::fetchServerConfig)
                 .whenInvokedWith(any())
                 .thenReturn(result)
         }

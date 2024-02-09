@@ -19,10 +19,14 @@ package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
 
 /**
  * Use case for domain lookup.
@@ -31,8 +35,9 @@ import com.wire.kalium.logic.functional.fold
  * @param email the email to lookup
  */
 class DomainLookupUseCase internal constructor(
-    private val serverConfigRepository: ServerConfigRepository,
-    private val ssoLoginRepository: SSOLoginRepository
+    private val serverConfigApi: ServerConfigApi,
+    private val ssoLoginRepository: SSOLoginRepository,
+    private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) {
     suspend operator fun invoke(email: String): Result {
         val domain = email.substringAfterLast('@').ifBlank {
@@ -41,7 +46,9 @@ class DomainLookupUseCase internal constructor(
         }
 
         return ssoLoginRepository.domainLookup(domain).flatMap {
-            serverConfigRepository.fetchRemoteConfig(it.configJsonUrl)
+            wrapApiRequest { serverConfigApi.fetchServerConfig(it.configJsonUrl) }
+                .map { serverConfigMapper.fromDTO(it) }
+
         }.fold(Result::Failure, Result::Success)
     }
 
