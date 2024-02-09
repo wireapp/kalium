@@ -37,28 +37,9 @@ import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.Url
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
-@Suppress("TooManyFunctions")
 internal interface ServerConfigRepository {
-
-    /**
-     * @return list of all locally stored server configurations
-     */
-    suspend fun configList(): Either<StorageFailure, List<ServerConfig>>
-
-    /**
-     * @return observable list of all locally stored server configurations
-     */
-    suspend fun configFlow(): Either<StorageFailure, Flow<List<ServerConfig>>>
-
-    /**
-     * delete a locally stored server configuration
-     */
-    suspend fun deleteById(id: String): Either<StorageFailure, Unit>
-    suspend fun delete(serverConfig: ServerConfig): Either<StorageFailure, Unit>
     suspend fun getOrFetchMetadata(serverLinks: ServerConfig.Links): Either<CoreFailure, ServerConfig>
     suspend fun storeConfig(links: ServerConfig.Links, metadata: ServerConfig.MetaData): Either<StorageFailure, ServerConfig>
 
@@ -73,19 +54,9 @@ internal interface ServerConfigRepository {
     suspend fun fetchApiVersionAndStore(links: ServerConfig.Links): Either<CoreFailure, ServerConfig>
 
     /**
-     * retrieve a config from the local DB by ID
-     */
-    fun configById(id: String): Either<StorageFailure, ServerConfig>
-
-    /**
-     * retrieve a config from the local DB by Links
-     */
-    suspend fun configByLinks(links: ServerConfig.Links): Either<StorageFailure, ServerConfig>
-
-    /**
      * update the api version of a locally stored config
      */
-    suspend fun updateConfigApiVersion(id: String): Either<CoreFailure, Unit>
+    suspend fun updateConfigApiVersion(serverConfig: ServerConfig): Either<CoreFailure, Unit>
 
     /**
      * Return the server links and metadata for the given userId
@@ -101,15 +72,6 @@ internal class ServerConfigDataSource(
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : ServerConfigRepository {
 
-    override suspend fun configList(): Either<StorageFailure, List<ServerConfig>> =
-        wrapStorageRequest { dao.allConfig() }.map { it.map(serverConfigMapper::fromEntity) }
-
-    override suspend fun configFlow(): Either<StorageFailure, Flow<List<ServerConfig>>> =
-        wrapStorageRequest { dao.allConfigFlow().map { it.map(serverConfigMapper::fromEntity) } }
-
-    override suspend fun deleteById(id: String) = wrapStorageRequest { dao.deleteById(id) }
-
-    override suspend fun delete(serverConfig: ServerConfig) = deleteById(serverConfig.id)
     override suspend fun getOrFetchMetadata(serverLinks: ServerConfig.Links): Either<CoreFailure, ServerConfig> =
         wrapStorageRequest { dao.configByLinks(serverConfigMapper.toEntity(serverLinks)) }.fold({
             fetchApiVersionAndStore(serverLinks)
@@ -164,16 +126,9 @@ internal class ServerConfigDataSource(
                 storeConfig(links, metaData)
             }
 
-    override fun configById(id: String): Either<StorageFailure, ServerConfig> = wrapStorageRequest {
-        dao.configById(id)
-    }.map { serverConfigMapper.fromEntity(it) }
-
-    override suspend fun configByLinks(links: ServerConfig.Links): Either<StorageFailure, ServerConfig> =
-        wrapStorageRequest { dao.configByLinks(serverConfigMapper.toEntity(links)) }.map { serverConfigMapper.fromEntity(it) }
-
-    override suspend fun updateConfigApiVersion(id: String): Either<CoreFailure, Unit> = configById(id)
-        .flatMap { fetchMetadata(it.links) }
-        .flatMap { wrapStorageRequest { dao.updateApiVersion(id, it.commonApiVersion.version) } }
+    override suspend fun updateConfigApiVersion(serverConfig: ServerConfig): Either<CoreFailure, Unit> =
+    fetchMetadata(serverConfig.links)
+    .flatMap { wrapStorageRequest { dao.updateApiVersion(serverConfig.id, it.commonApiVersion.version) } }
 
     override suspend fun configForUser(userId: UserId): Either<StorageFailure, ServerConfig> =
         wrapStorageRequest { dao.configForUser(userId.toDao()) }

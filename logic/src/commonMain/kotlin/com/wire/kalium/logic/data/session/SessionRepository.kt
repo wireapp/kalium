@@ -79,7 +79,7 @@ interface SessionRepository {
     suspend fun persistentWebSocketStatus(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun cookieLabel(userId: UserId): Either<StorageFailure, String?>
     suspend fun isAccountReadOnly(userId: UserId): Either<StorageFailure, Boolean>
-
+    suspend fun validSessionsWithServerConfig(): Either<StorageFailure, Map<UserId, ServerConfig>>
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -230,6 +230,14 @@ internal class SessionDataSource(
                 ManagedByEntity.SCIM -> true
             }
         }
+
+    override suspend fun validSessionsWithServerConfig(): Either<StorageFailure, Map<UserId, ServerConfig>> = wrapStorageRequest {
+        accountsDAO.validAccountWithServerConfigId()
+    }.map {
+        it.map { (userId, serverConfig) ->
+            userId.toModel() to serverConfigMapper.fromEntity(serverConfig)
+        }.toMap()
+    }
 
     internal fun ManagedByDTO.toDao() = when (this) {
         ManagedByDTO.WIRE -> ManagedByEntity.WIRE

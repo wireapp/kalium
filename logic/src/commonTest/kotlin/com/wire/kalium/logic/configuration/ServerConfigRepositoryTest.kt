@@ -23,7 +23,6 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.failure.ServerConfigFailure
-import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.util.stubs.newServerConfig
@@ -45,92 +44,13 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
 
 @ExperimentalCoroutinesApi
 class ServerConfigRepositoryTest {
-
-    @Test
-    fun givenStoredConfig_thenItCanBeRetrievedAsList() = runTest {
-        val (arrangement, repository) = Arrangement().withDaoEntityResponse().arrange()
-        val expected = listOf(newServerConfig(1), newServerConfig(2), newServerConfig(3))
-
-        repository.configList().shouldSucceed { assertEquals(it, expected) }
-        verify(arrangement.serverConfigDAO)
-            .suspendFunction(arrangement.serverConfigDAO::allConfig)
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenStoredConfig_thenItCanBeRetrievedAsFlow() = runTest {
-        val (arrangement, repository) = Arrangement().withDaoEntityFlowResponse().arrange()
-        val expected = listOf(newServerConfig(1), newServerConfig(2), newServerConfig(3))
-
-        val actual = repository.configFlow()
-
-        assertIs<Either.Right<Flow<List<ServerConfig>>>>(actual)
-        assertEquals(expected.first(), actual.value.first()[0])
-
-        verify(arrangement.serverConfigDAO)
-            .suspendFunction(arrangement.serverConfigDAO::allConfigFlow)
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenStoredConfig_thenItCanBeRetrievedById() = runTest {
-        val (arrangement, repository) = Arrangement()
-            .withConfigById(newServerConfigEntity(1))
-            .arrange()
-        val expected = newServerConfig(1)
-
-        val actual = repository.configById(expected.id)
-        assertIs<Either.Right<ServerConfig>>(actual)
-        assertEquals(expected, actual.value)
-
-        verify(arrangement.serverConfigDAO)
-            .function(arrangement.serverConfigDAO::configById)
-            .with(any())
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenStoredConfig_thenItCanBeDeleted() = runTest {
-        val serverConfigId = "1"
-        val (arrangement, repository) = Arrangement()
-            .withConfigById(newServerConfigEntity(1))
-            .arrange()
-
-        val actual = repository.deleteById(serverConfigId)
-
-        actual.shouldSucceed()
-        verify(arrangement.serverConfigDAO)
-            .suspendFunction(arrangement.serverConfigDAO::deleteById)
-            .with(any())
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenStoredConfig_whenDeleting_thenItCanBeDeleted() = runTest {
-        val serverConfig = newServerConfig(1)
-        val (arrangement, repository) = Arrangement()
-            .withConfigById(newServerConfigEntity(1))
-            .arrange()
-
-        val actual = repository.delete(serverConfig)
-
-        actual.shouldSucceed()
-        verify(arrangement.serverConfigDAO)
-            .suspendFunction(arrangement.serverConfigDAO::deleteById)
-            .with(any())
-            .wasInvoked(exactly = once)
-    }
-
     @Test
     fun givenValidCompatibleApiVersion_whenStoringConfigLocally_thenConfigIsStored() = runTest {
         val expected = newServerConfig(1)

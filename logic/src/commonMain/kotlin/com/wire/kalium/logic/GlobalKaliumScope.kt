@@ -135,7 +135,20 @@ class GlobalKaliumScope internal constructor(
 
     val session: SessionScope get() = SessionScope(sessionRepository)
     val fetchServerConfigFromDeepLink: GetServerConfigUseCase get() = GetServerConfigUseCase(customServerConfigRepository)
-    val updateApiVersions: UpdateApiVersionsUseCase get() = UpdateApiVersionsUseCaseImpl()
+    val updateApiVersions: UpdateApiVersionsUseCase
+        get() = UpdateApiVersionsUseCaseImpl(
+            sessionRepository,
+            globalPreferences.authTokenStorage,
+            { serverConfig, proxyCredentials ->
+                authenticationScopeProvider.provide(
+                    serverConfig,
+                    proxyCredentials,
+                    networkStateObserver,
+                    globalDatabase,
+                    kaliumConfigs
+                ).serverConfigRepository
+            },
+        )
     val storeServerConfig: StoreServerConfigUseCase get() = StoreServerConfigUseCaseImpl(customServerConfigRepository)
 
     val saveNotificationToken: SaveNotificationTokenUseCase
