@@ -35,6 +35,7 @@ data class RegisterClientParam(
     val model: String?,
     val cookieLabel: String?,
     val secondFactorVerificationCode: String? = null,
+    val modelPostfix: String?
 )
 
 data class DeleteClientParam(
