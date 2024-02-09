@@ -1,0 +1,10 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.message.MessageEntity;
+
+CREATE TABLE MessageAssetStatus (
+    id TEXT NOT NULL,
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+    upload_status TEXT AS MessageEntity.UploadStatus,
+    download_status TEXT AS MessageEntity.DownloadStatus,
+    PRIMARY KEY (id, conversation_id)
+);

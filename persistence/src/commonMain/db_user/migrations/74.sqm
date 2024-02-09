@@ -1,14 +1,60 @@
-import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.LegalHoldType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
-import com.wire.kalium.persistence.dao.message.MessageEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntityContent;
-import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
-import kotlin.Boolean;
-import kotlin.Int;
-import kotlin.collections.List;
-import kotlinx.datetime.Instant;
+ALTER TABLE MessageAssetContent RENAME TO TempMessageAssetContent;
+
+CREATE TABLE MessageAssetContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      asset_size INTEGER NOT NULL,
+      asset_name TEXT,
+      asset_mime_type TEXT NOT NULL,
+      asset_otr_key BLOB NOT NULL,
+      asset_sha256 BLOB NOT NULL,
+      asset_id TEXT NOT NULL,
+      asset_token TEXT,
+      asset_domain TEXT,
+      asset_encryption_algorithm TEXT,
+      asset_width INTEGER AS Int,
+      asset_height INTEGER AS Int,
+      asset_duration_ms INTEGER,
+      asset_normalized_loudness BLOB,
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
+INSERT INTO MessageAssetContent (message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness)
+SELECT message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness
+FROM TempMessageAssetContent;
+
+DROP TABLE TempMessageAssetContent;
+
+ALTER TABLE Asset ADD COLUMN download_status TEXT;
+ALTER TABLE Asset ADD COLUMN upload_status TEXT;
+
+DROP VIEW IF EXISTS MessageAssetView;
+
+CREATE VIEW IF NOT EXISTS MessageAssetView
+AS SELECT
+    Message.id AS id,
+    Message.conversation_id AS conversationId,
+    Message.content_type AS contentType,
+    Message.creation_date AS date,
+    Message.visibility AS visibility,
+    Message.sender_user_id AS senderUserId,
+    (Message.expire_after_millis IS NOT NULL) AS isEphemeral,
+    User.name AS senderName,
+    SelfUser.id AS selfUserId,
+    (Message.sender_user_id == SelfUser.id) AS isSelfMessage,
+    AssetMessage.asset_id AS assetId,
+    AssetMessage.asset_mime_type AS assetMimeType,
+    AssetMessage.asset_height AS assetHeight,
+    AssetMessage.asset_width AS assetWidth,
+    AssetContent.data_path AS dataPath
+FROM Message
+LEFT JOIN SelfUser
+LEFT JOIN User ON Message.sender_user_id = User.qualified_id
+LEFT JOIN MessageAssetContent AS AssetMessage ON Message.id = AssetMessage.message_id AND Message.conversation_id = AssetMessage.conversation_id
+LEFT JOIN Asset AS AssetContent ON AssetMessage.asset_id = AssetContent.key AND AssetMessage.asset_domain = AssetContent.domain;
+
+DROP VIEW IF EXISTS MessageDetailsView;
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT

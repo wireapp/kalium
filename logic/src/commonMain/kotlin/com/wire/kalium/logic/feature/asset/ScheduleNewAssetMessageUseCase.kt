@@ -335,8 +335,8 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 ),
                 // Asset is already in our local storage and therefore accessible but until we don't save it to external storage the asset
                 // will only be treated as "SAVED_INTERNALLY"
-                downloadStatus = Message.DownloadStatus.SAVED_INTERNALLY,
-                uploadStatus = uploadStatus
+//                 downloadStatus = Message.DownloadStatus.SAVED_INTERNALLY, // TODO KBX
+//                 uploadStatus = uploadStatus
             )
         }
     }

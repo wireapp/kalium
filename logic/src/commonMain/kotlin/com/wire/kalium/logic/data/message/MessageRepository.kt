@@ -41,6 +41,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapFlowStorageRequest
@@ -249,6 +250,9 @@ internal interface MessageRepository {
         limit: Int,
         offset: Int
     ): List<AssetMessage>
+
+    suspend fun updateAssetStatus(assetStatus: MessageAssetStatus): Either<CoreFailure, Unit>
+    suspend fun observeAssetStatuses(): Flow<Either<StorageFailure, List<MessageAssetStatus>>>
 }
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
@@ -717,4 +721,11 @@ internal class MessageDataSource internal constructor (
             messageId = messageId
         )
     }
+
+    override suspend fun updateAssetStatus(assetStatus: MessageAssetStatus): Either<CoreFailure, Unit> = wrapStorageRequest {
+        messageDAO.updateAssetStatus(assetStatus.toDao())
+    }
+    override suspend fun observeAssetStatuses() = messageDAO.observeAssetStatuses()
+        .wrapStorageRequest()
+        .mapRight { assetStatusEntities -> assetStatusEntities.map { it.toModel() } }
 }

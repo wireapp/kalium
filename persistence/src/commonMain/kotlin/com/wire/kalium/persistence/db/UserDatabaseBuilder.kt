@@ -161,6 +161,7 @@ class UserDatabaseBuilder internal constructor(
         MessageConversationProtocolChangedDuringACallContentAdapter =
             TableMapper.messageConversationProtocolChangedDuringACAllContentAdapter,
         ConversationLegalHoldStatusChangeNotifiedAdapter = TableMapper.conversationLegalHoldStatusChangeNotifiedAdapter,
+        MessageAssetStatusAdapter = TableMapper.assetStatusAdapter
     )
 
     init {
@@ -242,6 +243,7 @@ class UserDatabaseBuilder internal constructor(
             userId,
             database.reactionsQueries,
             queriesContext,
+            database.assetStatusQueries,
             database.buttonContentQueries
         )
 

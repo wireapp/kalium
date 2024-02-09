@@ -201,8 +201,8 @@ internal class SendBrokenAssetMessageUseCaseImpl(
                     assetDomain = assetId.domain,
                     assetToken = assetId.assetToken
                 ),
-                downloadStatus = Message.DownloadStatus.SAVED_EXTERNALLY,
-                uploadStatus = uploadStatus
+//                 downloadStatus = Message.DownloadStatus.SAVED_EXTERNALLY, // TODO KBX
+//                 uploadStatus = uploadStatus
             )
         }
     }

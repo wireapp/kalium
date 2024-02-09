@@ -137,8 +137,8 @@ class RetryFailedMessageUseCase internal constructor(
             else -> handleError("Message edit with content of type ${content::class.simpleName} cannot be retried")
         }
 
-    private suspend fun retrySendingAssetMessage(message: Message.Regular, content: AssetContent): Either<CoreFailure, Unit> =
-        when (content.uploadStatus) {
+    private suspend fun retrySendingAssetMessage(message: Message.Regular, content: AssetContent, uploadStatus: Message.UploadStatus = Message.UploadStatus.NOT_UPLOADED): Either<CoreFailure, Unit> =
+        when (uploadStatus) { // TODO KBX proper argument
             Message.UploadStatus.FAILED_UPLOAD -> {
                 updateAssetMessageUploadStatus(Message.UploadStatus.UPLOAD_IN_PROGRESS, message.conversationId, message.id)
                 retryUploadingAsset(content)
@@ -164,7 +164,7 @@ class RetryFailedMessageUseCase internal constructor(
 
             Message.UploadStatus.UPLOADED -> Either.Right(message)
 
-            else -> handleError("Asset message with upload status ${content.uploadStatus} cannot be retried")
+            else -> handleError("Asset message with upload status ${uploadStatus} cannot be retried")
         }
             .onSuccess { retrySendingMessage(it) }
             .map { /* returns Unit */ }
@@ -197,7 +197,7 @@ class RetryFailedMessageUseCase internal constructor(
                             assetDomain = uploadedAssetId.domain,
                             assetToken = uploadedAssetId.assetToken
                         ),
-                        uploadStatus = Message.UploadStatus.UPLOADED
+//                         uploadStatus = Message.UploadStatus.UPLOADED TODO KBX move to asset repo
                     )
                 }
         }

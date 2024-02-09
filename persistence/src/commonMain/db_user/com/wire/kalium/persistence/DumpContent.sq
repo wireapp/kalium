@@ -16,8 +16,6 @@ INSERT INTO MessageAssetContent
            local_db.MessageAssetContent.asset_size,
            local_db.MessageAssetContent.asset_name,
            local_db.MessageAssetContent.asset_mime_type,
-           local_db.MessageAssetContent.asset_upload_status,
-           local_db.MessageAssetContent.asset_download_status,
            local_db.MessageAssetContent.asset_otr_key,
            local_db.MessageAssetContent.asset_sha256,
            local_db.MessageAssetContent.asset_id,

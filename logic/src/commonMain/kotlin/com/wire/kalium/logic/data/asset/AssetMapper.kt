@@ -119,9 +119,7 @@ class AssetMapperImpl(
                         assetEncryptionAlgorithm?.contains("GCM") == true -> AES_GCM
                         else -> AES_CBC
                     }
-                ),
-                uploadStatus = assetUploadStatus.toModel(),
-                downloadStatus = assetDownloadStatus.toModel()
+                )
             )
         }
     }
@@ -194,9 +192,7 @@ class AssetMapperImpl(
 
                         is Asset.Status.NotUploaded -> defaultRemoteData
                     }
-                } ?: defaultRemoteData,
-                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED,
-                uploadStatus = Message.UploadStatus.NOT_UPLOADED
+                } ?: defaultRemoteData
             )
         }
     }

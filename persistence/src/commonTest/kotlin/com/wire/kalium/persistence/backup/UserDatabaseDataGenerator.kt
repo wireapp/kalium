@@ -156,8 +156,6 @@ class UserDatabaseDataGenerator(
             assetSizeInBytes = 256,
             assetName = "${messageAssetContentPrefix}Name",
             assetMimeType = "MP4",
-            assetUploadStatus = assetUploadStatus,
-            assetDownloadStatus = assetDownloadStatus,
             assetOtrKey = byteArrayOf(1),
             assetSha256Key = byteArrayOf(1),
             assetId = "${messageAssetContentPrefix}AssetId",
@@ -579,7 +577,6 @@ class UserDatabaseDataGenerator(
                 domain = "${assetPrefix}Domain${index}",
                 dataPath = "${assetPrefix}DataPath${index}",
                 dataSize = 256,
-                assetToken = null,
                 downloadedDate = null
             )
 

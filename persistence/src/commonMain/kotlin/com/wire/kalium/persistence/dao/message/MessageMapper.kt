@@ -390,7 +390,6 @@ object MessageMapper {
         assetMimeType: String?,
         assetHeight: Int?,
         assetWidth: Int?,
-        assetDownloadStatus: MessageEntity.DownloadStatus?,
         decodedAssetPath: String?
     ): AssetMessageEntity {
         return AssetMessageEntity(
@@ -401,7 +400,7 @@ object MessageMapper {
             assetId = assetId!!,
             width = assetWidth!!,
             height = assetHeight!!,
-            downloadStatus = assetDownloadStatus ?: MessageEntity.DownloadStatus.NOT_DOWNLOADED,
+            downloadStatus = MessageEntity.DownloadStatus.NOT_DOWNLOADED, // TODO KBX
             assetPath = decodedAssetPath,
             isSelfAsset = isSelfMessage
         )
@@ -442,8 +441,6 @@ object MessageMapper {
         assetSize: Long?,
         assetName: String?,
         assetMimeType: String?,
-        assetUploadStatus: MessageEntity.UploadStatus?,
-        assetDownloadStatus: MessageEntity.DownloadStatus?,
         assetOtrKey: ByteArray?,
         assetSha256: ByteArray?,
         assetId: String?,
@@ -527,8 +524,6 @@ object MessageMapper {
                 assetSizeInBytes = assetSize.requireField("asset_size"),
                 assetName = assetName,
                 assetMimeType = assetMimeType.requireField("asset_mime_type"),
-                assetUploadStatus = assetUploadStatus,
-                assetDownloadStatus = assetDownloadStatus,
                 assetOtrKey = assetOtrKey.requireField("asset_otr_key"),
                 assetSha256Key = assetSha256.requireField("asset_sha256"),
                 assetId = assetId.requireField("asset_id"),
@@ -666,6 +661,20 @@ object MessageMapper {
             readCount,
             recipientsFailedWithNoClientsList,
             recipientsFailedDeliveryList
+        )
+    }
+
+    fun fromAssetStatus(
+        id: String,
+        conversationId: QualifiedIDEntity,
+        uploadStatus: MessageEntity.UploadStatus?,
+        downloadStatus: MessageEntity.DownloadStatus?
+    ): MessageAssetStatusEntity {
+        return MessageAssetStatusEntity(
+            id = id,
+            conversationId = conversationId,
+            uploadStatus = uploadStatus,
+            downloadStatus = downloadStatus
         )
     }
 

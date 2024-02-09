@@ -108,8 +108,6 @@ fun WebEventContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? 
 
                                     else -> null
                                 },
-                                uploadStatus = Message.UploadStatus.NOT_UPLOADED,
-                                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
                             ),
                         ),
                         data.expectsReadConfirmation,

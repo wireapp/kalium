@@ -104,8 +104,6 @@ sealed interface Message {
                     "sizeInBytes" to "${content.value.sizeInBytes}",
                     "mimeType" to content.value.mimeType,
                     "metaData" to "${content.value.metadata}",
-                    "downloadStatus" to "${content.value.downloadStatus}",
-                    "uploadStatus" to "${content.value.uploadStatus}",
                     "otrKeySize" to "${content.value.remoteData.otrKey.size}",
                 )
 
@@ -653,3 +651,10 @@ sealed class DeliveryStatus {
         return Json.encodeToString(toLogMap())
     }
 }
+
+data class MessageAssetStatus(
+    val id: String,
+    val conversationId: ConversationId,
+    val uploadStatus: Message.UploadStatus = Message.UploadStatus.NOT_UPLOADED,
+    val downloadStatus: Message.DownloadStatus,
+)

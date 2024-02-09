@@ -1,0 +1,43 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.message.MessageEntity;
+
+CREATE TABLE MessageAssetStatus (
+    id TEXT NOT NULL,
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+    upload_status TEXT AS MessageEntity.UploadStatus,
+    download_status TEXT AS MessageEntity.DownloadStatus,
+    PRIMARY KEY (id, conversation_id)
+);
+
+deleteAssetStatus:
+DELETE FROM MessageAssetStatus WHERE id = ? AND conversation_id = ?;
+
+upsertMessageAssetStatus:
+INSERT INTO MessageAssetStatus(id, conversation_id, upload_status, download_status)
+VALUES( ?, ?, ?, ?)
+ON CONFLICT(id, conversation_id) DO UPDATE SET
+download_status = excluded.download_status,
+upload_status = excluded.upload_status;
+
+selectAll:
+SELECT * FROM MessageAssetStatus;
+
+updateAssetUploadStatus:
+UPDATE MessageAssetStatus
+SET upload_status = ?
+WHERE id = ? AND conversation_id = ?;
+
+updateAssetDownloadStatus:
+UPDATE MessageAssetStatus
+SET download_status = ?
+WHERE id = ? AND conversation_id = ?;
+
+resetAssetUploadStatus:
+UPDATE MessageAssetStatus
+SET upload_status = 'FAILED'
+WHERE upload_status = 'IN_PROGRESS';
+
+resetAssetDownloadStatus:
+UPDATE MessageAssetStatus
+SET download_status = 'FAILED'
+WHERE download_status = 'IN_PROGRESS';

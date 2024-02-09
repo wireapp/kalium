@@ -49,6 +49,8 @@ import com.wire.kalium.logic.feature.asset.GetImageAssetMessagesForConversationU
 import com.wire.kalium.logic.feature.asset.GetImageAssetMessagesForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCaseImpl
+import com.wire.kalium.logic.feature.asset.ObserveAssetStatusesUseCase
+import com.wire.kalium.logic.feature.asset.ObserveAssetStatusesUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCase
 import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCase
@@ -395,4 +397,6 @@ class MessageScope internal constructor(
         get() = GetSearchedConversationMessagePositionUseCaseImpl(
             messageRepository = messageRepository
         )
+
+    val observeAssetStatuses: ObserveAssetStatusesUseCase get() = ObserveAssetStatusesUseCaseImpl(messageRepository)
 }

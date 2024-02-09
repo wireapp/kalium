@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.dao.message
 
 import app.cash.sqldelight.coroutines.asFlow
+import com.wire.kalium.persistence.AssetStatusQueries
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MessageAssetViewQueries
 import com.wire.kalium.persistence.MessagePreviewQueries
@@ -58,6 +59,7 @@ internal class MessageDAOImpl internal constructor(
     private val selfUserId: UserIDEntity,
     private val reactionsQueries: ReactionsQueries,
     private val coroutineContext: CoroutineContext,
+    private val assetStatusQueries: AssetStatusQueries,
     buttonContentQueries: ButtonContentQueries
 ) : MessageDAO,
     MessageInsertExtension by MessageInsertExtensionImpl(
@@ -221,7 +223,7 @@ internal class MessageDAOImpl internal constructor(
         id: String,
         conversationId: QualifiedIDEntity
     ) = withContext(coroutineContext) {
-        queries.updateAssetUploadStatus(uploadStatus, id, conversationId)
+        assetStatusQueries.updateAssetUploadStatus(uploadStatus, id, conversationId)
     }
 
     override suspend fun updateAssetDownloadStatus(
@@ -229,7 +231,7 @@ internal class MessageDAOImpl internal constructor(
         id: String,
         conversationId: QualifiedIDEntity
     ) = withContext(coroutineContext) {
-        queries.updateAssetDownloadStatus(downloadStatus, id, conversationId)
+        assetStatusQueries.updateAssetDownloadStatus(downloadStatus, id, conversationId)
     }
 
     override suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity) =
@@ -379,7 +381,7 @@ internal class MessageDAOImpl internal constructor(
         }.asFlow().flowOn(coroutineContext).mapToList().map { it.toMap() }
 
     override suspend fun resetAssetDownloadStatus() = withContext(coroutineContext) {
-        queries.resetAssetDownloadStatus()
+        assetStatusQueries.resetAssetDownloadStatus()
     }
 
     override suspend fun markMessagesAsDecryptionResolved(
@@ -391,7 +393,7 @@ internal class MessageDAOImpl internal constructor(
     }
 
     override suspend fun resetAssetUploadStatus() = withContext(coroutineContext) {
-        queries.resetAssetUploadStatus()
+        assetStatusQueries.resetAssetUploadStatus()
     }
 
     override suspend fun getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
@@ -487,6 +489,21 @@ internal class MessageDAOImpl internal constructor(
             .selectSearchedConversationMessagePosition(conversationId, messageId)
             .executeAsOne()
             .toInt()
+    }
+
+    override suspend fun observeAssetStatuses(): Flow<List<MessageAssetStatusEntity>> =
+        assetStatusQueries.selectAll(mapper::fromAssetStatus)
+            .asFlow()
+            .flowOn(coroutineContext)
+            .mapToList()
+
+    override suspend fun updateAssetStatus(status: MessageAssetStatusEntity) {
+        assetStatusQueries.upsertMessageAssetStatus(
+            status.id,
+            status.conversationId,
+            upload_status = status.uploadStatus,
+            download_status = status.downloadStatus
+        )
     }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, assetViewQueries, mapper, coroutineContext)

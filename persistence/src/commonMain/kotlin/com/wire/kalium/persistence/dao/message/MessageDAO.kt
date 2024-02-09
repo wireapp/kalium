@@ -156,4 +156,7 @@ interface MessageDAO {
         limit: Int,
         offset: Int
     ): List<AssetMessageEntity>
+
+    suspend fun observeAssetStatuses(): Flow<List<MessageAssetStatusEntity>>
+    suspend fun updateAssetStatus(status: MessageAssetStatusEntity)
 }

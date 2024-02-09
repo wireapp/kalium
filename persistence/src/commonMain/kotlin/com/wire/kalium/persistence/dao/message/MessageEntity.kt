@@ -280,8 +280,6 @@ sealed class MessageEntityContent {
         // TODO: Make it not-nullable, fallback to message ID or something else if it comes without a name from the protobuf models
         val assetName: String? = null,
         val assetMimeType: String,
-        val assetUploadStatus: MessageEntity.UploadStatus? = null,
-        val assetDownloadStatus: MessageEntity.DownloadStatus? = null,
 
         // remote data fields
         val assetOtrKey: ByteArray,
@@ -495,6 +493,13 @@ sealed class DeliveryStatusEntity {
 
     data object CompleteDelivery : DeliveryStatusEntity()
 }
+
+data class MessageAssetStatusEntity(
+    val id: String,
+    val conversationId: QualifiedIDEntity,
+    val uploadStatus: MessageEntity.UploadStatus?,
+    val downloadStatus: MessageEntity.DownloadStatus?
+)
 
 @Serializable
 class ButtonEntity(

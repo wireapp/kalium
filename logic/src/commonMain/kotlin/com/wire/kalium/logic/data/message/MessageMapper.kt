@@ -40,6 +40,7 @@ import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.message.AssetTypeEntity
 import com.wire.kalium.persistence.dao.message.ButtonEntity
 import com.wire.kalium.persistence.dao.message.DeliveryStatusEntity
+import com.wire.kalium.persistence.dao.message.MessageAssetStatusEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
@@ -320,8 +321,6 @@ class MessageMapperImpl(
                 assetSizeInBytes = sizeInBytes,
                 assetName = name,
                 assetMimeType = mimeType,
-                assetUploadStatus = uploadStatus.toDao(),
-                assetDownloadStatus = downloadStatus.toDao(),
                 assetOtrKey = remoteData.otrKey,
                 assetSha256Key = remoteData.sha256,
                 assetId = remoteData.assetId,
@@ -682,4 +681,23 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
         is MessageContent.LegalHold.ForMembers.Enabled ->
             MessageEntityContent.LegalHold(this.members.map { it.toDao() }, MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS)
     }
+}
+
+
+fun MessageAssetStatus.toDao() : MessageAssetStatusEntity {
+    return MessageAssetStatusEntity(
+        id = id,
+        conversationId = conversationId.toDao(),
+        uploadStatus = uploadStatus.toDao(),
+        downloadStatus = downloadStatus.toDao()
+    )
+}
+
+fun MessageAssetStatusEntity.toModel() : MessageAssetStatus {
+    return MessageAssetStatus(
+        id = id,
+        conversationId = conversationId.toModel(),
+        uploadStatus = uploadStatus.toModel(),
+        downloadStatus = downloadStatus.toModel()
+    )
 }
