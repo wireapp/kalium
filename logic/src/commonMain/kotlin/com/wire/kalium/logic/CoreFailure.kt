@@ -296,6 +296,10 @@ internal inline fun <T> wrapMLSRequest(mlsRequest: () -> T): Either<MLSFailure, 
     return try {
         Either.Right(mlsRequest())
     } catch (e: Exception) {
+        kaliumLogger.e(
+            """{ "MLSException": "${e.message},"
+                |"cause": ${e.cause} }" """.trimMargin()
+        )
         kaliumLogger.e(e.stackTraceToString())
         Either.Left(mapMLSException(e))
     }

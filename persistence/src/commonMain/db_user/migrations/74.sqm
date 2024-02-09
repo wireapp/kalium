@@ -1,59 +1,3 @@
-ALTER TABLE MessageAssetContent RENAME TO TempMessageAssetContent;
-
-CREATE TABLE MessageAssetContent (
-      message_id TEXT NOT NULL,
-      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
-      asset_size INTEGER NOT NULL,
-      asset_name TEXT,
-      asset_mime_type TEXT NOT NULL,
-      asset_otr_key BLOB NOT NULL,
-      asset_sha256 BLOB NOT NULL,
-      asset_id TEXT NOT NULL,
-      asset_token TEXT,
-      asset_domain TEXT,
-      asset_encryption_algorithm TEXT,
-      asset_width INTEGER AS Int,
-      asset_height INTEGER AS Int,
-      asset_duration_ms INTEGER,
-      asset_normalized_loudness BLOB,
-      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
-      PRIMARY KEY (message_id, conversation_id)
-);
-
-INSERT INTO MessageAssetContent (message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness)
-SELECT message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness
-FROM TempMessageAssetContent;
-
-DROP TABLE TempMessageAssetContent;
-
-ALTER TABLE Asset ADD COLUMN download_status TEXT;
-ALTER TABLE Asset ADD COLUMN upload_status TEXT;
-
-DROP VIEW IF EXISTS MessageAssetView;
-
-CREATE VIEW IF NOT EXISTS MessageAssetView
-AS SELECT
-    Message.id AS id,
-    Message.conversation_id AS conversationId,
-    Message.content_type AS contentType,
-    Message.creation_date AS date,
-    Message.visibility AS visibility,
-    Message.sender_user_id AS senderUserId,
-    (Message.expire_after_millis IS NOT NULL) AS isEphemeral,
-    User.name AS senderName,
-    SelfUser.id AS selfUserId,
-    (Message.sender_user_id == SelfUser.id) AS isSelfMessage,
-    AssetMessage.asset_id AS assetId,
-    AssetMessage.asset_mime_type AS assetMimeType,
-    AssetMessage.asset_height AS assetHeight,
-    AssetMessage.asset_width AS assetWidth,
-    AssetContent.data_path AS dataPath
-FROM Message
-LEFT JOIN SelfUser
-LEFT JOIN User ON Message.sender_user_id = User.qualified_id
-LEFT JOIN MessageAssetContent AS AssetMessage ON Message.id = AssetMessage.message_id AND Message.conversation_id = AssetMessage.conversation_id
-LEFT JOIN Asset AS AssetContent ON AssetMessage.asset_id = AssetContent.key AND AssetMessage.asset_domain = AssetContent.domain;
-
 DROP VIEW IF EXISTS MessageDetailsView;
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
@@ -71,7 +15,7 @@ Message.expects_read_confirmation AS expectsReadConfirmation,
 Message.expire_after_millis AS expireAfterMillis,
 Message.self_deletion_start_date AS selfDeletionStartDate,
 Message.self_deletion_end_date AS selfDeletionEndDate,
-IFNULL ((SELECT COUNT (*) FROM Receipt WHERE message_id = Message.id AND type = "READ"), 0) AS readCount,
+IFNULL ((SELECT COUNT (*) FROM Receipt WHERE message_id = Message.id AND type = 'READ'), 0) AS readCount,
 User.name AS senderName,
 User.handle AS senderHandle,
 User.email AS senderEmail,
@@ -85,12 +29,18 @@ User.user_availability_status AS senderAvailabilityStatus,
 User.user_type AS senderUserType,
 User.bot_service AS senderBotService,
 User.deleted AS senderIsDeleted,
+User.expires_at AS senderExpiresAt,
+User.defederated AS senderDefederated,
+User.supported_protocols AS senderSupportedProtocols,
+User.active_one_on_one_conversation_id AS senderActiveOneOnOneConversationId,
 (Message.sender_user_id == SelfUser.id) AS isSelfMessage,
 TextContent.text_body AS text,
 TextContent.is_quoting_self AS isQuotingSelfUser,
 AssetContent.asset_size AS assetSize,
 AssetContent.asset_name AS assetName,
 AssetContent.asset_mime_type AS assetMimeType,
+AssetContent.asset_upload_status AS assetUploadStatus,
+AssetContent.asset_download_status AS assetDownloadStatus,
 AssetContent.asset_otr_key AS assetOtrKey,
 AssetContent.asset_sha256 AS assetSha256,
 AssetContent.asset_id AS assetId,

@@ -19,10 +19,12 @@ package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestConversationDetails
+import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
@@ -51,17 +53,24 @@ class FederationEventReceiverTest {
     @Test
     fun givenConversationsWithFederatedUsers_whenReceivingFederationDeleteEvent_thenAllConversationsWithThemShouldBeCleared() = runTest {
         // Given
+        fun createConnection(conversationId: ConversationId, otherUserId: UserId) = TestConversationDetails.CONNECTION.copy(
+            conversationId = conversationId,
+            otherUser = TestUser.OTHER.copy(id = otherUserId),
+            connection = TestConnection.CONNECTION.copy(
+                qualifiedConversationId = conversationId,
+                conversationId = conversationId.value,
+            )
+        )
         val defederatedConnections = List(defederatedUsersCount) {
-            TestConversationDetails.CONNECTION.copy(
+            createConnection(
                 conversationId = ConversationId("def_connection$it", defederatedDomain),
-                otherUser = TestUser.OTHER.copy(id = QualifiedID("connectionDefId$it", defederatedDomain))
+                otherUserId = UserId("connectionDefId$it", defederatedDomain)
             )
         }
-
         val otherConnections = List(defederatedUsersCount) {
-            TestConversationDetails.CONNECTION.copy(
+            createConnection(
                 conversationId = ConversationId("other_connection$it", otherDomain),
-                otherUser = TestUser.OTHER.copy(id = QualifiedID("connectionOtherId$it", otherDomain))
+                otherUserId = UserId("connectionOtherId$it", otherDomain)
             )
         }
 
@@ -99,17 +108,15 @@ class FederationEventReceiverTest {
         // When
         val event = Event.Federation.Delete(
             "id",
-            true,
-            false,
             defederatedDomain
         )
 
         // Then
-        useCase.onEvent(event).shouldSucceed()
+        useCase.onEvent(event, TestEvent.liveDeliveryInfo).shouldSucceed()
 
         verify(arrangement.connectionRepository)
             .suspendFunction(arrangement.connectionRepository::deleteConnection)
-            .with(matching<ConversationId> { it.domain == defederatedDomain })
+            .with(matching<Connection> { it.qualifiedConversationId.domain == defederatedDomain })
             .wasInvoked(exactly = defederatedConnections.size.time)
 
         verify(arrangement.connectionRepository)
@@ -170,13 +177,11 @@ class FederationEventReceiverTest {
             // When
             val event = Event.Federation.ConnectionRemoved(
                 "id",
-                true,
-                false,
                 listOf(defederatedDomain, defederatedDomainTwo)
             )
 
             // Then
-            useCase.onEvent(event).shouldSucceed()
+            useCase.onEvent(event, TestEvent.liveDeliveryInfo).shouldSucceed()
 
             verify(arrangement.memberDAO)
                 .suspendFunction(arrangement.memberDAO::deleteMembersByQualifiedID)

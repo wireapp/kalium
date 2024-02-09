@@ -218,8 +218,6 @@ class MemberLeaveEventHandlerTest {
         fun memberLeaveEvent(reason: MemberLeaveReason) = Event.Conversation.MemberLeave(
             id = "id",
             conversationId = conversationId,
-            transient = false,
-            live = false,
             removedBy = userId,
             removedList = listOf(userId),
             timestampIso = "timestampIso",

@@ -15,10 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+@file:Suppress("konsist.repositoriesShouldNotAccessFeaturePackageClasses")
 
 package com.wire.kalium.logic.data.call
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
@@ -49,6 +51,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
 import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
+import com.wire.kalium.logic.feature.conversation.mls.EpochChangesObserver
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.getOrNull
@@ -56,6 +59,8 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.onlyRight
+import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.logStructuredJson
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -67,7 +72,6 @@ import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
@@ -135,6 +139,7 @@ internal class CallDataSource(
     private val callDAO: CallDAO,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
+    private val epochChangesObserver: EpochChangesObserver,
     private val subconversationRepository: SubconversationRepository,
     private val userRepository: UserRepository,
     private val teamRepository: TeamRepository,
@@ -561,6 +566,14 @@ internal class CallDataSource(
             callJobs[conversationId] = scope.launch {
                 observeEpochInfo(conversationId).onSuccess {
                     it.collectLatest { epochInfo ->
+                        kaliumLogger.logStructuredJson(
+                            level = KaliumLogLevel.DEBUG,
+                            leadingMessage = "[CallRepository] Received epoch change",
+                            jsonStringKeyValues = mapOf(
+                                "conversationId" to conversationId.toLogString(),
+                                "epoch" to epochInfo.epoch.toString()
+                            )
+                        )
                         onEpochChange(conversationId, epochInfo)
                     }
                 }
@@ -614,7 +627,6 @@ internal class CallDataSource(
             }
         }
 
-    @OptIn(FlowPreview::class)
     override suspend fun observeEpochInfo(conversationId: ConversationId): Either<CoreFailure, Flow<EpochInfo>> =
         conversationRepository.getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
             when (protocolInfo) {
@@ -625,7 +637,7 @@ internal class CallDataSource(
                     createEpochInfo(protocolInfo.groupId, subconversationGroupId).map { initialEpochInfo ->
                         flowOf(
                             flowOf(initialEpochInfo),
-                            mlsConversationRepository.observeEpochChanges()
+                            epochChangesObserver.observe()
                                 .filter { it == protocolInfo.groupId || it == subconversationGroupId }
                                 .mapNotNull { createEpochInfo(protocolInfo.groupId, subconversationGroupId).getOrNull() }
                         ).flattenConcat()

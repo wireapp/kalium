@@ -49,6 +49,17 @@ internal interface SearchDAOArrangement {
         conversationId: Matcher<ConversationIDEntity> = any(),
         query: Matcher<String> = any()
     )
+
+    fun withSearchByHandle(
+        result: List<UserSearchEntity>,
+        handle: Matcher<String> = any()
+    )
+
+    fun withSearchByHandleExcludingConversation(
+        result: List<UserSearchEntity>,
+        conversationId: Matcher<ConversationIDEntity> = any(),
+        handle: Matcher<String> = any()
+    )
 }
 
 internal class SearchDAOArrangementImpl : SearchDAOArrangement {
@@ -90,6 +101,24 @@ internal class SearchDAOArrangementImpl : SearchDAOArrangement {
         given(searchDAO)
             .suspendFunction(searchDAO::searchListExcludingAConversation)
             .whenInvokedWith(conversationId, query)
+            .thenReturn(result)
+    }
+
+    override fun withSearchByHandle(result: List<UserSearchEntity>, handle: Matcher<String>) {
+        given(searchDAO)
+            .suspendFunction(searchDAO::handleSearch)
+            .whenInvokedWith(handle)
+            .thenReturn(result)
+    }
+
+    override fun withSearchByHandleExcludingConversation(
+        result: List<UserSearchEntity>,
+        conversationId: Matcher<ConversationIDEntity>,
+        handle: Matcher<String>
+    ) {
+        given(searchDAO)
+            .suspendFunction(searchDAO::handleSearchExcludingAConversation)
+            .whenInvokedWith(handle, conversationId)
             .thenReturn(result)
     }
 }

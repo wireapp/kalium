@@ -30,7 +30,11 @@ data class MonkeyId(
     val team: String,
     @SerialName("client")
     val clientId: Int
-)
+) {
+    companion object {
+        fun dummy() = MonkeyId(-1, "dummy", -1)
+    }
+}
 
 @Serializable
 data class ConversationDef(
