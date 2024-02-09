@@ -242,8 +242,8 @@ import com.wire.kalium.logic.feature.legalhold.MembersHavingLegalHoldClientUseCa
 import com.wire.kalium.logic.feature.legalhold.MembersHavingLegalHoldClientUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldChangeNotifiedForSelfUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldChangeNotifiedForSelfUseCaseImpl
-import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldForSelfUserUseCase
-import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldForSelfUserUseCaseImpl
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserUseCase
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldRequestUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldRequestUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
@@ -1393,11 +1393,11 @@ class UserSessionScope internal constructor(
 
     suspend fun observeIfE2EIRequiredDuringLogin(): Flow<Boolean?> = clientRepository.observeIsClientRegistrationBlockedByE2EI()
 
-    val observeLegalHoldForSelfUser: ObserveLegalHoldForSelfUserUseCase
-        get() = ObserveLegalHoldForSelfUserUseCaseImpl(userId, observeLegalHoldStateForUser)
+    val observeLegalHoldForSelfUser: ObserveLegalHoldStateForSelfUserUseCase
+        get() = ObserveLegalHoldStateForSelfUserUseCaseImpl(userId, observeLegalHoldStateForUser, observeLegalHoldRequest)
 
     val observeLegalHoldChangeNotifiedForSelf: ObserveLegalHoldChangeNotifiedForSelfUseCase
-        get() = ObserveLegalHoldChangeNotifiedForSelfUseCaseImpl(userConfigRepository, observeLegalHoldForSelfUser)
+        get() = ObserveLegalHoldChangeNotifiedForSelfUseCaseImpl(userId, userConfigRepository, observeLegalHoldStateForUser)
 
     val markLegalHoldChangeAsNotifiedForSelf: MarkLegalHoldChangeAsNotifiedForSelfUseCase
         get() = MarkLegalHoldChangeAsNotifiedForSelfUseCaseImpl(userConfigRepository)
@@ -1440,6 +1440,7 @@ class UserSessionScope internal constructor(
             clientRemoteRepository = clientRemoteRepository,
             userConfigRepository = userConfigRepository,
             selfClientIdProvider = clientIdProvider,
+            incrementalSyncRepository = incrementalSyncRepository
         )
 
     private val legalHoldHandler = LegalHoldHandlerImpl(
