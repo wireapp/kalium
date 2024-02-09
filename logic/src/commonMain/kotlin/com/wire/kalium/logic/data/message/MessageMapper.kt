@@ -202,7 +202,13 @@ class MessageMapperImpl(
                     ?.let { Message.ExpirationData.SelfDeletionStatus.Started(it) }
                     ?: Message.ExpirationData.SelfDeletionStatus.NotStarted)
         },
-        sender = message.sender?.let { userMapper.fromUserEntityToOtherUser(it) }
+        sender = message.sender?.let {
+            if (message.isSelfMessage) {
+                userMapper.fromUserEntityToSelfUser(it)
+            } else {
+                userMapper.fromUserEntityToOtherUser(it)
+            }
+        }
     )
 
     override fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview {
