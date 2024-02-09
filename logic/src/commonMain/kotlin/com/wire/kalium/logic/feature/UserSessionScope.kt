@@ -1753,7 +1753,8 @@ class UserSessionScope internal constructor(
         get() = SearchScope(
             searchUserRepository = searchUserRepository,
             selfUserId = userId,
-            sessionRepository = globalScope.sessionRepository
+            sessionRepository = globalScope.sessionRepository,
+            kaliumConfigs = kaliumConfigs
         )
 
     private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(userStorage)
