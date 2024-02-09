@@ -19,13 +19,18 @@
 package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrElse
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 
 /**
  * Adds an authenticated user to the session
@@ -33,7 +38,8 @@ import com.wire.kalium.logic.functional.onSuccess
  */
 class AddAuthenticatedUserUseCase internal constructor(
     private val sessionRepository: SessionRepository,
-    private val serverConfigRepository: ServerConfigRepository
+    private val serverConfigurationDAO: ServerConfigurationDAO,
+    private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) {
     sealed class Result {
         data class Success(val userId: UserId) : Result()
@@ -88,7 +94,12 @@ class AddAuthenticatedUserUseCase internal constructor(
                     { Result.Failure.Generic(it) },
                     { oldSession ->
                         val newServerConfig =
-                            serverConfigRepository.configById(newServerConfigId).fold({ return Result.Failure.Generic(it) }, { it })
+                            wrapStorageRequest {
+                                serverConfigurationDAO.configById(newServerConfigId)
+                            }.map {
+                                serverConfigMapper.fromEntity(it)
+                            }.getOrElse { return Result.Failure.Generic(it) }
+
                         if (oldSession.serverConfig.links == newServerConfig.links) {
                             storeUser(
                                 serverConfigId = newServerConfigId,

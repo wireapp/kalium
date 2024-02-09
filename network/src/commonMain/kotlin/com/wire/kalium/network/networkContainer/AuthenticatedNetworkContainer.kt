@@ -49,7 +49,6 @@ import com.wire.kalium.network.api.v3.authenticated.networkContainer.Authenticat
 import com.wire.kalium.network.api.v4.authenticated.networkContainer.AuthenticatedNetworkContainerV4
 import com.wire.kalium.network.api.v5.authenticated.networkContainer.AuthenticatedNetworkContainerV5
 import com.wire.kalium.network.defaultHttpEngine
-import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.HttpClient
@@ -177,7 +176,10 @@ internal class AuthenticatedHttpClientProviderImpl(
     private val sessionManager: SessionManager,
     private val networkStateObserver: NetworkStateObserver,
     private val accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi,
-    private val engine: HttpClientEngine = defaultHttpEngine(sessionManager.serverConfig().links.apiProxy),
+    private val engine: HttpClientEngine = defaultHttpEngine(
+        sessionManager.serverConfig().links.apiProxy,
+        sessionManager.proxyCredentials()
+        ),
     private val kaliumLogger: KaliumLogger,
 ) : AuthenticatedHttpClientProvider {
 

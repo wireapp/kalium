@@ -20,7 +20,7 @@ package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toDao
@@ -36,7 +36,7 @@ import com.wire.kalium.logic.feature.auth.PersistentWebSocketStatus
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.wrapStorageNullableRequest
@@ -45,6 +45,7 @@ import com.wire.kalium.network.api.base.model.ManagedByDTO
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.dao.ManagedByEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
+import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.model.SsoIdEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -78,14 +79,16 @@ interface SessionRepository {
     suspend fun persistentWebSocketStatus(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun cookieLabel(userId: UserId): Either<StorageFailure, String?>
     suspend fun isAccountReadOnly(userId: UserId): Either<StorageFailure, Boolean>
+    suspend fun validSessionsWithServerConfig(): Either<StorageFailure, Map<UserId, ServerConfig>>
 }
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 internal class SessionDataSource(
     private val accountsDAO: AccountsDAO,
     private val authTokenStorage: AuthTokenStorage,
-    private val serverConfigRepository: ServerConfigRepository,
+    private val serverConfigDAO: ServerConfigurationDAO,
     private val kaliumConfigs: KaliumConfigs,
+    private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper(),
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : SessionRepository {
@@ -135,8 +138,11 @@ internal class SessionDataSource(
         wrapStorageRequest { accountsDAO.fullAccountInfo(userId.toDao()) }
             .flatMap {
                 val accountInfo = sessionMapper.fromAccountInfoEntity(it.info)
-                val serverConfig: ServerConfig =
-                    serverConfigRepository.configById(it.serverConfigId).fold({ return Either.Left(it) }, { it })
+                val serverConfig: ServerConfig = wrapStorageRequest {
+                    serverConfigDAO.configById(it.serverConfigId)
+                }.map { serverConfigMapper.fromEntity(it) }
+                    .getOrElse { return Either.Left(it) }
+
                 val ssoId: SsoId? = sessionMapper.fromSsoIdEntity(it.ssoId)
                 Either.Right(Account(accountInfo, serverConfig, ssoId))
             }
@@ -224,6 +230,14 @@ internal class SessionDataSource(
                 ManagedByEntity.SCIM -> true
             }
         }
+
+    override suspend fun validSessionsWithServerConfig(): Either<StorageFailure, Map<UserId, ServerConfig>> = wrapStorageRequest {
+        accountsDAO.validAccountWithServerConfigId()
+    }.map {
+        it.map { (userId, serverConfig) ->
+            userId.toModel() to serverConfigMapper.fromEntity(serverConfig)
+        }.toMap()
+    }
 
     internal fun ManagedByDTO.toDao() = when (this) {
         ManagedByDTO.WIRE -> ManagedByEntity.WIRE

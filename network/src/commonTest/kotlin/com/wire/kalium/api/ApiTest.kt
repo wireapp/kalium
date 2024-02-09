@@ -32,12 +32,18 @@ import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
 import com.wire.kalium.network.serialization.JoseJson
 import com.wire.kalium.network.serialization.XProtoBuf
 import com.wire.kalium.network.tools.KtxSerializer
-import io.ktor.client.engine.mock.*
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
 import io.ktor.client.plugins.auth.providers.BearerAuthProvider
 import io.ktor.client.plugins.auth.providers.BearerTokens
 import io.ktor.client.plugins.auth.providers.RefreshTokensParams
 import io.ktor.client.request.HttpRequestData
-import io.ktor.http.*
+import io.ktor.http.ContentType
+import io.ktor.http.HeadersImpl
+import io.ktor.http.HttpHeaders
+import io.ktor.http.HttpMethod
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.URLProtocol
 import io.ktor.http.content.TextContent
 import io.ktor.utils.io.ByteReadChannel
 import kotlinx.serialization.json.JsonElement
@@ -166,17 +172,24 @@ internal abstract class ApiTest {
         statusCode: HttpStatusCode,
         assertion: (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>? = null,
-
+        developmentApiEnabled: Boolean = false,
         networkStateObserver: NetworkStateObserver = DEFAULT_TEST_NETWORK_STATE_OBSERVER,
     ): UnauthenticatedNetworkClient =
-        mockUnauthenticatedNetworkClient(ByteReadChannel(responseBody), statusCode, assertion, headers, networkStateObserver)
+        mockUnauthenticatedNetworkClient(
+            ByteReadChannel(responseBody),
+            statusCode,
+            assertion,
+            headers,
+            developmentApiEnabled,
+            networkStateObserver
+        )
 
     private fun mockUnauthenticatedNetworkClient(
         responseBody: ByteReadChannel,
         statusCode: HttpStatusCode,
         assertion: (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>?,
-
+        developmentApiEnabled: Boolean = false,
         networkStateObserver: NetworkStateObserver = DEFAULT_TEST_NETWORK_STATE_OBSERVER,
     ): UnauthenticatedNetworkClient {
 
@@ -186,7 +199,8 @@ internal abstract class ApiTest {
             backendLinks = TEST_BACKEND,
             engine = mockEngine,
             proxyCredentials = null,
-            networkStateObserver = networkStateObserver
+            networkStateObserver = networkStateObserver,
+            developmentApiEnabled = developmentApiEnabled
         ).unauthenticatedNetworkClient
     }
 
@@ -200,7 +214,7 @@ internal abstract class ApiTest {
 
     fun mockUnauthenticatedNetworkClient(
         expectedRequests: List<TestRequestHandler>,
-
+        developmentApiEnabled: Boolean = false,
         networkStateObserver: NetworkStateObserver = DEFAULT_TEST_NETWORK_STATE_OBSERVER,
     ): UnauthenticatedNetworkClient {
         val mockEngine = MockEngine { currentRequest ->
@@ -224,7 +238,8 @@ internal abstract class ApiTest {
             backendLinks = TEST_BACKEND,
             engine = mockEngine,
             proxyCredentials = null,
-            networkStateObserver = networkStateObserver
+            networkStateObserver = networkStateObserver,
+            developmentApiEnabled = developmentApiEnabled
         ).unauthenticatedNetworkClient
     }
 

@@ -34,9 +34,9 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsScheduler
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
@@ -49,7 +49,7 @@ abstract class CoreLogicCommon internal constructor(
     protected val idMapper: IdMapper = MapperProvider.idMapper()
 ) {
     protected abstract val globalPreferences: GlobalPrefProvider
-    protected abstract val globalDatabase: GlobalDatabaseProvider
+    internal abstract val globalDatabase: GlobalDatabaseProvider
     protected abstract val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
     protected val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
 
@@ -71,9 +71,9 @@ abstract class CoreLogicCommon internal constructor(
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     fun getAuthenticationScope(
         serverConfig: ServerConfig,
-        proxyCredentials: ProxyCredentials? = null
+        proxyCredentials: ProxyCredentials?
     ): AuthenticationScope =
-        authenticationScopeProvider.provide(serverConfig, proxyCredentials, getGlobalScope().serverConfigRepository, networkStateObserver)
+        authenticationScopeProvider.provide(serverConfig, proxyCredentials, networkStateObserver, globalDatabase, kaliumConfigs)
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     abstract fun getSessionScope(userId: UserId): UserSessionScope
@@ -83,8 +83,12 @@ abstract class CoreLogicCommon internal constructor(
     // TODO: make globalScope a singleton
     inline fun <T> globalScope(action: GlobalKaliumScope.() -> T): T = getGlobalScope().action()
 
-    inline fun <T> authenticationScope(serverConfig: ServerConfig, action: AuthenticationScope.() -> T): T =
-        getAuthenticationScope(serverConfig).action()
+    inline fun <T> authenticationScope(
+        serverConfig: ServerConfig,
+        proxyCredentials: ProxyCredentials?,
+        action: AuthenticationScope.() -> T
+    ): T =
+        getAuthenticationScope(serverConfig, proxyCredentials).action()
 
     inline fun <T> sessionScope(
         userId: UserId,

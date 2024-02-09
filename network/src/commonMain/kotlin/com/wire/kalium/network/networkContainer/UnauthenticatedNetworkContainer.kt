@@ -27,6 +27,8 @@ import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
 import com.wire.kalium.network.api.base.unauthenticated.VerificationCodeApi
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApi
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
+import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
 import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV0
 import com.wire.kalium.network.api.v2.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV2
 import com.wire.kalium.network.api.v3.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV3
@@ -44,49 +46,58 @@ interface UnauthenticatedNetworkContainer {
     val appVersioningApi: AppVersioningApi
     val verificationCodeApi: VerificationCodeApi
     val domainLookupApi: DomainLookupApi
+    val remoteVersion: VersionApi
+    val serverConfigApi: ServerConfigApi
 
     companion object {
         fun create(
             networkStateObserver: NetworkStateObserver,
             serverConfigDTO: ServerConfigDTO,
             proxyCredentials: ProxyCredentialsDTO?,
-            userAgent: String
+            userAgent: String,
+            developmentApiEnabled: Boolean
         ): UnauthenticatedNetworkContainer {
 
             KaliumUserAgentProvider.setUserAgent(userAgent)
 
             return when (serverConfigDTO.metaData.commonApiVersion.version) {
                 0 -> UnauthenticatedNetworkContainerV0(
+                    developmentApiEnabled,
                     networkStateObserver,
                     serverConfigDTO,
-                    proxyCredentials = proxyCredentials
+                    proxyCredentials = proxyCredentials,
                 )
 
                 1 -> UnauthenticatedNetworkContainerV0(
+                    developmentApiEnabled,
                     networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials
                 )
 
                 2 -> UnauthenticatedNetworkContainerV2(
+                    developmentApiEnabled,
                     networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials
                 )
 
                 3 -> UnauthenticatedNetworkContainerV3(
+                    developmentApiEnabled,
                     networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials
                 )
 
                 4 -> UnauthenticatedNetworkContainerV4(
+                    developmentApiEnabled,
                     networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials
                 )
 
                 5 -> UnauthenticatedNetworkContainerV5(
+                    developmentApiEnabled,
                     networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials
