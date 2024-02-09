@@ -23,7 +23,6 @@ import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIClient
-import com.wire.kalium.cryptography.E2EIConversationState
 import com.wire.kalium.cryptography.GroupInfoBundle
 import com.wire.kalium.cryptography.GroupInfoEncryptionType
 import com.wire.kalium.cryptography.MLSClient
@@ -96,7 +95,6 @@ import io.mockative.verify
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlinx.datetime.Instant
@@ -254,43 +252,6 @@ class MLSConversationRepositoryTest {
         verify(arrangement.mlsClient)
             .function(arrangement.mlsClient::updateKeyingMaterial)
             .with(eq(Arrangement.RAW_GROUP_ID))
-            .wasInvoked(once)
-    }
-
-    @Test
-    fun givenExistingConversation_whenCallingEstablishMLSGroupFromWelcome_thenGroupIsCreatedAndGroupStateIsUpdated() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
-            .withProcessWelcomeMessageSuccessful()
-            .withGetConversationByGroupIdSuccessful()
-            .arrange()
-
-        mlsConversationRepository.establishMLSGroupFromWelcome(Arrangement.WELCOME_EVENT).shouldSucceed()
-
-        verify(arrangement.mlsClient)
-            .function(arrangement.mlsClient::processWelcomeMessage)
-            .with(anyInstanceOf(ByteArray::class))
-            .wasInvoked(once)
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::updateConversationGroupState)
-            .with(eq(ConversationEntity.GroupState.ESTABLISHED), eq(Arrangement.RAW_GROUP_ID))
-            .wasInvoked(once)
-    }
-
-    @Test
-    fun givenNonExistingConversation_whenCallingEstablishMLSGroupFromWelcome_ThenGroupIsCreatedButConversationIsNotInserted() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
-            .withProcessWelcomeMessageSuccessful()
-            .withGetConversationByGroupIdFailing()
-            .arrange()
-
-        mlsConversationRepository.establishMLSGroupFromWelcome(Arrangement.WELCOME_EVENT).shouldSucceed()
-
-        verify(arrangement.mlsClient)
-            .function(arrangement.mlsClient::processWelcomeMessage)
-            .with(anyInstanceOf(ByteArray::class))
             .wasInvoked(once)
     }
 
@@ -1368,20 +1329,6 @@ class MLSConversationRepositoryTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withGetConversationByGroupIdSuccessful() = apply {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::observeConversationByGroupID)
-                .whenInvokedWith(anything())
-                .then { flowOf(TestConversation.VIEW_ENTITY) }
-        }
-
-        fun withGetConversationByGroupIdFailing() = apply {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::observeConversationByGroupID)
-                .whenInvokedWith(anything())
-                .then { flowOf(null) }
-        }
-
         fun withClearProposalTimerSuccessful() = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::clearProposalTimer)
@@ -1421,13 +1368,6 @@ class MLSConversationRepositoryTest {
                 .suspendFunction(mlsClientProvider::getMLSClient)
                 .whenInvokedWith(anything())
                 .then { Either.Right(mlsClient) }
-        }
-
-        fun withGetMLSClientFailed(failure: CoreFailure.Unknown) = apply {
-            given(mlsClientProvider)
-                .suspendFunction(mlsClientProvider::getMLSClient)
-                .whenInvokedWith(anything())
-                .then { Either.Left(failure) }
         }
 
         fun withRotateAllSuccessful() = apply {
@@ -1484,13 +1424,6 @@ class MLSConversationRepositoryTest {
                 .suspendFunction(mlsClient::mergePendingGroupFromExternalCommit)
                 .whenInvokedWith(anything())
                 .thenReturn(Unit)
-        }
-
-        fun withProcessWelcomeMessageSuccessful() = apply {
-            given(mlsClient)
-                .suspendFunction(mlsClient::processWelcomeMessage)
-                .whenInvokedWith(anything())
-                .thenReturn(WELCOME_BUNDLE)
         }
 
         fun withCommitPendingProposalsSuccessful() = apply {
@@ -1565,13 +1498,6 @@ class MLSConversationRepositoryTest {
                 .suspendFunction(syncManager::waitUntilLiveOrFailure)
                 .whenInvoked()
                 .thenReturn(Either.Right(Unit))
-        }
-
-        fun withGetGroupVerifyReturn(verificationStatus: E2EIConversationState) = apply {
-            given(mlsClient)
-                .suspendFunction(mlsClient::isGroupVerified)
-                .whenInvokedWith(anything())
-                .thenReturn(verificationStatus)
         }
 
         fun withGetMLSGroupIdByUserIdReturns(result: String?) = apply {
