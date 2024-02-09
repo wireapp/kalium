@@ -37,3 +37,24 @@ SELECT qualified_id, name, complete_asset_id, preview_asset_id, user_type, conne
         FROM Member
         WHERE conversation = :conversationId
     );
+
+searchByHandle:
+SELECT qualified_id, name, complete_asset_id, preview_asset_id, user_type, connection_status, handle
+    FROM User
+    WHERE connection_status = 'ACCEPTED' AND
+    qualified_id != (SELECT id FROM SelfUser LIMIT 1) AND
+    deleted = 0 AND
+    handle LIKE ('%' || :searchQuery || '%');
+
+searchByHandleExcludingAConversation:
+SELECT qualified_id, name, complete_asset_id, preview_asset_id, user_type, connection_status, handle
+    FROM User
+    WHERE connection_status = 'ACCEPTED' AND
+    qualified_id != (SELECT id FROM SelfUser LIMIT 1) AND
+    deleted = 0 AND
+    handle LIKE ('%' || :searchQuery || '%') AND
+    qualified_id NOT IN (
+        SELECT user
+        FROM Member
+        WHERE conversation = :conversationId
+    );
