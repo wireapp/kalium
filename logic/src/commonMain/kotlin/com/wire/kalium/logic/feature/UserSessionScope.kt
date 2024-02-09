@@ -1448,6 +1448,7 @@ class UserSessionScope internal constructor(
             clientRemoteRepository = clientRemoteRepository,
             userConfigRepository = userConfigRepository,
             selfClientIdProvider = clientIdProvider,
+            incrementalSyncRepository = incrementalSyncRepository
         )
 
     private val legalHoldHandler = LegalHoldHandlerImpl(
@@ -1760,7 +1761,8 @@ class UserSessionScope internal constructor(
         get() = SearchScope(
             searchUserRepository = searchUserRepository,
             selfUserId = userId,
-            sessionRepository = globalScope.sessionRepository
+            sessionRepository = globalScope.sessionRepository,
+            kaliumConfigs = kaliumConfigs
         )
 
     private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(userStorage)

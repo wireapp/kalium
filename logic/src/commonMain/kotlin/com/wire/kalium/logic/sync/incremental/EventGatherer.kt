@@ -82,7 +82,7 @@ internal class EventGathererImpl(
     // TODO: Refactor so currentSource is emitted through the gatherEvents flow, instead of having two separated flows
     override val currentSource: StateFlow<EventSource> get() = _currentSource.asStateFlow()
 
-    private val offlineEventBuffer = PendingEventsBuffer()
+    private val offlineEventBuffer = EventProcessingHistory()
     private val logger = kaliumLogger.withFeatureId(SYNC)
 
     override suspend fun gatherEvents(): Flow<EventEnvelope> = flow {
@@ -145,7 +145,7 @@ internal class EventGathererImpl(
         val envelope = webSocketEvent.payload
         val obfuscatedId = envelope.event.id.obfuscateId()
         if (offlineEventBuffer.contains(envelope.event)) {
-            if (offlineEventBuffer.clearBufferIfLastEventEquals(envelope.event)) {
+            if (offlineEventBuffer.clearHistoryIfLastEventEquals(envelope.event)) {
                 // Really live
                 logger.d("Removed most recent event from offlineEventBuffer: '$obfuscatedId'")
             } else {

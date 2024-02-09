@@ -23,19 +23,21 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 /**
- * Stores pending events as they are collected, used to
- * check if an event was already collected (duplicated, present in both pending and live sources).
+ * In-memory event storage, used to check if an event was already
+ * dealt with and avoid duplication. _i.e._ present in both pending and live sources.
  *
  * All operations are thread-safe.
  */
-internal class PendingEventsBuffer {
-    private val events = mutableListOf<Event>()
+internal class EventProcessingHistory {
+    private val events = hashSetOf<Event>()
+    private var lastAddedEvent: Event? = null
     private val mutex = Mutex()
 
     /**
      * Adds an [event] to the end of this storage.
      */
     suspend fun add(event: Event) = mutex.withLock {
+        lastAddedEvent = event
         events.add(event)
     }
 
@@ -59,9 +61,10 @@ internal class PendingEventsBuffer {
      * @return True if this [event] was the one added most recently and the storage was cleared.
      *         False otherwise.
      */
-    suspend fun clearBufferIfLastEventEquals(event: Event): Boolean = mutex.withLock {
-        if (events.last() == event) {
+    suspend fun clearHistoryIfLastEventEquals(event: Event): Boolean = mutex.withLock {
+        if (event == lastAddedEvent) {
             events.clear()
+            lastAddedEvent = null
             true
         } else {
             false
@@ -72,6 +75,7 @@ internal class PendingEventsBuffer {
      * Clears the storage, removes every previously added [Event].
      */
     suspend fun clear() = mutex.withLock {
+        lastAddedEvent = null
         events.clear()
     }
 }
