@@ -390,6 +390,7 @@ import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
+import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.CoroutineScope
@@ -408,6 +409,7 @@ class UserSessionScope internal constructor(
     private val userId: UserId,
     private val globalScope: GlobalKaliumScope,
     private val globalCallManager: GlobalCallManager,
+    private val globalDatabaseProvider: GlobalDatabaseProvider,
     private val globalPreferences: GlobalPrefProvider,
     authenticationScopeProvider: AuthenticationScopeProvider,
     private val userSessionWorkScheduler: UserSessionWorkScheduler,
@@ -541,6 +543,15 @@ class UserSessionScope internal constructor(
         kaliumConfigs::certPinningConfig,
         mockEngine = kaliumConfigs.kaliumMockEngine?.mockEngine
     )
+    val authenticationScope: AuthenticationScope by lazy {
+        authenticationScopeProvider.provide(
+            sessionManager.getServerConfig(),
+            sessionManager.getProxyCredentials(),
+            networkStateObserver,
+            globalDatabaseProvider,
+            kaliumConfigs
+        )
+    }
 
     internal val userConfigRepository: UserConfigRepository
         get() = UserConfigDataSource(
@@ -1482,7 +1493,7 @@ class UserSessionScope internal constructor(
             renamedConversationHandler,
             qualifiedIdMapper,
             team.isSelfATeamMember,
-            globalScope.serverConfigRepository,
+            authenticationScope.serverConfigRepository,
             userStorage,
             userPropertyRepository,
             oneOnOneResolver,
@@ -1551,7 +1562,7 @@ class UserSessionScope internal constructor(
             connectionRepository,
             qualifiedIdMapper,
             globalScope.sessionRepository,
-            globalScope.serverConfigRepository,
+            authenticationScope.serverConfigRepository,
             userId,
             userStorage.database.metadataDAO,
             userPropertyRepository,
