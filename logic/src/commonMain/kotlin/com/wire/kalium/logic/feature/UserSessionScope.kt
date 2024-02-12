@@ -274,6 +274,8 @@ import com.wire.kalium.logic.feature.proteus.ProteusSyncWorker
 import com.wire.kalium.logic.feature.proteus.ProteusSyncWorkerImpl
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelectorImpl
+import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
+import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCaseImpl
 import com.wire.kalium.logic.feature.search.SearchScope
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl
@@ -1622,6 +1624,11 @@ class UserSessionScope internal constructor(
         ACMECertificatesSyncWorkerImpl(e2eiRepository)
     }
 
+    private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase
+        get() = RefreshUsersWithoutMetadataUseCaseImpl(
+            userRepository
+        )
+
     @OptIn(DelicateKaliumApi::class)
     val client: ClientScope
         get() = ClientScope(
@@ -1673,7 +1680,8 @@ class UserSessionScope internal constructor(
             messages.deleteEphemeralMessageEndDate,
             oneOnOneResolver,
             this,
-            userScopedLogger
+            userScopedLogger,
+            refreshUsersWithoutMetadata
         )
     }
 
@@ -1754,7 +1762,8 @@ class UserSessionScope internal constructor(
             team.isSelfATeamMember,
             updateSupportedProtocols,
             clientRepository,
-            joinExistingMLSConversations
+            joinExistingMLSConversations,
+            refreshUsersWithoutMetadata
         )
 
     val search: SearchScope
@@ -1801,11 +1810,11 @@ class UserSessionScope internal constructor(
     val observeFileSharingStatus: ObserveFileSharingStatusUseCase
         get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
 
-   val observeShouldNotifyForRevokedCertificate: ObserveShouldNotifyForRevokedCertificateUseCase
-         by lazy { ObserveShouldNotifyForRevokedCertificateUseCaseImpl(userConfigRepository) }
+    val observeShouldNotifyForRevokedCertificate: ObserveShouldNotifyForRevokedCertificateUseCase
+            by lazy { ObserveShouldNotifyForRevokedCertificateUseCaseImpl(userConfigRepository) }
 
-   val markNotifyForRevokedCertificateAsNotified: MarkNotifyForRevokedCertificateAsNotifiedUseCase
-         by lazy { MarkNotifyForRevokedCertificateAsNotifiedUseCaseImpl(userConfigRepository) }
+    val markNotifyForRevokedCertificateAsNotified: MarkNotifyForRevokedCertificateAsNotifiedUseCase
+            by lazy { MarkNotifyForRevokedCertificateAsNotifiedUseCaseImpl(userConfigRepository) }
 
     val markGuestLinkFeatureFlagAsNotChanged: MarkGuestLinkFeatureFlagAsNotChangedUseCase
         get() = MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)
