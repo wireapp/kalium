@@ -47,8 +47,8 @@ import kotlinx.coroutines.isActive
 import kotlin.coroutines.coroutineContext
 
 interface EventRepository {
-    suspend fun pendingEvents(): Flow<Either<CoreFailure, Event>>
-    suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Event>>>
+    suspend fun pendingEvents(): Flow<Either<CoreFailure, EventEnvelope>>
+    suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<EventEnvelope>>>
     suspend fun updateLastProcessedEventId(eventId: String): Either<StorageFailure, Unit>
 
     /**
@@ -87,13 +87,13 @@ class EventDataSource(
 ) : EventRepository {
 
     // TODO(edge-case): handle Missing notification response (notify user that some messages are missing)
-    override suspend fun pendingEvents(): Flow<Either<CoreFailure, Event>> =
+    override suspend fun pendingEvents(): Flow<Either<CoreFailure, EventEnvelope>> =
         currentClientId().fold({ flowOf(Either.Left(it)) }, { clientId -> pendingEventsFlow(clientId) })
 
-    override suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<Event>>> =
+    override suspend fun liveEvents(): Either<CoreFailure, Flow<WebSocketEvent<EventEnvelope>>> =
         currentClientId().flatMap { clientId -> liveEventsFlow(clientId) }
 
-    private suspend fun liveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<Event>>> =
+    private suspend fun liveEventsFlow(clientId: ClientId): Either<NetworkFailure, Flow<WebSocketEvent<EventEnvelope>>> =
         wrapApiRequest { notificationApi.listenToLiveEvents(clientId.value) }.map {
             it.map { webSocketEvent ->
                 when (webSocketEvent) {
@@ -102,7 +102,7 @@ class EventDataSource(
                     }
 
                     is WebSocketEvent.NonBinaryPayloadReceived -> {
-                        flowOf(WebSocketEvent.NonBinaryPayloadReceived<Event>(webSocketEvent.payload))
+                        flowOf(WebSocketEvent.NonBinaryPayloadReceived<EventEnvelope>(webSocketEvent.payload))
                     }
 
                     is WebSocketEvent.Close -> {
@@ -118,7 +118,7 @@ class EventDataSource(
 
     private suspend fun pendingEventsFlow(
         clientId: ClientId
-    ) = flow<Either<CoreFailure, Event>> {
+    ) = flow<Either<CoreFailure, EventEnvelope>> {
 
         var hasMore = true
         var lastFetchedNotificationId = metadataDAO.valueByKey(LAST_PROCESSED_EVENT_ID_KEY)
@@ -130,7 +130,9 @@ class EventDataSource(
                 hasMore = notificationsPageResult.value.hasMore
                 lastFetchedNotificationId = notificationsPageResult.value.notifications.lastOrNull()?.id
 
-                notificationsPageResult.value.notifications.flatMap(eventMapper::fromDTO).forEach { event ->
+                notificationsPageResult.value.notifications.flatMap {
+                    eventMapper.fromDTO(it, isLive = false)
+                }.forEach { event ->
                     if (!coroutineContext.isActive) {
                         return@flow
                     }

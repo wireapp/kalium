@@ -22,6 +22,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.framework.TestEvent
+import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.ConversationEventReceiver
 import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
@@ -55,7 +56,7 @@ class EventProcessorTest {
             .arrange()
 
         // When
-        eventProcessor.processEvent(event)
+        eventProcessor.processEvent(event.wrapInEnvelope())
 
         // Then
         verify(arrangement.eventRepository)
@@ -74,7 +75,7 @@ class EventProcessorTest {
             .arrange()
 
         // When
-        eventProcessor.processEvent(event)
+        eventProcessor.processEvent(event.wrapInEnvelope())
 
         // Then
         verify(arrangement.conversationEventReceiver)
@@ -95,7 +96,7 @@ class EventProcessorTest {
             .arrange()
 
         // When
-        eventProcessor.processEvent(event)
+        eventProcessor.processEvent(event.wrapInEnvelope())
             .shouldFail { assertEquals(failure, it) }
 
         // Then
@@ -115,7 +116,7 @@ class EventProcessorTest {
             .arrange()
 
         // When
-        eventProcessor.processEvent(event)
+        eventProcessor.processEvent(event.wrapInEnvelope())
 
         // Then
         verify(arrangement.userEventReceiver)
@@ -136,7 +137,7 @@ class EventProcessorTest {
             .arrange()
 
         // When
-        eventProcessor.processEvent(event)
+        eventProcessor.processEvent(event.wrapInEnvelope())
             .shouldFail { assertEquals(failure, it) }
 
         // Then
@@ -149,26 +150,26 @@ class EventProcessorTest {
     @Test
     fun givenNonTransientEvent_whenProcessingEvent_thenLastProcessedEventIdIsUpdated() = runTest {
         // Given
-        val event = TestEvent.newConnection().copy(transient = false)
+        val envelope = TestEvent.newConnection().wrapInEnvelope(isTransient = false)
 
         val (arrangement, eventProcessor) = Arrangement()
-            .withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
+            .withUpdateLastProcessedEventId(envelope.event.id, Either.Right(Unit))
             .arrange()
 
         // When
-        eventProcessor.processEvent(event)
+        eventProcessor.processEvent(envelope.event.wrapInEnvelope())
 
         // Then
         verify(arrangement.eventRepository)
             .suspendFunction(arrangement.eventRepository::updateLastProcessedEventId)
-            .with(eq(event.id))
+            .with(eq(envelope.event.id))
             .wasInvoked(exactly = once)
     }
 
     @Test
     fun givenTransientEvent_whenProcessingEvent_thenLastProcessedEventIdIsNotUpdated() = runTest {
         // Given
-        val event = TestEvent.newConnection().copy(transient = true)
+        val event = TestEvent.newConnection().wrapInEnvelope(isTransient = true)
 
         val (arrangement, eventProcessor) = Arrangement()
             .arrange()
@@ -192,7 +193,7 @@ class EventProcessorTest {
             .withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
             .arrange()
 
-        eventProcessor.processEvent(event)
+        eventProcessor.processEvent(event.wrapInEnvelope())
 
         verify(arrangement.userPropertiesEventReceiver)
             .suspendFunction(arrangement.userPropertiesEventReceiver::onEvent)
@@ -212,7 +213,7 @@ class EventProcessorTest {
             .arrange()
 
         // When
-        eventProcessor.processEvent(event)
+        eventProcessor.processEvent(event.wrapInEnvelope())
             .shouldFail { assertEquals(failure, it) }
 
         // Then

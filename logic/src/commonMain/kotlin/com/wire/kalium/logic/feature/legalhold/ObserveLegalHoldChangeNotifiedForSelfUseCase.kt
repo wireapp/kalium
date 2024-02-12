@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.legalhold
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -41,8 +42,9 @@ interface ObserveLegalHoldChangeNotifiedForSelfUseCase {
 }
 
 internal class ObserveLegalHoldChangeNotifiedForSelfUseCaseImpl internal constructor(
+    private val selfUserId: UserId,
     val userConfigRepository: UserConfigRepository,
-    val observeLegalHoldForSelfUserUseCase: ObserveLegalHoldForSelfUserUseCase
+    val observeLegalHoldForUserUseCase: ObserveLegalHoldStateForUserUseCase
 ) : ObserveLegalHoldChangeNotifiedForSelfUseCase {
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun invoke(): Flow<ObserveLegalHoldChangeNotifiedForSelfUseCase.Result> =
@@ -57,7 +59,7 @@ internal class ObserveLegalHoldChangeNotifiedForSelfUseCaseImpl internal constru
                         if (isNotified)
                             flowOf(ObserveLegalHoldChangeNotifiedForSelfUseCase.Result.AlreadyNotified)
                         else
-                            observeLegalHoldForSelfUserUseCase()
+                            observeLegalHoldForUserUseCase(selfUserId)
                                 .map { legalHoldState ->
                                     ObserveLegalHoldChangeNotifiedForSelfUseCase.Result.ShouldNotify(legalHoldState)
                                 }

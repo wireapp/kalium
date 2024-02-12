@@ -64,15 +64,17 @@ class DatabaseExporterTest : BaseDatabaseTest() {
 
     @Test
     fun givenSelfDeletingMessages_whenBackup_thenTheyAreNotIncludedInTheGeneratedBackup() = runTest {
-        val selfDeleteMessage = OTHER_MESSAGE.copy(id = "selfDelete", expireAfterMs = 10000)
-        val normalMessage = OTHER_MESSAGE.copy(id = "normal",expireAfterMs = null)
+        val selfDeleteMessage =
+            OTHER_MESSAGE.copy(id = "selfDelete", expireAfterMs = 10000, sender = OTHER_USER, senderUserId = OTHER_USER.id)
+        val normalMessage = OTHER_MESSAGE.copy(id = "normal", expireAfterMs = null, sender = OTHER_USER, senderUserId = OTHER_USER.id)
+
         localDB.messageDAO.insertOrIgnoreMessages(listOf(selfDeleteMessage, normalMessage))
 
         localDB.messageDAO.getMessageById(selfDeleteMessage.id, selfDeleteMessage.conversationId)?.also {
             assertEquals(selfDeleteMessage, it)
         } ?: fail("Message should not be null")
 
-        localDB.databaseExporter.exportToPlainDB(null)?: fail("Backup should not be null")
+        localDB.databaseExporter.exportToPlainDB(null) ?: fail("Backup should not be null")
 
         createDatabase(backupUserId, passphrase = null, enableWAL = false).also { backupDB ->
             backupDB.messageDAO.getMessageById(selfDeleteMessage.id, selfDeleteMessage.conversationId)?.also {
@@ -83,6 +85,7 @@ class DatabaseExporterTest : BaseDatabaseTest() {
             } ?: fail("Message should not be null")
         }
     }
+
     private companion object {
         val TEST_CONVERSATION_1 = newConversationEntity("testConversation1")
         val TEST_CONVERSATION_2 = newConversationEntity("testConversation2")

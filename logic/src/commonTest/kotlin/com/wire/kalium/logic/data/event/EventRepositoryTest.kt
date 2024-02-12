@@ -72,7 +72,7 @@ class EventRepositoryTest {
 
         eventRepository.pendingEvents().test {
             awaitItem().shouldSucceed {
-                assertEquals(pendingEvent.id, it.id)
+                assertEquals(pendingEvent.id, it.event.id)
             }
             awaitComplete()
         }

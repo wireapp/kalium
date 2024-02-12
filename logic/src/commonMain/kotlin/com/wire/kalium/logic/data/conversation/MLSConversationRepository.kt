@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.cryptography.CommitBundle
+import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.WireIdentity
@@ -29,7 +30,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.event.Event.Conversation.MLSWelcome
+import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
@@ -56,6 +57,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -76,7 +78,6 @@ import io.ktor.util.decodeBase64Bytes
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.withContext
@@ -95,13 +96,20 @@ data class DecryptedMessageBundle(
     val identity: E2EIdentity?
 )
 
-data class E2EIdentity(val clientId: String, val handle: String, val displayName: String, val domain: String)
+data class E2EIdentity(
+    val clientId: CryptoQualifiedClientId,
+    val handle: String,
+    val displayName: String,
+    val domain: String,
+    val certificate: String,
+    val status: CryptoCertificateStatus,
+    val thumbprint: String
+)
 
 @Suppress("TooManyFunctions", "LongParameterList")
 interface MLSConversationRepository {
     suspend fun decryptMessage(message: ByteArray, groupID: GroupID): Either<CoreFailure, List<DecryptedMessageBundle>>
     suspend fun establishMLSGroup(groupID: GroupID, members: List<UserId>): Either<CoreFailure, Unit>
-    suspend fun establishMLSGroupFromWelcome(welcomeEvent: MLSWelcome): Either<CoreFailure, Unit>
     suspend fun hasEstablishedMLSGroup(groupID: GroupID): Either<CoreFailure, Boolean>
     suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun removeMembersFromMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
@@ -226,29 +234,6 @@ internal class MLSConversationDataSource(
         }
     }
 
-    // Todo: Used only in test, should we remove it ?
-    override suspend fun establishMLSGroupFromWelcome(welcomeEvent: MLSWelcome): Either<CoreFailure, Unit> =
-        mlsClientProvider.getMLSClient().flatMap { client ->
-            wrapMLSRequest { client.processWelcomeMessage(welcomeEvent.message.decodeBase64Bytes()) }
-                .flatMap { welcomeBundle ->
-                    kaliumLogger.i("Created conversation from welcome message (groupID = ${welcomeBundle.groupId})")
-
-                    wrapStorageRequest {
-                        if (conversationDAO.observeConversationByGroupID(welcomeBundle.groupId).first() != null) {
-                            // Welcome arrived after the conversation create event, updating existing conversation.
-                            conversationDAO.updateConversationGroupState(
-                                ConversationEntity.GroupState.ESTABLISHED,
-                                welcomeBundle.groupId
-                            )
-                            kaliumLogger.i("Updated conversation from welcome message (groupID = ${welcomeBundle.groupId})")
-                            welcomeBundle.crlNewDistributionPoints?.let { newDistributionPoints ->
-                                checkRevocationList(newDistributionPoints)
-                            }
-                        }
-                    }
-                }
-        }
-
     override suspend fun hasEstablishedMLSGroup(groupID: GroupID): Either<CoreFailure, Boolean> =
         mlsClientProvider.getMLSClient()
             .flatMap {
@@ -367,9 +352,9 @@ internal class MLSConversationDataSource(
 
     private suspend fun processCommitBundleEvents(events: List<EventContentDTO>) {
         events.forEach { eventContentDTO ->
-            val event = MapperProvider.eventMapper(selfUserId).fromEventContentDTO(LocalId.generate(), eventContentDTO, true, false)
+            val event = MapperProvider.eventMapper(selfUserId).fromEventContentDTO(LocalId.generate(), eventContentDTO)
             if (event is Event.Conversation) {
-                commitBundleEventReceiver.onEvent(event)
+                commitBundleEventReceiver.onEvent(event, EventDeliveryInfo(isTransient = true, source = EventSource.LIVE))
             }
         }
     }
@@ -574,19 +559,26 @@ internal class MLSConversationDataSource(
                     mlsClient.getDeviceIdentities(
                         it.mlsGroupId,
                         listOf(CryptoQualifiedClientId(it.clientId, it.userId.toModel().toCrypto()))
-                    ).first() // todo: ask if it's possible that's a client has more than one identity?
+                    ).first()
                 }
             }
         }
 
     override suspend fun getUserIdentity(userId: UserId) =
-        wrapStorageRequest { conversationDAO.getMLSGroupIdByUserId(userId.toDao()) }.flatMap { mlsGroupId ->
+        wrapStorageRequest {
+            if (userId == selfUserId) {
+                val selfConversationId = conversationDAO.getSelfConversationId(ConversationEntity.Protocol.MLS)
+                conversationDAO.getMLSGroupIdByConversationId(selfConversationId!!)
+            } else {
+                conversationDAO.getMLSGroupIdByUserId(userId.toDao())
+            }
+        }.flatMap { mlsGroupId ->
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
                     mlsClient.getUserIdentities(
                         mlsGroupId,
                         listOf(userId.toCrypto())
-                    )[userId.value]!!
+                    )[userId.value] ?: emptyList()
                 }
             }
         }

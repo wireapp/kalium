@@ -166,8 +166,6 @@ internal class TeamDataSource(
         legalHoldHandler.handleEnable(
             eventMapper.legalHoldEnabled(
                 id = LocalId.generate(),
-                transient = true,
-                live = false,
                 eventContentDTO = EventContentDTO.User.LegalHoldEnabledDTO(id = selfUserId.toString())
             )
         )
@@ -182,8 +180,6 @@ internal class TeamDataSource(
             LegalHoldStatusDTO.ENABLED -> legalHoldHandler.handleEnable(
                 eventMapper.legalHoldEnabled(
                     id = LocalId.generate(),
-                    transient = true,
-                    live = false,
                     eventContentDTO = EventContentDTO.User.LegalHoldEnabledDTO(id = selfUserId.toString())
                 )
             )
@@ -191,8 +187,6 @@ internal class TeamDataSource(
             LegalHoldStatusDTO.DISABLED -> legalHoldHandler.handleDisable(
                 eventMapper.legalHoldDisabled(
                     id = LocalId.generate(),
-                    transient = true,
-                    live = false,
                     eventContentDTO = EventContentDTO.User.LegalHoldDisabledDTO(id = selfUserId.toString())
                 )
             )
@@ -201,8 +195,6 @@ internal class TeamDataSource(
                 legalHoldRequestHandler.handle(
                     eventMapper.legalHoldRequest(
                         id = LocalId.generate(),
-                        transient = true,
-                        live = false,
                         eventContentDTO = EventContentDTO.User.NewLegalHoldRequestDTO(
                             clientId = response.clientId!!,
                             lastPreKey = response.lastPreKey!!,

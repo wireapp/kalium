@@ -35,7 +35,6 @@ import com.wire.kalium.logic.feature.featureConfig.handler.FileSharingConfigHand
 import com.wire.kalium.logic.feature.featureConfig.handler.GuestRoomConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.MLSMigrationConfigHandler
-import com.wire.kalium.logic.feature.featureConfig.handler.SecondFactorPasswordChallengeConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.SelfDeletingMessagesConfigHandler
 import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
 import com.wire.kalium.logic.data.message.TeamSettingsSelfDeletionStatus
@@ -44,7 +43,6 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.any
@@ -69,7 +67,10 @@ class FeatureConfigEventReceiverTest {
             .withIsFileSharingEnabled(Either.Right(FileSharingStatus(state = FileSharingStatus.Value.Disabled, isStatusChanged = false)))
             .arrange()
 
-        featureConfigEventReceiver.onEvent(arrangement.newFileSharingUpdatedEvent(ConfigsStatusModel(Status.ENABLED)))
+        featureConfigEventReceiver.onEvent(
+            event = arrangement.newFileSharingUpdatedEvent(ConfigsStatusModel(Status.ENABLED)),
+            deliveryInfo = TestEvent.liveDeliveryInfo
+        )
 
         verify(arrangement.userConfigRepository)
             .function(arrangement.userConfigRepository::setFileSharingStatus)
@@ -85,7 +86,8 @@ class FeatureConfigEventReceiverTest {
             .arrange()
 
         featureConfigEventReceiver.onEvent(
-            arrangement.newFileSharingUpdatedEvent(ConfigsStatusModel(Status.DISABLED))
+            event = arrangement.newFileSharingUpdatedEvent(ConfigsStatusModel(Status.DISABLED)),
+            deliveryInfo = TestEvent.liveDeliveryInfo
         )
 
         verify(arrangement.userConfigRepository)
@@ -102,9 +104,10 @@ class FeatureConfigEventReceiverTest {
             .arrange()
 
         featureConfigEventReceiver.onEvent(
-            arrangement.newFileSharingUpdatedEvent(ConfigsStatusModel(Status.DISABLED))
+            event = arrangement.newFileSharingUpdatedEvent(ConfigsStatusModel(Status.DISABLED)),
+            deliveryInfo = TestEvent.liveDeliveryInfo
         )
-
+        
         verify(arrangement.userConfigRepository)
             .function(arrangement.userConfigRepository::setFileSharingStatus)
             .with(eq(false), eq(false))
@@ -118,7 +121,8 @@ class FeatureConfigEventReceiverTest {
             .arrange()
 
         featureConfigEventReceiver.onEvent(
-            arrangement.newConferenceCallingUpdatedEvent(ConferenceCallingModel(Status.ENABLED))
+            arrangement.newConferenceCallingUpdatedEvent(ConferenceCallingModel(Status.ENABLED)),
+            TestEvent.liveDeliveryInfo
         )
 
         verify(arrangement.userConfigRepository)
@@ -134,9 +138,8 @@ class FeatureConfigEventReceiverTest {
             .arrange()
 
         featureConfigEventReceiver.onEvent(
-            arrangement.newConferenceCallingUpdatedEvent(
-                ConferenceCallingModel(Status.DISABLED)
-            )
+            event = arrangement.newConferenceCallingUpdatedEvent(ConferenceCallingModel(Status.DISABLED)),
+            deliveryInfo = TestEvent.liveDeliveryInfo
         )
 
         verify(arrangement.userConfigRepository)
@@ -160,7 +163,10 @@ class FeatureConfigEventReceiverTest {
             .withSelfDeletingMessages(currentSelfDeletingMessagesStatus)
             .arrange()
 
-        featureConfigEventReceiver.onEvent(arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel))
+        featureConfigEventReceiver.onEvent(
+            arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel), 
+            TestEvent.liveDeliveryInfo
+        )
 
         verify(arrangement.userConfigRepository)
             .suspendFunction(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
@@ -184,7 +190,10 @@ class FeatureConfigEventReceiverTest {
                 .withSelfDeletingMessages(currentSelfDeletingMessagesStatus)
                 .arrange()
 
-            featureConfigEventReceiver.onEvent(arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel))
+            featureConfigEventReceiver.onEvent(
+                arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel), 
+                TestEvent.liveDeliveryInfo
+            )
 
             verify(arrangement.userConfigRepository)
                 .suspendFunction(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
@@ -209,7 +218,10 @@ class FeatureConfigEventReceiverTest {
                 .withSelfDeletingMessages(currentSelfDeletingMessagesStatus)
                 .arrange()
 
-            featureConfigEventReceiver.onEvent(arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel))
+            featureConfigEventReceiver.onEvent(
+                arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel), 
+                TestEvent.liveDeliveryInfo
+            )
 
             verify(arrangement.userConfigRepository)
                 .suspendFunction(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
@@ -231,7 +243,10 @@ class FeatureConfigEventReceiverTest {
                 .withStoredTeamSettingsSelfDeletionStatusError()
                 .arrange()
 
-            featureConfigEventReceiver.onEvent(arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel))
+            featureConfigEventReceiver.onEvent(
+                arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel), 
+                TestEvent.liveDeliveryInfo
+            )
 
             verify(arrangement.userConfigRepository)
                 .suspendFunction(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
@@ -252,7 +267,10 @@ class FeatureConfigEventReceiverTest {
                 .withStoredTeamSettingsSelfDeletionStatusError()
                 .arrange()
 
-            featureConfigEventReceiver.onEvent(arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel))
+            featureConfigEventReceiver.onEvent(
+                arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel), 
+                TestEvent.liveDeliveryInfo
+            )
 
             verify(arrangement.userConfigRepository)
                 .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
@@ -272,7 +290,10 @@ class FeatureConfigEventReceiverTest {
             .withDisabledKaliumConfigFlag()
             .arrange()
 
-        featureConfigEventReceiver.onEvent(arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel))
+        featureConfigEventReceiver.onEvent(
+            event = arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel),
+            deliveryInfo = TestEvent.liveDeliveryInfo
+        )
 
         verify(arrangement.userConfigRepository)
             .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
@@ -288,7 +309,7 @@ class FeatureConfigEventReceiverTest {
         val (_, handler) = Arrangement()
             .arrange()
 
-        handler.onEvent(newUnknownFeatureUpdate).shouldSucceed()
+        handler.onEvent(newUnknownFeatureUpdate, TestEvent.liveDeliveryInfo).shouldSucceed()
     }
 
     private class Arrangement {
@@ -368,15 +389,15 @@ class FeatureConfigEventReceiverTest {
 
         fun newFileSharingUpdatedEvent(
             model: ConfigsStatusModel
-        ) = Event.FeatureConfig.FileSharingUpdated("eventId", false, false, model)
+        ) = Event.FeatureConfig.FileSharingUpdated("eventId", model)
 
         fun newConferenceCallingUpdatedEvent(
             model: ConferenceCallingModel
-        ) = Event.FeatureConfig.ConferenceCallingUpdated("eventId", false, false, model)
+        ) = Event.FeatureConfig.ConferenceCallingUpdated("eventId", model)
 
         fun newSelfDeletingMessagesUpdatedEvent(
             model: SelfDeletingMessagesModel
-        ) = Event.FeatureConfig.SelfDeletingMessagesConfig("eventId", false, false, model)
+        ) = Event.FeatureConfig.SelfDeletingMessagesConfig("eventId", model)
 
         fun arrange() = this to featureConfigEventReceiver
     }
