@@ -62,8 +62,6 @@ class AuthenticationScopeProvider internal constructor(
         serverConfig: ServerConfig,
         proxyCredentials: ProxyCredentials?,
         networkStateObserver: NetworkStateObserver,
-        certConfig: () -> CertificatePinning,
-        mockEngine: HttpClientEngine?
         globalDatabase: GlobalDatabaseProvider,
         kaliumConfigs: KaliumConfigs
     ): AuthenticationScope =
@@ -73,10 +71,8 @@ class AuthenticationScopeProvider internal constructor(
                 serverConfig,
                 proxyCredentials,
                 networkStateObserver,
-                certConfig,
-                mockEngine,
-                networkStateObserver,
-                kaliumConfigs
+                kaliumConfigs = kaliumConfigs,
+                globalDatabase = globalDatabase
             )
         }
 }
@@ -87,20 +83,18 @@ class AuthenticationScope internal constructor(
     private val proxyCredentials: ProxyCredentials?,
     private val networkStateObserver: NetworkStateObserver,
     private val globalDatabase: GlobalDatabaseProvider,
-    private val kaliumConfigs: KaliumConfigs
-    certConfig: () -> CertificatePinning,
-    mockEngine: HttpClientEngine?
+    private val kaliumConfigs: KaliumConfigs,
 ) {
 
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
         UnauthenticatedNetworkContainer.create(
             networkStateObserver,
-            MapperProvider.serverConfigMapper().toDTO(serverConfig),
-            proxyCredentials?.let { MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(it) },
-            userAgent,
-            kaliumConfigs.developmentApiEnabled,
-            certificatePinning = certConfig(),
-            mockEngine
+            serverConfigDTO = MapperProvider.serverConfigMapper().toDTO(serverConfig),
+            proxyCredentials = proxyCredentials?.let { MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(it) },
+            userAgent = userAgent,
+            developmentApiEnabled = kaliumConfigs.developmentApiEnabled,
+            certificatePinning = kaliumConfigs.certPinningConfig,
+            mockEngine = kaliumConfigs.kaliumMockEngine?.mockEngine
         )
     }
 

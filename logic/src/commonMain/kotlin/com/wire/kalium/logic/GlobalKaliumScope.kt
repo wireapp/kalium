@@ -100,7 +100,6 @@ class GlobalKaliumScope internal constructor(
         UnboundNetworkContainerCommon(
             networkStateObserver,
             userAgent,
-            kaliumConfigs.ignoreSSLCertificatesForUnboundCalls,
             kaliumConfigs.certPinningConfig,
             kaliumConfigs.kaliumMockEngine?.mockEngine
         )
@@ -150,8 +149,8 @@ class GlobalKaliumScope internal constructor(
                     serverConfig,
                     proxyCredentials,
                     networkStateObserver,
-                    globalDatabase,
-                    kaliumConfigs
+                    globalDatabase = globalDatabase,
+                    kaliumConfigs = kaliumConfigs,
                 ).serverConfigRepository
             },
         )

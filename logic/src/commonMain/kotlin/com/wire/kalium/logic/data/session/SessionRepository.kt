@@ -63,7 +63,7 @@ interface SessionRepository {
     suspend fun allSessions(): Either<StorageFailure, List<AccountInfo>>
     suspend fun allSessionsFlow(): Flow<List<AccountInfo>>
     suspend fun allValidSessions(): Either<StorageFailure, List<AccountInfo.Valid>>
-    suspend fun allValidSessionsFlow(): Flow<List<AccountInfo>>
+    suspend fun allValidSessionsFlow(): Flow<Either<StorageFailure, List<AccountInfo>>>
     suspend fun doesValidSessionExist(userId: UserId): Either<StorageFailure, Boolean>
     fun fullAccountInfo(userId: UserId): Either<StorageFailure, Account>
     suspend fun userAccountInfo(userId: UserId): Either<StorageFailure, AccountInfo>
@@ -127,7 +127,7 @@ internal class SessionDataSource internal constructor(
         wrapStorageRequest { accountsDAO.allValidAccountList() }
             .map { it.map { AccountInfo.Valid(it.userIDEntity.toModel()) } }
 
-    override fun allValidSessionsFlow(): Flow<Either<StorageFailure, List<AccountInfo>>> =
+    override suspend fun allValidSessionsFlow(): Flow<Either<StorageFailure, List<AccountInfo>>> =
         accountsDAO.observerValidAccountList()
             .map { it.map { AccountInfo.Valid(it.userIDEntity.toModel()) } }
             .wrapStorageRequest()

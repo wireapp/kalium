@@ -588,21 +588,14 @@ class UserSessionScope internal constructor(
         kaliumConfigs,
         sessionManager.serverConfig().metaData.commonApiVersion.version
     )
-    val authenticationScope: AuthenticationScope = authenticationScopeProvider.provide(
-        sessionManager.getServerConfig(),
-        sessionManager.getProxyCredentials(),
-        globalScope.serverConfigRepository,
-        networkStateObserver,
-        kaliumConfigs::certPinningConfig,
-        mockEngine = kaliumConfigs.kaliumMockEngine?.mockEngine
-    )
+
     val authenticationScope: AuthenticationScope by lazy {
         authenticationScopeProvider.provide(
             sessionManager.getServerConfig(),
             sessionManager.getProxyCredentials(),
             networkStateObserver,
-            globalDatabaseProvider,
-            kaliumConfigs
+            globalDatabase = globalDatabaseProvider,
+            kaliumConfigs = kaliumConfigs,
         )
     }
 
