@@ -24,6 +24,7 @@ import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApiImpl
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApiImpl
+import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.session.CertificatePinning
 import io.ktor.client.engine.HttpClientEngine
 
@@ -54,17 +55,17 @@ internal class UnboundNetworkClientProviderImpl(
 class UnboundNetworkContainerCommon(
     networkStateObserver: NetworkStateObserver,
     userAgent: String,
-    private val ignoreSSLCertificates: Boolean,
     certificatePinning: CertificatePinning,
     mockEngine: HttpClientEngine?
 ) : UnboundNetworkContainer,
     UnboundNetworkClientProvider by UnboundNetworkClientProviderImpl(
         networkStateObserver,
         userAgent,
-        ignoreSSLCertificates,
-        networkStateObserver = networkStateObserver,
-        userAgent = userAgent,
-        engine =
+        engine = mockEngine ?: defaultHttpEngine(
+            certificatePinning = certificatePinning,
+            proxyCredentials = null,
+            serverConfigDTOApiProxy = null
+        )
     ) {
     override val serverConfigApi: ServerConfigApi get() = ServerConfigApiImpl(unboundNetworkClient)
     override val acmeApi: ACMEApi get() = ACMEApiImpl(unboundNetworkClient)

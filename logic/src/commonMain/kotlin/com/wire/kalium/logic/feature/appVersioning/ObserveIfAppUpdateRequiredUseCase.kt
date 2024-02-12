@@ -105,12 +105,11 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
                             async {
                                 val isUpdateRequired = authenticationScopeProvider
                                     .provide(
-                                        serverConfig,
-                                        proxyCredentials,
-                                        networkStateObserver,
-                                        globalDatabaseProvider,
-                                        kaliumConfigs,
-                                        kaliumConfigs.kaliumMockEngine?.mockEngine
+                                        serverConfig = serverConfig,
+                                        proxyCredentials = proxyCredentials,
+                                        networkStateObserver = networkStateObserver,
+                                        globalDatabase = globalDatabaseProvider,
+                                        kaliumConfigs = kaliumConfigs,
                                     )
                                     .checkIfUpdateRequired(currentAppVersion, serverConfig.links.blackList)
                                 serverConfig.id to isUpdateRequired

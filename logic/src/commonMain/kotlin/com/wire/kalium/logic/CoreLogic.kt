@@ -80,10 +80,7 @@ abstract class CoreLogicCommon internal constructor(
         authenticationScopeProvider.provide(
             serverConfig,
             proxyCredentials,
-            getGlobalScope().serverConfigRepository,
             networkStateObserver,
-            kaliumConfigs::certPinningConfig,
-            kaliumConfigs.kaliumMockEngine?.mockEngine,
             globalDatabase,
             kaliumConfigs
         )
