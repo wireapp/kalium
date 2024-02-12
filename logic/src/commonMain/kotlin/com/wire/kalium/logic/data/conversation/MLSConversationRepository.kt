@@ -16,6 +16,8 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:Suppress("konsist.repositoriesShouldNotAccessFeaturePackageClasses")
+
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.cryptography.CommitBundle
@@ -28,6 +30,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.id.ConversationId
@@ -44,6 +47,7 @@ import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapper
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
@@ -167,6 +171,8 @@ private fun CoreFailure.getStrategy(
     }
 }
 
+// TODO: refactor this repository as it's doing too much.
+// A Repository should be a dummy class that get and set some values
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class MLSConversationDataSource(
     private val selfUserId: UserId,
@@ -181,6 +187,8 @@ internal class MLSConversationDataSource(
     private val epochsFlow: MutableSharedFlow<GroupID>,
     private val proposalTimersFlow: MutableSharedFlow<ProposalTimer>,
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
+    private val checkRevocationList: CheckRevocationListUseCase,
+    private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
     private val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper(),
@@ -220,7 +228,9 @@ internal class MLSConversationDataSource(
                         epochsFlow.emit(groupID)
                     }
                     messages.map {
-                        // TODO: process crlDps from decryptMessage
+                        it.crlNewDistributionPoints?.let { newDistributionPoints ->
+                            checkRevocationList(newDistributionPoints)
+                        }
                         it.toModel(groupID)
                     }
                 }
@@ -265,7 +275,9 @@ internal class MLSConversationDataSource(
             wrapMLSRequest {
                 mlsClient.joinByExternalCommit(groupInfo)
             }.flatMap { commitBundle ->
-                // TODO: process crlDps from decryptMessage
+                commitBundle.crlNewDistributionPoints?.let {
+                    checkRevocationList(it)
+                }
                 sendCommitBundleForExternalCommit(groupID, commitBundle)
             }.onSuccess {
                 conversationDAO.updateConversationGroupState(
@@ -363,7 +375,9 @@ internal class MLSConversationDataSource(
                 wrapMLSRequest {
                     mlsClient.commitPendingProposals(idMapper.toCryptoModel(groupID))
                 }.flatMap { commitBundle ->
-                    // TODO: process crlDps from decryptMessage
+                    commitBundle?.crlNewDistributionPoints?.let {
+                        checkRevocationList(it)
+                    }
                     commitBundle?.let { sendCommitBundle(groupID, it) } ?: Either.Right(Unit)
                 }.flatMap {
                     wrapStorageRequest {
@@ -410,7 +424,9 @@ internal class MLSConversationDataSource(
                                 mlsClient.addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)
                             }
                         }.flatMap { commitBundle ->
-                            // TODO: process crlDps from commitBundle
+                            commitBundle?.crlNewDistributionPoints?.let {
+                                checkRevocationList(it)
+                            }
                             commitBundle?.let {
                                 sendCommitBundle(groupID, it)
                             } ?: Either.Right(Unit)
@@ -522,6 +538,9 @@ internal class MLSConversationDataSource(
         wrapMLSRequest {
             mlsClient.e2eiRotateAll(e2eiClient, certificateChain, keyPackageLimitsProvider.refillAmount().toUInt())
         }.map { rotateBundle ->
+            rotateBundle.crlNewDistributionPoints?.let {
+                checkRevocationList(it)
+            }
             if (!isNewClient) {
                 kaliumLogger.w("enrollment for existing client: upload new keypackages and drop old ones")
                 keyPackageRepository.replaceKeyPackages(clientId, rotateBundle.newKeyPackages).flatMapLeft {
@@ -675,6 +694,16 @@ internal class MLSConversationDataSource(
                 kaliumLogger.e("Discarding pending commit failed: $error")
             }
             Either.Right(Unit)
+        }
+    }
+
+    private suspend fun checkRevocationList(crlNewDistributionPoints: List<String>) {
+        crlNewDistributionPoints.forEach { url ->
+            checkRevocationList(url).map { newExpiration ->
+                newExpiration?.let {
+                    certificateRevocationListRepository.addOrUpdateCRL(url, it)
+                }
+            }
         }
     }
 }
