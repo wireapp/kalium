@@ -16,6 +16,8 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:Suppress("konsist.repositoriesShouldNotAccessFeaturePackageClasses")
+
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.cryptography.CommitBundle
@@ -169,6 +171,8 @@ private fun CoreFailure.getStrategy(
     }
 }
 
+// TODO: refactor this repository as it's doing too much.
+// A Repository should be a dummy class that get and set some values
 @Suppress("TooManyFunctions", "LongParameterList")
 internal class MLSConversationDataSource(
     private val selfUserId: UserId,
