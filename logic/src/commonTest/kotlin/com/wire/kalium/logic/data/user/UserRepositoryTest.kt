@@ -54,6 +54,7 @@ import com.wire.kalium.persistence.dao.PartialUserEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserDetailsEntity
+import com.wire.kalium.persistence.dao.UserEntityMinimized
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
@@ -644,6 +645,40 @@ class UserRepositoryTest {
     }
 
     @Test
+    fun givenUserDAOReturnsFailure_whenCallingGetKnownUserMinimized_thenReturnFailure() = runTest {
+        val (_, userRepository) = Arrangement()
+            .withUserDAOReturning(null)
+            .arrange()
+
+        val result = userRepository.getKnownUserMinimized(TestUser.USER_ID)
+
+        result.shouldFail()
+    }
+
+    @Test
+    fun givenUserDAOReturnsUserMinimized_whenCallingGetKnownUserMinimized_thenReturnUserMinimized() = runTest {
+        val userMinimized = UserEntityMinimized(
+            id = QualifiedIDEntity("id", "domain"),
+            name = "Max",
+            userType = UserTypeEntity.ADMIN,
+            completeAssetId = null
+        )
+        val (arrangement, userRepository) = Arrangement()
+            .withUserDAOReturning(userMinimized)
+            .arrange()
+
+        val result = userRepository.getKnownUserMinimized(TestUser.USER_ID)
+
+        verify(arrangement.userDAO)
+            .suspendFunction(arrangement.userDAO::getUserMinimizedByQualifiedID)
+            .with(any())
+            .wasInvoked(exactly = once)
+        result.shouldSucceed {
+            assertIs<OtherUserMinimized>(it)
+        }
+    }
+
+    @Test
     fun givenATeamMemberUser_whenFetchingUserInfo_thenItShouldBeUpsertedAsATeamMember() = runTest {
         val (arrangement, userRepository) = Arrangement()
             .withUserDaoReturning(TestUser.DETAILS_ENTITY.copy(team = TestTeam.TEAM_ID.value))
@@ -699,9 +734,6 @@ class UserRepositoryTest {
         val sessionRepository = mock(SessionRepository::class)
 
         @Mock
-        val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
-
-        @Mock
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
         val selfUserId = TestUser.SELF.id
@@ -732,6 +764,12 @@ class UserRepositoryTest {
                 .then { Either.Right(TestTeam.TEAM_ID) }
         }
 
+        fun withUserDAOReturning(value: UserEntityMinimized?) = apply {
+            given(userDAO)
+                .suspendFunction(userDAO::getUserMinimizedByQualifiedID)
+                .whenInvokedWith(any())
+                .thenReturn(value)
+        }
         fun withSelfUserIdFlowMetadataReturning(selfUserIdStringFlow: Flow<String?>) = apply {
             given(metadataDAO)
                 .suspendFunction(metadataDAO::valueByKeyFlow)
@@ -779,13 +817,6 @@ class UserRepositoryTest {
                 .suspendFunction(userDAO::getUsersDetailsByQualifiedIDList)
                 .whenInvokedWith(any())
                 .thenReturn(knownUserEntities)
-        }
-
-        fun withMapperQualifiedUserId(nonQualifiedId: String = "alice@wonderland") = apply {
-            given(qualifiedIdMapper)
-                .function(qualifiedIdMapper::fromStringToQualifiedID)
-                .whenInvokedWith(eq(nonQualifiedId))
-                .thenReturn(com.wire.kalium.logic.data.id.QualifiedID("alice", "wonderland"))
         }
 
         fun withUserDaoReturning(userEntity: UserDetailsEntity? = TestUser.DETAILS_ENTITY) = apply {
