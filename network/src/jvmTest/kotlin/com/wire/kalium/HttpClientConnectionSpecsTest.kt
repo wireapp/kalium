@@ -17,7 +17,7 @@
  */
 package com.wire.kalium
 
-import com.wire.kalium.network.OkhttpClientFactory
+import com.wire.kalium.network.buildOkhttpClient
 import okhttp3.CipherSuite
 import okhttp3.ConnectionSpec
 import okhttp3.TlsVersion
@@ -51,7 +51,7 @@ class HttpClientConnectionSpecsTest {
         )
 
         // when
-        val connectionSpecs = OkhttpClientFactory { }.connectionSpecs
+        val connectionSpecs = buildOkhttpClient { }.connectionSpecs
 
         // then
         with(connectionSpecs[0]) {

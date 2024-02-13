@@ -17,11 +17,15 @@
  */
 package com.wire.kalium.network
 
+import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
-@Suppress("FunctionName")
-fun OkhttpClientFactory(block: OkHttpClient.Builder.() -> Unit): OkHttpClient = OkHttpSingleton.createNew(block)
+fun buildOkhttpClient(block: OkHttpClient.Builder.() -> Unit): OkHttpClient =
+    OkHttpSingleton.createNew(block)
+
+fun buildClearTextTrafficOkhttpClient(): OkHttpClient =
+    OkHttpSingleton.createNewClearTextTrafficClient()
 
 private object OkHttpSingleton {
     private val sharedClient by lazy {
@@ -35,8 +39,15 @@ private object OkHttpSingleton {
                 .writeTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
         }.connectionSpecs(supportedConnectionSpecs()).build()
     }
+    private val clearTextTrafficClient by lazy {
+        OkHttpClient.Builder().apply {
+            connectionSpecs(listOf(ConnectionSpec.CLEARTEXT))
+        }.build()
+    }
 
     fun createNew(block: OkHttpClient.Builder.() -> Unit): OkHttpClient {
         return sharedClient.newBuilder().apply(block).build()
     }
+
+    fun createNewClearTextTrafficClient(): OkHttpClient = clearTextTrafficClient
 }
