@@ -98,22 +98,26 @@ object TestDataImporter {
                     backendConfig.presetTeam.owner.email,
                     backendConfig.passwordForUsers,
                     UserId(backendConfig.presetTeam.owner.unqualifiedId, backendConfig.domain),
+                    null,
                     httpClient
                 )
                 backendConfig.presetTeam.users.map { user ->
                     UserData(
-                        user.email, backendConfig.passwordForUsers, UserId(user.unqualifiedId, backendConfig.domain), team
+                        user.email,
+                        backendConfig.passwordForUsers,
+                        UserId(user.unqualifiedId, backendConfig.domain),
+                        team,
+                        null
                     )
                 }
             } else {
                 val team = httpClient.createTeam(backendConfig)
                 val users = (1..backendConfig.userCount.toInt()).map { httpClient.createUser(it, team, backendConfig.passwordForUsers) }
-                    .plus(team.owner)
                 if (backendConfig.dumpUsers) {
-                    dumpUsers(team, users)
+                    dumpUsers(team, users.plus(team.owner))
                 }
                 users.forEach { setUserHandle(backendConfig, it) }
-                users
+                users.plus(team.owner)
             }
         }
     }
@@ -161,6 +165,7 @@ private suspend fun HttpClient.createTeam(backendConfig: BackendConfig): Team {
         ownerEmail = email,
         ownerPassword = backendConfig.passwordForUsers,
         ownerId = UserId(userId, backend.domain),
+        ownerOldCode = null,
         client = this
     )
     login(team.owner.email, team.owner.password, team.owner.request2FA())
@@ -177,6 +182,7 @@ private suspend fun setUserHandle(backendConfig: BackendConfig, userData: UserDa
     httpClient.login(userData.email, userData.password, secondFactor) { accessToken ->
         token = BearerTokens(accessToken, "")
     }
+    userData.oldCode = secondFactor
     httpClient.put("self/handle") { setBody(mapOf("handle" to "monkey-${userData.userId.value}").toJsonObject()) }
 }
 
@@ -194,7 +200,7 @@ private suspend fun HttpClient.createUser(i: Int, team: Team, userPassword: Stri
     }.body<JsonObject>()
     val userId = response["id"]?.jsonPrimitive?.content ?: error("Could not register user in team")
     logger.d("Created user $email (id $userId) in team ${team.name}")
-    return UserData(email, userPassword, UserId(userId, team.backend.domain), team)
+    return UserData(email, userPassword, UserId(userId, team.backend.domain), team, null)
 }
 
 private suspend fun HttpClient.login(
@@ -225,7 +231,7 @@ internal suspend fun HttpClient.teamParticipants(team: Team): List<UserId> {
 }
 
 suspend fun HttpClient.request2FA(email: String, userId: UserId): String {
-    this.post("v3/verification-code/send") {
+    this.post("verification-code/send") {
         setBody(
             mapOf(
                 "action" to "login", "email" to email
@@ -248,7 +254,7 @@ private suspend fun HttpClient.invite(teamId: String, email: String, name: Strin
 }
 
 internal fun httpClient(backendConfig: BackendConfig, tokenProvider: () -> BearerTokens? = { token }) = HttpClient(OkHttp.create()) {
-    val excludedPaths = listOf("v3", "register", "login", "activate")
+    val excludedPaths = listOf("verification-code", "register", "login", "activate")
     defaultRequest {
         url(backendConfig.api)
         contentType(ContentType.Application.Json)
