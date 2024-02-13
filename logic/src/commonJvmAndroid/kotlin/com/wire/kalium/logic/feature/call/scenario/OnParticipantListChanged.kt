@@ -28,9 +28,10 @@ import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 
 @Suppress("LongParameterList")
@@ -53,13 +54,15 @@ class OnParticipantListChanged internal constructor(
             participantsChange.members.map { member ->
                 val participant = participantMapper.fromCallMemberToParticipant(member)
                 val userId = qualifiedIdMapper.fromStringToQualifiedID(member.userId)
-                userRepository.getKnownUserMinimized(userId).also {
+                userRepository.getKnownUserMinimized(userId).onSuccess {
                     val updatedParticipant = participant.copy(
-                        name = it?.name!!,
+                        name = it.name,
                         avatarAssetId = it.completePicture,
                         userType = it.userType
                     )
                     participants.add(updatedParticipant)
+                }.onFailure {
+                    participants.add(participant)
                 }
             }
 
