@@ -30,5 +30,4 @@ expect fun defaultHttpEngine(
     certificatePinning: CertificatePinning
 ): HttpClientEngine
 
-
 expect fun clearTextTrafficEngine(): HttpClientEngine

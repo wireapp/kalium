@@ -39,4 +39,3 @@ fun buildOkhttpClient(
 fun buildClearTextTrafficOkhttpClient(): OkHttpClient = OkHttpClient.Builder().apply {
     connectionSpecs(listOf(ConnectionSpec.CLEARTEXT))
 }.build()
-
