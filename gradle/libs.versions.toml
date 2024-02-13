@@ -29,6 +29,7 @@ ktx-atomicfu = "0.20.0"
 ktx-reactive = "1.7.3"
 kover = "0.7.1"
 multiplatform-settings = "1.1.1"
+moduleGraph = "0.5.0"
 # if you update sqlDelight check if https://github.com/cashapp/sqldelight/issues/4154 is fixed
 # and delete the work around in the dev.mk file
 sqldelight = "2.0.1"
@@ -68,6 +69,7 @@ kalium-library = { id = "kalium.library" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 completeKotlin = { id = "com.louiscad.complete-kotlin", version.ref = "completeKotlin" }
+moduleGraph = { id = "dev.iurysouza.modulegraph", version.ref = "moduleGraph" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
