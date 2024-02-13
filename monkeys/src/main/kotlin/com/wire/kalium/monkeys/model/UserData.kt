@@ -23,7 +23,11 @@ import io.ktor.client.plugins.ClientRequestException
 import io.ktor.http.HttpStatusCode
 
 data class UserData(
-    val email: String, val password: String, val userId: UserId, val team: Team, var oldCode: String?
+    val email: String,
+    val password: String,
+    val userId: UserId,
+    val team: Team,
+    var oldCode: String?
 ) {
     fun backendConfig() = BackendConfig(
         this.team.backend.api,
