@@ -147,7 +147,7 @@ interface UserRepository {
 
     suspend fun isAtLeastOneUserATeamMember(userId: List<UserId>, teamId: TeamId): Either<StorageFailure, Boolean>
 
-    suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedID>):  Either<StorageFailure, Unit>
+    suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedID>): Either<StorageFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
