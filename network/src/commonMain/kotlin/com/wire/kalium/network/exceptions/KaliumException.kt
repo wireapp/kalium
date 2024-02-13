@@ -209,7 +209,11 @@ fun KaliumException.InvalidRequestError.isNotTeamMember(): Boolean {
 }
 
 fun KaliumException.InvalidRequestError.isConversationNotFound(): Boolean {
-    return errorResponse.label == NO_CONVERSATION || errorResponse.label == NO_CONVERSATION_CODE
+    return errorResponse.label == NO_CONVERSATION
+}
+
+fun KaliumException.InvalidRequestError.isConversationHasNoCode(): Boolean {
+    return errorResponse.label == NO_CONVERSATION_CODE
 }
 
 fun KaliumException.InvalidRequestError.isGuestLinkDisabled(): Boolean {
@@ -226,7 +230,7 @@ fun KaliumException.InvalidRequestError.isWrongConversationPassword(): Boolean {
 }
 
 val KaliumException.InvalidRequestError.authenticationCodeFailure: AuthenticationCodeFailure?
-    get() = AuthenticationCodeFailure.values().firstOrNull {
+    get() = AuthenticationCodeFailure.entries.firstOrNull {
         errorResponse.label == it.responseLabel
     }
 

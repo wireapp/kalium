@@ -18,15 +18,27 @@
 
 package com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink
 
+import io.ktor.http.URLBuilder
+import io.ktor.http.Url
+import io.ktor.http.parameters
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class ConversationInviteLinkResponse(
-    @SerialName("uri") val uri: String,
+    @SerialName("uri") internal val uri: String?,
     @SerialName("key") val key: String,
     @SerialName("code") val code: String,
     // the initial value for has password because password protected invite links
     // are supported on api v4+
     @SerialName("has_password") val hasPassword: Boolean = false
-)
+) {
+    fun link(accountsUrl: String): String = uri ?: run {
+        URLBuilder(Url(accountsUrl)).apply {
+            parameters {
+                append("code", code)
+                append("key", key)
+            }
+        }.build().toString()
+     }
+}

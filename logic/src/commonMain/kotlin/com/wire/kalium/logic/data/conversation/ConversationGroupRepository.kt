@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
@@ -49,6 +50,8 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ServiceAddedResponse
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isConversationHasNoCode
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.LocalId
@@ -82,6 +85,7 @@ interface ConversationGroupRepository {
     suspend fun revokeGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
     suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<Either<CoreFailure, ConversationGuestLink?>>
     suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long?): Either<CoreFailure, Unit>
+    suspend fun updateGuestRoomLink(conversationId: ConversationId, accountUrl: String): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -492,6 +496,26 @@ internal class ConversationGroupRepositoryImpl(
                 )
             }
             .map { }
+
+    override suspend fun updateGuestRoomLink(conversationId: ConversationId, accountUrl: String): Either<CoreFailure, Unit> =
+        wrapApiRequest {
+            conversationApi.guestLinkInfo(conversationId.toApi())
+        }.fold({
+            if (it is NetworkFailure.ServerMiscommunication &&
+                it.kaliumException is KaliumException.InvalidRequestError &&
+                it.kaliumException.isConversationHasNoCode()
+            ) {
+                wrapStorageRequest {
+                    conversationDAO.updateGuestRoomLink(conversationId.toDao(), null, false)
+                }
+            } else {
+                Either.Left(it)
+            }
+        }, {
+            wrapStorageRequest {
+                conversationDAO.updateGuestRoomLink(conversationId.toDao(), it.link(accountUrl), it.hasPassword)
+            }
+        })
 
     /**
      * Extract from a [NetworkFailure.FederatedBackendFailure.RetryableFailure] the domains

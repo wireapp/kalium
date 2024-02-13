@@ -1312,6 +1312,41 @@ class ConversationGroupRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenAFetchingConversationCodeSuccess_whenSyncingCode_thenUpdateLocally() = runTest {
+        val expected = NetworkResponse.Success(
+            ConversationInviteLinkResponse(
+                uri = "uri",
+                code = "code",
+                key = "key",
+                hasPassword = false
+            ),
+            emptyMap(),
+            200
+        )
+
+        val conversationId = ConversationId("value", "domain")
+
+        val accountUrl = "accountUrl.com"
+
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withRemoteFetchCode(expected)
+            .withInsertConversationSuccess()
+            .arrange()
+
+        conversationGroupRepository.updateGuestRoomLink(conversationId, accountUrl)
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::guestLinkInfo)
+            .with(eq(conversationId.toApi()))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::updateGuestRoomLink)
+            .with(eq(conversationId), eq("uri"), eq(expected.value.hasPassword))
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
 
@@ -1726,6 +1761,15 @@ class ConversationGroupRepositoryTest {
                 .suspendFunction(newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withRemoteFetchCode(
+            result: NetworkResponse<ConversationInviteLinkResponse>
+        ) = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::guestLinkInfo)
+                .whenInvokedWith(any())
+                .thenReturn(result)
         }
 
         fun arrange() = this to conversationGroupRepository

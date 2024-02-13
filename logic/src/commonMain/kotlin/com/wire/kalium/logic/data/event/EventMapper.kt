@@ -48,6 +48,7 @@ import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi.P
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi.PropertyKey.WIRE_TYPING_INDICATOR_MODE
 import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
 import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
+import io.ktor.http.Url
 import io.ktor.utils.io.charsets.Charsets
 import io.ktor.utils.io.core.toByteArray
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -76,7 +77,7 @@ class EventMapper(
     }
 
     @Suppress("ComplexMethod")
-    fun fromEventContentDTO(id: String, eventContentDTO: EventContentDTO): Event =
+    fun fromEventContentDTO(id: String, eventContentDTO: EventContentDTO, accountUrl: String): Event =
         when (eventContentDTO) {
             is EventContentDTO.Conversation.NewMessageDTO -> newMessage(id, eventContentDTO)
             is EventContentDTO.Conversation.NewConversationDTO -> newConversation(id, eventContentDTO)
@@ -104,7 +105,7 @@ class EventMapper(
             is EventContentDTO.Conversation.ReceiptModeUpdate -> conversationReceiptModeUpdate(id, eventContentDTO)
             is EventContentDTO.Conversation.MessageTimerUpdate -> conversationMessageTimerUpdate(id, eventContentDTO)
             is EventContentDTO.Conversation.CodeDeleted -> conversationCodeDeleted(id, eventContentDTO)
-            is EventContentDTO.Conversation.CodeUpdated -> conversationCodeUpdated(id, eventContentDTO)
+            is EventContentDTO.Conversation.CodeUpdated -> conversationCodeUpdated(id, eventContentDTO, accountUrl)
             is EventContentDTO.Federation -> federationTerminated(id, eventContentDTO)
             is EventContentDTO.Conversation.ConversationTypingDTO -> conversationTyping(id, eventContentDTO)
             is EventContentDTO.Conversation.ProtocolUpdate -> conversationProtocolUpdate(id, eventContentDTO)
@@ -146,11 +147,12 @@ class EventMapper(
     private fun conversationCodeUpdated(
         id: String,
         event: EventContentDTO.Conversation.CodeUpdated,
+        accountUrl: String
     ): Event.Conversation.CodeUpdated = Event.Conversation.CodeUpdated(
         id = id,
         key = event.data.key,
         code = event.data.code,
-        uri = event.data.uri,
+        uri = event.data.link(accountUrl),
         isPasswordProtected = event.data.hasPassword,
         conversationId = event.qualifiedConversation.toModel(),
     )

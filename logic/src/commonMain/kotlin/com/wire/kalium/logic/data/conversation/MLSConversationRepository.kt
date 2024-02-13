@@ -29,6 +29,7 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.event.Event
@@ -189,6 +190,7 @@ internal class MLSConversationDataSource(
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
     private val checkRevocationList: CheckRevocationListUseCase,
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
+    private val serverConfigLinks: ServerConfig.Links,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
     private val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper(),
@@ -356,7 +358,12 @@ internal class MLSConversationDataSource(
 
     private suspend fun processCommitBundleEvents(events: List<EventContentDTO>) {
         events.forEach { eventContentDTO ->
-            val event = MapperProvider.eventMapper(selfUserId).fromEventContentDTO(LocalId.generate(), eventContentDTO)
+            val event =
+                MapperProvider.eventMapper(selfUserId).fromEventContentDTO(
+                    LocalId.generate(),
+                    eventContentDTO,
+                    serverConfigLinks.accounts
+                )
             if (event is Event.Conversation) {
                 commitBundleEventReceiver.onEvent(event, EventDeliveryInfo(isTransient = true, source = EventSource.LIVE))
             }
