@@ -1437,7 +1437,7 @@ class UserSessionScope internal constructor(
             clientRepository = clientRepository
         )
 
-    private val membersHavingLegalHoldClient: MembersHavingLegalHoldClientUseCase
+    val membersHavingLegalHoldClient: MembersHavingLegalHoldClientUseCase
         get() = MembersHavingLegalHoldClientUseCaseImpl(clientRepository)
 
     private val legalHoldSystemMessagesHandler = LegalHoldSystemMessagesHandlerImpl(
