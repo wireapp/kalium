@@ -159,7 +159,7 @@ class ConversationScope internal constructor(
         )
 
     val addMemberToConversationUseCase: AddMemberToConversationUseCase
-        get() = AddMemberToConversationUseCaseImpl(conversationGroupRepository, userRepository)
+        get() = AddMemberToConversationUseCaseImpl(conversationGroupRepository, userRepository, refreshUsersWithoutMetadata)
 
     val addServiceToConversationUseCase: AddServiceToConversationUseCase
         get() = AddServiceToConversationUseCase(groupRepository = conversationGroupRepository)
