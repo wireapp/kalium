@@ -25,11 +25,9 @@ import com.wire.kalium.network.api.base.unbound.acme.*
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.*
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 
-@OptIn(ExperimentalCoroutinesApi::class)
 internal class ACMEApiTest : ApiTest() {
 
     @Ignore

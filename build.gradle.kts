@@ -53,6 +53,7 @@ plugins {
     alias(libs.plugins.kover)
     id("scripts.testing")
     id("scripts.detekt")
+    alias(libs.plugins.moduleGraph)
     alias(libs.plugins.completeKotlin)
 }
 
@@ -141,3 +142,8 @@ rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJ
 }
 
 tasks.dokkaHtmlMultiModule.configure {}
+
+moduleGraphConfig {
+    readmePath.set("./README.md")
+    heading.set("#### Dependency Graph")
+}

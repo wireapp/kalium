@@ -16,12 +16,29 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.data.call
+package com.wire.kalium.logic.feature.user
 
-interface ParticipantsOrderByName {
-    fun sortItems(participants: List<Participant>): List<Participant>
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.functional.fold
+
+/**
+ * Checks if the current user's team has enabled E2EI .
+ */
+interface IsE2EIEnabledUseCase {
+    /**
+     * @return true if E2EI is enabled, false otherwise.
+     */
+    operator fun invoke(): Boolean
 }
 
-class ParticipantsOrderByNameImpl : ParticipantsOrderByName {
-    override fun sortItems(participants: List<Participant>) = participants.sortedBy { it.name?.uppercase() }
+internal class IsE2EIEnabledUseCaseImpl(
+    private val userConfigRepository: UserConfigRepository
+) : IsE2EIEnabledUseCase {
+
+    override operator fun invoke(): Boolean =
+        userConfigRepository.getE2EISettings().fold({
+            false
+        }, {
+            it.isRequired
+        })
 }
