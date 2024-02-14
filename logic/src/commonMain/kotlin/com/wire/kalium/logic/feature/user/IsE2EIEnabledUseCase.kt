@@ -16,13 +16,29 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.sync.receiver
+package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.event.EventDeliveryInfo
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.functional.fold
 
-internal fun interface EventReceiver<T : Event> {
-    suspend fun onEvent(event: T, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit>
+/**
+ * Checks if the current user's team has enabled E2EI .
+ */
+interface IsE2EIEnabledUseCase {
+    /**
+     * @return true if E2EI is enabled, false otherwise.
+     */
+    operator fun invoke(): Boolean
+}
+
+internal class IsE2EIEnabledUseCaseImpl(
+    private val userConfigRepository: UserConfigRepository
+) : IsE2EIEnabledUseCase {
+
+    override operator fun invoke(): Boolean =
+        userConfigRepository.getE2EISettings().fold({
+            false
+        }, {
+            it.isRequired
+        })
 }

@@ -22,7 +22,7 @@ import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.sync.ConnectionPolicy
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
@@ -68,7 +68,7 @@ internal interface EventGatherer {
      *
      * Will stop or keep gathering accordingly to the current [ConnectionPolicy]
      */
-    suspend fun gatherEvents(): Flow<Event>
+    suspend fun gatherEvents(): Flow<EventEnvelope>
 
     val currentSource: StateFlow<EventSource>
 }
@@ -79,12 +79,13 @@ internal class EventGathererImpl(
 ) : EventGatherer {
 
     private val _currentSource = MutableStateFlow(EventSource.PENDING)
+    // TODO: Refactor so currentSource is emitted through the gatherEvents flow, instead of having two separated flows
     override val currentSource: StateFlow<EventSource> get() = _currentSource.asStateFlow()
 
-    private val offlineEventBuffer = PendingEventsBuffer()
+    private val offlineEventBuffer = EventProcessingHistory()
     private val logger = kaliumLogger.withFeatureId(SYNC)
 
-    override suspend fun gatherEvents(): Flow<Event> = flow {
+    override suspend fun gatherEvents(): Flow<EventEnvelope> = flow {
         offlineEventBuffer.clear()
         _currentSource.value = EventSource.PENDING
         eventRepository.lastProcessedEventId().flatMap {
@@ -99,8 +100,8 @@ internal class EventGathererImpl(
         _currentSource.value = EventSource.PENDING
     }
 
-    private suspend fun FlowCollector<Event>.handleWebSocketEventsWhilePolicyAllows(
-        webSocketEventFlow: Flow<WebSocketEvent<Event>>
+    private suspend fun FlowCollector<EventEnvelope>.handleWebSocketEventsWhilePolicyAllows(
+        webSocketEventFlow: Flow<WebSocketEvent<EventEnvelope>>
     ) = webSocketEventFlow.combine(incrementalSyncRepository.connectionPolicyState)
         .buffer(Channel.UNLIMITED)
         .transformWhile { (webSocketEvent, policy) ->
@@ -118,14 +119,16 @@ internal class EventGathererImpl(
         .cancellable()
         .collect { handleWebsocketEvent(it) }
 
-    private suspend fun FlowCollector<Event>.handleWebsocketEvent(webSocketEvent: WebSocketEvent<Event>) = when (webSocketEvent) {
+    private suspend fun FlowCollector<EventEnvelope>.handleWebsocketEvent(
+        webSocketEvent: WebSocketEvent<EventEnvelope>
+    ) = when (webSocketEvent) {
         is WebSocketEvent.Open -> onWebSocketOpen()
         is WebSocketEvent.BinaryPayloadReceived -> onWebSocketEventReceived(webSocketEvent)
         is WebSocketEvent.Close -> handleWebSocketClosure(webSocketEvent)
         is WebSocketEvent.NonBinaryPayloadReceived -> logger.w("Non binary event received on Websocket")
     }
 
-    private fun handleWebSocketClosure(webSocketEvent: WebSocketEvent.Close<Event>) =
+    private fun handleWebSocketClosure(webSocketEvent: WebSocketEvent.Close<EventEnvelope>) =
         when (val cause = webSocketEvent.cause) {
             null -> logger.i("Websocket closed normally")
             is IOException ->
@@ -135,38 +138,41 @@ internal class EventGathererImpl(
                 throw KaliumSyncException("Unknown Websocket error: $cause, message: ${cause.message}", CoreFailure.Unknown(cause))
         }
 
-    private suspend fun FlowCollector<Event>.onWebSocketEventReceived(webSocketEvent: WebSocketEvent.BinaryPayloadReceived<Event>) {
+    private suspend fun FlowCollector<EventEnvelope>.onWebSocketEventReceived(
+        webSocketEvent: WebSocketEvent.BinaryPayloadReceived<EventEnvelope>
+    ) {
         logger.i("Websocket Received binary payload")
-        val event = webSocketEvent.payload
-        if (offlineEventBuffer.contains(event)) {
-            if (offlineEventBuffer.clearBufferIfLastEventEquals(event)) {
+        val envelope = webSocketEvent.payload
+        val obfuscatedId = envelope.event.id.obfuscateId()
+        if (offlineEventBuffer.contains(envelope.event)) {
+            if (offlineEventBuffer.clearHistoryIfLastEventEquals(envelope.event)) {
                 // Really live
-                logger.d("Removed most recent event from offlineEventBuffer: '${event.id.obfuscateId()}'")
+                logger.d("Removed most recent event from offlineEventBuffer: '$obfuscatedId'")
             } else {
                 // Really live
-                logger.d("Removing event from offlineEventBuffer: ${event.id.obfuscateId()}")
-                offlineEventBuffer.remove(event)
+                logger.d("Removing event from offlineEventBuffer: $obfuscatedId")
+                offlineEventBuffer.remove(envelope.event)
             }
             logger
-                .d("Skipping emit of event from WebSocket because already emitted as offline event ${event.id.obfuscateId()}")
+                .d("Skipping emit of event from WebSocket because already emitted as offline event $obfuscatedId")
         } else {
-            logger.d("Event never seen before ${event.id.obfuscateId()} - We are live")
-            emit(event)
+            logger.d("Event never seen before $obfuscatedId - We are live")
+            emit(envelope)
         }
     }
 
-    private suspend fun FlowCollector<Event>.onWebSocketOpen() {
+    private suspend fun FlowCollector<EventEnvelope>.onWebSocketOpen() {
         logger.i("Websocket Open")
         eventRepository
             .pendingEvents()
             .onEach { result ->
                 result.onFailure(::throwPendingEventException)
             }
-            .filterIsInstance<Either.Right<Event>>()
+            .filterIsInstance<Either.Right<EventEnvelope>>()
             .map { offlineEvent -> offlineEvent.value }
             .collect {
-                logger.i("Collecting offline event: ${it.id.obfuscateId()}")
-                offlineEventBuffer.add(it)
+                logger.i("Collecting offline event: ${it.event.id.obfuscateId()}")
+                offlineEventBuffer.add(it.event)
                 emit(it)
             }
         logger.i("Offline events collection finished. Collecting Live events.")
