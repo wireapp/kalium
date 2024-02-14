@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
