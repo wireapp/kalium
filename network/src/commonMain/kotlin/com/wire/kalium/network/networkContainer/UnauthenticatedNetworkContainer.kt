@@ -83,7 +83,9 @@ interface UnauthenticatedNetworkContainer {
                     mockEngine
                 )
 
-                3 -> UnauthenticatedNetworkContainerV3(
+                // this is intentional since we should drop support for api v3
+                // and we default back to v2
+                3 -> UnauthenticatedNetworkContainerV2(
                     networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,

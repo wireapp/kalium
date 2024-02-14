@@ -148,7 +148,9 @@ interface AuthenticatedNetworkContainer {
                     kaliumLogger,
                 )
 
-                3 -> AuthenticatedNetworkContainerV3(
+                // this is intentional since we should drop support for api v3
+                // and we default back to v2
+                3 -> AuthenticatedNetworkContainerV2(
                     networkStateObserver,
                     sessionManager,
                     selfUserId,
