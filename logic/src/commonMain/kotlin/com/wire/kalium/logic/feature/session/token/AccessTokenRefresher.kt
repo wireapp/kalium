@@ -40,7 +40,6 @@ internal interface AccessTokenRefresher {
 }
 
 internal class AccessTokenRefresherImpl(
-    private val userId: UserId,
     private val repository: AccessTokenRepository,
 ) : AccessTokenRefresher {
     override suspend fun refreshTokenAndPersistSession(
@@ -51,14 +50,7 @@ internal class AccessTokenRefresherImpl(
             refreshToken = currentRefreshToken,
             clientId = clientId
         ).flatMap { result ->
-            repository.persistTokens(result.accessToken, result.refreshToken).map {
-                AccountTokens(
-                    userId = userId,
-                    accessToken = result.accessToken,
-                    refreshToken = result.refreshToken,
-                    cookieLabel = null
-                )
-            }
+            repository.persistTokens(result.accessToken, result.refreshToken)
         }
     }
 }

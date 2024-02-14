@@ -46,6 +46,7 @@ interface SessionMapper {
     fun toLogoutReasonEntity(reason: LogoutReason): LogoutReasonEntity
     fun toSsoIdEntity(ssoId: SsoId?): SsoIdEntity?
     fun toAuthTokensEntity(authSession: AccountTokens): AuthTokenEntity
+    fun toAccountTokens(authSession: AuthTokenEntity): AccountTokens
     fun fromSsoIdEntity(ssoIdEntity: SsoIdEntity?): SsoId?
     fun toLogoutReason(reason: LogoutReasonEntity): LogoutReason
     fun fromEntityToProxyCredentialsDTO(proxyCredentialsEntity: ProxyCredentialsEntity): ProxyCredentialsDTO
@@ -58,9 +59,7 @@ interface SessionMapper {
 }
 
 @Suppress("TooManyFunctions")
-internal class SessionMapperImpl(
-    private val idMapper: IdMapper
-) : SessionMapper {
+internal class SessionMapperImpl : SessionMapper {
 
     override fun toSessionDTO(authSession: AccountTokens): SessionDTO = with(authSession) {
         SessionDTO(
@@ -121,6 +120,14 @@ internal class SessionMapperImpl(
             cookieLabel = cookieLabel
         )
     }
+
+    override fun toAccountTokens(authSession: AuthTokenEntity): AccountTokens = AccountTokens(
+        userId = authSession.userId.toModel(),
+        accessToken = authSession.accessToken,
+        refreshToken = authSession.refreshToken,
+        tokenType = authSession.tokenType,
+        cookieLabel = authSession.cookieLabel
+    )
 
     override fun fromSsoIdEntity(ssoIdEntity: SsoIdEntity?): SsoId? =
         ssoIdEntity?.let { SsoId(scimExternalId = it.scimExternalId, subject = it.subject, tenant = it.tenant) }

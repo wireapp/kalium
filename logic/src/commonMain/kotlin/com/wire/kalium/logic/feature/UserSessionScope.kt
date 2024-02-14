@@ -560,7 +560,6 @@ class UserSessionScope internal constructor(
 
     private val accessTokenRefresher: AccessTokenRefresher
         get() = AccessTokenRefresherImpl(
-            userId = userId,
             repository = accessTokenRepository
         )
 
