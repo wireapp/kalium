@@ -22,7 +22,10 @@ import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
 fun buildOkhttpClient(block: OkHttpClient.Builder.() -> Unit): OkHttpClient =
-    OkHttpSingleton.createNew(block)
+    OkHttpSingleton.createNew {
+        connectionSpecs(supportedConnectionSpecs())
+        block()
+    }
 
 fun buildClearTextTrafficOkhttpClient(): OkHttpClient =
     OkHttpSingleton.createNew { connectionSpecs(listOf(ConnectionSpec.CLEARTEXT)) }

@@ -52,10 +52,12 @@ class HttpClientConnectionSpecsTest {
         )
 
         // when
-        val connectionSpecs = buildOkhttpClient { }.connectionSpecs
+        val connectionSpecs = buildOkhttpClient {  }.connectionSpecs
 
         // then
         with(connectionSpecs[0]) {
+            assertEquals(ConnectionSpec.RESTRICTED_TLS, this)
+
             tlsVersions?.let {
                 assertTrue { it.containsAll(validTlsVersions) }
                 assertFalse { it.containsAll(notValidTlsVersions) }
