@@ -25,7 +25,7 @@ fun buildOkhttpClient(block: OkHttpClient.Builder.() -> Unit): OkHttpClient =
     OkHttpSingleton.createNew(block)
 
 fun buildClearTextTrafficOkhttpClient(): OkHttpClient =
-    OkHttpSingleton.createNewClearTextTrafficClient()
+    OkHttpSingleton.createNew { connectionSpecs(listOf(ConnectionSpec.CLEARTEXT)) }
 
 private object OkHttpSingleton {
     private val sharedClient by lazy {
@@ -37,17 +37,10 @@ private object OkHttpSingleton {
                 .connectTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
                 .readTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
                 .writeTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
-        }.connectionSpecs(supportedConnectionSpecs()).build()
-    }
-    private val clearTextTrafficClient by lazy {
-        OkHttpClient.Builder().apply {
-            connectionSpecs(listOf(ConnectionSpec.CLEARTEXT))
         }.build()
     }
 
     fun createNew(block: OkHttpClient.Builder.() -> Unit): OkHttpClient {
         return sharedClient.newBuilder().apply(block).build()
     }
-
-    fun createNewClearTextTrafficClient(): OkHttpClient = clearTextTrafficClient
 }

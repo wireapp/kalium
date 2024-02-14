@@ -46,6 +46,8 @@ actual fun defaultHttpEngine(
     certificatePinning: CertificatePinning
 ): HttpClientEngine = OkHttp.create {
     buildOkhttpClient {
+        connectionSpecs(supportedConnectionSpecs())
+
         if (certificatePinning.isNotEmpty() && !ignoreSSLCertificates) {
             val certPinner = CertificatePinner.Builder().apply {
                 certificatePinning.forEach { (cert, hosts) ->
