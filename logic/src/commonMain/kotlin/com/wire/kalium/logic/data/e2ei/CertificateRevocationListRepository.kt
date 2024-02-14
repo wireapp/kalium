@@ -27,7 +27,7 @@ import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.dao.MetadataDAO
 import io.ktor.http.Url
-import io.ktor.http.protocolWithAuthority
+import io.ktor.http.authority
 
 interface CertificateRevocationListRepository {
 
@@ -84,7 +84,7 @@ internal class CertificateRevocationListRepositoryDataSource(
 
     override suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String> =
         userConfigRepository.getE2EISettings().map {
-            (Url(it.discoverUrl).protocolWithAuthority)
+           (Url(it.discoverUrl).authority)
         }
 
     override suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray> =
