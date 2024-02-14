@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.api.tools
 
+import com.wire.kalium.network.buildClearTextTrafficOkhttpClient
 import com.wire.kalium.network.buildOkhttpClient
 import okhttp3.CipherSuite
 import okhttp3.ConnectionSpec
@@ -65,6 +66,13 @@ class HttpClientConnectionSpecsTest {
                 assertFalse { it.containsAll(notValidCipherSuites) }
             }
         }
-        assertEquals(connectionSpecs[1], ConnectionSpec.CLEARTEXT)
+    }
+
+    @Test
+    fun givenOkHttpSingleton_whenBuildingClearTextTrafficOkhttpClient_thenEnsureConnectionSpecClearText() {
+
+        val connectionSpecs = buildClearTextTrafficOkhttpClient()
+
+        assertEquals(ConnectionSpec.CLEARTEXT, connectionSpecs.connectionSpecs.first())
     }
 }
