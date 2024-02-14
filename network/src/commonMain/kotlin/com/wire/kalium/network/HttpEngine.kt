@@ -29,3 +29,5 @@ expect fun defaultHttpEngine(
     ignoreSSLCertificates: Boolean = false,
     certificatePinning: CertificatePinning
 ): HttpClientEngine
+
+expect fun clearTextTrafficEngine(): HttpClientEngine
