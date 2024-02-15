@@ -66,6 +66,11 @@ class MLSConversationsVerificationStatusesHandlerTest {
             .suspendFunction(arrangement.persistMessageUseCase::invoke)
             .with(any())
             .wasNotInvoked()
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::setDegradedConversationNotifiedFlag)
+            .with(any(), any())
+            .wasNotInvoked()
     }
 
     @Test
@@ -88,6 +93,11 @@ class MLSConversationsVerificationStatusesHandlerTest {
         verify(arrangement.persistMessageUseCase)
             .suspendFunction(arrangement.persistMessageUseCase::invoke)
             .with(any())
+            .wasNotInvoked()
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::setDegradedConversationNotifiedFlag)
+            .with(any(), any())
             .wasNotInvoked()
     }
 
@@ -116,6 +126,11 @@ class MLSConversationsVerificationStatusesHandlerTest {
             .suspendFunction(arrangement.persistMessageUseCase::invoke)
             .with(anyInstanceOf(Message.System::class))
             .wasInvoked(once)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::setDegradedConversationNotifiedFlag)
+            .with(any(), eq(true))
+            .wasInvoked(once)
     }
 
     @Test
@@ -141,6 +156,11 @@ class MLSConversationsVerificationStatusesHandlerTest {
         verify(arrangement.persistMessageUseCase)
             .suspendFunction(arrangement.persistMessageUseCase::invoke)
             .with(any())
+            .wasNotInvoked()
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::setDegradedConversationNotifiedFlag)
+            .with(any(), any())
             .wasNotInvoked()
     }
 
@@ -169,6 +189,11 @@ class MLSConversationsVerificationStatusesHandlerTest {
             .suspendFunction(arrangement.persistMessageUseCase::invoke)
             .with(anyInstanceOf(Message.System::class))
             .wasInvoked(once)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::setDegradedConversationNotifiedFlag)
+            .with(any(), eq(false))
+            .wasInvoked(once)
     }
 
     private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
@@ -182,6 +207,7 @@ class MLSConversationsVerificationStatusesHandlerTest {
         init {
             withUpdateVerificationStatus(Either.Right(Unit))
             withPersistingMessage(Either.Right(Unit))
+            withSetDegradedConversationNotifiedFlag(Either.Right(Unit))
         }
 
         fun arrange() = block().run {
