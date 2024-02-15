@@ -54,7 +54,7 @@ class SyncSelfTeamUseCaseTest {
 
         val (arrangement, syncSelfTeamUseCase) = Arrangement()
             .withSelfUser(selfUserFlow)
-            .witFetchAllTeamMembersEagerly(false)
+            .witFetchAllTeamMembersEagerly(200)
             .arrange()
 
         // when
@@ -82,7 +82,7 @@ class SyncSelfTeamUseCaseTest {
 
         val (arrangement, syncSelfTeamUseCase) = Arrangement()
             .withSelfUser(selfUserFlow)
-            .witFetchAllTeamMembersEagerly(true)
+            .witFetchAllTeamMembersEagerly(200)
             .withTeam()
             .withTeamMembers()
             .withServicesSync()
@@ -116,7 +116,7 @@ class SyncSelfTeamUseCaseTest {
 
         val (arrangement, syncSelfTeamUseCase) = Arrangement()
             .withSelfUser(selfUserFlow)
-            .witFetchAllTeamMembersEagerly(false)
+            .witFetchAllTeamMembersEagerly(null)
             .withFailingTeamInfo()
             .arrange()
 
@@ -151,7 +151,7 @@ class SyncSelfTeamUseCaseTest {
 
         val (_, syncSelfTeamUseCase) = Arrangement()
             .withSelfUser(selfUserFlow)
-            .witFetchAllTeamMembersEagerly(false)
+            .witFetchAllTeamMembersEagerly(null)
             .withTeam()
             .withTeamMembers()
             .withFailingServicesSync()
@@ -165,13 +165,14 @@ class SyncSelfTeamUseCaseTest {
     }
 
     @Test
-    fun givenSelfUserHasValidTeamAndFetchAllTeamMembersEagerlyIsFalse_whenSyncingSelfTeam_thenTeamInfoAndServicesAreRequestedSuccessfully() = runTest {
+    fun givenSelfUserHasValidTeamAndFetchLimitIsNull_whenSyncingSelfTeam_thenTeamInfoAndServicesAreRequestedSuccessfully() = runTest {
         // given
         val selfUserFlow = flowOf(TestUser.SELF)
 
         val (arrangement, syncSelfTeamUseCase) = Arrangement()
             .withSelfUser(selfUserFlow)
-            .witFetchAllTeamMembersEagerly(false)
+            .witFetchAllTeamMembersEagerly(null)
+            .withTeamMembers()
             .withTeam()
             .withServicesSync()
             .arrange()
@@ -186,8 +187,9 @@ class SyncSelfTeamUseCaseTest {
             .wasInvoked(exactly = once)
         verify(arrangement.teamRepository)
             .suspendFunction(arrangement.teamRepository::fetchMembersByTeamId)
-            .with(any(), any())
-            .wasNotInvoked()
+            .with(any(), any(), eq(null))
+            .wasInvoked(exactly = once)
+
         verify(arrangement.teamRepository)
             .suspendFunction(arrangement.teamRepository::syncServices)
             .with(eq(TestUser.SELF.teamId))
@@ -196,7 +198,7 @@ class SyncSelfTeamUseCaseTest {
 
     private class Arrangement {
 
-        var fetchAllTeamMembersEagerly by Delegates.notNull<Boolean>()
+        var fetchTeamMemberLimit: Int? = null
 
         @Mock
         val userRepository = mock(classOf<UserRepository>())
@@ -205,8 +207,8 @@ class SyncSelfTeamUseCaseTest {
         val teamRepository = mock(classOf<TeamRepository>())
 
         private lateinit var syncSelfTeamUseCase: SyncSelfTeamUseCase
-        fun witFetchAllTeamMembersEagerly(result: Boolean) = apply {
-            fetchAllTeamMembersEagerly = result
+        fun witFetchAllTeamMembersEagerly(result: Int?) = apply {
+            fetchTeamMemberLimit = result
         }
 
         fun withSelfUser(selfUserFlow: Flow<SelfUser>) = apply {
@@ -255,7 +257,7 @@ class SyncSelfTeamUseCaseTest {
             syncSelfTeamUseCase = SyncSelfTeamUseCaseImpl(
                 userRepository = userRepository,
                 teamRepository = teamRepository,
-                fetchAllTeamMembersEagerly
+                fetchedUsersLimit = fetchTeamMemberLimit
             )
             return this to syncSelfTeamUseCase
         }
