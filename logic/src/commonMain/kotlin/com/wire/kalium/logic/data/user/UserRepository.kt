@@ -99,7 +99,7 @@ interface UserRepository {
     suspend fun getSelfUser(): SelfUser?
     suspend fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
-    suspend fun getKnownUserMinimized(userId: UserId): OtherUserMinimized?
+    suspend fun getKnownUserMinimized(userId: UserId): Either<StorageFailure, OtherUserMinimized>
     suspend fun getUsersWithOneOnOneConversation(): List<OtherUser>
     suspend fun observeUser(userId: UserId): Flow<User?>
     suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser>
@@ -426,10 +426,12 @@ internal class UserDataSource internal constructor(
             }
     }
 
-    override suspend fun getKnownUserMinimized(userId: UserId) = userDAO.getUserMinimizedByQualifiedID(
-        qualifiedID = userId.toDao()
-    )?.let {
-        userMapper.fromUserEntityToOtherUserMinimized(it)
+    override suspend fun getKnownUserMinimized(userId: UserId) = wrapStorageRequest {
+        userDAO.getUserMinimizedByQualifiedID(
+            qualifiedID = userId.toDao()
+        )?.let {
+            userMapper.fromUserEntityToOtherUserMinimized(it)
+        }
     }
 
     override suspend fun observeUser(userId: UserId): Flow<User?> =
