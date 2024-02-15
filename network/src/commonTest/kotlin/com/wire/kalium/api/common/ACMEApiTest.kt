@@ -25,11 +25,9 @@ import com.wire.kalium.network.api.base.unbound.acme.*
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.*
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 
-@OptIn(ExperimentalCoroutinesApi::class)
 internal class ACMEApiTest : ApiTest() {
 
     @Ignore
@@ -46,7 +44,7 @@ internal class ACMEApiTest : ApiTest() {
                 assertNoQueryParams()
             }
         )
-        val acmeApi: ACMEApi = ACMEApiImpl(networkClient)
+        val acmeApi: ACMEApi = ACMEApiImpl(networkClient, networkClient)
 
         acmeApi.getTrustAnchors(ACME_DISCOVERY_URL).also { actual ->
             assertIs<NetworkResponse.Success<CertificateChain>>(actual)
@@ -67,7 +65,7 @@ internal class ACMEApiTest : ApiTest() {
                 assertNoQueryParams()
             }
         )
-        val acmeApi: ACMEApi = ACMEApiImpl(networkClient)
+        val acmeApi: ACMEApi = ACMEApiImpl(networkClient, networkClient)
 
         acmeApi.getACMEDirectories(ACME_DISCOVERY_URL).also { actual ->
             assertIs<NetworkResponse.Success<AcmeDirectoriesResponse>>(actual)
@@ -88,7 +86,7 @@ internal class ACMEApiTest : ApiTest() {
                 assertNoQueryParams()
             }
         )
-        val acmeApi: ACMEApi = ACMEApiImpl(networkClient)
+        val acmeApi: ACMEApi = ACMEApiImpl(networkClient, networkClient)
 
         acmeApi.getACMENonce(ACME_DIRECTORIES_SAMPLE.newNonce).also { actual ->
             assertIs<NetworkResponse.Success<String>>(actual)
@@ -110,7 +108,7 @@ internal class ACMEApiTest : ApiTest() {
                 assertNoQueryParams()
             }
         )
-        val acmeApi: ACMEApi = ACMEApiImpl(networkClient)
+        val acmeApi: ACMEApi = ACMEApiImpl(networkClient, networkClient)
 
         acmeApi.sendACMERequest("", byteArrayOf(0x12, 0x24, 0x32, 0x42)).also { actual ->
             assertIs<NetworkResponse.Success<ACMEResponse>>(actual)
@@ -134,7 +132,7 @@ internal class ACMEApiTest : ApiTest() {
                 assertNoQueryParams()
             }
         )
-        val acmeApi: ACMEApi = ACMEApiImpl(networkClient)
+        val acmeApi: ACMEApi = ACMEApiImpl(networkClient, networkClient)
 
         val response = acmeApi.sendACMERequest(ACME_DIRECTORIES_SAMPLE.newNonce)
         assertFalse(response.isSuccessful())
@@ -154,7 +152,7 @@ internal class ACMEApiTest : ApiTest() {
                 assertNoQueryParams()
             }
         )
-        val acmeApi: ACMEApi = ACMEApiImpl(networkClient)
+        val acmeApi: ACMEApi = ACMEApiImpl(networkClient, networkClient)
 
         acmeApi.sendACMERequest("", byteArrayOf(0x12, 0x24, 0x32, 0x42)).also { actual ->
             assertIs<NetworkResponse.Success<ACMEResponse>>(actual)
@@ -180,7 +178,7 @@ internal class ACMEApiTest : ApiTest() {
                 assertNoQueryParams()
             }
         )
-        val acmeApi: ACMEApi = ACMEApiImpl(networkClient)
+        val acmeApi: ACMEApi = ACMEApiImpl(networkClient, networkClient)
 
         acmeApi.sendChallengeRequest(RANDOM_CHALLENGE_URL, byteArrayOf(0x12, 0x24, 0x32, 0x42)).also { actual ->
             assertIs<NetworkResponse.Success<ChallengeResponse>>(actual)
