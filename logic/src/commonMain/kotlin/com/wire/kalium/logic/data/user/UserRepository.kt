@@ -51,7 +51,10 @@ import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.functional.onFailure
+<<<<<<< HEAD
 import com.wire.kalium.logic.functional.onSuccess
+=======
+>>>>>>> 0875a73b53 (fix: observe connections without user metadata [WPB-6247] (#2503))
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -240,6 +243,9 @@ internal class UserDataSource internal constructor(
             .flatMap { userProfileDTO ->
                 fetchTeamMembersByIds(listOf(userProfileDTO))
                     .flatMap { persistUsers(listOf(userProfileDTO), it) }
+            }
+            .onFailure {
+                userDAO.insertOrIgnoreIncompleteUsers(listOf(userId.toDao()))
             }
 
     override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> =
