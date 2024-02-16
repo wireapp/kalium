@@ -274,6 +274,8 @@ import com.wire.kalium.logic.feature.proteus.ProteusSyncWorker
 import com.wire.kalium.logic.feature.proteus.ProteusSyncWorkerImpl
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelectorImpl
+import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
+import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCaseImpl
 import com.wire.kalium.logic.feature.search.SearchScope
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl
@@ -291,6 +293,8 @@ import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherImpl
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCaseImpl
 import com.wire.kalium.logic.feature.team.TeamScope
+import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
+import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
@@ -915,7 +919,7 @@ class UserSessionScope internal constructor(
         get() = SyncSelfTeamUseCaseImpl(
             userRepository = userRepository,
             teamRepository = teamRepository,
-            fetchAllTeamMembersEagerly = kaliumConfigs.fetchAllTeamMembersEagerly
+            fetchedUsersLimit = kaliumConfigs.limitTeamMembersFetchDuringSlowSync
         )
 
     private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase
@@ -1622,6 +1626,11 @@ class UserSessionScope internal constructor(
         ACMECertificatesSyncWorkerImpl(e2eiRepository)
     }
 
+    private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase
+        get() = RefreshUsersWithoutMetadataUseCaseImpl(
+            userRepository
+        )
+
     @OptIn(DelicateKaliumApi::class)
     val client: ClientScope
         get() = ClientScope(
@@ -1673,7 +1682,8 @@ class UserSessionScope internal constructor(
             messages.deleteEphemeralMessageEndDate,
             oneOnOneResolver,
             this,
-            userScopedLogger
+            userScopedLogger,
+            refreshUsersWithoutMetadata
         )
     }
 
@@ -1754,7 +1764,8 @@ class UserSessionScope internal constructor(
             team.isSelfATeamMember,
             updateSupportedProtocols,
             clientRepository,
-            joinExistingMLSConversations
+            joinExistingMLSConversations,
+            refreshUsersWithoutMetadata
         )
 
     val search: SearchScope
@@ -1801,11 +1812,11 @@ class UserSessionScope internal constructor(
     val observeFileSharingStatus: ObserveFileSharingStatusUseCase
         get() = ObserveFileSharingStatusUseCaseImpl(userConfigRepository)
 
-   val observeShouldNotifyForRevokedCertificate: ObserveShouldNotifyForRevokedCertificateUseCase
-         by lazy { ObserveShouldNotifyForRevokedCertificateUseCaseImpl(userConfigRepository) }
+    val observeShouldNotifyForRevokedCertificate: ObserveShouldNotifyForRevokedCertificateUseCase
+            by lazy { ObserveShouldNotifyForRevokedCertificateUseCaseImpl(userConfigRepository) }
 
-   val markNotifyForRevokedCertificateAsNotified: MarkNotifyForRevokedCertificateAsNotifiedUseCase
-         by lazy { MarkNotifyForRevokedCertificateAsNotifiedUseCaseImpl(userConfigRepository) }
+    val markNotifyForRevokedCertificateAsNotified: MarkNotifyForRevokedCertificateAsNotifiedUseCase
+            by lazy { MarkNotifyForRevokedCertificateAsNotifiedUseCaseImpl(userConfigRepository) }
 
     val markGuestLinkFeatureFlagAsNotChanged: MarkGuestLinkFeatureFlagAsNotChangedUseCase
         get() = MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl(userConfigRepository)
@@ -1835,6 +1846,7 @@ class UserSessionScope internal constructor(
         get() = MarkFileSharingChangeAsNotifiedUseCase(userConfigRepository)
 
     val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(featureSupport, userConfigRepository)
+    val isE2EIEnabled: IsE2EIEnabledUseCase get() = IsE2EIEnabledUseCaseImpl(userConfigRepository)
 
     val observeE2EIRequired: ObserveE2EIRequiredUseCase
         get() = ObserveE2EIRequiredUseCaseImpl(

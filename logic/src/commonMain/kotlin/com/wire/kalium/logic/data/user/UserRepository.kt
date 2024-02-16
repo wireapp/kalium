@@ -99,7 +99,7 @@ interface UserRepository {
     suspend fun getSelfUser(): SelfUser?
     suspend fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
-    suspend fun getKnownUserMinimized(userId: UserId): OtherUserMinimized?
+    suspend fun getKnownUserMinimized(userId: UserId): Either<StorageFailure, OtherUserMinimized>
     suspend fun getUsersWithOneOnOneConversation(): List<OtherUser>
     suspend fun observeUser(userId: UserId): Flow<User?>
     suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser>
@@ -146,6 +146,8 @@ interface UserRepository {
     suspend fun updateActiveOneOnOneConversation(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
 
     suspend fun isAtLeastOneUserATeamMember(userId: List<UserId>, teamId: TeamId): Either<StorageFailure, Boolean>
+
+    suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedID>): Either<StorageFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -424,10 +426,12 @@ internal class UserDataSource internal constructor(
             }
     }
 
-    override suspend fun getKnownUserMinimized(userId: UserId) = userDAO.getUserMinimizedByQualifiedID(
-        qualifiedID = userId.toDao()
-    )?.let {
-        userMapper.fromUserEntityToOtherUserMinimized(it)
+    override suspend fun getKnownUserMinimized(userId: UserId) = wrapStorageRequest {
+        userDAO.getUserMinimizedByQualifiedID(
+            qualifiedID = userId.toDao()
+        )?.let {
+            userMapper.fromUserEntityToOtherUserMinimized(it)
+        }
     }
 
     override suspend fun observeUser(userId: UserId): Flow<User?> =
@@ -465,6 +469,10 @@ internal class UserDataSource internal constructor(
 
     override suspend fun isAtLeastOneUserATeamMember(userId: List<UserId>, teamId: TeamId) = wrapStorageRequest {
         userDAO.isAtLeastOneUserATeamMember(userId.map { it.toDao() }, teamId.value)
+    }
+
+    override suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedID>) = wrapStorageRequest {
+        userDAO.insertOrIgnoreIncompleteUsers(userIds.map { it.toDao() })
     }
 
     override fun observeAllKnownUsersNotInConversation(

@@ -16,18 +16,29 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.network
+package com.wire.kalium.logic.feature.user
 
-import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
-import com.wire.kalium.network.session.CertificatePinning
-import com.wire.kalium.network.tools.ServerConfigDTO
-import io.ktor.client.engine.HttpClientEngine
+import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.functional.fold
 
-expect fun defaultHttpEngine(
-    serverConfigDTOApiProxy: ServerConfigDTO.ApiProxy? = null,
-    proxyCredentials: ProxyCredentialsDTO? = null,
-    ignoreSSLCertificates: Boolean = false,
-    certificatePinning: CertificatePinning
-): HttpClientEngine
+/**
+ * Checks if the current user's team has enabled E2EI .
+ */
+interface IsE2EIEnabledUseCase {
+    /**
+     * @return true if E2EI is enabled, false otherwise.
+     */
+    operator fun invoke(): Boolean
+}
 
-expect fun clearTextTrafficEngine(): HttpClientEngine
+internal class IsE2EIEnabledUseCaseImpl(
+    private val userConfigRepository: UserConfigRepository
+) : IsE2EIEnabledUseCase {
+
+    override operator fun invoke(): Boolean =
+        userConfigRepository.getE2EISettings().fold({
+            false
+        }, {
+            it.isRequired
+        })
+}
