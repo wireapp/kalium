@@ -238,7 +238,7 @@ internal class UserConfigDataSource internal constructor(
     override suspend fun clearE2EISettings() {
         wrapStorageRequest {
             userConfigStorage.setE2EISettings(null)
-            userConfigStorage.setE2EINotificationTime(0)
+            userConfigStorage.updateE2EINotificationTime(0)
         }
     }
 
