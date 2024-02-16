@@ -35,6 +35,8 @@ import io.ktor.client.request.preparePost
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
+import io.ktor.http.URLBuilder
+import io.ktor.http.URLProtocol
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 
@@ -57,7 +59,12 @@ class ACMEApiImpl internal constructor(
     private val clearTextTrafficHttpClient get() = unboundClearTextTrafficNetworkClient.httpClient
 
     override suspend fun getTrustAnchors(acmeUrl: String): NetworkResponse<ByteArray> = wrapKaliumResponse {
-        httpClient.get("$acmeUrl/$PATH_ACME_ROOTS_PEM")
+        URLBuilder(acmeUrl).apply {
+            protocol = URLProtocol.HTTPS
+            pathSegments = pathSegments + PATH_ACME_ROOTS_PEM
+        }
+            .build()
+            .let { httpClient.get(it) }
     }
 
     override suspend fun getACMEDirectories(discoveryUrl: String): NetworkResponse<AcmeDirectoriesResponse> = wrapKaliumResponse {
