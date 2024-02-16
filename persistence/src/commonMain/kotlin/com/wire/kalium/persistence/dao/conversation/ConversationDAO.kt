@@ -94,9 +94,11 @@ interface ConversationDAO {
     suspend fun updateConversationReceiptMode(conversationID: QualifiedIDEntity, receiptMode: ConversationEntity.ReceiptMode)
     suspend fun updateGuestRoomLink(
         conversationId: QualifiedIDEntity,
-        link: String?,
+        link: String,
         isPasswordProtected: Boolean
     )
+
+    suspend fun deleteGuestRoomLink(conversationId: QualifiedIDEntity)
 
     suspend fun observeGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): Flow<ConversationGuestLinkEntity?>
     suspend fun updateMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?)

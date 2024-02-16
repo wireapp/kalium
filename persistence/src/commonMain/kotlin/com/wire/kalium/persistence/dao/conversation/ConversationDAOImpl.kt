@@ -360,10 +360,14 @@ internal class ConversationDAOImpl internal constructor(
 
     override suspend fun updateGuestRoomLink(
         conversationId: QualifiedIDEntity,
-        link: String?,
+        link: String,
         isPasswordProtected: Boolean
     ) = withContext(coroutineContext) {
         conversationQueries.updateGuestRoomLink(link, isPasswordProtected, conversationId)
+    }
+
+    override suspend fun deleteGuestRoomLink(conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
+        conversationQueries.updateGuestRoomLink(null, false, conversationId)
     }
 
     override suspend fun observeGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): Flow<ConversationGuestLinkEntity?> =

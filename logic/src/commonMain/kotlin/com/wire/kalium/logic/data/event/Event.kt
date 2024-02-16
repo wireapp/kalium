@@ -49,6 +49,9 @@ import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.serialization.toJsonElement
+import io.ktor.http.URLBuilder
+import io.ktor.http.Url
+import io.ktor.http.parameters
 import kotlinx.serialization.json.JsonNull
 
 /**
@@ -385,7 +388,7 @@ sealed class Event(open val id: String) {
             override val conversationId: ConversationId,
             val key: String,
             val code: String,
-            val uri: String,
+            val uri: String?,
             val isPasswordProtected: Boolean,
         ) : Conversation(id, conversationId) {
             override fun toLogMap(): Map<String, Any?> = mapOf(typeKey to "Conversation.CodeUpdated")

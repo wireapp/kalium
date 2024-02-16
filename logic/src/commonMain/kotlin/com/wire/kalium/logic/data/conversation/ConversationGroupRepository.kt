@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.conversation.guestroomlink.link
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -472,7 +473,7 @@ internal class ConversationGroupRepositoryImpl(
             conversationApi.revokeGuestRoomLink(conversationId.toApi())
         }.onSuccess {
             wrapStorageRequest {
-                conversationDAO.updateGuestRoomLink(conversationId.toDao(), null, false)
+                conversationDAO.deleteGuestRoomLink(conversationId.toDao())
             }
         }
 
@@ -506,7 +507,7 @@ internal class ConversationGroupRepositoryImpl(
                 it.kaliumException.isConversationHasNoCode()
             ) {
                 wrapStorageRequest {
-                    conversationDAO.updateGuestRoomLink(conversationId.toDao(), null, false)
+                    conversationDAO.deleteGuestRoomLink(conversationId.toDao())
                 }
             } else {
                 Either.Left(it)

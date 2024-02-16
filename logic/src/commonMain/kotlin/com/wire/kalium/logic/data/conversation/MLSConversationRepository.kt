@@ -361,8 +361,7 @@ internal class MLSConversationDataSource(
             val event =
                 MapperProvider.eventMapper(selfUserId).fromEventContentDTO(
                     LocalId.generate(),
-                    eventContentDTO,
-                    serverConfigLinks.accounts
+                    eventContentDTO
                 )
             if (event is Event.Conversation) {
                 commitBundleEventReceiver.onEvent(event, EventDeliveryInfo(isTransient = true, source = EventSource.LIVE))

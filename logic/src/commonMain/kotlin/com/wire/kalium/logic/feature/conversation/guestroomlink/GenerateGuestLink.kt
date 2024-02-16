@@ -15,21 +15,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.feature.conversation.guestroomlink
 
-package com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink
-
+import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
 import io.ktor.http.URLBuilder
-import io.ktor.http.Url
 import io.ktor.http.parameters
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 
-@Serializable
-data class ConversationInviteLinkResponse(
-    @SerialName("uri") val uri: String?,
-    @SerialName("key") val key: String,
-    @SerialName("code") val code: String,
-    // the initial value for has password because password protected invite links
-    // are supported on api v4+
-    @SerialName("has_password") val hasPassword: Boolean = false
-)
+
+private fun generateGuestLink(
+    key: String,
+    code: String,
+    accountUrl: String
+): String = URLBuilder(accountUrl).apply {
+    parameters.apply {
+        append("key", key)
+        append("code", code)
+    }.build()
+}.buildString()
+
+fun Event.Conversation.CodeUpdated.link(accountUrl: String): String = uri ?: generateGuestLink(key, code, accountUrl)
+
+fun ConversationInviteLinkResponse.link(accountUrl: String): String = uri ?: generateGuestLink(key, code, accountUrl)

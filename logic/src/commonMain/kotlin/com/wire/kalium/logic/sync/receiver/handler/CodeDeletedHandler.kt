@@ -32,8 +32,6 @@ internal class CodeDeletedHandlerImpl internal constructor(
     private val conversationDAO: ConversationDAO
 ) : CodeDeletedHandler {
     override suspend fun handle(event: Event.Conversation.CodeDeleted) = wrapStorageRequest {
-        conversationDAO.updateGuestRoomLink(
-            event.conversationId.toDao(), null, false
-        )
+        conversationDAO.deleteGuestRoomLink(event.conversationId.toDao())
     }
 }
