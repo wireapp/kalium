@@ -170,9 +170,10 @@ interface UserConfigStorage {
     fun isGuestRoomLinkEnabledFlow(): Flow<IsGuestRoomLinkEnabledEntity?>
     fun isScreenshotCensoringEnabledFlow(): Flow<Boolean>
     fun persistScreenshotCensoring(enabled: Boolean)
-    fun setE2EINotificationTime(timeStamp: Long)
+    fun setIfAbsentE2EINotificationTime(timeStamp: Long)
     fun getE2EINotificationTime(): Long?
     fun e2EINotificationTimeFlow(): Flow<Long?>
+    fun updateE2EINotificationTime(timeStamp: Long)
 }
 
 @Serializable
@@ -468,13 +469,15 @@ class UserConfigStorageImpl(
         .onStart { emit(getE2EISettings()) }
         .distinctUntilChanged()
 
-    override fun setE2EINotificationTime(timeStamp: Long) {
-        kaliumPreferences.putLong(
-            E2EI_NOTIFICATION_TIME,
-            timeStamp
-        ).also {
-            e2EINotificationFlow.tryEmit(Unit)
+    override fun setIfAbsentE2EINotificationTime(timeStamp: Long) {
+        getE2EINotificationTime().let { current ->
+            if (current == null || current <= 0)
+                kaliumPreferences.putLong(E2EI_NOTIFICATION_TIME, timeStamp).also { e2EINotificationFlow.tryEmit(Unit) }
         }
+    }
+
+    override fun updateE2EINotificationTime(timeStamp: Long) {
+        kaliumPreferences.putLong(E2EI_NOTIFICATION_TIME, timeStamp).also { e2EINotificationFlow.tryEmit(Unit) }
     }
 
     override fun getE2EINotificationTime(): Long? {
