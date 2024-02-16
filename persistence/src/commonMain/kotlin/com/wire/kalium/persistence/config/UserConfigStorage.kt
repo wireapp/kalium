@@ -123,7 +123,7 @@ interface UserConfigStorage {
     /**
      * Save MLSE2EISetting
      */
-    fun setE2EISettings(settingEntity: E2EISettingsEntity)
+    fun setE2EISettings(settingEntity: E2EISettingsEntity?)
 
     /**
      * Get MLSE2EISetting
@@ -446,13 +446,17 @@ class UserConfigStorageImpl(
 
     override fun isMLSEnabled(): Boolean = kaliumPreferences.getBoolean(ENABLE_MLS, false)
 
-    override fun setE2EISettings(settingEntity: E2EISettingsEntity) {
-        kaliumPreferences.putSerializable(
-            E2EI_SETTINGS,
-            settingEntity,
-            E2EISettingsEntity.serializer()
-        ).also {
-            e2EIFlow.tryEmit(Unit)
+    override fun setE2EISettings(settingEntity: E2EISettingsEntity?) {
+        if (settingEntity == null) {
+            kaliumPreferences.remove(E2EI_SETTINGS)
+        } else {
+            kaliumPreferences.putSerializable(
+                E2EI_SETTINGS,
+                settingEntity,
+                E2EISettingsEntity.serializer()
+            ).also {
+                e2EIFlow.tryEmit(Unit)
+            }
         }
     }
 
