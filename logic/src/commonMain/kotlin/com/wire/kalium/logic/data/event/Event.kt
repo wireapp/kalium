@@ -49,9 +49,6 @@ import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.serialization.toJsonElement
-import io.ktor.http.URLBuilder
-import io.ktor.http.Url
-import io.ktor.http.parameters
 import kotlinx.serialization.json.JsonNull
 
 /**

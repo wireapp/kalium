@@ -18,9 +18,6 @@
 
 package com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink
 
-import io.ktor.http.URLBuilder
-import io.ktor.http.Url
-import io.ktor.http.parameters
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
