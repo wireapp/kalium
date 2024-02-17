@@ -15,12 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.conversation.guestroomlink
+package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
 import io.ktor.http.URLBuilder
-import io.ktor.http.parameters
 
 
 private fun generateGuestLink(

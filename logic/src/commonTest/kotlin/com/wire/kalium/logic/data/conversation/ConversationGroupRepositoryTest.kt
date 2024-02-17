@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -909,7 +910,7 @@ class ConversationGroupRepositoryTest {
         val conversationId = ConversationId("value", "domain")
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withSuccessfulCallToRevokeGuestRoomLinkApi()
-            .withSuccessfulUpdateOfGuestRoomLinkInDB(null)
+            .withDeleteGuestLink()
             .arrange()
 
         val result = conversationGroupRepository.revokeGuestRoomLink(conversationId)
@@ -922,8 +923,8 @@ class ConversationGroupRepositoryTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::updateGuestRoomLink)
-            .with(any(), eq(null))
+            .suspendFunction(arrangement.conversationDAO::deleteGuestRoomLink)
+            .with(any())
             .wasInvoked(exactly = once)
     }
 
@@ -1343,7 +1344,7 @@ class ConversationGroupRepositoryTest {
 
         verify(arrangement.conversationDAO)
             .suspendFunction(arrangement.conversationDAO::updateGuestRoomLink)
-            .with(eq(conversationId), eq("uri"), eq(expected.value.hasPassword))
+            .with(eq(conversationId.toDao()), eq("uri"), eq(expected.value.hasPassword))
             .wasInvoked(exactly = once)
     }
 
@@ -1649,10 +1650,10 @@ class ConversationGroupRepositoryTest {
                 )
         }
 
-        fun withSuccessfulUpdateOfGuestRoomLinkInDB(link: String?) = apply {
+        fun withDeleteGuestLink() = apply {
             given(conversationDAO)
-                .suspendFunction(conversationDAO::updateGuestRoomLink)
-                .whenInvokedWith(any(), eq(link))
+                .suspendFunction(conversationDAO::deleteGuestRoomLink)
+                .whenInvokedWith(any())
                 .thenReturn(Unit)
         }
 

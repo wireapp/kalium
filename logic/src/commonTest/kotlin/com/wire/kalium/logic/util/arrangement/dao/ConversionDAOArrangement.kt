@@ -25,6 +25,13 @@ import io.mockative.matchers.Matcher
 interface ConversionDAOArrangement {
     val conversionDAO: ConversationDAO
 
+    fun withDeleteGustLink(conversationId: Matcher<ConversationIDEntity> = any()) {
+        given(conversionDAO)
+            .suspendFunction(conversionDAO::deleteGuestRoomLink)
+            .whenInvokedWith(conversationId)
+            .thenReturn(Unit)
+    }
+
     fun withUpdatedGuestRoomLink(
         conversationId: Matcher<ConversationIDEntity> = any(),
         uri: Matcher<String?> = any(),
