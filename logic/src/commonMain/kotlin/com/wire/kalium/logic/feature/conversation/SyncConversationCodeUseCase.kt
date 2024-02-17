@@ -21,6 +21,10 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
 
+/**
+ * Use case to sync the conversation code.
+ * This use case is used to update the conversation code in the database.
+ */
 class SyncConversationCodeUseCase(
     private val conversationGroupRepository: ConversationGroupRepository,
     private val serverConfigLinks: ServerConfig.Links
