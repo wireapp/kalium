@@ -109,16 +109,16 @@ internal class MemberLeaveEventHandlerImpl(
     }
 
     private suspend fun handleUserDeleted(event: Event.Conversation.MemberLeave, numberOfUsersDeleted: Long): MessageContent.System? {
-        val teamId = selfTeamIdProvider().getOrNull() ?: return null
+        val teamId = selfTeamIdProvider().getOrNull()
 
-        val isMemberRemoved = userRepository.isAtLeastOneUserATeamMember(
-            event.removedList,
-            teamId
-        ).getOrElse(false)
-        return if (isMemberRemoved && numberOfUsersDeleted > 0) {
-            MessageContent.MemberChange.RemovedFromTeam(members = event.removedList)
-        } else {
-            null
+        return when {
+            numberOfUsersDeleted <= 0L -> null
+            teamId == null -> MessageContent.MemberChange.Removed(members = event.removedList)
+            userRepository.isAtLeastOneUserATeamMember(
+                event.removedList,
+                teamId
+            ).getOrElse(false) -> MessageContent.MemberChange.RemovedFromTeam(members = event.removedList)
+            else -> MessageContent.MemberChange.Removed(members = event.removedList)
         }
     }
 
