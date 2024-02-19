@@ -22,7 +22,7 @@ import kotlinx.datetime.Instant
 
 data class E2EISettings(
     val isRequired: Boolean,
-    val discoverUrl: String,
+    val discoverUrl: String?,
     val gracePeriodEnd: Instant?
 ) {
 
