@@ -571,7 +571,7 @@ class UserSessionScope internal constructor(
         accessTokenRefresherFactory = accessTokenRefresherFactory,
         userId = userId,
         tokenStorage = globalPreferences.authTokenStorage,
-        logout = { logoutReason -> logout(logoutReason, true) }
+        logout = { logoutReason -> logout(reason = logoutReason, waitUntilCompletes = true) }
     )
     private val authenticatedNetworkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(
         networkStateObserver,
