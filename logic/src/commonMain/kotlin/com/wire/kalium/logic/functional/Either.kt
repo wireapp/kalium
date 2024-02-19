@@ -159,7 +159,7 @@ inline fun <T, L, R> Either<L, R>.mapLeft(fn: (L) -> (T)): Either<T, R> =
  * Returns the value from this `Right` or the given argument if this is a `Left`.
  * Right(12).getOrElse(17) RETURNS 12 and Left(12).getOrElse(17) RETURNS 17
  */
-fun <L, R> Either<L, R>.getOrElse(value: R): R =
+inline fun <L, R> Either<L, R>.getOrElse(value: R): R =
     when (this) {
         is Left -> value
         is Right -> this.value
@@ -169,7 +169,7 @@ fun <L, R> Either<L, R>.getOrElse(value: R): R =
  * Returns the value from this `Right` or the result of `fn` if this is a `Left`.
  * Right(12).getOrElse{ it + 3 } RETURNS 12 and Left(12).getOrElse{ it + 3 } RETURNS 15
  */
-fun <L, R> Either<L, R>.getOrElse(fn: (L) -> (R)): R =
+inline fun <L, R> Either<L, R>.getOrElse(fn: (L) -> (R)): R =
     when (this) {
         is Left -> fn(value)
         is Right -> this.value
@@ -179,7 +179,7 @@ fun <L, R> Either<L, R>.getOrElse(fn: (L) -> (R)): R =
  * Returns the value from this `Right` or null if this is a `Left`.
  * Right(12).getOrNull() RETURNS 12 and Left(12).getOrNull() RETURNS null
  */
-fun <L, R> Either<L, R>.getOrNull(): R? =
+inline fun <L, R> Either<L, R>.getOrNull(): R? =
     when (this) {
         is Left -> null
         is Right -> this.value

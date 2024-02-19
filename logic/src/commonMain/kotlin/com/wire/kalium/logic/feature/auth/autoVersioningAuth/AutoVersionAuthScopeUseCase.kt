@@ -15,11 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+@file:Suppress("konsist.useCasesShouldNotAccessNetworkLayerDirectly")
 
 package com.wire.kalium.logic.feature.auth.autoVersioningAuth
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.CoreLogicCommon
+import com.wire.kalium.logic.configuration.server.CommonApiVersionType
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.failure.ServerConfigFailure
@@ -27,6 +29,7 @@ import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.network.SupportedApiVersions
 
 /**
  * This use case is responsible for obtaining the authentication scope for the current version of the app.
@@ -39,9 +42,22 @@ class AutoVersionAuthScopeUseCase(
 ) {
 
     suspend operator fun invoke(
-        proxyAuthentication: ProxyAuthentication = ProxyAuthentication.None
+        proxyCredentials: ProxyCredentials?
     ): Result =
-        coreLogic.getGlobalScope().serverConfigRepository.getOrFetchMetadata(serverLinks).fold({
+        coreLogic.getAuthenticationScope(
+            serverConfig = ServerConfig(
+                links = serverLinks,
+                id = "initialization",
+                metaData = ServerConfig.MetaData(
+                    federation = false,
+                    commonApiVersion = CommonApiVersionType.Valid(
+                        SupportedApiVersions.first()
+                    ),
+                    domain = null
+                )
+            ),
+            proxyCredentials = proxyCredentials
+        ).serverConfigRepository.getOrFetchMetadata(serverLinks).fold({
             handleError(it)
         }, { serverConfig ->
             // Backend team doesn't want any clients using the development APIs in production, so
@@ -49,10 +65,6 @@ class AutoVersionAuthScopeUseCase(
             // prevent any accidental usage.
             if (kaliumConfigs.developmentApiEnabled && serverConfig.links == ServerConfig.PRODUCTION) {
                 return Result.Failure.Generic(CoreFailure.DevelopmentAPINotAllowedOnProduction)
-            }
-            val proxyCredentials = when (proxyAuthentication) {
-                is ProxyAuthentication.None -> null
-                is ProxyAuthentication.UsernameAndPassword -> proxyAuthentication.proxyCredentials
             }
             Result.Success(coreLogic.getAuthenticationScope(serverConfig, proxyCredentials))
         })
@@ -72,11 +84,5 @@ class AutoVersionAuthScopeUseCase(
             data object TooNewVersion : Failure()
             data class Generic(val genericFailure: CoreFailure) : Failure()
         }
-    }
-
-    sealed interface ProxyAuthentication {
-        data object None : ProxyAuthentication
-
-        data class UsernameAndPassword(val proxyCredentials: ProxyCredentials) : ProxyAuthentication
     }
 }

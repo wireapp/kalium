@@ -35,7 +35,7 @@ import kotlin.test.assertEquals
 
 class FederatedIdMapperTest {
 
-    lateinit var federatedIdMapper: FederatedIdMapper
+    private lateinit var federatedIdMapper: FederatedIdMapper
 
     @Mock
     private val sessionRepository = mock(classOf<SessionRepository>())
@@ -57,7 +57,7 @@ class FederatedIdMapperTest {
     @Test
     fun givenAUserId_whenCurrentEnvironmentIsFederated_thenShouldMapTheValueWithDomain() = runTest {
         given(sessionRepository)
-            .function(sessionRepository::isFederated)
+            .suspendFunction(sessionRepository::isFederated)
             .whenInvokedWith(any())
             .then { Either.Right(true) }
 
@@ -69,7 +69,7 @@ class FederatedIdMapperTest {
     @Test
     fun givenAUserId_whenCurrentEnvironmentIsNotFederated_thenShouldMapTheValueWithoutDomain() = runTest {
         given(sessionRepository)
-            .function(sessionRepository::isFederated)
+            .suspendFunction(sessionRepository::isFederated)
             .whenInvokedWith(any())
             .then { Either.Right(false) }
 
@@ -81,7 +81,7 @@ class FederatedIdMapperTest {
     @Test
     fun givenError_whenGettingUserFederationStatus_thenShouldMapTheValueWithoutDomain() = runTest {
         given(sessionRepository)
-            .function(sessionRepository::isFederated)
+            .suspendFunction(sessionRepository::isFederated)
             .whenInvokedWith(any())
             .then { Either.Left(StorageFailure.Generic(IOException("why are we still here just to suffer!"))) }
 
