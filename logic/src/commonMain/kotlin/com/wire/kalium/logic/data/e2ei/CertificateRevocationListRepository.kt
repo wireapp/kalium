@@ -89,7 +89,7 @@ internal class CertificateRevocationListRepositoryDataSource(
 
         userConfigRepository.getE2EISettings()
             .flatMap {
-                return@flatMap if (!it.isRequired) E2EIFailure.Disabled.left()
+                if (!it.isRequired) E2EIFailure.Disabled.left()
                 else if (it.discoverUrl == null) E2EIFailure.MissingDiscoveryUrl.left()
                 else Url(it.discoverUrl).protocolWithAuthority.right()
             }
