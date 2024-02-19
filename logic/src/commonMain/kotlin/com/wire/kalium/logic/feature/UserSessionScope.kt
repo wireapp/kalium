@@ -1557,7 +1557,7 @@ class UserSessionScope internal constructor(
         get() = CertificateRevocationListRepositoryDataSource(
             acmeApi = globalScope.unboundNetworkContainer.acmeApi,
             metadataDAO = userStorage.database.metadataDAO,
-            e2eiRepository = e2eiRepository
+            userConfigRepository = userConfigRepository
         )
 
     private val proteusPreKeyRefiller: ProteusPreKeyRefiller
