@@ -22,6 +22,8 @@ package com.wire.kalium.logic.feature.auth
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepository
 import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepositoryImpl
+import com.wire.kalium.logic.configuration.server.CustomServerConfigDataSource
+import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
@@ -108,6 +110,14 @@ class AuthenticationScope internal constructor(
         get() = RegisterAccountDataSource(
             unauthenticatedNetworkContainer.registerApi
         )
+
+    private val customServerConfigRepository: CustomServerConfigRepository
+        get() = CustomServerConfigDataSource(
+            unauthenticatedNetworkContainer.serverConfigApi,
+            kaliumConfigs.developmentApiEnabled,
+            globalDatabase.serverConfigurationDAO
+        )
+
     internal val ssoLoginRepository: SSOLoginRepository
         get() = SSOLoginRepositoryImpl(unauthenticatedNetworkContainer.sso, unauthenticatedNetworkContainer.domainLookupApi)
 
@@ -140,7 +150,7 @@ class AuthenticationScope internal constructor(
 
     val domainLookup: DomainLookupUseCase
         get() = DomainLookupUseCase(
-            serverConfigApi = unauthenticatedNetworkContainer.serverConfigApi,
+            serverConfigApi = customServerConfigRepository,
             ssoLoginRepository = ssoLoginRepository
         )
 

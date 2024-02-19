@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-@file:Suppress("konsist.useCasesShouldNotAccessNetworkLayerDirectly")
+@file:Suppress("konsist.useCasesShouldNotAccessNetworkLayerDirectly","konsist.useCasesShouldNotAccessDaoLayerDirectly")
 
 package com.wire.kalium.logic.feature.appVersioning
 
