@@ -59,12 +59,7 @@ class ACMEApiImpl internal constructor(
     private val clearTextTrafficHttpClient get() = unboundClearTextTrafficNetworkClient.httpClient
 
     override suspend fun getTrustAnchors(acmeUrl: String): NetworkResponse<ByteArray> = wrapKaliumResponse {
-        URLBuilder(acmeUrl).apply {
-            protocol = URLProtocol.HTTPS
-            pathSegments = pathSegments + PATH_ACME_ROOTS_PEM
-        }
-            .build()
-            .let { httpClient.get(it) }
+        httpClient.get("$acmeUrl/$PATH_ACME_ROOTS_PEM")
     }
 
     override suspend fun getACMEDirectories(discoveryUrl: String): NetworkResponse<AcmeDirectoriesResponse> = wrapKaliumResponse {
