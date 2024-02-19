@@ -35,4 +35,5 @@ fun String.renderMonkeyTemplate(userData: UserData, monkeyId: MonkeyId): String 
     return this.replace("{{teamName}}", userData.team.name).replace("{{email}}", userData.email)
         .replace("{{userId}}", userData.userId.value).replace("{{teamId}}", userData.team.id)
         .replace("{{monkeyIndex}}", monkeyId.index.toString()).replace("{{monkeyClientId}}", monkeyId.clientId.toString())
+        .replace("{{code}}", userData.oldCode.orEmpty())
 }

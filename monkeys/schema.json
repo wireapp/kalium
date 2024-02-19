@@ -198,6 +198,11 @@
                         "description": "How many users should be created in this team",
                         "type": "integer"
                     },
+                    "2FAEnabled": {
+                        "description": "Does this server require 2FA authentication?",
+                        "type": "boolean",
+                        "default": false
+                    },
                     "dumpUsers": {
                         "description": "Should the application dump the users created into a file",
                         "type": "boolean"
