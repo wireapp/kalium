@@ -62,6 +62,7 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessagesAfterEndDateUseCase
+import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
@@ -94,7 +95,8 @@ class ConversationScope internal constructor(
     private val deleteEphemeralMessageEndDate: DeleteEphemeralMessagesAfterEndDateUseCase,
     private val oneOnOneResolver: OneOnOneResolver,
     private val scope: CoroutineScope,
-    private val kaliumLogger: KaliumLogger
+    private val kaliumLogger: KaliumLogger,
+    private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase
 ) {
 
     val getConversations: GetConversationsUseCase
@@ -144,7 +146,8 @@ class ConversationScope internal constructor(
             conversationGroupRepository,
             syncManager,
             currentClientIdProvider,
-            newGroupConversationSystemMessagesCreator
+            newGroupConversationSystemMessagesCreator,
+            refreshUsersWithoutMetadata
         )
 
     internal val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
@@ -156,7 +159,7 @@ class ConversationScope internal constructor(
         )
 
     val addMemberToConversationUseCase: AddMemberToConversationUseCase
-        get() = AddMemberToConversationUseCaseImpl(conversationGroupRepository, userRepository)
+        get() = AddMemberToConversationUseCaseImpl(conversationGroupRepository, userRepository, refreshUsersWithoutMetadata)
 
     val addServiceToConversationUseCase: AddServiceToConversationUseCase
         get() = AddServiceToConversationUseCase(groupRepository = conversationGroupRepository)

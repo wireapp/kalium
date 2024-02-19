@@ -28,4 +28,11 @@ class SupportedApiVersionTest {
     fun givenEmptySupportedApiVersionList_thenFail() {
         if (SupportedApiVersions.isNullOrEmpty()) fail()
     }
+
+    @Test
+    fun apiV3ShouldNotBeSupported() {
+        if (SupportedApiVersions.contains(3)) fail()
+    }
+
+
 }

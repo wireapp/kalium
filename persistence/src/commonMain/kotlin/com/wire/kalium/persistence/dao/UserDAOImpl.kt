@@ -385,9 +385,13 @@ class UserDAOImpl internal constructor(
             .mapToList()
             .map { it.map(mapper::toDetailsModel) }
 
-    override suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State) =
+    override suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedIDEntity>) =
         withContext(queriesContext) {
-            userQueries.insertOrIgnoreUserIdWithConnectionStatus(qualifiedID, connectionStatus)
+            userQueries.transaction {
+                for (userId: QualifiedIDEntity in userIds) {
+                    userQueries.insertOrIgnoreUserId(userId)
+                }
+            }
         }
 
     override suspend fun observeAllUsersDetailsByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserDetailsEntity>> =
