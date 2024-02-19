@@ -18,6 +18,8 @@
 package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.auth.login.DomainLookupResult
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.di.MapperProvider
@@ -41,7 +43,6 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class DomainLookupUseCaseTest {
 
     @Test
@@ -83,8 +84,8 @@ class DomainLookupUseCaseTest {
             .arrange()
         useCases(userEmail)
 
-        verify(arrangement.serverConfigApi)
-            .suspendFunction(arrangement.serverConfigApi::fetchServerConfig)
+        verify(arrangement.customServerConfigRepository)
+            .suspendFunction(arrangement.customServerConfigRepository::fetchRemoteConfig)
             .with(eq("https://wire.com"))
             .wasInvoked(exactly = once)
     }
@@ -94,9 +95,6 @@ class DomainLookupUseCaseTest {
         val userEmail = "cool-person@wire.com"
         val expectedServerLinks = newServerConfig(1).links
 
-        val expextedDTO = expectedServerLinks.let {
-            MapperProvider.serverConfigMapper().toDTO(it)
-        }
         val (arrangement, useCases) = Arrangement()
             .withDomainLookupResult(Either.Right(DomainLookupResult("https://wire.com", "https://wire.com")))
             .withFetchServerConfigResult(NetworkResponse.Success(expextedDTO, emptyMap(), 200,))
@@ -112,8 +110,8 @@ class DomainLookupUseCaseTest {
             .with(eq("wire.com"))
             .wasInvoked(exactly = once)
 
-        verify(arrangement.serverConfigApi)
-            .suspendFunction(arrangement.serverConfigApi::fetchServerConfig)
+        verify(arrangement.customServerConfigRepository)
+            .suspendFunction(arrangement.customServerConfigRepository::fetchRemoteConfig)
             .with(eq("https://wire.com"))
             .wasInvoked(exactly = once)
     }
@@ -124,10 +122,10 @@ class DomainLookupUseCaseTest {
         val ssoLoginRepository: SSOLoginRepository = mock(SSOLoginRepository::class)
 
         @Mock
-        val serverConfigApi: ServerConfigApi = mock(ServerConfigApi::class)
+        val customServerConfigRepository: CustomServerConfigRepository = mock(CustomServerConfigRepository::class)
 
         private val useCases = DomainLookupUseCase(
-            serverConfigApi,
+            customServerConfigRepository,
             ssoLoginRepository
         )
 
@@ -138,9 +136,10 @@ class DomainLookupUseCaseTest {
                 .thenReturn(result)
         }
 
-        fun withFetchServerConfigResult(result: NetworkResponse<ServerConfigDTO.Links>) = apply {
-            given(serverConfigApi)
-                .suspendFunction(serverConfigApi::fetchServerConfig)
+        fun withFetchServerConfigResult(result:
+                                        Either<NetworkFailure, ServerConfig.Links>) = apply {
+            given(customServerConfigRepository)
+                .suspendFunction(customServerConfigRepository::fetchRemoteConfig)
                 .whenInvokedWith(any())
                 .thenReturn(result)
         }

@@ -75,15 +75,13 @@ internal class UnboundClearTextTrafficNetworkClientProviderImpl(
 class UnboundNetworkContainerCommon(
     networkStateObserver: NetworkStateObserver,
     userAgent: String,
-    private val ignoreSSLCertificates: Boolean,
     certificatePinning: CertificatePinning,
     mockEngine: HttpClientEngine?
 ) : UnboundNetworkContainer,
     UnboundNetworkClientProvider by UnboundNetworkClientProviderImpl(
-        networkStateObserver = networkStateObserver,
-        userAgent = userAgent,
+        networkStateObserver,
+        userAgent,
         engine = mockEngine ?: defaultHttpEngine(
-            ignoreSSLCertificates = ignoreSSLCertificates,
             certificatePinning = certificatePinning,
             proxyCredentials = null,
             serverConfigDTOApiProxy = null

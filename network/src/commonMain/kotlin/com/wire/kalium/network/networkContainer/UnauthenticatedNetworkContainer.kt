@@ -93,8 +93,7 @@ interface UnauthenticatedNetworkContainer {
 
                 // this is intentional since we should drop support for api v3
                 // and we default back to v2
-                3 -> UnauthenticatedNetworkContainerV2(
-                    developmentApiEnabled,
+                3 -> UnauthenticatedNetworkContainerV2(                    developmentApiEnabled,
                     networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
