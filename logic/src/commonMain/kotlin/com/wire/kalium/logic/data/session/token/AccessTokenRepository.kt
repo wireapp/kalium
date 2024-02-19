@@ -20,8 +20,11 @@ package com.wire.kalium.logic.data.session.token
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.session.SessionMapper
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
@@ -57,13 +60,14 @@ internal interface AccessTokenRepository {
     suspend fun persistTokens(
         accessToken: AccessToken,
         refreshToken: RefreshToken
-    ): Either<CoreFailure, Unit>
+    ): Either<CoreFailure, AccountTokens>
 }
 
 internal class AccessTokenRepositoryImpl(
     private val userId: UserId,
     private val accessTokenApi: AccessTokenApi,
     private val authTokenStorage: AuthTokenStorage,
+    private val sessionMapper: SessionMapper = MapperProvider.sessionMapper()
 ) : AccessTokenRepository {
     override suspend fun getNewAccessToken(
         refreshToken: String,
@@ -79,12 +83,14 @@ internal class AccessTokenRepositoryImpl(
     override suspend fun persistTokens(
         accessToken: AccessToken,
         refreshToken: RefreshToken
-    ): Either<StorageFailure, Unit> = wrapStorageRequest {
+    ): Either<StorageFailure, AccountTokens> = wrapStorageRequest {
         authTokenStorage.updateToken(
             userId.toDao(),
             accessToken.value,
             accessToken.tokenType,
             refreshToken.value
         )
-    }.map { }
+    }.map {
+        sessionMapper.toAccountTokens(it)
+    }
 }
