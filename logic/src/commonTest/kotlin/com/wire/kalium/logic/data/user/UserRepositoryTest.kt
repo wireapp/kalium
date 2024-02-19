@@ -36,6 +36,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.LIST_USERS_DTO
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.test_util.TestNetworkException.federationNotEnabled
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.shouldFail
@@ -711,6 +712,20 @@ class UserRepositoryTest {
             .wasNotInvoked()
     }
 
+    @Test
+    fun givenUserId_whenFetchingUserInfoFailed_thenItShouldInsertIncompleteUserData() = runTest {
+        val (arrangement, userRepository) = Arrangement()
+            .withFailingGetUserInfo()
+            .arrange()
+
+        userRepository.fetchUserInfo(TestUser.USER_ID)
+
+        verify(arrangement.userDAO)
+            .suspendFunction(arrangement.userDAO::insertOrIgnoreIncompleteUsers)
+            .with(any())
+            .wasInvoked()
+    }
+
     private class Arrangement {
         @Mock
         val userDAO = configure(mock(classOf<UserDAO>())) { stubsUnitByDefault = true }
@@ -803,6 +818,13 @@ class UserRepositoryTest {
                 .suspendFunction(userDetailsApi::getUserInfo)
                 .whenInvokedWith(any())
                 .thenReturn(NetworkResponse.Success(result, mapOf(), 200))
+        }
+
+        fun withFailingGetUserInfo() = apply {
+            given(userDetailsApi)
+                .suspendFunction(userDetailsApi::getUserInfo)
+                .whenInvokedWith(any())
+                .thenReturn(NetworkResponse.Error(TestNetworkException.generic))
         }
 
         fun withSuccessfulFetchTeamMembersByIds(result: List<TeamsApi.TeamMemberDTO>) = apply {
@@ -936,6 +958,13 @@ class UserRepositoryTest {
                 .suspendFunction(userDAO::updateActiveOneOnOneConversation)
                 .whenInvokedWith(any(), any())
                 .thenThrow(exception)
+        }
+
+        fun withInsertOrIgnoreUsers() {
+            given(userDAO)
+                .suspendFunction(userDAO::insertOrIgnoreIncompleteUsers)
+                .whenInvokedWith(any())
+                .thenReturn(Unit)
         }
 
         fun arrange(block: (Arrangement.() -> Unit) = { }): Pair<Arrangement, UserRepository> {

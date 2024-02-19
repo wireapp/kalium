@@ -241,6 +241,9 @@ internal class UserDataSource internal constructor(
                 fetchTeamMembersByIds(listOf(userProfileDTO))
                     .flatMap { persistUsers(listOf(userProfileDTO), it) }
             }
+            .onFailure {
+                userDAO.insertOrIgnoreIncompleteUsers(listOf(userId.toDao()))
+            }
 
     override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> =
         if (qualifiedUserIdList.isEmpty()) {
