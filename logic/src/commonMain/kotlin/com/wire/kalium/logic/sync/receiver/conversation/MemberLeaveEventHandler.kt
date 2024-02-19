@@ -73,10 +73,10 @@ internal class MemberLeaveEventHandlerImpl(
                     return@flatMap Either.Right(Unit)
                 }
 
-                resolveMessageContent(event).let { contant ->
+                resolveMessageContent(event).let { content ->
                     Message.System(
                         id = event.id,
-                        content = contant,
+                        content = content,
                         conversationId = event.conversationId,
                         date = event.timestampIso,
                         senderUserId = event.removedBy,
