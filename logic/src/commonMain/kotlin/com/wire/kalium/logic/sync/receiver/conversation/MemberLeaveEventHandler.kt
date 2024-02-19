@@ -33,9 +33,9 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -67,20 +67,23 @@ internal class MemberLeaveEventHandlerImpl(
                 // fetch required unknown users that haven't been persisted during slow sync, e.g. from another team
                 // and keep them to properly show this member-leave message
                 userRepository.fetchUsersIfUnknownByIds(event.removedList.toSet())
-            }.onSuccess { numberOfUsersDeleted ->
-                val content: MessageContent.System? = resolveMessageContent(event, numberOfUsersDeleted)
+            }.flatMap { numberOfUsersDeleted ->
 
-                content?.let {
+                if (numberOfUsersDeleted <= 0) {
+                    return@flatMap Either.Right(Unit)
+                }
+
+                resolveMessageContent(event).let { contant ->
                     Message.System(
                         id = event.id,
-                        content = it,
+                        content = contant,
                         conversationId = event.conversationId,
                         date = event.timestampIso,
                         senderUserId = event.removedBy,
                         status = Message.Status.Sent,
                         visibility = Message.Visibility.VISIBLE,
                         expirationData = null
-                    ).also {
+                    ).let {
                         persistMessage(it)
                     }
                 }
@@ -97,27 +100,27 @@ internal class MemberLeaveEventHandlerImpl(
                         event,
                         Pair("errorInfo", "$it")
                     )
-            }.map { }
+            }
 
-    private suspend fun resolveMessageContent(event: Event.Conversation.MemberLeave, numberOfUsersDeleted: Long): MessageContent.System? {
+    private suspend fun resolveMessageContent(event: Event.Conversation.MemberLeave): MessageContent.System {
         return when (event.reason) {
             MemberLeaveReason.Left,
             MemberLeaveReason.Removed -> MessageContent.MemberChange.Removed(members = event.removedList)
 
-            MemberLeaveReason.UserDeleted -> handleUserDeleted(event, numberOfUsersDeleted)
+            MemberLeaveReason.UserDeleted -> handleUserDeleted(event)
         }
     }
 
-    private suspend fun handleUserDeleted(event: Event.Conversation.MemberLeave, numberOfUsersDeleted: Long): MessageContent.System? {
+    private suspend fun handleUserDeleted(event: Event.Conversation.MemberLeave): MessageContent.System {
         val teamId = selfTeamIdProvider().getOrNull()
 
         return when {
-            numberOfUsersDeleted <= 0L -> null
             teamId == null -> MessageContent.MemberChange.Removed(members = event.removedList)
             userRepository.isAtLeastOneUserATeamMember(
                 event.removedList,
                 teamId
             ).getOrElse(false) -> MessageContent.MemberChange.RemovedFromTeam(members = event.removedList)
+
             else -> MessageContent.MemberChange.Removed(members = event.removedList)
         }
     }
