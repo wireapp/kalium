@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.legalhold.ListUsersLegalHoldConsent
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConversation
@@ -172,6 +173,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+            .withInsertFailedToAddSystemMessageSuccess()
             .arrange()
 
         val unreachableUserId = TestUser.USER_ID.copy(domain = "unstableDomain2.com")
@@ -201,7 +203,12 @@ class ConversationGroupRepositoryTest {
 
             verify(newConversationMembersRepository)
                 .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
-                .with(anything(), anything(), eq(listOf(unreachableUserId)))
+                .with(anything(), anything())
+                .wasInvoked(once)
+
+            verify(newGroupConversationSystemMessagesCreator)
+                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+                .with(anything(),  eq(listOf(unreachableUserId)), eq(MessageContent.MemberChange.FailedToAdd.Type.Federation))
                 .wasInvoked(once)
         }
     }
@@ -245,6 +252,11 @@ class ConversationGroupRepositoryTest {
             verify(newConversationMembersRepository)
                 .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
                 .with(anything(), anything())
+                .wasNotInvoked()
+
+            verify(newGroupConversationSystemMessagesCreator)
+                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+                .with(anything(), anything(), anything())
                 .wasNotInvoked()
         }
     }
@@ -479,7 +491,6 @@ class ConversationGroupRepositoryTest {
             .withAddMemberAPISucceedChanged()
             .withSuccessfulAddMemberToMLSGroup()
             .withSuccessfulHandleMemberJoinEvent()
-            .withInsertAddedAndFailedSystemMessageSuccess()
             .arrange()
 
         conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
@@ -1347,7 +1358,7 @@ class ConversationGroupRepositoryTest {
                 .wasInvoked(exactly = once)
             verify(arrangement.newGroupConversationSystemMessagesCreator)
                 .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
-                .with(anything(), eq((usersWithoutConsent + usersFailed).toSet()))
+                .with(anything(), eq(usersWithoutConsent + usersFailed))
                 .wasInvoked(exactly = once)
         }
 
@@ -1383,7 +1394,7 @@ class ConversationGroupRepositoryTest {
                 .wasNotInvoked()
             verify(arrangement.newGroupConversationSystemMessagesCreator)
                 .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
-                .with(anything(), eq(expectedInitialUsers.toSet()))
+                .with(anything(), eq(expectedInitialUsers))
                 .wasInvoked(once)
         }
 
@@ -1779,13 +1790,6 @@ class ConversationGroupRepositoryTest {
             given(newGroupConversationSystemMessagesCreator)
                 .suspendFunction(newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
                 .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(Unit))
-        }
-
-        fun withInsertAddedAndFailedSystemMessageSuccess(): Arrangement = apply {
-            given(newGroupConversationSystemMessagesCreator)
-                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
-                .whenInvokedWith(anything(), anything(), anything())
                 .thenReturn(Either.Right(Unit))
         }
 

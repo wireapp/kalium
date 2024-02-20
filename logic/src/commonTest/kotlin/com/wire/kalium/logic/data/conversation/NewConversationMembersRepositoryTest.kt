@@ -59,7 +59,7 @@ class NewConversationMembersRepositoryTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.newGroupConversationSystemMessagesCreator)
-            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
+            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAdded)
             .with(any())
             .wasInvoked(once)
     }
@@ -92,7 +92,7 @@ class NewConversationMembersRepositoryTest {
 
         fun withPersistResolvedMembersSystemMessageSuccess() = apply {
             given(newGroupConversationSystemMessagesCreator)
-                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
+                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationResolvedMembersAdded)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
         }

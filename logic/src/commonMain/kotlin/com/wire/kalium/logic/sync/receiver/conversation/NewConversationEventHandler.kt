@@ -95,7 +95,7 @@ internal class NewConversationEventHandlerImpl(
     ) {
         if (isNewUnhandledConversation) {
             newGroupConversationSystemMessagesCreator.conversationStarted(event.senderUserId, event.conversation)
-            newGroupConversationSystemMessagesCreator.conversationResolvedMembersAddedAndFailed(
+            newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(
                 event.conversationId.toDao(),
                 event.conversation.members.otherMembers.map { it.id.toModel() }
             )
