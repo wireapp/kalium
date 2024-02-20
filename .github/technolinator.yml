@@ -1,0 +1,24 @@
+# whether Technolinator does analysis at all; default: true
+enable: true
+# whether Technolinator shall comment vulnerability reports to pull-requests
+enablePullRequestReport: false
+analysis:
+    # whether cdxgen should scan for projects recursively in 'location' or only 'location' itself; default: true
+    recursive: true
+    # include only 'required' scoped dependencies to created BOM
+    requiredScopeOnly: false
+    # create sbom with evidence (slows down the process)
+    evidence: true
+jdk:
+    # select JDK version used by cdxgen on JVM based projects (see below)
+    version: 17
+
+# to split up repositories in multiple dependency-track projects, you can recursively configure subprojects.
+# structure is the same like for the single-project config, each distinct project will result in one dependency-track project.
+# subprojects inherit the settings of their parents (and the root project)
+# minimal required structure is shown below
+#projects: []
+# - project:
+#     name: first-sub-project
+#   analysis:
+#     location: projects/sub_project_1
