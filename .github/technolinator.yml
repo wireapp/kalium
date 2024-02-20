@@ -10,5 +10,5 @@ analysis:
     # create sbom with evidence (slows down the process)
     evidence: true
 jdk:
-    # select JDK version used by cdxgen on JVM based projects (see below)
+    # select JDK version used by cdxgen on JVM based projects
     version: 17
