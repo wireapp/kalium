@@ -22,8 +22,10 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetMessage
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.asset.SUPPORTED_IMAGE_ASSET_MIME_TYPES
 import com.wire.kalium.logic.data.asset.toDao
+import com.wire.kalium.logic.data.asset.toModel
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
@@ -97,14 +99,8 @@ internal interface MessageRepository {
         messageUuids: List<String>
     ): Either<CoreFailure, Unit>
 
-    suspend fun updateAssetMessageUploadStatus(
-        uploadStatus: Message.UploadStatus,
-        conversationId: ConversationId,
-        messageUuid: String
-    ): Either<CoreFailure, Unit>
-
-    suspend fun updateAssetMessageDownloadStatus(
-        downloadStatus: Message.DownloadStatus,
+    suspend fun updateAssetMessageTransferStatus(
+        transferStatus: AssetTransferStatus,
         conversationId: ConversationId,
         messageUuid: String
     ): Either<CoreFailure, Unit>
@@ -251,13 +247,19 @@ internal interface MessageRepository {
         offset: Int
     ): List<AssetMessage>
 
-    suspend fun updateAssetStatus(assetStatus: MessageAssetStatus): Either<CoreFailure, Unit>
-    suspend fun observeAssetStatuses(): Flow<Either<StorageFailure, List<MessageAssetStatus>>>
+    suspend fun observeAssetStatuses(
+        conversationId: ConversationId
+    ): Flow<Either<StorageFailure, List<MessageAssetStatus>>>
+
+    suspend fun getMessageAssetTransferStatus(
+        messageId: String,
+        conversationId: ConversationId
+    ): Either<StorageFailure, AssetTransferStatus>
 }
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
 @Suppress("LongParameterList", "TooManyFunctions")
-internal class MessageDataSource internal constructor (
+internal class MessageDataSource internal constructor(
     private val selfUserId: UserId,
     private val messageApi: MessageApi,
     private val mlsMessageApi: MLSMessageApi,
@@ -406,27 +408,14 @@ internal class MessageDataSource internal constructor (
             )
         }
 
-    override suspend fun updateAssetMessageUploadStatus(
-        uploadStatus: Message.UploadStatus,
+    override suspend fun updateAssetMessageTransferStatus(
+        transferStatus: AssetTransferStatus,
         conversationId: ConversationId,
         messageUuid: String
     ): Either<CoreFailure, Unit> =
         wrapStorageRequest {
-            messageDAO.updateAssetUploadStatus(
-                uploadStatus.toDao(),
-                messageUuid,
-                conversationId.toDao()
-            )
-        }
-
-    override suspend fun updateAssetMessageDownloadStatus(
-        downloadStatus: Message.DownloadStatus,
-        conversationId: ConversationId,
-        messageUuid: String
-    ): Either<CoreFailure, Unit> =
-        wrapStorageRequest {
-            messageDAO.updateAssetDownloadStatus(
-                downloadStatus.toDao(),
+            messageDAO.updateAssetTransferStatus(
+                transferStatus.toDao(),
                 messageUuid,
                 conversationId.toDao()
             )
@@ -585,7 +574,7 @@ internal class MessageDataSource internal constructor (
     override suspend fun resetAssetProgressStatus() {
         wrapStorageRequest {
             messageDAO.resetAssetUploadStatus()
-            messageDAO.resetAssetDownloadStatus()
+            messageDAO.resetAssetTransferStatus()
         }
     }
 
@@ -722,10 +711,16 @@ internal class MessageDataSource internal constructor (
         )
     }
 
-    override suspend fun updateAssetStatus(assetStatus: MessageAssetStatus): Either<CoreFailure, Unit> = wrapStorageRequest {
-        messageDAO.updateAssetStatus(assetStatus.toDao())
-    }
-    override suspend fun observeAssetStatuses() = messageDAO.observeAssetStatuses()
+    override suspend fun observeAssetStatuses(
+        conversationId: ConversationId
+    ) = messageDAO.observeAssetStatuses(conversationId.toDao())
         .wrapStorageRequest()
         .mapRight { assetStatusEntities -> assetStatusEntities.map { it.toModel() } }
+
+    override suspend fun getMessageAssetTransferStatus(
+        messageId: String,
+        conversationId: ConversationId
+    ): Either<StorageFailure, AssetTransferStatus> = wrapStorageRequest {
+        messageDAO.getMessageAssetTransferStatus(messageId, conversationId.toDao()).toModel()
+    }
 }

@@ -18,51 +18,40 @@
 
 package com.wire.kalium.logic.feature.asset
 
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.Message.DownloadStatus
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
-interface UpdateAssetMessageDownloadStatusUseCase {
+interface GetAssetMessageTransferStatusUseCase {
     /**
-     * Function that allows update an asset message download status. This field indicates whether the asset has been downloaded locally
-     * already or not.
+     * Function that gets [AssetTransferStatus]. If status does not exist then it returns [AssetTransferStatus.NOT_PROCESSED]
      *
-     * @param downloadStatus the new download status to update the asset message
      * @param conversationId the conversation identifier
      * @param messageId the message identifier
-     * @return [UpdateDownloadStatusResult] sealed class with either a Success state in case of success or [CoreFailure] on failure
      */
     suspend operator fun invoke(
-        downloadStatus: DownloadStatus,
         conversationId: ConversationId,
         messageId: String
-    ): UpdateDownloadStatusResult
+    ): AssetTransferStatus
 }
 
-internal class UpdateAssetMessageDownloadStatusUseCaseImpl(
+internal class GetAssetMessageTransferStatusUseCaseImpl(
     private val messageRepository: MessageRepository,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
-) : UpdateAssetMessageDownloadStatusUseCase {
+) : GetAssetMessageTransferStatusUseCase {
 
     override suspend operator fun invoke(
-        downloadStatus: DownloadStatus,
         conversationId: ConversationId,
         messageId: String
-    ): UpdateDownloadStatusResult = withContext(dispatcher.io) {
-        messageRepository.updateAssetMessageDownloadStatus(downloadStatus, conversationId, messageId).fold({
-            UpdateDownloadStatusResult.Failure(it)
+    ): AssetTransferStatus = withContext(dispatcher.io) {
+        messageRepository.getMessageAssetTransferStatus(messageId, conversationId).fold({
+            AssetTransferStatus.NOT_PROCESSED
         }, {
-            UpdateDownloadStatusResult.Success
+            it
         })
     }
-}
-
-sealed class UpdateDownloadStatusResult {
-    data object Success : UpdateDownloadStatusResult()
-    data class Failure(val coreFailure: CoreFailure) : UpdateDownloadStatusResult()
 }

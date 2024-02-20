@@ -1,43 +1,31 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntity;
+import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity;
 
 CREATE TABLE MessageAssetStatus (
-    id TEXT NOT NULL,
+    message_id TEXT NOT NULL,
     conversation_id TEXT AS QualifiedIDEntity NOT NULL,
-    upload_status TEXT AS MessageEntity.UploadStatus,
-    download_status TEXT AS MessageEntity.DownloadStatus,
-    PRIMARY KEY (id, conversation_id)
+    transfer_status TEXT AS AssetTransferStatusEntity NOT NULL DEFAULT 'NOT_PROCESSED',
+    FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    PRIMARY KEY (message_id, conversation_id)
 );
 
 deleteAssetStatus:
-DELETE FROM MessageAssetStatus WHERE id = ? AND conversation_id = ?;
+DELETE FROM MessageAssetStatus WHERE message_id = ? AND conversation_id = ?;
 
 upsertMessageAssetStatus:
-INSERT INTO MessageAssetStatus(id, conversation_id, upload_status, download_status)
-VALUES( ?, ?, ?, ?)
-ON CONFLICT(id, conversation_id) DO UPDATE SET
-download_status = excluded.download_status,
-upload_status = excluded.upload_status;
+INSERT INTO MessageAssetStatus(message_id, conversation_id, transfer_status)
+VALUES( ?, ?, ?)
+ON CONFLICT(message_id, conversation_id) DO UPDATE SET
+transfer_status = excluded.transfer_status;
 
-selectAll:
-SELECT * FROM MessageAssetStatus;
+selectConversationAssetStatus:
+SELECT * FROM MessageAssetStatus
+WHERE conversation_id = :conversationId;
 
-updateAssetUploadStatus:
-UPDATE MessageAssetStatus
-SET upload_status = ?
-WHERE id = ? AND conversation_id = ?;
+selectMessageAssetStatus:
+SELECT transfer_status FROM MessageAssetStatus
+WHERE conversation_id = :conversationId AND message_id = :messageId;
 
-updateAssetDownloadStatus:
-UPDATE MessageAssetStatus
-SET download_status = ?
-WHERE id = ? AND conversation_id = ?;
-
-resetAssetUploadStatus:
-UPDATE MessageAssetStatus
-SET upload_status = 'FAILED'
-WHERE upload_status = 'IN_PROGRESS';
-
-resetAssetDownloadStatus:
-UPDATE MessageAssetStatus
-SET download_status = 'FAILED'
-WHERE download_status = 'IN_PROGRESS';
+resetAssetTransferStatus:
+DELETE FROM MessageAssetStatus
+WHERE transfer_status = 'UPLOAD_IN_PROGRESS' OR transfer_status = "DOWNLOAD_IN_PROGRESS";

@@ -50,8 +50,7 @@ object TestMessage {
                 assetToken = null,
                 assetDomain = null,
                 encryptionAlgorithm = null
-            ),
-            downloadStatus = Message.DownloadStatus.SAVED_INTERNALLY
+            )
         )
     )
     val TEXT_MESSAGE = Message.Regular(

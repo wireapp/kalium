@@ -27,6 +27,7 @@ import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
+import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionMapper
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
@@ -405,7 +406,6 @@ object MessageMapper {
             assetId = assetId!!,
             width = assetWidth!!,
             height = assetHeight!!,
-            downloadStatus = MessageEntity.DownloadStatus.NOT_DOWNLOADED, // TODO KBX
             assetPath = decodedAssetPath,
             isSelfAsset = isSelfMessage
         )
@@ -644,6 +644,7 @@ object MessageMapper {
                 locationName,
                 locationZoom
             )
+
             MessageEntity.ContentType.LEGAL_HOLD -> MessageEntityContent.LegalHold(
                 memberUserIdList = legalHoldMemberList.requireField("memberChangeList"),
                 type = legalHoldType.requireField("legalHoldType")
@@ -698,14 +699,12 @@ object MessageMapper {
     fun fromAssetStatus(
         id: String,
         conversationId: QualifiedIDEntity,
-        uploadStatus: MessageEntity.UploadStatus?,
-        downloadStatus: MessageEntity.DownloadStatus?
+        transferStatusEntity: AssetTransferStatusEntity,
     ): MessageAssetStatusEntity {
         return MessageAssetStatusEntity(
             id = id,
             conversationId = conversationId,
-            uploadStatus = uploadStatus,
-            downloadStatus = downloadStatus
+            transferStatusEntity
         )
     }
 

@@ -45,6 +45,8 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
+import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetImageAssetMessagesForConversationUseCase
 import com.wire.kalium.logic.feature.asset.GetImageAssetMessagesForConversationUseCaseImpl
 import com.wire.kalium.logic.feature.asset.GetMessageAssetUseCase
@@ -53,10 +55,8 @@ import com.wire.kalium.logic.feature.asset.ObserveAssetStatusesUseCase
 import com.wire.kalium.logic.feature.asset.ObserveAssetStatusesUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCase
 import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCaseImpl
-import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCase
-import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCaseImpl
-import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
-import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCaseImpl
+import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
+import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCaseImpl
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
@@ -209,6 +209,11 @@ class MessageScope internal constructor(
             messageSendFailureHandler
         )
 
+    private val getAssetMessageTransferStatus: GetAssetMessageTransferStatusUseCase
+        get() = GetAssetMessageTransferStatusUseCaseImpl(
+            messageRepository, dispatcher
+        )
+
     val retryFailedMessage: RetryFailedMessageUseCase
         get() = RetryFailedMessageUseCase(
             messageRepository,
@@ -217,7 +222,8 @@ class MessageScope internal constructor(
             scope,
             dispatcher,
             messageSender,
-            updateAssetMessageUploadStatus,
+            updateAssetMessageTransferStatus,
+            getAssetMessageTransferStatus,
             messageSendFailureHandler
         )
 
@@ -227,7 +233,7 @@ class MessageScope internal constructor(
     val sendAssetMessage: ScheduleNewAssetMessageUseCase
         get() = ScheduleNewAssetMessageUseCaseImpl(
             persistMessage,
-            updateAssetMessageUploadStatus,
+            updateAssetMessageTransferStatus,
             currentClientIdProvider,
             assetRepository,
             selfUserId,
@@ -246,7 +252,7 @@ class MessageScope internal constructor(
             assetRepository,
             messageRepository,
             userRepository,
-            updateAssetMessageDownloadStatus,
+            updateAssetMessageTransferStatus,
             scope,
             dispatcher
         )
@@ -318,13 +324,8 @@ class MessageScope internal constructor(
     val markMessagesAsNotified: MarkMessagesAsNotifiedUseCase
         get() = MarkMessagesAsNotifiedUseCase(conversationRepository)
 
-    val updateAssetMessageUploadStatus: UpdateAssetMessageUploadStatusUseCase
-        get() = UpdateAssetMessageUploadStatusUseCaseImpl(
-            messageRepository
-        )
-
-    val updateAssetMessageDownloadStatus: UpdateAssetMessageDownloadStatusUseCase
-        get() = UpdateAssetMessageDownloadStatusUseCaseImpl(
+    val updateAssetMessageTransferStatus: UpdateAssetMessageTransferStatusUseCase
+        get() = UpdateAssetMessageTransferStatusUseCaseImpl(
             messageRepository
         )
 

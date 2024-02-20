@@ -97,7 +97,8 @@ class DebugScope internal constructor(
             assetRepository,
             userId,
             slowSyncRepository,
-            messageSender
+            messageSender,
+            messageRepository
         )
 
     val sendConfirmation: SendConfirmationUseCase

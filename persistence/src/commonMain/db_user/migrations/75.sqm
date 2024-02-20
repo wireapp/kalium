@@ -1,12 +1,13 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity;
 
 CREATE TABLE MessageAssetStatus (
-    id TEXT NOT NULL,
+    message_id TEXT NOT NULL,
     conversation_id TEXT AS QualifiedIDEntity NOT NULL,
-    upload_status TEXT AS MessageEntity.UploadStatus,
-    download_status TEXT AS MessageEntity.DownloadStatus,
-    PRIMARY KEY (id, conversation_id)
+    transfer_status TEXT AS AssetTransferStatusEntity NOT NULL DEFAULT 'NOT_PROCESSED',
+    FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    PRIMARY KEY (message_id, conversation_id)
 );
 
 ALTER TABLE MessageAssetContent RENAME TO TempMessageAssetContent;
@@ -36,9 +37,6 @@ SELECT message_id, conversation_id, asset_size, asset_name, asset_mime_type, ass
 FROM TempMessageAssetContent;
 
 DROP TABLE TempMessageAssetContent;
-
-ALTER TABLE Asset ADD COLUMN download_status TEXT;
-ALTER TABLE Asset ADD COLUMN upload_status TEXT;
 
 DROP VIEW IF EXISTS MessageAssetView;
 

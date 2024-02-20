@@ -141,7 +141,6 @@ class MessageMapperImpl(
             message.assetId,
             message.width,
             message.height,
-            message.downloadStatus.toModel(),
             message.assetPath?.toPath(),
             message.isSelfAsset
         )
@@ -708,8 +707,7 @@ fun MessageAssetStatus.toDao() : MessageAssetStatusEntity {
     return MessageAssetStatusEntity(
         id = id,
         conversationId = conversationId.toDao(),
-        uploadStatus = uploadStatus.toDao(),
-        downloadStatus = downloadStatus.toDao()
+        transferStatus = transferStatus.toDao()
     )
 }
 
@@ -717,7 +715,6 @@ fun MessageAssetStatusEntity.toModel() : MessageAssetStatus {
     return MessageAssetStatus(
         id = id,
         conversationId = conversationId.toModel(),
-        uploadStatus = uploadStatus.toModel(),
-        downloadStatus = downloadStatus.toModel()
+        transferStatus = transferStatus.toModel()
     )
 }

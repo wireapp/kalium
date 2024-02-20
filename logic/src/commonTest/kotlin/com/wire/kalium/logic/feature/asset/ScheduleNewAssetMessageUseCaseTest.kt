@@ -23,6 +23,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -178,9 +179,9 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .suspendFunction(arrangement.assetDataSource::persistAsset)
                 .with(any(), any(), eq(dataPath), any(), any())
                 .wasInvoked(exactly = once)
-            verify(arrangement.updateUploadStatus)
-                .suspendFunction(arrangement.updateUploadStatus::invoke)
-                .with(matching { it == Message.UploadStatus.FAILED_UPLOAD }, any(), any())
+            verify(arrangement.updateTransferStatus)
+                .suspendFunction(arrangement.updateTransferStatus::invoke)
+                .with(matching { it == AssetTransferStatus.FAILED_UPLOAD }, any(), any())
                 .wasInvoked(exactly = once)
         }
 
@@ -248,6 +249,7 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
                 .withObserveMessageVisibility()
                 .withDeleteAssetLocally()
+                .withUpdateMessageAssetTransferStatus(UpdateTransferStatusResult.Success)
                 .arrange()
 
             // When
@@ -281,48 +283,6 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
                 .with(any(), any(), any(), any(), any())
                 .wasInvoked(exactly = once)
-        }
-
-    @Test
-    fun givenASuccessfulSendAssetMessageRequest_whenCheckingTheMessageRepository_thenTheAssetIsMarkedAsSavedInternally() =
-        runTest(testDispatcher.default) {
-            // Given
-            val assetToSend = mockedLongAssetData()
-            val assetName = "some-asset.txt"
-            val conversationId = ConversationId("some-convo-id", "some-domain-id")
-            val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
-            val expectedAssetId = dummyUploadedAssetId
-            val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
-            val (arrangement, sendAssetUseCase) = Arrangement(this)
-                .withSuccessfulResponse(expectedAssetId, expectedAssetSha256)
-                .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
-                .withObserveMessageVisibility()
-                .withDeleteAssetLocally()
-                .arrange()
-
-            // When
-            sendAssetUseCase.invoke(
-                conversationId = conversationId,
-                assetDataPath = dataPath,
-                assetDataSize = assetToSend.size.toLong(),
-                assetName = assetName,
-                assetMimeType = "text/plain",
-                assetWidth = null,
-                assetHeight = null,
-                audioLengthInMs = 0
-            )
-            advanceUntilIdle()
-
-            // Then
-            verify(arrangement.persistMessage)
-                .suspendFunction(arrangement.persistMessage::invoke)
-                .with(
-                    matching {
-                        val content = it.content
-                        content is MessageContent.Asset && content.value.downloadStatus == Message.DownloadStatus.SAVED_INTERNALLY
-                    }
-                )
-                .wasInvoked(exactly = twice)
         }
 
     @Test
@@ -362,11 +322,11 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .suspendFunction(arrangement.persistMessage::invoke)
                 .with(any())
                 .wasNotInvoked()
-            verify(arrangement.updateUploadStatus)
-                .suspendFunction(arrangement.updateUploadStatus::invoke)
+            verify(arrangement.updateTransferStatus)
+                .suspendFunction(arrangement.updateTransferStatus::invoke)
                 .with(
                     matching {
-                        it == Message.UploadStatus.FAILED_UPLOAD
+                        it == AssetTransferStatus.FAILED_UPLOAD
                     },
                     any(), any()
                 )
@@ -386,6 +346,7 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
                 .withObserveMessageVisibility()
                 .withDeleteAssetLocally()
+                .withUpdateMessageAssetTransferStatus(UpdateTransferStatusResult.Success)
                 .arrange()
 
             // When
@@ -411,15 +372,15 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .with(
                     matching {
                         val content = it.content
-                        content is MessageContent.Asset && content.value.uploadStatus == Message.UploadStatus.UPLOAD_IN_PROGRESS
+                        content is MessageContent.Asset
                     }
                 )
                 .wasInvoked(exactly = once)
-            verify(arrangement.updateUploadStatus)
-                .suspendFunction(arrangement.updateUploadStatus::invoke)
+            verify(arrangement.updateTransferStatus)
+                .suspendFunction(arrangement.updateTransferStatus::invoke)
                 .with(
                     matching {
-                        it == Message.UploadStatus.FAILED_UPLOAD
+                        it == AssetTransferStatus.FAILED_UPLOAD
                     },
                     any(), any()
                 )
@@ -462,13 +423,23 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .with(
                     matching {
                         val content = it.content
-                        content is MessageContent.Asset && content.value.uploadStatus == Message.UploadStatus.UPLOADED
+                        content is MessageContent.Asset
                     }
                 )
             verify(arrangement.persistMessage)
                 .suspendFunction(arrangement.persistMessage::invoke)
                 .with(any())
                 .wasInvoked(exactly = twice)
+
+            verify(arrangement.updateTransferStatus)
+                .suspendFunction(arrangement.updateTransferStatus::invoke)
+                .with(
+                    matching {
+                        it == AssetTransferStatus.UPLOADED
+                    },
+                    any(), any()
+                )
+                .wasInvoked(exactly = once)
         }
 
     @Test
@@ -573,7 +544,7 @@ class ScheduleNewAssetMessageUseCaseTest {
         private val slowSyncRepository = mock(classOf<SlowSyncRepository>())
 
         @Mock
-        val updateUploadStatus = mock(classOf<UpdateAssetMessageUploadStatusUseCase>())
+        val updateTransferStatus = mock(classOf<UpdateAssetMessageTransferStatusUseCase>())
 
         @Mock
         private val userPropertyRepository = mock(classOf<UserPropertyRepository>())
@@ -640,10 +611,10 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .suspendFunction(messageSender::sendMessage)
                 .whenInvokedWith(any(), any())
                 .thenReturn(Either.Right(Unit))
-            given(updateUploadStatus)
-                .suspendFunction(updateUploadStatus::invoke)
+            given(updateTransferStatus)
+                .suspendFunction(updateTransferStatus::invoke)
                 .whenInvokedWith(any(), any(), any())
-                .thenReturn(UpdateUploadStatusResult.Success)
+                .thenReturn(UpdateTransferStatusResult.Success)
         }
 
         fun withUnsuccessfulSendMessageResponse(
@@ -702,10 +673,10 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .suspendFunction(assetDataSource::uploadAndPersistPrivateAsset)
                 .whenInvokedWith(any(), any(), any(), any())
                 .thenReturn(Either.Left(NetworkFailure.ServerMiscommunication(exception)))
-            given(updateUploadStatus)
-                .suspendFunction(updateUploadStatus::invoke)
+            given(updateTransferStatus)
+                .suspendFunction(updateTransferStatus::invoke)
                 .whenInvokedWith(any(), any(), any())
-                .thenReturn(UpdateUploadStatusResult.Failure(CoreFailure.Unknown(RuntimeException("some error"))))
+                .thenReturn(UpdateTransferStatusResult.Failure(CoreFailure.Unknown(RuntimeException("some error"))))
         }
 
         fun withPersistMessageErrorResponse() = apply {
@@ -725,10 +696,10 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .suspendFunction(persistMessage::invoke)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Left(StorageFailure.Generic(IOException("Some error"))))
-            given(updateUploadStatus)
-                .suspendFunction(updateUploadStatus::invoke)
+            given(updateTransferStatus)
+                .suspendFunction(updateTransferStatus::invoke)
                 .whenInvokedWith(any(), any(), any())
-                .thenReturn(UpdateUploadStatusResult.Failure(CoreFailure.Unknown(RuntimeException("some error"))))
+                .thenReturn(UpdateTransferStatusResult.Failure(CoreFailure.Unknown(RuntimeException("some error"))))
         }
 
         fun withPersistAssetErrorResponse() = apply {
@@ -744,10 +715,10 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .suspendFunction(assetDataSource::persistAsset)
                 .whenInvokedWith(any(), any(), any(), any(), any())
                 .thenReturn(Either.Left(StorageFailure.Generic(IOException("Some error"))))
-            given(updateUploadStatus)
-                .suspendFunction(updateUploadStatus::invoke)
+            given(updateTransferStatus)
+                .suspendFunction(updateTransferStatus::invoke)
                 .whenInvokedWith(any(), any(), any())
-                .thenReturn(UpdateUploadStatusResult.Failure(CoreFailure.Unknown(RuntimeException("some error"))))
+                .thenReturn(UpdateTransferStatusResult.Failure(CoreFailure.Unknown(RuntimeException("some error"))))
         }
 
         fun withSelfDeleteTimer(result: SelfDeletionTimer) = apply {
@@ -771,10 +742,16 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .thenReturn(Either.Right(Unit))
         }
 
+        fun withUpdateMessageAssetTransferStatus(result: UpdateTransferStatusResult) = apply {
+            given(updateTransferStatus)
+                .suspendFunction(updateTransferStatus::invoke)
+                .whenInvokedWith(any(), any(), any())
+                .thenReturn(result)
+        }
 
         fun arrange() = this to ScheduleNewAssetMessageUseCaseImpl(
             persistMessage,
-            updateUploadStatus,
+            updateTransferStatus,
             currentClientIdProvider,
             assetDataSource,
             QualifiedID("some-id", "some-domain"),

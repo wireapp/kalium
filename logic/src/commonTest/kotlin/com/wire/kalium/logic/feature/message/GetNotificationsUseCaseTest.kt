@@ -426,8 +426,7 @@ class GetNotificationsUseCaseTest {
                             assetToken = "==some-asset-token",
                             assetDomain = "some-asset-domain.com",
                             encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
-                        ),
-                        downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
+                        )
                     )
                 ),
                 conversationId = conversationId,

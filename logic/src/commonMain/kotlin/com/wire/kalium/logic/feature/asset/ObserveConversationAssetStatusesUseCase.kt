@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.asset
 
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageAssetStatus
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.fold
@@ -32,7 +33,7 @@ import kotlinx.coroutines.flow.map
  */
 // TODO KBX tests
 interface ObserveAssetStatusesUseCase {
-    suspend operator fun invoke(): Flow<Map<String, MessageAssetStatus>>
+    suspend operator fun invoke(conversationId: ConversationId): Flow<Map<String, MessageAssetStatus>>
 }
 
 internal class ObserveAssetStatusesUseCaseImpl(
@@ -40,8 +41,8 @@ internal class ObserveAssetStatusesUseCaseImpl(
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ObserveAssetStatusesUseCase {
 
-    override suspend operator fun invoke(): Flow<Map<String, MessageAssetStatus>> {
-        return messageRepository.observeAssetStatuses()
+    override suspend operator fun invoke(conversationId: ConversationId): Flow<Map<String, MessageAssetStatus>> {
+        return messageRepository.observeAssetStatuses(conversationId)
             .map {
                 it.fold(
                     { mapOf() },

@@ -252,7 +252,6 @@ internal object TableMapper {
 
     val assetStatusAdapter = MessageAssetStatus.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
-        upload_statusAdapter = EnumColumnAdapter(),
-        download_statusAdapter = EnumColumnAdapter()
+        transfer_statusAdapter = EnumColumnAdapter(),
     )
 }

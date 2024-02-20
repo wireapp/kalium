@@ -123,8 +123,7 @@ class ProtoContentMapperTest {
                 sizeInBytes = mockedAsset.size.toLong(),
                 name = assetName,
                 mimeType = "file/binary",
-                remoteData = defaultRemoteData,
-                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
+                remoteData = defaultRemoteData
             )
         )
         val protoContent = ProtoContent.Readable(
@@ -390,8 +389,7 @@ class ProtoContentMapperTest {
                 sizeInBytes = mockedAsset.size.toLong(),
                 name = assetName,
                 mimeType = "file/binary",
-                remoteData = defaultRemoteData,
-                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
+                remoteData = defaultRemoteData
             )
         )
         val expiresAfterMillis = 1000L
