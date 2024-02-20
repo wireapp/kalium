@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.auth
 
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutReason
@@ -53,6 +54,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private val logoutRepository: LogoutRepository,
     private val sessionRepository: SessionRepository,
     private val clientRepository: ClientRepository,
+    private val userConfigRepository: UserConfigRepository,
     private val userId: QualifiedID,
     private val deregisterTokenUseCase: DeregisterTokenUseCase,
     private val clearClientDataUseCase: ClearClientDataUseCase,
@@ -106,6 +108,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
                 LogoutReason.SELF_SOFT_LOGOUT -> clearCurrentClientIdAndFirebaseTokenFlag()
             }
 
+            userConfigRepository.clearE2EISettings()
             userSessionScopeProvider.get(userId)?.cancel()
             userSessionScopeProvider.delete(userId)
             logoutCallback(userId, reason)

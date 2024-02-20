@@ -32,7 +32,6 @@ import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherFactory
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.nullableFold
-import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
@@ -94,27 +93,27 @@ class SessionManagerImpl internal constructor(
     ): SessionDTO {
         val refresher = accessTokenRefresherFactory.create(accessTokenApi)
         return withContext(coroutineContext) {
-            refresher.refreshTokenAndPersistSession(oldRefreshToken).onFailure {
-                if (it is NetworkFailure.ServerMiscommunication) {
-                    onServerMissCommunication(it)
-                }
-            }.map { refreshResult ->
-                SessionDTO(
-                    userId = userId.toApi(),
-                    tokenType = refreshResult.accessToken.tokenType,
-                    accessToken = refreshResult.accessToken.value,
-                    refreshToken = refreshResult.refreshToken.value,
-                    cookieLabel = refreshResult.cookieLabel
-                )
-            }.fold({
-                val message = "Failure during auth token refresh. " +
-                        "A network request is failing because of this. " +
-                        "Future requests should reattempt to refresh the token. Failure='$it'"
-                kaliumLogger.w(message)
-                throw FailureToRefreshTokenException(message)
-            }, {
-                it
-            })
+            refresher.refreshTokenAndPersistSession(oldRefreshToken)
+                .map { refreshResult ->
+                    SessionDTO(
+                        userId = userId.toApi(),
+                        tokenType = refreshResult.accessToken.tokenType,
+                        accessToken = refreshResult.accessToken.value,
+                        refreshToken = refreshResult.refreshToken.value,
+                        cookieLabel = refreshResult.cookieLabel
+                    )
+                }.fold({
+                    if (it is NetworkFailure.ServerMiscommunication) {
+                        onServerMissCommunication(it)
+                    }
+                    val message = "Failure during auth token refresh. " +
+                            "A network request is failing because of this. " +
+                            "Future requests should reattempt to refresh the token. Failure='$it'"
+                    kaliumLogger.w(message)
+                    throw FailureToRefreshTokenException(message)
+                }, {
+                    it
+                })
         }
     }
 
