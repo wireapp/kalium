@@ -38,7 +38,7 @@ internal class GetDefaultProtocolUseCaseImpl(
     override fun invoke(): SupportedProtocol =
         userConfigRepository.getDefaultProtocol().fold({
             SupportedProtocol.PROTEUS
-        },{ supportedProtocol ->
+        }, { supportedProtocol ->
             supportedProtocol
         })
 }
