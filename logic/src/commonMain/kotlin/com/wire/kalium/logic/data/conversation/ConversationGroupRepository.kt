@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -94,6 +95,7 @@ internal class ConversationGroupRepositoryImpl(
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
     private val newConversationMembersRepository: NewConversationMembersRepository,
+    private val userRepository: UserRepository,
     private val newGroupConversationSystemMessagesCreator: Lazy<NewGroupConversationSystemMessagesCreator>,
     private val selfUserId: UserId,
     private val teamIdProvider: SelfTeamIdProvider,
@@ -119,14 +121,13 @@ internal class ConversationGroupRepositoryImpl(
                 is Either.Left -> {
                     val canRetryOnce = apiResult.value.hasUnreachableDomainsError && failedUsersList.isEmpty()
                     if (canRetryOnce) {
-                        val (validUsers, failedUsers) = extractValidUsersForRetryableFederationError(
-                            usersList,
-                            apiResult.value as NetworkFailure.FederatedBackendFailure.FailedDomains
-                        )
-                        // edge case, in case backend goes 🍌 and returns non-matching domains
-                        if (failedUsers.isEmpty()) Either.Left(apiResult.value)
+                        extractValidUsersForRetryableError(apiResult.value, usersList)
+                            .flatMap { (validUsers, failedUsers) ->
+                                // edge case, in case backend goes 🍌 and returns non-matching domains
+                                if (failedUsers.isEmpty()) Either.Left(apiResult.value)
 
-                        createGroupConversation(name, validUsers, options, failedUsers)
+                                createGroupConversation(name, validUsers, options, failedUsers)
+                            }
                     } else {
                         Either.Left(apiResult.value)
                     }
@@ -197,7 +198,7 @@ internal class ConversationGroupRepositoryImpl(
 
     /**
      * Handle the error cases and retry for claimPackages offline and out of packages.
-     * Handle error case and retry for sendingCommit unreachable.
+     * Handle error case and retry for sendingCommit unreachable or missing legal hold consent.
      */
     private suspend fun tryAddMembersToMLSGroup(
         conversationId: ConversationId,
@@ -250,6 +251,20 @@ internal class ConversationGroupRepositoryImpl(
                     failedUsersList = (failedUsersList + failedUsers).toSet(),
                     remainingAttempts = remainingAttempts - 1
                 )
+            }
+
+            // missing legal hold consent
+            this.isMissingLegalHoldConsentError -> {
+                fetchAndExtractValidUsersForRetryableLegalHoldError(userIdList)
+                    .flatMap { (validUsers, failedUsers) ->
+                        tryAddMembersToMLSGroup(
+                            conversationId = conversationId,
+                            groupId = groupId,
+                            userIdList = validUsers,
+                            failedUsersList = (failedUsersList + failedUsers).toSet(),
+                            remainingAttempts = remainingAttempts - 1
+                        )
+                    }
             }
 
             else -> {
@@ -346,21 +361,20 @@ internal class ConversationGroupRepositoryImpl(
     ): Either<CoreFailure, Unit> {
         val canRetryOnce = apiResult.value.isRetryable && failedUsersList.isEmpty()
         return if (canRetryOnce) {
-            val (validUsers, failedUsers) = extractValidUsersForRetryableFederationError(
-                userIdList,
-                apiResult.value as NetworkFailure.FederatedBackendFailure.RetryableFailure
-            )
-            when (failedUsers.isNotEmpty()) {
-                true -> tryAddMembersToCloudAndStorage(validUsers, conversationId, failedUsers.toSet())
-                false -> {
-                    newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
-                        conversationId,
-                        (validUsers + failedUsers).toSet()
-                    ).flatMap {
-                        Either.Left(apiResult.value)
+            extractValidUsersForRetryableError(apiResult.value, userIdList)
+                .flatMap { (validUsers, failedUsers) ->
+                    when (failedUsers.isNotEmpty()) {
+                        true -> tryAddMembersToCloudAndStorage(validUsers, conversationId, failedUsers.toSet())
+                        false -> {
+                            newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
+                                conversationId,
+                                (validUsers + failedUsers).toSet()
+                            ).flatMap {
+                                Either.Left(apiResult.value)
+                            }
+                        }
                     }
                 }
-            }
         } else {
             newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
                 conversationId,
@@ -492,6 +506,35 @@ internal class ConversationGroupRepositoryImpl(
                 )
             }
             .map { }
+
+    /**
+     * Extract valid and invalid users lists from the given userIdList depending on a given NetworkFailure.
+     * If the given [NetworkFailure] is not retryable, the original userIdList is returned as valid users and invalid users list is empty.
+     */
+    private suspend fun extractValidUsersForRetryableError(
+        failure: CoreFailure,
+        userIdList: List<UserId>,
+    ): Either<CoreFailure, ValidToInvalidUsers> = when {
+        failure is NetworkFailure.FederatedBackendFailure.RetryableFailure ->
+            Either.Right(extractValidUsersForRetryableFederationError(userIdList, failure))
+        failure.isMissingLegalHoldConsentError ->
+            fetchAndExtractValidUsersForRetryableLegalHoldError(userIdList)
+        else ->
+            Either.Right(ValidToInvalidUsers(userIdList, emptyList()))
+    }
+
+    /**
+     * Filter the initial [userIdList] into valid and invalid users where valid users are only team members.
+     */
+    private suspend fun fetchAndExtractValidUsersForRetryableLegalHoldError(
+        userIdList: List<UserId>
+    ): Either<CoreFailure, ValidToInvalidUsers> =
+        userRepository.fetchUsersLegalHoldConsent(userIdList.toSet()).map {
+            ValidToInvalidUsers(
+                validUsers = it.usersWithConsent,
+                failedUsers = it.usersWithoutConsent + it.usersFailed
+            )
+        }
 
     /**
      * Extract from a [NetworkFailure.FederatedBackendFailure.RetryableFailure] the domains
