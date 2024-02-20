@@ -56,6 +56,7 @@ import com.wire.kalium.network.api.base.unbound.acme.DtoAuthorizationChallengeTy
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.util.DateTimeUtil
+import io.ktor.http.Url
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anyInstanceOf
@@ -928,7 +929,7 @@ class E2EIRepositoryTest {
         // Given
 
         val (arrangement, e2eiRepository) = Arrangement()
-            .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(discoverUrl = RANDOM_URL + "/random/path")))
+            .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(discoverUrl = RANDOM_URL)))
             .withFetchAcmeTrustAnchorsApiSucceed()
             .withGetMLSClientSuccessful()
             .withRegisterTrustAnchors()
@@ -947,7 +948,7 @@ class E2EIRepositoryTest {
 
         verify(arrangement.acmeApi)
             .suspendFunction(arrangement.acmeApi::getTrustAnchors)
-            .with(eq(RANDOM_URL))
+            .with(eq(Url(RANDOM_URL)))
             .wasInvoked(once)
 
         verify(arrangement.mlsClient)
@@ -993,7 +994,7 @@ class E2EIRepositoryTest {
             .arrange()
 
         e2eiRepository.discoveryUrl().shouldSucceed {
-            assertEquals(RANDOM_URL, it)
+            assertEquals(Url(RANDOM_URL), it)
         }
 
         verify(arrangement.userConfigRepository)
@@ -1066,7 +1067,7 @@ class E2EIRepositoryTest {
                 .thenReturn(RANDOM_BYTE_ARRAY)
         }
 
-        fun withRotateKeysAndMigrateConversationsReturns(result: Either<CoreFailure, Unit>) = apply {
+        fun withRotateKeysAndMigrateConversationsReturns(result: Either<E2EIFailure, Unit>) = apply {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::rotateKeysAndMigrateConversations)
                 .whenInvokedWith(anything(), anything(), anything())
@@ -1279,7 +1280,7 @@ class E2EIRepositoryTest {
             )
 
         companion object {
-            val TEST_FAILURE = Either.Left(CoreFailure.Unknown(Throwable("an error")))
+            val TEST_FAILURE = Either.Left(E2EIFailure.Generic(Exception("an error")))
             val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(ErrorResponse(405, "", ""))
             val RANDOM_BYTE_ARRAY = "random-value".encodeToByteArray()
             val RANDOM_NONCE = Nonce("xxxxx")

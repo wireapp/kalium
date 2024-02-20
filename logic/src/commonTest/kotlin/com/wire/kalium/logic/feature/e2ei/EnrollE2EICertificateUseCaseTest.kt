@@ -22,6 +22,7 @@ import com.wire.kalium.cryptography.AcmeDirectory
 import com.wire.kalium.cryptography.NewAcmeAuthz
 import com.wire.kalium.cryptography.NewAcmeOrder
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.data.e2ei.AuthorizationResult
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.Nonce
@@ -29,6 +30,7 @@ import com.wire.kalium.logic.feature.e2ei.usecase.E2EIEnrollmentResult
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.e2ei.AccessTokenResponse
@@ -61,7 +63,7 @@ class EnrollE2EICertificateUseCaseTest {
         // given
         arrangement.withInitializingE2EIClientSucceed()
         arrangement.withLoadTrustAnchorsResulting(Either.Right(Unit))
-        arrangement.withLoadACMEDirectoriesResulting(TEST_EITHER_LEFT)
+        arrangement.withLoadACMEDirectoriesResulting(E2EIFailure.AcmeDirectories(TEST_CORE_FAILURE).left())
 
         // when
         val result = enrollE2EICertificateUseCase.initialEnrollment()
@@ -143,7 +145,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withInitializingE2EIClientSucceed()
         arrangement.withLoadTrustAnchorsResulting(Either.Right(Unit))
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
-        arrangement.withGetACMENonceResulting(TEST_EITHER_LEFT)
+        arrangement.withGetACMENonceResulting(E2EIFailure.AcmeNonce(TEST_CORE_FAILURE).left())
 
         // when
         val result = enrollE2EICertificateUseCase.initialEnrollment()
@@ -224,7 +226,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withLoadTrustAnchorsResulting(Either.Right(Unit))
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
         arrangement.withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
-        arrangement.withCreateNewAccountResulting(TEST_EITHER_LEFT)
+        arrangement.withCreateNewAccountResulting(E2EIFailure.AcmeNewAccount(TEST_CORE_FAILURE).left())
 
         // when
         val result = enrollE2EICertificateUseCase.initialEnrollment()
@@ -310,7 +312,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
         arrangement.withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
-        arrangement.withCreateNewOrderResulting(TEST_EITHER_LEFT)
+        arrangement.withCreateNewOrderResulting(E2EIFailure.AcmeNewOrder(TEST_CORE_FAILURE).left())
 
         // when
         val result = enrollE2EICertificateUseCase.initialEnrollment()
@@ -398,7 +400,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewOrderResulting(Either.Right(Triple(ACME_ORDER, RANDOM_NONCE, RANDOM_LOCATION)))
-        arrangement.withGettingChallenges(TEST_EITHER_LEFT)
+        arrangement.withGettingChallenges(E2EIFailure.AcmeAuthorizations.left())
 
         // when
         val result = enrollE2EICertificateUseCase.initialEnrollment()
@@ -537,7 +539,7 @@ class EnrollE2EICertificateUseCaseTest {
         val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
 
         // given
-        arrangement.withGetWireNonceResulting(TEST_EITHER_LEFT)
+        arrangement.withGetWireNonceResulting(E2EIFailure.WireNonce(TEST_CORE_FAILURE).left())
 
         // when
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
@@ -590,7 +592,7 @@ class EnrollE2EICertificateUseCaseTest {
 
         // given
         arrangement.withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
-        arrangement.withGetDPoPTokenResulting(TEST_EITHER_LEFT)
+        arrangement.withGetDPoPTokenResulting(E2EIFailure.DPoPToken(TEST_CORE_FAILURE).left())
 
         // when
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
@@ -646,7 +648,7 @@ class EnrollE2EICertificateUseCaseTest {
         // given
         arrangement.withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
-        arrangement.withGetWireAccessTokenResulting(TEST_EITHER_LEFT)
+        arrangement.withGetWireAccessTokenResulting(E2EIFailure.DPoPChallenge(TEST_CORE_FAILURE).left())
 
         // when
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
@@ -702,7 +704,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
         arrangement.withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
-        arrangement.withValidateDPoPChallengeResulting(TEST_EITHER_LEFT)
+        arrangement.withValidateDPoPChallengeResulting(E2EIFailure.DPoPChallenge(TEST_CORE_FAILURE).left())
 
         // when
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
@@ -760,7 +762,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
         arrangement.withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
         arrangement.withValidateDPoPChallengeResulting(Either.Right(ACME_CHALLENGE_RESPONSE))
-        arrangement.withValidateOIDCChallengeResulting(TEST_EITHER_LEFT)
+        arrangement.withValidateOIDCChallengeResulting(E2EIFailure.OIDCChallenge(TEST_CORE_FAILURE).left())
 
         // when
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
@@ -819,7 +821,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
         arrangement.withValidateDPoPChallengeResulting(Either.Right(ACME_CHALLENGE_RESPONSE))
         arrangement.withValidateOIDCChallengeResulting(Either.Right(ACME_CHALLENGE_RESPONSE))
-        arrangement.withCheckOrderRequestResulting(TEST_EITHER_LEFT)
+        arrangement.withCheckOrderRequestResulting(E2EIFailure.CheckOrderRequest(TEST_CORE_FAILURE).left())
 
         // when
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
@@ -878,7 +880,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withValidateDPoPChallengeResulting(Either.Right(ACME_CHALLENGE_RESPONSE))
         arrangement.withValidateOIDCChallengeResulting(Either.Right(ACME_CHALLENGE_RESPONSE))
         arrangement.withCheckOrderRequestResulting(Either.Right((ACME_RESPONSE to RANDOM_LOCATION)))
-        arrangement.withFinalizeResulting(TEST_EITHER_LEFT)
+        arrangement.withFinalizeResulting(E2EIFailure.FinalizeRequest(TEST_CORE_FAILURE).left())
 
         // when
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
@@ -936,7 +938,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withCheckOrderRequestResulting(Either.Right((ACME_RESPONSE to RANDOM_LOCATION)))
         arrangement.withFinalizeResulting(Either.Right((ACME_RESPONSE to RANDOM_LOCATION)))
         arrangement.withRotateKeysAndMigrateConversations(Either.Right(Unit))
-        arrangement.withCertificateRequestResulting(TEST_EITHER_LEFT)
+        arrangement.withCertificateRequestResulting(E2EIFailure.Certificate(TEST_CORE_FAILURE).left())
 
         // when
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
@@ -981,7 +983,7 @@ class EnrollE2EICertificateUseCaseTest {
         arrangement.withCheckOrderRequestResulting(Either.Right((ACME_RESPONSE to RANDOM_LOCATION)))
         arrangement.withFinalizeResulting(Either.Right((ACME_RESPONSE to RANDOM_LOCATION)))
         arrangement.withCertificateRequestResulting(Either.Right(ACME_RESPONSE))
-        arrangement.withRotateKeysAndMigrateConversations(TEST_EITHER_LEFT)
+        arrangement.withRotateKeysAndMigrateConversations(E2EIFailure.RotationAndMigration(TEST_CORE_FAILURE).left())
 
         // when
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
@@ -1102,42 +1104,42 @@ class EnrollE2EICertificateUseCaseTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withLoadTrustAnchorsResulting(result: Either<CoreFailure, Unit>) = apply {
+        fun withLoadTrustAnchorsResulting(result: Either<E2EIFailure, Unit>) = apply {
             given(e2EIRepository)
                 .suspendFunction(e2EIRepository::fetchAndSetTrustAnchors)
                 .whenInvoked()
                 .thenReturn(result)
         }
 
-        fun withLoadACMEDirectoriesResulting(result: Either<CoreFailure, AcmeDirectory>) = apply {
+        fun withLoadACMEDirectoriesResulting(result: Either<E2EIFailure, AcmeDirectory>) = apply {
             given(e2EIRepository)
                 .suspendFunction(e2EIRepository::loadACMEDirectories)
                 .whenInvoked()
                 .thenReturn(result)
         }
 
-        fun withGetACMENonceResulting(result: Either<CoreFailure, Nonce>) = apply {
+        fun withGetACMENonceResulting(result: Either<E2EIFailure, Nonce>) = apply {
             given(e2EIRepository)
                 .suspendFunction(e2EIRepository::getACMENonce)
                 .whenInvokedWith(any())
                 .thenReturn(result)
         }
 
-        fun withCreateNewAccountResulting(result: Either<CoreFailure, Nonce>) = apply {
+        fun withCreateNewAccountResulting(result: Either<E2EIFailure, Nonce>) = apply {
             given(e2EIRepository)
                 .suspendFunction(e2EIRepository::createNewAccount)
                 .whenInvokedWith(any(), any())
                 .thenReturn(result)
         }
 
-        fun withCreateNewOrderResulting(result: Either<CoreFailure, Triple<NewAcmeOrder, Nonce, String>>) = apply {
+        fun withCreateNewOrderResulting(result: Either<E2EIFailure, Triple<NewAcmeOrder, Nonce, String>>) = apply {
             given(e2EIRepository)
                 .suspendFunction(e2EIRepository::createNewOrder)
                 .whenInvokedWith(any(), any())
                 .thenReturn(result)
         }
 
-        fun withGettingChallenges(result: Either<CoreFailure, AuthorizationResult>) = apply {
+        fun withGettingChallenges(result: Either<E2EIFailure, AuthorizationResult>) = apply {
             given(e2EIRepository)
                 .suspendFunction(e2EIRepository::getAuthorizations)
                 .whenInvokedWith(any(), any())
@@ -1149,63 +1151,63 @@ class EnrollE2EICertificateUseCaseTest {
                 .thenReturn(Either.Right(REFRESH_TOKEN))
         }
 
-        fun withGetWireNonceResulting(result: Either<CoreFailure, Nonce>) = apply {
+        fun withGetWireNonceResulting(result: Either<E2EIFailure, Nonce>) = apply {
             given(e2EIRepository)
                 .suspendFunction(e2EIRepository::getWireNonce)
                 .whenInvoked()
                 .thenReturn(result)
         }
 
-        fun withGetDPoPTokenResulting(result: Either<CoreFailure, String>) = apply {
+        fun withGetDPoPTokenResulting(result: Either<E2EIFailure, String>) = apply {
             given(e2EIRepository)
                 .suspendFunction(e2EIRepository::getDPoPToken)
                 .whenInvokedWith(any())
                 .thenReturn(result)
         }
 
-        fun withGetWireAccessTokenResulting(result: Either<CoreFailure, AccessTokenResponse>) = apply {
+        fun withGetWireAccessTokenResulting(result: Either<E2EIFailure, AccessTokenResponse>) = apply {
             given(e2EIRepository)
                 .suspendFunction(e2EIRepository::getWireAccessToken)
                 .whenInvokedWith(any())
                 .thenReturn(result)
         }
 
-        fun withValidateDPoPChallengeResulting(result: Either<CoreFailure, ChallengeResponse>) = apply {
+        fun withValidateDPoPChallengeResulting(result: Either<E2EIFailure, ChallengeResponse>) = apply {
             given(e2EIRepository)
                 .suspendFunction(e2EIRepository::validateDPoPChallenge)
                 .whenInvokedWith(any(), any(), any())
                 .thenReturn(result)
         }
 
-        fun withValidateOIDCChallengeResulting(result: Either<CoreFailure, ChallengeResponse>) = apply {
+        fun withValidateOIDCChallengeResulting(result: Either<E2EIFailure, ChallengeResponse>) = apply {
             given(e2EIRepository)
                 .suspendFunction(e2EIRepository::validateOIDCChallenge)
                 .whenInvokedWith(any(), any(), any())
                 .thenReturn(result)
         }
 
-        fun withCheckOrderRequestResulting(result: Either<CoreFailure, Pair<ACMEResponse, String>>) = apply {
+        fun withCheckOrderRequestResulting(result: Either<E2EIFailure, Pair<ACMEResponse, String>>) = apply {
             given(e2EIRepository)
                 .suspendFunction(e2EIRepository::checkOrderRequest)
                 .whenInvokedWith(any(), any())
                 .thenReturn(result)
         }
 
-        fun withFinalizeResulting(result: Either<CoreFailure, Pair<ACMEResponse, String>>) = apply {
+        fun withFinalizeResulting(result: Either<E2EIFailure, Pair<ACMEResponse, String>>) = apply {
             given(e2EIRepository)
                 .suspendFunction(e2EIRepository::finalize)
                 .whenInvokedWith(any(), any())
                 .thenReturn(result)
         }
 
-        fun withRotateKeysAndMigrateConversations(result: Either<CoreFailure, Unit>) = apply {
+        fun withRotateKeysAndMigrateConversations(result: Either<E2EIFailure, Unit>) = apply {
             given(e2EIRepository)
                 .suspendFunction(e2EIRepository::rotateKeysAndMigrateConversations)
                 .whenInvokedWith(any())
                 .thenReturn(result)
         }
 
-        fun withCertificateRequestResulting(result: Either<CoreFailure, ACMEResponse>) = apply {
+        fun withCertificateRequestResulting(result: Either<E2EIFailure, ACMEResponse>) = apply {
             given(e2EIRepository)
                 .suspendFunction(e2EIRepository::certificateRequest)
                 .whenInvokedWith(any(), any())
@@ -1221,7 +1223,6 @@ class EnrollE2EICertificateUseCaseTest {
         val RANDOM_NONCE = Nonce("random-nonce")
         val REFRESH_TOKEN = "YRjxLpsjRqL7zYuKstXogqioA_P3Z4fiEuga0NCVRcDSc8cy_9msxg"
         val TEST_CORE_FAILURE = CoreFailure.Unknown(Throwable("an error"))
-        val TEST_EITHER_LEFT = Either.Left(TEST_CORE_FAILURE)
         val ACME_BASE_URL = "https://balderdash.hogwash.work:9000"
         val RANDOM_LOCATION = "https://balderdash.hogwash.work:9000"
         val RANDOM_BYTE_ARRAY = "random-value".encodeToByteArray()

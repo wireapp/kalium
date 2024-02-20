@@ -26,15 +26,15 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
 interface E2EIClientProvider {
-    suspend fun getE2EIClient(clientId: ClientId? = null, isNewClient: Boolean = false): Either<CoreFailure, E2EIClient>
+    suspend fun getE2EIClient(clientId: ClientId? = null, isNewClient: Boolean = false): Either<E2EIFailure, E2EIClient>
     suspend fun nuke()
 }
 
@@ -47,17 +47,21 @@ internal class EI2EIClientProviderImpl(
 
     private var e2EIClient: E2EIClient? = null
 
-    override suspend fun getE2EIClient(clientId: ClientId?, isNewClient: Boolean): Either<CoreFailure, E2EIClient> =
+    override suspend fun getE2EIClient(clientId: ClientId?, isNewClient: Boolean): Either<E2EIFailure, E2EIClient> =
         withContext(dispatchers.io) {
             val currentClientId =
-                clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
+                clientId ?: currentClientIdProvider().fold({ return@withContext E2EIFailure.GettingE2EIClient(it).left() }, { it })
 
             return@withContext e2EIClient?.let {
                 Either.Right(it)
             } ?: run {
-                getSelfUserInfo().flatMap { selfUser ->
+                getSelfUserInfo().fold({
+                    E2EIFailure.GettingE2EIClient(it).left()
+                }, { selfUser ->
                     // TODO: use e2eiNewEnrollment for new clients, when CC fix the issues in it
-                    mlsClientProvider.getMLSClient(currentClientId).flatMap {
+                    mlsClientProvider.getMLSClient(currentClientId).fold({
+                        E2EIFailure.GettingE2EIClient(it).left()
+                    }, {
                         val newE2EIClient = if (it.isE2EIEnabled()) {
                             kaliumLogger.e("initial E2EI client for mls client that already has e2ei enabled")
                             it.e2eiNewRotateEnrollment(
@@ -75,8 +79,8 @@ internal class EI2EIClientProviderImpl(
                         }
                         e2EIClient = newE2EIClient
                         Either.Right(newE2EIClient)
-                    }
-                }
+                    })
+                })
             }
 
         }
