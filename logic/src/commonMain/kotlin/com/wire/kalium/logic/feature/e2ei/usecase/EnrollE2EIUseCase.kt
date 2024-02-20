@@ -62,7 +62,6 @@ class EnrollE2EIUseCaseImpl internal constructor(
         val acmeDirectories = e2EIRepository.loadACMEDirectories().getOrFail {
             return it.left() }
 
-
         var prevNonce = e2EIRepository.getACMENonce(acmeDirectories.newNonce).getOrFail {
             return it.left() }
 
@@ -137,14 +136,12 @@ class EnrollE2EIUseCaseImpl internal constructor(
         ).getOrFail {
             return it.left() }
 
-
         prevNonce = Nonce(dpopChallengeResponse.nonce)
 
         val oidcChallengeResponse = e2EIRepository.validateOIDCChallenge(
             idToken, oAuthState, prevNonce, oidcAuthorizations.challenge
         ).getOrFail {
             return it.left() }
-
 
         prevNonce = Nonce(oidcChallengeResponse.nonce)
 
@@ -202,7 +199,6 @@ class EnrollE2EIUseCaseImpl internal constructor(
 }
 
 sealed interface E2EIEnrollmentResult {
-
     @Suppress("LongParameterList")
     data class Initialized(
         val target: String,
@@ -216,5 +212,4 @@ sealed interface E2EIEnrollmentResult {
     ) : E2EIEnrollmentResult
 
     class Finalized(val certificate: String) : E2EIEnrollmentResult
-
 }
