@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.client
 
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -28,6 +29,7 @@ import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.nullableFold
+import com.wire.kalium.logic.kaliumLogger
 
 /**
  * This use case is responsible for getting the client.
@@ -74,6 +76,7 @@ internal class GetOrRegisterClientUseCaseImpl(
 
         when (result) {
             is RegisterClientResult.E2EICertificateRequired -> {
+                kaliumLogger.i("Client registration blocked because E2EI certificate required")
                 clientRepository.setClientRegistrationBlockedByE2EI()
                 upgradeCurrentSessionAndPersistClient(result.client.id)
             }
@@ -86,7 +89,9 @@ internal class GetOrRegisterClientUseCaseImpl(
     }
 
     private suspend fun upgradeCurrentSessionAndPersistClient(clientId: ClientId) {
+        kaliumLogger.i("Upgrade current session for client ${clientId.value.obfuscateId()}")
         upgradeCurrentSessionUseCase(clientId).flatMap {
+            kaliumLogger.i("Persist client ${clientId.value.obfuscateId()}")
             clientRepository.persistClientId(clientId)
         }
     }
