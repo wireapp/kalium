@@ -127,6 +127,7 @@ interface UserConfigRepository {
     suspend fun observeCertificateExpirationTime(url: String): Flow<Either<StorageFailure, ULong>>
     suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean)
     suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Either<StorageFailure, Boolean>>
+    suspend fun clearE2EISettings()
 }
 
 @Suppress("TooManyFunctions")
@@ -233,6 +234,13 @@ internal class UserConfigDataSource internal constructor(
                 userConfigStorage.updateE2EINotificationTime(notifyUserAfterMs)
             }
         }
+
+    override suspend fun clearE2EISettings() {
+        wrapStorageRequest {
+            userConfigStorage.setE2EISettings(null)
+            userConfigStorage.updateE2EINotificationTime(0)
+        }
+    }
 
     private fun getE2EINotificationTimeOrNull() =
         wrapStorageRequest { userConfigStorage.getE2EINotificationTime() }.getOrNull()
@@ -449,6 +457,7 @@ internal class UserConfigDataSource internal constructor(
 
     override suspend fun observeCertificateExpirationTime(url: String): Flow<Either<StorageFailure, ULong>> =
         userConfigDAO.observeCertificateExpirationTime(url).wrapStorageRequest()
+
     override suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean) {
         userConfigDAO.setShouldNotifyForRevokedCertificate(shouldNotify)
     }
