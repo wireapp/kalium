@@ -18,10 +18,7 @@
 package com.wire.kalium.logic.data.e2ei
 
 import com.wire.kalium.logic.CoreFailure
-<<<<<<< HEAD
-=======
 import com.wire.kalium.logic.E2EIFailure
->>>>>>> 171f1e0bfb (fix: circular dependency in CertificateRevocationListRepository (#2514))
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -89,19 +86,12 @@ internal class CertificateRevocationListRepositoryDataSource(
     }
 
     override suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String> =
-<<<<<<< HEAD
-        userConfigRepository.getE2EISettings().map {
-            (Url(it.discoverUrl).protocolWithAuthority)
-        }
-=======
-
         userConfigRepository.getE2EISettings()
             .flatMap {
                 if (!it.isRequired) E2EIFailure.Disabled.left()
                 else if (it.discoverUrl == null) E2EIFailure.MissingDiscoveryUrl.left()
                 else Url(it.discoverUrl).protocolWithAuthority.right()
             }
->>>>>>> 171f1e0bfb (fix: circular dependency in CertificateRevocationListRepository (#2514))
 
     override suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray> =
         wrapApiRequest {
