@@ -80,6 +80,7 @@ internal class GetMessageAssetUseCaseImpl(
         }, { message ->
             when (val content = message.content) {
                 is MessageContent.Asset -> {
+                    // TODO isIncompleteImage should be used here for incomplete messages
                     val assetMetadata = with(content.value.remoteData) {
                         DownloadAssetMessageMetadata(
                             content.value.name ?: "",
@@ -139,7 +140,7 @@ internal class GetMessageAssetUseCaseImpl(
                                     else -> MessageAssetResult.Failure(it, true)
                                 }
                             }, { decodedAssetPath ->
-                                // TODO KBX rethink should we store images asset status when they are already downloaded
+                                // TODO Kubaz rethink should we store images asset status when they are already downloaded
                                 updateAssetMessageTransferStatus(AssetTransferStatus.SAVED_INTERNALLY, conversationId, messageId)
                                 MessageAssetResult.Success(decodedAssetPath, assetMetadata.assetSize, assetMetadata.assetName)
                             })
