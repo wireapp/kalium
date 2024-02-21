@@ -231,7 +231,6 @@ class E2EIRepositoryImpl(
     override suspend fun getDPoPToken(wireNonce: Nonce) =
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient -> e2eiClient.createDpopToken(wireNonce.value).right() }
 
-
     override suspend fun validateDPoPChallenge(accessToken: String, prevNonce: Nonce, acmeChallenge: AcmeChallenge) =
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
             val challengeRequest = e2eiClient.getNewDpopChallengeRequest(accessToken, prevNonce.value)
