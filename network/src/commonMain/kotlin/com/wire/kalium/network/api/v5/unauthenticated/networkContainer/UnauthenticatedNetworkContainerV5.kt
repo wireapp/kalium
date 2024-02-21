@@ -44,6 +44,7 @@ import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.HttpClientEngine
 
+@Suppress("LongParameterList")
 class UnauthenticatedNetworkContainerV5 internal constructor(
     private val developmentApiEnabled: Boolean,
     networkStateObserver: NetworkStateObserver,

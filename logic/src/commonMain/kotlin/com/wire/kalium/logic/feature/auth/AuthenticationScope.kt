@@ -44,9 +44,6 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
-import io.ktor.util.collections.ConcurrentMap
-import com.wire.kalium.network.session.CertificatePinning
-import io.ktor.client.engine.HttpClientEngine
 
 class AuthenticationScopeProvider internal constructor(
     private val userAgent: String

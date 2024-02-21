@@ -21,7 +21,6 @@ package com.wire.kalium.logic.data.session
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.Account
 import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.logic.data.auth.AccountTokens

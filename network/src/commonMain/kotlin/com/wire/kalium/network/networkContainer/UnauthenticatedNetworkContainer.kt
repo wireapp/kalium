@@ -49,6 +49,7 @@ interface UnauthenticatedNetworkContainer {
     val remoteVersion: VersionApi
     val serverConfigApi: ServerConfigApi
 
+    @Suppress("LongMethod")
     companion object {
         fun create(
             networkStateObserver: NetworkStateObserver,
