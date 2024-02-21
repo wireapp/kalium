@@ -49,6 +49,7 @@ class MonkeyServer : CliktCommand() {
     private val port by option("-p", "--port", help = "Port to bind the http server").int().default(DEFAULT_PORT)
     private val logLevel by option("-l", "--log-level", help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.INFO)
     private val logOutputFile by option("-o", "--log-file", help = "output file for logs")
+    private val oldCode by option("-c", "--code", help = "Current 2FA code to use until a new one can be generated")
     private val fileLogger: LogWriter by lazy { fileLogger(logOutputFile ?: "kalium.log") }
 
     @OptIn(ExperimentalSerializationApi::class)
@@ -72,11 +73,11 @@ class MonkeyServer : CliktCommand() {
         } else {
             CoreLogger.init(KaliumLogger.Config(logLevel))
         }
-        backendConfig?.let { initMonkey(it) }
+        backendConfig?.let { initMonkey(it, oldCode) }
         embeddedServer(Netty, port = port, host = "0.0.0.0", module = {
             configureMonitoring()
             configureAdministration()
-            configureRoutes(coreLogic)
+            configureRoutes(coreLogic, oldCode)
         }).start(wait = true)
     }
 }

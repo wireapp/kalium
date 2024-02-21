@@ -274,6 +274,8 @@ import com.wire.kalium.logic.feature.proteus.ProteusSyncWorker
 import com.wire.kalium.logic.feature.proteus.ProteusSyncWorkerImpl
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
 import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelectorImpl
+import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
+import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCaseImpl
 import com.wire.kalium.logic.feature.search.SearchScope
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl
@@ -291,6 +293,8 @@ import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherImpl
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCaseImpl
 import com.wire.kalium.logic.feature.team.TeamScope
+import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
+import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
@@ -558,7 +562,6 @@ class UserSessionScope internal constructor(
 
     private val accessTokenRefresher: AccessTokenRefresher
         get() = AccessTokenRefresherImpl(
-            userId = userId,
             repository = accessTokenRepository
         )
 
@@ -567,7 +570,7 @@ class UserSessionScope internal constructor(
         accessTokenRefresherFactory = accessTokenRefresherFactory,
         userId = userId,
         tokenStorage = globalPreferences.authTokenStorage,
-        logout = { logoutReason -> logout(logoutReason) }
+        logout = { logoutReason -> logout(reason = logoutReason, waitUntilCompletes = true) }
     )
     private val authenticatedNetworkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(
         networkStateObserver,
@@ -654,7 +657,9 @@ class UserSessionScope internal constructor(
             commitBundleEventReceiver,
             epochsFlow,
             proposalTimersFlow,
-            keyPackageLimitsProvider
+            keyPackageLimitsProvider,
+            checkRevocationList,
+            certificateRevocationListRepository
         )
 
     private val e2eiRepository: E2EIRepository
@@ -1324,8 +1329,14 @@ class UserSessionScope internal constructor(
         )
     private val mlsWelcomeHandler: MLSWelcomeEventHandler
         get() = MLSWelcomeEventHandlerImpl(
-            mlsClientProvider, conversationRepository, oneOnOneResolver, client.refillKeyPackages
+            mlsClientProvider = mlsClientProvider,
+            conversationRepository = conversationRepository,
+            oneOnOneResolver = oneOnOneResolver,
+            refillKeyPackages = client.refillKeyPackages,
+            checkRevocationList = checkRevocationList,
+            certificateRevocationListRepository = certificateRevocationListRepository
         )
+
     private val renamedConversationHandler: RenamedConversationEventHandler
         get() = RenamedConversationEventHandlerImpl(
             userStorage.database.conversationDAO, persistMessage
@@ -1425,7 +1436,7 @@ class UserSessionScope internal constructor(
             clientRepository = clientRepository
         )
 
-    private val membersHavingLegalHoldClient: MembersHavingLegalHoldClientUseCase
+    val membersHavingLegalHoldClient: MembersHavingLegalHoldClientUseCase
         get() = MembersHavingLegalHoldClientUseCaseImpl(clientRepository)
 
     private val legalHoldSystemMessagesHandler = LegalHoldSystemMessagesHandlerImpl(
@@ -1614,6 +1625,11 @@ class UserSessionScope internal constructor(
         ACMECertificatesSyncWorkerImpl(e2eiRepository)
     }
 
+    private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase
+        get() = RefreshUsersWithoutMetadataUseCaseImpl(
+            userRepository
+        )
+
     @OptIn(DelicateKaliumApi::class)
     val client: ClientScope
         get() = ClientScope(
@@ -1665,7 +1681,8 @@ class UserSessionScope internal constructor(
             messages.deleteEphemeralMessageEndDate,
             oneOnOneResolver,
             this,
-            userScopedLogger
+            userScopedLogger,
+            refreshUsersWithoutMetadata
         )
     }
 
@@ -1746,7 +1763,8 @@ class UserSessionScope internal constructor(
             team.isSelfATeamMember,
             updateSupportedProtocols,
             clientRepository,
-            joinExistingMLSConversations
+            joinExistingMLSConversations,
+            refreshUsersWithoutMetadata
         )
 
     val search: SearchScope
@@ -1766,6 +1784,7 @@ class UserSessionScope internal constructor(
             logoutRepository,
             globalScope.sessionRepository,
             clientRepository,
+            userConfigRepository,
             userId,
             client.deregisterNativePushToken,
             client.clearClientData,
@@ -1827,6 +1846,7 @@ class UserSessionScope internal constructor(
         get() = MarkFileSharingChangeAsNotifiedUseCase(userConfigRepository)
 
     val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(featureSupport, userConfigRepository)
+    val isE2EIEnabled: IsE2EIEnabledUseCase get() = IsE2EIEnabledUseCaseImpl(userConfigRepository)
 
     val observeE2EIRequired: ObserveE2EIRequiredUseCase
         get() = ObserveE2EIRequiredUseCaseImpl(

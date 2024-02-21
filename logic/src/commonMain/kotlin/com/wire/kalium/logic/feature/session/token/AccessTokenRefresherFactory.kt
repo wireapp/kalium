@@ -38,7 +38,6 @@ internal class AccessTokenRefresherFactoryImpl(
 ) : AccessTokenRefresherFactory {
     override fun create(accessTokenApi: AccessTokenApi): AccessTokenRefresher {
         return AccessTokenRefresherImpl(
-            userId = userId,
             repository = AccessTokenRepositoryImpl(
                 userId = userId,
                 accessTokenApi = accessTokenApi,
