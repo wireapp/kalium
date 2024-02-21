@@ -1463,7 +1463,7 @@ class MLSConversationRepositoryTest {
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
-            .withGetMLSGroupIdByUserIdReturns(Arrangement.GROUP_ID.value)
+            .withGetMLSGroupIdByConversationIdReturns(Arrangement.GROUP_ID.value)
             .withGetExternalSenderKeySuccessful()
             .withGetPublicKeysSuccessful()
             .withUpdateKeyingMaterialSuccessful()
