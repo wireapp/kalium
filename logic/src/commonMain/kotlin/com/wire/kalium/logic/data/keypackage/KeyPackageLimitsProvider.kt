@@ -33,7 +33,9 @@ class KeyPackageLimitsProviderImpl(
 ) : KeyPackageLimitsProvider {
 
     private val keyPackageUploadLimit: Int
-        get() = if (kaliumConfigs.lowerKeyPackageLimits) KEY_PACKAGE_LIMIT_LOW else KEY_PACKAGE_LIMIT
+        get() = if (kaliumConfigs.lowerKeyPackageLimits) {
+            KEY_PACKAGE_LIMIT_LOW
+        } else KEY_PACKAGE_LIMIT
 
     private val keyPackageUploadThreshold: Float
         get() = KEY_PACKAGE_THRESHOLD
@@ -46,7 +48,7 @@ class KeyPackageLimitsProviderImpl(
 
     companion object {
         internal const val KEY_PACKAGE_LIMIT = 100
-        internal const val KEY_PACKAGE_LIMIT_LOW = 10
-        internal const val KEY_PACKAGE_THRESHOLD = 0.5F
+        internal const val KEY_PACKAGE_LIMIT_LOW = 1
+        internal const val KEY_PACKAGE_THRESHOLD = 1F
     }
 }
