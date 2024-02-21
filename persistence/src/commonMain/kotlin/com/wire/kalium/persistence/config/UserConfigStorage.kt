@@ -203,7 +203,7 @@ data class TeamSettingsSelfDeletionStatusEntity(
 @Serializable
 data class E2EISettingsEntity(
     @SerialName("status") val status: Boolean,
-    @SerialName("discoverUrl") val discoverUrl: String,
+    @SerialName("discoverUrl") val discoverUrl: String?,
     @SerialName("gracePeriodEndMs") val gracePeriodEndMs: Long?,
 )
 
