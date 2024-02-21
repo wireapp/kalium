@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
@@ -48,6 +49,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.AddServiceReq
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ServiceAddedResponse
@@ -139,53 +141,59 @@ internal class ConversationGroupRepositoryImpl(
                     }
                 }
 
-                is Either.Right -> {
-                    val conversationResponse = apiResult.value
-                    val conversationEntity = conversationMapper.fromApiModelToDaoModel(
-                        conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION, selfTeamId
-                    )
-                    val protocol = protocolInfoMapper.fromEntity(conversationEntity.protocolInfo)
+                is Either.Right -> handleGroupConversationCreated(apiResult.value, selfTeamId, usersList, lastUsersAttempt)
+            }
+        }
 
-                    wrapStorageRequest {
-                        conversationDAO.insertConversation(conversationEntity)
-                    }.flatMap {
-                        newGroupConversationSystemMessagesCreator.value.conversationStarted(conversationEntity)
-                    }.flatMap {
-                        newConversationMembersRepository.persistMembersAdditionToTheConversation(
-                            conversationEntity.id, conversationResponse
-                        ).flatMap {
-                            when (lastUsersAttempt) {
-                                is LastUsersAttempt.None -> Either.Right(Unit)
-                                is LastUsersAttempt.Failed ->
-                                    newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
-                                        conversationEntity.id.toModel(), lastUsersAttempt.failedUsers, lastUsersAttempt.failType
-                                    )
-                            }
-                        }.flatMap {
-                            when (protocol) {
-                                is Conversation.ProtocolInfo.Proteus -> Either.Right(Unit)
-                                is Conversation.ProtocolInfo.MLSCapable -> mlsConversationRepository.establishMLSGroup(
-                                    groupID = protocol.groupId,
-                                    members = usersList + selfUserId
-                                )
-                            }
-                        }
-                    }.flatMap {
-                        wrapStorageRequest {
-                            newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
-                                conversationEntity.id.toModel()
-                            )
-                        }
-                    }.flatMap {
-                        wrapStorageRequest {
-                            conversationDAO.getConversationByQualifiedID(conversationEntity.id)?.let {
-                                conversationMapper.fromDaoModel(it)
-                            }
-                        }
-                    }
+    private suspend fun handleGroupConversationCreated(
+        conversationResponse: ConversationResponse,
+        selfTeamId: TeamId?,
+        usersList: List<UserId>,
+        lastUsersAttempt: LastUsersAttempt,
+    ): Either<CoreFailure, Conversation> {
+        val conversationEntity = conversationMapper.fromApiModelToDaoModel(
+            conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION, selfTeamId
+        )
+        val protocol = protocolInfoMapper.fromEntity(conversationEntity.protocolInfo)
+
+        return wrapStorageRequest {
+            conversationDAO.insertConversation(conversationEntity)
+        }.flatMap {
+            newGroupConversationSystemMessagesCreator.value.conversationStarted(conversationEntity)
+        }.flatMap {
+            newConversationMembersRepository.persistMembersAdditionToTheConversation(
+                conversationEntity.id, conversationResponse
+            ).flatMap {
+                when (lastUsersAttempt) {
+                    is LastUsersAttempt.None -> Either.Right(Unit)
+                    is LastUsersAttempt.Failed ->
+                        newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
+                            conversationEntity.id.toModel(), lastUsersAttempt.failedUsers, lastUsersAttempt.failType
+                        )
+                }
+            }.flatMap {
+                when (protocol) {
+                    is Conversation.ProtocolInfo.Proteus -> Either.Right(Unit)
+                    is Conversation.ProtocolInfo.MLSCapable -> mlsConversationRepository.establishMLSGroup(
+                        groupID = protocol.groupId,
+                        members = usersList + selfUserId
+                    )
+                }
+            }
+        }.flatMap {
+            wrapStorageRequest {
+                newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
+                    conversationEntity.id.toModel()
+                )
+            }
+        }.flatMap {
+            wrapStorageRequest {
+                conversationDAO.getConversationByQualifiedID(conversationEntity.id)?.let {
+                    conversationMapper.fromDaoModel(it)
                 }
             }
         }
+    }
 
     override suspend fun addMembers(
         userIdList: List<UserId>,

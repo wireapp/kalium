@@ -637,7 +637,7 @@ private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage)
     else -> MessageContent.QuotedMessageDetails.Invalid
 }
 
-@Suppress("ComplexMethod")
+@Suppress("ComplexMethod", "LongMethod")
 fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
     is MessageContent.MemberChange -> {
         val memberUserIdList = this.members.map { it.toDao() }
