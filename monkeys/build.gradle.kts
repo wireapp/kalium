@@ -60,9 +60,14 @@ tasks.startScripts {
     dependsOn(serverScripts)
 }
 
+tasks.jar {
+    manifest {
+        attributes["CC-Version"] = libs.coreCrypto.get().version
+    }
+}
+
 sourceSets {
     val main by getting {
-
         dependencies {
             implementation(project(":network"))
             implementation(project(":cryptography"))
