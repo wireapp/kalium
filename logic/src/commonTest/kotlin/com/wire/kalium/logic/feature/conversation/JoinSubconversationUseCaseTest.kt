@@ -70,7 +70,7 @@ class JoinSubconversationUseCaseTest {
 
             verify(arrangement.mlsConversationRepository)
                 .suspendFunction(arrangement.mlsConversationRepository::establishMLSSubConversationGroup)
-                .with(eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_ZERO_EPOCH.groupId)))
+                .with(eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_ZERO_EPOCH.groupId)), anything())
                 .wasInvoked(exactly = once)
         }
 
@@ -139,7 +139,7 @@ class JoinSubconversationUseCaseTest {
 
             verify(arrangement.mlsConversationRepository)
                 .suspendFunction(arrangement.mlsConversationRepository::establishMLSSubConversationGroup)
-                .with(eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.groupId)))
+                .with(eq(GroupID(Arrangement.SUBCONVERSATION_RESPONSE_WITH_STALE_EPOCH.groupId)), anything())
                 .wasInvoked(exactly = once)
         }
 
@@ -195,7 +195,7 @@ class JoinSubconversationUseCaseTest {
         fun withEstablishMLSSubConversationGroupSuccessful() = apply {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::establishMLSSubConversationGroup)
-                .whenInvokedWith(anything())
+                .whenInvokedWith(anything(), anything())
                 .thenReturn(Either.Right(Unit))
         }
 

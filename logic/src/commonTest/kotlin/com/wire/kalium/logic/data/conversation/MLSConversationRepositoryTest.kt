@@ -1463,13 +1463,14 @@ class MLSConversationRepositoryTest {
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
+            .withGetMLSGroupIdByUserIdReturns(Arrangement.GROUP_ID.value)
             .withGetExternalSenderKeySuccessful()
             .withGetPublicKeysSuccessful()
             .withUpdateKeyingMaterialSuccessful()
             .withSendCommitBundleSuccessful()
             .arrange()
 
-        val result = mlsConversationRepository.establishMLSSubConversationGroup(Arrangement.GROUP_ID)
+        val result = mlsConversationRepository.establishMLSSubConversationGroup(Arrangement.GROUP_ID, TestConversation.ID)
         result.shouldSucceed()
 
         verify(arrangement.mlsClient)

@@ -29,6 +29,7 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.event.Event
@@ -114,7 +115,7 @@ data class E2EIdentity(
 interface MLSConversationRepository {
     suspend fun decryptMessage(message: ByteArray, groupID: GroupID): Either<CoreFailure, List<DecryptedMessageBundle>>
     suspend fun establishMLSGroup(groupID: GroupID, members: List<UserId>): Either<CoreFailure, Unit>
-    suspend fun establishMLSSubConversationGroup(groupID: GroupID): Either<CoreFailure, Unit>
+    suspend fun establishMLSSubConversationGroup(groupID: GroupID, parentId: ConversationId): Either<CoreFailure, Unit>
     suspend fun establishMLSGroupFromWelcome(welcomeEvent: MLSWelcome): Either<CoreFailure, Unit>
     suspend fun hasEstablishedMLSGroup(groupID: GroupID): Either<CoreFailure, Boolean>
     suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
@@ -530,11 +531,14 @@ internal class MLSConversationDataSource(
     }
 
     override suspend fun establishMLSSubConversationGroup(
-        groupID: GroupID
+        groupID: GroupID,
+        parentId: ConversationId
     ): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            val externalSenderKey = mlsClient.getExternalSenders(idMapper.toCryptoModel(groupID))
-            establishMLSGroup(groupID, emptyList(), listOf(mlsPublicKeysMapper.toCrypto(externalSenderKey)))
+            conversationDAO.getMLSGroupIdByConversationId(parentId.toDao())?.let { parentGroupId ->
+                val externalSenderKey = mlsClient.getExternalSenders(GroupID(parentGroupId).toCrypto())
+                establishMLSGroup(groupID, emptyList(), listOf(mlsPublicKeysMapper.toCrypto(externalSenderKey)))
+            } ?: Either.Left(StorageFailure.DataNotFound)
         }
     }
 
