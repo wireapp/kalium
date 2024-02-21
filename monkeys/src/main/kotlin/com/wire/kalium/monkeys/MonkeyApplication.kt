@@ -180,10 +180,12 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
         val isActive = AtomicBoolean(true)
 
         fun getCCVersion(): String {
-            this::class.java.classLoader?.getResources("META-INF/MANIFEST.MF")?.asIterator()?.forEach {
-                val manifest = Manifest(it.openStream())
-                if (manifest.mainAttributes.getValue("CC-Version") != null)
-                    return manifest.mainAttributes.getValue("CC-Version")
+            this::class.java.classLoader?.getResources("META-INF/MANIFEST.MF")?.asIterator()?.forEach { url ->
+                url.openStream().use {
+                    val manifest = Manifest(it)
+                    if (manifest.mainAttributes.getValue("CC-Version") != null)
+                        return manifest.mainAttributes.getValue("CC-Version")
+                }
             }
             return "Not-Found"
         }
