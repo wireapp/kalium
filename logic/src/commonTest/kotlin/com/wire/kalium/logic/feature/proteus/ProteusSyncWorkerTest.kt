@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.proteus
 
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.PreKeyRepositoryArrangement
@@ -123,7 +124,8 @@ class ProteusSyncWorkerTest {
                 incrementalSyncRepository = incrementalSyncRepository,
                 proteusPreKeyRefiller = proteusPreKeyRefiller,
                 preKeyRepository = preKeyRepository,
-                minIntervalBetweenRefills = minIntervalBetweenRefills
+                minIntervalBetweenRefills = minIntervalBetweenRefills,
+                kaliumLogger = kaliumLogger
             )
         }
     }

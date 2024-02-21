@@ -24,6 +24,7 @@ import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.E2EIConversationState
+import com.wire.kalium.cryptography.ExternalSenderKey
 import com.wire.kalium.cryptography.GroupInfoBundle
 import com.wire.kalium.cryptography.GroupInfoEncryptionType
 import com.wire.kalium.cryptography.MLSClient
@@ -126,35 +127,36 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenCommitMessageWithNewDistributionPoints_whenDecryptingMessage_thenCheckRevocationList() = runTest(TestKaliumDispatcher.default) {
-        val messageWithNewDistributionPoints = Arrangement.DECRYPTED_MESSAGE_BUNDLE.copy(
-            crlNewDistributionPoints = listOf("url")
-        )
-        val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
-            .withDecryptMLSMessageSuccessful(messageWithNewDistributionPoints)
-            .withCheckRevocationListResult()
-            .arrange()
+    fun givenCommitMessageWithNewDistributionPoints_whenDecryptingMessage_thenCheckRevocationList() =
+        runTest(TestKaliumDispatcher.default) {
+            val messageWithNewDistributionPoints = Arrangement.DECRYPTED_MESSAGE_BUNDLE.copy(
+                crlNewDistributionPoints = listOf("url")
+            )
+            val (arrangement, mlsConversationRepository) = Arrangement()
+                .withGetMLSClientSuccessful()
+                .withDecryptMLSMessageSuccessful(messageWithNewDistributionPoints)
+                .withCheckRevocationListResult()
+                .arrange()
 
-        val epochChange = async(TestKaliumDispatcher.default) {
-            arrangement.epochsFlow.first()
+            val epochChange = async(TestKaliumDispatcher.default) {
+                arrangement.epochsFlow.first()
+            }
+            yield()
+
+            mlsConversationRepository.decryptMessage(Arrangement.COMMIT, Arrangement.GROUP_ID)
+
+            verify(arrangement.checkRevocationList)
+                .suspendFunction(arrangement.checkRevocationList::invoke)
+                .with(any())
+                .wasInvoked(once)
+
+            verify(arrangement.certificateRevocationListRepository)
+                .suspendFunction(arrangement.certificateRevocationListRepository::addOrUpdateCRL)
+                .with(any(), any())
+                .wasInvoked(once)
+
+            assertEquals(Arrangement.GROUP_ID, epochChange.await())
         }
-        yield()
-
-        mlsConversationRepository.decryptMessage(Arrangement.COMMIT, Arrangement.GROUP_ID)
-
-        verify(arrangement.checkRevocationList)
-            .suspendFunction(arrangement.checkRevocationList::invoke)
-            .with(any())
-            .wasInvoked(once)
-
-        verify(arrangement.certificateRevocationListRepository)
-            .suspendFunction(arrangement.certificateRevocationListRepository::addOrUpdateCRL)
-            .with(any(), any())
-            .wasInvoked(once)
-
-        assertEquals(Arrangement.GROUP_ID, epochChange.await())
-    }
 
     @Test
     fun givenSuccessfulResponses_whenCallingEstablishMLSGroup_thenGroupIsCreatedAndCommitBundleIsSentAndAccepted() = runTest {
@@ -1319,14 +1321,14 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenGetClientId_whenGetUserIdentitiesFails_thenReturnsError() = runTest {
+    fun givenGetClientId_whenGetUserIdentitiesEmpty_thenReturnsNull() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withGetDeviceIdentitiesReturn(emptyList())
             .withGetE2EIConversationClientInfoByClientIdReturns(E2EI_CONVERSATION_CLIENT_INFO_ENTITY)
             .arrange()
 
-        mlsConversationRepository.getClientIdentity(TestClient.CLIENT_ID).shouldFail()
+        assertEquals(Either.Right(null), mlsConversationRepository.getClientIdentity(TestClient.CLIENT_ID))
 
         verify(arrangement.mlsClient)
             .suspendFunction(arrangement.mlsClient::getDeviceIdentities)
@@ -1455,6 +1457,38 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Test
+    fun givenSuccessfulResponses_whenCallingEstablishMLSSubConversationGroup_thenGroupIsCreatedAndCommitBundleIsSentAndAccepted() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsReturningNothing()
+            .withClaimKeyPackagesSuccessful()
+            .withGetMLSClientSuccessful()
+            .withGetMLSGroupIdByConversationIdReturns(Arrangement.GROUP_ID.value)
+            .withGetExternalSenderKeySuccessful()
+            .withGetPublicKeysSuccessful()
+            .withUpdateKeyingMaterialSuccessful()
+            .withSendCommitBundleSuccessful()
+            .arrange()
+
+        val result = mlsConversationRepository.establishMLSSubConversationGroup(Arrangement.GROUP_ID, TestConversation.ID)
+        result.shouldSucceed()
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::createConversation)
+            .with(eq(Arrangement.RAW_GROUP_ID), eq(listOf(Arrangement.CRYPTO_MLS_EXTERNAL_KEY)))
+            .wasInvoked(once)
+
+        verify(arrangement.mlsMessageApi)
+            .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
+            .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
+            .wasInvoked(once)
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::commitAccepted)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+    }
+
     private class Arrangement {
 
         @Mock
@@ -1555,11 +1589,13 @@ class MLSConversationRepositoryTest {
                 .whenInvokedWith(anything())
                 .then { Either.Right(keyPackages) }
         }
+
         fun withKeyPackageLimits(refillAmount: Int) = apply {
             given(keyPackageLimitsProvider).function(keyPackageLimitsProvider::refillAmount)
                 .whenInvoked()
                 .thenReturn(refillAmount)
         }
+
         fun withReplaceKeyPackagesReturning(result: Either<CoreFailure, Unit>) = apply {
             given(keyPackageRepository)
                 .suspendFunction(keyPackageRepository::replaceKeyPackages)
@@ -1579,6 +1615,13 @@ class MLSConversationRepositoryTest {
                 .suspendFunction(mlsClientProvider::getMLSClient)
                 .whenInvokedWith(anything())
                 .then { Either.Right(mlsClient) }
+        }
+
+        fun withGetExternalSenderKeySuccessful() = apply {
+            given(mlsClient)
+                .suspendFunction(mlsClient::getExternalSenders)
+                .whenInvokedWith(anything())
+                .thenReturn(EXTERNAL_SENDER_KEY)
         }
 
         fun withGetMLSClientFailed(failure: CoreFailure.Unknown) = apply {
@@ -1772,7 +1815,7 @@ class MLSConversationRepositoryTest {
             const val EPOCH = 5UL
             const val RAW_GROUP_ID = "groupId"
             val GROUP_ID = GroupID(RAW_GROUP_ID)
-            val WELCOME_BUNDLE = WelcomeBundle(RAW_GROUP_ID,null)
+            val WELCOME_BUNDLE = WelcomeBundle(RAW_GROUP_ID, null)
             val TIME = DateTimeUtil.currentIsoDateTimeString()
             val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(ErrorResponse(405, "", ""))
             val MLS_STALE_MESSAGE_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-stale-message"))
@@ -1790,6 +1833,8 @@ class MLSConversationRepositoryTest {
                 "user1"
             )
             val WELCOME = "welcome".encodeToByteArray()
+            val EXTERNAL_SENDER_KEY = ExternalSenderKey("externalSenderKey".encodeToByteArray())
+            val CRYPTO_MLS_EXTERNAL_KEY = MapperProvider.mlsPublicKeyMapper().toCrypto(EXTERNAL_SENDER_KEY)
             val COMMIT = "commit".encodeToByteArray()
             val PUBLIC_GROUP_STATE = "public_group_state".encodeToByteArray()
             val PUBLIC_GROUP_STATE_BUNDLE = GroupInfoBundle(

@@ -50,6 +50,7 @@ import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapRight
+import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -99,7 +100,7 @@ interface UserRepository {
     suspend fun getSelfUser(): SelfUser?
     suspend fun observeAllKnownUsers(): Flow<Either<StorageFailure, List<OtherUser>>>
     suspend fun getKnownUser(userId: UserId): Flow<OtherUser?>
-    suspend fun getKnownUserMinimized(userId: UserId): OtherUserMinimized?
+    suspend fun getKnownUserMinimized(userId: UserId): Either<StorageFailure, OtherUserMinimized>
     suspend fun getUsersWithOneOnOneConversation(): List<OtherUser>
     suspend fun observeUser(userId: UserId): Flow<User?>
     suspend fun userById(userId: UserId): Either<CoreFailure, OtherUser>
@@ -238,6 +239,9 @@ internal class UserDataSource internal constructor(
             .flatMap { userProfileDTO ->
                 fetchTeamMembersByIds(listOf(userProfileDTO))
                     .flatMap { persistUsers(listOf(userProfileDTO), it) }
+            }
+            .onFailure {
+                userDAO.insertOrIgnoreIncompleteUsers(listOf(userId.toDao()))
             }
 
     override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> =
@@ -426,10 +430,12 @@ internal class UserDataSource internal constructor(
             }
     }
 
-    override suspend fun getKnownUserMinimized(userId: UserId) = userDAO.getUserMinimizedByQualifiedID(
-        qualifiedID = userId.toDao()
-    )?.let {
-        userMapper.fromUserEntityToOtherUserMinimized(it)
+    override suspend fun getKnownUserMinimized(userId: UserId) = wrapStorageRequest {
+        userDAO.getUserMinimizedByQualifiedID(
+            qualifiedID = userId.toDao()
+        )?.let {
+            userMapper.fromUserEntityToOtherUserMinimized(it)
+        }
     }
 
     override suspend fun observeUser(userId: UserId): Flow<User?> =

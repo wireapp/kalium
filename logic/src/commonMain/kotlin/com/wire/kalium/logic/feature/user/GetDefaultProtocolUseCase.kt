@@ -15,28 +15,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.feature.user
 
-package com.wire.kalium.logic.data.conversation
-
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.user.SupportedProtocol
+import com.wire.kalium.logic.functional.fold
 
-// TODO(qol): rename to CreateConversationParam
-data class ConversationOptions(
-    val access: Set<Conversation.Access>? = null,
-    val accessRole: Set<Conversation.AccessRole>? = null,
-    val readReceiptsEnabled: Boolean = false,
-    val protocol: Protocol = Protocol.PROTEUS,
-    val creatorClientId: ClientId? = null
-) {
-    enum class Protocol {
-        PROTEUS, MLS;
+/**
+ * Get the Default Protocol [SupportedProtocol]
+ */
+interface GetDefaultProtocolUseCase {
+    /**
+     * @return [SupportedProtocol.MLS] or [SupportedProtocol.PROTEUS]
+     */
+    operator fun invoke(): SupportedProtocol
+}
 
-        companion object {
-            fun fromSupportedProtocolToConversationOptionsProtocol(supportedProtocol: SupportedProtocol): Protocol =
-                when (supportedProtocol) {
-                    SupportedProtocol.MLS -> MLS
-                    SupportedProtocol.PROTEUS -> PROTEUS
-                }
-        }
-    }
+internal class GetDefaultProtocolUseCaseImpl(
+    private val userConfigRepository: UserConfigRepository
+) : GetDefaultProtocolUseCase {
+
+    override fun invoke(): SupportedProtocol =
+        userConfigRepository.getDefaultProtocol().fold({
+            SupportedProtocol.PROTEUS
+        }, { supportedProtocol ->
+            supportedProtocol
+        })
 }
