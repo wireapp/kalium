@@ -91,9 +91,8 @@ internal class JoinSubconversationUseCaseImpl(
                         )
                     )
                 }.flatMap {
-                    mlsConversationRepository.establishMLSGroup(
-                        GroupID(subconversationDetails.groupId),
-                        emptyList()
+                    mlsConversationRepository.establishMLSSubConversationGroup(
+                        GroupID(subconversationDetails.groupId)
                     )
                 }
             } else {
@@ -117,7 +116,7 @@ internal class JoinSubconversationUseCaseImpl(
                 }
             }
         } else {
-            mlsConversationRepository.establishMLSGroup(GroupID(subconversationDetails.groupId), emptyList())
+            mlsConversationRepository.establishMLSSubConversationGroup(GroupID(subconversationDetails.groupId))
         }
 
     private suspend fun joinOrEstablishSubconversationAndRetry(
