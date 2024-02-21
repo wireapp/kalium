@@ -68,6 +68,10 @@ class MLSClientImpl : MLSClient {
         TODO("Not yet implemented")
     }
 
+    override suspend fun getExternalSenders(groupId: MLSGroupId): ExternalSenderKey {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun wipeConversation(groupId: MLSGroupId) {
         TODO("Not yet implemented")
     }
