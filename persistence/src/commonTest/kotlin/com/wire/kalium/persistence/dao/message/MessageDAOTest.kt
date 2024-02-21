@@ -34,7 +34,6 @@ import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
@@ -53,7 +52,6 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
 @Suppress("LargeClass")
-@OptIn(ExperimentalCoroutinesApi::class)
 class MessageDAOTest : BaseDatabaseTest() {
 
     private lateinit var messageDAO: MessageDAO
@@ -429,7 +427,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                         1000,
                         assetName = "test name",
                         assetMimeType = "MP4",
-                        assetDownloadStatus = null,
                         assetOtrKey = byteArrayOf(1),
                         assetSha256Key = byteArrayOf(1),
                         assetId = "assetId",
@@ -479,7 +476,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                         1000,
                         assetName = "test name",
                         assetMimeType = mimeType,
-                        assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
                         assetOtrKey = byteArrayOf(1),
                         assetSha256Key = byteArrayOf(1),
                         assetId = assetId,
@@ -500,7 +496,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                         1000,
                         assetName = "test name",
                         assetMimeType = "image/jpeg",
-                        assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
                         assetOtrKey = byteArrayOf(1),
                         assetSha256Key = byteArrayOf(1),
                         assetId = assetId,
@@ -522,7 +517,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                         1000,
                         assetName = "test name",
                         assetMimeType = "image/png",
-                        assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
                         assetOtrKey = byteArrayOf(1),
                         assetSha256Key = byteArrayOf(1),
                         assetId = assetId,
@@ -544,7 +538,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                         1000,
                         assetName = "test name",
                         assetMimeType = "image/png",
-                        assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
                         assetOtrKey = byteArrayOf(1),
                         assetSha256Key = byteArrayOf(1),
                         assetId = assetId,
@@ -1156,10 +1149,6 @@ class MessageDAOTest : BaseDatabaseTest() {
         val senderClientId = "someClient"
         val dummyOtrKey = byteArrayOf(1, 2, 3)
         val dummySha256Key = byteArrayOf(10, 9, 8, 7, 6)
-        val initialUploadStatus = MessageEntity.UploadStatus.IN_PROGRESS
-        val updatedUploadStatus = MessageEntity.UploadStatus.UPLOADED
-        val initialDownloadStatus = MessageEntity.DownloadStatus.IN_PROGRESS
-        val updatedDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY
         val initialAssetSize = 1000L
         val updatedAssetSize = 2000L
         val initialAssetName = "Some asset name.zip"
@@ -1195,8 +1184,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                 assetId = initialAssetId,
                 assetDomain = initialDomain,
                 assetEncryptionAlgorithm = initialAssetEncryption,
-                assetUploadStatus = initialUploadStatus,
-                assetDownloadStatus = initialDownloadStatus,
                 assetToken = initialAssetToken,
                 assetWidth = initialMetadataWidth,
                 assetHeight = initialMetadataHeight
@@ -1212,8 +1199,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                 assetId = updatedAssetId,
                 assetDomain = updatedAssetDomain,
                 assetEncryptionAlgorithm = updatedAssetEncryption,
-                assetUploadStatus = updatedUploadStatus,
-                assetDownloadStatus = updatedDownloadStatus,
                 assetToken = updatedAssetToken,
                 assetWidth = updatedMetadataWidth,
                 assetHeight = updatedMetadataHeight
@@ -1247,10 +1232,8 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertEquals(initialDomain, updatedMessageContent.assetDomain)
         assertTrue(updatedMessageContent.assetOtrKey.contentEquals(dummyOtrKey))
         assertTrue(updatedMessageContent.assetSha256Key.contentEquals(dummySha256Key))
-        assertEquals(initialDownloadStatus, updatedMessageContent.assetDownloadStatus)
         assertEquals(initialMetadataWidth, updatedMessageContent.assetWidth)
         assertEquals(initialMetadataHeight, updatedMessageContent.assetHeight)
-        assertEquals(initialUploadStatus, updatedMessageContent.assetUploadStatus)
     }
 
     @Test

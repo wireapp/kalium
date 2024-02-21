@@ -103,9 +103,7 @@ class UserDatabaseDataGenerator(
     @Suppress("StringTemplate")
     private suspend fun generateAssetMessages(
         amount: Int,
-        conversationIDEntity: ConversationIDEntity,
-        assetUploadStatus: MessageEntity.UploadStatus,
-        assetDownloadStatus: MessageEntity.DownloadStatus
+        conversationIDEntity: ConversationIDEntity
     ): List<MessageEntity> {
         val messagePrefix = "Asset${databasePrefix}Message${generatedAssetsCount}"
         val messages = mutableListOf<MessageEntity>()
@@ -124,7 +122,7 @@ class UserDatabaseDataGenerator(
             messages.add(
                 MessageEntity.Regular(
                     id = "${messagePrefix}messageId",
-                    content = generateMessageAssetContent(assetUploadStatus, assetDownloadStatus),
+                    content = generateMessageAssetContent(),
                     conversationId = conversationIDEntity,
                     date = DEFAULT_DATE,
                     senderUserId = senderUser.id,
@@ -146,10 +144,7 @@ class UserDatabaseDataGenerator(
     }
 
     @Suppress("StringTemplate")
-    private fun generateMessageAssetContent(
-        assetUploadStatus: MessageEntity.UploadStatus,
-        assetDownloadStatus: MessageEntity.DownloadStatus
-    ): MessageEntityContent.Asset {
+    private fun generateMessageAssetContent(): MessageEntityContent.Asset {
         val messageAssetContentPrefix = "${databasePrefix}MessageAssetContent${generatedAssetsCount}"
 
         return MessageEntityContent.Asset(
@@ -593,9 +588,7 @@ class UserDatabaseDataGenerator(
     @Suppress("StringTemplate")
     suspend fun generateAndInsertMessageAssetContent(
         conversationAmount: Int,
-        assetAmountPerConversation: Int,
-        assetUploadStatus: MessageEntity.UploadStatus,
-        assetDownloadStatus: MessageEntity.DownloadStatus
+        assetAmountPerConversation: Int
     ): List<ConversationViewEntity> {
         val conversationPrefix = "${databasePrefix}Conversation${generatedConversationsCount}"
 
@@ -644,9 +637,7 @@ class UserDatabaseDataGenerator(
             userDatabaseBuilder.messageDAO.insertOrIgnoreMessages(
                 generateAssetMessages(
                     amount = assetAmountPerConversation,
-                    conversationIDEntity = conversationId,
-                    assetUploadStatus = assetUploadStatus,
-                    assetDownloadStatus = assetDownloadStatus
+                    conversationIDEntity = conversationId
                 )
             )
         }

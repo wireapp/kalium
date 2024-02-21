@@ -104,7 +104,6 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
             1000,
             assetName = "test name",
             assetMimeType = "MP4",
-            assetDownloadStatus = null,
             assetOtrKey = byteArrayOf(1),
             assetSha256Key = byteArrayOf(1),
             assetId = "assetId",
