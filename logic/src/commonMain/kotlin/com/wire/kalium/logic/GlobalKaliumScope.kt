@@ -100,6 +100,7 @@ class GlobalKaliumScope internal constructor(
         UnboundNetworkContainerCommon(
             networkStateObserver,
             userAgent,
+            ignoreSSLCertificates = kaliumConfigs.ignoreSSLCertificatesForUnboundCalls,
             kaliumConfigs.certPinningConfig,
             kaliumConfigs.kaliumMockEngine?.mockEngine
         )

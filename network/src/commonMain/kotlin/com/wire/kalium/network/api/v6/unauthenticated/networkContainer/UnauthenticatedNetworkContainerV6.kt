@@ -27,6 +27,10 @@ import com.wire.kalium.network.api.base.unauthenticated.VerificationCodeApi
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApi
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApiImpl
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApiImpl
+import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
+import com.wire.kalium.network.api.base.unbound.versioning.VersionApiImpl
 import com.wire.kalium.network.api.v6.unauthenticated.DomainLookupApiV6
 import com.wire.kalium.network.api.v6.unauthenticated.LoginApiV6
 import com.wire.kalium.network.api.v6.unauthenticated.RegisterApiV6
@@ -50,7 +54,8 @@ class UnauthenticatedNetworkContainerV6 internal constructor(
         serverConfigDTOApiProxy = backendLinks.links.apiProxy,
         proxyCredentials = proxyCredentials,
         certificatePinning = certificatePinning
-    )
+    ),
+    private val developmentApiEnabled: Boolean
 ) : UnauthenticatedNetworkContainer,
     UnauthenticatedNetworkClientProvider by UnauthenticatedNetworkClientProviderImpl(
         networkStateObserver,
@@ -60,6 +65,10 @@ class UnauthenticatedNetworkContainerV6 internal constructor(
     override val loginApi: LoginApi get() = LoginApiV6(unauthenticatedNetworkClient)
     override val verificationCodeApi: VerificationCodeApi get() = VerificationCodeApiV6(unauthenticatedNetworkClient)
     override val domainLookupApi: DomainLookupApi get() = DomainLookupApiV6(unauthenticatedNetworkClient)
+    override val remoteVersion: VersionApi
+        get() = VersionApiImpl(unauthenticatedNetworkClient, developmentApiEnabled = developmentApiEnabled)
+    override val serverConfigApi: ServerConfigApi
+        get() = ServerConfigApiImpl(unauthenticatedNetworkClient)
     override val registerApi: RegisterApi get() = RegisterApiV6(unauthenticatedNetworkClient)
     override val sso: SSOLoginApi get() = SSOLoginApiV6(unauthenticatedNetworkClient)
     override val appVersioningApi: AppVersioningApi get() = AppVersioningApiImpl(unauthenticatedNetworkClient)

@@ -84,7 +84,9 @@ class UnboundNetworkContainerCommon(
         userAgent = userAgent,
         engine = mockEngine ?: defaultHttpEngine(
             ignoreSSLCertificates = ignoreSSLCertificates,
-            certificatePinning = certificatePinning
+            certificatePinning = certificatePinning,
+            proxyCredentials = null,
+            serverConfigDTOApiProxy = null
         )
     ),
     UnboundClearTextTrafficNetworkClientProvider by UnboundClearTextTrafficNetworkClientProviderImpl(

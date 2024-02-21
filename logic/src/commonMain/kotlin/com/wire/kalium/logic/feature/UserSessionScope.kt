@@ -1680,8 +1680,6 @@ class UserSessionScope internal constructor(
             messages.sendConfirmation,
             renamedConversationHandler,
             qualifiedIdMapper,
-            globalScope.serverConfigRepository,
-            team.isSelfATeamMember,
             authenticationScope.serverConfigRepository,
             userStorage,
             userPropertyRepository,

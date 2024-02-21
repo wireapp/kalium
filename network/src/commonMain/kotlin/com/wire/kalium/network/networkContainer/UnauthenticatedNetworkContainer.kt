@@ -99,7 +99,7 @@ interface UnauthenticatedNetworkContainer {
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
-                    mockEngine
+                    mockEngine = mockEngine,
                 )
 
                 4 -> UnauthenticatedNetworkContainerV4(
@@ -108,8 +108,8 @@ interface UnauthenticatedNetworkContainer {
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
-                    mockEngine
-                )
+                    mockEngine = mockEngine,
+                    )
 
                 5 -> UnauthenticatedNetworkContainerV5(
                     developmentApiEnabled,
@@ -117,7 +117,7 @@ interface UnauthenticatedNetworkContainer {
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
-                    mockEngine
+                    mockEngine = mockEngine,
                 )
 
                 6 -> UnauthenticatedNetworkContainerV6(
@@ -125,7 +125,8 @@ interface UnauthenticatedNetworkContainer {
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
-                    mockEngine
+                    mockEngine = mockEngine,
+                    developmentApiEnabled = developmentApiEnabled
                 )
 
                 else -> error("Unsupported version: ${serverConfigDTO.metaData.commonApiVersion.version}")
