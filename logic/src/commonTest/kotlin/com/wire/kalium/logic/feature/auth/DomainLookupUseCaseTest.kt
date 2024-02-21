@@ -24,6 +24,8 @@ import com.wire.kalium.logic.data.auth.login.DomainLookupResult
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.left
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
 import com.wire.kalium.network.exceptions.KaliumException
@@ -80,7 +82,7 @@ class DomainLookupUseCaseTest {
 
         val (arrangement, useCases) = Arrangement()
             .withDomainLookupResult(Either.Right(DomainLookupResult("https://wire.com", "https://wire.com")))
-            .withFetchServerConfigResult(NetworkResponse.Error(KaliumException.NoNetwork()))
+            .withFetchServerConfigResult(NetworkFailure.NoNetworkConnection(IOException()).left())
             .arrange()
         useCases(userEmail)
 
@@ -97,7 +99,7 @@ class DomainLookupUseCaseTest {
 
         val (arrangement, useCases) = Arrangement()
             .withDomainLookupResult(Either.Right(DomainLookupResult("https://wire.com", "https://wire.com")))
-            .withFetchServerConfigResult(NetworkResponse.Success(expextedDTO, emptyMap(), 200,))
+            .withFetchServerConfigResult(expectedServerLinks.right())
             .arrange()
 
         useCases(userEmail).also {
@@ -136,8 +138,7 @@ class DomainLookupUseCaseTest {
                 .thenReturn(result)
         }
 
-        fun withFetchServerConfigResult(result:
-                                        Either<NetworkFailure, ServerConfig.Links>) = apply {
+        fun withFetchServerConfigResult(result: Either<NetworkFailure, ServerConfig.Links>) = apply {
             given(customServerConfigRepository)
                 .suspendFunction(customServerConfigRepository::fetchRemoteConfig)
                 .whenInvokedWith(any())

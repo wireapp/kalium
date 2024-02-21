@@ -150,7 +150,7 @@ class AuthenticationScope internal constructor(
 
     val domainLookup: DomainLookupUseCase
         get() = DomainLookupUseCase(
-            serverConfigApi = customServerConfigRepository,
+            customServerConfigRepository = customServerConfigRepository,
             ssoLoginRepository = ssoLoginRepository
         )
 
