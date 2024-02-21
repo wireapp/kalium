@@ -118,7 +118,6 @@ internal class SendBrokenAssetMessageUseCaseImpl(
             // Create a unique message ID
             val generatedMessageUuid = uuid4().toString()
 
-
             message = Message.Regular(
                 id = generatedMessageUuid,
                 content = MessageContent.Asset(

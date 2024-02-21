@@ -702,8 +702,7 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
     }
 }
 
-
-fun MessageAssetStatus.toDao() : MessageAssetStatusEntity {
+fun MessageAssetStatus.toDao(): MessageAssetStatusEntity {
     return MessageAssetStatusEntity(
         id = id,
         conversationId = conversationId.toDao(),
@@ -711,7 +710,7 @@ fun MessageAssetStatus.toDao() : MessageAssetStatusEntity {
     )
 }
 
-fun MessageAssetStatusEntity.toModel() : MessageAssetStatus {
+fun MessageAssetStatusEntity.toModel(): MessageAssetStatus {
     return MessageAssetStatus(
         id = id,
         conversationId = conversationId.toModel(),
