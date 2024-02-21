@@ -39,6 +39,8 @@ internal object MLSMessageFailureHandler {
             is MLSFailure.SelfCommitIgnored -> MLSMessageFailureResolution.Ignore
             // Message arrive in an unmerged group, it has been buffered and will be consumed later.
             is MLSFailure.UnmergedPendingGroup -> MLSMessageFailureResolution.Ignore
+            is MLSFailure.StaleProposal -> MLSMessageFailureResolution.Ignore
+            is MLSFailure.StaleCommit -> MLSMessageFailureResolution.Ignore
             else -> MLSMessageFailureResolution.InformUser
         }
     }
