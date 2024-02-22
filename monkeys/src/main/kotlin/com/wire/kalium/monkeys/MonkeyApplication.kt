@@ -24,6 +24,7 @@ import co.touchlab.kermit.LogWriter
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.clikt.parameters.options.default
+import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.enum
 import com.wire.kalium.logger.KaliumLogLevel
@@ -60,6 +61,7 @@ import sun.misc.SignalHandler
 import java.io.File
 import java.util.Optional
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.jar.Manifest
 import kotlin.coroutines.cancellation.CancellationException
 
 fun CoroutineScope.stopIM() {
@@ -70,6 +72,7 @@ fun CoroutineScope.stopIM() {
 
 class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
     private val dataFilePath by argument(help = "path to the test data file")
+    private val skipWarmup by option("-s", "--skip-warmup", help = "Should the warmup be skipped?").flag()
     private val logLevel by option("-l", "--log-level", help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.INFO)
     private val logOutputFile by option("-f", "--log-file", help = "output file for logs")
     private val monkeysLogOutputFile by option("-m", "--monkeys-log-file", help = "output file for monkey logs")
@@ -102,7 +105,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
                 }
             }.start(false).stopServerOnCancellation()
 
-            logger.i("Initializing Infinite Monkeys")
+            logger.i("Initializing Infinite Monkeys - CC: ${getCCVersion()}")
             val testData = TestDataImporter.importFromFile(dataFilePath)
             val eventProcessor = when (testData.eventStorage) {
                 is com.wire.kalium.monkeys.model.EventStorage.FileStorage -> FileStorage(testData.eventStorage)
@@ -151,8 +154,10 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
             // the first one creates the preset groups and logs everyone in so keypackages are created
             val eventChannel = Channel<Event>(Channel.UNLIMITED)
             if (index == 0) {
-                logger.i("Creating initial key packages for clients (logging everyone in and out). This can take a while...")
-                monkeyPool.warmUp(coreLogic)
+                if (!this.skipWarmup) {
+                    logger.i("Creating initial key packages for clients (logging everyone in and out). This can take a while...")
+                    monkeyPool.warmUp(coreLogic)
+                }
                 logger.i("Creating prefixed groups")
                 testData.conversationDistribution.forEach { (prefix, config) ->
                     ConversationPool.createPrefixedConversations(
@@ -173,5 +178,16 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
     companion object {
         val HOME_DIRECTORY: String = homeDirectory()
         val isActive = AtomicBoolean(true)
+
+        fun getCCVersion(): String {
+            this::class.java.classLoader?.getResources("META-INF/MANIFEST.MF")?.asIterator()?.forEach { url ->
+                url.openStream().use {
+                    val manifest = Manifest(it)
+                    if (manifest.mainAttributes.getValue("CC-Version") != null)
+                        return manifest.mainAttributes.getValue("CC-Version")
+                }
+            }
+            return "Not-Found"
+        }
     }
 }
