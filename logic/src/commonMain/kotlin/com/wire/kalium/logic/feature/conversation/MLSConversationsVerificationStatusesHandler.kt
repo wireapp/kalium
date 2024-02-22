@@ -18,19 +18,24 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation.VerificationStatus
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.conversation.mls.ConversationVerificationStatusChecker
+import com.wire.kalium.logic.feature.conversation.mls.EpochChangesObserver
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.mapLatest
+import kotlinx.coroutines.flow.onEach
 
 /**
  * Observes all the MLS Conversations Verification status.
@@ -43,20 +48,34 @@ internal interface MLSConversationsVerificationStatusesHandler {
 internal class MLSConversationsVerificationStatusesHandlerImpl(
     private val conversationRepository: ConversationRepository,
     private val persistMessage: PersistMessageUseCase,
-    private val mlsConversationRepository: MLSConversationRepository,
+    private val conversationVerificationStatusChecker: ConversationVerificationStatusChecker,
+    private val epochChangesObserver: EpochChangesObserver,
     private val selfUserId: UserId,
+    kaliumLogger: KaliumLogger
 ) : MLSConversationsVerificationStatusesHandler {
 
-    override suspend fun invoke() =
-        mlsConversationRepository.observeEpochChanges()
-            .mapLatest { groupId -> mlsConversationRepository.getConversationVerificationStatus(groupId).map { groupId to it } }
+    private val logger = kaliumLogger.withTextTag("MLSConversationsVerificationStatusesHandler")
+
+    override suspend fun invoke() {
+        logger.d("Starting to monitor")
+        epochChangesObserver.observe()
+            .mapLatest { groupId -> conversationVerificationStatusChecker.check(groupId).map { groupId to it } }
+            .onEach {
+                if (it is Either.Left) {
+                    val failure = it.value
+                    val throwable = if (failure is CoreFailure.Unknown) failure.rootCause else null
+                    logger.w("Error while checking conversation verification status: ${it.value}", throwable)
+                }
+            }
             .onlyRight()
             .collect { (groupId, newStatus) ->
                 conversationRepository.getConversationDetailsByMLSGroupId(groupId)
                     .map { conversation -> updateStatusAndNotifyUserIfNeeded(newStatus, conversation) }
             }
+    }
 
     private suspend fun updateStatusAndNotifyUserIfNeeded(newStatusFromCC: VerificationStatus, conversation: ConversationDetails) {
+        logger.i("Updating verification status and notifying user if needed")
         val currentStatus = conversation.conversation.mlsVerificationStatus
         val newStatus = getActualNewStatus(newStatusFromCC, currentStatus)
 
@@ -91,6 +110,7 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
         conversationId: ConversationId,
         updatedStatus: VerificationStatus
     ) {
+        logger.i("Notifying user about state changes")
         val content = if (updatedStatus == VerificationStatus.VERIFIED) MessageContent.ConversationVerifiedMLS
         else MessageContent.ConversationDegradedMLS
 
@@ -106,5 +126,7 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
         )
 
         persistMessage(conversationDegradedMessage)
+
+        conversationRepository.setDegradedConversationNotifiedFlag(conversationId, updatedStatus == VerificationStatus.DEGRADED)
     }
 }

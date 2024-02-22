@@ -214,7 +214,7 @@ interface UserDAO {
      *
      * @return true if the user was updated
      */
-    suspend fun updateUser(update: PartialUserEntity): Boolean
+    suspend fun updateUser(update: PartialUserEntity)
 
     suspend fun updateUser(users: List<PartialUserEntity>)
 
@@ -275,7 +275,7 @@ interface UserDAO {
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
     suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
     fun observeUsersDetailsNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserDetailsEntity>>
-    suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State)
+    suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedIDEntity>)
     suspend fun getUsersDetailsNotInConversationByNameOrHandleOrEmail(
         conversationId: QualifiedIDEntity,
         searchQuery: String,

@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.sync
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.kaliumLogger
@@ -34,18 +35,23 @@ internal interface AvsSyncStateReporter {
 
 internal class AvsSyncStateReporterImpl(
     val callManager: Lazy<CallManager>,
-    val observeSyncStateUseCase: ObserveSyncStateUseCase
+    val observeSyncStateUseCase: ObserveSyncStateUseCase,
+    kaliumLogger: KaliumLogger
 ) : AvsSyncStateReporter {
+
+    private val logger = kaliumLogger.withTextTag("AvsSyncStateReporter")
+
     override suspend fun execute() {
+        logger.d("Starting to monitor")
         observeSyncStateUseCase().distinctUntilChanged().collectLatest {
             when (it) {
                 SyncState.GatheringPendingEvents -> {
-                    kaliumLogger.d("Reporting that the app has started IncrementalSync to AVS")
+                    logger.d("Reporting that the app has started IncrementalSync to AVS")
                     callManager.value.reportProcessNotifications(true)
                 }
 
                 SyncState.Live -> {
-                    kaliumLogger.d("Reporting that the app has finished IncrementalSync to AVS")
+                    logger.d("Reporting that the app has finished IncrementalSync to AVS")
                     callManager.value.reportProcessNotifications(false)
                 }
 

@@ -15,23 +15,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.legalhold
+package com.wire.kalium.logic.data.e2ei
 
-import com.wire.kalium.logic.data.user.UserId
-import kotlinx.coroutines.flow.Flow
+import com.wire.kalium.cryptography.NewAcmeAuthz
+import kotlin.jvm.JvmInline
 
-/**
- * Use case that allows to observe the legal hold state for the self user.
- */
-interface ObserveLegalHoldForSelfUserUseCase {
-    suspend operator fun invoke(): Flow<LegalHoldState>
-}
+data class AcmeAuthorization(
+    val nonce: Nonce,
+    val location: String?,
+    val response: ByteArray,
+    val challengeType: AuthorizationChallengeType,
+    val newAcmeAuthz: NewAcmeAuthz
+)
 
-internal class ObserveLegalHoldForSelfUserUseCaseImpl internal constructor(
-    private val selfUserId: UserId,
-    private val observeLegalHoldStateForUser: ObserveLegalHoldStateForUserUseCase
-) : ObserveLegalHoldForSelfUserUseCase {
-    override suspend fun invoke(): Flow<LegalHoldState> = observeLegalHoldStateForUser(
-        userId = selfUserId
-    )
+@JvmInline
+value class Nonce(val value: String)
+
+data class AuthorizationResult(
+    val oidcAuthorization: NewAcmeAuthz,
+    val dpopAuthorization: NewAcmeAuthz,
+    val nonce: Nonce
+)
+
+enum class AuthorizationChallengeType {
+    /**
+     * Data Protection on Demand
+     */
+    DPoP,
+    /**
+     * OpenID Connect
+     */
+    OIDC
 }

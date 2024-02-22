@@ -191,6 +191,9 @@ interface MLSFailure : CoreFailure {
 }
 
 interface E2EIFailure : CoreFailure {
+
+    data object Disabled : E2EIFailure
+    data object MissingDiscoveryUrl : E2EIFailure
     data class FailedInitialization(val step: E2EIEnrollmentResult.E2EIStep) : E2EIFailure
     data class FailedOAuth(val reason: String) : E2EIFailure
     data class FailedFinalization(val step: E2EIEnrollmentResult.E2EIStep) : E2EIFailure
@@ -296,6 +299,10 @@ internal inline fun <T> wrapMLSRequest(mlsRequest: () -> T): Either<MLSFailure, 
     return try {
         Either.Right(mlsRequest())
     } catch (e: Exception) {
+        kaliumLogger.e(
+            """{ "MLSException": "${e.message},"
+                |"cause": ${e.cause} }" """.trimMargin()
+        )
         kaliumLogger.e(e.stackTraceToString())
         Either.Left(mapMLSException(e))
     }

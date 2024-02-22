@@ -214,10 +214,13 @@ class CallManagerImpl internal constructor(
         val msg = content.value.toByteArray()
 
         val callingValue = json.decodeFromString<MessageContent.Calling.CallingValue>(content.value)
+        val conversationMembers = conversationRepository.observeConversationMembers(message.conversationId).first()
         val shouldRemoteMute = shouldRemoteMuteChecker.check(
+            senderUserId = message.senderUserId,
             selfUserId = userId.await(),
             selfClientId = clientId.await().value,
-            targets = callingValue.targets
+            targets = callingValue.targets,
+            conversationMembers = conversationMembers
         )
 
         if (callingValue.type != REMOTE_MUTE_TYPE || shouldRemoteMute) {

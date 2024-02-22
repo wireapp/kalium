@@ -26,6 +26,7 @@ import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApiImpl
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApiImpl
+import com.wire.kalium.network.clearTextTrafficEngine
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.session.CertificatePinning
 import io.ktor.client.engine.HttpClientEngine
@@ -40,6 +41,10 @@ private interface UnboundNetworkClientProvider {
     val unboundNetworkClient: UnboundNetworkClient
 }
 
+private interface UnboundClearTextTrafficNetworkClientProvider {
+    val unboundClearTextTrafficNetworkClient: UnboundNetworkClient
+}
+
 internal class UnboundNetworkClientProviderImpl(
     networkStateObserver: NetworkStateObserver,
     userAgent: String,
@@ -51,6 +56,21 @@ internal class UnboundNetworkClientProviderImpl(
     }
 
     override val unboundNetworkClient by lazy {
+        UnboundNetworkClient(networkStateObserver, engine)
+    }
+}
+
+internal class UnboundClearTextTrafficNetworkClientProviderImpl(
+    networkStateObserver: NetworkStateObserver,
+    userAgent: String,
+    engine: HttpClientEngine
+) : UnboundClearTextTrafficNetworkClientProvider {
+
+    init {
+        KaliumUserAgentProvider.setUserAgent(userAgent)
+    }
+
+    override val unboundClearTextTrafficNetworkClient by lazy {
         UnboundNetworkClient(networkStateObserver, engine)
     }
 }
@@ -70,8 +90,21 @@ class UnboundNetworkContainerCommon(
             ignoreSSLCertificates = ignoreSSLCertificates,
             certificatePinning = certificatePinning
         )
+    ),
+    UnboundClearTextTrafficNetworkClientProvider by UnboundClearTextTrafficNetworkClientProviderImpl(
+        networkStateObserver = networkStateObserver,
+        userAgent = userAgent,
+        engine = mockEngine ?: clearTextTrafficEngine()
     ) {
     override val serverConfigApi: ServerConfigApi get() = ServerConfigApiImpl(unboundNetworkClient)
-    override val remoteVersion: VersionApi get() = VersionApiImpl(unboundNetworkClient, developmentApiEnabled)
-    override val acmeApi: ACMEApi get() = ACMEApiImpl(unboundNetworkClient)
+    override val remoteVersion: VersionApi
+        get() = VersionApiImpl(
+            unboundNetworkClient,
+            developmentApiEnabled
+        )
+    override val acmeApi: ACMEApi
+        get() = ACMEApiImpl(
+            unboundNetworkClient,
+            unboundClearTextTrafficNetworkClient
+        )
 }

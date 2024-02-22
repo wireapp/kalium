@@ -75,6 +75,7 @@ class MLSMessageCreatorImpl(
                     messageUid = message.id,
                     messageContent = message.content,
                     expectsReadConfirmation = expectsReadConfirmation,
+                    expiresAfterMillis = message.expirationData?.expireAfter?.inWholeMilliseconds,
                     legalHoldStatus = legalHoldStatus
                 )
             )

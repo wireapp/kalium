@@ -18,8 +18,14 @@
 package com.wire.kalium.logic.feature.e2ei
 
 import com.wire.kalium.cryptography.CryptoCertificateStatus
+import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.E2EIFailure
+import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.id.toCrypto
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.e2ei.usecase.GetE2EICertificateUseCaseResult
 import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -29,17 +35,14 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.feature.e2ei.usecase.GetE2EICertificateUseCaseResult
-import kotlinx.coroutines.test.runTest
 
 class GetE2eiCertificateUseCaseTest {
 
     @Test
-    fun givenRepositoryReturnsFailure_whenRunningUseCase_thenReturnNotActivated() = runTest {
+    fun givenRepositoryReturnsFailure_whenRunningUseCase_thenReturnFailure() = runTest {
         val (arrangement, getE2eiCertificateUseCase) = Arrangement()
             .withRepositoryFailure()
             .arrange()
@@ -51,13 +54,13 @@ class GetE2eiCertificateUseCaseTest {
             .with(any())
             .wasInvoked(once)
 
-        assertEquals(GetE2EICertificateUseCaseResult.Failure.NotActivated, result)
+        assertEquals(GetE2EICertificateUseCaseResult.Failure, result)
     }
 
     @Test
     fun givenRepositoryReturnsValidCertificateString_whenRunningUseCase_thenReturnCertificate() = runTest {
         val (arrangement, getE2eiCertificateUseCase) = Arrangement()
-            .withRepositoryValidCertificate()
+            .withRepositoryValidCertificate(IDENTITY)
             .withDecodeSuccess()
             .arrange()
 
@@ -74,6 +77,28 @@ class GetE2eiCertificateUseCaseTest {
             .wasInvoked(once)
 
         assertEquals(true, result is GetE2EICertificateUseCaseResult.Success)
+    }
+
+    @Test
+    fun givenRepositoryReturnsNullCertificate_whenRunningUseCase_thenReturnNotActivated() = runTest {
+        val (arrangement, getE2eiCertificateUseCase) = Arrangement()
+            .withRepositoryValidCertificate(null)
+            .withDecodeSuccess()
+            .arrange()
+
+        val result = getE2eiCertificateUseCase.invoke(CLIENT_ID)
+
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::getClientIdentity)
+            .with(any())
+            .wasInvoked(once)
+
+        verify(arrangement.pemCertificateDecoder)
+            .function(arrangement.pemCertificateDecoder::decode)
+            .with(any())
+            .wasNotInvoked()
+
+        assertEquals(true, result is GetE2EICertificateUseCaseResult.NotActivated)
     }
 
     class Arrangement {
@@ -96,7 +121,7 @@ class GetE2eiCertificateUseCaseTest {
                 .thenReturn(Either.Left(E2EIFailure.Generic(Exception())))
         }
 
-        fun withRepositoryValidCertificate() = apply {
+        fun withRepositoryValidCertificate(identity: WireIdentity?) = apply {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::getClientIdentity)
                 .whenInvokedWith(any())
@@ -113,14 +138,17 @@ class GetE2eiCertificateUseCaseTest {
 
     companion object {
         val CLIENT_ID = ClientId("client-id")
+        private val USER_ID = UserId("value", "domain")
+        private val CRYPTO_QUALIFIED_CLIENT_ID = CryptoQualifiedClientId("clientId", USER_ID.toCrypto())
         val e2eiCertificate = E2eiCertificate("certificate")
-        val identity = WireIdentity(
-            CLIENT_ID.value,
+        val IDENTITY = WireIdentity(
+            CRYPTO_QUALIFIED_CLIENT_ID,
             handle = "alic_test",
             displayName = "Alice Test",
             domain = "test.com",
             certificate = "certificate",
-            status = CryptoCertificateStatus.EXPIRED
+            status = CryptoCertificateStatus.EXPIRED,
+            thumbprint = "thumbprint"
         )
     }
 }

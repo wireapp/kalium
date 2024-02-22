@@ -24,6 +24,8 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -117,6 +119,30 @@ class SendConnectionRequestUseCaseTest {
 
         // then
         assertEquals(SendConnectionRequestResult.Failure.FederationDenied::class, resultFailure::class)
+        verify(arrangement.connectionRepository)
+            .suspendFunction(arrangement.connectionRepository::sendUserConnection)
+            .with(eq(userId))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenAConnectionRequest_whenInvokingAndFailsByMissingLegalHoldConsent_thenShouldReturnsAMissingLegalHoldConsent() = runTest {
+        // given
+        val (arrangement, sendConnectionRequestUseCase) = Arrangement()
+            .withFetchUserInfoResult(Either.Right(Unit))
+            .withCreateConnectionResult(
+                Either.Left(
+                    NetworkFailure.ServerMiscommunication(
+                        KaliumException.InvalidRequestError(ErrorResponse(403, "", "missing-legalhold-consent"))
+                    )
+                )
+            )
+            .arrange()
+        // when
+        val resultFailure = sendConnectionRequestUseCase(userId)
+
+        // then
+        assertEquals(SendConnectionRequestResult.Failure.MissingLegalHoldConsent::class, resultFailure::class)
         verify(arrangement.connectionRepository)
             .suspendFunction(arrangement.connectionRepository::sendUserConnection)
             .with(eq(userId))

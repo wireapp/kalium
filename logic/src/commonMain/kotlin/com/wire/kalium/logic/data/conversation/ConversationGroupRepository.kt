@@ -207,7 +207,7 @@ internal class ConversationGroupRepositoryImpl(
         remainingAttempts: Int = 2
     ): Either<CoreFailure, Unit> {
         return when (val addingMemberResult = mlsConversationRepository.addMemberToMLSGroup(GroupID(groupId), userIdList)) {
-            is Either.Right -> handleMLSMembersAdded(conversationId, userIdList, failedUsersList)
+            is Either.Right -> handleMLSMembersNotAdded(conversationId, failedUsersList)
             is Either.Left -> {
                 addingMemberResult.value.handleMLSMembersFailed(
                     conversationId = conversationId,
@@ -262,13 +262,12 @@ internal class ConversationGroupRepositoryImpl(
         }
     }
 
-    private suspend fun handleMLSMembersAdded(
+    private suspend fun handleMLSMembersNotAdded(
         conversationId: ConversationId,
-        userIdList: List<UserId>,
         failedUsersList: Set<UserId>
     ): Either<CoreFailure, Unit> {
-        return newGroupConversationSystemMessagesCreator.value.conversationResolvedMembersAddedAndFailed(
-            conversationId.toDao(), userIdList, failedUsersList.toList()
+        return newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
+            conversationId, failedUsersList
         ).flatMap {
             Either.Right(Unit)
         }
@@ -290,8 +289,6 @@ internal class ConversationGroupRepositoryImpl(
                                     eventMapper.conversationMemberJoin(
                                         LocalId.generate(),
                                         response.event,
-                                        true,
-                                        false
                                     )
                                 )
                             }
@@ -330,7 +327,7 @@ internal class ConversationGroupRepositoryImpl(
         conversationId: ConversationId
     ) = if (apiResult.value is ConversationMemberAddedResponse.Changed) {
         memberJoinEventHandler.handle(
-            eventMapper.conversationMemberJoin(LocalId.generate(), apiResult.value.event, true, false)
+            eventMapper.conversationMemberJoin(LocalId.generate(), apiResult.value.event)
         ).flatMap {
             if (failedUsersList.isNotEmpty()) {
                 newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(conversationId, failedUsersList)
@@ -405,7 +402,7 @@ internal class ConversationGroupRepositoryImpl(
         if (response is ConversationMemberAddedResponse.Changed) {
             val conversationId = response.event.qualifiedConversation.toModel()
 
-            memberJoinEventHandler.handle(eventMapper.conversationMemberJoin(LocalId.generate(), response.event, true, false))
+            memberJoinEventHandler.handle(eventMapper.conversationMemberJoin(LocalId.generate(), response.event))
                 .flatMap {
                     wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationId.toDao()) }
                         .flatMap { protocol ->
@@ -453,8 +450,6 @@ internal class ConversationGroupRepositoryImpl(
                     eventMapper.conversationMemberLeave(
                         LocalId.generate(),
                         response.event,
-                        false,
-                        false
                     )
                 )
             }
@@ -493,8 +488,6 @@ internal class ConversationGroupRepositoryImpl(
                     eventMapper.conversationMessageTimerUpdate(
                         LocalId.generate(),
                         it,
-                        true,
-                        false
                     )
                 )
             }

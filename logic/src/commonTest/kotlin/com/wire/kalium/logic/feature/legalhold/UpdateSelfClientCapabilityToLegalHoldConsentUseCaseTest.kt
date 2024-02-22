@@ -23,7 +23,10 @@ import com.wire.kalium.logic.data.client.UpdateClientCapabilitiesParam
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.kaliumLogger
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anything
@@ -32,15 +35,30 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 class UpdateSelfClientCapabilityToLegalHoldConsentUseCaseTest {
 
     @Test
+    fun givenAppSyncing_whenInvokingUseCase_thenDoNotUpdateCapabilities() = runTest {
+        val (arrangement, useCase) = Arrangement()
+            .withSyncOngoing()
+            .arrange()
+
+        useCase.invoke()
+
+        verify(arrangement.userConfigRepository)
+            .suspendFunction(arrangement.userConfigRepository::shouldUpdateClientLegalHoldCapability)
+            .wasNotInvoked()
+    }
+
+    @Test
     fun givenUserConfigRepositoryReturnsFalse_whenInvoking_thenTheClientCapabilitiesShouldNotBeUpdated() =
         runTest {
             val (arrangement, useCase) = Arrangement()
+                .withSyncDone()
                 .withShouldUpdateClientLegalHoldCapabilityResult(false)
                 .arrange()
 
@@ -59,6 +77,7 @@ class UpdateSelfClientCapabilityToLegalHoldConsentUseCaseTest {
         runTest {
             // given
             val (arrangement, useCase) = Arrangement()
+                .withSyncDone()
                 .withShouldUpdateClientLegalHoldCapabilityResult(true)
                 .withClientId()
                 .withUpdateClientCapabilitiesSuccess()
@@ -94,16 +113,34 @@ class UpdateSelfClientCapabilityToLegalHoldConsentUseCaseTest {
         @Mock
         val selfClientIdProvider: CurrentClientIdProvider = mock(CurrentClientIdProvider::class)
 
+        @Mock
+        val incrementalSyncRepository: IncrementalSyncRepository = mock(IncrementalSyncRepository::class)
+
         val useCase: UpdateSelfClientCapabilityToLegalHoldConsentUseCase by lazy {
             UpdateSelfClientCapabilityToLegalHoldConsentUseCaseImpl(
                 clientRemoteRepository = clientRemoteRepository,
                 userConfigRepository = userConfigRepository,
-                selfClientIdProvider = selfClientIdProvider
+                selfClientIdProvider = selfClientIdProvider,
+                incrementalSyncRepository = incrementalSyncRepository,
+                kaliumLogger = kaliumLogger
             )
         }
 
         fun arrange() = this to useCase
 
+        fun withSyncOngoing() = apply {
+            given(incrementalSyncRepository)
+                .getter(incrementalSyncRepository::incrementalSyncState)
+                .whenInvoked()
+                .thenReturn(flowOf(IncrementalSyncStatus.FetchingPendingEvents))
+        }
+
+        fun withSyncDone() = apply {
+            given(incrementalSyncRepository)
+                .getter(incrementalSyncRepository::incrementalSyncState)
+                .whenInvoked()
+                .thenReturn(flowOf(IncrementalSyncStatus.Live))
+        }
         fun withShouldUpdateClientLegalHoldCapabilityResult(result: Boolean) = apply {
             given(userConfigRepository)
                 .suspendFunction(userConfigRepository::shouldUpdateClientLegalHoldCapability)

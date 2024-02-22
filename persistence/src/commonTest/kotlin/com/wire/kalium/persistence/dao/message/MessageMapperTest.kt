@@ -21,6 +21,7 @@ import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -114,6 +115,7 @@ class MessageMapperTest {
             expectsReadConfirmation: Boolean = false,
             expireAfterMillis: Long? = null,
             selfDeletionStartDate: Instant? = null,
+            selfDeletionEndDate: Instant? = null,
             readCount: Long = 0,
             senderName: String? = null,
             senderHandle: String? = null,
@@ -128,6 +130,10 @@ class MessageMapperTest {
             senderUserType: UserTypeEntity = UserTypeEntity.STANDARD,
             senderBotService: BotIdEntity? = null,
             senderIsDeleted: Boolean = false,
+            senderExpiresAt: Instant? = null,
+            senderDefederated: Boolean = false,
+            senderSupportedProtocols: Set<SupportedProtocolEntity>? = null,
+            senderActiveOneOnOneConversationId: QualifiedIDEntity? = null,
             isSelfMessage: Boolean = false,
             text: String? = null,
             isQuotingSelfUser: Boolean? = null,
@@ -201,6 +207,7 @@ class MessageMapperTest {
                 expectsReadConfirmation,
                 expireAfterMillis,
                 selfDeletionStartDate,
+                selfDeletionEndDate,
                 readCount,
                 senderName,
                 senderHandle,
@@ -215,6 +222,10 @@ class MessageMapperTest {
                 senderUserType,
                 senderBotService,
                 senderIsDeleted,
+                senderExpiresAt,
+                senderDefederated,
+                senderSupportedProtocols,
+                senderActiveOneOnOneConversationId,
                 isSelfMessage,
                 text,
                 isQuotingSelfUser,

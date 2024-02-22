@@ -202,7 +202,7 @@ class UserDAOImpl internal constructor(
             complete_asset_id = update.completeAssetId,
             supported_protocols = update.supportedProtocols,
             update.id
-        ).executeAsOne() > 0
+        )
     }
 
     override suspend fun updateUser(users: List<PartialUserEntity>) = withContext(queriesContext) {
@@ -385,9 +385,13 @@ class UserDAOImpl internal constructor(
             .mapToList()
             .map { it.map(mapper::toDetailsModel) }
 
-    override suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State) =
+    override suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedIDEntity>) =
         withContext(queriesContext) {
-            userQueries.insertOrIgnoreUserIdWithConnectionStatus(qualifiedID, connectionStatus)
+            userQueries.transaction {
+                for (userId: QualifiedIDEntity in userIds) {
+                    userQueries.insertOrIgnoreUserId(userId)
+                }
+            }
         }
 
     override suspend fun observeAllUsersDetailsByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserDetailsEntity>> =

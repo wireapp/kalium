@@ -23,6 +23,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.MLSConversationRepositoryArrangement
@@ -66,6 +67,11 @@ class MLSConversationsVerificationStatusesHandlerTest {
             .suspendFunction(arrangement.persistMessageUseCase::invoke)
             .with(any())
             .wasNotInvoked()
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::setDegradedConversationNotifiedFlag)
+            .with(any(), any())
+            .wasNotInvoked()
     }
 
     @Test
@@ -88,6 +94,11 @@ class MLSConversationsVerificationStatusesHandlerTest {
         verify(arrangement.persistMessageUseCase)
             .suspendFunction(arrangement.persistMessageUseCase::invoke)
             .with(any())
+            .wasNotInvoked()
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::setDegradedConversationNotifiedFlag)
+            .with(any(), any())
             .wasNotInvoked()
     }
 
@@ -116,6 +127,11 @@ class MLSConversationsVerificationStatusesHandlerTest {
             .suspendFunction(arrangement.persistMessageUseCase::invoke)
             .with(anyInstanceOf(Message.System::class))
             .wasInvoked(once)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::setDegradedConversationNotifiedFlag)
+            .with(any(), eq(true))
+            .wasInvoked(once)
     }
 
     @Test
@@ -141,6 +157,11 @@ class MLSConversationsVerificationStatusesHandlerTest {
         verify(arrangement.persistMessageUseCase)
             .suspendFunction(arrangement.persistMessageUseCase::invoke)
             .with(any())
+            .wasNotInvoked()
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::setDegradedConversationNotifiedFlag)
+            .with(any(), any())
             .wasNotInvoked()
     }
 
@@ -169,6 +190,11 @@ class MLSConversationsVerificationStatusesHandlerTest {
             .suspendFunction(arrangement.persistMessageUseCase::invoke)
             .with(anyInstanceOf(Message.System::class))
             .wasInvoked(once)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::setDegradedConversationNotifiedFlag)
+            .with(any(), eq(false))
+            .wasInvoked(once)
     }
 
     private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
@@ -179,18 +205,20 @@ class MLSConversationsVerificationStatusesHandlerTest {
         PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl() {
 
-
         init {
             withUpdateVerificationStatus(Either.Right(Unit))
             withPersistingMessage(Either.Right(Unit))
+            withSetDegradedConversationNotifiedFlag(Either.Right(Unit))
         }
 
         fun arrange() = block().run {
             this@Arrangement to MLSConversationsVerificationStatusesHandlerImpl(
                 conversationRepository = conversationRepository,
                 persistMessage = persistMessageUseCase,
-                mlsConversationRepository = mlsConversationRepository,
-                selfUserId = TestUser.USER_ID
+                conversationVerificationStatusChecker = conversationVerificationStatusChecker,
+                epochChangesObserver = epochChangesObserver,
+                selfUserId = TestUser.USER_ID,
+                kaliumLogger = kaliumLogger
             )
         }
     }
