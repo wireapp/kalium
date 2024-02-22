@@ -754,14 +754,10 @@ class LegalHoldHandlerTest {
     companion object {
         private val testDispatchers: KaliumDispatcher = TestKaliumDispatcher
         private val legalHoldEventEnabled = Event.User.LegalHoldEnabled(
-            transient = false,
-            live = false,
             id = "id-1",
             userId = TestUser.SELF.id,
         )
         private val legalHoldEventDisabled = Event.User.LegalHoldDisabled(
-            transient = false,
-            live = false,
             id = "id-2",
             userId = TestUser.OTHER_USER_ID
         )

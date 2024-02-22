@@ -50,9 +50,11 @@ interface ACMEApi {
 }
 
 class ACMEApiImpl internal constructor(
-    private val unboundNetworkClient: UnboundNetworkClient
+    private val unboundNetworkClient: UnboundNetworkClient,
+    private val unboundClearTextTrafficNetworkClient: UnboundNetworkClient
 ) : ACMEApi {
     private val httpClient get() = unboundNetworkClient.httpClient
+    private val clearTextTrafficHttpClient get() = unboundClearTextTrafficNetworkClient.httpClient
 
     override suspend fun getTrustAnchors(acmeUrl: String): NetworkResponse<ByteArray> = wrapKaliumResponse {
         httpClient.get("$acmeUrl/$PATH_ACME_ROOTS_PEM")
@@ -77,7 +79,10 @@ class ACMEApiImpl internal constructor(
             handleUnsuccessfulResponse(httpResponse)
         }
 
-    override suspend fun sendACMERequest(url: String, body: ByteArray?): NetworkResponse<ACMEResponse> =
+    override suspend fun sendACMERequest(
+        url: String,
+        body: ByteArray?
+    ): NetworkResponse<ACMEResponse> =
         httpClient.preparePost(url) {
             contentType(ContentType.Application.JoseJson)
             body?.let { setBody(body) }
@@ -161,9 +166,10 @@ class ACMEApiImpl internal constructor(
         httpClient.get("$baseUrl/$PATH_ACME_FEDERATION")
     }
 
-    override suspend fun getClientDomainCRL(discoveryUrl: String): NetworkResponse<ByteArray> = wrapKaliumResponse {
-        httpClient.get("${discoveryUrl.replace("https", "http")}/$PATH_CRL")
-    }
+    override suspend fun getClientDomainCRL(discoveryUrl: String): NetworkResponse<ByteArray> =
+        wrapKaliumResponse {
+            clearTextTrafficHttpClient.get("$discoveryUrl/$PATH_CRL")
+        }
 
     private companion object {
         const val PATH_ACME_FEDERATION = "federation"
@@ -173,5 +179,4 @@ class ACMEApiImpl internal constructor(
         const val LOCATION_HEADER_KEY = "location"
         const val PATH_CRL = "crl"
     }
-
 }

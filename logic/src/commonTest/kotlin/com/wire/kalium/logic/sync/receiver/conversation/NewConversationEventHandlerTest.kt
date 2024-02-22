@@ -421,8 +421,6 @@ class NewConversationEventHandlerTest {
         ) = Event.Conversation.NewConversation(
             id = "eventId",
             conversationId = TestConversation.ID,
-            transient = false,
-            live = false,
             timestampIso = "timestamp",
             conversation = conversation,
             senderUserId = TestUser.SELF.id

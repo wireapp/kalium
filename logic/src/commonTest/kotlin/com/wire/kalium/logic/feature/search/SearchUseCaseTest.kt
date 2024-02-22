@@ -138,7 +138,7 @@ class SearchUseCaseTest {
             newUserSearchDetails("localUser2")
         )
 
-        val expected = SearchUsersUseCase.Result(
+        val expected = SearchUserResult(
             connected = listOf(
                 newUserSearchDetails("remoteAndLocalUser1").copy(name = "updatedNewName"),
                 newUserSearchDetails("localUser2")
@@ -253,7 +253,8 @@ class SearchUseCaseTest {
 
         private val searchUseCase: SearchUsersUseCase = SearchUsersUseCase(
             searchUserRepository = searchUserRepository,
-            selfUserId = selfUserID
+            selfUserId = selfUserID,
+            maxRemoteSearchResultCount = 30
         )
 
         fun arrange(block: Arrangement.() -> Unit) = apply(block)

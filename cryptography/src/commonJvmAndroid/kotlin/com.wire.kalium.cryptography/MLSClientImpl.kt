@@ -52,7 +52,7 @@ class MLSClientImpl(
     }
 
     override suspend fun getPublicKey(): ByteArray {
-        return coreCrypto.clientPublicKey(defaultCiphersuite)
+        return coreCrypto.clientPublicKey(defaultCiphersuite, toCredentialType(getMLSCredentials()))
     }
 
     override suspend fun generateKeyPackages(amount: Int): List<ByteArray> {
@@ -113,6 +113,10 @@ class MLSClientImpl(
         )
 
         coreCrypto.createConversation(groupId.decodeBase64Bytes(), toCredentialType(getMLSCredentials()), conf)
+    }
+
+    override suspend fun getExternalSenders(groupId: MLSGroupId): ExternalSenderKey {
+        return toExternalSenderKey(coreCrypto.getExternalSender(groupId.decodeBase64Bytes()))
     }
 
     override suspend fun wipeConversation(groupId: MLSGroupId) {
@@ -301,6 +305,8 @@ class MLSClientImpl(
             groupId = value.id.encodeBase64(),
             crlNewDistributionPoints = value.crlNewDistributionPoints
         )
+
+        fun toExternalSenderKey(value: ByteArray) = ExternalSenderKey(value)
 
         fun toCommitBundle(value: com.wire.crypto.MemberAddedMessages) = CommitBundle(
             value.commit,
