@@ -77,14 +77,14 @@ internal class SecondFactorVerificationRepositoryImpl(
     }
 
     override fun storeVerificationCode(email: String, verificationCode: String) {
-        verificationCodeStorage[email] = verificationCode
+        verificationCodeStorage[email.lowercase()] = verificationCode
     }
 
     override fun getStoredVerificationCode(email: String): String? {
-        return verificationCodeStorage[email]
+        return verificationCodeStorage[email.lowercase()]
     }
 
     override suspend fun clearStoredVerificationCode(email: String) {
-        verificationCodeStorage.remove(email)
+        verificationCodeStorage.remove(email.lowercase())
     }
 }
