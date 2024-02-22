@@ -920,7 +920,7 @@ class UserSessionScope internal constructor(
         get() = SyncSelfTeamUseCaseImpl(
             userRepository = userRepository,
             teamRepository = teamRepository,
-            fetchAllTeamMembersEagerly = kaliumConfigs.fetchAllTeamMembersEagerly
+            fetchedUsersLimit = kaliumConfigs.limitTeamMembersFetchDuringSlowSync
         )
 
     private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase
@@ -1559,7 +1559,7 @@ class UserSessionScope internal constructor(
         get() = CertificateRevocationListRepositoryDataSource(
             acmeApi = globalScope.unboundNetworkContainer.acmeApi,
             metadataDAO = userStorage.database.metadataDAO,
-            e2eiRepository = e2eiRepository
+            userConfigRepository = userConfigRepository
         )
 
     private val proteusPreKeyRefiller: ProteusPreKeyRefiller
