@@ -111,7 +111,6 @@ class ProteusClientProviderImpl(
             } catch (e: Exception) {
 
                 val logMap = mapOf(
-                    "rootProteusPath" to rootProteusPath,
                     "userId" to userId.value.obfuscateId(),
                     "exception" to e,
                     "message" to e.message,
