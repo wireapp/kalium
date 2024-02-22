@@ -19,6 +19,7 @@ package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.feature.call.CallManager
+import com.wire.kalium.logic.kaliumLogger
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -85,7 +86,8 @@ class AvsSyncStateReporterTest {
 
         fun arrange() = this to AvsSyncStateReporterImpl(
             callManager = lazy { callManager },
-            observeSyncStateUseCase = observeSyncStateUseCase
+            observeSyncStateUseCase = observeSyncStateUseCase,
+            kaliumLogger = kaliumLogger
         )
 
         fun withGatheringEventsSyncState() = apply {
