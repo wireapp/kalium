@@ -97,7 +97,6 @@ class ProteusClientProviderImpl(
         }
     }
 
-
     @Suppress("TooGenericExceptionCaught")
     private suspend fun createProteusClient(): ProteusClient {
         return if (kaliumConfigs.encryptProteusStorage) {
