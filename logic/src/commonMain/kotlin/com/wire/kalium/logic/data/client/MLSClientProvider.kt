@@ -88,6 +88,7 @@ class MLSClientProviderImpl(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun getCoreCrypto(clientId: ClientId?) = coreCryptoCentralMutex.withLock {
         withContext(dispatchers.io) {
             val currentClientId = clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })

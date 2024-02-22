@@ -75,7 +75,3 @@ class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: Str
         const val KEYSTORE_NAME = "keystore"
     }
 }
-
-
-//  unable to open database file: /data/user/0/com.wire.android.internal/app_accounts/
-//  wire.com/14c54480-ab81-4e52-9624-95d611b9ec44/mls/f0347c8de613a188/keystore/keystore
