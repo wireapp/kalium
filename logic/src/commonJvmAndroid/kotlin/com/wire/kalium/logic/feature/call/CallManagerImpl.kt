@@ -399,12 +399,12 @@ class CallManagerImpl internal constructor(
     }
 
     override suspend fun setTestRemoteVideoStates(conversationId: ConversationId, participants: List<Participant>) = withCalling {
-        for (part in participants) {
-            val videoState = if (part.isCameraOn) 1 else 0
+        for (participant in participants) {
+            val videoState = if (participant.isCameraOn) 1 else 0
             kcall_set_user_vidstate(
                 federatedIdMapper.parseToFederatedId(conversationId),
-                federatedIdMapper.parseToFederatedId(part.id),
-                clientid = part.clientId,
+                federatedIdMapper.parseToFederatedId(participant.id),
+                clientid = participant.clientId,
                 videoState
             )
         }
