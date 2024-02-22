@@ -77,7 +77,8 @@ class ConsoleCommand : CliktCommand(name = "console") {
                     if (call.status == CallStatus.ESTABLISHED) {
                         userSession.calls.setTestRemoteVideoStates(
                             conversationId = call.conversationId,
-                            participants = call.participants)
+                            participants = call.participants
+                        )
                     }
                 }
             }
