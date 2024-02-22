@@ -21,11 +21,14 @@ package com.wire.kalium.logic.data.client
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.coreCryptoCentral
 import com.wire.kalium.cryptography.cryptoboxProteusClient
+import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.logStructuredJson
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.logic.wrapProteusRequest
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
@@ -106,7 +109,15 @@ class ProteusClientProviderImpl(
                     databaseKey = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId).value
                 )
             } catch (e: Exception) {
-                kaliumLogger.e("createProteusClient: Error creating CoreCryptoCentral", e)
+
+                val logMap = mapOf(
+                    "rootProteusPath" to rootProteusPath,
+                    "userId" to userId.value.obfuscateId(),
+                    "exception" to e,
+                    "message" to e.message,
+                    "stackTrace" to e.stackTraceToString()
+                )
+                kaliumLogger.logStructuredJson(KaliumLogLevel.ERROR, TAG, logMap)
                 throw e
             }
             central.proteusClient()
@@ -117,5 +128,9 @@ class ProteusClientProviderImpl(
                 ioContext = dispatcher.io
             )
         }
+    }
+
+    private companion object {
+        const val TAG = "ProteusClientProvider"
     }
 }

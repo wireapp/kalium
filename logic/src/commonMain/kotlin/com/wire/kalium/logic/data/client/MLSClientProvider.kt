@@ -23,6 +23,7 @@ import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoUserID
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.coreCryptoCentral
+import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -31,6 +32,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.logStructuredJson
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.FileUtil
@@ -107,8 +109,14 @@ class MLSClientProviderImpl(
                         databaseKey = passphrase
                     )
                 } catch (e: Exception) {
-                    kaliumLogger.e("Error creating CoreCryptoCentral", e)
-                    kaliumLogger.e("Error creating CoreCryptoCentral stacktrace: ${e.stackTraceToString()}")
+
+                    val logMap = mapOf(
+                        "exception" to e,
+                        "message" to e.message,
+                        "stackTrace" to e.stackTraceToString()
+                    )
+
+                    kaliumLogger.logStructuredJson(KaliumLogLevel.ERROR, TAG, logMap)
                     return@run Either.Left(CoreFailure.Unknown(e))
                 }
                 coreCryptoCentral = cc
@@ -125,5 +133,6 @@ class MLSClientProviderImpl(
 
     private companion object {
         const val KEYSTORE_NAME = "keystore"
+        const val TAG = "MLSClientProvider"
     }
 }
