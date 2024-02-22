@@ -19,15 +19,17 @@
 package com.wire.kalium.logic.data.client
 
 import com.wire.kalium.cryptography.E2EIClient
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.left
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -59,9 +61,7 @@ internal class EI2EIClientProviderImpl(
             return@withContext e2EIClient?.let {
                 Either.Right(it)
             } ?: run {
-                getSelfUserInfo().fold({
-                    E2EIFailure.GettingE2EIClient(it).left()
-                }, { selfUser ->
+                getSelfUserInfo().flatMap { selfUser ->
                     // TODO: use e2eiNewEnrollment for new clients, when CC fix the issues in it
                     mlsClientProvider.getMLSClient(currentClientId).fold({
                         E2EIFailure.GettingE2EIClient(it).left()
@@ -84,23 +84,19 @@ internal class EI2EIClientProviderImpl(
                         e2EIClient = newE2EIClient
                         Either.Right(newE2EIClient)
                     })
-                })
+                }
             }
         }
     }
 
-    private suspend fun getSelfUserInfo(): Either<CoreFailure, SelfUser> {
-        val selfUser = userRepository.getSelfUser() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
+    private suspend fun getSelfUserInfo(): Either<E2EIFailure, SelfUser> {
+        val selfUser = userRepository.getSelfUser() ?: return E2EIFailure.GettingE2EIClient(StorageFailure.DataNotFound).left()
         return if (selfUser.name == null || selfUser.handle == null)
-            Either.Left(E2EIFailure.Generic(IllegalArgumentException(ERROR_NAME_AND_HANDLE_MUST_NOT_BE_NULL)))
-        else Either.Right(selfUser)
+            E2EIFailure.GettingE2EIClient(StorageFailure.DataNotFound).left()
+        else selfUser.right()
     }
 
     override suspend fun nuke() {
         e2EIClient = null
-    }
-
-    companion object {
-        const val ERROR_NAME_AND_HANDLE_MUST_NOT_BE_NULL = "name and handle must have a value"
     }
 }
