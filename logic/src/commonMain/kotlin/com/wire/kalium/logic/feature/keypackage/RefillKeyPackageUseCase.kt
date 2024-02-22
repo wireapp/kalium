@@ -55,14 +55,15 @@ internal class RefillKeyPackagesUseCaseImpl(
             //       and fetch from local instead of remote
             keyPackageRepository.getAvailableKeyPackageCount(selfClientId)
                 .flatMap {
+                    kaliumLogger.i("Key packages: Found ${it.count} available key packages")
                     if (keyPackageLimitsProvider.needsRefill(it.count)) {
-                        kaliumLogger.i("Refilling key packages...")
+                        kaliumLogger.i("Key packages: Refilling key packages...")
                         val amount = keyPackageLimitsProvider.refillAmount()
                         keyPackageRepository.uploadNewKeyPackages(selfClientId, amount).flatMap {
                             Either.Right(Unit)
                         }
                     } else {
-                        kaliumLogger.i("Key packages didn't need refilling")
+                        kaliumLogger.i("Key packages: Refill not needed")
                         Either.Right(Unit)
                     }
                 }

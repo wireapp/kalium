@@ -51,13 +51,23 @@ import kotlinx.coroutines.flow.map
 
 interface TeamRepository {
     suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Team>
-    suspend fun fetchMembersByTeamId(teamId: TeamId, userDomain: String): Either<CoreFailure, Unit>
+    suspend fun fetchMembersByTeamId(
+        teamId: TeamId,
+        userDomain: String,
+        fetchedUsersLimit: Int?,
+        pageSize: Int = FETCH_TEAM_MEMBER_PAGE_SIZE
+    ): Either<CoreFailure, Unit>
+
     suspend fun getTeam(teamId: TeamId): Flow<Team?>
     suspend fun deleteConversation(conversationId: ConversationId, teamId: TeamId): Either<CoreFailure, Unit>
     suspend fun syncTeam(teamId: TeamId): Either<CoreFailure, Team>
     suspend fun syncServices(teamId: TeamId): Either<CoreFailure, Unit>
     suspend fun approveLegalHoldRequest(teamId: TeamId, password: String?): Either<CoreFailure, Unit>
     suspend fun fetchLegalHoldStatus(teamId: TeamId): Either<CoreFailure, LegalHoldStatus>
+
+    private companion object {
+        const val FETCH_TEAM_MEMBER_PAGE_SIZE = 200
+    }
 }
 
 @Suppress("LongParameterList")
@@ -89,14 +99,24 @@ internal class TeamDataSource(
         }
     }
 
-    override suspend fun fetchMembersByTeamId(teamId: TeamId, userDomain: String): Either<CoreFailure, Unit> {
+    override suspend fun fetchMembersByTeamId(
+        teamId: TeamId,
+        userDomain: String,
+        fetchedUsersLimit: Int?,
+        pageSize: Int
+    ): Either<CoreFailure, Unit> {
         var hasMore = true
         var error: CoreFailure? = null
-        while (hasMore && error == null) {
+        var pagesSynced = 0
+        while (
+            hasMore &&
+            error == null &&
+            fetchedUsersLimit?.let { limit -> pagesSynced * pageSize >= limit } != true
+        ) {
             wrapApiRequest {
                 teamsApi.getTeamMembers(
                     teamId = teamId.value,
-                    limitTo = FETCH_TEAM_MEMBER_PAGE_SIZE
+                    limitTo = pageSize
                 )
             }.onSuccess {
                 hasMore = it.hasMore
@@ -113,6 +133,7 @@ internal class TeamDataSource(
             }.onFailure {
                 error = it
             }
+            pagesSynced++
         }
         return if (error != null) {
             Either.Left(error!!)
@@ -207,7 +228,4 @@ internal class TeamDataSource(
         }.map { legalHoldStatusMapper.fromApiModel(response.legalHoldStatusDTO) }
     }
 
-    private companion object {
-        const val FETCH_TEAM_MEMBER_PAGE_SIZE = 200
-    }
 }

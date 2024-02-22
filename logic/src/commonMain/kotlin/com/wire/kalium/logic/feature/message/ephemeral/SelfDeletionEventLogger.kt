@@ -17,19 +17,19 @@
  */
 package com.wire.kalium.logic.feature.message.ephemeral
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
 
-internal object SelfDeletionEventLogger {
+internal class SelfDeletionEventLogger(private val logger: KaliumLogger) {
     fun log(
         loggingSelfDeletionEvent: LoggingSelfDeletionEvent
     ) {
-        kaliumLogger.i(loggingSelfDeletionEvent.toJson())
+        logger.i(loggingSelfDeletionEvent.toJson())
     }
 }
 

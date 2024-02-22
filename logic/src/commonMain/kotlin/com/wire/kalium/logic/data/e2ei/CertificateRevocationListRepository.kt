@@ -18,8 +18,12 @@
 package com.wire.kalium.logic.data.e2ei
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.E2EIFailure
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.left
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
@@ -44,7 +48,7 @@ interface CertificateRevocationListRepository {
 internal class CertificateRevocationListRepositoryDataSource(
     private val acmeApi: ACMEApi,
     private val metadataDAO: MetadataDAO,
-    private val e2eiRepository: E2EIRepository
+    private val userConfigRepository: UserConfigRepository
 ) : CertificateRevocationListRepository {
     override suspend fun getCRLs(): CRLUrlExpirationList? =
         metadataDAO.getSerializable(CRL_LIST_KEY, CRLUrlExpirationList.serializer())
@@ -82,9 +86,12 @@ internal class CertificateRevocationListRepositoryDataSource(
     }
 
     override suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String> =
-        e2eiRepository.discoveryUrl().map {
-            Url(it).protocolWithAuthority
-        }
+        userConfigRepository.getE2EISettings()
+            .flatMap {
+                if (!it.isRequired) E2EIFailure.Disabled.left()
+                else if (it.discoverUrl == null) E2EIFailure.MissingDiscoveryUrl.left()
+                else Url(it.discoverUrl).protocolWithAuthority.right()
+            }
 
     override suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray> =
         wrapApiRequest {
