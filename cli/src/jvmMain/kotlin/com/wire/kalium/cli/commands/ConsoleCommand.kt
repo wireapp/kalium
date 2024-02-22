@@ -213,7 +213,8 @@ class ConsoleCommand : CliktCommand(name = "console") {
 
         userSession.calls.updateVideoState(
             conversationId = currentConversation.id,
-            videoState)
+            videoState
+        )
 
         return 0
     }
