@@ -81,9 +81,11 @@ class MLSClientProviderImpl(
     }
 
     override suspend fun clearLocalFiles() {
-        mlsClient?.close()
-        mlsClient = null
-        FileUtil.deleteDirectory(rootKeyStorePath)
+        mlsClientMutex.withLock {
+            mlsClient?.close()
+            mlsClient = null
+            FileUtil.deleteDirectory(rootKeyStorePath)
+        }
     }
 
     override suspend fun getCoreCrypto(clientId: ClientId?) = coreCryptoCentralMutex.withLock {
