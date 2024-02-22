@@ -25,6 +25,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.logic.wrapProteusRequest
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
@@ -98,10 +99,15 @@ class ProteusClientProviderImpl(
 
     private suspend fun createProteusClient(): ProteusClient {
         return if (kaliumConfigs.encryptProteusStorage) {
-            val central = coreCryptoCentral(
-                rootDir = rootProteusPath,
-                databaseKey = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId).value
-            )
+            val central = try {
+                coreCryptoCentral(
+                    rootDir = rootProteusPath,
+                    databaseKey = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId).value
+                )
+            } catch (e: Exception) {
+                kaliumLogger.e("createProteusClient: Error creating CoreCryptoCentral", e)
+                throw e
+            }
             central.proteusClient()
         } else {
             cryptoboxProteusClient(

@@ -25,16 +25,19 @@ import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.coreCryptoCentral
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import com.wire.kalium.util.FileUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 interface MLSClientProvider {
@@ -56,18 +59,23 @@ class MLSClientProviderImpl(
     private var mlsClient: MLSClient? = null
     private var coreCryptoCentral: CoreCryptoCentral? = null
 
-    override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> = withContext(dispatchers.io) {
-        val currentClientId = clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
-        val cryptoUserId = CryptoUserID(value = userId.value, domain = userId.domain)
-        return@withContext mlsClient?.let {
-            Either.Right(it)
-        } ?: run {
-            mlsClient(
-                cryptoUserId,
-                currentClientId
-            ).map {
-                mlsClient = it
-                return@run Either.Right(it)
+    private val mlsClientMutex = Mutex()
+    private val coreCryptoCentralMutex = Mutex()
+
+    override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> = mlsClientMutex.withLock {
+        withContext(dispatchers.io) {
+            val currentClientId = clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
+            val cryptoUserId = CryptoUserID(value = userId.value, domain = userId.domain)
+            return@withContext mlsClient?.let {
+                Either.Right(it)
+            } ?: run {
+                mlsClient(
+                    cryptoUserId,
+                    currentClientId
+                ).map {
+                    mlsClient = it
+                    return@run Either.Right(it)
+                }
             }
         }
     }
@@ -78,23 +86,31 @@ class MLSClientProviderImpl(
         FileUtil.deleteDirectory(rootKeyStorePath)
     }
 
-    override suspend fun getCoreCrypto(clientId: ClientId?) = withContext(dispatchers.io) {
-        val currentClientId = clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
+    override suspend fun getCoreCrypto(clientId: ClientId?) = coreCryptoCentralMutex.withLock {
+        withContext(dispatchers.io) {
+            val currentClientId = clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
 
-        val location = "$rootKeyStorePath/${currentClientId.value}".also {
-            // TODO: migrate to okio solution once assert refactor is merged
-            FileUtil.mkDirs(it)
-        }
-        val passphrase = SecurityHelperImpl(passphraseStorage).mlsDBSecret(userId).value
-        return@withContext coreCryptoCentral?.let {
-            Either.Right(it)
-        } ?: run {
-            val cc = coreCryptoCentral(
-                rootDir = "$location/$KEYSTORE_NAME",
-                databaseKey = passphrase
-            )
-            coreCryptoCentral = cc
-            Either.Right(cc)
+            val location = "$rootKeyStorePath/${currentClientId.value}".also {
+                // TODO: migrate to okio solution once assert refactor is merged
+                FileUtil.mkDirs(it)
+            }
+            val passphrase = SecurityHelperImpl(passphraseStorage).mlsDBSecret(userId).value
+            return@withContext coreCryptoCentral?.let {
+                Either.Right(it)
+            } ?: run {
+                val cc = try {
+                    coreCryptoCentral(
+                        rootDir = "$location/$KEYSTORE_NAME",
+                        databaseKey = passphrase
+                    )
+                } catch (e: Exception) {
+                    kaliumLogger.e("Error creating CoreCryptoCentral", e)
+                    kaliumLogger.e("Error creating CoreCryptoCentral stacktrace: ${e.stackTraceToString()}")
+                    return@run Either.Left(CoreFailure.Unknown(e))
+                }
+                coreCryptoCentral = cc
+                Either.Right(cc)
+            }
         }
     }
 
