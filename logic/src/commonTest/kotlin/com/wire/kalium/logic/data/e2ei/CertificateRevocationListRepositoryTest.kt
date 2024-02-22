@@ -115,9 +115,9 @@ class CertificateRevocationListRepositoryTest {
         val metadataDAO = mock(classOf<MetadataDAO>())
 
         @Mock
-        val e2eiRepository = mock(classOf<E2EIRepository>())
+        val userConfigRepository = mock(classOf<UserConfigRepository>())
 
-        fun arrange() = this to CertificateRevocationListRepositoryDataSource(acmeApi, metadataDAO, e2eiRepository)
+        fun arrange() = this to CertificateRevocationListRepositoryDataSource(acmeApi, metadataDAO, userConfigRepository)
 
         suspend fun withEmptyList() = apply {
             given(metadataDAO).coroutine {

@@ -28,7 +28,6 @@ value class Ed25519Key(
 data class MLSPublicKey(
     val key: Ed25519Key,
     val keyType: KeyType
-
 )
 
 enum class KeyType { REMOVAL }
