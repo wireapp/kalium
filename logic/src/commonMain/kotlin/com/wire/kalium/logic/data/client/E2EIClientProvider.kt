@@ -18,11 +18,13 @@
 
 package com.wire.kalium.logic.data.client
 
+import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
@@ -63,6 +65,7 @@ internal class EI2EIClientProviderImpl(
             } ?: run {
                 getSelfUserInfo().flatMap { selfUser ->
                     if (isNewClient) {
+                        kaliumLogger.w("initial E2EI client without MLS client")
                         mlsClientProvider.getCoreCrypto(currentClientId).flatMap {
                             val cryptoQualifiedClientId = CryptoQualifiedClientId(
                                 clientId!!.value,
@@ -81,7 +84,7 @@ internal class EI2EIClientProviderImpl(
                     } else {
                     mlsClientProvider.getMLSClient(currentClientId).flatMap {
                         val newE2EIClient = if (it.isE2EIEnabled()) {
-                            kaliumLogger.e("initial E2EI client for mls client that already has e2ei enabled")
+                            kaliumLogger.w("initial E2EI client for MLS client that already has e2ei enabled")
                             it.e2eiNewRotateEnrollment(
                                 selfUser.name,
                                 selfUser.handle,
@@ -89,7 +92,7 @@ internal class EI2EIClientProviderImpl(
                                 defaultE2EIExpiry
                             )
                         } else {
-                            kaliumLogger.e("initial E2EI client for MLS client without e2ei")
+                            kaliumLogger.w("initial E2EI client for MLS client without E2EI")
                             it.e2eiNewActivationEnrollment(
                                 selfUser.name!!,
                                 selfUser.handle!!,
