@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 
+@Suppress("TooManyFunctions")
 interface CallManager {
     suspend fun onCallingMessageReceived(
         message: Message.Signaling,

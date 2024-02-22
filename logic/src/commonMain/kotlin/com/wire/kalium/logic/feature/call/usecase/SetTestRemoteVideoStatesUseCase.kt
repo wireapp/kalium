@@ -22,6 +22,9 @@ import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
 
+/**
+ * Forward the calling participants' video state to the calling test tool
+ */
 class SetTestRemoteVideoStatesUseCase internal constructor(
     private val callManager: Lazy<CallManager>
 ) {

@@ -20,6 +20,9 @@ package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.feature.call.CallManager
 
+/**
+ * Enable / disable preview video when running the calling test tool
+ */
 class SetTestPreviewActiveUseCase internal constructor(
     private val callManager: Lazy<CallManager>
 ) {
