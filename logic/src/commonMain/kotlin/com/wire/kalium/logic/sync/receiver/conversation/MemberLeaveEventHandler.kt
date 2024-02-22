@@ -85,6 +85,7 @@ internal class MemberLeaveEventHandlerImpl(
                         expirationData = null
                     ).let {
                         persistMessage(it)
+                        Either.Right(Unit)
                     }
                 }
             }.onSuccess {
