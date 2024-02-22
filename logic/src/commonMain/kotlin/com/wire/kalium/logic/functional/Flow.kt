@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.functional
 
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
@@ -42,7 +41,6 @@ suspend inline fun <A, B> Collection<A>.flatMapFromIterable(
 
 fun <T1, T2> Flow<T1>.combine(flow: Flow<T2>): Flow<Pair<T1, T2>> = combine(flow) { t1, t2 -> t1 to t2 }
 
-@OptIn(FlowPreview::class)
 fun <T> Flow<List<T>>.flatten() = flatMapConcat { it.asFlow() }
 
 fun <T> Flow<T>.distinct(): Flow<T> {

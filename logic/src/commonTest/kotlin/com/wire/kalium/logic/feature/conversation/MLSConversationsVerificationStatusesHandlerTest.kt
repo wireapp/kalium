@@ -23,6 +23,7 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.MLSConversationRepositoryArrangement
@@ -216,7 +217,8 @@ class MLSConversationsVerificationStatusesHandlerTest {
                 persistMessage = persistMessageUseCase,
                 conversationVerificationStatusChecker = conversationVerificationStatusChecker,
                 epochChangesObserver = epochChangesObserver,
-                selfUserId = TestUser.USER_ID
+                selfUserId = TestUser.USER_ID,
+                kaliumLogger = kaliumLogger
             )
         }
     }
