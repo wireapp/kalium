@@ -284,7 +284,7 @@ class MLSClientImpl(
         try {
             coreCrypto.e2eiRegisterAcmeCa(pem)
         } catch (e: CryptographyException) {
-            kaliumLogger.i("Registering TrustAnchors failed: $e")
+            kaliumLogger.w("Registering TrustAnchors failed")
         }
     }
 
