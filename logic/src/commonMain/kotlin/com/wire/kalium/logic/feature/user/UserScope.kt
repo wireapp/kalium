@@ -19,6 +19,7 @@
 
 package com.wire.kalium.logic.feature.user
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -102,7 +103,8 @@ class UserScope internal constructor(
     private val updateSelfUserSupportedProtocolsUseCase: UpdateSelfUserSupportedProtocolsUseCase,
     private val clientRepository: ClientRepository,
     private val joinExistingMLSConversationsUseCase: JoinExistingMLSConversationsUseCase,
-    val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase
+    val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
+    private val userScoppedLogger: KaliumLogger
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val getSelfUser: GetSelfUserUseCase get() = GetSelfUserUseCaseImpl(userRepository)
@@ -196,6 +198,7 @@ class UserScope internal constructor(
         get() = ObserveCertificateRevocationForSelfClientUseCaseImpl(
             userConfigRepository = userConfigRepository,
             currentClientIdProvider = clientIdProvider,
-            getE2eiCertificate = getE2EICertificate
+            getE2eiCertificate = getE2EICertificate,
+            kaliumLogger = userScoppedLogger,
         )
 }

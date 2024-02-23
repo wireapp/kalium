@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -106,6 +107,7 @@ class MessageScope internal constructor(
     private val staleEpochVerifier: StaleEpochVerifier,
     private val legalHoldHandler: LegalHoldHandler,
     private val scope: CoroutineScope,
+    private val kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     private val legalHoldStatusMapper: LegalHoldStatusMapper = LegalHoldStatusMapperImpl
 ) {
@@ -151,7 +153,8 @@ class MessageScope internal constructor(
             messageRepository = messageRepository,
             deleteEphemeralMessageForSelfUserAsReceiver = deleteEphemeralMessageForSelfUserAsReceiver,
             deleteEphemeralMessageForSelfUserAsSender = deleteEphemeralMessageForSelfUserAsSender,
-            selfUserId = selfUserId
+            selfUserId = selfUserId,
+            kaliumLogger = kaliumLogger
         )
 
     private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl

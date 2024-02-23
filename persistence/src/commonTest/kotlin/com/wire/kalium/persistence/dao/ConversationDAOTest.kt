@@ -1576,6 +1576,67 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenNotEstablishedMLSConversationExists_whenGettingE2EIClientInfoByClientId_thenReturnsNull() = runTest {
+        // given
+        val clientId = "id0"
+        userDAO.upsertUser(user1)
+
+        clientDao.insertClients(listOf(insertedClient.copy(user1.id, id = clientId), insertedClient.copy(user1.id, id = "id1")))
+
+        conversationDAO.insertConversation(conversationEntity1.copy(id = user1.id, type = ConversationEntity.Type.SELF))
+        conversationDAO.insertConversation(conversationEntity3)
+        memberDAO.insertMembersWithQualifiedId(
+            listOf(
+                MemberEntity(user1.id, MemberEntity.Role.Admin),
+            ),
+            conversationEntity3.id
+        )
+        // then
+        assertNull(conversationDAO.getE2EIConversationClientInfoByClientId(clientId))
+    }
+
+    @Test
+    fun givenNotEstablishedMLSConversationExists_whenGettingMLSGroupIdByUserId_thenReturnsNull() = runTest {
+        // given
+        val clientId = "id0"
+        userDAO.upsertUser(user1)
+        userDAO.upsertUser(user2)
+
+        conversationDAO.insertConversation(conversationEntity1.copy(id = user1.id, type = ConversationEntity.Type.SELF))
+        conversationDAO.insertConversation(conversationEntity3)
+        memberDAO.insertMembersWithQualifiedId(
+            listOf(
+                MemberEntity(user1.id, MemberEntity.Role.Admin),
+                MemberEntity(user2.id, MemberEntity.Role.Admin),
+            ),
+            conversationEntity3.id
+        )
+        // then
+        assertNull(conversationDAO.getMLSGroupIdByUserId(user1.id))
+    }
+
+    @Test
+    fun givenEstablishedMLSConversationExists_whenGettingMLSGroupIdByUserId_thenReturnsMLSGroupId() = runTest {
+        // given
+        val expected = (conversationEntity4.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+        userDAO.upsertUser(user1)
+        userDAO.upsertUser(user2)
+
+        conversationDAO.insertConversation(conversationEntity1.copy(id = user1.id, type = ConversationEntity.Type.SELF))
+        conversationDAO.insertConversation(conversationEntity4)
+        memberDAO.insertMembersWithQualifiedId(
+            listOf(
+                MemberEntity(user1.id, MemberEntity.Role.Admin),
+                MemberEntity(user2.id, MemberEntity.Role.Admin),
+            ),
+            conversationEntity4.id
+        )
+        // then
+        assertEquals(expected, conversationDAO.getMLSGroupIdByUserId(user1.id))
+    }
+
+
+    @Test
     fun givenMLSSelfConversationDoesNotExists_whenGettingE2EIClientInfoByClientId_thenShouldReturnNull() = runTest {
         // given
         val clientId = "id0"
@@ -1671,6 +1732,60 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val result = conversationDAO.observeLegalHoldStatusChangeNotified(conversationId).first()
         // then
         assertEquals(false, result)
+    }
+
+    @Test
+    fun givenOnlyProteusConversation_whenGettingMLSGroupIdByConversationId_thenShouldReturnNull() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("conversationId", "domain")
+        conversationDAO.insertConversation(conversationEntity1.copy(conversationId))
+
+        // when
+        val result = conversationDAO.getMLSGroupIdByConversationId(conversationId)
+
+        // then
+        assertNull(result)
+    }
+
+    @Test
+    fun givenNotEstablishedMLSConversation_whenGettingMLSGroupIdByConversationId_thenShouldReturnNull() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("conversationId", "domain")
+        conversationDAO.insertConversation(conversationEntity3.copy(conversationId))
+
+        // when
+        val result = conversationDAO.getMLSGroupIdByConversationId(conversationId)
+
+        // then
+        assertNull(result)
+    }
+
+    @Test
+    fun givenEstablishedMLSConversation_whenGettingMLSGroupIdByConversationId_thenShouldReturnMLSGroupId() = runTest {
+        // given
+        val expected = (conversationEntity4.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+        val conversationId = QualifiedIDEntity("conversationId", "domain")
+        conversationDAO.insertConversation(conversationEntity4.copy(conversationId))
+
+        // when
+        val result = conversationDAO.getMLSGroupIdByConversationId(conversationId)
+
+        // then
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun givenEstablishedMLSConversation_whenGettingMLSGroupIdByUserId_thenShouldReturnMLSGroupId() = runTest {
+        // given
+        val expected = (conversationEntity4.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+        val conversationId = QualifiedIDEntity("conversationId", "domain")
+        conversationDAO.insertConversation(conversationEntity4.copy(conversationId))
+
+        // when
+        val result = conversationDAO.getMLSGroupIdByConversationId(conversationId)
+
+        // then
+        assertEquals(expected, result)
     }
 
     private fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity {
