@@ -256,8 +256,9 @@ class E2EIRepositoryImpl(
     override suspend fun setOIDCChallengeResponse(challengeResponse: ChallengeResponse) =
         mlsClientProvider.getCoreCrypto().flatMap { coreCrypto ->
             e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
-                e2eiClient.setOIDCChallengeResponse(coreCrypto, Json.encodeToString(challengeResponse).encodeToByteArray())
-                Either.Right(Unit)
+                wrapE2EIRequest {
+                    e2eiClient.setOIDCChallengeResponse(coreCrypto, Json.encodeToString(challengeResponse).encodeToByteArray())
+                }
             }
         }
 

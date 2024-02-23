@@ -43,6 +43,7 @@ import io.mockative.any
 import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
+import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -156,6 +157,7 @@ class MemberLeaveEventHandlerTest {
                 )
                 withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = eq(event.removedList.toSet()))
                 withTeamId(Either.Right(null))
+                withPersistingMessage(Either.Right(Unit))
             }
 
         memberLeaveEventHandler.handle(memberLeaveEvent(reason = MemberLeaveReason.UserDeleted))
@@ -181,7 +183,53 @@ class MemberLeaveEventHandlerTest {
 
         verify(arrangement.persistMessageUseCase)
             .suspendFunction(arrangement.persistMessageUseCase::invoke)
-            .with(eq(memberRemovedFromTeamMessage(event)))
+            .with(matching {
+                it.content is MessageContent.MemberChange.Removed
+            })
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenNotMembersRemoved_whenResolvingMessageContent_thenNotMessagePersisted() = runTest {
+        val event = memberLeaveEvent(reason = MemberLeaveReason.UserDeleted)
+
+        val (arrangement, memberLeaveEventHandler) = Arrangement()
+            .arrange {
+                withTeamId(Either.Right(TeamId("teamId")))
+                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
+                withMarkAsDeleted(Either.Right(Unit), userId = eq(event.removedList))
+                withDeleteMembersByQualifiedID(
+                    result = 0,
+                    conversationId = eq(event.conversationId.toDao()),
+                    memberIdList = eq(list)
+                )
+                withIsAtLeastOneUserATeamMember(Either.Right(false))
+            }
+
+        memberLeaveEventHandler.handle(event)
+
+        verify(arrangement.userRepository).coroutine {
+            fetchUsersIfUnknownByIds(event.removedList.toSet())
+        }.wasInvoked(once)
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::markAsDeleted)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.memberDAO)
+            .suspendFunction(arrangement.memberDAO::deleteMembersByQualifiedID)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.updateConversationClientsForCurrentCall)
+            .suspendFunction(arrangement.updateConversationClientsForCurrentCall::invoke)
+            .with(eq(event.conversationId))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.persistMessageUseCase)
+            .suspendFunction(arrangement.persistMessageUseCase::invoke)
+            .with(any())
             .wasNotInvoked()
     }
 
