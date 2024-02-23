@@ -131,6 +131,38 @@ class SecondFactorVerificationRepositoryTest {
         assertNull(result)
     }
 
+    @Test
+    fun givenEmailAndCode_whenStoringVerificationCode_thenItShouldNotBeCaseSensitive() = runTest {
+        val (_, secondFactorVerificationRepository) = Arrangement().arrange()
+
+        val verificationCode = "111"
+
+        secondFactorVerificationRepository.storeVerificationCode(EMAIL.uppercase(), verificationCode)
+
+        val result = secondFactorVerificationRepository.getStoredVerificationCode(EMAIL.lowercase())
+
+        assertEquals(verificationCode, result)
+    }
+
+    @Test
+    fun givenEmailAndCode_whenDeletingCode_thenItShouldNotBeCaseSensitive() = runTest {
+        val (_, secondFactorVerificationRepository) = Arrangement().arrange()
+
+        val verificationCode = "111"
+
+        secondFactorVerificationRepository.storeVerificationCode(EMAIL.uppercase(), verificationCode)
+
+        secondFactorVerificationRepository.getStoredVerificationCode(EMAIL.lowercase()).also {
+            assertEquals(verificationCode, it)
+        }
+
+        secondFactorVerificationRepository.clearStoredVerificationCode(EMAIL.lowercase())
+
+        secondFactorVerificationRepository.getStoredVerificationCode(EMAIL.lowercase()).also {
+            assertNull(it)
+        }
+    }
+
     private class Arrangement {
 
         @Mock
