@@ -68,7 +68,9 @@ internal class EI2EIClientProviderImpl(
                 getSelfUserInfo().flatMap { selfUser ->
                     if (isNewClient) {
                         kaliumLogger.w("initial E2EI client without MLS client")
-                        mlsClientProvider.getCoreCrypto(currentClientId).flatMap {
+                        mlsClientProvider.getCoreCrypto(currentClientId).fold({
+                            E2EIFailure.GettingE2EIClient(it).left()
+                        }, {
                             val cryptoQualifiedClientId = CryptoQualifiedClientId(
                                 currentClientId.value,
                                 selfUser.id.toCrypto()
@@ -82,37 +84,37 @@ internal class EI2EIClientProviderImpl(
                             )
                             e2EIClient = newE2EIClient
                             Either.Right(newE2EIClient)
-                        }
+                        })
                     } else {
-                    mlsClientProvider.getMLSClient(currentClientId).getMLSClient(currentClientId).fold({
-                        E2EIFailure.GettingE2EIClient(it).left()
-                    }, {
-                        val newE2EIClient = if (it.isE2EIEnabled()) {
-                            kaliumLogger.w("initial E2EI client for MLS client that already has e2ei enabled")
-                            it.e2eiNewRotateEnrollment(
-                                selfUser.name,
-                                selfUser.handle,
-                                selfUser.teamId?.value,
-                                defaultE2EIExpiry
-                            )
-                        } else {
-                            kaliumLogger.w("initial E2EI client for MLS client without E2EI")
-                            it.e2eiNewActivationEnrollment(
-                                selfUser.name!!,
-                                selfUser.handle!!,
-                                selfUser.teamId?.value,
-                                defaultE2EIExpiry
-                            )
-                        }
-                        e2EIClient = newE2EIClient
-                        Either.Right(newE2EIClient)
+                        mlsClientProvider.getMLSClient(currentClientId).fold({
+                            E2EIFailure.GettingE2EIClient(it).left()
+                        }, {
+                            val newE2EIClient = if (it.isE2EIEnabled()) {
+                                kaliumLogger.w("initial E2EI client for MLS client that already has E2EI enabled")
+                                it.e2eiNewRotateEnrollment(
+                                    selfUser.name,
+                                    selfUser.handle,
+                                    selfUser.teamId?.value,
+                                    defaultE2EIExpiry
+                                )
+                            } else {
+                                kaliumLogger.w("initial E2EI client for MLS client without E2EI")
+                                it.e2eiNewActivationEnrollment(
+                                    selfUser.name!!,
+                                    selfUser.handle!!,
+                                    selfUser.teamId?.value,
+                                    defaultE2EIExpiry
+                                )
+                            }
+                            e2EIClient = newE2EIClient
+                            Either.Right(newE2EIClient)
+                        })
                     }
-                    }
-                    })
                 }
             }
         }
     }
+
 
     private suspend fun getSelfUserInfo(): Either<E2EIFailure, SelfUser> {
         val selfUser = userRepository.getSelfUser() ?: return E2EIFailure.GettingE2EIClient(StorageFailure.DataNotFound).left()
