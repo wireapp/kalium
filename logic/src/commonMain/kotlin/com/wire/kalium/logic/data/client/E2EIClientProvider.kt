@@ -31,6 +31,8 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 interface E2EIClientProvider {
@@ -47,7 +49,9 @@ internal class EI2EIClientProviderImpl(
 
     private var e2EIClient: E2EIClient? = null
 
-    override suspend fun getE2EIClient(clientId: ClientId?, isNewClient: Boolean): Either<CoreFailure, E2EIClient> =
+    private val mutex = Mutex()
+
+    override suspend fun getE2EIClient(clientId: ClientId?, isNewClient: Boolean): Either<CoreFailure, E2EIClient> = mutex.withLock {
         withContext(dispatchers.io) {
             val currentClientId =
                 clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
@@ -78,8 +82,8 @@ internal class EI2EIClientProviderImpl(
                     }
                 }
             }
-
         }
+    }
 
     private suspend fun getSelfUserInfo(): Either<CoreFailure, SelfUser> {
         val selfUser = userRepository.getSelfUser() ?: return Either.Left(CoreFailure.Unknown(NullPointerException()))
