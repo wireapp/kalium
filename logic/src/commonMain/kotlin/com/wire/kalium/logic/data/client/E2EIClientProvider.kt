@@ -60,6 +60,8 @@ internal class EI2EIClientProviderImpl(
             val currentClientId =
                 clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
 
+            kaliumLogger.w("clientId: ${currentClientId.value}")
+
             return@withContext e2EIClient?.let {
                 Either.Right(it)
             } ?: run {
@@ -68,7 +70,7 @@ internal class EI2EIClientProviderImpl(
                         kaliumLogger.w("initial E2EI client without MLS client")
                         mlsClientProvider.getCoreCrypto(currentClientId).flatMap {
                             val cryptoQualifiedClientId = CryptoQualifiedClientId(
-                                clientId!!.value,
+                                currentClientId.value,
                                 selfUser.id.toCrypto()
                             )
                             val newE2EIClient2 = it.newAcmeEnrollment(
