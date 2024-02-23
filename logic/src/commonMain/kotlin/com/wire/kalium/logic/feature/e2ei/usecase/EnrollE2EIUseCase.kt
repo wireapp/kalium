@@ -57,7 +57,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
 
         e2EIRepository.initFreshE2EIClient(isNewClient = isNewClientRegistration)
 
-        e2EIRepository.fetchAndSetTrustAnchors()
+        //e2EIRepository.fetchAndSetTrustAnchors()
 
         val acmeDirectories = e2EIRepository.loadACMEDirectories().getOrFail {
             return it.left() }
@@ -121,6 +121,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
         val dPopAuthorizations = initializationResult.dPopAuthorizations
         val oidcAuthorizations = initializationResult.oidcAuthorizations
         val orderLocation = initializationResult.orderLocation
+        val isNewClientRegistration = initializationResult.isNewClientRegistration
 
         val wireNonce = e2EIRepository.getWireNonce().getOrFail {
             return it.left() }
@@ -159,14 +160,18 @@ class EnrollE2EIUseCaseImpl internal constructor(
             e2EIRepository.certificateRequest(finalizeResponse.second, prevNonce).getOrFail {
                 return it.left() }
 
-        e2EIRepository
-            .rotateKeysAndMigrateConversations(
-                certificateRequest.response.decodeToString(),
-                initializationResult.isNewClientRegistration
-            )
-            .onFailure {
-                return it.left()
-            }
+        if (isNewClientRegistration) {
+            e2EIRepository.initiateMLSClient(certificateRequest.response.decodeToString())
+        } else {
+            e2EIRepository
+                .rotateKeysAndMigrateConversations(
+                    certificateRequest.response.decodeToString(),
+                    initializationResult.isNewClientRegistration
+                )
+                .onFailure {
+                    return it.left()
+                }
+        }
 
         return E2EIEnrollmentResult.Finalized(certificateRequest.response.decodeToString()).right()
     }

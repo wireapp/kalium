@@ -29,12 +29,15 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.left
+import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.kaliumLogger
 
 sealed class RegisterMLSClientResult {
     data object Success : RegisterMLSClientResult()
 
-    data class E2EICertificateRequired(val mlsClient: MLSClient) : RegisterMLSClientResult()
+    data object E2EICertificateRequired : RegisterMLSClientResult()
 }
 
 /**
@@ -54,15 +57,14 @@ internal class RegisterMLSClientUseCaseImpl(
 ) : RegisterMLSClientUseCase {
 
     override suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, RegisterMLSClientResult> =
-        mlsClientProvider.getMLSClient(clientId).flatMap { mlsClient ->
-            userConfigRepository.getE2EISettings().fold({
-                Either.Right(mlsClient)
-            }, { e2eiSettings ->
-                if (e2eiSettings.isRequired && !mlsClient.isE2EIEnabled()) {
-                    kaliumLogger.i("MLS Client registration stopped: e2ei is required and is not enrolled!")
-                    return Either.Right(RegisterMLSClientResult.E2EICertificateRequired(mlsClient))
-                } else Either.Right(mlsClient)
-            })
+        userConfigRepository.getE2EISettings().flatMap {e2eiSettings ->
+            if (e2eiSettings.isRequired && !mlsClientProvider.isMLSClientInitialised()){
+                return RegisterMLSClientResult.E2EICertificateRequired.right()
+            }else{
+                mlsClientProvider.getMLSClient(clientId)
+            }
+        }.onFailure {
+            mlsClientProvider.getMLSClient(clientId)
         }.flatMap {
             clientRepository.registerMLSClient(clientId, it.getPublicKey())
         }.flatMap {

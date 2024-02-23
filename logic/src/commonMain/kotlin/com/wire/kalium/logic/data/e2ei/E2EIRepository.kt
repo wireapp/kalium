@@ -85,6 +85,7 @@ interface E2EIRepository {
     suspend fun checkOrderRequest(location: String, prevNonce: Nonce): Either<E2EIFailure, Pair<ACMEResponse, String>>
     suspend fun certificateRequest(location: String, prevNonce: Nonce): Either<E2EIFailure, ACMEResponse>
     suspend fun rotateKeysAndMigrateConversations(certificateChain: String, isNewClient: Boolean = false): Either<E2EIFailure, Unit>
+    suspend fun initiateMLSClient(certificateChain: String): Either<E2EIFailure, Unit>
     suspend fun getOAuthRefreshToken(): Either<E2EIFailure, String?>
     suspend fun nukeE2EIClient()
     suspend fun fetchFederationCertificates(): Either<E2EIFailure, Unit>
@@ -316,6 +317,20 @@ class E2EIRepositoryImpl(
                 mlsConversationRepository.rotateKeysAndMigrateConversations(clientId, e2eiClient, certificateChain, isNewClient)
             })
         }
+
+    override suspend fun initiateMLSClient(certificateChain: String): Either<E2EIFailure, Unit> {
+        return e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
+            currentClientIdProvider().fold({
+                E2EIFailure.RotationAndMigration(it).left()
+            }, { clientId ->
+                mlsClientProvider.getMLSClient(e2eiClient, certificateChain, clientId).fold({
+                    E2EIFailure.RotationAndMigration(it).left()
+                }, {
+                    Unit.right()
+                })
+            })
+        }
+    }
 
     override suspend fun getOAuthRefreshToken() = e2EIClientProvider.getE2EIClient().flatMap { e2EIClient ->
         e2EIClient.getOAuthRefreshToken().right()

@@ -18,19 +18,24 @@
 
 package com.wire.kalium.logic.data.client
 
+import com.wire.kalium.cryptography.CertificateChain
 import com.wire.kalium.cryptography.CoreCryptoCentral
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoUserID
+import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.coreCryptoCentral
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.logStructuredJson
 import com.wire.kalium.logic.util.SecurityHelperImpl
@@ -43,13 +48,18 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 interface MLSClientProvider {
-    suspend fun getMLSClient(clientId: ClientId? = null): Either<CoreFailure, MLSClient>
+    fun isMLSClientInitialised(): Boolean
 
-    suspend fun getE2EIMLSClient()
+    suspend fun getMLSClient(clientId: ClientId? = null): Either<CoreFailure, MLSClient>
 
     suspend fun getCoreCrypto(clientId: ClientId? = null): Either<CoreFailure, CoreCryptoCentral>
 
     suspend fun clearLocalFiles()
+    suspend fun getMLSClient(
+        enrollment: E2EIClient,
+        certificateChain: CertificateChain,
+        clientId: ClientId?
+    ): Either<E2EIFailure, MLSClient>
 }
 
 class MLSClientProviderImpl(
@@ -65,6 +75,8 @@ class MLSClientProviderImpl(
 
     private val mlsClientMutex = Mutex()
     private val coreCryptoCentralMutex = Mutex()
+
+    override fun isMLSClientInitialised() = mlsClient != null
 
     override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> = mlsClientMutex.withLock {
         withContext(dispatchers.io) {
@@ -84,9 +96,26 @@ class MLSClientProviderImpl(
         }
     }
 
-    override suspend fun getE2EIMLSClient() {
-        //todo: impl for initializing mls client with e2ei cert
-        TODO("Not yet implemented")
+    override suspend fun getMLSClient(
+        enrollment: E2EIClient,
+        certificateChain: CertificateChain, clientId: ClientId?
+    ): Either<E2EIFailure, MLSClient> = mlsClientMutex.withLock {
+        withContext(dispatchers.io) {
+            val currentClientId =
+                clientId ?: currentClientIdProvider().fold({ return@withContext E2EIFailure.GettingE2EIClient(it).left() }, { it })
+            return@withContext mlsClient?.let {
+                Either.Right(it)
+            } ?: run {
+                e2eiMLSClient(
+                    enrollment,
+                    certificateChain,
+                    currentClientId
+                ).map {
+                    mlsClient = it
+                    return@run Either.Right(it)
+                }
+            }
+        }
     }
 
     override suspend fun clearLocalFiles() {
@@ -138,10 +167,17 @@ class MLSClientProviderImpl(
         }
     }
 
-    private suspend fun e2eiMLSClient(userId: CryptoUserID, clientId: ClientId): Either<CoreFailure, MLSClient> {
-        return getCoreCrypto(clientId).map {
-            it.mlsClient(CryptoQualifiedClientId(clientId.value, userId))
-        }
+    private suspend fun e2eiMLSClient(
+        enrollment: E2EIClient,
+        certificateChain: CertificateChain,
+        clientId: ClientId
+    ): Either<E2EIFailure, MLSClient> {
+        return getCoreCrypto(clientId).fold({
+            E2EIFailure.GettingE2EIClient(it).left()
+        }, {
+            // MLS Keypackages taken care somewhere else, here we don't need to generate any
+            it.mlsClient(enrollment, certificateChain, 0U).right()
+        })
     }
 
     private companion object {
