@@ -1321,11 +1321,20 @@ class UserSessionScope internal constructor(
         )
     private val memberJoinHandler: MemberJoinEventHandler
         get() = MemberJoinEventHandlerImpl(
-            conversationRepository, userRepository, persistMessage, userId
+            conversationRepository = conversationRepository,
+            userRepository = userRepository,
+            persistMessage = persistMessage,
+            legalHoldHandler = legalHoldHandler,
+            selfUserId = userId
         )
     private val memberLeaveHandler: MemberLeaveEventHandler
         get() = MemberLeaveEventHandlerImpl(
-            userStorage.database.memberDAO, userRepository, persistMessage, updateConversationClientsForCurrentCall, selfTeamId
+            memberDAO = userStorage.database.memberDAO,
+            userRepository = userRepository,
+            persistMessage = persistMessage,
+            updateConversationClientsForCurrentCall = updateConversationClientsForCurrentCall,
+            legalHoldHandler = legalHoldHandler,
+            selfTeamIdProvider = selfTeamId
         )
     private val memberChangeHandler: MemberChangeEventHandler
         get() = MemberChangeEventHandlerImpl(

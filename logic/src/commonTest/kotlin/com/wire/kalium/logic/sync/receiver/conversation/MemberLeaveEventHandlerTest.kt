@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.SelfTeamIdProviderArrangement
@@ -41,6 +42,7 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
 import io.mockative.eq
+import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -183,6 +185,29 @@ class MemberLeaveEventHandlerTest {
             .wasNotInvoked()
     }
 
+    @Test
+    fun givenMemberLeaveEvent_whenHandlingIt_thenShouldUpdateConversationLegalHoldIfNeeded() = runTest {
+        // given
+        val event = memberLeaveEvent(reason = MemberLeaveReason.Left)
+        val (arrangement, memberLeaveEventHandler) = Arrangement()
+            .arrange {
+                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = eq(event.removedList.toSet()))
+                withPersistingMessage(Either.Right(Unit))
+                withDeleteMembersByQualifiedID(
+                    result = list.size.toLong(),
+                    conversationId = eq(event.conversationId.toDao()),
+                    memberIdList = eq(list)
+                )
+            }
+        // when
+        memberLeaveEventHandler.handle(event)
+        // then
+        verify(arrangement.legalHoldHandler)
+            .suspendFunction(arrangement.legalHoldHandler::handleConversationMembersChanged)
+            .with(eq(event.conversationId))
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement : UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
         MemberDAOArrangement by MemberDAOArrangementImpl(),
@@ -191,7 +216,17 @@ class MemberLeaveEventHandlerTest {
         @Mock
         val updateConversationClientsForCurrentCall = mock(classOf<UpdateConversationClientsForCurrentCallUseCase>())
 
+        @Mock
+        val legalHoldHandler = mock(classOf<LegalHoldHandler>())
+
         private lateinit var memberLeaveEventHandler: MemberLeaveEventHandler
+
+        init {
+            given(legalHoldHandler)
+                .suspendFunction(legalHoldHandler::handleConversationMembersChanged)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
 
         fun arrange(block: Arrangement.() -> Unit): Pair<Arrangement, MemberLeaveEventHandler> = apply(block)
             .let {
@@ -200,7 +235,8 @@ class MemberLeaveEventHandlerTest {
                     userRepository = userRepository,
                     persistMessage = persistMessageUseCase,
                     updateConversationClientsForCurrentCall = lazy { updateConversationClientsForCurrentCall },
-                    selfTeamIdProvider
+                    legalHoldHandler = legalHoldHandler,
+                    selfTeamIdProvider = selfTeamIdProvider
                 )
                 this to memberLeaveEventHandler
             }
