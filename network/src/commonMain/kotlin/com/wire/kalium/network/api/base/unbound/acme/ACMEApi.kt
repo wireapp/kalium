@@ -35,18 +35,20 @@ import io.ktor.client.request.preparePost
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
+import io.ktor.http.Url
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
+import io.ktor.http.protocolWithAuthority
 
 interface ACMEApi {
-    suspend fun getTrustAnchors(acmeUrl: String): NetworkResponse<ByteArray>
-    suspend fun getACMEDirectories(discoveryUrl: String): NetworkResponse<AcmeDirectoriesResponse>
+    suspend fun getTrustAnchors(discoveryUrl: Url): NetworkResponse<ByteArray>
+    suspend fun getACMEDirectories(discoveryUrl: Url): NetworkResponse<AcmeDirectoriesResponse>
     suspend fun getACMENonce(url: String): NetworkResponse<String>
     suspend fun sendACMERequest(url: String, body: ByteArray? = null): NetworkResponse<ACMEResponse>
     suspend fun sendAuthorizationRequest(url: String, body: ByteArray? = null): NetworkResponse<ACMEAuthorizationResponse>
     suspend fun sendChallengeRequest(url: String, body: ByteArray): NetworkResponse<ChallengeResponse>
-    suspend fun getACMEFederation(baseUrl: String): NetworkResponse<String>
-    suspend fun getClientDomainCRL(discoveryUrl: String): NetworkResponse<ByteArray>
+    suspend fun getACMEFederation(discoveryUrl: Url): NetworkResponse<String>
+    suspend fun getClientDomainCRL(url: String): NetworkResponse<ByteArray>
 }
 
 class ACMEApiImpl internal constructor(
@@ -56,11 +58,11 @@ class ACMEApiImpl internal constructor(
     private val httpClient get() = unboundNetworkClient.httpClient
     private val clearTextTrafficHttpClient get() = unboundClearTextTrafficNetworkClient.httpClient
 
-    override suspend fun getTrustAnchors(acmeUrl: String): NetworkResponse<ByteArray> = wrapKaliumResponse {
-        httpClient.get("$acmeUrl/$PATH_ACME_ROOTS_PEM")
+    override suspend fun getTrustAnchors(discoveryUrl: Url): NetworkResponse<ByteArray> = wrapKaliumResponse {
+        httpClient.get("${discoveryUrl.protocolWithAuthority}/$PATH_ACME_ROOTS_PEM")
     }
 
-    override suspend fun getACMEDirectories(discoveryUrl: String): NetworkResponse<AcmeDirectoriesResponse> = wrapKaliumResponse {
+    override suspend fun getACMEDirectories(discoveryUrl: Url): NetworkResponse<AcmeDirectoriesResponse> = wrapKaliumResponse {
         httpClient.get(discoveryUrl)
     }
 
@@ -162,13 +164,13 @@ class ACMEApiImpl internal constructor(
             }
         }
 
-    override suspend fun getACMEFederation(baseUrl: String): NetworkResponse<String> = wrapKaliumResponse {
-        httpClient.get("$baseUrl/$PATH_ACME_FEDERATION")
+    override suspend fun getACMEFederation(discoveryUrl: Url): NetworkResponse<String> = wrapKaliumResponse {
+        httpClient.get("${discoveryUrl.protocolWithAuthority}/$PATH_ACME_FEDERATION")
     }
 
-    override suspend fun getClientDomainCRL(discoveryUrl: String): NetworkResponse<ByteArray> =
+    override suspend fun getClientDomainCRL(url: String): NetworkResponse<ByteArray> =
         wrapKaliumResponse {
-            clearTextTrafficHttpClient.get("$discoveryUrl/$PATH_CRL")
+            clearTextTrafficHttpClient.get("$url/$PATH_CRL")
         }
 
     private companion object {
