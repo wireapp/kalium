@@ -159,9 +159,9 @@ class UserDatabaseBuilder internal constructor(
         MessageConversationLocationContentAdapter = TableMapper.messageConversationLocationContentAdapter,
         MessageLegalHoldContentAdapter = TableMapper.messageLegalHoldContentAdapter,
         MessageConversationProtocolChangedDuringACallContentAdapter =
-            TableMapper.messageConversationProtocolChangedDuringACAllContentAdapter,
+        TableMapper.messageConversationProtocolChangedDuringACAllContentAdapter,
         ConversationLegalHoldStatusChangeNotifiedAdapter = TableMapper.conversationLegalHoldStatusChangeNotifiedAdapter,
-        MessageAssetStatusAdapter = TableMapper.assetStatusAdapter
+        MessageAssetTransferStatusAdapter = TableMapper.messageAssetTransferStatusAdapter
     )
 
     init {
@@ -243,7 +243,7 @@ class UserDatabaseBuilder internal constructor(
             userId,
             database.reactionsQueries,
             queriesContext,
-            database.assetStatusQueries,
+            database.messageAssetTransferStatusQueries,
             database.buttonContentQueries
         )
 

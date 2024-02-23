@@ -175,7 +175,7 @@ internal interface MessageRepository {
         newMembers: List<UserId>,
     ): Either<CoreFailure, Unit>
 
-    suspend fun resetAssetProgressStatus()
+    suspend fun resetAssetTransferStatus()
     suspend fun markMessagesAsDecryptionResolved(
         conversationId: ConversationId,
         userId: UserId,
@@ -571,9 +571,8 @@ internal class MessageDataSource internal constructor(
         messageDAO.updateLegalHoldMessageMembers(conversationId.toDao(), messageId, newMembers.map { it.toDao() })
     }
 
-    override suspend fun resetAssetProgressStatus() {
+    override suspend fun resetAssetTransferStatus() {
         wrapStorageRequest {
-            messageDAO.resetAssetUploadStatus()
             messageDAO.resetAssetTransferStatus()
         }
     }

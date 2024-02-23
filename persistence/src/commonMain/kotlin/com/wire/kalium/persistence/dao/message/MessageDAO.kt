@@ -100,8 +100,6 @@ interface MessageDAO {
     suspend fun observeUnreadEvents(): Flow<Map<ConversationIDEntity, List<UnreadEventEntity>>>
     suspend fun observeUnreadMessageCounter(): Flow<Map<ConversationIDEntity, Int>>
 
-    suspend fun resetAssetUploadStatus()
-
     suspend fun resetAssetTransferStatus()
 
     suspend fun markMessagesAsDecryptionResolved(

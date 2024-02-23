@@ -34,14 +34,24 @@ data class AssetMessageEntity(
 
 enum class AssetTransferStatusEntity {
     /**
-     * There was no attempt done to transfer the asset's data to/from remote (server) storage.
-     */
-    NOT_PROCESSED,
-
-    /**
      * The asset is currently being uploaded to remote storage.
      */
     UPLOAD_IN_PROGRESS,
+
+    /**
+     * The last attempt at uploading this asset's data failed.
+     */
+    FAILED_UPLOAD,
+
+    /**
+     * The asset was successfully uploaded and saved in the internal storage.
+     */
+    UPLOADED,
+
+    /**
+     * There was no attempt done to transfer the asset's data to/from remote (server) storage.
+     */
+    NOT_DOWNLOADED,
 
     /**
      * The asset is currently being downloaded from remote storage.
@@ -49,9 +59,9 @@ enum class AssetTransferStatusEntity {
     DOWNLOAD_IN_PROGRESS,
 
     /**
-     * The asset was successfully uploaded and saved in the internal storage.
+     * The last attempt at downloading this asset's data failed.
      */
-    UPLOADED,
+    FAILED_DOWNLOAD,
 
     /**
      * The asset has been successfully downloaded and saved in the internal storage,
@@ -64,16 +74,6 @@ enum class AssetTransferStatusEntity {
      * e.g.: Asset was saved in Downloads, Desktop, or other user-chosen directory.
      */
     SAVED_EXTERNALLY,
-
-    /**
-     * The last attempt at uploading this asset's data failed.
-     */
-    FAILED_UPLOAD,
-
-    /**
-     * The last attempt at downloading this asset's data failed.
-     */
-    FAILED_DOWNLOAD,
 
     /**
      * Asset was not found on the server.

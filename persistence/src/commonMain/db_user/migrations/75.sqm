@@ -1,11 +1,10 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntity;
 
-CREATE TABLE MessageAssetStatus (
+CREATE TABLE MessageAssetTransferStatus (
     message_id TEXT NOT NULL,
     conversation_id TEXT AS QualifiedIDEntity NOT NULL,
-    transfer_status TEXT AS AssetTransferStatusEntity NOT NULL DEFAULT 'NOT_PROCESSED',
+    transfer_status TEXT AS AssetTransferStatusEntity NOT NULL DEFAULT 'NOT_DOWNLOADED',
     FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
     PRIMARY KEY (message_id, conversation_id)
 );
@@ -13,6 +12,26 @@ CREATE TABLE MessageAssetStatus (
 DROP VIEW IF EXISTS MessageAssetView;
 DROP VIEW IF EXISTS MessagePreview;
 DROP VIEW IF EXISTS MessageDetailsView;
+
+INSERT OR IGNORE INTO MessageAssetTransferStatus (message_id, conversation_id, transfer_status)
+SELECT
+    message_id,
+    conversation_id,
+    CASE
+        WHEN asset_upload_status = 'UPLOADED' THEN 'UPLOADED'
+        WHEN asset_download_status = 'SAVED_INTERNALLY' THEN 'SAVED_INTERNALLY'
+        WHEN asset_download_status = 'SAVED_EXTERNALLY' THEN 'SAVED_EXTERNALLY'
+        ELSE 'NOT_DOWNLOADED'
+    END AS transfer_status
+FROM
+    MessageAssetContent
+WHERE
+    (asset_upload_status = 'UPLOADED'
+    OR asset_download_status = 'SAVED_INTERNALLY'
+    OR asset_download_status = 'SAVED_EXTERNALLY')
+    AND (asset_mime_type NOT IN ('image/jpg', 'image/jpeg', 'image/png', 'image/gif', 'image/webp')
+    OR asset_width <= 0
+    OR asset_height <= 0);
 
 ALTER TABLE MessageAssetContent RENAME TO TempMessageAssetContent;
 

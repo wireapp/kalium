@@ -28,7 +28,7 @@ import kotlinx.coroutines.withContext
 
 interface GetAssetMessageTransferStatusUseCase {
     /**
-     * Function that gets [AssetTransferStatus]. If status does not exist then it returns [AssetTransferStatus.NOT_PROCESSED]
+     * Function that gets [AssetTransferStatus]. If status does not exist then it returns [AssetTransferStatus.NOT_DOWNLOADED]
      *
      * @param conversationId the conversation identifier
      * @param messageId the message identifier
@@ -49,7 +49,7 @@ internal class GetAssetMessageTransferStatusUseCaseImpl(
         messageId: String
     ): AssetTransferStatus = withContext(dispatcher.io) {
         messageRepository.getMessageAssetTransferStatus(messageId, conversationId).fold({
-            AssetTransferStatus.NOT_PROCESSED
+            AssetTransferStatus.NOT_DOWNLOADED
         }, {
             it
         })

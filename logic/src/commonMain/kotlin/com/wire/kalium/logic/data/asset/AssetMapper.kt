@@ -242,7 +242,7 @@ class AssetMapperImpl(
 
 fun AssetTransferStatus.toDao(): AssetTransferStatusEntity {
     return when (this) {
-        AssetTransferStatus.NOT_PROCESSED -> AssetTransferStatusEntity.NOT_PROCESSED
+        AssetTransferStatus.NOT_DOWNLOADED -> AssetTransferStatusEntity.NOT_DOWNLOADED
         AssetTransferStatus.UPLOAD_IN_PROGRESS -> AssetTransferStatusEntity.UPLOAD_IN_PROGRESS
         AssetTransferStatus.DOWNLOAD_IN_PROGRESS -> AssetTransferStatusEntity.DOWNLOAD_IN_PROGRESS
         AssetTransferStatus.UPLOADED -> AssetTransferStatusEntity.UPLOADED
@@ -256,7 +256,7 @@ fun AssetTransferStatus.toDao(): AssetTransferStatusEntity {
 
 fun AssetTransferStatusEntity.toModel(): AssetTransferStatus {
     return when (this) {
-        AssetTransferStatusEntity.NOT_PROCESSED -> AssetTransferStatus.NOT_PROCESSED
+        AssetTransferStatusEntity.NOT_DOWNLOADED -> AssetTransferStatus.NOT_DOWNLOADED
         AssetTransferStatusEntity.UPLOAD_IN_PROGRESS -> AssetTransferStatus.UPLOAD_IN_PROGRESS
         AssetTransferStatusEntity.DOWNLOAD_IN_PROGRESS -> AssetTransferStatus.DOWNLOAD_IN_PROGRESS
         AssetTransferStatusEntity.UPLOADED -> AssetTransferStatus.UPLOADED

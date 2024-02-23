@@ -1,31 +1,36 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity;
 
-CREATE TABLE MessageAssetStatus (
+CREATE TABLE MessageAssetTransferStatus (
     message_id TEXT NOT NULL,
     conversation_id TEXT AS QualifiedIDEntity NOT NULL,
-    transfer_status TEXT AS AssetTransferStatusEntity NOT NULL DEFAULT 'NOT_PROCESSED',
+    transfer_status TEXT AS AssetTransferStatusEntity NOT NULL DEFAULT 'NOT_DOWNLOADED',
     FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
     PRIMARY KEY (message_id, conversation_id)
 );
 
 deleteAssetStatus:
-DELETE FROM MessageAssetStatus WHERE message_id = ? AND conversation_id = ?;
+DELETE FROM MessageAssetTransferStatus WHERE message_id = ? AND conversation_id = ?;
+
+siema:
+INSERT OR IGNORE INTO MessageAssetTransferStatus (message_id, conversation_id)
+SELECT message_id, conversation_id
+FROM MessageAssetContent;
 
 upsertMessageAssetStatus:
-INSERT INTO MessageAssetStatus(message_id, conversation_id, transfer_status)
+INSERT INTO MessageAssetTransferStatus(message_id, conversation_id, transfer_status)
 VALUES( ?, ?, ?)
 ON CONFLICT(message_id, conversation_id) DO UPDATE SET
 transfer_status = excluded.transfer_status;
 
 selectConversationAssetStatus:
-SELECT * FROM MessageAssetStatus
+SELECT * FROM MessageAssetTransferStatus
 WHERE conversation_id = :conversationId;
 
 selectMessageAssetStatus:
-SELECT transfer_status FROM MessageAssetStatus
+SELECT transfer_status FROM MessageAssetTransferStatus
 WHERE conversation_id = :conversationId AND message_id = :messageId;
 
 resetAssetTransferStatus:
-DELETE FROM MessageAssetStatus
+DELETE FROM MessageAssetTransferStatus
 WHERE transfer_status = 'UPLOAD_IN_PROGRESS' OR transfer_status = "DOWNLOAD_IN_PROGRESS";

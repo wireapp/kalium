@@ -28,7 +28,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-class UpdateAssetMessageDownloadStatusUseCaseTest {
+class UpdateAssetMessageTransferStatusUseCaseTest {
 
     @Test
     fun givenAValidDownloadStatusUpdateRequest_whenInvoked_thenResultSuccessIsReturned() = runTest {

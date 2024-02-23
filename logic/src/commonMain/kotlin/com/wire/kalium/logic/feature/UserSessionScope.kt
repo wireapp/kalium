@@ -1966,7 +1966,7 @@ class UserSessionScope internal constructor(
             slowSyncManager
 
             callRepository.updateOpenCallsToClosedStatus()
-            messageRepository.resetAssetProgressStatus()
+            messageRepository.resetAssetTransferStatus()
         }
 
         launch {

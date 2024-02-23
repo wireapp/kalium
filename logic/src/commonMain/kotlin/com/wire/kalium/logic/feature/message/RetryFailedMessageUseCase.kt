@@ -150,7 +150,7 @@ class RetryFailedMessageUseCase internal constructor(
         val assetTransferStatus = getAssetMessageTransferStatusUseCase(message.conversationId, message.id)
 
         return when (assetTransferStatus) {
-            AssetTransferStatus.FAILED_UPLOAD, AssetTransferStatus.NOT_PROCESSED -> {
+            AssetTransferStatus.FAILED_UPLOAD, AssetTransferStatus.NOT_DOWNLOADED -> {
                 updateAssetMessageTransferStatus(AssetTransferStatus.UPLOAD_IN_PROGRESS, message.conversationId, message.id)
                 retryUploadingAsset(content)
                     .flatMap { uploadedAssetContent ->

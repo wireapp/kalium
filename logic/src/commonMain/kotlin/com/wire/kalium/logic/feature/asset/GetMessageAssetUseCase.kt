@@ -59,7 +59,6 @@ interface GetMessageAssetUseCase {
     ): Deferred<MessageAssetResult>
 }
 
-// TODO: refactor this use case or find a way to centralize [Message.DownloadStatus] management
 internal class GetMessageAssetUseCaseImpl(
     private val assetRepository: AssetRepository,
     private val messageRepository: MessageRepository,

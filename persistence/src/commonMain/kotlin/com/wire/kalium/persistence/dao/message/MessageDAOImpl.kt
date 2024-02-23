@@ -19,8 +19,8 @@
 package com.wire.kalium.persistence.dao.message
 
 import app.cash.sqldelight.coroutines.asFlow
-import com.wire.kalium.persistence.AssetStatusQueries
 import com.wire.kalium.persistence.ConversationsQueries
+import com.wire.kalium.persistence.MessageAssetTransferStatusQueries
 import com.wire.kalium.persistence.MessageAssetViewQueries
 import com.wire.kalium.persistence.MessagePreviewQueries
 import com.wire.kalium.persistence.MessagesQueries
@@ -60,7 +60,7 @@ internal class MessageDAOImpl internal constructor(
     private val selfUserId: UserIDEntity,
     private val reactionsQueries: ReactionsQueries,
     private val coroutineContext: CoroutineContext,
-    private val assetStatusQueries: AssetStatusQueries,
+    private val assetStatusQueries: MessageAssetTransferStatusQueries,
     buttonContentQueries: ButtonContentQueries
 ) : MessageDAO,
     MessageInsertExtension by MessageInsertExtensionImpl(
@@ -387,10 +387,6 @@ internal class MessageDAOImpl internal constructor(
         clientId: String,
     ) = withContext(coroutineContext) {
         queries.markMessagesAsDecryptionResolved(userId, clientId)
-    }
-
-    override suspend fun resetAssetUploadStatus() = withContext(coroutineContext) {
-        assetStatusQueries.resetAssetTransferStatus()
     }
 
     override suspend fun getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
