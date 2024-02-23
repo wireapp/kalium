@@ -12,11 +12,6 @@ CREATE TABLE MessageAssetTransferStatus (
 deleteAssetStatus:
 DELETE FROM MessageAssetTransferStatus WHERE message_id = ? AND conversation_id = ?;
 
-siema:
-INSERT OR IGNORE INTO MessageAssetTransferStatus (message_id, conversation_id)
-SELECT message_id, conversation_id
-FROM MessageAssetContent;
-
 upsertMessageAssetStatus:
 INSERT INTO MessageAssetTransferStatus(message_id, conversation_id, transfer_status)
 VALUES( ?, ?, ?)
