@@ -144,16 +144,19 @@ internal class ConversationGroupRepositoryImpl(
                     }.flatMap {
                         newGroupConversationSystemMessagesCreator.value.conversationStarted(conversationEntity)
                     }.flatMap {
-                        newConversationMembersRepository.persistMembersAdditionToTheConversation(
-                            conversationEntity.id, conversationResponse, failedUsersList
-                        ).flatMap {
-                            when (protocol) {
-                                is Conversation.ProtocolInfo.Proteus -> Either.Right(Unit)
-                                is Conversation.ProtocolInfo.MLSCapable -> mlsConversationRepository.establishMLSGroup(
+                        when (protocol) {
+                            is Conversation.ProtocolInfo.Proteus -> Either.Right(Unit)
+                            is Conversation.ProtocolInfo.MLSCapable -> {
+                                mlsConversationRepository.establishMLSGroup(
                                     groupID = protocol.groupId,
-                                    members = usersList + selfUserId
+                                    members = usersList + selfUserId,
+                                    allowPartialMemberList = true
                                 )
                             }
+                        }.flatMap {
+                            newConversationMembersRepository.persistMembersAdditionToTheConversation(
+                                conversationEntity.id, conversationResponse, failedUsersList
+                            )
                         }
                     }.flatMap {
                         wrapStorageRequest {
@@ -229,7 +232,7 @@ internal class ConversationGroupRepositoryImpl(
     ): Either<CoreFailure, Unit> {
         return when {
             // claiming key packages offline or out of packages
-            this is CoreFailure.NoKeyPackagesAvailable && remainingAttempts > 0 -> {
+            this is CoreFailure.MissingKeyPackages && remainingAttempts > 0 -> {
                 val (validUsers, failedUsers) = userIdList.partition { !this.failedUserIds.contains(it) }
                 tryAddMembersToMLSGroup(
                     conversationId = conversationId,

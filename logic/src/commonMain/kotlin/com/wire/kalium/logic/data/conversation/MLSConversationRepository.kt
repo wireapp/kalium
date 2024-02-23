@@ -109,10 +109,27 @@ data class E2EIdentity(
     val thumbprint: String
 )
 
+// TODO(refactor): This whole class is far too smart for a repository and these functions are HUGE.
+//                 Extract functions to smaller single-responsibility/specialized classes.
 @Suppress("TooManyFunctions", "LongParameterList")
 interface MLSConversationRepository {
     suspend fun decryptMessage(message: ByteArray, groupID: GroupID): Either<CoreFailure, List<DecryptedMessageBundle>>
-    suspend fun establishMLSGroup(groupID: GroupID, members: List<UserId>): Either<CoreFailure, Unit>
+
+    /**
+     * Establishes an MLS (Messaging Layer Security) group with the specified group ID and members.
+     *
+     * @param groupID The ID of the group to be established. Must be of type [GroupID].
+     * @param members The list of user IDs (of type [UserId]) to be added as members to the group.
+     * @param allowPartialMemberList Flag indicating whether to allow a partial member list in case of some users
+     * not having key packages available. Default value is false.
+     * @return An instance of [Either] indicating the result of the operation. It can be either [Right] if the
+     *         group was successfully established, or [Left] if an error occurred. If successful, returns [Unit].
+     *         Possible types of [Left] are defined in the sealed interface [CoreFailure].
+     */
+    suspend fun establishMLSGroup(groupID: GroupID,
+                                  members: List<UserId>,
+                                  allowPartialMemberList: Boolean = false
+    ): Either<CoreFailure, Unit>
     suspend fun establishMLSGroupFromWelcome(welcomeEvent: MLSWelcome): Either<CoreFailure, Unit>
     suspend fun hasEstablishedMLSGroup(groupID: GroupID): Either<CoreFailure, Boolean>
     suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
@@ -429,7 +446,8 @@ internal class MLSConversationDataSource(
     private suspend fun internalAddMemberToMLSGroup(
         groupID: GroupID,
         userIdList: List<UserId>,
-        retryOnStaleMessage: Boolean
+        retryOnStaleMessage: Boolean,
+        allowPartialMemberList: Boolean = false
     ): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
         commitPendingProposals(groupID).flatMap {
             retryOnCommitFailure(groupID, retryOnStaleMessage = retryOnStaleMessage) {
@@ -519,7 +537,8 @@ internal class MLSConversationDataSource(
 
     override suspend fun establishMLSGroup(
         groupID: GroupID,
-        members: List<UserId>
+        members: List<UserId>,
+        allowPartialMemberList: Boolean
     ): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             mlsPublicKeysRepository.getKeys().flatMap { publicKeys ->

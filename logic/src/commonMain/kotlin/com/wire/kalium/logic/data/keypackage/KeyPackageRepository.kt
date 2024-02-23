@@ -75,7 +75,7 @@ class KeyPackageDataSource(
             }
 
             if (failedUsers.isNotEmpty()) {
-                Either.Left(CoreFailure.NoKeyPackagesAvailable(failedUsers))
+                Either.Left(CoreFailure.MissingKeyPackages(failedUsers, claimedKeyPackages))
             } else {
                 Either.Right(claimedKeyPackages)
             }

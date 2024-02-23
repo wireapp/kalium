@@ -1801,6 +1801,6 @@ class ConversationGroupRepositoryTest {
             NetworkFailure.FederatedBackendFailure.FailedDomains(domains.toList())
         )
 
-        val KEY_PACKAGES_NOT_AVAILABLE_FAILURE = Either.Left(CoreFailure.NoKeyPackagesAvailable(setOf(TestUser.OTHER_FEDERATED_USER_ID)))
+        val KEY_PACKAGES_NOT_AVAILABLE_FAILURE = Either.Left(CoreFailure.MissingKeyPackages(setOf(TestUser.OTHER_FEDERATED_USER_ID)))
     }
 }

@@ -227,7 +227,7 @@ class JoinExistingMLSConversationsUseCaseTest {
             given(joinExistingMLSConversationUseCase)
                 .suspendFunction(joinExistingMLSConversationUseCase::invoke)
                 .whenInvokedWith(anything())
-                .then { Either.Left(CoreFailure.NoKeyPackagesAvailable(setOf())) }
+                .then { Either.Left(CoreFailure.MissingKeyPackages(setOf())) }
         }
 
 
