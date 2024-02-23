@@ -221,23 +221,31 @@ class KaliumLogger(
         }
     }
 
-    data class UserClientData(val userId: String, val clientId: String) {
-
+    data class LogAttributes(
+        val userClientData: UserClientData?,
+        val textTag: String
+    ) {
         companion object {
-            private val regex = Regex("^.*\\[.+\\|.+\\]\$")
+            private val regex = Regex("^.*\\[.+\\|.*\\]\$")
 
             /**
              * Parses the user-related data from the String tag in the standard pattern: "tag[userId|clientId]".
              * Returns null if the tag doesn't match the pattern, which means it does not contain user-related data.
              */
             @Suppress("unused")
-            fun getFromTag(tag: String): UserClientData? =
+            fun getInfoFromTagString(tag: String): LogAttributes =
                 if (tag.matches(regex)) {
-                    tag.substringAfterLast("[").substringBefore("]").split("|")
+                    val prefix = tag.substringBefore("[")
+                    val userClientData = tag.substringAfterLast("[").substringBefore("]").split("|")
                         .let { data -> UserClientData(data[0], data[1]) }
-                } else null
+                    LogAttributes(userClientData, prefix)
+                } else {
+                    LogAttributes(null, tag)
+                }
         }
     }
+
+    data class UserClientData(val userId: String, val clientId: String?)
 
     companion object {
         fun disabled(): KaliumLogger = KaliumLogger(
