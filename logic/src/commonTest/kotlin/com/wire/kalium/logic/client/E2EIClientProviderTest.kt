@@ -123,6 +123,27 @@ class E2EIClientProviderTest {
             .wasNotInvoked()
     }
 
+    @Test
+    fun givenIsNewClientTrue_whenGettingE2EIClient_newAcmeEnrollmentCalled()= runTest {
+        val (arrangement, e2eiClientProvider) = Arrangement()
+            .arrange {
+                withGettingCoreCryptoSuccessful()
+                withGetNewAcmeEnrollmentSuccessful()
+                withSelfUser(TestUser.SELF)
+            }
+
+        e2eiClientProvider.getE2EIClient(TestClient.CLIENT_ID,isNewClient = true).shouldSucceed()
+
+        verify(arrangement.userRepository)
+            .suspendFunction(arrangement.userRepository::getSelfUser)
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.coreCryptoCentral)
+            .suspendFunction(arrangement.coreCryptoCentral::newAcmeEnrollment)
+            .with(any(), any(), any(), any(), any())
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement :
         E2EIClientProviderArrangement by E2EIClientProviderArrangementImpl() {
         private lateinit var e2eiClientProvider: E2EIClientProvider

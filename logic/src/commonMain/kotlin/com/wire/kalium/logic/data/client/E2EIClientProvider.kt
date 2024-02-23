@@ -73,15 +73,15 @@ internal class EI2EIClientProviderImpl(
                                 currentClientId.value,
                                 selfUser.id.toCrypto()
                             )
-                            val newE2EIClient2 = it.newAcmeEnrollment(
+                            val newE2EIClient = it.newAcmeEnrollment(
                                 cryptoQualifiedClientId,
                                 selfUser.name!!,
                                 selfUser.handle!!,
                                 selfUser.teamId?.value,
                                 defaultE2EIExpiry
                             )
-                            e2EIClient = newE2EIClient2
-                            Either.Right(newE2EIClient2)
+                            e2EIClient = newE2EIClient
+                            Either.Right(newE2EIClient)
                         }
                     } else {
                     mlsClientProvider.getMLSClient(currentClientId).flatMap {
