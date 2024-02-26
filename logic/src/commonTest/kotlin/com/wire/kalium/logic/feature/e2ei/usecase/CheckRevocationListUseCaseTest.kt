@@ -181,6 +181,31 @@ class CheckRevocationListUseCaseTest {
                 .wasInvoked(once)
         }
 
+    @Test
+    fun givenE2EIAndMLSAreDisabled_whenRunningUseCase_thenE2EIFailureDisabledIsReturned() = runTest {
+        // given
+        val (arrangement, checkRevocationList) = Arrangement()
+            .withE2EIEnabledAndMLSEnabled(false)
+            .arrange()
+
+        // when
+        val result = checkRevocationList.invoke(DUMMY_URL)
+
+        // then
+        result.shouldFail {
+            assertEquals(E2EIFailure.Disabled, it)
+        }
+
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::registerCrl)
+            .with(any())
+            .wasNotInvoked()
+
+        verify(arrangement.mLSConversationsVerificationStatusesHandler)
+            .suspendFunction(arrangement.mLSConversationsVerificationStatusesHandler::invoke)
+            .wasNotInvoked()
+    }
+
     internal class Arrangement {
 
         @Mock
