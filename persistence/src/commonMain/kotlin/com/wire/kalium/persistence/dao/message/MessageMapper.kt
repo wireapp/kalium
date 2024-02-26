@@ -159,7 +159,9 @@ object MessageMapper {
                         }
                     }
 
-                    MessageEntity.MemberChangeType.FAILED_TO_ADD -> {
+                    MessageEntity.MemberChangeType.FAILED_TO_ADD_FEDERATION,
+                    MessageEntity.MemberChangeType.FAILED_TO_ADD_LEGAL_HOLD,
+                    MessageEntity.MemberChangeType.FAILED_TO_ADD_UNKNOWN -> {
                         MessagePreviewEntityContent.MembersFailedToAdded(
                             senderName = senderName,
                             isContainSelfUserId = userIdList.firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,

@@ -404,7 +404,12 @@ fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when
             MessageEntity.MemberChangeType.ADDED -> MessageContent.MemberChange.Added(memberList)
             MessageEntity.MemberChangeType.REMOVED -> MessageContent.MemberChange.Removed(memberList)
             MessageEntity.MemberChangeType.CREATION_ADDED -> MessageContent.MemberChange.CreationAdded(memberList)
-            MessageEntity.MemberChangeType.FAILED_TO_ADD -> MessageContent.MemberChange.FailedToAdd(memberList)
+            MessageEntity.MemberChangeType.FAILED_TO_ADD_FEDERATION ->
+                MessageContent.MemberChange.FailedToAdd(memberList, MessageContent.MemberChange.FailedToAdd.Type.Federation)
+            MessageEntity.MemberChangeType.FAILED_TO_ADD_LEGAL_HOLD ->
+                MessageContent.MemberChange.FailedToAdd(memberList, MessageContent.MemberChange.FailedToAdd.Type.LegalHold)
+            MessageEntity.MemberChangeType.FAILED_TO_ADD_UNKNOWN ->
+                MessageContent.MemberChange.FailedToAdd(memberList, MessageContent.MemberChange.FailedToAdd.Type.Unknown)
             MessageEntity.MemberChangeType.FEDERATION_REMOVED -> MessageContent.MemberChange.FederationRemoved(memberList)
             MessageEntity.MemberChangeType.REMOVED_FROM_TEAM -> MessageContent.MemberChange.RemovedFromTeam(memberList)
         }
@@ -630,7 +635,7 @@ private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage)
     else -> MessageContent.QuotedMessageDetails.Invalid
 }
 
-@Suppress("ComplexMethod")
+@Suppress("ComplexMethod", "LongMethod")
 fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
     is MessageContent.MemberChange -> {
         val memberUserIdList = this.members.map { it.toDao() }
@@ -645,7 +650,14 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
                 MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.CREATION_ADDED)
 
             is MessageContent.MemberChange.FailedToAdd ->
-                MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD)
+                when (this.type) {
+                    MessageContent.MemberChange.FailedToAdd.Type.Federation ->
+                        MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD_FEDERATION)
+                    MessageContent.MemberChange.FailedToAdd.Type.LegalHold ->
+                        MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD_LEGAL_HOLD)
+                    MessageContent.MemberChange.FailedToAdd.Type.Unknown ->
+                        MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD_UNKNOWN)
+                }
 
             is MessageContent.MemberChange.FederationRemoved -> MessageEntityContent.MemberChange(
                 memberUserIdList,
