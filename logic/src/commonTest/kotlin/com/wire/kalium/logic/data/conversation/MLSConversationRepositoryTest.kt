@@ -1529,8 +1529,6 @@ class MLSConversationRepositoryTest {
                 .thenReturn(e2eiInfo)
         }
 
-<<<<<<< HEAD
-=======
         fun withGetEstablishedSelfMLSGroupIdReturns(id: String?) = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getEstablishedSelfMLSGroupId)
@@ -1538,7 +1536,6 @@ class MLSConversationRepositoryTest {
                 .thenReturn(id)
         }
 
->>>>>>> 3ea58e84e4 (fix: Missing MLS Conversation (WPB-5302) (#2541))
         fun withAddMLSMemberSuccessful(commitBundle: CommitBundle = COMMIT_BUNDLE) = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::addMember)
@@ -1674,13 +1671,6 @@ class MLSConversationRepositoryTest {
                 .suspendFunction(mlsClient::getUserIdentities)
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(identitiesMap)
-        }
-
-        fun withGetSelfConversationIdReturns(id: QualifiedIDEntity?) = apply {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::getSelfConversationId)
-                .whenInvokedWith(anything())
-                .thenReturn(id)
         }
 
         companion object {
