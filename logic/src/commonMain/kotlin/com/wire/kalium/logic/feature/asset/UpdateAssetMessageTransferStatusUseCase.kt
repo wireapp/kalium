@@ -19,50 +19,49 @@
 package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.Message.DownloadStatus
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.withContext
 
-interface UpdateAssetMessageDownloadStatusUseCase {
+interface UpdateAssetMessageTransferStatusUseCase {
     /**
-     * Function that allows update an asset message download status. This field indicates whether the asset has been downloaded locally
-     * already or not.
+     * Function that allows update an asset message transfer status.
      *
-     * @param downloadStatus the new download status to update the asset message
+     * @param transferStatus the new transfer status to update the asset message
      * @param conversationId the conversation identifier
      * @param messageId the message identifier
-     * @return [UpdateDownloadStatusResult] sealed class with either a Success state in case of success or [CoreFailure] on failure
+     * @return [UpdateTransferStatusResult] sealed class with either a Success state in case of success or [CoreFailure] on failure
      */
     suspend operator fun invoke(
-        downloadStatus: DownloadStatus,
+        transferStatus: AssetTransferStatus,
         conversationId: ConversationId,
         messageId: String
-    ): UpdateDownloadStatusResult
+    ): UpdateTransferStatusResult
 }
 
-internal class UpdateAssetMessageDownloadStatusUseCaseImpl(
+internal class UpdateAssetMessageTransferStatusUseCaseImpl(
     private val messageRepository: MessageRepository,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
-) : UpdateAssetMessageDownloadStatusUseCase {
+) : UpdateAssetMessageTransferStatusUseCase {
 
     override suspend operator fun invoke(
-        downloadStatus: DownloadStatus,
+        transferStatus: AssetTransferStatus,
         conversationId: ConversationId,
         messageId: String
-    ): UpdateDownloadStatusResult = withContext(dispatcher.io) {
-        messageRepository.updateAssetMessageDownloadStatus(downloadStatus, conversationId, messageId).fold({
-            UpdateDownloadStatusResult.Failure(it)
+    ): UpdateTransferStatusResult = withContext(dispatcher.io) {
+        messageRepository.updateAssetMessageTransferStatus(transferStatus, conversationId, messageId).fold({
+            UpdateTransferStatusResult.Failure(it)
         }, {
-            UpdateDownloadStatusResult.Success
+            UpdateTransferStatusResult.Success
         })
     }
 }
 
-sealed class UpdateDownloadStatusResult {
-    data object Success : UpdateDownloadStatusResult()
-    data class Failure(val coreFailure: CoreFailure) : UpdateDownloadStatusResult()
+sealed class UpdateTransferStatusResult {
+    data object Success : UpdateTransferStatusResult()
+    data class Failure(val coreFailure: CoreFailure) : UpdateTransferStatusResult()
 }

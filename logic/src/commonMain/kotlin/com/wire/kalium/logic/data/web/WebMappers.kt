@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.AssetContent
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MigratedMessage
 import com.wire.kalium.logic.data.message.ProtoContent
@@ -108,8 +107,6 @@ fun WebEventContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? 
 
                                     else -> null
                                 },
-                                uploadStatus = Message.UploadStatus.NOT_UPLOADED,
-                                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
                             ),
                         ),
                         data.expectsReadConfirmation,

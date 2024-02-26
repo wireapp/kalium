@@ -24,6 +24,7 @@ import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
@@ -31,7 +32,8 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.getType
-import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
+import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
+import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
@@ -53,7 +55,8 @@ class RetryFailedMessageUseCase internal constructor(
     private val scope: CoroutineScope,
     private val dispatcher: KaliumDispatcher,
     private val messageSender: MessageSender,
-    private val updateAssetMessageUploadStatus: UpdateAssetMessageUploadStatusUseCase,
+    private val updateAssetMessageTransferStatus: UpdateAssetMessageTransferStatusUseCase,
+    private val getAssetMessageTransferStatusUseCase: GetAssetMessageTransferStatusUseCase,
     private val messageSendFailureHandler: MessageSendFailureHandler,
 ) {
 
@@ -71,7 +74,10 @@ class RetryFailedMessageUseCase internal constructor(
      * @return [Either.Left] in case the message could not be found or has invalid status, [Either.Right] otherwise. Note that this doesn't
      * imply that send will succeed, it just confirms that resending is the valid action for this message, and it has been started.
      */
-    suspend operator fun invoke(messageId: String, conversationId: ConversationId): Either<CoreFailure, Unit> =
+    suspend operator fun invoke(
+        messageId: String,
+        conversationId: ConversationId
+    ): Either<CoreFailure, Unit> =
         messageRepository.getMessageById(conversationId, messageId)
             .flatMap { message ->
                 when (message.status) {
@@ -137,10 +143,15 @@ class RetryFailedMessageUseCase internal constructor(
             else -> handleError("Message edit with content of type ${content::class.simpleName} cannot be retried")
         }
 
-    private suspend fun retrySendingAssetMessage(message: Message.Regular, content: AssetContent): Either<CoreFailure, Unit> =
-        when (content.uploadStatus) {
-            Message.UploadStatus.FAILED_UPLOAD -> {
-                updateAssetMessageUploadStatus(Message.UploadStatus.UPLOAD_IN_PROGRESS, message.conversationId, message.id)
+    private suspend fun retrySendingAssetMessage(
+        message: Message.Regular,
+        content: AssetContent,
+    ): Either<CoreFailure, Unit> {
+        val assetTransferStatus = getAssetMessageTransferStatusUseCase(message.conversationId, message.id)
+
+        return when (assetTransferStatus) {
+            AssetTransferStatus.FAILED_UPLOAD, AssetTransferStatus.NOT_DOWNLOADED -> {
+                updateAssetMessageTransferStatus(AssetTransferStatus.UPLOAD_IN_PROGRESS, message.conversationId, message.id)
                 retryUploadingAsset(content)
                     .flatMap { uploadedAssetContent ->
                         message.copy(content = MessageContent.Asset(value = uploadedAssetContent)).let { updatedMessage ->
@@ -150,7 +161,7 @@ class RetryFailedMessageUseCase internal constructor(
                     }
                     .onFailure {
                         kaliumLogger.e("Failed to retry sending asset message. Failure = $it")
-                        updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, message.conversationId, message.id)
+                        updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, message.conversationId, message.id)
                         val type = message.content.getType()
                         messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
                             failure = it,
@@ -162,12 +173,13 @@ class RetryFailedMessageUseCase internal constructor(
                     }
             }
 
-            Message.UploadStatus.UPLOADED -> Either.Right(message)
+            AssetTransferStatus.UPLOADED -> Either.Right(message)
 
-            else -> handleError("Asset message with upload status ${content.uploadStatus} cannot be retried")
+            else -> handleError("Asset message with transfer status $assetTransferStatus cannot be retried")
         }
             .onSuccess { retrySendingMessage(it) }
             .map { /* returns Unit */ }
+    }
 
     private suspend fun retryUploadingAsset(assetContent: AssetContent): Either<CoreFailure, AssetContent> =
         with(assetContent) {
@@ -197,7 +209,6 @@ class RetryFailedMessageUseCase internal constructor(
                             assetDomain = uploadedAssetId.domain,
                             assetToken = uploadedAssetId.assetToken
                         ),
-                        uploadStatus = Message.UploadStatus.UPLOADED
                     )
                 }
         }
