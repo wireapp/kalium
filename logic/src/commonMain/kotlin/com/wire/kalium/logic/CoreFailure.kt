@@ -26,6 +26,7 @@ import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isFederationDenied
 import com.wire.kalium.network.exceptions.isFederationNotEnabled
+import com.wire.kalium.network.exceptions.isMissingLegalHoldConsent
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
@@ -46,7 +47,16 @@ sealed interface CoreFailure {
         get() = this is NetworkFailure.FederatedBackendFailure.ConflictingBackends && this.domains.isNotEmpty()
 
     val isRetryable: Boolean
-        get() = this is NetworkFailure.FederatedBackendFailure.RetryableFailure
+        get() = when {
+            this is NetworkFailure.FederatedBackendFailure.RetryableFailure -> true
+            isMissingLegalHoldConsentError -> true
+            else -> false
+        }
+
+    val isMissingLegalHoldConsentError: Boolean
+        get() = this is NetworkFailure.ServerMiscommunication
+                && this.kaliumException is KaliumException.InvalidRequestError
+                && this.kaliumException.isMissingLegalHoldConsent()
 
     /**
      * The attempted operation requires that this client is registered.
@@ -191,6 +201,9 @@ interface MLSFailure : CoreFailure {
 }
 
 interface E2EIFailure : CoreFailure {
+
+    data object Disabled : E2EIFailure
+    data object MissingDiscoveryUrl : E2EIFailure
     data class FailedInitialization(val step: E2EIEnrollmentResult.E2EIStep) : E2EIFailure
     data class FailedOAuth(val reason: String) : E2EIFailure
     data class FailedFinalization(val step: E2EIEnrollmentResult.E2EIStep) : E2EIFailure

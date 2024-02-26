@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.arrangement.repository.E2EIRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.E2EIRepositoryArrangementImpl
 import io.mockative.twice
@@ -54,7 +55,11 @@ class ACMECertificatesSyncWorkerTest {
 
         fun arrange(): Pair<Arrangement, ACMECertificatesSyncWorker> = run {
             configure()
-            this@Arrangement to ACMECertificatesSyncWorkerImpl(e2eiRepository = e2eiRepository, syncInterval = syncInterval)
+            this@Arrangement to ACMECertificatesSyncWorkerImpl(
+                e2eiRepository = e2eiRepository,
+                syncInterval = syncInterval,
+                kaliumLogger = kaliumLogger
+            )
         }
     }
 

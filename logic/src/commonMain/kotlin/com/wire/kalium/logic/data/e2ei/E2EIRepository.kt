@@ -24,6 +24,7 @@ import com.wire.kalium.cryptography.AcmeDirectory
 import com.wire.kalium.cryptography.NewAcmeAuthz
 import com.wire.kalium.cryptography.NewAcmeOrder
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -35,6 +36,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrFail
+import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
@@ -91,6 +93,7 @@ interface E2EIRepository {
     suspend fun fetchFederationCertificates(): Either<CoreFailure, Unit>
     suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String>
     suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray>
+    fun discoveryUrl(): Either<CoreFailure, String>
 }
 
 @Suppress("LongParameterList")
@@ -116,9 +119,9 @@ class E2EIRepositoryImpl(
         })
     }
 
-    override suspend fun fetchAndSetTrustAnchors(): Either<CoreFailure, Unit> = userConfigRepository.getE2EISettings().flatMap {
+    override suspend fun fetchAndSetTrustAnchors(): Either<CoreFailure, Unit> = discoveryUrl().flatMap {
         wrapApiRequest {
-            acmeApi.getTrustAnchors(Url(it.discoverUrl).protocolWithAuthority)
+            acmeApi.getTrustAnchors(Url(it).protocolWithAuthority)
         }.flatMap { trustAnchors ->
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapE2EIRequest {
@@ -128,9 +131,9 @@ class E2EIRepositoryImpl(
         }
     }
 
-    override suspend fun loadACMEDirectories(): Either<CoreFailure, AcmeDirectory> = userConfigRepository.getE2EISettings().flatMap {
+    override suspend fun loadACMEDirectories(): Either<CoreFailure, AcmeDirectory> = discoveryUrl().flatMap {
         wrapApiRequest {
-            acmeApi.getACMEDirectories(it.discoverUrl)
+            acmeApi.getACMEDirectories(it)
         }.flatMap { directories ->
             e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
                 wrapE2EIRequest {
@@ -253,8 +256,9 @@ class E2EIRepositoryImpl(
     override suspend fun setOIDCChallengeResponse(challengeResponse: ChallengeResponse) =
         mlsClientProvider.getCoreCrypto().flatMap { coreCrypto ->
             e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
-                e2eiClient.setOIDCChallengeResponse(coreCrypto, Json.encodeToString(challengeResponse).encodeToByteArray())
-                Either.Right(Unit)
+                wrapE2EIRequest {
+                    e2eiClient.setOIDCChallengeResponse(coreCrypto, Json.encodeToString(challengeResponse).encodeToByteArray())
+                }
             }
         }
 
@@ -299,26 +303,34 @@ class E2EIRepositoryImpl(
         Either.Right(e2EIClient.getOAuthRefreshToken())
     }
 
-    override suspend fun fetchFederationCertificates(): Either<CoreFailure, Unit> = userConfigRepository.getE2EISettings().flatMap {
-        wrapApiRequest {
-            acmeApi.getACMEFederation(Url(it.discoverUrl).protocolWithAuthority)
-        }.flatMap { data ->
-            mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                wrapMLSRequest {
-                    mlsClient.registerIntermediateCa(data)
+    override suspend fun fetchFederationCertificates(): Either<CoreFailure, Unit> = discoveryUrl()
+        .flatMap {
+            wrapApiRequest {
+                acmeApi.getACMEFederation(Url(it).protocolWithAuthority)
+            }.flatMap { data ->
+                mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+                    wrapMLSRequest {
+                        mlsClient.registerIntermediateCa(data)
+                    }
                 }
             }
         }
-    }
+
+    override fun discoveryUrl(): Either<CoreFailure, String> =
+        userConfigRepository.getE2EISettings().flatMap { settings ->
+            when {
+                !settings.isRequired -> E2EIFailure.Disabled.left()
+                settings.discoverUrl == null -> E2EIFailure.MissingDiscoveryUrl.left()
+                else -> Either.Right(settings.discoverUrl)
+            }
+        }
 
     override suspend fun nukeE2EIClient() {
         e2EIClientProvider.nuke()
     }
 
     override suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String> =
-        userConfigRepository.getE2EISettings().map {
-            (Url(it.discoverUrl).protocolWithAuthority)
-        }
+        discoveryUrl().map { Url(it).protocolWithAuthority }
 
     override suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray> =
         wrapApiRequest {

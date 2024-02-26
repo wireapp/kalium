@@ -31,8 +31,12 @@ class E2EIConfigHandler(
     private val userConfigRepository: UserConfigRepository,
 ) {
     fun handle(e2eiConfig: E2EIModel): Either<CoreFailure, Unit> {
-        val gracePeriodEnd = DateTimeUtil.currentInstant()
-            .plus(e2eiConfig.config.verificationExpirationSeconds.toDuration(DurationUnit.SECONDS))
+        val gracePeriodEnd = e2eiConfig.config.verificationExpirationSeconds
+            .toDuration(DurationUnit.SECONDS)
+            .let {
+            DateTimeUtil.currentInstant().plus(it)
+        }
+
         userConfigRepository.setE2EISettings(
             E2EISettings(
                 isRequired = e2eiConfig.status == Status.ENABLED,
