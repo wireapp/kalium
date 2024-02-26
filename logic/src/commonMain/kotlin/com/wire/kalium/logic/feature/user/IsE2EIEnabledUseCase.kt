@@ -22,11 +22,11 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.fold
 
 /**
- * Checks if the current user's team has enabled E2EI .
+ * Checks if the current user's team has enabled E2EI and MLS.
  */
 interface IsE2EIEnabledUseCase {
     /**
-     * @return true if E2EI is enabled, false otherwise.
+     * @return true if E2EI and MLS is enabled, false otherwise.
      */
     operator fun invoke(): Boolean
 }
