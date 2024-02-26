@@ -38,16 +38,16 @@ class GetUserE2eiCertificateStatusUseCaseImpl internal constructor(
 ) : GetUserE2eiCertificateStatusUseCase {
     override suspend operator fun invoke(userId: UserId): GetUserE2eiCertificateStatusResult =
         if (isE2EIEnabledUseCase()) {
-        mlsConversationRepository.getUserIdentity(userId).fold(
-            {
-                GetUserE2eiCertificateStatusResult.Failure.NotActivated
-            },
-            { identities ->
-                identities.getUserCertificateStatus(pemCertificateDecoder)?.let {
-                    GetUserE2eiCertificateStatusResult.Success(it)
-                } ?: GetUserE2eiCertificateStatusResult.Failure.NotActivated
-            }
-        )
+            mlsConversationRepository.getUserIdentity(userId).fold(
+                {
+                    GetUserE2eiCertificateStatusResult.Failure.NotActivated
+                },
+                { identities ->
+                    identities.getUserCertificateStatus(pemCertificateDecoder)?.let {
+                        GetUserE2eiCertificateStatusResult.Success(it)
+                    } ?: GetUserE2eiCertificateStatusResult.Failure.NotActivated
+                }
+            )
         } else {
             GetUserE2eiCertificateStatusResult.Failure.NotActivated
         }
