@@ -218,7 +218,8 @@ sealed class ConversationRepository {
             text: String?,
             mentions: List<MessageMention>,
             messageTimer: Int?,
-            quotedMessageId: String?
+            quotedMessageId: String?,
+            buttons: List<String> = listOf()
         ): Response = instance.coreLogic.globalScope {
             return when (val session = session.currentSession()) {
                 is CurrentSessionResult.Success -> {
@@ -226,9 +227,16 @@ sealed class ConversationRepository {
                         if (text != null) {
                             setMessageTimer(instance, conversationId, messageTimer)
                             log.info("Instance ${instance.instanceId}: Send text message '$text'")
-                            messages.sendTextMessage(
-                                conversationId, text, mentions, quotedMessageId
-                            ).fold({
+                            val result = if (buttons.isEmpty()) {
+                                messages.sendTextMessage(
+                                    conversationId, text, mentions, quotedMessageId
+                                )
+                            } else {
+                                messages.sendButtonMessage(
+                                    conversationId, text, mentions, quotedMessageId, buttons
+                                )
+                            }
+                            result.fold({
                                 Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
                             }, {
                                 Response.status(Response.Status.OK)
