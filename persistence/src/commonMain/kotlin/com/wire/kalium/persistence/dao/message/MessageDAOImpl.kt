@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao.message
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationsQueries
+import com.wire.kalium.persistence.MessageAssetTransferStatusQueries
 import com.wire.kalium.persistence.MessageAssetViewQueries
 import com.wire.kalium.persistence.MessagePreviewQueries
 import com.wire.kalium.persistence.MessagesQueries
@@ -31,6 +32,7 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
+import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventEntity
@@ -58,6 +60,7 @@ internal class MessageDAOImpl internal constructor(
     private val selfUserId: UserIDEntity,
     private val reactionsQueries: ReactionsQueries,
     private val coroutineContext: CoroutineContext,
+    private val assetStatusQueries: MessageAssetTransferStatusQueries,
     buttonContentQueries: ButtonContentQueries
 ) : MessageDAO,
     MessageInsertExtension by MessageInsertExtensionImpl(
@@ -216,20 +219,16 @@ internal class MessageDAOImpl internal constructor(
                 }
         } ?: false
 
-    override suspend fun updateAssetUploadStatus(
-        uploadStatus: MessageEntity.UploadStatus,
+    override suspend fun updateAssetTransferStatus(
+        transferStatus: AssetTransferStatusEntity,
         id: String,
         conversationId: QualifiedIDEntity
     ) = withContext(coroutineContext) {
-        queries.updateAssetUploadStatus(uploadStatus, id, conversationId)
-    }
-
-    override suspend fun updateAssetDownloadStatus(
-        downloadStatus: MessageEntity.DownloadStatus,
-        id: String,
-        conversationId: QualifiedIDEntity
-    ) = withContext(coroutineContext) {
-        queries.updateAssetDownloadStatus(downloadStatus, id, conversationId)
+        assetStatusQueries.upsertMessageAssetStatus(
+            id,
+            conversationId,
+            transferStatus
+        )
     }
 
     override suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity) =
@@ -378,8 +377,8 @@ internal class MessageDAOImpl internal constructor(
             conversationId to count.toInt()
         }.asFlow().flowOn(coroutineContext).mapToList().map { it.toMap() }
 
-    override suspend fun resetAssetDownloadStatus() = withContext(coroutineContext) {
-        queries.resetAssetDownloadStatus()
+    override suspend fun resetAssetTransferStatus() = withContext(coroutineContext) {
+        assetStatusQueries.resetAssetTransferStatus()
     }
 
     override suspend fun markMessagesAsDecryptionResolved(
@@ -388,10 +387,6 @@ internal class MessageDAOImpl internal constructor(
         clientId: String,
     ) = withContext(coroutineContext) {
         queries.markMessagesAsDecryptionResolved(userId, clientId)
-    }
-
-    override suspend fun resetAssetUploadStatus() = withContext(coroutineContext) {
-        queries.resetAssetUploadStatus()
     }
 
     override suspend fun getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
@@ -488,6 +483,18 @@ internal class MessageDAOImpl internal constructor(
             .executeAsOne()
             .toInt()
     }
+
+    override suspend fun observeAssetStatuses(conversationId: QualifiedIDEntity): Flow<List<MessageAssetStatusEntity>> =
+        assetStatusQueries.selectConversationAssetStatus(conversationId, mapper::fromAssetStatus)
+            .asFlow()
+            .flowOn(coroutineContext)
+            .mapToList()
+
+    override suspend fun getMessageAssetTransferStatus(messageId: String, conversationId: QualifiedIDEntity): AssetTransferStatusEntity =
+        withContext(coroutineContext) {
+            assetStatusQueries.selectMessageAssetStatus(conversationId, messageId)
+                .executeAsOne()
+        }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, assetViewQueries, mapper, coroutineContext)
 

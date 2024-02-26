@@ -44,7 +44,6 @@ import io.mockative.once
 import io.mockative.verify
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 
@@ -268,7 +267,8 @@ class AssetMessageHandlerTest {
         @Mock
         val validateAssetMimeType = mock(classOf<ValidateAssetMimeTypeUseCase>())
 
-        private val assetMessageHandlerImpl = AssetMessageHandlerImpl(messageRepository, persistMessage, userConfigRepository, validateAssetMimeType)
+        private val assetMessageHandlerImpl =
+            AssetMessageHandlerImpl(messageRepository, persistMessage, userConfigRepository, validateAssetMimeType)
 
         fun withValidateAssetMime(result: Boolean) = apply {
             given(validateAssetMimeType)
@@ -322,9 +322,7 @@ class AssetMessageHandlerTest {
                     assetDomain = "some-asset-domain",
                     assetToken = "some-asset-token",
                     encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
-                ),
-                uploadStatus = Message.UploadStatus.NOT_UPLOADED,
-                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
+                )
             )
 
         )
@@ -341,9 +339,7 @@ class AssetMessageHandlerTest {
                     assetDomain = "",
                     assetToken = "",
                     encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
-                ),
-                uploadStatus = Message.UploadStatus.NOT_UPLOADED,
-                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
+                )
             )
 
         )

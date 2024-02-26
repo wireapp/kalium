@@ -25,7 +25,6 @@ AS SELECT
     AssetMessage.asset_mime_type AS assetMimeType,
     AssetMessage.asset_height AS assetHeight,
     AssetMessage.asset_width AS assetWidth,
-    AssetMessage.asset_download_status AS assetDownloadStatus,
     AssetContent.data_path AS dataPath
 FROM Message
 LEFT JOIN SelfUser
