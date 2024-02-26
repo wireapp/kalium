@@ -44,7 +44,6 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.id.toCrypto
-import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.mlspublickeys.Ed25519Key
@@ -74,7 +73,6 @@ import com.wire.kalium.network.api.base.authenticated.notification.MemberLeaveRe
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -1306,15 +1304,13 @@ class MLSConversationRepositoryTest {
         val groupId = TestConversation.MLS_PROTOCOL_INFO.groupId.value
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
-            .withGetSelfConversationIdReturns(TestConversation.MLS_CONVERSATION.id.toDao())
-            .withGetMLSGroupIdByConversationIdReturns(groupId)
+            .withGetEstablishedSelfMLSGroupIdReturns(groupId)
             .withGetUserIdentitiesReturn(
                 mapOf(
                     TestUser.USER_ID.value to listOf(WIRE_IDENTITY),
                     "some_other_user_id" to listOf(WIRE_IDENTITY.copy(clientId = CRYPTO_CLIENT_ID.copy("another_client_id"))),
                 )
             )
-            .withGetMLSGroupIdByUserIdReturns(groupId)
             .arrange()
 
         assertEquals(Either.Right(listOf(WIRE_IDENTITY)), mlsConversationRepository.getUserIdentity(TestUser.USER_ID))
@@ -1330,13 +1326,7 @@ class MLSConversationRepositoryTest {
             .wasNotInvoked()
 
         verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::getSelfConversationId)
-            .with(eq(ConversationEntity.Protocol.MLS))
-            .wasInvoked(once)
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::getMLSGroupIdByConversationId)
-            .with(eq(TestConversation.MLS_CONVERSATION.id.toDao()))
+            .suspendFunction(arrangement.conversationDAO::getEstablishedSelfMLSGroupId)
             .wasInvoked(once)
     }
 
@@ -1345,8 +1335,6 @@ class MLSConversationRepositoryTest {
         val groupId = TestConversation.MLS_PROTOCOL_INFO.groupId.value
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
-            .withGetSelfConversationIdReturns(TestConversation.MLS_CONVERSATION.id.toDao())
-            .withGetMLSGroupIdByConversationIdReturns(groupId)
             .withGetUserIdentitiesReturn(
                 mapOf(
                     TestUser.OTHER_USER_ID.value to listOf(WIRE_IDENTITY),
@@ -1366,16 +1354,6 @@ class MLSConversationRepositoryTest {
             .suspendFunction(arrangement.conversationDAO::getMLSGroupIdByUserId)
             .with(any())
             .wasInvoked(once)
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::getSelfConversationId)
-            .with(eq(ConversationEntity.Protocol.MLS))
-            .wasNotInvoked()
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::getMLSGroupIdByConversationId)
-            .with(eq(TestConversation.MLS_CONVERSATION.id.toDao()))
-            .wasNotInvoked()
     }
 
     @Test
@@ -1551,6 +1529,16 @@ class MLSConversationRepositoryTest {
                 .thenReturn(e2eiInfo)
         }
 
+<<<<<<< HEAD
+=======
+        fun withGetEstablishedSelfMLSGroupIdReturns(id: String?) = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getEstablishedSelfMLSGroupId)
+                .whenInvoked()
+                .thenReturn(id)
+        }
+
+>>>>>>> 3ea58e84e4 (fix: Missing MLS Conversation (WPB-5302) (#2541))
         fun withAddMLSMemberSuccessful(commitBundle: CommitBundle = COMMIT_BUNDLE) = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::addMember)
