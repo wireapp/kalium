@@ -446,7 +446,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
@@ -487,10 +486,8 @@ class UserSessionScope internal constructor(
             }
         }
 
-    private val clientIdStateFlow = MutableStateFlow<ClientId?>(null)
-
     private val userScopedLogger: KaliumLogger = kaliumLogger.withUserDeviceData {
-        KaliumLogger.UserClientData(userId.toLogString(), clientIdStateFlow.value?.value?.obfuscateId() ?: "")
+        KaliumLogger.UserClientData(userId.toLogString(), _clientId?.value?.obfuscateId() ?: "")
     }
 
     private val cachedClientIdClearer: CachedClientIdClearer = object : CachedClientIdClearer {
@@ -713,6 +710,7 @@ class UserSessionScope internal constructor(
             userStorage.database.conversationDAO,
             authenticatedNetworkContainer.conversationApi,
             newConversationMembersRepository,
+            userRepository,
             lazy { conversations.newGroupConversationSystemMessagesCreator },
             userId,
             selfTeamId

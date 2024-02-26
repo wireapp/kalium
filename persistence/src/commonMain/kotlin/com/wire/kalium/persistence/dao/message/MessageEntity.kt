@@ -166,10 +166,22 @@ sealed interface MessageEntity {
         CREATION_ADDED,
 
         /**
-         * A member(s) was not added to the conversation.
+         * A member(s) was not added to the conversation due to the federation error.
          * Note: This is only valid for the creator of the conversation, local-only.
          */
-        FAILED_TO_ADD,
+        FAILED_TO_ADD_FEDERATION,
+
+        /**
+         * A member(s) was not added to the conversation due to the legal hold error.
+         * Note: This is only valid for the creator of the conversation, local-only.
+         */
+        FAILED_TO_ADD_LEGAL_HOLD,
+
+        /**
+         * A member(s) was not added to the conversation due to the other unknown error.
+         * Note: This is only valid for the creator of the conversation, local-only.
+         */
+        FAILED_TO_ADD_UNKNOWN,
 
         /**
          * Member(s) removed from the conversation, due to some backend stopped to federate between them, or us.
