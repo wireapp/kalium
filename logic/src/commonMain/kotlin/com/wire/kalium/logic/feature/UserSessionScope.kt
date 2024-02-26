@@ -1777,7 +1777,8 @@ class UserSessionScope internal constructor(
             clientRepository,
             joinExistingMLSConversations,
             refreshUsersWithoutMetadata,
-            userScopedLogger,
+            isE2EIEnabled,
+            userScopedLogger
         )
 
     val search: SearchScope
@@ -1859,7 +1860,10 @@ class UserSessionScope internal constructor(
         get() = MarkFileSharingChangeAsNotifiedUseCase(userConfigRepository)
 
     val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(featureSupport, userConfigRepository)
-    val isE2EIEnabled: IsE2EIEnabledUseCase get() = IsE2EIEnabledUseCaseImpl(userConfigRepository)
+    val isE2EIEnabled: IsE2EIEnabledUseCase get() = IsE2EIEnabledUseCaseImpl(
+        userConfigRepository,
+        isMLSEnabled
+    )
 
     val getDefaultProtocol: GetDefaultProtocolUseCase
         get() = GetDefaultProtocolUseCaseImpl(
