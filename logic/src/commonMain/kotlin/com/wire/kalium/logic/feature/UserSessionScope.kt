@@ -242,10 +242,10 @@ import com.wire.kalium.logic.feature.legalhold.MembersHavingLegalHoldClientUseCa
 import com.wire.kalium.logic.feature.legalhold.MembersHavingLegalHoldClientUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldChangeNotifiedForSelfUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldChangeNotifiedForSelfUseCaseImpl
-import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserUseCase
-import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldRequestUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldRequestUseCaseImpl
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserUseCase
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.UpdateSelfClientCapabilityToLegalHoldConsentUseCase
@@ -710,6 +710,7 @@ class UserSessionScope internal constructor(
             userStorage.database.conversationDAO,
             authenticatedNetworkContainer.conversationApi,
             newConversationMembersRepository,
+            userRepository,
             lazy { conversations.newGroupConversationSystemMessagesCreator },
             userId,
             selfTeamId
@@ -1988,7 +1989,7 @@ class UserSessionScope internal constructor(
             slowSyncManager
 
             callRepository.updateOpenCallsToClosedStatus()
-            messageRepository.resetAssetProgressStatus()
+            messageRepository.resetAssetTransferStatus()
         }
 
         launch {

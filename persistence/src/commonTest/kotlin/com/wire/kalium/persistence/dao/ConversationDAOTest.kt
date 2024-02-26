@@ -512,8 +512,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
                             assetSizeInBytes = 123L,
                             assetName = "assetName",
                             assetMimeType = "assetMimeType",
-                            assetUploadStatus = MessageEntity.UploadStatus.UPLOADED,
-                            assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
                             assetOtrKey = ByteArray(32),
                             assetSha256Key = ByteArray(32),
                             assetId = "assetId",

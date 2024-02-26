@@ -29,6 +29,7 @@ import com.wire.kalium.persistence.ConversationLegalHoldStatusChangeNotified
 import com.wire.kalium.persistence.Member
 import com.wire.kalium.persistence.Message
 import com.wire.kalium.persistence.MessageAssetContent
+import com.wire.kalium.persistence.MessageAssetTransferStatus
 import com.wire.kalium.persistence.MessageConversationChangedContent
 import com.wire.kalium.persistence.MessageConversationLocationContent
 import com.wire.kalium.persistence.MessageConversationProtocolChangedContent
@@ -127,8 +128,6 @@ internal object TableMapper {
         conversation_idAdapter = QualifiedIDAdapter,
         asset_widthAdapter = IntColumnAdapter,
         asset_heightAdapter = IntColumnAdapter,
-        asset_upload_statusAdapter = EnumColumnAdapter(),
-        asset_download_statusAdapter = EnumColumnAdapter(),
     )
     val messageConversationChangedContentAdapter = MessageConversationChangedContent.Adapter(
         conversation_idAdapter = QualifiedIDAdapter
@@ -249,5 +248,10 @@ internal object TableMapper {
 
     val conversationLegalHoldStatusChangeNotifiedAdapter = ConversationLegalHoldStatusChangeNotified.Adapter(
         conversation_idAdapter = QualifiedIDAdapter
+    )
+
+    val messageAssetTransferStatusAdapter = MessageAssetTransferStatus.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        transfer_statusAdapter = EnumColumnAdapter(),
     )
 }

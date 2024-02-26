@@ -1,14 +1,88 @@
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.LegalHoldType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
-import com.wire.kalium.persistence.dao.message.MessageEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntityContent;
-import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
-import kotlin.Boolean;
-import kotlin.Int;
-import kotlin.collections.List;
-import kotlinx.datetime.Instant;
+import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity;
+
+CREATE TABLE MessageAssetTransferStatus (
+    message_id TEXT NOT NULL,
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+    transfer_status TEXT AS AssetTransferStatusEntity NOT NULL DEFAULT 'NOT_DOWNLOADED',
+    FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    PRIMARY KEY (message_id, conversation_id)
+);
+
+DROP VIEW IF EXISTS MessageAssetView;
+DROP VIEW IF EXISTS MessagePreview;
+DROP VIEW IF EXISTS MessageDetailsView;
+
+INSERT OR IGNORE INTO MessageAssetTransferStatus (message_id, conversation_id, transfer_status)
+SELECT
+    message_id,
+    conversation_id,
+    CASE
+        WHEN asset_upload_status = 'UPLOADED' THEN 'UPLOADED'
+        WHEN asset_download_status = 'SAVED_INTERNALLY' THEN 'SAVED_INTERNALLY'
+        WHEN asset_download_status = 'SAVED_EXTERNALLY' THEN 'SAVED_EXTERNALLY'
+        ELSE 'NOT_DOWNLOADED'
+    END AS transfer_status
+FROM
+    MessageAssetContent
+WHERE
+    (asset_upload_status = 'UPLOADED'
+    OR asset_download_status = 'SAVED_INTERNALLY'
+    OR asset_download_status = 'SAVED_EXTERNALLY')
+    AND (asset_mime_type NOT IN ('image/jpg', 'image/jpeg', 'image/png', 'image/gif', 'image/webp')
+    OR asset_width <= 0
+    OR asset_height <= 0);
+
+ALTER TABLE MessageAssetContent RENAME TO TempMessageAssetContent;
+
+CREATE TABLE MessageAssetContent (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      asset_size INTEGER NOT NULL,
+      asset_name TEXT,
+      asset_mime_type TEXT NOT NULL,
+      asset_otr_key BLOB NOT NULL,
+      asset_sha256 BLOB NOT NULL,
+      asset_id TEXT NOT NULL,
+      asset_token TEXT,
+      asset_domain TEXT,
+      asset_encryption_algorithm TEXT,
+      asset_width INTEGER AS Int,
+      asset_height INTEGER AS Int,
+      asset_duration_ms INTEGER,
+      asset_normalized_loudness BLOB,
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id)
+);
+
+INSERT INTO MessageAssetContent (message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness)
+SELECT message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness
+FROM TempMessageAssetContent;
+
+DROP TABLE TempMessageAssetContent;
+
+CREATE VIEW IF NOT EXISTS MessageAssetView
+AS SELECT
+    Message.id AS id,
+    Message.conversation_id AS conversationId,
+    Message.content_type AS contentType,
+    Message.creation_date AS date,
+    Message.visibility AS visibility,
+    Message.sender_user_id AS senderUserId,
+    (Message.expire_after_millis IS NOT NULL) AS isEphemeral,
+    User.name AS senderName,
+    SelfUser.id AS selfUserId,
+    (Message.sender_user_id == SelfUser.id) AS isSelfMessage,
+    AssetMessage.asset_id AS assetId,
+    AssetMessage.asset_mime_type AS assetMimeType,
+    AssetMessage.asset_height AS assetHeight,
+    AssetMessage.asset_width AS assetWidth,
+    AssetContent.data_path AS dataPath
+FROM Message
+LEFT JOIN SelfUser
+LEFT JOIN User ON Message.sender_user_id = User.qualified_id
+LEFT JOIN MessageAssetContent AS AssetMessage ON Message.id = AssetMessage.message_id AND Message.conversation_id = AssetMessage.conversation_id
+LEFT JOIN Asset AS AssetContent ON AssetMessage.asset_id = AssetContent.key AND AssetMessage.asset_domain = AssetContent.domain;
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
@@ -171,3 +245,39 @@ LEFT JOIN MessageConversationLocationContent AS ConversationLocationContent ON M
 LEFT JOIN MessageLegalHoldContent AS LegalHoldContent ON Message.id = LegalHoldContent.message_id AND Message.conversation_id = LegalHoldContent.conversation_id
 LEFT JOIN SelfUser;
 -- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
+
+CREATE VIEW IF NOT EXISTS MessagePreview
+AS SELECT
+    Message.id AS id,
+    Message.conversation_id AS conversationId,
+    Message.content_type AS contentType,
+    Message.creation_date AS date,
+    Message.visibility AS visibility,
+    Message.sender_user_id AS senderUserId,
+    (Message.expire_after_millis IS NOT NULL) AS isEphemeral,
+    User.name AS senderName,
+    User.connection_status AS senderConnectionStatus,
+    User.deleted AS senderIsDeleted,
+    SelfUser.id AS selfUserId,
+    (Message.sender_user_id == SelfUser.id) AS isSelfMessage,
+    MemberChangeContent.member_change_list AS memberChangeList,
+    MemberChangeContent.member_change_type AS memberChangeType,
+    ConversationNameChangedContent.conversation_name AS updateConversationName,
+    Conversation.name AS conversationName,
+    (Mention.user_id IS NOT NULL) AS isMentioningSelfUser,
+    TextContent.is_quoting_self AS isQuotingSelfUser,
+    TextContent.text_body AS text,
+    AssetContent.asset_mime_type AS assetMimeType,
+    (Message.creation_date > Conversation.last_read_date) AS isUnread,
+    IFNULL((Message.creation_date > IFNULL(Conversation.last_notified_date, 0)), FALSE) AS shouldNotify,
+    Conversation.muted_status AS mutedStatus,
+    Conversation.type AS conversationType
+FROM Message
+LEFT JOIN SelfUser
+LEFT JOIN User ON Message.sender_user_id = User.qualified_id
+LEFT JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id
+LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
+LEFT JOIN MessageMention AS Mention ON Message.id == Mention.message_id AND SelfUser.id == Mention.user_id
+LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
+LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
+LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id;
