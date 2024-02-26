@@ -32,13 +32,14 @@ interface IsE2EIEnabledUseCase {
 }
 
 internal class IsE2EIEnabledUseCaseImpl(
-    private val userConfigRepository: UserConfigRepository
+    private val userConfigRepository: UserConfigRepository,
+    private val isMLSEnabledUseCase: IsMLSEnabledUseCase
 ) : IsE2EIEnabledUseCase {
 
     override operator fun invoke(): Boolean =
         userConfigRepository.getE2EISettings().fold({
             false
         }, {
-            it.isRequired
+            it.isRequired && isMLSEnabledUseCase()
         })
 }

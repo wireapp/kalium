@@ -307,11 +307,12 @@ class MLSClientImpl(
     }
 
     override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration {
-        return toCrlRegistration(coreCrypto.e2eiRegisterCrl(url, crl))
+        return CrlRegistration(false,1000000UL)
+        //return toCrlRegistration(coreCrypto.e2eiRegisterCrl(url, crl))
     }
 
     override suspend fun registerIntermediateCa(pem: CertificateChain) {
-        coreCrypto.e2eiRegisterIntermediateCa(pem)
+        //coreCrypto.e2eiRegisterIntermediateCa(pem)
     }
 
     companion object {
