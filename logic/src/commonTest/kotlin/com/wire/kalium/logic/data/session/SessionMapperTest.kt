@@ -36,15 +36,11 @@ import kotlin.test.assertEquals
 import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
 class SessionMapperTest {
-
-    @Mock
-    val idMapper = mock(classOf<IdMapper>())
-
     private lateinit var sessionMapper: SessionMapper
 
     @BeforeTest
     fun setup() {
-        sessionMapper = SessionMapperImpl(idMapper)
+        sessionMapper = SessionMapperImpl()
     }
 
     @Test
@@ -69,8 +65,6 @@ class SessionMapperTest {
     @Test
     fun givenAnAuthTokens_whenMappingToPersistenceAuthTokens_thenValuesAreMappedCorrectly() {
         val authSession: AccountTokens = TEST_AUTH_TOKENS
-
-        given(idMapper).invocation { idMapper.toSsoIdEntity(TEST_SSO_ID) }.then { TEST_SSO_ID_ENTITY }
 
         val expected: AuthTokenEntity = with(authSession) {
             AuthTokenEntity(

@@ -131,13 +131,22 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
         )
 
     override fun fromDTO(data: FeatureConfigData.E2EI?): E2EIModel =
-        E2EIModel(
+        data?.let {
+            E2EIModel(
+                E2EIConfigModel(
+                    data.config.url,
+                    data.config.verificationExpirationSeconds
+                ),
+                fromDTO(data.status)
+            )
+        } ?: E2EIModel(
             E2EIConfigModel(
-                data?.config?.url ?: "",
-                data?.config?.verificationExpirationSeconds ?: 0L
+                null,
+                0
             ),
-            fromDTO(data?.status ?: FeatureFlagStatusDTO.DISABLED)
+            Status.DISABLED
         )
+
     override fun fromModel(status: Status): FeatureFlagStatusDTO =
         when (status) {
             Status.ENABLED -> FeatureFlagStatusDTO.ENABLED

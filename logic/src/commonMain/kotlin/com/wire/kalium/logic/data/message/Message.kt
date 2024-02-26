@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.User
@@ -107,8 +108,6 @@ sealed interface Message {
                     "sizeInBytes" to "${content.value.sizeInBytes}",
                     "mimeType" to content.value.mimeType,
                     "metaData" to "${content.value.metadata}",
-                    "downloadStatus" to "${content.value.downloadStatus}",
-                    "uploadStatus" to "${content.value.uploadStatus}",
                     "otrKeySize" to "${content.value.remoteData.otrKey.size}",
                 )
 
@@ -531,65 +530,6 @@ sealed interface Message {
         }
     }
 
-    enum class UploadStatus {
-        /**
-         * There was no attempt done to upload the asset's data to remote (server) storage.
-         */
-        NOT_UPLOADED,
-
-        /**
-         * The asset is currently being uploaded and will be saved internally after a successful upload
-         * @see UPLOADED
-         */
-        UPLOAD_IN_PROGRESS,
-
-        /**
-         * The asset was uploaded and saved in the internal storage, that should be only readable by this Kalium client.
-         */
-        UPLOADED,
-
-        /**
-         * The last attempt at uploading and saving this asset's data failed.
-         */
-        FAILED_UPLOAD
-    }
-
-    enum class DownloadStatus {
-        /**
-         * There was no attempt done to fetch the asset's data from remote (server) storage.
-         */
-        NOT_DOWNLOADED,
-
-        /**
-         * The asset is currently being downloaded and will be saved internally after a successful download
-         * @see SAVED_INTERNALLY
-         */
-        DOWNLOAD_IN_PROGRESS,
-
-        /**
-         * The asset was downloaded and saved in the internal storage, that should be only readable by this Kalium client.
-         */
-        SAVED_INTERNALLY,
-
-        /**
-         * The asset was downloaded internally and saved in an external storage, readable by other software on the machine that this Kalium
-         * client is currently running on.
-         *
-         * _.e.g_: Asset was saved in Downloads, Desktop or other user-chosen directory.
-         */
-        SAVED_EXTERNALLY,
-
-        /**
-         * The last attempt at fetching and saving this asset's data failed.
-         */
-        FAILED_DOWNLOAD,
-
-        /**
-         * Asset was not found on the server
-         */
-        NOT_FOUND
-    }
-
     enum class Visibility {
         VISIBLE, DELETED, HIDDEN
     }
@@ -658,3 +598,9 @@ sealed class DeliveryStatus {
         return Json.encodeToString(toLogMap())
     }
 }
+
+data class MessageAssetStatus(
+    val id: String,
+    val conversationId: ConversationId,
+    val transferStatus: AssetTransferStatus
+)

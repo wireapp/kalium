@@ -788,7 +788,6 @@ class MessageRepositoryTest {
             assetId = "assetId",
             width = 640,
             height = 480,
-            downloadStatus = Message.DownloadStatus.SAVED_INTERNALLY,
             assetPath = "asset/path".toPath(),
             isSelfAsset = false
         )

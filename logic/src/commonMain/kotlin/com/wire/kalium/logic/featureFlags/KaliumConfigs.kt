@@ -45,7 +45,10 @@ data class KaliumConfigs(
     val mockNetworkStateObserver: NetworkStateObserver? = null,
     // Interval between attempts to advance the proteus to MLS migration
     val mlsMigrationInterval: Duration = 24.hours,
-    val fetchAllTeamMembersEagerly: Boolean = false,
+    // limit for the number of team members to fetch during slow sync
+    // if null there will be no limit and all team members will be fetched
+    // preferably it should be a multiple of TeamRepository.FETCH_TEAM_MEMBER_PAGE_SIZE
+    val limitTeamMembersFetchDuringSlowSync: Int? = null,
     val maxRemoteSearchResultCount: Int = 30
 )
 

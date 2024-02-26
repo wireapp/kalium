@@ -18,7 +18,6 @@
 package com.wire.kalium.persistence.dao.asset
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.message.MessageEntity
 import kotlinx.datetime.Instant
 
 data class AssetMessageEntity(
@@ -29,7 +28,55 @@ data class AssetMessageEntity(
     val assetId: String,
     val width: Int,
     val height: Int,
-    val downloadStatus: MessageEntity.DownloadStatus,
     val assetPath: String?,
     val isSelfAsset: Boolean
 )
+
+enum class AssetTransferStatusEntity {
+    /**
+     * The asset is currently being uploaded to remote storage.
+     */
+    UPLOAD_IN_PROGRESS,
+
+    /**
+     * The last attempt at uploading this asset's data failed.
+     */
+    FAILED_UPLOAD,
+
+    /**
+     * The asset was successfully uploaded and saved in the internal storage.
+     */
+    UPLOADED,
+
+    /**
+     * There was no attempt done to transfer the asset's data to/from remote (server) storage.
+     */
+    NOT_DOWNLOADED,
+
+    /**
+     * The asset is currently being downloaded from remote storage.
+     */
+    DOWNLOAD_IN_PROGRESS,
+
+    /**
+     * The last attempt at downloading this asset's data failed.
+     */
+    FAILED_DOWNLOAD,
+
+    /**
+     * The asset has been successfully downloaded and saved in the internal storage,
+     * that should be only readable by this client. This state is used for downloaded assets saved internally.
+     */
+    SAVED_INTERNALLY,
+
+    /**
+     * The asset was downloaded and saved in an external storage, readable by other software on the machine.
+     * e.g.: Asset was saved in Downloads, Desktop, or other user-chosen directory.
+     */
+    SAVED_EXTERNALLY,
+
+    /**
+     * Asset was not found on the server.
+     */
+    NOT_FOUND
+}

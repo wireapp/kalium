@@ -21,10 +21,10 @@ package com.wire.kalium.logic.data.user
 import app.cash.turbine.test
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.legalhold.ListUsersLegalHoldConsent
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserDataSource.Companion.BATCH_SIZE
 import com.wire.kalium.logic.data.user.UserDataSource.Companion.SELF_USER_ID_KEY
@@ -36,7 +36,9 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.LIST_USERS_DTO
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.getOrNull
+import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.test_util.TestNetworkException.federationNotEnabled
+import com.wire.kalium.logic.test_util.TestNetworkException.generic
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
@@ -47,6 +49,7 @@ import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.QualifiedUserIdListRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
+import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.base.model.UserProfileDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
@@ -711,6 +714,72 @@ class UserRepositoryTest {
             .wasNotInvoked()
     }
 
+    @Test
+    fun givenUserId_whenFetchingUserInfoFailed_thenItShouldInsertIncompleteUserData() = runTest {
+        val (arrangement, userRepository) = Arrangement()
+            .withFailingGetUserInfo()
+            .arrange()
+
+        userRepository.fetchUserInfo(TestUser.USER_ID)
+
+        verify(arrangement.userDAO)
+            .suspendFunction(arrangement.userDAO::insertOrIgnoreIncompleteUsers)
+            .with(any())
+            .wasInvoked()
+    }
+
+    @Test
+    fun givenApiRequestSucceeds_whenFetchingUsersLegalHoldConsent_thenShouldReturnProperValues() = runTest {
+        // given
+        val userIdWithConsent = TestUser.OTHER_USER_ID.copy(value = "idWithConsent")
+        val userIdWithoutConsent = TestUser.OTHER_USER_ID.copy(value = "idWithoutConsent")
+        val userIdFailed = TestUser.OTHER_USER_ID.copy(value = "idFailed")
+        val requestedUserIds = setOf(userIdWithConsent, userIdWithoutConsent, userIdFailed)
+        val expectedResult = ListUsersLegalHoldConsent(
+            usersWithConsent = listOf(userIdWithConsent),
+            usersWithoutConsent = listOf(userIdWithoutConsent),
+            usersFailed = listOf(userIdFailed),
+        )
+        val (arrangement, userRepository) = Arrangement()
+            .withSuccessfulGetMultipleUsersApiRequest(
+                ListUsersDTO(
+                    usersFound = listOf(
+                        TestUser.USER_PROFILE_DTO.copy(id = userIdWithConsent.toApi(), legalHoldStatus = LegalHoldStatusDTO.DISABLED),
+                        TestUser.USER_PROFILE_DTO.copy(id = userIdWithoutConsent.toApi(), legalHoldStatus = LegalHoldStatusDTO.NO_CONSENT),
+                    ),
+                    usersFailed = listOf(userIdFailed.toApi()),
+                )
+            )
+            .arrange()
+        // when
+        val result = userRepository.fetchUsersLegalHoldConsent(requestedUserIds)
+        // then
+        result.shouldSucceed {
+            assertEquals(expectedResult, it)
+        }
+        verify(arrangement.userDetailsApi)
+            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
+            .with(eq(QualifiedUserIdListRequest(requestedUserIds.map { it.toApi() }.toList())))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenApiRequestFails_whenFetchingUsersLegalHoldConsent_thenShouldPropagateError() = runTest {
+        // given
+        val requestedUserIds = setOf(TestUser.OTHER_USER_ID)
+        val (arrangement, userRepository) = Arrangement()
+            .withGetMultipleUsersApiRequestGenericError()
+            .arrange()
+        // when
+        val result = userRepository.fetchUsersLegalHoldConsent(requestedUserIds)
+        // then
+        result.shouldFail()
+        verify(arrangement.userDetailsApi)
+            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
+            .with(eq(QualifiedUserIdListRequest(requestedUserIds.map { it.toApi() }.toList())))
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
         @Mock
         val userDAO = configure(mock(classOf<UserDAO>())) { stubsUnitByDefault = true }
@@ -770,6 +839,7 @@ class UserRepositoryTest {
                 .whenInvokedWith(any())
                 .thenReturn(value)
         }
+
         fun withSelfUserIdFlowMetadataReturning(selfUserIdStringFlow: Flow<String?>) = apply {
             given(metadataDAO)
                 .suspendFunction(metadataDAO::valueByKeyFlow)
@@ -803,6 +873,13 @@ class UserRepositoryTest {
                 .suspendFunction(userDetailsApi::getUserInfo)
                 .whenInvokedWith(any())
                 .thenReturn(NetworkResponse.Success(result, mapOf(), 200))
+        }
+
+        fun withFailingGetUserInfo() = apply {
+            given(userDetailsApi)
+                .suspendFunction(userDetailsApi::getUserInfo)
+                .whenInvokedWith(any())
+                .thenReturn(NetworkResponse.Error(TestNetworkException.generic))
         }
 
         fun withSuccessfulFetchTeamMembersByIds(result: List<TeamsApi.TeamMemberDTO>) = apply {
@@ -864,6 +941,13 @@ class UserRepositoryTest {
                 .suspendFunction(userDetailsApi::getMultipleUsers)
                 .whenInvokedWith(any())
                 .thenReturn(NetworkResponse.Error(federationNotEnabled))
+        }
+
+        fun withGetMultipleUsersApiRequestGenericError() = apply {
+            given(userDetailsApi)
+                .suspendFunction(userDetailsApi::getMultipleUsers)
+                .whenInvokedWith(any())
+                .thenReturn(NetworkResponse.Error(generic))
         }
 
         fun withUpdateDisplayNameApiRequestResponse(response: NetworkResponse<Unit>) = apply {
@@ -936,6 +1020,13 @@ class UserRepositoryTest {
                 .suspendFunction(userDAO::updateActiveOneOnOneConversation)
                 .whenInvokedWith(any(), any())
                 .thenThrow(exception)
+        }
+
+        fun withInsertOrIgnoreUsers() {
+            given(userDAO)
+                .suspendFunction(userDAO::insertOrIgnoreIncompleteUsers)
+                .whenInvokedWith(any())
+                .thenReturn(Unit)
         }
 
         fun arrange(block: (Arrangement.() -> Unit) = { }): Pair<Arrangement, UserRepository> {

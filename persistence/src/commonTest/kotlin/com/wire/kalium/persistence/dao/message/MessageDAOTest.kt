@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetEntity
+import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
@@ -34,7 +35,6 @@ import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
@@ -53,7 +53,6 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
 @Suppress("LargeClass")
-@OptIn(ExperimentalCoroutinesApi::class)
 class MessageDAOTest : BaseDatabaseTest() {
 
     private lateinit var messageDAO: MessageDAO
@@ -429,7 +428,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                         1000,
                         assetName = "test name",
                         assetMimeType = "MP4",
-                        assetDownloadStatus = null,
                         assetOtrKey = byteArrayOf(1),
                         assetSha256Key = byteArrayOf(1),
                         assetId = "assetId",
@@ -479,7 +477,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                         1000,
                         assetName = "test name",
                         assetMimeType = mimeType,
-                        assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
                         assetOtrKey = byteArrayOf(1),
                         assetSha256Key = byteArrayOf(1),
                         assetId = assetId,
@@ -500,7 +497,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                         1000,
                         assetName = "test name",
                         assetMimeType = "image/jpeg",
-                        assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
                         assetOtrKey = byteArrayOf(1),
                         assetSha256Key = byteArrayOf(1),
                         assetId = assetId,
@@ -522,7 +518,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                         1000,
                         assetName = "test name",
                         assetMimeType = "image/png",
-                        assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
                         assetOtrKey = byteArrayOf(1),
                         assetSha256Key = byteArrayOf(1),
                         assetId = assetId,
@@ -544,7 +539,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                         1000,
                         assetName = "test name",
                         assetMimeType = "image/png",
-                        assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
                         assetOtrKey = byteArrayOf(1),
                         assetSha256Key = byteArrayOf(1),
                         assetId = assetId,
@@ -1156,10 +1150,6 @@ class MessageDAOTest : BaseDatabaseTest() {
         val senderClientId = "someClient"
         val dummyOtrKey = byteArrayOf(1, 2, 3)
         val dummySha256Key = byteArrayOf(10, 9, 8, 7, 6)
-        val initialUploadStatus = MessageEntity.UploadStatus.IN_PROGRESS
-        val updatedUploadStatus = MessageEntity.UploadStatus.UPLOADED
-        val initialDownloadStatus = MessageEntity.DownloadStatus.IN_PROGRESS
-        val updatedDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY
         val initialAssetSize = 1000L
         val updatedAssetSize = 2000L
         val initialAssetName = "Some asset name.zip"
@@ -1195,8 +1185,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                 assetId = initialAssetId,
                 assetDomain = initialDomain,
                 assetEncryptionAlgorithm = initialAssetEncryption,
-                assetUploadStatus = initialUploadStatus,
-                assetDownloadStatus = initialDownloadStatus,
                 assetToken = initialAssetToken,
                 assetWidth = initialMetadataWidth,
                 assetHeight = initialMetadataHeight
@@ -1212,8 +1200,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                 assetId = updatedAssetId,
                 assetDomain = updatedAssetDomain,
                 assetEncryptionAlgorithm = updatedAssetEncryption,
-                assetUploadStatus = updatedUploadStatus,
-                assetDownloadStatus = updatedDownloadStatus,
                 assetToken = updatedAssetToken,
                 assetWidth = updatedMetadataWidth,
                 assetHeight = updatedMetadataHeight
@@ -1247,10 +1233,8 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertEquals(initialDomain, updatedMessageContent.assetDomain)
         assertTrue(updatedMessageContent.assetOtrKey.contentEquals(dummyOtrKey))
         assertTrue(updatedMessageContent.assetSha256Key.contentEquals(dummySha256Key))
-        assertEquals(initialDownloadStatus, updatedMessageContent.assetDownloadStatus)
         assertEquals(initialMetadataWidth, updatedMessageContent.assetWidth)
         assertEquals(initialMetadataHeight, updatedMessageContent.assetHeight)
-        assertEquals(initialUploadStatus, updatedMessageContent.assetUploadStatus)
     }
 
     @Test
@@ -2067,6 +2051,138 @@ class MessageDAOTest : BaseDatabaseTest() {
 
         assertEquals(result.size, 1)
         assertEquals(result.first().id, "1")
+    }
+
+    @Test
+    fun givenAssetTransferStatusInProgress_whenResettingAssetTransferStatus_thenTransferStatusesAreRemoved() = runTest {
+        // given
+        val source = conversationEntity1
+        val destination = conversationEntity2
+        userDAO.upsertUsers(listOf(userEntity1, userEntity2))
+        conversationDAO.insertConversation(source)
+        conversationDAO.insertConversation(destination)
+        val messageId = "messageid"
+        val message2Id = "messageid2"
+        val messages = listOf(
+            newRegularMessageEntity(
+                id = messageId,
+                date = "2000-01-01T13:00:00.000Z".toInstant(),
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                expireAfterMs = 2000,
+                content = MessageEntityContent.Asset(
+                    1000,
+                    assetName = "test name",
+                    assetMimeType = "image/png",
+                    assetOtrKey = byteArrayOf(1),
+                    assetSha256Key = byteArrayOf(1),
+                    assetId = "assetId",
+                    assetToken = "",
+                    assetDomain = "",
+                    assetEncryptionAlgorithm = "",
+                    assetWidth = 20,
+                    assetHeight = 20,
+                )
+            ),
+            newRegularMessageEntity(
+                id = message2Id,
+                date = "2000-01-01T13:00:00.000Z".toInstant(),
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                expireAfterMs = 2000,
+                content = MessageEntityContent.Asset(
+                    1000,
+                    assetName = "test name2",
+                    assetMimeType = "image/png",
+                    assetOtrKey = byteArrayOf(1),
+                    assetSha256Key = byteArrayOf(1),
+                    assetId = "assetId2",
+                    assetToken = "",
+                    assetDomain = "",
+                    assetEncryptionAlgorithm = "",
+                    assetWidth = 20,
+                    assetHeight = 20,
+                )
+            )
+        )
+
+        messageDAO.insertOrIgnoreMessages(messages)
+
+        messageDAO.updateAssetTransferStatus(AssetTransferStatusEntity.DOWNLOAD_IN_PROGRESS, messageId, conversationEntity1.id)
+        messageDAO.updateAssetTransferStatus(AssetTransferStatusEntity.UPLOAD_IN_PROGRESS, message2Id, conversationEntity1.id)
+
+        // when
+        messageDAO.resetAssetTransferStatus()
+
+        // then
+        val assetStatuses = messageDAO.observeAssetStatuses(conversationEntity1.id).first()
+
+        assertTrue(assetStatuses.isEmpty())
+    }
+
+    @Test
+    fun givenEmptyAssetTransferStatus_whenUpdatingMessageAssetTransferStatus_thenSourceIsProperlyPropagated() = runTest {
+        // given
+        val source = conversationEntity1
+        val destination = conversationEntity2
+        userDAO.upsertUsers(listOf(userEntity1, userEntity2))
+        conversationDAO.insertConversation(source)
+        conversationDAO.insertConversation(destination)
+        val messageId = "messageid"
+        val message2Id = "messageid2"
+        val messages = listOf(
+            newRegularMessageEntity(
+                id = messageId,
+                date = "2000-01-01T13:00:00.000Z".toInstant(),
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                expireAfterMs = 2000,
+                content = MessageEntityContent.Asset(
+                    1000,
+                    assetName = "test name",
+                    assetMimeType = "image/png",
+                    assetOtrKey = byteArrayOf(1),
+                    assetSha256Key = byteArrayOf(1),
+                    assetId = "assetId",
+                    assetToken = "",
+                    assetDomain = "",
+                    assetEncryptionAlgorithm = "",
+                    assetWidth = 20,
+                    assetHeight = 20,
+                )
+            ),
+            newRegularMessageEntity(
+                id = message2Id,
+                date = "2000-01-01T13:00:00.000Z".toInstant(),
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                expireAfterMs = 2000,
+                content = MessageEntityContent.Asset(
+                    1000,
+                    assetName = "test name2",
+                    assetMimeType = "image/png",
+                    assetOtrKey = byteArrayOf(1),
+                    assetSha256Key = byteArrayOf(1),
+                    assetId = "assetId2",
+                    assetToken = "",
+                    assetDomain = "",
+                    assetEncryptionAlgorithm = "",
+                    assetWidth = 20,
+                    assetHeight = 20,
+                )
+            )
+        )
+
+        messageDAO.insertOrIgnoreMessages(messages)
+
+        // when
+        messageDAO.updateAssetTransferStatus(AssetTransferStatusEntity.DOWNLOAD_IN_PROGRESS, messageId, conversationEntity1.id)
+        messageDAO.updateAssetTransferStatus(AssetTransferStatusEntity.UPLOAD_IN_PROGRESS, message2Id, conversationEntity1.id)
+
+        // then
+        val assetStatuses = messageDAO.observeAssetStatuses(conversationEntity1.id).first()
+
+        assertEquals(messages.size, assetStatuses.size)
     }
 
     private suspend fun insertInitialData() {

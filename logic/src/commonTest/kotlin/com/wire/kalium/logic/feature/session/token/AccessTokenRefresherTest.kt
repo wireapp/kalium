@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.session.token
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.session.token.AccessToken
 import com.wire.kalium.logic.data.session.token.AccessTokenRefreshResult
 import com.wire.kalium.logic.data.session.token.AccessTokenRepository
@@ -81,9 +82,11 @@ class AccessTokenRefresherTest {
 
     @Test
     fun givenSuccessfulRefresh_whenRefreshing_thenShouldPersistResultCorrectly(): TestResult = runTest {
+        val expected = AccountTokens(userId = TestUser.USER_ID, TEST_REFRESH_RESULT.accessToken, TEST_REFRESH_RESULT.refreshToken, null)
+
         val (arrangement, accessTokenRefresher) = arrange {
             withRefreshTokenReturning(Either.Right(TEST_REFRESH_RESULT))
-            withPersistReturning(Either.Right(Unit))
+            withPersistReturning(Either.Right(expected))
         }
 
         accessTokenRefresher.refreshTokenAndPersistSession("egal")
@@ -95,9 +98,11 @@ class AccessTokenRefresherTest {
 
     @Test
     fun givenEverythingSucceeds_whenRefreshing_thenShouldPropagateSuccess(): TestResult = runTest {
+
+        val expected = AccountTokens(userId = TestUser.USER_ID, TEST_REFRESH_RESULT.accessToken, TEST_REFRESH_RESULT.refreshToken, null)
         val (_, accessTokenRefresher) = arrange {
             withRefreshTokenReturning(Either.Right(TEST_REFRESH_RESULT))
-            withPersistReturning(Either.Right(Unit))
+            withPersistReturning(Either.Right(expected))
         }
 
         accessTokenRefresher.refreshTokenAndPersistSession("egal").shouldSucceed { }
@@ -105,14 +110,12 @@ class AccessTokenRefresherTest {
 
     private class Arrangement(private val configure: Arrangement.() -> Unit) {
 
-        val userId = TestUser.USER_ID
-
         @Mock
         val repository = mock(AccessTokenRepository::class)
 
         fun arrange(): Pair<Arrangement, AccessTokenRefresher> = run {
             configure()
-            this@Arrangement to AccessTokenRefresherImpl(userId, repository)
+            this@Arrangement to AccessTokenRefresherImpl(repository)
         }
 
         fun withRefreshTokenReturning(result: Either<NetworkFailure, AccessTokenRefreshResult>) {
@@ -122,7 +125,7 @@ class AccessTokenRefresherTest {
                 .thenReturn(result)
         }
 
-        fun withPersistReturning(result: Either<StorageFailure, Unit>) {
+        fun withPersistReturning(result: Either<StorageFailure, AccountTokens>) {
             given(repository)
                 .suspendFunction(repository::persistTokens)
                 .whenInvokedWith(anything(), anything())

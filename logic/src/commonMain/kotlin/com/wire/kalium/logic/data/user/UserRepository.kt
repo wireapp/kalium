@@ -35,6 +35,7 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.legalhold.ListUsersLegalHoldConsent
 import com.wire.kalium.logic.data.message.UserSummary
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.Team
@@ -61,6 +62,7 @@ import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserReques
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
+import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.UserProfileDTO
 import com.wire.kalium.network.api.base.model.isTeamMember
@@ -150,6 +152,8 @@ interface UserRepository {
     suspend fun isAtLeastOneUserATeamMember(userId: List<UserId>, teamId: TeamId): Either<StorageFailure, Boolean>
 
     suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedID>): Either<StorageFailure, Unit>
+
+    suspend fun fetchUsersLegalHoldConsent(userIds: Set<UserId>): Either<CoreFailure, ListUsersLegalHoldConsent>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -241,10 +245,13 @@ internal class UserDataSource internal constructor(
                 fetchTeamMembersByIds(listOf(userProfileDTO))
                     .flatMap { persistUsers(listOf(userProfileDTO), it) }
             }
+            .onFailure {
+                userDAO.insertOrIgnoreIncompleteUsers(listOf(userId.toDao()))
+            }
 
-    override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> =
+    private suspend fun fetchUsersByIdsReturningListUsersDTO(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, ListUsersDTO> =
         if (qualifiedUserIdList.isEmpty()) {
-            Either.Right(Unit)
+            Either.Right(ListUsersDTO(emptyList(), emptyList()))
         } else {
             qualifiedUserIdList
                 .chunked(BATCH_SIZE)
@@ -287,8 +294,12 @@ internal class UserDataSource internal constructor(
                     }
                     fetchTeamMembersByIds(listUserProfileDTO.usersFound)
                         .flatMap { persistUsers(listUserProfileDTO.usersFound, it) }
+                        .map { listUserProfileDTO }
                 }
         }
+
+    override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> =
+        fetchUsersByIdsReturningListUsersDTO(qualifiedUserIdList).map { }
 
     private suspend fun fetchTeamMembersByIds(userProfileList: List<UserProfileDTO>): Either<CoreFailure, List<TeamsApi.TeamMemberDTO>> {
         val selfUserDomain = selfUserId.domain
@@ -476,6 +487,19 @@ internal class UserDataSource internal constructor(
     override suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedID>) = wrapStorageRequest {
         userDAO.insertOrIgnoreIncompleteUsers(userIds.map { it.toDao() })
     }
+
+    override suspend fun fetchUsersLegalHoldConsent(userIds: Set<UserId>): Either<CoreFailure, ListUsersLegalHoldConsent> =
+        fetchUsersByIdsReturningListUsersDTO(userIds).map { listUsersDTO ->
+            listUsersDTO.usersFound
+                .partition { it.legalHoldStatus != LegalHoldStatusDTO.NO_CONSENT }
+                .let { (usersWithConsent, usersWithoutConsent) ->
+                    ListUsersLegalHoldConsent(
+                        usersWithConsent = usersWithConsent.map { it.id.toModel() },
+                        usersWithoutConsent = usersWithoutConsent.map { it.id.toModel() },
+                        usersFailed = listUsersDTO.usersFailed.map { it.toModel() }
+                    )
+                }
+        }
 
     override fun observeAllKnownUsersNotInConversation(
         conversationId: ConversationId

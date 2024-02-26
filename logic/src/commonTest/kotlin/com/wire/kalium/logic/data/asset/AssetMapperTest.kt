@@ -19,7 +19,6 @@ package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.protobuf.messages.Asset
@@ -55,9 +54,7 @@ class AssetMapperTest {
                     assetToken = "token",
                     assetDomain = "domain",
                     encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
-                ),
-                uploadStatus = Message.UploadStatus.FAILED_UPLOAD,
-                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
+                )
             )
         )
         val (_, mapper) = Arrangement()

@@ -24,7 +24,6 @@ import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.message.AssetContent
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -53,11 +52,9 @@ import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class ApplicationMessageHandlerTest {
 
     @Test
@@ -68,8 +65,7 @@ class ApplicationMessageHandlerTest {
                 1000, "some-image.jpg", "image/jpg", AssetContent.AssetMetadata.Image(200, 200),
                 AssetContent.RemoteData(
                     ByteArray(16), ByteArray(16), "assetid", null, null, null
-                ),
-                Message.UploadStatus.NOT_UPLOADED, Message.DownloadStatus.NOT_DOWNLOADED
+                )
             )
         )
         val protoContent = ProtoContent.Readable(
@@ -99,8 +95,7 @@ class ApplicationMessageHandlerTest {
             .suspendFunction(arrangement.assetMessageHandler::handle)
             .with(
                 matching {
-                    it.content is MessageContent.Asset &&
-                            (it.content as MessageContent.Asset).value.downloadStatus == Message.DownloadStatus.NOT_DOWNLOADED
+                    it.content is MessageContent.Asset
                 }
             )
             .wasInvoked(exactly = once)

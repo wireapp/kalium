@@ -64,10 +64,14 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
      * Logs user in and register client (if not registered)
      */
     override suspend fun login(coreLogic: CoreLogic, callback: (Monkey) -> Unit) {
-        val authScope = getAuthScope(coreLogic, this.monkeyType.userData().team.backend)
-        val email = this.monkeyType.userData().email
-        val password = this.monkeyType.userData().password
-        val loginResult = authScope.login(email, password, false)
+        val userData = this.monkeyType.userData()
+        val secondFactor = userData.request2FA()
+        val authScope = getAuthScope(coreLogic, userData.team.backend)
+        val email = userData.email
+        val password = userData.password
+        val loginResult = authScope.login(
+            userIdentifier = email, password = password, shouldPersistClient = false, secondFactorVerificationCode = secondFactor
+        )
         if (loginResult !is AuthenticationResult.Success) {
             error("User creds didn't work ($email, $password)")
         }
@@ -86,7 +90,10 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
         }
         val sessionScope = coreLogic.getSessionScope(loginResult.authData.userId)
         val registerClientParam = RegisterClientUseCase.RegisterClientParam(
-            password = this.monkeyType.userData().password, capabilities = emptyList(), clientType = ClientType.Temporary
+            password = userData.password,
+            capabilities = emptyList(),
+            clientType = ClientType.Temporary,
+            secondFactorVerificationCode = secondFactor
         )
         val registerResult = sessionScope.client.getOrRegister(registerClientParam)
         if (registerResult is RegisterClientResult.Failure) {

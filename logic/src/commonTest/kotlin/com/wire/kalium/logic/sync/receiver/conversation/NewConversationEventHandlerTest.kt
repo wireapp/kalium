@@ -165,8 +165,8 @@ class NewConversationEventHandlerTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.newGroupConversationSystemMessagesCreator)
-            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
-            .with(eq(event.conversationId.toDao()), eq(event.conversation.members.otherMembers.map { it.id.toModel() }), any())
+            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAdded)
+            .with(eq(event.conversationId.toDao()), eq(event.conversation.members.otherMembers.map { it.id.toModel() }))
             .wasInvoked(exactly = once)
 
         verify(arrangement.newGroupConversationSystemMessagesCreator)
@@ -224,7 +224,7 @@ class NewConversationEventHandlerTest {
                 .wasNotInvoked()
 
             verify(arrangement.newGroupConversationSystemMessagesCreator)
-                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
+                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAdded)
                 .with(eq(event.conversationId.toDao()), eq(event.conversation))
                 .wasNotInvoked()
 
@@ -364,7 +364,7 @@ class NewConversationEventHandlerTest {
         fun withConversationResolvedMembersSystemMessage() = apply {
             given(newGroupConversationSystemMessagesCreator)
                 .suspendFunction(
-                    newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed
+                    newGroupConversationSystemMessagesCreator::conversationResolvedMembersAdded
                 )
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))

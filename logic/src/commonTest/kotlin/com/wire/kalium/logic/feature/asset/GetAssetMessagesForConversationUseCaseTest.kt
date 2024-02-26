@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
@@ -53,7 +52,6 @@ class GetAssetMessagesForConversationUseCaseTest {
             assetId = "assetId",
             width = 640,
             height = 480,
-            downloadStatus = Message.DownloadStatus.SAVED_INTERNALLY,
             assetPath = "asset/path".toPath(),
             isSelfAsset = false
         )

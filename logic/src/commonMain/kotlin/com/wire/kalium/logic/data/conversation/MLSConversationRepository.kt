@@ -133,7 +133,7 @@ interface MLSConversationRepository {
         isNewClient: Boolean = false
     ): Either<CoreFailure, Unit>
 
-    suspend fun getClientIdentity(clientId: ClientId): Either<CoreFailure, WireIdentity>
+    suspend fun getClientIdentity(clientId: ClientId): Either<CoreFailure, WireIdentity?>
     suspend fun getUserIdentity(userId: UserId): Either<CoreFailure, List<WireIdentity>>
     suspend fun getMembersIdentities(
         conversationId: ConversationId,
@@ -569,7 +569,7 @@ internal class MLSConversationDataSource(
                     mlsClient.getDeviceIdentities(
                         it.mlsGroupId,
                         listOf(CryptoQualifiedClientId(it.clientId, it.userId.toModel().toCrypto()))
-                    ).first()
+                    ).firstOrNull()
                 }
             }
         }

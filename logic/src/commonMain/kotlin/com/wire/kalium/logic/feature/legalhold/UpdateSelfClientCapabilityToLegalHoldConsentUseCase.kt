@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.legalhold
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.ClientCapability
@@ -26,7 +27,8 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.onFailure
 import kotlinx.coroutines.flow.filter
 
 /**
@@ -41,19 +43,26 @@ internal class UpdateSelfClientCapabilityToLegalHoldConsentUseCaseImpl internal 
     private val clientRemoteRepository: ClientRemoteRepository,
     private val userConfigRepository: UserConfigRepository,
     private val selfClientIdProvider: CurrentClientIdProvider,
-    private val incrementalSyncRepository: IncrementalSyncRepository
+    private val incrementalSyncRepository: IncrementalSyncRepository,
+    kaliumLogger: KaliumLogger
 ) : UpdateSelfClientCapabilityToLegalHoldConsentUseCase {
+
+    private val logger = kaliumLogger.withTextTag("UpdateSelfClientCapabilityToLegalHoldConsentUseCase")
+
     override suspend fun invoke(): Either<CoreFailure, Unit> {
+        logger.d("Starting to monitor")
         incrementalSyncRepository.incrementalSyncState.filter { it is IncrementalSyncStatus.Live }.collect {
-            userConfigRepository.shouldUpdateClientLegalHoldCapability().takeIf { it }?.let {
-                selfClientIdProvider().map { clientId ->
-                    clientRemoteRepository.updateClientCapabilities(
-                        UpdateClientCapabilitiesParam(listOf(ClientCapability.LegalHoldImplicitConsent)),
-                        clientId.value
-                    ).map {
-                        userConfigRepository.setShouldUpdateClientLegalHoldCapability(false)
-                    }
+            val shouldUpdateCapability = userConfigRepository.shouldUpdateClientLegalHoldCapability()
+            if (!shouldUpdateCapability) return@collect
+            selfClientIdProvider().flatMap { clientId ->
+                clientRemoteRepository.updateClientCapabilities(
+                    UpdateClientCapabilitiesParam(listOf(ClientCapability.LegalHoldImplicitConsent)),
+                    clientId.value
+                ).flatMap {
+                    userConfigRepository.setShouldUpdateClientLegalHoldCapability(false)
                 }
+            }.onFailure {
+                logger.w("Error updating legal hold client capability: $it")
             }
         }
         return Either.Right(Unit)

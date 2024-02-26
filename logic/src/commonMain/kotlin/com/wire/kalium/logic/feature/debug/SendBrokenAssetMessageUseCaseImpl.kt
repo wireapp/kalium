@@ -25,6 +25,7 @@ import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
@@ -35,6 +36,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -80,7 +82,8 @@ internal class SendBrokenAssetMessageUseCaseImpl(
     private val assetDataSource: AssetRepository,
     private val userId: UserId,
     private val slowSyncRepository: SlowSyncRepository,
-    private val messageSender: MessageSender
+    private val messageSender: MessageSender,
+    private val messageRepository: MessageRepository
 ) : SendBrokenAssetMessageUseCase {
     private lateinit var currentAssetMessageContent: AssetMessageMetadata
     override suspend fun invoke(
@@ -120,7 +123,6 @@ internal class SendBrokenAssetMessageUseCaseImpl(
                 content = MessageContent.Asset(
                     provideAssetMessageContent(
                         currentAssetMessageContent,
-                        Message.UploadStatus.UPLOAD_IN_PROGRESS,
                         brokenState
                     )
                 ),
@@ -132,6 +134,9 @@ internal class SendBrokenAssetMessageUseCaseImpl(
                 editStatus = Message.EditStatus.NotEdited,
                 isSelfMessage = true
             )
+
+            // We update the upload status to UPLOAD_IN_PROGRESS when upload stared
+            messageRepository.updateAssetMessageTransferStatus(AssetTransferStatus.UPLOAD_IN_PROGRESS, conversationId, generatedMessageUuid)
 
             uploadAssetAndUpdateMessage(message, brokenState)
         }.fold({
@@ -154,11 +159,10 @@ internal class SendBrokenAssetMessageUseCaseImpl(
             // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload
             currentAssetMessageContent = currentAssetMessageContent.copy(sha256Key = sha256, assetId = assetId)
             val updatedMessage = message.copy(
-                // We update the upload status to UPLOADED as the upload succeeded
-                content = MessageContent.Asset(
-                    provideAssetMessageContent(currentAssetMessageContent, Message.UploadStatus.UPLOADED, brokenState)
-                )
+                content = MessageContent.Asset(provideAssetMessageContent(currentAssetMessageContent, brokenState))
             )
+            // We update the upload status to UPLOADED as the upload succeeded
+            messageRepository.updateAssetMessageTransferStatus(AssetTransferStatus.UPLOADED, message.conversationId, message.id)
             prepareAndSendAssetMessage(updatedMessage)
         }.flatMap {
             Either.Right(Unit)
@@ -177,7 +181,6 @@ internal class SendBrokenAssetMessageUseCaseImpl(
     @Suppress("LongParameterList", "MaxLineLength")
     private fun provideAssetMessageContent(
         assetMessageMetadata: AssetMessageMetadata,
-        uploadStatus: Message.UploadStatus,
         brokenState: BrokenState,
     ): AssetContent {
         with(assetMessageMetadata) {
@@ -201,8 +204,6 @@ internal class SendBrokenAssetMessageUseCaseImpl(
                     assetDomain = assetId.domain,
                     assetToken = assetId.assetToken
                 ),
-                downloadStatus = Message.DownloadStatus.SAVED_EXTERNALLY,
-                uploadStatus = uploadStatus
             )
         }
     }
