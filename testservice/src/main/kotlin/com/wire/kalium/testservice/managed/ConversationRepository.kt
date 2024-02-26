@@ -19,6 +19,7 @@
 package com.wire.kalium.testservice.managed
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.mention.MessageMention
@@ -271,6 +272,30 @@ sealed class ConversationRepository {
                         } else {
                             Response.status(Response.Status.EXPECTATION_FAILED).entity("No text to send").build()
                         }
+                    }
+                }
+
+                is CurrentSessionResult.Failure -> {
+                    Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Session failure").build()
+                }
+            }
+        }
+
+        suspend fun sendTyping(
+            instance: Instance,
+            conversationId: ConversationId,
+            status: String
+        ): Response = instance.coreLogic.globalScope {
+            when (val session = session.currentSession()) {
+                is CurrentSessionResult.Success -> {
+                    instance.coreLogic.sessionScope(session.accountInfo.userId) {
+                        log.info("Instance ${instance.instanceId}: $status typing")
+                        if (status.equals("started")) {
+                            conversations.sendTypingEvent(conversationId, Conversation.TypingIndicatorMode.STARTED)
+                        } else {
+                            conversations.sendTypingEvent(conversationId, Conversation.TypingIndicatorMode.STOPPED)
+                        }
+                        Response.status(Response.Status.OK).build()
                     }
                 }
 
