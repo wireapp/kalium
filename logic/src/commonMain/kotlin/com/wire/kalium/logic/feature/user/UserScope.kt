@@ -104,6 +104,7 @@ class UserScope internal constructor(
     private val clientRepository: ClientRepository,
     private val joinExistingMLSConversationsUseCase: JoinExistingMLSConversationsUseCase,
     val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
+    private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase,
     private val userScoppedLogger: KaliumLogger
 ) {
     private val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
@@ -129,12 +130,14 @@ class UserScope internal constructor(
     val getUserE2eiCertificateStatus: GetUserE2eiCertificateStatusUseCase
         get() = GetUserE2eiCertificateStatusUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,
-            pemCertificateDecoder = pemCertificateDecoderImpl
+            pemCertificateDecoder = pemCertificateDecoderImpl,
+            isE2EIEnabledUseCase = isE2EIEnabledUseCase
         )
     val getUserE2eiCertificates: GetUserE2eiCertificatesUseCase
         get() = GetUserE2eiCertificatesUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,
-            pemCertificateDecoder = pemCertificateDecoderImpl
+            pemCertificateDecoder = pemCertificateDecoderImpl,
+            isE2EIEnabledUseCase = isE2EIEnabledUseCase
         )
     val getMembersE2EICertificateStatuses: GetMembersE2EICertificateStatusesUseCase
         get() = GetMembersE2EICertificateStatusesUseCaseImpl(
