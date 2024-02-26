@@ -1777,7 +1777,8 @@ class UserSessionScope internal constructor(
             clientRepository,
             joinExistingMLSConversations,
             refreshUsersWithoutMetadata,
-            userScopedLogger,
+            isE2EIEnabled,
+            userScopedLogger
         )
 
     val search: SearchScope
