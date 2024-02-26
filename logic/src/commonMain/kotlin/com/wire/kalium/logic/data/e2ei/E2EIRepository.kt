@@ -321,7 +321,8 @@ class E2EIRepositoryImpl(
         e2EIClient.getOAuthRefreshToken().right()
     }
 
-    override suspend fun fetchFederationCertificates() = discoveryUrl().flatMap {
+    override suspend fun fetchFederationCertificates() =
+        discoveryUrl().flatMap {
             wrapApiRequest {
                 acmeApi.getACMEFederation(it)
             }.fold({
@@ -330,11 +331,11 @@ class E2EIRepositoryImpl(
                 mlsClientProvider.getMLSClient().fold({
                     E2EIFailure.MissingMLSClient(it).left()
                 }, { mlsClient ->
-                    mlsClient.registerIntermediateCa(data)
-                    Unit.right()
+                    wrapE2EIRequest {
+                        mlsClient.registerIntermediateCa(data)
+                    }
                 })
             })
-
         }
 
     override fun discoveryUrl() =
