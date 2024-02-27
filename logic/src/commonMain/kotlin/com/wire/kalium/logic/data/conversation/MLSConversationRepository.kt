@@ -114,11 +114,7 @@ data class E2EIdentity(
 interface MLSConversationRepository {
     suspend fun decryptMessage(message: ByteArray, groupID: GroupID): Either<CoreFailure, List<DecryptedMessageBundle>>
     suspend fun establishMLSGroup(groupID: GroupID, members: List<UserId>): Either<CoreFailure, Unit>
-<<<<<<< HEAD
-=======
     suspend fun establishMLSSubConversationGroup(groupID: GroupID, parentId: ConversationId): Either<CoreFailure, Unit>
-    suspend fun establishMLSGroupFromWelcome(welcomeEvent: MLSWelcome): Either<CoreFailure, Unit>
->>>>>>> 4862e2f3fe (fix(mls): fix MLS call and upgrade CC to RC-40 (WPB-6764) (#2523))
     suspend fun hasEstablishedMLSGroup(groupID: GroupID): Either<CoreFailure, Boolean>
     suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun removeMembersFromMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>

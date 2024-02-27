@@ -23,11 +23,7 @@ import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIClient
-<<<<<<< HEAD
-=======
-import com.wire.kalium.cryptography.E2EIConversationState
 import com.wire.kalium.cryptography.ExternalSenderKey
->>>>>>> 4862e2f3fe (fix(mls): fix MLS call and upgrade CC to RC-40 (WPB-6764) (#2523))
 import com.wire.kalium.cryptography.GroupInfoBundle
 import com.wire.kalium.cryptography.GroupInfoEncryptionType
 import com.wire.kalium.cryptography.MLSClient
@@ -1566,24 +1562,12 @@ class MLSConversationRepositoryTest {
                 .whenInvokedWith(anything())
                 .then { Either.Right(mlsClient) }
         }
-
-<<<<<<< HEAD
-=======
         fun withGetExternalSenderKeySuccessful() = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::getExternalSenders)
                 .whenInvokedWith(anything())
                 .thenReturn(EXTERNAL_SENDER_KEY)
         }
-
-        fun withGetMLSClientFailed(failure: CoreFailure.Unknown) = apply {
-            given(mlsClientProvider)
-                .suspendFunction(mlsClientProvider::getMLSClient)
-                .whenInvokedWith(anything())
-                .then { Either.Left(failure) }
-        }
-
->>>>>>> 4862e2f3fe (fix(mls): fix MLS call and upgrade CC to RC-40 (WPB-6764) (#2523))
         fun withRotateAllSuccessful(rotateBundle: RotateBundle = ROTATE_BUNDLE) = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::e2eiRotateAll)
