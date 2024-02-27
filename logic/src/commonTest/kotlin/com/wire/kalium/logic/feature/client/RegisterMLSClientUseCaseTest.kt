@@ -52,6 +52,7 @@ class RegisterMLSClientUseCaseTest {
             val e2eiIsEnrolled = true
             val (arrangement, registerMLSClient) = Arrangement()
                 .withGetMLSClientSuccessful()
+                .withIsMLSClientInitialisedReturns()
                 .withMLSClientE2EIIsEnabledReturns(e2eiIsEnrolled)
                 .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(isRequired = e2eiIsRequired)))
                 .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY)
@@ -84,6 +85,7 @@ class RegisterMLSClientUseCaseTest {
             val e2eiIsEnrolled = false
             val (arrangement, registerMLSClient) = Arrangement()
                 .withGetMLSClientSuccessful()
+                .withIsMLSClientInitialisedReturns(false)
                 .withMLSClientE2EIIsEnabledReturns(e2eiIsEnrolled)
                 .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(isRequired = e2eiIsRequired)))
                 .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY)
@@ -169,6 +171,13 @@ class RegisterMLSClientUseCaseTest {
         fun withMLSClientE2EIIsEnabledReturns(result: Boolean) = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::isE2EIEnabled)
+                .whenInvoked()
+                .thenReturn(result)
+        }
+
+        fun withIsMLSClientInitialisedReturns(result: Boolean = true) = apply {
+            given(mlsClientProvider)
+                .function(mlsClientProvider::isMLSClientInitialised)
                 .whenInvoked()
                 .thenReturn(result)
         }

@@ -98,6 +98,8 @@ internal interface ConversationRepositoryArrangement {
             .whenInvokedWith(any(), any())
             .thenReturn(result)
     }
+
+    fun withSetDegradedConversationNotifiedFlag(result: Either<CoreFailure, Unit>)
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -248,6 +250,13 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
     override fun withGetConversationByIdReturning(result: Conversation?) {
         given(conversationRepository)
             .suspendFunction(conversationRepository::getConversationById)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withSetDegradedConversationNotifiedFlag(result: Either<CoreFailure, Unit>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::setDegradedConversationNotifiedFlag)
             .whenInvokedWith(any())
             .thenReturn(result)
     }

@@ -123,7 +123,7 @@ interface UserConfigStorage {
     /**
      * Save MLSE2EISetting
      */
-    fun setE2EISettings(settingEntity: E2EISettingsEntity)
+    fun setE2EISettings(settingEntity: E2EISettingsEntity?)
 
     /**
      * Get MLSE2EISetting
@@ -170,9 +170,10 @@ interface UserConfigStorage {
     fun isGuestRoomLinkEnabledFlow(): Flow<IsGuestRoomLinkEnabledEntity?>
     fun isScreenshotCensoringEnabledFlow(): Flow<Boolean>
     fun persistScreenshotCensoring(enabled: Boolean)
-    fun setE2EINotificationTime(timeStamp: Long)
+    fun setIfAbsentE2EINotificationTime(timeStamp: Long)
     fun getE2EINotificationTime(): Long?
     fun e2EINotificationTimeFlow(): Flow<Long?>
+    fun updateE2EINotificationTime(timeStamp: Long)
 }
 
 @Serializable
@@ -202,7 +203,7 @@ data class TeamSettingsSelfDeletionStatusEntity(
 @Serializable
 data class E2EISettingsEntity(
     @SerialName("status") val status: Boolean,
-    @SerialName("discoverUrl") val discoverUrl: String,
+    @SerialName("discoverUrl") val discoverUrl: String?,
     @SerialName("gracePeriodEndMs") val gracePeriodEndMs: Long?,
 )
 
@@ -445,13 +446,17 @@ class UserConfigStorageImpl(
 
     override fun isMLSEnabled(): Boolean = kaliumPreferences.getBoolean(ENABLE_MLS, false)
 
-    override fun setE2EISettings(settingEntity: E2EISettingsEntity) {
-        kaliumPreferences.putSerializable(
-            E2EI_SETTINGS,
-            settingEntity,
-            E2EISettingsEntity.serializer()
-        ).also {
-            e2EIFlow.tryEmit(Unit)
+    override fun setE2EISettings(settingEntity: E2EISettingsEntity?) {
+        if (settingEntity == null) {
+            kaliumPreferences.remove(E2EI_SETTINGS)
+        } else {
+            kaliumPreferences.putSerializable(
+                E2EI_SETTINGS,
+                settingEntity,
+                E2EISettingsEntity.serializer()
+            ).also {
+                e2EIFlow.tryEmit(Unit)
+            }
         }
     }
 
@@ -464,13 +469,15 @@ class UserConfigStorageImpl(
         .onStart { emit(getE2EISettings()) }
         .distinctUntilChanged()
 
-    override fun setE2EINotificationTime(timeStamp: Long) {
-        kaliumPreferences.putLong(
-            E2EI_NOTIFICATION_TIME,
-            timeStamp
-        ).also {
-            e2EINotificationFlow.tryEmit(Unit)
+    override fun setIfAbsentE2EINotificationTime(timeStamp: Long) {
+        getE2EINotificationTime().let { current ->
+            if (current == null || current <= 0)
+                kaliumPreferences.putLong(E2EI_NOTIFICATION_TIME, timeStamp).also { e2EINotificationFlow.tryEmit(Unit) }
         }
+    }
+
+    override fun updateE2EINotificationTime(timeStamp: Long) {
+        kaliumPreferences.putLong(E2EI_NOTIFICATION_TIME, timeStamp).also { e2EINotificationFlow.tryEmit(Unit) }
     }
 
     override fun getE2EINotificationTime(): Long? {

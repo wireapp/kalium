@@ -24,7 +24,7 @@ import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.NewAcmeAuthz
 import com.wire.kalium.cryptography.NewAcmeOrder
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
@@ -55,6 +55,7 @@ import com.wire.kalium.network.api.base.unbound.acme.DtoAuthorizationChallengeTy
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.util.DateTimeUtil
+import io.ktor.http.Url
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anyInstanceOf
@@ -68,6 +69,7 @@ import io.mockative.thenDoNothing
 import io.mockative.time
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -309,7 +311,7 @@ class E2EIRepositoryTest {
         // Given
         val (arrangement, e2eiRepository) = Arrangement()
             .withGetNewAuthzRequestSuccessful()
-            .withSendAuthorizationRequestSucceed(url = RANDOM_URL ,DtoAuthorizationChallengeType.DPoP)
+            .withSendAuthorizationRequestSucceed(url = RANDOM_URL, DtoAuthorizationChallengeType.DPoP)
             .withSendAcmeRequestApiSucceed()
             .withSetAuthzResponseSuccessful()
             .withSendAcmeRequestApiSucceed()
@@ -414,7 +416,7 @@ class E2EIRepositoryTest {
         val expected = Arrangement.AUTHORIZATIONS_RESULT
         // Given
         val (arrangement, e2eiRepository) = Arrangement()
-            .withSendAuthorizationRequestSucceed(url = authorizationsUrls[0],DtoAuthorizationChallengeType.DPoP)
+            .withSendAuthorizationRequestSucceed(url = authorizationsUrls[0], DtoAuthorizationChallengeType.DPoP)
             .withSendAuthorizationRequestSucceed(url = authorizationsUrls[1], DtoAuthorizationChallengeType.OIDC)
             .withGetE2EIClientSuccessful()
             .withGetMLSClientSuccessful()
@@ -850,8 +852,8 @@ class E2EIRepositoryTest {
             .with(any())
             .wasNotInvoked()
 
-        verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::registerIntermediateCa)
+        verify(arrangement.coreCryptoCentral)
+            .suspendFunction(arrangement.coreCryptoCentral::registerIntermediateCa)
             .with(any())
             .wasNotInvoked()
     }
@@ -863,7 +865,8 @@ class E2EIRepositoryTest {
         val (arrangement, e2eiRepository) = Arrangement()
             .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS))
             .withAcmeFederationApiSucceed()
-            .withGetMLSClientSuccessful()
+            .withCurrentClientIdProviderSuccessful()
+            .withGetCoreCryptoSuccessful()
             .withRegisterIntermediateCABag()
             .arrange()
 
@@ -883,8 +886,8 @@ class E2EIRepositoryTest {
             .with(any())
             .wasInvoked(once)
 
-        verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::registerIntermediateCa)
+        verify(arrangement.coreCryptoCentral)
+            .suspendFunction(arrangement.coreCryptoCentral::registerIntermediateCa)
             .with(any())
             .wasInvoked(once)
     }
@@ -915,8 +918,8 @@ class E2EIRepositoryTest {
             .with(any())
             .wasNotInvoked()
 
-        verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::registerIntermediateCa)
+        verify(arrangement.coreCryptoCentral)
+            .suspendFunction(arrangement.coreCryptoCentral::registerIntermediateCa)
             .with(any())
             .wasNotInvoked()
     }
@@ -926,9 +929,11 @@ class E2EIRepositoryTest {
         // Given
 
         val (arrangement, e2eiRepository) = Arrangement()
-            .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(discoverUrl = RANDOM_URL+"/random/path")))
+            .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(discoverUrl = RANDOM_URL)))
             .withFetchAcmeTrustAnchorsApiSucceed()
-            .withGetMLSClientSuccessful()
+            .withCurrentClientIdProviderSuccessful()
+            .withCurrentClientIdProviderSuccessful()
+            .withGetCoreCryptoSuccessful()
             .withRegisterTrustAnchors()
             .arrange()
 
@@ -945,14 +950,60 @@ class E2EIRepositoryTest {
 
         verify(arrangement.acmeApi)
             .suspendFunction(arrangement.acmeApi::getTrustAnchors)
-            .with(eq(RANDOM_URL))
+            .with(eq(Url(RANDOM_URL)))
             .wasInvoked(once)
 
-        verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::registerTrustAnchors)
+        verify(arrangement.coreCryptoCentral)
+            .suspendFunction(arrangement.coreCryptoCentral::registerTrustAnchors)
             .with(eq(Arrangement.RANDOM_BYTE_ARRAY.decodeToString()))
             .wasInvoked(once)
     }
+
+    @Test
+    fun givenE2EIIsDisabled_whenCallingDiscoveryUrl_thenItFailWithDisabled() {
+        val (arrangement, e2eiRepository) = Arrangement()
+            .withGettingE2EISettingsReturns(Either.Right(E2EISettings(false, null, Instant.DISTANT_FUTURE)))
+            .arrange()
+
+        e2eiRepository.discoveryUrl().shouldFail {
+            assertIs<E2EIFailure.Disabled>(it)
+        }
+
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::getE2EISettings)
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenE2EIIsEnabledAndDiscoveryUrlIsNull_whenCallingDiscoveryUrl_thenItFailWithMissingDiscoveryUrl() {
+        val (arrangement, e2eiRepository) = Arrangement()
+            .withGettingE2EISettingsReturns(Either.Right(E2EISettings(true, null, Instant.DISTANT_FUTURE)))
+            .arrange()
+
+        e2eiRepository.discoveryUrl().shouldFail {
+            assertIs<E2EIFailure.MissingDiscoveryUrl>(it)
+        }
+
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::getE2EISettings)
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenE2EIIsEnabledAndDiscoveryUrlIsNotNull_whenCallingDiscoveryUrl_thenItSucceed() {
+        val (arrangement, e2eiRepository) = Arrangement()
+            .withGettingE2EISettingsReturns(Either.Right(E2EISettings(true, RANDOM_URL, Instant.DISTANT_FUTURE)))
+            .arrange()
+
+        e2eiRepository.discoveryUrl().shouldSucceed {
+            assertEquals(Url(RANDOM_URL), it)
+        }
+
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::getE2EISettings)
+            .wasInvoked(once)
+    }
+
     private class Arrangement {
 
         fun withGetE2EIClientSuccessful() = apply {
@@ -1018,7 +1069,7 @@ class E2EIRepositoryTest {
                 .thenReturn(RANDOM_BYTE_ARRAY)
         }
 
-        fun withRotateKeysAndMigrateConversationsReturns(result: Either<CoreFailure, Unit>) = apply {
+        fun withRotateKeysAndMigrateConversationsReturns(result: Either<E2EIFailure, Unit>) = apply {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::rotateKeysAndMigrateConversations)
                 .whenInvokedWith(anything(), anything(), anything())
@@ -1176,15 +1227,15 @@ class E2EIRepositoryTest {
         }
 
         fun withRegisterIntermediateCABag() = apply {
-            given(mlsClient)
-                .suspendFunction(mlsClient::registerIntermediateCa)
+            given(coreCryptoCentral)
+                .suspendFunction(coreCryptoCentral::registerIntermediateCa)
                 .whenInvokedWith(any())
                 .thenDoNothing()
         }
 
         fun withRegisterTrustAnchors() = apply {
-            given(mlsClient)
-                .suspendFunction(mlsClient::registerTrustAnchors)
+            given(coreCryptoCentral)
+                .suspendFunction(coreCryptoCentral::registerTrustAnchors)
                 .whenInvokedWith(any())
                 .thenReturn(Unit)
         }
@@ -1231,7 +1282,7 @@ class E2EIRepositoryTest {
             )
 
         companion object {
-            val TEST_FAILURE = Either.Left(CoreFailure.Unknown(Throwable("an error")))
+            val TEST_FAILURE = Either.Left(E2EIFailure.Generic(Exception("an error")))
             val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(ErrorResponse(405, "", ""))
             val RANDOM_BYTE_ARRAY = "random-value".encodeToByteArray()
             val RANDOM_NONCE = Nonce("xxxxx")

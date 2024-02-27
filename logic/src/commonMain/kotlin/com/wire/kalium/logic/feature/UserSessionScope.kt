@@ -295,6 +295,8 @@ import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherImpl
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCase
 import com.wire.kalium.logic.feature.team.SyncSelfTeamUseCaseImpl
 import com.wire.kalium.logic.feature.team.TeamScope
+import com.wire.kalium.logic.feature.user.GetDefaultProtocolUseCase
+import com.wire.kalium.logic.feature.user.GetDefaultProtocolUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCaseImpl
 import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCase
@@ -310,19 +312,19 @@ import com.wire.kalium.logic.feature.user.ObserveE2EIRequiredUseCase
 import com.wire.kalium.logic.feature.user.ObserveE2EIRequiredUseCaseImpl
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCaseImpl
-import com.wire.kalium.logic.feature.user.e2ei.ObserveShouldNotifyForRevokedCertificateUseCase
-import com.wire.kalium.logic.feature.user.e2ei.ObserveShouldNotifyForRevokedCertificateUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncContactsUseCase
 import com.wire.kalium.logic.feature.user.SyncContactsUseCaseImpl
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCase
 import com.wire.kalium.logic.feature.user.SyncSelfUserUseCaseImpl
-import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
-import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCaseImpl
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCase
 import com.wire.kalium.logic.feature.user.UpdateSelfUserSupportedProtocolsUseCaseImpl
+import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
+import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCaseImpl
 import com.wire.kalium.logic.feature.user.UserScope
 import com.wire.kalium.logic.feature.user.e2ei.MarkNotifyForRevokedCertificateAsNotifiedUseCase
 import com.wire.kalium.logic.feature.user.e2ei.MarkNotifyForRevokedCertificateAsNotifiedUseCaseImpl
+import com.wire.kalium.logic.feature.user.e2ei.ObserveShouldNotifyForRevokedCertificateUseCase
+import com.wire.kalium.logic.feature.user.e2ei.ObserveShouldNotifyForRevokedCertificateUseCaseImpl
 import com.wire.kalium.logic.feature.user.guestroomlink.MarkGuestLinkFeatureFlagAsNotChangedUseCase
 import com.wire.kalium.logic.feature.user.guestroomlink.MarkGuestLinkFeatureFlagAsNotChangedUseCaseImpl
 import com.wire.kalium.logic.feature.user.guestroomlink.ObserveGuestRoomLinkFeatureFlagUseCase
@@ -446,7 +448,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
@@ -487,10 +488,8 @@ class UserSessionScope internal constructor(
             }
         }
 
-    private val clientIdStateFlow = MutableStateFlow<ClientId?>(null)
-
     private val userScopedLogger: KaliumLogger = kaliumLogger.withUserDeviceData {
-        KaliumLogger.UserClientData(userId.toLogString(), clientIdStateFlow.value?.value?.obfuscateId() ?: "")
+        KaliumLogger.UserClientData(userId.toLogString(), _clientId?.value?.obfuscateId() ?: "")
     }
 
     private val cachedClientIdClearer: CachedClientIdClearer = object : CachedClientIdClearer {
@@ -573,7 +572,7 @@ class UserSessionScope internal constructor(
         accessTokenRefresherFactory = accessTokenRefresherFactory,
         userId = userId,
         tokenStorage = globalPreferences.authTokenStorage,
-        logout = { logoutReason -> logout(logoutReason) }
+        logout = { logoutReason -> logout(reason = logoutReason, waitUntilCompletes = true) }
     )
     private val authenticatedNetworkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(
         networkStateObserver,
@@ -644,7 +643,8 @@ class UserSessionScope internal constructor(
             certificateRevocationListRepository = certificateRevocationListRepository,
             currentClientIdProvider = clientIdProvider,
             mlsClientProvider = mlsClientProvider,
-            mLSConversationsVerificationStatusesHandler = mlsConversationsVerificationStatusesHandler
+            mLSConversationsVerificationStatusesHandler = mlsConversationsVerificationStatusesHandler,
+            isE2EIEnabledUseCase = isE2EIEnabled
         )
     private val checkRevocationListForCurrentClient: CheckRevocationListForCurrentClientUseCase
         get() = CheckRevocationListForCurrentClientUseCaseImpl(
@@ -927,7 +927,7 @@ class UserSessionScope internal constructor(
         get() = SyncSelfTeamUseCaseImpl(
             userRepository = userRepository,
             teamRepository = teamRepository,
-            fetchAllTeamMembersEagerly = kaliumConfigs.fetchAllTeamMembersEagerly
+            fetchedUsersLimit = kaliumConfigs.limitTeamMembersFetchDuringSlowSync
         )
 
     private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase
@@ -1058,7 +1058,8 @@ class UserSessionScope internal constructor(
             incrementalSyncRepository,
             clientRepository,
             recoverMLSConversationsUseCase,
-            slowSyncRepository
+            slowSyncRepository,
+            userScopedLogger
         )
     }
 
@@ -1066,7 +1067,8 @@ class UserSessionScope internal constructor(
         ConversationsRecoveryManagerImpl(
             incrementalSyncRepository,
             addSystemMessageToAllConversationsUseCase,
-            slowSyncRepository
+            slowSyncRepository,
+            userScopedLogger
         )
     }
 
@@ -1460,7 +1462,8 @@ class UserSessionScope internal constructor(
             clientRemoteRepository = clientRemoteRepository,
             userConfigRepository = userConfigRepository,
             selfClientIdProvider = clientIdProvider,
-            incrementalSyncRepository = incrementalSyncRepository
+            incrementalSyncRepository = incrementalSyncRepository,
+            kaliumLogger = userScopedLogger,
         )
 
     private val legalHoldHandler = LegalHoldHandlerImpl(
@@ -1573,7 +1576,8 @@ class UserSessionScope internal constructor(
         ProteusSyncWorkerImpl(
             incrementalSyncRepository = incrementalSyncRepository,
             proteusPreKeyRefiller = proteusPreKeyRefiller,
-            preKeyRepository = preKeyRepository
+            preKeyRepository = preKeyRepository,
+            kaliumLogger = userScopedLogger,
         )
     }
 
@@ -1582,6 +1586,7 @@ class UserSessionScope internal constructor(
             certificateRevocationListRepository = certificateRevocationListRepository,
             incrementalSyncRepository = incrementalSyncRepository,
             checkRevocationList = checkRevocationList,
+            kaliumLogger = userScopedLogger,
         )
     }
 
@@ -1589,6 +1594,7 @@ class UserSessionScope internal constructor(
         FeatureFlagSyncWorkerImpl(
             incrementalSyncRepository = incrementalSyncRepository,
             syncFeatureConfigs = syncFeatureConfigsUseCase,
+            kaliumLogger = userScopedLogger,
         )
     }
 
@@ -1608,7 +1614,8 @@ class UserSessionScope internal constructor(
     private val avsSyncStateReporter: AvsSyncStateReporter by lazy {
         AvsSyncStateReporterImpl(
             callManager = callManager,
-            observeSyncStateUseCase = observeSyncState
+            observeSyncStateUseCase = observeSyncState,
+            kaliumLogger = userScopedLogger,
         )
     }
 
@@ -1631,7 +1638,11 @@ class UserSessionScope internal constructor(
         )
 
     private val acmeCertificatesSyncWorker: ACMECertificatesSyncWorker by lazy {
-        ACMECertificatesSyncWorkerImpl(e2eiRepository)
+        ACMECertificatesSyncWorkerImpl(
+            e2eiRepository = e2eiRepository,
+            kaliumLogger = userScopedLogger,
+            isE2EIEnabledUseCase = isE2EIEnabled
+        )
     }
 
     private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase
@@ -1717,7 +1728,8 @@ class UserSessionScope internal constructor(
             staleEpochVerifier,
             eventProcessor,
             legalHoldHandler,
-            this
+            this,
+            userScopedLogger,
         )
     val messages: MessageScope
         get() = MessageScope(
@@ -1747,7 +1759,8 @@ class UserSessionScope internal constructor(
             messageMetadataRepository,
             staleEpochVerifier,
             legalHoldHandler,
-            this
+            this,
+            userScopedLogger,
         )
     val users: UserScope
         get() = UserScope(
@@ -1773,7 +1786,9 @@ class UserSessionScope internal constructor(
             updateSupportedProtocols,
             clientRepository,
             joinExistingMLSConversations,
-            refreshUsersWithoutMetadata
+            refreshUsersWithoutMetadata,
+            isE2EIEnabled,
+            userScopedLogger
         )
 
     val search: SearchScope
@@ -1793,6 +1808,7 @@ class UserSessionScope internal constructor(
             logoutRepository,
             globalScope.sessionRepository,
             clientRepository,
+            userConfigRepository,
             userId,
             client.deregisterNativePushToken,
             client.clearClientData,
@@ -1854,7 +1870,15 @@ class UserSessionScope internal constructor(
         get() = MarkFileSharingChangeAsNotifiedUseCase(userConfigRepository)
 
     val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(featureSupport, userConfigRepository)
-    val isE2EIEnabled: IsE2EIEnabledUseCase get() = IsE2EIEnabledUseCaseImpl(userConfigRepository)
+    val isE2EIEnabled: IsE2EIEnabledUseCase get() = IsE2EIEnabledUseCaseImpl(
+        userConfigRepository,
+        isMLSEnabled
+    )
+
+    val getDefaultProtocol: GetDefaultProtocolUseCase
+        get() = GetDefaultProtocolUseCaseImpl(
+            userConfigRepository = userConfigRepository
+        )
 
     val observeE2EIRequired: ObserveE2EIRequiredUseCase
         get() = ObserveE2EIRequiredUseCaseImpl(
@@ -1959,12 +1983,17 @@ class UserSessionScope internal constructor(
             persistMessage,
             conversationVerificationStatusChecker,
             epochChangesObserver,
-            userId
+            userId,
+            userScopedLogger,
         )
     }
 
     private val typingIndicatorSyncManager: TypingIndicatorSyncManager =
-        TypingIndicatorSyncManager(lazy { conversations.typingIndicatorIncomingRepository }, observeSyncState)
+        TypingIndicatorSyncManager(
+            typingIndicatorIncomingRepository = lazy { conversations.typingIndicatorIncomingRepository },
+            observeSyncStateUseCase = observeSyncState,
+            kaliumLogger = userScopedLogger,
+        )
 
     init {
         launch {

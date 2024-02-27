@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.message.ephemeral
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -45,14 +46,18 @@ internal interface EphemeralMessageDeletionHandler {
     suspend fun deleteSelfDeletionMessagesFromEndDate()
 }
 
+@Suppress("LongParameterList")
 internal class EphemeralMessageDeletionHandlerImpl(
     private val messageRepository: MessageRepository,
     private val selfUserId: UserId,
     private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     private val deleteEphemeralMessageForSelfUserAsReceiver: DeleteEphemeralMessageForSelfUserAsReceiverUseCase,
     private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCase,
+    kaliumLogger: KaliumLogger,
     userSessionCoroutineScope: CoroutineScope
 ) : EphemeralMessageDeletionHandler, CoroutineScope by userSessionCoroutineScope {
+    private val kaliumLogger = kaliumLogger.withTextTag("EphemeralMessageDeletionHandler")
+    private val logger = SelfDeletionEventLogger(kaliumLogger)
     override val coroutineContext: CoroutineContext
         get() = kaliumDispatcher.default
 
@@ -76,7 +81,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
     }
 
     override fun enqueueSelfDeletion(message: Message, expirationData: Message.ExpirationData) {
-        SelfDeletionEventLogger.log(
+        logger.log(
             LoggingSelfDeletionEvent.InvalidMessageStatus(
                 message,
                 expirationData
@@ -87,7 +92,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
             ongoingSelfDeletionMessagesMutex.withLock {
                 val isSelfDeletionOutgoing = ongoingSelfDeletionMessages[message.conversationId to message.id] != null
 
-                SelfDeletionEventLogger.log(
+                logger.log(
                     LoggingSelfDeletionEvent.SelfSelfDeletionAlreadyRequested(
                         message,
                         expirationData
@@ -100,7 +105,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
             }
             markDeletionDateAndWait(message, expirationData)
 
-            SelfDeletionEventLogger.log(
+            logger.log(
                 LoggingSelfDeletionEvent.StartingSelfSelfDeletion(
                     message,
                     expirationData
@@ -115,7 +120,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
         removeFromOutgoingDeletion(message)
 
         if (message.senderUserId == selfUserId) {
-            SelfDeletionEventLogger.log(
+            logger.log(
                 LoggingSelfDeletionEvent.AttemptingToDelete(
                     message,
                     expirationData,
@@ -124,7 +129,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
 
             when (val result = deleteEphemeralMessageForSelfUserAsSender(message.conversationId, message.id)) {
                 is Either.Left -> {
-                    SelfDeletionEventLogger.log(
+                    logger.log(
                         LoggingSelfDeletionEvent.SelfDeletionFailed(
                             message,
                             expirationData,
@@ -134,7 +139,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                 }
 
                 is Either.Right -> {
-                    SelfDeletionEventLogger.log(
+                    logger.log(
                         LoggingSelfDeletionEvent.SuccessfullyDeleted(
                             message,
                             expirationData,
@@ -143,7 +148,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                 }
             }
         } else {
-            SelfDeletionEventLogger.log(
+            logger.log(
                 LoggingSelfDeletionEvent.AttemptingToDelete(
                     message,
                     expirationData,
@@ -152,7 +157,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
 
             when (val result = deleteEphemeralMessageForSelfUserAsReceiver(message.conversationId, message.id)) {
                 is Either.Left -> {
-                    SelfDeletionEventLogger.log(
+                    logger.log(
                         LoggingSelfDeletionEvent.SelfDeletionFailed(
                             message,
                             expirationData,
@@ -162,7 +167,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                 }
 
                 is Either.Right -> {
-                    SelfDeletionEventLogger.log(
+                    logger.log(
                         LoggingSelfDeletionEvent.SuccessfullyDeleted(
                             message,
                             expirationData
@@ -182,7 +187,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
     private suspend fun markDeletionDateAndWait(message: Message, expirationData: Message.ExpirationData) {
         with(expirationData) {
             if (selfDeletionStatus is Message.ExpirationData.SelfDeletionStatus.NotStarted) {
-                SelfDeletionEventLogger.log(
+                logger.log(
                     LoggingSelfDeletionEvent.StartingSelfSelfDeletion(
                         message,
                         expirationData
@@ -204,7 +209,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                     deletionEndDate = deletionEndDate
                 )
 
-                SelfDeletionEventLogger.log(
+                logger.log(
                     LoggingSelfDeletionEvent.MarkingSelfSelfDeletionStartDate(
                         message,
                         expirationData,
@@ -215,7 +220,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
 
             val delayWaitingTime = timeLeftForDeletion()
 
-            SelfDeletionEventLogger.log(
+            logger.log(
                 LoggingSelfDeletionEvent.WaitingForSelfDeletion(
                     message,
                     expirationData,
@@ -232,6 +237,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
     }
 
     override suspend fun enqueuePendingSelfDeletionMessages() {
+        kaliumLogger.d("Enqueueing pending message with self-deletion")
         messageRepository.getEphemeralMessagesMarkedForDeletion()
             .onSuccess { ephemeralMessages ->
                 ephemeralMessages.forEach { ephemeralMessage ->
@@ -246,6 +252,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
     }
 
     override suspend fun deleteSelfDeletionMessagesFromEndDate() {
+        kaliumLogger.d("Deleting self-deleting messages from end date")
         messageRepository.getEphemeralMessagesMarkedForEndDeletion()
             .onSuccess { ephemeralMessages ->
                 ephemeralMessages.forEach { ephemeralMessage ->

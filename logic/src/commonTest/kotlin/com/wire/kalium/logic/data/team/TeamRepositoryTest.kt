@@ -58,6 +58,7 @@ import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.oneOf
+import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -121,7 +122,7 @@ class TeamRepositoryTest {
             .withGetTeamMembers(NetworkResponse.Success(teamMembersList, mapOf(), 200))
             .arrange()
 
-        val result = teamRepository.fetchMembersByTeamId(teamId = TeamId("teamId"), userDomain = "userDomain")
+        val result = teamRepository.fetchMembersByTeamId(teamId = TeamId("teamId"), userDomain = "userDomain", null)
 
         // Verifies that userDAO insertUsers was called with the correct mapped values
         verify(arrangement.userDAO)
@@ -143,11 +144,57 @@ class TeamRepositoryTest {
             .whenInvokedWith(any(), anything())
             .thenReturn(NetworkResponse.Error(KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))))
 
-        val result = teamRepository.fetchMembersByTeamId(teamId = TeamId("teamId"), userDomain = "userDomain")
+        val result = teamRepository.fetchMembersByTeamId(teamId = TeamId("teamId"), userDomain = "userDomain", null)
 
         result.shouldFail {
             assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)
         }
+    }
+
+    @Test
+    fun givenLimitIs0_whenFetchingTeamMembers_thenReturnSuccessWithoutFetchingAnything() = runTest {
+        val (arrangement, teamRepository) = Arrangement()
+            .arrange()
+
+        val result = teamRepository.fetchMembersByTeamId(teamId = TeamId("teamId"), userDomain = "userDomain", 0)
+
+        result.shouldSucceed()
+
+        verify(arrangement.teamsApi)
+            .suspendFunction(arrangement.teamsApi::getTeamMembers)
+            .with(any(), any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenLimitAndHasMoreIsTrue_whenFetchingTeamMembers_thenDoNotFetchTheNextyPage() = runTest {
+        val teamMember = TestTeam.memberDTO(
+            nonQualifiedUserId = "teamMember1"
+        )
+
+        val teamMembersList = TeamsApi.TeamMemberList(
+            hasMore = true,
+            members = listOf(
+                teamMember
+            )
+        )
+
+
+        val pageSize = 100
+        val limit = 200
+
+        val (arrangement, teamRepository) = Arrangement()
+            .withGetTeamMembers(NetworkResponse.Success(teamMembersList, mapOf(), 200))
+            .arrange()
+
+        val result = teamRepository.fetchMembersByTeamId(teamId = TeamId("teamId"), userDomain = "userDomain", limit, pageSize = pageSize)
+
+        result.shouldSucceed()
+
+        verify(arrangement.teamsApi)
+            .suspendFunction(arrangement.teamsApi::getTeamMembers)
+            .with(any(), any())
+            .wasInvoked(exactly = twice)
     }
 
     @Test

@@ -17,12 +17,13 @@
  */
 package com.wire.kalium.logic.util.arrangement.provider
 
+import com.wire.kalium.cryptography.CoreCryptoCentral
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.anything
@@ -38,6 +39,9 @@ interface E2EIClientProviderArrangement {
     val mlsClient: MLSClient
 
     @Mock
+    val coreCryptoCentral: CoreCryptoCentral
+
+    @Mock
     val e2eiClient: E2EIClient
 
     @Mock
@@ -46,12 +50,15 @@ interface E2EIClientProviderArrangement {
     @Mock
     val currentClientIdProvider: CurrentClientIdProvider
 
+    fun withGettingCoreCryptoSuccessful()
+
+    fun withGetNewAcmeEnrollmentSuccessful()
+
     fun withGetMLSClientSuccessful()
 
     fun withE2EINewActivationEnrollmentSuccessful()
 
     fun withE2EINewRotationEnrollmentSuccessful()
-
 
     fun withE2EIEnabled(isEnabled: Boolean)
 
@@ -64,6 +71,23 @@ class E2EIClientProviderArrangementImpl : E2EIClientProviderArrangement {
     override val e2eiClient: E2EIClient = mock(classOf<E2EIClient>())
     override val userRepository: UserRepository = mock(classOf<UserRepository>())
     override val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+    override val coreCryptoCentral = mock(classOf<CoreCryptoCentral>())
+
+    override fun withGettingCoreCryptoSuccessful() {
+        given(mlsClientProvider)
+            .suspendFunction(mlsClientProvider::getCoreCrypto)
+            .whenInvokedWith(anything())
+            .then { Either.Right(coreCryptoCentral) }
+    }
+
+    override fun withGetNewAcmeEnrollmentSuccessful() {
+        given(coreCryptoCentral)
+            .suspendFunction(coreCryptoCentral::newAcmeEnrollment)
+            .whenInvokedWith(anything())
+            .thenReturn(e2eiClient)
+    }
+
+
     override fun withGetMLSClientSuccessful() {
         given(mlsClientProvider)
             .suspendFunction(mlsClientProvider::getMLSClient)
