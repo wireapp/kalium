@@ -392,6 +392,12 @@ SELECT Conversation.mls_group_id FROM Conversation
 WHERE Conversation.qualified_id = :conversationId
 AND Conversation.mls_group_state IS 'ESTABLISHED';
 
+getEstablishedSelfMLSGroupId:
+SELECT Conversation.mls_group_id FROM Conversation
+WHERE type = 'SELF'
+AND protocol = 'MLS'
+AND Conversation.mls_group_state IS 'ESTABLISHED';
+
 updateConversationReceiptMode:
 UPDATE Conversation
 SET receipt_mode = ?
