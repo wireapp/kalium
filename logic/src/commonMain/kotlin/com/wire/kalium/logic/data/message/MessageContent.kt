@@ -269,7 +269,9 @@ sealed class MessageContent {
          * A member(s) was not added to the conversation.
          * Note: This is only valid for the creator of the conversation, local-only.
          */
-        data class FailedToAdd(override val members: List<UserId>) : MemberChange(members)
+        data class FailedToAdd(override val members: List<UserId>, val type: Type) : MemberChange(members) {
+            enum class Type { Federation, LegalHold, Unknown; }
+        }
 
         /**
          * A member(s) was added to the conversation while the conversation was being created.
@@ -414,7 +416,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.NewConversationReceiptMode -> "NewConversationReceiptMode"
     is MessageContent.ConversationCreated -> "ConversationCreated"
     is MessageContent.MemberChange.CreationAdded -> "MemberChange.CreationAdded"
-    is MessageContent.MemberChange.FailedToAdd -> "MemberChange.FailedToAdd"
+    is MessageContent.MemberChange.FailedToAdd -> "MemberChange.FailedToAdd.${this.type}"
     is MessageContent.MLSWrongEpochWarning -> "MLSWrongEpochWarning"
     is MessageContent.ConversationDegradedMLS -> "ConversationVerification.Degraded.MLS"
     is MessageContent.ConversationDegradedProteus -> "ConversationVerification.Degraded.Proteus"

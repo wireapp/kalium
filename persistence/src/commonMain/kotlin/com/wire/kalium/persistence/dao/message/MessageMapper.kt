@@ -27,6 +27,7 @@ import com.wire.kalium.persistence.dao.UserEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
+import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionMapper
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
@@ -158,7 +159,9 @@ object MessageMapper {
                         }
                     }
 
-                    MessageEntity.MemberChangeType.FAILED_TO_ADD -> {
+                    MessageEntity.MemberChangeType.FAILED_TO_ADD_FEDERATION,
+                    MessageEntity.MemberChangeType.FAILED_TO_ADD_LEGAL_HOLD,
+                    MessageEntity.MemberChangeType.FAILED_TO_ADD_UNKNOWN -> {
                         MessagePreviewEntityContent.MembersFailedToAdded(
                             senderName = senderName,
                             isContainSelfUserId = userIdList.firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
@@ -395,7 +398,6 @@ object MessageMapper {
         assetMimeType: String?,
         assetHeight: Int?,
         assetWidth: Int?,
-        assetDownloadStatus: MessageEntity.DownloadStatus?,
         decodedAssetPath: String?
     ): AssetMessageEntity {
         return AssetMessageEntity(
@@ -406,7 +408,6 @@ object MessageMapper {
             assetId = assetId!!,
             width = assetWidth!!,
             height = assetHeight!!,
-            downloadStatus = assetDownloadStatus ?: MessageEntity.DownloadStatus.NOT_DOWNLOADED,
             assetPath = decodedAssetPath,
             isSelfAsset = isSelfMessage
         )
@@ -451,8 +452,6 @@ object MessageMapper {
         assetSize: Long?,
         assetName: String?,
         assetMimeType: String?,
-        assetUploadStatus: MessageEntity.UploadStatus?,
-        assetDownloadStatus: MessageEntity.DownloadStatus?,
         assetOtrKey: ByteArray?,
         assetSha256: ByteArray?,
         assetId: String?,
@@ -536,8 +535,6 @@ object MessageMapper {
                 assetSizeInBytes = assetSize.requireField("asset_size"),
                 assetName = assetName,
                 assetMimeType = assetMimeType.requireField("asset_mime_type"),
-                assetUploadStatus = assetUploadStatus,
-                assetDownloadStatus = assetDownloadStatus,
                 assetOtrKey = assetOtrKey.requireField("asset_otr_key"),
                 assetSha256Key = assetSha256.requireField("asset_sha256"),
                 assetId = assetId.requireField("asset_id"),
@@ -649,6 +646,7 @@ object MessageMapper {
                 locationName,
                 locationZoom
             )
+
             MessageEntity.ContentType.LEGAL_HOLD -> MessageEntityContent.LegalHold(
                 memberUserIdList = legalHoldMemberList.requireField("memberChangeList"),
                 type = legalHoldType.requireField("legalHoldType")
@@ -697,6 +695,18 @@ object MessageMapper {
             recipientsFailedWithNoClientsList,
             recipientsFailedDeliveryList,
             sender
+        )
+    }
+
+    fun fromAssetStatus(
+        id: String,
+        conversationId: QualifiedIDEntity,
+        transferStatusEntity: AssetTransferStatusEntity,
+    ): MessageAssetStatusEntity {
+        return MessageAssetStatusEntity(
+            id = id,
+            conversationId = conversationId,
+            transferStatusEntity
         )
     }
 

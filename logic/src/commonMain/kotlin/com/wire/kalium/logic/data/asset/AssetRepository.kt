@@ -130,6 +130,7 @@ interface AssetRepository {
      */
     // TODO(federation): add the domain to delete asset locally
     suspend fun deleteAssetLocally(assetId: String): Either<CoreFailure, Unit>
+    suspend fun fetchDecodedAsset(assetId: String): Either<CoreFailure, Path>
 }
 
 internal class AssetDataSource(
@@ -242,7 +243,7 @@ internal class AssetDataSource(
             assetSHA256 = assetSHA256Key
         )
 
-    private suspend fun fetchDecodedAsset(assetId: String): Either<CoreFailure, Path> =
+    override suspend fun fetchDecodedAsset(assetId: String): Either<CoreFailure, Path> =
         wrapStorageRequest { assetDao.getAssetByKey(assetId).firstOrNull() }
             .map { it.dataPath.toPath() }
 
