@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.e2ei.usecase
 
+import com.wire.kalium.cryptography.CoreCryptoCentral
 import com.wire.kalium.cryptography.CrlRegistration
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.CoreFailure
@@ -59,8 +60,8 @@ class CheckRevocationListUseCaseTest {
                 .with(any())
                 .wasInvoked(once)
 
-            verify(arrangement.mlsClient)
-                .suspendFunction(arrangement.mlsClient::registerCrl)
+            verify(arrangement.coreCrypto)
+                .suspendFunction(arrangement.coreCrypto::registerCrl)
                 .with(any())
                 .wasNotInvoked()
         }
@@ -85,8 +86,8 @@ class CheckRevocationListUseCaseTest {
                 .suspendFunction(arrangement.currentClientIdProvider::invoke)
                 .wasInvoked(once)
 
-            verify(arrangement.mlsClient)
-                .suspendFunction(arrangement.mlsClient::registerCrl)
+            verify(arrangement.coreCrypto)
+                .suspendFunction(arrangement.coreCrypto::registerCrl)
                 .with(any())
                 .wasNotInvoked()
         }
@@ -108,12 +109,12 @@ class CheckRevocationListUseCaseTest {
                 .wasInvoked(once)
 
             verify(arrangement.mlsClientProvider)
-                .suspendFunction(arrangement.mlsClientProvider::getMLSClient)
+                .suspendFunction(arrangement.mlsClientProvider::getCoreCrypto)
                 .with(eq(TestClient.CLIENT_ID))
                 .wasInvoked(once)
 
-            verify(arrangement.mlsClient)
-                .suspendFunction(arrangement.mlsClient::registerCrl)
+            verify(arrangement.coreCrypto)
+                .suspendFunction(arrangement.coreCrypto::registerCrl)
                 .with(any())
                 .wasNotInvoked()
         }
@@ -138,12 +139,12 @@ class CheckRevocationListUseCaseTest {
                 .wasInvoked(once)
 
             verify(arrangement.mlsClientProvider)
-                .suspendFunction(arrangement.mlsClientProvider::getMLSClient)
+                .suspendFunction(arrangement.mlsClientProvider::getCoreCrypto)
                 .with(eq(TestClient.CLIENT_ID))
                 .wasInvoked(once)
 
-            verify(arrangement.mlsClient)
-                .suspendFunction(arrangement.mlsClient::registerCrl)
+            verify(arrangement.coreCrypto)
+                .suspendFunction(arrangement.coreCrypto::registerCrl)
                 .with(any())
                 .wasInvoked(once)
         }
@@ -165,8 +166,8 @@ class CheckRevocationListUseCaseTest {
                 assertEquals(EXPIRATION, it)
             }
 
-            verify(arrangement.mlsClient)
-                .suspendFunction(arrangement.mlsClient::registerCrl)
+            verify(arrangement.coreCrypto)
+                .suspendFunction(arrangement.coreCrypto::registerCrl)
                 .with(any())
                 .wasInvoked(once)
 
@@ -175,13 +176,41 @@ class CheckRevocationListUseCaseTest {
                 .wasInvoked(once)
         }
 
+<<<<<<< HEAD
+=======
+    @Test
+    fun givenE2EIAndMLSAreDisabled_whenRunningUseCase_thenE2EIFailureDisabledIsReturned() = runTest {
+        // given
+        val (arrangement, checkRevocationList) = Arrangement()
+            .withE2EIEnabledAndMLSEnabled(false)
+            .arrange()
+
+        // when
+        val result = checkRevocationList.invoke(DUMMY_URL)
+
+        // then
+        result.shouldFail {
+            assertEquals(E2EIFailure.Disabled, it)
+        }
+
+        verify(arrangement.coreCrypto)
+            .suspendFunction(arrangement.coreCrypto::registerCrl)
+            .with(any())
+            .wasNotInvoked()
+
+        verify(arrangement.mLSConversationsVerificationStatusesHandler)
+            .suspendFunction(arrangement.mLSConversationsVerificationStatusesHandler::invoke)
+            .wasNotInvoked()
+    }
+
+>>>>>>> c9759d4364 (fix(e2ei): create fresh MLS client with x509 with E2EI certificate (#2450))
     internal class Arrangement {
 
         @Mock
         val certificateRevocationListRepository = mock(classOf<CertificateRevocationListRepository>())
 
         @Mock
-        val mlsClient = mock(classOf<MLSClient>())
+        val coreCrypto = mock(classOf<CoreCryptoCentral>())
 
         @Mock
         val mLSConversationsVerificationStatusesHandler =
@@ -232,28 +261,28 @@ class CheckRevocationListUseCaseTest {
 
         fun withMlsClientProviderFailure() = apply {
             given(mlsClientProvider)
-                .suspendFunction(mlsClientProvider::getMLSClient)
+                .suspendFunction(mlsClientProvider::getCoreCrypto)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Left(CoreFailure.SyncEventOrClientNotFound))
         }
 
         fun withMlsClientProviderSuccess() = apply {
             given(mlsClientProvider)
-                .suspendFunction(mlsClientProvider::getMLSClient)
+                .suspendFunction(mlsClientProvider::getCoreCrypto)
                 .whenInvokedWith(any())
-                .thenReturn(Either.Right(mlsClient))
+                .thenReturn(Either.Right(coreCrypto))
         }
 
         fun withRegisterCrl() = apply {
-            given(mlsClient)
-                .suspendFunction(mlsClient::registerCrl)
+            given(coreCrypto)
+                .suspendFunction(coreCrypto::registerCrl)
                 .whenInvokedWith(any(), any())
                 .thenReturn(CrlRegistration(false, EXPIRATION))
         }
 
         fun withRegisterCrlFlagChanged() = apply {
-            given(mlsClient)
-                .suspendFunction(mlsClient::registerCrl)
+            given(coreCrypto)
+                .suspendFunction(coreCrypto::registerCrl)
                 .whenInvokedWith(any())
                 .thenReturn(CrlRegistration(true, EXPIRATION))
         }

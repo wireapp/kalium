@@ -204,11 +204,38 @@ interface E2EIFailure : CoreFailure {
 
     data object Disabled : E2EIFailure
     data object MissingDiscoveryUrl : E2EIFailure
+<<<<<<< HEAD
     data class FailedInitialization(val step: E2EIEnrollmentResult.E2EIStep) : E2EIFailure
     data class FailedOAuth(val reason: String) : E2EIFailure
     data class FailedFinalization(val step: E2EIEnrollmentResult.E2EIStep) : E2EIFailure
     data object FailedRotationAndMigration : E2EIFailure
 
+=======
+    data class MissingMLSClient(internal val reason: CoreFailure) : E2EIFailure
+    data class MissingE2EIClient(internal val reason: CoreFailure) : E2EIFailure
+    data object MissingTeamSettings : E2EIFailure
+    data class GettingE2EIClient(internal val reason: CoreFailure) : E2EIFailure
+    data class TrustAnchors(internal val reason: CoreFailure) : E2EIFailure
+    data class IntermediateCert(internal val reason: CoreFailure) : E2EIFailure
+    data class CRL(internal val reason: CoreFailure) : E2EIFailure
+    data class OAuthRefreshToken(internal val reason: CoreFailure) : E2EIFailure
+    data class AcmeNonce(internal val reason: CoreFailure) : E2EIFailure
+    data class AcmeNewAccount(internal val reason: CoreFailure) : E2EIFailure
+    data class AcmeDirectories(internal val reason: CoreFailure) : E2EIFailure
+    data class AcmeNewOrder(internal val reason: CoreFailure) : E2EIFailure
+    data object AcmeAuthorizations : E2EIFailure
+    data class OAuth(val reason: String) : E2EIFailure
+    data class WireNonce(internal val reason: CoreFailure) : E2EIFailure
+    data class DPoPToken(internal val reason: CoreFailure) : E2EIFailure
+    data class WireAccessToken(internal val reason: CoreFailure) : E2EIFailure
+    data class DPoPChallenge(internal val reason: CoreFailure) : E2EIFailure
+    data class OIDCChallenge(internal val reason: CoreFailure) : E2EIFailure
+    data class CheckOrderRequest(internal val reason: CoreFailure) : E2EIFailure
+    data class FinalizeRequest(internal val reason: CoreFailure) : E2EIFailure
+    data class RotationAndMigration(internal val reason: CoreFailure) : E2EIFailure
+    data class InitMLSClient(internal val reason: CoreFailure) : E2EIFailure
+    data class Certificate(internal val reason: CoreFailure) : E2EIFailure
+>>>>>>> c9759d4364 (fix(e2ei): create fresh MLS client with x509 with E2EI certificate (#2450))
     class Generic(internal val exception: Exception) : E2EIFailure {
         val rootCause: Throwable get() = exception
     }

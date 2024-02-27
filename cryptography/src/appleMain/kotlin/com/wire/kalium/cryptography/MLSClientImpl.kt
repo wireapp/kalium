@@ -175,19 +175,11 @@ class MLSClientImpl(
         return toByteArray(coreCrypto.exportSecretKey(toUByteList(groupId.decodeBase64Bytes()), keyLength))
     }
 
-    override suspend fun newAcmeEnrollment(
-        clientId: CryptoQualifiedClientId,
-        displayName: String,
-        handle: String,
-        teamId: String?
-    ): E2EIClient {
-        TODO("Not yet implemented")
-    }
-
     override suspend fun e2eiNewActivationEnrollment(
         displayName: String,
         handle: String,
-        teamId: String?
+        teamId: String?,
+        expiry: Duration
     ): E2EIClient {
         TODO("Not yet implemented")
     }
@@ -195,7 +187,8 @@ class MLSClientImpl(
     override suspend fun e2eiNewRotateEnrollment(
         displayName: String?,
         handle: String?,
-        teamId: String?
+        teamId: String?,
+        expiry: Duration
     ): E2EIClient {
         TODO("Not yet implemented")
     }
@@ -229,18 +222,6 @@ class MLSClientImpl(
     }
 
     override suspend fun getUserIdentities(groupId: MLSGroupId, users: List<CryptoQualifiedID>): Map<String, List<WireIdentity>> {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun registerTrustAnchors(pem: CertificateChain) {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun registerIntermediateCa(pem: String) {
         TODO("Not yet implemented")
     }
 

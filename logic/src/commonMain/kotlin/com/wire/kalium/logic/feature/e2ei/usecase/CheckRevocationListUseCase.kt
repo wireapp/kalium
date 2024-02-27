@@ -40,12 +40,24 @@ internal class CheckRevocationListUseCaseImpl(
     private val mLSConversationsVerificationStatusesHandler: MLSConversationsVerificationStatusesHandler
 ) : CheckRevocationListUseCase {
     override suspend fun invoke(url: String): Either<CoreFailure, ULong?> {
+<<<<<<< HEAD
         return certificateRevocationListRepository.getClientDomainCRL(url).flatMap {
             currentClientIdProvider().flatMap { clientId ->
                 mlsClientProvider.getMLSClient(clientId).map { mlsClient ->
                     mlsClient.registerCrl(url, it).run {
                         if (dirty) {
                             mLSConversationsVerificationStatusesHandler()
+=======
+        return if (isE2EIEnabledUseCase()) {
+            certificateRevocationListRepository.getClientDomainCRL(url).flatMap {
+                currentClientIdProvider().flatMap { clientId ->
+                    mlsClientProvider.getCoreCrypto(clientId).map { coreCrypto ->
+                        coreCrypto.registerCrl(url, it).run {
+                            if (dirty) {
+                                mLSConversationsVerificationStatusesHandler()
+                            }
+                            this.expiration
+>>>>>>> c9759d4364 (fix(e2ei): create fresh MLS client with x509 with E2EI certificate (#2450))
                         }
                         this.expiration
                     }

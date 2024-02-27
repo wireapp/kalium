@@ -82,6 +82,7 @@ interface E2EIRepository {
         acmeChallenge: AcmeChallenge
     ): Either<CoreFailure, ChallengeResponse>
 
+<<<<<<< HEAD
     suspend fun setDPoPChallengeResponse(challengeResponse: ChallengeResponse): Either<CoreFailure, Unit>
     suspend fun setOIDCChallengeResponse(challengeResponse: ChallengeResponse): Either<CoreFailure, Unit>
     suspend fun finalize(location: String, prevNonce: Nonce): Either<CoreFailure, Pair<ACMEResponse, String>>
@@ -89,6 +90,16 @@ interface E2EIRepository {
     suspend fun certificateRequest(location: String, prevNonce: Nonce): Either<CoreFailure, ACMEResponse>
     suspend fun rotateKeysAndMigrateConversations(certificateChain: String, isNewClient: Boolean = false): Either<CoreFailure, Unit>
     suspend fun getOAuthRefreshToken(): Either<CoreFailure, String?>
+=======
+    suspend fun setDPoPChallengeResponse(challengeResponse: ChallengeResponse): Either<E2EIFailure, Unit>
+    suspend fun setOIDCChallengeResponse(challengeResponse: ChallengeResponse): Either<E2EIFailure, Unit>
+    suspend fun finalize(location: String, prevNonce: Nonce): Either<E2EIFailure, Pair<ACMEResponse, String>>
+    suspend fun checkOrderRequest(location: String, prevNonce: Nonce): Either<E2EIFailure, Pair<ACMEResponse, String>>
+    suspend fun certificateRequest(location: String, prevNonce: Nonce): Either<E2EIFailure, ACMEResponse>
+    suspend fun rotateKeysAndMigrateConversations(certificateChain: String, isNewClient: Boolean = false): Either<E2EIFailure, Unit>
+    suspend fun initiateMLSClient(certificateChain: String): Either<E2EIFailure, Unit>
+    suspend fun getOAuthRefreshToken(): Either<E2EIFailure, String?>
+>>>>>>> c9759d4364 (fix(e2ei): create fresh MLS client with x509 with E2EI certificate (#2450))
     suspend fun nukeE2EIClient()
     suspend fun fetchFederationCertificates(): Either<CoreFailure, Unit>
     suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String>
@@ -110,12 +121,36 @@ class E2EIRepositoryImpl(
 
     override suspend fun initFreshE2EIClient(clientId: ClientId?, isNewClient: Boolean): Either<CoreFailure, Unit> {
         nukeE2EIClient()
+<<<<<<< HEAD
         return e2EIClientProvider.getE2EIClient(clientId, isNewClient).fold({
             kaliumLogger.w("E2EI client initialization failed: $it")
             Either.Left(it)
         }, {
             kaliumLogger.w("E2EI client initialized for enrollment")
             Either.Right(Unit)
+=======
+        return e2EIClientProvider.getE2EIClient(clientId, isNewClient).fold({ it.left() }, { Unit.right() })
+    }
+
+    override suspend fun fetchAndSetTrustAnchors(): Either<E2EIFailure, Unit> = discoveryUrl().flatMap {
+        // todo: fetch only once!
+        wrapApiRequest {
+            acmeApi.getTrustAnchors(it)
+        }.fold({
+            E2EIFailure.TrustAnchors(it).left()
+        }, { trustAnchors ->
+            currentClientIdProvider().fold({
+                E2EIFailure.TrustAnchors(it).left()
+            }, { clientId ->
+                mlsClientProvider.getCoreCrypto(clientId).fold({
+                E2EIFailure.MissingMLSClient(it).left()
+                }, { coreCrypto ->
+                wrapE2EIRequest {
+                    coreCrypto.registerTrustAnchors(trustAnchors.decodeToString())
+                }
+                })
+            })
+>>>>>>> c9759d4364 (fix(e2ei): create fresh MLS client with x509 with E2EI certificate (#2450))
         })
     }
 
@@ -299,6 +334,16 @@ class E2EIRepositoryImpl(
             }
         }
 
+    override suspend fun initiateMLSClient(certificateChain: String): Either<E2EIFailure, Unit> {
+        return e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
+            currentClientIdProvider().fold({
+                E2EIFailure.InitMLSClient(it).left()
+            }, { clientId ->
+                mlsClientProvider.initMLSClientWithCertificate(e2eiClient, certificateChain, clientId)
+            })
+        }
+    }
+
     override suspend fun getOAuthRefreshToken() = e2EIClientProvider.getE2EIClient().flatMap { e2EIClient ->
         Either.Right(e2EIClient.getOAuthRefreshToken())
     }
@@ -306,6 +351,7 @@ class E2EIRepositoryImpl(
     override suspend fun fetchFederationCertificates(): Either<CoreFailure, Unit> = discoveryUrl()
         .flatMap {
             wrapApiRequest {
+<<<<<<< HEAD
                 acmeApi.getACMEFederation(Url(it).protocolWithAuthority)
             }.flatMap { data ->
                 mlsClientProvider.getMLSClient().flatMap { mlsClient ->
@@ -314,6 +360,24 @@ class E2EIRepositoryImpl(
                     }
                 }
             }
+=======
+                acmeApi.getACMEFederation(it)
+            }.fold({
+                E2EIFailure.IntermediateCert(it).left()
+            }, { data ->
+                currentClientIdProvider().fold({
+                    E2EIFailure.TrustAnchors(it).left()
+                }, { clientId ->
+                    mlsClientProvider.getCoreCrypto(clientId).fold({
+                        E2EIFailure.MissingMLSClient(it).left()
+                    }, { coreCrypto ->
+                        wrapE2EIRequest {
+                            coreCrypto.registerIntermediateCa(data)
+                        }
+                    })
+                })
+            })
+>>>>>>> c9759d4364 (fix(e2ei): create fresh MLS client with x509 with E2EI certificate (#2450))
         }
 
     override fun discoveryUrl(): Either<CoreFailure, String> =

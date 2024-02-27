@@ -127,6 +127,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
         val dPopAuthorizations = initializationResult.dPopAuthorizations
         val oidcAuthorizations = initializationResult.oidcAuthorizations
         val orderLocation = initializationResult.orderLocation
+        val isNewClientRegistration = initializationResult.isNewClientRegistration
 
         val wireNonce = e2EIRepository.getWireNonce().getOrFail {
             return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.WireNonce, it)
@@ -177,9 +178,23 @@ class EnrollE2EIUseCaseImpl internal constructor(
 
         val certificateRequest =
             e2EIRepository.certificateRequest(finalizeResponse.second, prevNonce).getOrFail {
+<<<<<<< HEAD
                 return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.Certificate, it)
                     .toEitherLeft()
+=======
+                return it.left() }
+
+        if (isNewClientRegistration) {
+            e2EIRepository.initiateMLSClient(certificateRequest.response.decodeToString()).onFailure {
+                return it.left()
+>>>>>>> c9759d4364 (fix(e2ei): create fresh MLS client with x509 with E2EI certificate (#2450))
             }
+        } else {
+            e2EIRepository.rotateKeysAndMigrateConversations(
+                    certificateRequest.response.decodeToString(),
+                    initializationResult.isNewClientRegistration
+            ).onFailure { return it.left() }
+        }
 
         e2EIRepository
             .rotateKeysAndMigrateConversations(certificateRequest.response.decodeToString())
