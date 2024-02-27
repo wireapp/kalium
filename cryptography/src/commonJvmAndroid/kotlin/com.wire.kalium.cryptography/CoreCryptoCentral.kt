@@ -74,7 +74,7 @@ class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: Str
         certificateChain: CertificateChain,
         newMLSKeyPackageCount: UInt
     ): MLSClient {
-        //todo: use DPs list from here, and return alongside with the mls client
+        // todo: use DPs list from here, and return alongside with the mls client
         cc.e2eiMlsInitOnly(
             (enrollment as E2EIClientImpl).wireE2eIdentity,
             certificateChain, newMLSKeyPackageCount

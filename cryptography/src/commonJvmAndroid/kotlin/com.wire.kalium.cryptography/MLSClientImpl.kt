@@ -29,7 +29,6 @@ import com.wire.crypto.MlsGroupInfoEncryptionType
 import com.wire.crypto.MlsRatchetTreeType
 import com.wire.crypto.MlsWirePolicy
 import com.wire.crypto.client.Ciphersuites
-import com.wire.kalium.cryptography.exceptions.CryptographyException
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import kotlin.time.Duration

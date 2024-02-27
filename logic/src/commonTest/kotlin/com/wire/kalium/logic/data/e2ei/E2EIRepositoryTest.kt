@@ -853,8 +853,8 @@ class E2EIRepositoryTest {
             .with(any())
             .wasNotInvoked()
 
-        verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::registerIntermediateCa)
+        verify(arrangement.coreCryptoCentral)
+            .suspendFunction(arrangement.coreCryptoCentral::registerIntermediateCa)
             .with(any())
             .wasNotInvoked()
     }
@@ -886,8 +886,8 @@ class E2EIRepositoryTest {
             .with(any())
             .wasInvoked(once)
 
-        verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::registerIntermediateCa)
+        verify(arrangement.coreCryptoCentral)
+            .suspendFunction(arrangement.coreCryptoCentral::registerIntermediateCa)
             .with(any())
             .wasInvoked(once)
     }
@@ -918,8 +918,8 @@ class E2EIRepositoryTest {
             .with(any())
             .wasNotInvoked()
 
-        verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::registerIntermediateCa)
+        verify(arrangement.coreCryptoCentral)
+            .suspendFunction(arrangement.coreCryptoCentral::registerIntermediateCa)
             .with(any())
             .wasNotInvoked()
     }
@@ -951,8 +951,8 @@ class E2EIRepositoryTest {
             .with(eq(Url(RANDOM_URL)))
             .wasInvoked(once)
 
-        verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::registerTrustAnchors)
+        verify(arrangement.coreCryptoCentral)
+            .suspendFunction(arrangement.coreCryptoCentral::registerTrustAnchors)
             .with(eq(Arrangement.RANDOM_BYTE_ARRAY.decodeToString()))
             .wasInvoked(once)
     }
@@ -1225,15 +1225,15 @@ class E2EIRepositoryTest {
         }
 
         fun withRegisterIntermediateCABag() = apply {
-            given(mlsClient)
-                .suspendFunction(mlsClient::registerIntermediateCa)
+            given(coreCryptoCentral)
+                .suspendFunction(coreCryptoCentral::registerIntermediateCa)
                 .whenInvokedWith(any())
                 .thenDoNothing()
         }
 
         fun withRegisterTrustAnchors() = apply {
-            given(mlsClient)
-                .suspendFunction(mlsClient::registerTrustAnchors)
+            given(coreCryptoCentral)
+                .suspendFunction(coreCryptoCentral::registerTrustAnchors)
                 .whenInvokedWith(any())
                 .thenReturn(Unit)
         }

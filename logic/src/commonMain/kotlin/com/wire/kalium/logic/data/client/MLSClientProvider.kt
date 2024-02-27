@@ -98,7 +98,8 @@ class MLSClientProviderImpl(
 
     override suspend fun initMLSClientWithCertificate(
         enrollment: E2EIClient,
-        certificateChain: CertificateChain, clientId: ClientId?
+        certificateChain: CertificateChain,
+        clientId: ClientId?
     ): Either<E2EIFailure, Unit> = mlsClientMutex.withLock {
         withContext(dispatchers.io) {
             val currentClientId =

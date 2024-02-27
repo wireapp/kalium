@@ -95,7 +95,6 @@ class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: Str
         TODO("Not yet implemented")
     }
 
-
     companion object {
         const val KEYSTORE_NAME = "keystore"
     }

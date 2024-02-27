@@ -115,7 +115,6 @@ internal class EI2EIClientProviderImpl(
         }
     }
 
-
     private suspend fun getSelfUserInfo(): Either<E2EIFailure, SelfUser> {
         val selfUser = userRepository.getSelfUser() ?: return E2EIFailure.GettingE2EIClient(StorageFailure.DataNotFound).left()
         return if (selfUser.name == null || selfUser.handle == null)

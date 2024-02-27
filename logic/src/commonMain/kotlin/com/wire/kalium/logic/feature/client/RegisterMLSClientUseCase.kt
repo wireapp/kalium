@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -28,11 +27,8 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.right
-import com.wire.kalium.logic.kaliumLogger
 
 sealed class RegisterMLSClientResult {
     data object Success : RegisterMLSClientResult()
@@ -44,7 +40,6 @@ sealed class RegisterMLSClientResult {
  * Register an MLS client with an existing client already registered on the backend.
  */
 interface RegisterMLSClientUseCase {
-
     suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, RegisterMLSClientResult>
 }
 
@@ -57,10 +52,10 @@ internal class RegisterMLSClientUseCaseImpl(
 ) : RegisterMLSClientUseCase {
 
     override suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, RegisterMLSClientResult> =
-        userConfigRepository.getE2EISettings().flatMap {e2eiSettings ->
-            if (e2eiSettings.isRequired && !mlsClientProvider.isMLSClientInitialised()){
+        userConfigRepository.getE2EISettings().flatMap { e2eiSettings ->
+            if (e2eiSettings.isRequired && !mlsClientProvider.isMLSClientInitialised()) {
                 return RegisterMLSClientResult.E2EICertificateRequired.right()
-            }else{
+            } else {
                 mlsClientProvider.getMLSClient(clientId)
             }
         }.onFailure {
