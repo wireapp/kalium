@@ -40,16 +40,6 @@ class GetUserE2eiCertificatesUseCaseImpl internal constructor(
     private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase
 ) : GetUserE2eiCertificatesUseCase {
     override suspend operator fun invoke(userId: UserId): Map<String, E2eiCertificate> =
-<<<<<<< HEAD
-        mlsConversationRepository.getUserIdentity(userId).map { identities ->
-            val result = mutableMapOf<String, E2eiCertificate>()
-            identities.forEach {
-                result[it.clientId.value] = pemCertificateDecoder.decode(it.certificate, it.status)
-            }
-            result
-        }.getOrElse(mapOf())
-
-=======
         if (isE2EIEnabledUseCase()) {
             mlsConversationRepository.getUserIdentity(userId).map { identities ->
                 val result = mutableMapOf<String, E2eiCertificate>()
@@ -59,5 +49,4 @@ class GetUserE2eiCertificatesUseCaseImpl internal constructor(
                 result
             }.getOrElse(mapOf())
         } else mapOf()
->>>>>>> 5519f15945 (fix: Respect MLS and E2EI Enabled on User Identity (WPB-6807) (#2546))
 }
