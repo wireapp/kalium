@@ -306,6 +306,7 @@ class MLSClientImpl(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration = try {
         toCrlRegistration(coreCrypto.e2eiRegisterCrl(url, crl))
     } catch (exception: Exception) {
@@ -316,6 +317,7 @@ class MLSClientImpl(
         )
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun registerIntermediateCa(pem: CertificateChain) {
         try {
             coreCrypto.e2eiRegisterIntermediateCa(pem)
