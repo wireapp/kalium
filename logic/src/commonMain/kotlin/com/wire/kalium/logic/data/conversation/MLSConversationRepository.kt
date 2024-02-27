@@ -605,8 +605,7 @@ internal class MLSConversationDataSource(
     override suspend fun getUserIdentity(userId: UserId) =
         wrapStorageRequest {
             if (userId == selfUserId) {
-                val selfConversationId = conversationDAO.getSelfConversationId(ConversationEntity.Protocol.MLS)
-                conversationDAO.getMLSGroupIdByConversationId(selfConversationId!!)
+                conversationDAO.getEstablishedSelfMLSGroupId()
             } else {
                 conversationDAO.getMLSGroupIdByUserId(userId.toDao())
             }
