@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
@@ -182,6 +183,26 @@ class MemberJoinEventHandlerTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenMemberJoinEvent_whenHandlingIt_thenShouldUpdateConversationLegalHoldIfNeeded() = runTest {
+        // given
+        val newMembers = listOf(Member(TestUser.USER_ID, Member.Role.Admin))
+        val event = TestEvent.memberJoin(members = newMembers)
+        val (arrangement, eventHandler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .withFetchConversationIfUnknownSucceeding()
+            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
+            .withPersistMembersSucceeding()
+            .arrange()
+        // when
+        eventHandler.handle(event)
+        // then
+        verify(arrangement.legalHoldHandler)
+            .suspendFunction(arrangement.legalHoldHandler::handleConversationMembersChanged)
+            .with(eq(event.conversationId))
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
         @Mock
         val persistMessage = mock(classOf<PersistMessageUseCase>())
@@ -192,12 +213,23 @@ class MemberJoinEventHandlerTest {
         @Mock
         private val userRepository = mock(classOf<UserRepository>())
 
+        @Mock
+        val legalHoldHandler = mock(classOf<LegalHoldHandler>())
+
         private val memberJoinEventHandler: MemberJoinEventHandler = MemberJoinEventHandlerImpl(
-            conversationRepository,
-            userRepository,
-            persistMessage,
-            TestUser.SELF.id
+            conversationRepository = conversationRepository,
+            userRepository = userRepository,
+            persistMessage = persistMessage,
+            legalHoldHandler = legalHoldHandler,
+            selfUserId = TestUser.SELF.id
         )
+
+        init {
+            given(legalHoldHandler)
+                .suspendFunction(legalHoldHandler::handleConversationMembersChanged)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
+        }
 
         fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
             given(persistMessage)

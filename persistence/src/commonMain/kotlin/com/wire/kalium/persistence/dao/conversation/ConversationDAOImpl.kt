@@ -435,4 +435,12 @@ internal class ConversationDAOImpl internal constructor(
             .asFlow()
             .mapToOneOrDefault(true)
             .flowOn(coroutineContext)
+
+    override suspend fun getEstablishedSelfMLSGroupId(): String? =
+        withContext(coroutineContext) {
+            conversationQueries
+                .getEstablishedSelfMLSGroupId()
+                .executeAsOneOrNull()
+                ?.mls_group_id
+        }
 }

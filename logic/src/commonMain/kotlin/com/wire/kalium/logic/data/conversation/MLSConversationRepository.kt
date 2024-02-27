@@ -24,12 +24,15 @@ import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIClient
+import com.wire.kalium.cryptography.Ed22519Key
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.event.Event
@@ -55,9 +58,11 @@ import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.flatten
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
+import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.incremental.EventSource
@@ -113,6 +118,7 @@ data class E2EIdentity(
 interface MLSConversationRepository {
     suspend fun decryptMessage(message: ByteArray, groupID: GroupID): Either<CoreFailure, List<DecryptedMessageBundle>>
     suspend fun establishMLSGroup(groupID: GroupID, members: List<UserId>): Either<CoreFailure, Unit>
+    suspend fun establishMLSSubConversationGroup(groupID: GroupID, parentId: ConversationId): Either<CoreFailure, Unit>
     suspend fun hasEstablishedMLSGroup(groupID: GroupID): Either<CoreFailure, Boolean>
     suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun removeMembersFromMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
@@ -131,7 +137,7 @@ interface MLSConversationRepository {
         e2eiClient: E2EIClient,
         certificateChain: String,
         isNewClient: Boolean = false
-    ): Either<CoreFailure, Unit>
+    ): Either<E2EIFailure, Unit>
 
     suspend fun getClientIdentity(clientId: ClientId): Either<CoreFailure, WireIdentity?>
     suspend fun getUserIdentity(userId: UserId): Either<CoreFailure, List<WireIdentity>>
@@ -504,19 +510,40 @@ internal class MLSConversationDataSource(
         groupID: GroupID,
         members: List<UserId>
     ): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
+        mlsPublicKeysRepository.getKeys().flatMap { publicKeys ->
+            val keys = publicKeys.map { mlsPublicKeysMapper.toCrypto(it) }
+            establishMLSGroup(groupID, members, keys)
+        }
+    }
+
+    override suspend fun establishMLSSubConversationGroup(
+        groupID: GroupID,
+        parentId: ConversationId
+    ): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            mlsPublicKeysRepository.getKeys().flatMap { publicKeys ->
-                wrapMLSRequest {
-                    mlsClient.createConversation(
-                        idMapper.toCryptoModel(groupID),
-                        publicKeys.map { mlsPublicKeysMapper.toCrypto(it) }
-                    )
-                }.flatMapLeft {
-                    if (it is MLSFailure.ConversationAlreadyExists) {
-                        Either.Right(Unit)
-                    } else {
-                        Either.Left(it)
-                    }
+            conversationDAO.getMLSGroupIdByConversationId(parentId.toDao())?.let { parentGroupId ->
+                val externalSenderKey = mlsClient.getExternalSenders(GroupID(parentGroupId).toCrypto())
+                establishMLSGroup(groupID, emptyList(), listOf(mlsPublicKeysMapper.toCrypto(externalSenderKey)))
+            } ?: Either.Left(StorageFailure.DataNotFound)
+        }
+    }
+
+    private suspend fun establishMLSGroup(
+        groupID: GroupID,
+        members: List<UserId>,
+        keys: List<Ed22519Key>
+    ): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
+        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            wrapMLSRequest {
+                mlsClient.createConversation(
+                    idMapper.toCryptoModel(groupID),
+                    keys
+                )
+            }.flatMapLeft {
+                if (it is MLSFailure.ConversationAlreadyExists) {
+                    Either.Right(Unit)
+                } else {
+                    Either.Left(it)
                 }
             }.flatMap {
                 internalAddMemberToMLSGroup(groupID, members, retryOnStaleMessage = false).onFailure {
@@ -540,32 +567,39 @@ internal class MLSConversationDataSource(
         e2eiClient: E2EIClient,
         certificateChain: String,
         isNewClient: Boolean
-    ) = mlsClientProvider.getMLSClient(clientId).flatMap { mlsClient ->
+    ) = mlsClientProvider.getMLSClient(clientId).fold({
+        E2EIFailure.MissingMLSClient(it).left()
+    }, { mlsClient ->
         wrapMLSRequest {
             mlsClient.e2eiRotateAll(e2eiClient, certificateChain, keyPackageLimitsProvider.refillAmount().toUInt())
-        }.map { rotateBundle ->
+        }.fold({
+            E2EIFailure.RotationAndMigration(it).left()
+        }, { rotateBundle ->
             rotateBundle.crlNewDistributionPoints?.let {
                 checkRevocationList(it)
             }
             if (!isNewClient) {
                 kaliumLogger.w("enrollment for existing client: upload new keypackages and drop old ones")
                 keyPackageRepository.replaceKeyPackages(clientId, rotateBundle.newKeyPackages).flatMapLeft {
-                    return Either.Left(it)
+                    return E2EIFailure.RotationAndMigration(it).left()
                 }
             }
-
             kaliumLogger.w("send migration commits after key rotations")
             kaliumLogger.w("rotate bundles: ${rotateBundle.commits.size}")
             rotateBundle.commits.map {
                 sendCommitBundle(GroupID(it.key), it.value)
-            }.foldToEitherWhileRight(Unit) { value, _ -> value }.fold({ return Either.Left(it) }, { })
-        }
-    }
+            }.foldToEitherWhileRight(Unit) { value, _ -> value }.fold({ E2EIFailure.RotationAndMigration(it).left() }, {
+                Unit.right()
+            })
+        })
+    })
 
     override suspend fun getClientIdentity(clientId: ClientId) =
         wrapStorageRequest { conversationDAO.getE2EIConversationClientInfoByClientId(clientId.value) }.flatMap {
+            kaliumLogger.i("#### conversation id for e2ei: ${it.clientId}, $it.")
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
+
                     mlsClient.getDeviceIdentities(
                         it.mlsGroupId,
                         listOf(CryptoQualifiedClientId(it.clientId, it.userId.toModel().toCrypto()))
@@ -577,8 +611,7 @@ internal class MLSConversationDataSource(
     override suspend fun getUserIdentity(userId: UserId) =
         wrapStorageRequest {
             if (userId == selfUserId) {
-                val selfConversationId = conversationDAO.getSelfConversationId(ConversationEntity.Protocol.MLS)
-                conversationDAO.getMLSGroupIdByConversationId(selfConversationId!!)
+                conversationDAO.getEstablishedSelfMLSGroupId()
             } else {
                 conversationDAO.getMLSGroupIdByUserId(userId.toDao())
             }

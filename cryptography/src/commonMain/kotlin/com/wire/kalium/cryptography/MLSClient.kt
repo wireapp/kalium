@@ -131,6 +131,11 @@ value class Ed22519Key(
     val value: ByteArray
 )
 
+@JvmInline
+value class ExternalSenderKey(
+    val value: ByteArray
+)
+
 enum class CredentialType {
     Basic,
     X509;
@@ -248,6 +253,15 @@ interface MLSClient {
         groupId: MLSGroupId,
         externalSenders: List<Ed22519Key> = emptyList()
     )
+
+    /**
+     * Get External Senders of an MLS conversation
+     *
+     * @param groupId MLS group ID provided by BE
+     */
+    suspend fun getExternalSenders(
+        groupId: MLSGroupId
+    ): ExternalSenderKey
 
     suspend fun wipeConversation(groupId: MLSGroupId)
 

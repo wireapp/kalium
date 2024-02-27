@@ -629,6 +629,70 @@ class LegalHoldHandlerTest {
             .wasInvoked()
     }
 
+    private fun testHandlingConversationMembersChanged(
+        thereAreMembersWithLegalHoldEnabledAfterChange: Boolean,
+        legalHoldStatusForConversationChanged: Boolean,
+        handleEnabledForConversationInvoked: Boolean,
+        handleDisabledForConversationInvoked: Boolean,
+    ) = runTest {
+        // given
+        val conversationId = TestConversation.CONVERSATION.id
+        val userId = TestUser.OTHER_USER_ID
+        val membersHavingLegalHoldClient = if(thereAreMembersWithLegalHoldEnabledAfterChange) listOf(userId) else emptyList()
+        val (arrangement, handler) = Arrangement()
+            .withMembersHavingLegalHoldClientSuccess(membersHavingLegalHoldClient)
+            .withUpdateLegalHoldStatusSuccess(isChanged = legalHoldStatusForConversationChanged)
+            .arrange()
+        // when
+        val result = handler.handleConversationMembersChanged(conversationId)
+        // then
+        result.shouldSucceed()
+        verify(arrangement.legalHoldSystemMessagesHandler)
+            .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleEnabledForConversation)
+            .with(eq(conversationId), any())
+            .let { if(handleEnabledForConversationInvoked) it.wasInvoked() else it.wasNotInvoked() }
+        verify(arrangement.legalHoldSystemMessagesHandler)
+            .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleDisabledForConversation)
+            .with(eq(conversationId), any())
+            .let { if(handleDisabledForConversationInvoked) it.wasInvoked() else it.wasNotInvoked() }
+    }
+
+    @Test
+    fun givenAtLeastOneMemberWithLHEnabled_AndLHForConversationChanged_whenHandlingMembersChanged_thenHandleEnabledForConversation() =
+        testHandlingConversationMembersChanged(
+            thereAreMembersWithLegalHoldEnabledAfterChange = true,
+            legalHoldStatusForConversationChanged = true,
+            handleEnabledForConversationInvoked = true,
+            handleDisabledForConversationInvoked = false,
+        )
+
+    @Test
+    fun givenNoMemberWithLHEnabled_AndLHForConversationChanged_whenHandlingMembersChanged_thenHandleDisabledForConversation() =
+        testHandlingConversationMembersChanged(
+            thereAreMembersWithLegalHoldEnabledAfterChange = false,
+            legalHoldStatusForConversationChanged = true,
+            handleEnabledForConversationInvoked = false,
+            handleDisabledForConversationInvoked = true,
+        )
+
+    @Test
+    fun givenAtLeastOneMemberWithLHEnabled_AndLHForConversationDidNotChange_whenHandlingMembersChanged_thenDoNotHandleForConversation() =
+        testHandlingConversationMembersChanged(
+            thereAreMembersWithLegalHoldEnabledAfterChange = true,
+            legalHoldStatusForConversationChanged = false,
+            handleEnabledForConversationInvoked = false,
+            handleDisabledForConversationInvoked = false,
+        )
+
+    @Test
+    fun givenNoMemberWithLHEnabled_AndLHForConversationDidNotChange_whenHandlingMembersChanged_thenDoNotHandleForConversation() =
+        testHandlingConversationMembersChanged(
+            thereAreMembersWithLegalHoldEnabledAfterChange = true,
+            legalHoldStatusForConversationChanged = false,
+            handleEnabledForConversationInvoked = false,
+            handleDisabledForConversationInvoked = false,
+        )
+
     private class Arrangement {
 
         @Mock

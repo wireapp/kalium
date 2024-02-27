@@ -1790,6 +1790,26 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenEstablishedSelfMLSConversation_whenGettingEstablishedSelfMLSGroupId_thenShouldReturnEstablishedSelfMLSGroupId() = runTest {
+        // given
+        val expected = (conversationEntity4.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+        conversationDAO.insertConversation(
+            conversationEntity4.copy(
+                type = ConversationEntity.Type.SELF
+            )
+        )
+
+        // when
+        val result = conversationDAO.getEstablishedSelfMLSGroupId()
+
+        // then
+        assertEquals(
+            expected,
+            result
+        )
+    }
+
+    @Test
     fun givenConversationWithGuestLink_whenCallingDelete_thenTheLinkIsDeleted() = runTest {
         val conversationId = QualifiedIDEntity("conversationId", "domain")
         conversationDAO.insertConversation(conversationEntity1.copy(conversationId))

@@ -116,4 +116,5 @@ interface ConversationDAO {
     suspend fun observeLegalHoldStatusChangeNotified(conversationId: QualifiedIDEntity): Flow<Boolean>
     suspend fun getMLSGroupIdByUserId(userId: UserIDEntity): String?
     suspend fun getMLSGroupIdByConversationId(conversationId: QualifiedIDEntity): String?
+    suspend fun getEstablishedSelfMLSGroupId(): String?
 }

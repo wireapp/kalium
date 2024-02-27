@@ -39,6 +39,7 @@ import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.member.MemberDAO
 
@@ -51,6 +52,7 @@ internal class MemberLeaveEventHandlerImpl(
     private val userRepository: UserRepository,
     private val persistMessage: PersistMessageUseCase,
     private val updateConversationClientsForCurrentCall: Lazy<UpdateConversationClientsForCurrentCallUseCase>,
+    private val legalHoldHandler: LegalHoldHandler,
     private val selfTeamIdProvider: SelfTeamIdProvider
 ) : MemberLeaveEventHandler {
 
@@ -88,6 +90,7 @@ internal class MemberLeaveEventHandlerImpl(
                         Either.Right(Unit)
                     }
                 }
+                legalHoldHandler.handleConversationMembersChanged(event.conversationId)
             }.onSuccess {
                 kaliumLogger
                     .logEventProcessing(
