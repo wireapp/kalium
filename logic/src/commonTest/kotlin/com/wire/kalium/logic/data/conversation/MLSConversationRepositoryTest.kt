@@ -32,6 +32,7 @@ import com.wire.kalium.cryptography.RotateBundle
 import com.wire.kalium.cryptography.WelcomeBundle
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.COMMIT_BUNDLE
@@ -58,6 +59,7 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
@@ -1189,7 +1191,7 @@ class MLSConversationRepositoryTest {
             .arrange()
 
         assertEquals(
-            TEST_FAILURE,
+            E2EIFailure.RotationAndMigration(TEST_FAILURE.value).left(),
             mlsConversationRepository.rotateKeysAndMigrateConversations(TestClient.CLIENT_ID, arrangement.e2eiClient, "")
         )
 
