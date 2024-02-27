@@ -303,20 +303,7 @@ class E2EIRepositoryImpl(
         Either.Right(e2EIClient.getOAuthRefreshToken())
     }
 
-<<<<<<< HEAD
-    override suspend fun fetchFederationCertificates(): Either<CoreFailure, Unit> = discoveryUrl()
-        .flatMap {
-            wrapApiRequest {
-                acmeApi.getACMEFederation(Url(it).protocolWithAuthority)
-            }.flatMap { data ->
-                mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                    wrapMLSRequest {
-                        mlsClient.registerIntermediateCa(data)
-                    }
-                }
-            }
-=======
-    override suspend fun fetchFederationCertificates() =
+    override suspend fun fetchFederationCertificates(): Either<CoreFailure, Unit> =
         discoveryUrl().flatMap {
             wrapApiRequest {
                 acmeApi.getACMEFederation(it)
@@ -331,7 +318,6 @@ class E2EIRepositoryImpl(
                     }
                 })
             })
->>>>>>> 4d9c0d1843 (fix: wrap registerCrl and registerIntermediateCa in try catch and wrapE2EIRequest (#2549))
         }
 
     override fun discoveryUrl(): Either<CoreFailure, String> =
