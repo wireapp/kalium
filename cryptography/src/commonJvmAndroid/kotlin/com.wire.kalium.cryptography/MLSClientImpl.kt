@@ -306,12 +306,24 @@ class MLSClientImpl(
         }
     }
 
-    override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration {
-        return toCrlRegistration(coreCrypto.e2eiRegisterCrl(url, crl))
+    @Suppress("TooGenericExceptionCaught")
+    override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration = try {
+        toCrlRegistration(coreCrypto.e2eiRegisterCrl(url, crl))
+    } catch (exception: Exception) {
+        kaliumLogger.w("Registering Crl failed, exception: $exception")
+        CrlRegistration(
+            dirty = false,
+            expiration = null
+        )
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun registerIntermediateCa(pem: CertificateChain) {
-        coreCrypto.e2eiRegisterIntermediateCa(pem)
+        try {
+            coreCrypto.e2eiRegisterIntermediateCa(pem)
+        } catch (exception: Exception) {
+            kaliumLogger.w("Registering IntermediateCa failed, exception: $exception")
+        }
     }
 
     companion object {
