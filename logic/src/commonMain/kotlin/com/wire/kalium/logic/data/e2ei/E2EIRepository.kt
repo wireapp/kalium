@@ -336,7 +336,8 @@ class E2EIRepositoryImpl(
         e2EIClient.getOAuthRefreshToken().right()
     }
 
-    override suspend fun fetchFederationCertificates() = discoveryUrl().flatMap {
+    override suspend fun fetchFederationCertificates() =
+        discoveryUrl().flatMap {
             wrapApiRequest {
                 acmeApi.getACMEFederation(it)
             }.fold({
@@ -346,7 +347,7 @@ class E2EIRepositoryImpl(
                     E2EIFailure.TrustAnchors(it).left()
                 }, { clientId ->
                     mlsClientProvider.getCoreCrypto(clientId).fold({
-                        E2EIFailure.TrustAnchors(it).left()
+                        E2EIFailure.MissingMLSClient(it).left()
                     }, { coreCrypto ->
                         wrapE2EIRequest {
                             coreCrypto.registerIntermediateCa(data)
