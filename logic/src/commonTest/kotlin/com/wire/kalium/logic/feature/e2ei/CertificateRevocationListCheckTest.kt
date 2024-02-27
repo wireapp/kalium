@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import io.mockative.Mock
@@ -77,7 +78,7 @@ class CertificateRevocationListCheckTest {
         val checkRevocationList = mock(classOf<CheckRevocationListUseCase>())
 
         fun arrange() = this to CertificateRevocationListCheckWorkerImpl(
-            certificateRevocationListRepository, incrementalSyncRepository, checkRevocationList
+            certificateRevocationListRepository, incrementalSyncRepository, checkRevocationList, kaliumLogger
         )
 
         fun withNoCRL() = apply {

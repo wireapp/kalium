@@ -242,10 +242,10 @@ import com.wire.kalium.logic.feature.legalhold.MembersHavingLegalHoldClientUseCa
 import com.wire.kalium.logic.feature.legalhold.MembersHavingLegalHoldClientUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldChangeNotifiedForSelfUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldChangeNotifiedForSelfUseCaseImpl
-import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserUseCase
-import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldRequestUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldRequestUseCaseImpl
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserUseCase
+import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForSelfUserUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCaseImpl
 import com.wire.kalium.logic.feature.legalhold.UpdateSelfClientCapabilityToLegalHoldConsentUseCase
@@ -446,7 +446,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
@@ -487,10 +486,8 @@ class UserSessionScope internal constructor(
             }
         }
 
-    private val clientIdStateFlow = MutableStateFlow<ClientId?>(null)
-
     private val userScopedLogger: KaliumLogger = kaliumLogger.withUserDeviceData {
-        KaliumLogger.UserClientData(userId.toLogString(), clientIdStateFlow.value?.value?.obfuscateId() ?: "")
+        KaliumLogger.UserClientData(userId.toLogString(), _clientId?.value?.obfuscateId() ?: "")
     }
 
     private val cachedClientIdClearer: CachedClientIdClearer = object : CachedClientIdClearer {
@@ -713,6 +710,7 @@ class UserSessionScope internal constructor(
             userStorage.database.conversationDAO,
             authenticatedNetworkContainer.conversationApi,
             newConversationMembersRepository,
+            userRepository,
             lazy { conversations.newGroupConversationSystemMessagesCreator },
             userId,
             selfTeamId
@@ -920,7 +918,7 @@ class UserSessionScope internal constructor(
         get() = SyncSelfTeamUseCaseImpl(
             userRepository = userRepository,
             teamRepository = teamRepository,
-            fetchAllTeamMembersEagerly = kaliumConfigs.fetchAllTeamMembersEagerly
+            fetchedUsersLimit = kaliumConfigs.limitTeamMembersFetchDuringSlowSync
         )
 
     private val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase
@@ -1051,7 +1049,8 @@ class UserSessionScope internal constructor(
             incrementalSyncRepository,
             clientRepository,
             recoverMLSConversationsUseCase,
-            slowSyncRepository
+            slowSyncRepository,
+            userScopedLogger
         )
     }
 
@@ -1059,7 +1058,8 @@ class UserSessionScope internal constructor(
         ConversationsRecoveryManagerImpl(
             incrementalSyncRepository,
             addSystemMessageToAllConversationsUseCase,
-            slowSyncRepository
+            slowSyncRepository,
+            userScopedLogger
         )
     }
 
@@ -1453,7 +1453,8 @@ class UserSessionScope internal constructor(
             clientRemoteRepository = clientRemoteRepository,
             userConfigRepository = userConfigRepository,
             selfClientIdProvider = clientIdProvider,
-            incrementalSyncRepository = incrementalSyncRepository
+            incrementalSyncRepository = incrementalSyncRepository,
+            kaliumLogger = userScopedLogger,
         )
 
     private val legalHoldHandler = LegalHoldHandlerImpl(
@@ -1556,7 +1557,7 @@ class UserSessionScope internal constructor(
         get() = CertificateRevocationListRepositoryDataSource(
             acmeApi = globalScope.unboundNetworkContainer.acmeApi,
             metadataDAO = userStorage.database.metadataDAO,
-            e2eiRepository = e2eiRepository
+            userConfigRepository = userConfigRepository
         )
 
     private val proteusPreKeyRefiller: ProteusPreKeyRefiller
@@ -1566,7 +1567,8 @@ class UserSessionScope internal constructor(
         ProteusSyncWorkerImpl(
             incrementalSyncRepository = incrementalSyncRepository,
             proteusPreKeyRefiller = proteusPreKeyRefiller,
-            preKeyRepository = preKeyRepository
+            preKeyRepository = preKeyRepository,
+            kaliumLogger = userScopedLogger,
         )
     }
 
@@ -1575,6 +1577,7 @@ class UserSessionScope internal constructor(
             certificateRevocationListRepository = certificateRevocationListRepository,
             incrementalSyncRepository = incrementalSyncRepository,
             checkRevocationList = checkRevocationList,
+            kaliumLogger = userScopedLogger,
         )
     }
 
@@ -1582,6 +1585,7 @@ class UserSessionScope internal constructor(
         FeatureFlagSyncWorkerImpl(
             incrementalSyncRepository = incrementalSyncRepository,
             syncFeatureConfigs = syncFeatureConfigsUseCase,
+            kaliumLogger = userScopedLogger,
         )
     }
 
@@ -1601,7 +1605,8 @@ class UserSessionScope internal constructor(
     private val avsSyncStateReporter: AvsSyncStateReporter by lazy {
         AvsSyncStateReporterImpl(
             callManager = callManager,
-            observeSyncStateUseCase = observeSyncState
+            observeSyncStateUseCase = observeSyncState,
+            kaliumLogger = userScopedLogger,
         )
     }
 
@@ -1624,7 +1629,10 @@ class UserSessionScope internal constructor(
         )
 
     private val acmeCertificatesSyncWorker: ACMECertificatesSyncWorker by lazy {
-        ACMECertificatesSyncWorkerImpl(e2eiRepository)
+        ACMECertificatesSyncWorkerImpl(
+            e2eiRepository = e2eiRepository,
+            kaliumLogger = userScopedLogger,
+        )
     }
 
     private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase
@@ -1710,7 +1718,8 @@ class UserSessionScope internal constructor(
             staleEpochVerifier,
             eventProcessor,
             legalHoldHandler,
-            this
+            this,
+            userScopedLogger,
         )
     val messages: MessageScope
         get() = MessageScope(
@@ -1740,7 +1749,8 @@ class UserSessionScope internal constructor(
             messageMetadataRepository,
             staleEpochVerifier,
             legalHoldHandler,
-            this
+            this,
+            userScopedLogger,
         )
     val users: UserScope
         get() = UserScope(
@@ -1766,7 +1776,8 @@ class UserSessionScope internal constructor(
             updateSupportedProtocols,
             clientRepository,
             joinExistingMLSConversations,
-            refreshUsersWithoutMetadata
+            refreshUsersWithoutMetadata,
+            userScopedLogger,
         )
 
     val search: SearchScope
@@ -1958,12 +1969,17 @@ class UserSessionScope internal constructor(
             persistMessage,
             conversationVerificationStatusChecker,
             epochChangesObserver,
-            userId
+            userId,
+            userScopedLogger,
         )
     }
 
     private val typingIndicatorSyncManager: TypingIndicatorSyncManager =
-        TypingIndicatorSyncManager(lazy { conversations.typingIndicatorIncomingRepository }, observeSyncState)
+        TypingIndicatorSyncManager(
+            typingIndicatorIncomingRepository = lazy { conversations.typingIndicatorIncomingRepository },
+            observeSyncStateUseCase = observeSyncState,
+            kaliumLogger = userScopedLogger,
+        )
 
     init {
         launch {
@@ -1973,7 +1989,7 @@ class UserSessionScope internal constructor(
             slowSyncManager
 
             callRepository.updateOpenCallsToClosedStatus()
-            messageRepository.resetAssetProgressStatus()
+            messageRepository.resetAssetTransferStatus()
         }
 
         launch {

@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.debug
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -85,7 +86,8 @@ class DebugScope internal constructor(
     private val eventProcessor: EventProcessor,
     private val legalHoldHandler: LegalHoldHandler,
     private val scope: CoroutineScope,
-    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+    private val logger: KaliumLogger,
+    internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
 ) {
 
     val breakSession: BreakSessionUseCase
@@ -97,7 +99,8 @@ class DebugScope internal constructor(
             assetRepository,
             userId,
             slowSyncRepository,
-            messageSender
+            messageSender,
+            messageRepository
         )
 
     val sendConfirmation: SendConfirmationUseCase
@@ -188,6 +191,7 @@ class DebugScope internal constructor(
             messageRepository = messageRepository,
             deleteEphemeralMessageForSelfUserAsReceiver = deleteEphemeralMessageForSelfUserAsReceiver,
             deleteEphemeralMessageForSelfUserAsSender = deleteEphemeralMessageForSelfUserAsSender,
-            selfUserId = userId
+            selfUserId = userId,
+            kaliumLogger = logger
         )
 }
