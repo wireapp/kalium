@@ -57,7 +57,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
 
         e2EIRepository.initFreshE2EIClient(isNewClient = isNewClientRegistration)
 
-        //e2EIRepository.fetchAndSetTrustAnchors()
+        e2EIRepository.fetchAndSetTrustAnchors()
 
         val acmeDirectories = e2EIRepository.loadACMEDirectories().getOrFail {
             return it.left() }
