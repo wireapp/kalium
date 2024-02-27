@@ -60,48 +60,27 @@ class EnrollE2EIUseCaseImpl internal constructor(
         e2EIRepository.fetchAndSetTrustAnchors()
 
         val acmeDirectories = e2EIRepository.loadACMEDirectories().getOrFail {
-<<<<<<< HEAD
-            return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeDirectories, it).toEitherLeft()
+            return it.left()
         }
 
         var prevNonce = e2EIRepository.getACMENonce(acmeDirectories.newNonce).getOrFail {
-            return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNonce, it).toEitherLeft()
+            return it.left()
         }
 
         prevNonce = e2EIRepository.createNewAccount(prevNonce, acmeDirectories.newAccount).getOrFail {
-            return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNewAccount, it).toEitherLeft()
+            return it.left()
         }
 
         val newOrderResponse = e2EIRepository.createNewOrder(prevNonce, acmeDirectories.newOrder).getOrFail {
-            return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.AcmeNewOrder, it).toEitherLeft()
+            return it.left()
         }
-
-        prevNonce = newOrderResponse.second
-        val authorizations = e2EIRepository.getAuthorizations(prevNonce, newOrderResponse.first.authorizations)
-            .getOrFail {
-                return E2EIEnrollmentResult.Failed(
-                    E2EIEnrollmentResult.E2EIStep.AcmeNewAuthz,
-                    it
-                ).toEitherLeft()
-            }
-=======
-            return it.left() }
-
-        var prevNonce = e2EIRepository.getACMENonce(acmeDirectories.newNonce).getOrFail {
-            return it.left() }
-
-        prevNonce = e2EIRepository.createNewAccount(prevNonce, acmeDirectories.newAccount).getOrFail {
-            return it.left() }
-
-        val newOrderResponse = e2EIRepository.createNewOrder(prevNonce, acmeDirectories.newOrder).getOrFail {
-            return it.left() }
 
         prevNonce = newOrderResponse.second
 
         val authorizations =
             e2EIRepository.getAuthorizations(prevNonce, newOrderResponse.first.authorizations).getOrFail {
-                return it.left() }
->>>>>>> 630462f7b8 (fix(e2ei): error handling (WPB-6271) (#2522))
+                return it.left()
+            }
 
         prevNonce = authorizations.nonce
         val oidcAuthorizations = authorizations.oidcAuthorization
@@ -188,11 +167,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
         e2EIRepository
             .rotateKeysAndMigrateConversations(certificateRequest.response.decodeToString())
             .onFailure {
-<<<<<<< HEAD
-                return E2EIEnrollmentResult.Failed(E2EIEnrollmentResult.E2EIStep.ConversationMigration, it).toEitherLeft()
-=======
                 return it.left()
->>>>>>> 630462f7b8 (fix(e2ei): error handling (WPB-6271) (#2522))
             }
 
         return E2EIEnrollmentResult.Finalized(certificateRequest.response.decodeToString()).right()

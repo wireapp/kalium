@@ -50,16 +50,6 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 interface E2EIRepository {
-<<<<<<< HEAD
-    suspend fun initFreshE2EIClient(clientId: ClientId? = null, isNewClient: Boolean = false): Either<CoreFailure, Unit>
-    suspend fun fetchAndSetTrustAnchors(): Either<CoreFailure, Unit>
-    suspend fun getWireAccessToken(wireNonce: String): Either<CoreFailure, AccessTokenResponse>
-    suspend fun loadACMEDirectories(): Either<CoreFailure, AcmeDirectory>
-    suspend fun getACMENonce(endpoint: String): Either<CoreFailure, Nonce>
-    suspend fun createNewAccount(prevNonce: Nonce, createAccountEndpoint: String): Either<CoreFailure, Nonce>
-    suspend fun createNewOrder(prevNonce: Nonce, createOrderEndpoint: String): Either<CoreFailure, Triple<NewAcmeOrder, Nonce, String>>
-    suspend fun createAuthorization(prevNonce: Nonce, endpoint: String): Either<CoreFailure, AcmeAuthorization>
-=======
     suspend fun initFreshE2EIClient(clientId: ClientId? = null, isNewClient: Boolean = false): Either<E2EIFailure, Unit>
     suspend fun fetchAndSetTrustAnchors(): Either<E2EIFailure, Unit>
     suspend fun loadACMEDirectories(): Either<E2EIFailure, AcmeDirectory>
@@ -67,21 +57,15 @@ interface E2EIRepository {
     suspend fun createNewAccount(prevNonce: Nonce, createAccountEndpoint: String): Either<E2EIFailure, Nonce>
     suspend fun createNewOrder(prevNonce: Nonce, createOrderEndpoint: String): Either<E2EIFailure, Triple<NewAcmeOrder, Nonce, String>>
     suspend fun createAuthorization(prevNonce: Nonce, endpoint: String): Either<E2EIFailure, AcmeAuthorization>
->>>>>>> 630462f7b8 (fix(e2ei): error handling (WPB-6271) (#2522))
 
     suspend fun getAuthorizations(
         prevNonce: Nonce,
         authorizationsEndpoints: List<String>
     ): Either<E2EIFailure, AuthorizationResult>
 
-<<<<<<< HEAD
-    suspend fun getWireNonce(): Either<CoreFailure, Nonce>
-    suspend fun getDPoPToken(wireNonce: Nonce): Either<CoreFailure, String>
-=======
     suspend fun getWireNonce(): Either<E2EIFailure, Nonce>
     suspend fun getWireAccessToken(dpopToken: String): Either<E2EIFailure, AccessTokenResponse>
     suspend fun getDPoPToken(wireNonce: Nonce): Either<E2EIFailure, String>
->>>>>>> 630462f7b8 (fix(e2ei): error handling (WPB-6271) (#2522))
     suspend fun validateDPoPChallenge(
         accessToken: String,
         prevNonce: Nonce,
@@ -159,15 +143,11 @@ class E2EIRepositoryImpl(
 
     override suspend fun getACMENonce(endpoint: String) = wrapApiRequest {
         acmeApi.getACMENonce(endpoint)
-<<<<<<< HEAD
-    }.map { Nonce(it) }
-=======
     }.fold({
         E2EIFailure.AcmeNonce(it).left()
     }, {
         Nonce(it).right()
     })
->>>>>>> 630462f7b8 (fix(e2ei): error handling (WPB-6271) (#2522))
 
     override suspend fun createNewAccount(prevNonce: Nonce, createAccountEndpoint: String) =
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
