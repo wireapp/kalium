@@ -78,7 +78,7 @@ class E2EIClientProviderTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.mlsClientProvider)
-            .suspendFunction(arrangement.mlsClientProvider::getMLSClient, fun1<ClientId>())
+            .suspendFunction(arrangement.mlsClientProvider::getMLSClient)
             .with(any())
             .wasInvoked(exactly = once)
 
@@ -110,7 +110,7 @@ class E2EIClientProviderTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.mlsClientProvider)
-            .suspendFunction(arrangement.mlsClientProvider::getMLSClient, fun1<ClientId>())
+            .suspendFunction(arrangement.mlsClientProvider::getMLSClient)
             .with(any())
             .wasNotInvoked()
 

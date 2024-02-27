@@ -24,7 +24,6 @@ import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.NewAcmeAuthz
 import com.wire.kalium.cryptography.NewAcmeOrder
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.E2EISettings
@@ -866,7 +865,8 @@ class E2EIRepositoryTest {
         val (arrangement, e2eiRepository) = Arrangement()
             .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS))
             .withAcmeFederationApiSucceed()
-            .withGetMLSClientSuccessful()
+            .withCurrentClientIdProviderSuccessful()
+            .withGetCoreCryptoSuccessful()
             .withRegisterIntermediateCABag()
             .arrange()
 
@@ -931,7 +931,9 @@ class E2EIRepositoryTest {
         val (arrangement, e2eiRepository) = Arrangement()
             .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(discoverUrl = RANDOM_URL)))
             .withFetchAcmeTrustAnchorsApiSucceed()
-            .withGetMLSClientSuccessful()
+            .withCurrentClientIdProviderSuccessful()
+            .withCurrentClientIdProviderSuccessful()
+            .withGetCoreCryptoSuccessful()
             .withRegisterTrustAnchors()
             .arrange()
 

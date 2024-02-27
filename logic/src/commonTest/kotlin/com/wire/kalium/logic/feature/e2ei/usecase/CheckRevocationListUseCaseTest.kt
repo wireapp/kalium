@@ -268,7 +268,7 @@ class CheckRevocationListUseCaseTest {
 
         fun withMlsClientProviderFailure() = apply {
             given(mlsClientProvider)
-                .suspendFunction(mlsClientProvider::getMLSClient)
+                .suspendFunction(mlsClientProvider::getCoreCrypto)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Left(CoreFailure.SyncEventOrClientNotFound))
         }

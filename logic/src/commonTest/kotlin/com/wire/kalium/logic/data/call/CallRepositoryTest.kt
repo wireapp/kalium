@@ -66,7 +66,6 @@ import io.mockative.any
 import io.mockative.classOf
 import io.mockative.configure
 import io.mockative.eq
-import io.mockative.fun1
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
@@ -1701,7 +1700,7 @@ class CallRepositoryTest {
 
         fun givenGetMLSClientSucceeds() = apply {
             given(mlsClientProvider)
-                .suspendFunction(mlsClientProvider::getMLSClient, fun1<ClientId>())
+                .suspendFunction(mlsClientProvider::getMLSClient)
                 .whenInvokedWith(eq(null))
                 .thenReturn(Either.Right(mlsClient))
         }
