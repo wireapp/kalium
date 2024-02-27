@@ -22,6 +22,7 @@ import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoCallbacks
 import com.wire.crypto.client.Ciphersuites
 import com.wire.crypto.coreCryptoDeferredInit
+import com.wire.kalium.cryptography.MLSClientImpl.Companion.toCrlRegistration
 import com.wire.kalium.cryptography.exceptions.CryptographyException
 import java.io.File
 
@@ -113,12 +114,24 @@ class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: Str
         }
     }
 
-    override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration {
-        return MLSClientImpl.toCrlRegistration(cc.e2eiRegisterCrl(url, crl))
+    @Suppress("TooGenericExceptionCaught")
+    override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration = try {
+        toCrlRegistration(cc.e2eiRegisterCrl(url, crl))
+    } catch (exception: Exception) {
+        kaliumLogger.w("Registering Crl failed, exception: $exception")
+        CrlRegistration(
+            dirty = false,
+            expiration = null
+        )
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun registerIntermediateCa(pem: CertificateChain) {
-        cc.e2eiRegisterIntermediateCa(pem)
+        try {
+            cc.e2eiRegisterIntermediateCa(pem)
+        } catch (exception: Exception) {
+            kaliumLogger.w("Registering IntermediateCa failed, exception: $exception")
+        }
     }
 
     companion object {
