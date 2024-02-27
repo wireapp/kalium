@@ -1788,6 +1788,26 @@ class ConversationDAOTest : BaseDatabaseTest() {
         assertEquals(expected, result)
     }
 
+    @Test
+    fun givenEstablishedSelfMLSConversation_whenGettingEstablishedSelfMLSGroupId_thenShouldReturnEstablishedSelfMLSGroupId() = runTest {
+        // given
+        val expected = (conversationEntity4.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+        conversationDAO.insertConversation(
+            conversationEntity4.copy(
+                type = ConversationEntity.Type.SELF
+            )
+        )
+
+        // when
+        val result = conversationDAO.getEstablishedSelfMLSGroupId()
+
+        // then
+        assertEquals(
+            expected,
+            result
+        )
+    }
+
     private fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity {
         val protocol: ConversationEntity.Protocol
         val mlsGroupId: String?
