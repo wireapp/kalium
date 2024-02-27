@@ -658,7 +658,8 @@ class UserSessionScope internal constructor(
             proposalTimersFlow,
             keyPackageLimitsProvider,
             checkRevocationList,
-            certificateRevocationListRepository
+            certificateRevocationListRepository,
+            sessionManager.getServerConfig().links,
         )
 
     private val e2eiRepository: E2EIRepository
@@ -1367,7 +1368,8 @@ class UserSessionScope internal constructor(
 
     private val conversationCodeUpdateHandler: CodeUpdatedHandler
         get() = CodeUpdateHandlerImpl(
-            conversationDAO = userStorage.database.conversationDAO
+            conversationDAO = userStorage.database.conversationDAO,
+            sessionManager.getServerConfig().links
         )
 
     private val conversationCodeDeletedHandler: CodeDeletedHandler
@@ -1701,7 +1703,8 @@ class UserSessionScope internal constructor(
             oneOnOneResolver,
             this,
             userScopedLogger,
-            refreshUsersWithoutMetadata
+            refreshUsersWithoutMetadata,
+            sessionManager.getServerConfig().links
         )
     }
 

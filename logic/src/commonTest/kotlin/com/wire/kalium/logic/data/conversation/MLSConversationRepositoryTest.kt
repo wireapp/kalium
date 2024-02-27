@@ -63,6 +63,7 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
@@ -1474,6 +1475,8 @@ class MLSConversationRepositoryTest {
 
         val proposalTimersFlow = MutableSharedFlow<ProposalTimer>()
 
+        val serverConfigLink = newServerConfig(1).links
+
         init {
             withCommitBundleEventReceiverSucceeding()
         }
@@ -1492,7 +1495,8 @@ class MLSConversationRepositoryTest {
             proposalTimersFlow,
             keyPackageLimitsProvider,
             checkRevocationList,
-            certificateRevocationListRepository
+            certificateRevocationListRepository,
+            serverConfigLink
         )
 
         fun withCommitBundleEventReceiverSucceeding() = apply {
