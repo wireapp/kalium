@@ -118,12 +118,16 @@ class E2EIRepositoryImpl(
         }.fold({
             E2EIFailure.TrustAnchors(it).left()
         }, { trustAnchors ->
-            mlsClientProvider.getMLSClient().fold({
+            currentClientIdProvider().fold({
+                E2EIFailure.TrustAnchors(it).left()
+            }, { clientId ->
+                mlsClientProvider.getCoreCrypto(clientId).fold({
                 E2EIFailure.MissingMLSClient(it).left()
-            }, { mlsClient ->
+                }, { coreCrypto ->
                 wrapE2EIRequest {
-                    mlsClient.registerTrustAnchors(trustAnchors.decodeToString())
+                    coreCrypto.registerTrustAnchors(trustAnchors.decodeToString())
                 }
+                })
             })
         })
     }
@@ -321,13 +325,9 @@ class E2EIRepositoryImpl(
     override suspend fun initiateMLSClient(certificateChain: String): Either<E2EIFailure, Unit> {
         return e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
             currentClientIdProvider().fold({
-                E2EIFailure.RotationAndMigration(it).left()
+                E2EIFailure.InitMLSClient(it).left()
             }, { clientId ->
-                mlsClientProvider.getMLSClient(e2eiClient, certificateChain, clientId).fold({
-                    E2EIFailure.RotationAndMigration(it).left()
-                }, {
-                    Unit.right()
-                })
+                mlsClientProvider.initMLSClientWithCertificate(e2eiClient, certificateChain, clientId)
             })
         }
     }
@@ -342,14 +342,18 @@ class E2EIRepositoryImpl(
             }.fold({
                 E2EIFailure.IntermediateCert(it).left()
             }, { data ->
-                mlsClientProvider.getMLSClient().fold({
-                    E2EIFailure.MissingMLSClient(it).left()
-                }, { mlsClient ->
-                    mlsClient.registerIntermediateCa(data)
-                    Unit.right()
+                currentClientIdProvider().fold({
+                    E2EIFailure.TrustAnchors(it).left()
+                }, { clientId ->
+                    mlsClientProvider.getCoreCrypto(clientId).fold({
+                        E2EIFailure.TrustAnchors(it).left()
+                    }, { coreCrypto ->
+                        wrapE2EIRequest {
+                            coreCrypto.registerIntermediateCa(data)
+                        }
+                    })
                 })
             })
-
         }
 
     override fun discoveryUrl() =

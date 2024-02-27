@@ -214,6 +214,7 @@ interface E2EIFailure : CoreFailure {
     data class CheckOrderRequest(internal val reason: CoreFailure) : E2EIFailure
     data class FinalizeRequest(internal val reason: CoreFailure) : E2EIFailure
     data class RotationAndMigration(internal val reason: CoreFailure) : E2EIFailure
+    data class InitMLSClient(internal val reason: CoreFailure) : E2EIFailure
     data class Certificate(internal val reason: CoreFailure) : E2EIFailure
     class Generic(internal val exception: Exception) : E2EIFailure {
         val rootCause: Throwable get() = exception

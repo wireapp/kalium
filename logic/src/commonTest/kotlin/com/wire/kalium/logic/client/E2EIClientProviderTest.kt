@@ -19,6 +19,7 @@ package com.wire.kalium.logic.client
 
 import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.EI2EIClientProviderImpl
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.E2EIClientProviderArrangement
@@ -26,6 +27,7 @@ import com.wire.kalium.logic.util.arrangement.provider.E2EIClientProviderArrange
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
+import io.mockative.fun1
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
@@ -76,7 +78,7 @@ class E2EIClientProviderTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.mlsClientProvider)
-            .suspendFunction(arrangement.mlsClientProvider::getMLSClient)
+            .suspendFunction(arrangement.mlsClientProvider::getMLSClient, fun1<ClientId>())
             .with(any())
             .wasInvoked(exactly = once)
 
@@ -108,7 +110,7 @@ class E2EIClientProviderTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.mlsClientProvider)
-            .suspendFunction(arrangement.mlsClientProvider::getMLSClient)
+            .suspendFunction(arrangement.mlsClientProvider::getMLSClient, fun1<ClientId>())
             .with(any())
             .wasNotInvoked()
 

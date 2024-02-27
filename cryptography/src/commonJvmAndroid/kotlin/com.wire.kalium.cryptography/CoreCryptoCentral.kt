@@ -22,6 +22,7 @@ import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoCallbacks
 import com.wire.crypto.client.Ciphersuites
 import com.wire.crypto.coreCryptoDeferredInit
+import com.wire.kalium.cryptography.exceptions.CryptographyException
 import java.io.File
 
 actual suspend fun coreCryptoCentral(rootDir: String, databaseKey: String): CoreCryptoCentral {
@@ -102,6 +103,22 @@ class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: Str
             )
 
         )
+    }
+
+    override suspend fun registerTrustAnchors(pem: CertificateChain) {
+        try {
+            cc.e2eiRegisterAcmeCa(pem)
+        } catch (e: CryptographyException) {
+            kaliumLogger.w("Registering TrustAnchors failed")
+        }
+    }
+
+    override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration {
+        return MLSClientImpl.toCrlRegistration(cc.e2eiRegisterCrl(url, crl))
+    }
+
+    override suspend fun registerIntermediateCa(pem: CertificateChain) {
+        cc.e2eiRegisterIntermediateCa(pem)
     }
 
     companion object {

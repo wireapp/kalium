@@ -167,16 +167,4 @@ class MLSClientImpl : MLSClient {
     override suspend fun getUserIdentities(groupId: MLSGroupId, users: List<CryptoQualifiedID>): Map<String, List<WireIdentity>> {
         TODO("Not yet implemented")
     }
-
-    override suspend fun registerTrustAnchors(pem: CertificateChain) {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun registerIntermediateCa(pem: CertificateChain) {
-        TODO("Not yet implemented")
-    }
 }

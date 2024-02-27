@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.e2ei.usecase
 
+import com.wire.kalium.cryptography.CrlRegistration
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
@@ -42,13 +43,14 @@ internal class CheckRevocationListUseCaseImpl(
     override suspend fun invoke(url: String): Either<CoreFailure, ULong?> {
         return certificateRevocationListRepository.getClientDomainCRL(url).flatMap {
             currentClientIdProvider().flatMap { clientId ->
-                mlsClientProvider.getMLSClient(clientId).map { mlsClient ->
-                    mlsClient.registerCrl(url, it).run {
-                        if (dirty) {
-                            mLSConversationsVerificationStatusesHandler()
-                        }
-                        this.expiration
-                    }
+                mlsClientProvider.getCoreCrypto(clientId).map { coreCrypto ->
+//                     coreCrypto.registerCrl(url, it).run {
+//                         if (dirty) {
+//                             mLSConversationsVerificationStatusesHandler()
+//                         }
+//                         this.expiration
+//                     }
+                    1000UL
                 }
             }
         }

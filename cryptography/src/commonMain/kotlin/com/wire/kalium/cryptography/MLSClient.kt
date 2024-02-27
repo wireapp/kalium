@@ -449,23 +449,4 @@ interface MLSClient {
         groupId: MLSGroupId,
         users: List<CryptoQualifiedID>
     ): Map<String, List<WireIdentity>>
-
-    /**
-     * Register ACME-CA certificates for E2EI
-     * @param pem is the certificate string in pem format
-     */
-    suspend fun registerTrustAnchors(pem: CertificateChain)
-
-    /**
-     * Register Certificate Revocations List for a url for E2EI
-     * @param url that the CRL downloaded from
-     * @param crl fetched crl from the url
-     */
-    suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration
-
-    /**
-     * Register Intermediate CA for E2EI
-     * @param pem fetched certificate chain in pem format from the CA
-     */
-    suspend fun registerIntermediateCa(pem: CertificateChain)
 }

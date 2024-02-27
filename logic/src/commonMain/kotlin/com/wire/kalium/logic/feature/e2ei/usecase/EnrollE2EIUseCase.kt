@@ -161,16 +161,14 @@ class EnrollE2EIUseCaseImpl internal constructor(
                 return it.left() }
 
         if (isNewClientRegistration) {
-            e2EIRepository.initiateMLSClient(certificateRequest.response.decodeToString())
+            e2EIRepository.initiateMLSClient(certificateRequest.response.decodeToString()).onFailure {
+                return it.left()
+            }
         } else {
-            e2EIRepository
-                .rotateKeysAndMigrateConversations(
+            e2EIRepository.rotateKeysAndMigrateConversations(
                     certificateRequest.response.decodeToString(),
                     initializationResult.isNewClientRegistration
-                )
-                .onFailure {
-                    return it.left()
-                }
+            ).onFailure { return it.left() }
         }
 
         return E2EIEnrollmentResult.Finalized(certificateRequest.response.decodeToString()).right()

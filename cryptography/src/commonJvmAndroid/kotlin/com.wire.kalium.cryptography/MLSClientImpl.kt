@@ -280,22 +280,6 @@ class MLSClientImpl(
         }
     }
 
-    override suspend fun registerTrustAnchors(pem: CertificateChain) {
-        try {
-            coreCrypto.e2eiRegisterAcmeCa(pem)
-        } catch (e: CryptographyException) {
-            kaliumLogger.w("Registering TrustAnchors failed")
-        }
-    }
-
-    override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration {
-        return toCrlRegistration(coreCrypto.e2eiRegisterCrl(url, crl))
-    }
-
-    override suspend fun registerIntermediateCa(pem: CertificateChain) {
-        coreCrypto.e2eiRegisterIntermediateCa(pem)
-    }
-
     companion object {
         fun toUByteList(value: ByteArray): List<UByte> = value.asUByteArray().asList()
         fun toUByteList(value: String): List<UByte> = value.encodeToByteArray().asUByteArray().asList()

@@ -43,7 +43,7 @@ internal class ACMECertificatesSyncWorkerImpl(
         intervalFlow(syncInterval.inWholeMilliseconds)
             .collect {
                 logger.i("Fetching federation certificates")
-                e2eiRepository.fetchFederationCertificates()
+                //e2eiRepository.fetchFederationCertificates()
             }
     }
 

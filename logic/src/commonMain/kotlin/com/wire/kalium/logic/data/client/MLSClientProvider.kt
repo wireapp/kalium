@@ -55,11 +55,11 @@ interface MLSClientProvider {
     suspend fun getCoreCrypto(clientId: ClientId? = null): Either<CoreFailure, CoreCryptoCentral>
 
     suspend fun clearLocalFiles()
-    suspend fun getMLSClient(
+    suspend fun initMLSClientWithCertificate(
         enrollment: E2EIClient,
         certificateChain: CertificateChain,
         clientId: ClientId?
-    ): Either<E2EIFailure, MLSClient>
+    ): Either<E2EIFailure, Unit>
 }
 
 class MLSClientProviderImpl(
@@ -96,15 +96,15 @@ class MLSClientProviderImpl(
         }
     }
 
-    override suspend fun getMLSClient(
+    override suspend fun initMLSClientWithCertificate(
         enrollment: E2EIClient,
         certificateChain: CertificateChain, clientId: ClientId?
-    ): Either<E2EIFailure, MLSClient> = mlsClientMutex.withLock {
+    ): Either<E2EIFailure, Unit> = mlsClientMutex.withLock {
         withContext(dispatchers.io) {
             val currentClientId =
                 clientId ?: currentClientIdProvider().fold({ return@withContext E2EIFailure.GettingE2EIClient(it).left() }, { it })
             return@withContext mlsClient?.let {
-                Either.Right(it)
+                Unit.right()
             } ?: run {
                 e2eiMLSClient(
                     enrollment,
@@ -112,7 +112,6 @@ class MLSClientProviderImpl(
                     currentClientId
                 ).map {
                     mlsClient = it
-                    return@run Either.Right(it)
                 }
             }
         }

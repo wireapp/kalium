@@ -83,6 +83,19 @@ class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: Str
         TODO("Not yet implemented")
     }
 
+    override suspend fun registerTrustAnchors(pem: CertificateChain) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun registerIntermediateCa(pem: CertificateChain) {
+        TODO("Not yet implemented")
+    }
+
+
     companion object {
         const val KEYSTORE_NAME = "keystore"
     }
