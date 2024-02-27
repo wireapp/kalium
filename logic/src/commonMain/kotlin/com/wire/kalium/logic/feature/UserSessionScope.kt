@@ -446,7 +446,6 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
@@ -487,10 +486,8 @@ class UserSessionScope internal constructor(
             }
         }
 
-    private val clientIdStateFlow = MutableStateFlow<ClientId?>(null)
-
     private val userScopedLogger: KaliumLogger = kaliumLogger.withUserDeviceData {
-        KaliumLogger.UserClientData(userId.toLogString(), clientIdStateFlow.value?.value?.obfuscateId() ?: "")
+        KaliumLogger.UserClientData(userId.toLogString(), _clientId?.value?.obfuscateId() ?: "")
     }
 
     private val cachedClientIdClearer: CachedClientIdClearer = object : CachedClientIdClearer {
@@ -1780,7 +1777,8 @@ class UserSessionScope internal constructor(
             clientRepository,
             joinExistingMLSConversations,
             refreshUsersWithoutMetadata,
-            userScopedLogger,
+            isE2EIEnabled,
+            userScopedLogger
         )
 
     val search: SearchScope
@@ -1862,7 +1860,10 @@ class UserSessionScope internal constructor(
         get() = MarkFileSharingChangeAsNotifiedUseCase(userConfigRepository)
 
     val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(featureSupport, userConfigRepository)
-    val isE2EIEnabled: IsE2EIEnabledUseCase get() = IsE2EIEnabledUseCaseImpl(userConfigRepository)
+    val isE2EIEnabled: IsE2EIEnabledUseCase get() = IsE2EIEnabledUseCaseImpl(
+        userConfigRepository,
+        isMLSEnabled
+    )
 
     val getDefaultProtocol: GetDefaultProtocolUseCase
         get() = GetDefaultProtocolUseCaseImpl(
