@@ -322,5 +322,6 @@ class ConversationScope internal constructor(
         get() = SetNotifiedAboutConversationUnderLegalHoldUseCaseImpl(conversationRepository)
     val observeConversationUnderLegalHoldNotified: ObserveConversationUnderLegalHoldNotifiedUseCase
         get() = ObserveConversationUnderLegalHoldNotifiedUseCaseImpl(conversationRepository)
-
+    val syncConversationCode: SyncConversationCodeUseCase
+        get() = SyncConversationCodeUseCase(conversationGroupRepository, serverConfigLinks)
 }
