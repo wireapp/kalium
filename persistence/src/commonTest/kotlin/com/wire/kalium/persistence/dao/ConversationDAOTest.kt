@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationGuestLinkEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.E2EIConversationClientInfoEntity
 import com.wire.kalium.persistence.dao.conversation.MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI
@@ -1806,6 +1807,23 @@ class ConversationDAOTest : BaseDatabaseTest() {
             expected,
             result
         )
+    }
+
+    @Test
+    fun givenConversationWithGuestLink_whenCallingDelete_thenTheLinkIsDeleted() = runTest {
+        val conversationId = QualifiedIDEntity("conversationId", "domain")
+        conversationDAO.insertConversation(conversationEntity1.copy(conversationId))
+        conversationDAO.updateGuestRoomLink(conversationId, "link", true)
+
+        conversationDAO.observeGuestRoomLinkByConversationId(conversationId).first().let {
+            assertEquals(ConversationGuestLinkEntity("link", true), it)
+        }
+
+        conversationDAO.deleteGuestRoomLink(conversationId)
+
+        conversationDAO.observeGuestRoomLinkByConversationId(conversationId).first().let {
+            assertEquals(null, it)
+        }
     }
 
     private fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity {

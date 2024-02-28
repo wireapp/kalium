@@ -145,7 +145,7 @@ class EventMapper(
 
     private fun conversationCodeUpdated(
         id: String,
-        event: EventContentDTO.Conversation.CodeUpdated,
+        event: EventContentDTO.Conversation.CodeUpdated
     ): Event.Conversation.CodeUpdated = Event.Conversation.CodeUpdated(
         id = id,
         key = event.data.key,

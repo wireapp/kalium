@@ -35,7 +35,7 @@ class CodeDeletedHandlerTest {
     @Test
     fun givenCodeUpdateEvent_whenHandlerIsInvoked_thenCodeIsUpdated() = runTest {
         val (arrangement, handler) = Arrangement().arrange {
-            withUpdatedGuestRoomLink()
+            withDeleteGustLink()
         }
 
         val event = Event.Conversation.CodeDeleted(
@@ -46,14 +46,12 @@ class CodeDeletedHandlerTest {
         handler.handle(event)
 
         verify(arrangement.conversionDAO)
-            .suspendFunction(arrangement.conversionDAO::updateGuestRoomLink)
+            .suspendFunction(arrangement.conversionDAO::deleteGuestRoomLink)
             .with(
                 eq(ConversationIDEntity(
                     event.conversationId.value,
                     event.conversationId.domain
-                )),
-                eq(null as String?),
-                eq(false)
+                ))
             ).wasInvoked(exactly = once)
     }
 
