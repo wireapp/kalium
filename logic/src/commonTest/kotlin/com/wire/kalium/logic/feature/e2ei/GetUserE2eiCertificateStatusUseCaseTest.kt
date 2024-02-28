@@ -26,12 +26,12 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificateStatusResult
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificateStatusUseCaseImpl
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.arrangement.mls.CertificateStatusMapperArrangement
+import com.wire.kalium.logic.util.arrangement.mls.CertificateStatusMapperArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.mls.PemCertificateDecoderArrangement
-import com.wire.kalium.logic.util.arrangement.mls.PemCertificateDecoderArrangementImpl
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.verify
@@ -43,110 +43,148 @@ import kotlin.test.assertTrue
 class GetUserE2eiCertificateStatusUseCaseTest {
 
     @Test
-    fun givenErrorOnGettingUserIdentity_whenGetUserE2eiCertificateStatus_thenNotActivatedResult() = runTest {
-        val (_, getUserE2eiCertificateStatus) = arrange {
-            withE2EIEnabledAndMLSEnabled(true)
-            withUserIdentity(Either.Left(MLSFailure.WrongEpoch))
+    fun givenErrorOnGettingUserIdentity_whenGetUserE2eiCertificateStatus_thenNotActivatedResult() =
+        runTest {
+            val (_, getUserE2eiCertificateStatus) = arrange {
+                withE2EIEnabledAndMLSEnabled(true)
+                withUserIdentity(Either.Left(MLSFailure.WrongEpoch))
+            }
+
+            val result = getUserE2eiCertificateStatus(USER_ID)
+
+            assertEquals(GetUserE2eiCertificateStatusResult.Failure.NotActivated, result)
         }
 
-        val result = getUserE2eiCertificateStatus(USER_ID)
-
-        assertEquals(GetUserE2eiCertificateStatusResult.Failure.NotActivated, result)
-    }
-
     @Test
-    fun givenEmptyWireIdentityList_whenGetUserE2eiCertificateStatus_thenNotActivatedResult() = runTest {
-        val (_, getUserE2eiCertificateStatus) = arrange {
-            withE2EIEnabledAndMLSEnabled(true)
-            withUserIdentity(Either.Right(listOf()))
+    fun givenEmptyWireIdentityList_whenGetUserE2eiCertificateStatus_thenNotActivatedResult() =
+        runTest {
+            val (_, getUserE2eiCertificateStatus) = arrange {
+                withE2EIEnabledAndMLSEnabled(true)
+                withUserIdentity(Either.Right(listOf()))
+            }
+
+            val result = getUserE2eiCertificateStatus(USER_ID)
+
+            assertEquals(GetUserE2eiCertificateStatusResult.Failure.NotActivated, result)
         }
 
-        val result = getUserE2eiCertificateStatus(USER_ID)
-
-        assertEquals(GetUserE2eiCertificateStatusResult.Failure.NotActivated, result)
-    }
-
     @Test
-    fun givenOneWireIdentityExpired_whenGetUserE2eiCertificateStatus_thenResultIsExpired() = runTest {
-        val (_, getUserE2eiCertificateStatus) = arrange {
-            withE2EIEnabledAndMLSEnabled(true)
-            withUserIdentity(Either.Right(listOf(WIRE_IDENTITY, WIRE_IDENTITY.copy(status = CryptoCertificateStatus.EXPIRED))))
-        }
-
-        val result = getUserE2eiCertificateStatus(USER_ID)
-
-        assertTrue { result is GetUserE2eiCertificateStatusResult.Success }
-        assertEquals(CertificateStatus.EXPIRED, (result as GetUserE2eiCertificateStatusResult.Success).status)
-    }
-
-    @Test
-    fun givenOneWireIdentityRevoked_whenGetUserE2eiCertificateStatus_thenResultIsRevoked() = runTest {
-        val (_, getUserE2eiCertificateStatus) = arrange {
-            withE2EIEnabledAndMLSEnabled(true)
-            withUserIdentity(Either.Right(listOf(WIRE_IDENTITY, WIRE_IDENTITY.copy(status = CryptoCertificateStatus.REVOKED))))
-        }
-
-        val result = getUserE2eiCertificateStatus(USER_ID)
-
-        assertTrue { result is GetUserE2eiCertificateStatusResult.Success }
-        assertEquals(CertificateStatus.REVOKED, (result as GetUserE2eiCertificateStatusResult.Success).status)
-    }
-
-    @Test
-    fun givenOneWireIdentityRevoked_whenGetUserE2eiCertificateStatus_thenResultIsRevoked2() = runTest {
-        val (_, getUserE2eiCertificateStatus) = arrange {
-            withE2EIEnabledAndMLSEnabled(true)
-            withUserIdentity(
-                Either.Right(
-                    listOf(
-                        WIRE_IDENTITY.copy(status = CryptoCertificateStatus.EXPIRED),
-                        WIRE_IDENTITY.copy(status = CryptoCertificateStatus.REVOKED)
+    fun givenOneWireIdentityExpired_whenGetUserE2eiCertificateStatus_thenResultIsExpired() =
+        runTest {
+            val (_, getUserE2eiCertificateStatus) = arrange {
+                withE2EIEnabledAndMLSEnabled(true)
+                withUserIdentity(
+                    Either.Right(
+                        listOf(
+                            WIRE_IDENTITY,
+                            WIRE_IDENTITY.copy(status = CryptoCertificateStatus.EXPIRED)
+                        )
                     )
                 )
+            }
+
+            val result = getUserE2eiCertificateStatus(USER_ID)
+
+            assertTrue { result is GetUserE2eiCertificateStatusResult.Success }
+            assertEquals(
+                CertificateStatus.EXPIRED,
+                (result as GetUserE2eiCertificateStatusResult.Success).status
             )
         }
 
-        val result = getUserE2eiCertificateStatus(USER_ID)
-
-        assertTrue { result is GetUserE2eiCertificateStatusResult.Success }
-        assertEquals(CertificateStatus.REVOKED, (result as GetUserE2eiCertificateStatusResult.Success).status)
-    }
-
     @Test
-    fun givenE2EIAndMLSIsDisabled_whenGettingUserE2EICertificateStatus_thenFailureNotActivatedIsReturned() = runTest {
-        // given
-        val (arrangement, getUserE2eiCertificateStatus) = arrange {
-            withE2EIEnabledAndMLSEnabled(false)
+    fun givenOneWireIdentityRevoked_whenGetUserE2eiCertificateStatus_thenResultIsRevoked() =
+        runTest {
+            val (_, getUserE2eiCertificateStatus) = arrange {
+                withE2EIEnabledAndMLSEnabled(true)
+                withUserIdentity(
+                    Either.Right(
+                        listOf(
+                            WIRE_IDENTITY,
+                            WIRE_IDENTITY.copy(status = CryptoCertificateStatus.REVOKED)
+                        )
+                    )
+                )
+            }
+
+            val result = getUserE2eiCertificateStatus(USER_ID)
+
+            assertTrue { result is GetUserE2eiCertificateStatusResult.Success }
+            assertEquals(
+                CertificateStatus.REVOKED,
+                (result as GetUserE2eiCertificateStatusResult.Success).status
+            )
         }
 
-        // when
-        val result = getUserE2eiCertificateStatus(USER_ID)
+    @Test
+    fun givenOneWireIdentityRevoked_whenGetUserE2eiCertificateStatus_thenResultIsRevoked2() =
+        runTest {
+            val (_, getUserE2eiCertificateStatus) = arrange {
+                withE2EIEnabledAndMLSEnabled(true)
+                withUserIdentity(
+                    Either.Right(
+                        listOf(
+                            WIRE_IDENTITY.copy(status = CryptoCertificateStatus.EXPIRED),
+                            WIRE_IDENTITY.copy(status = CryptoCertificateStatus.REVOKED)
+                        )
+                    )
+                )
+            }
 
-        // then
-        assertEquals(
-            GetUserE2eiCertificateStatusResult.Failure.NotActivated,
-            result
-        )
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::getUserIdentity)
-            .with(any())
-            .wasNotInvoked()
-    }
+            val result = getUserE2eiCertificateStatus(USER_ID)
+
+            assertTrue { result is GetUserE2eiCertificateStatusResult.Success }
+            assertEquals(
+                CertificateStatus.REVOKED,
+                (result as GetUserE2eiCertificateStatusResult.Success).status
+            )
+        }
+
+    @Test
+    fun givenE2EIAndMLSIsDisabled_whenGettingUserE2EICertificateStatus_thenFailureNotActivatedIsReturned() =
+        runTest {
+            // given
+            val (arrangement, getUserE2eiCertificateStatus) = arrange {
+                withE2EIEnabledAndMLSEnabled(false)
+            }
+
+            // when
+            val result = getUserE2eiCertificateStatus(USER_ID)
+
+            // then
+            assertEquals(
+                GetUserE2eiCertificateStatusResult.Failure.NotActivated,
+                result
+            )
+            verify(arrangement.mlsConversationRepository)
+                .suspendFunction(arrangement.mlsConversationRepository::getUserIdentity)
+                .with(any())
+                .wasNotInvoked()
+        }
 
     private class Arrangement(private val block: Arrangement.() -> Unit) :
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
-        PemCertificateDecoderArrangement by PemCertificateDecoderArrangementImpl(),
+        CertificateStatusMapperArrangement by CertificateStatusMapperArrangementImpl(),
         IsE2EIEnabledUseCaseArrangement by IsE2EIEnabledUseCaseArrangementImpl() {
 
         fun arrange() = run {
-            withPemCertificateDecode(E2EI_CERTIFICATE, any(), eq(CryptoCertificateStatus.VALID))
-            withPemCertificateDecode(E2EI_CERTIFICATE.copy(status = CertificateStatus.EXPIRED), any(), eq(CryptoCertificateStatus.EXPIRED))
-            withPemCertificateDecode(E2EI_CERTIFICATE.copy(status = CertificateStatus.REVOKED), any(), eq(CryptoCertificateStatus.REVOKED))
+            withCertificateStatusMapperReturning(
+                CertificateStatus.VALID,
+                eq(CryptoCertificateStatus.VALID)
+            )
+            withCertificateStatusMapperReturning(
+                CertificateStatus.EXPIRED,
+                eq(CryptoCertificateStatus.EXPIRED)
+            )
+            withCertificateStatusMapperReturning(
+                CertificateStatus.REVOKED,
+                eq(CryptoCertificateStatus.REVOKED)
+            )
 
             block()
             this@Arrangement to GetUserE2eiCertificateStatusUseCaseImpl(
                 mlsConversationRepository = mlsConversationRepository,
-                pemCertificateDecoder = pemCertificateDecoder,
+                certificateStatusMapper = certificateStatusMapper,
                 isE2EIEnabledUseCase = isE2EIEnabledUseCase
             )
         }
@@ -156,7 +194,8 @@ class GetUserE2eiCertificateStatusUseCaseTest {
         fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
         private val USER_ID = UserId("value", "domain")
-        private val CRYPTO_QUALIFIED_CLIENT_ID = CryptoQualifiedClientId("clientId", USER_ID.toCrypto())
+        private val CRYPTO_QUALIFIED_CLIENT_ID =
+            CryptoQualifiedClientId("clientId", USER_ID.toCrypto())
         private val WIRE_IDENTITY =
             WireIdentity(
                 CRYPTO_QUALIFIED_CLIENT_ID,
@@ -165,9 +204,14 @@ class GetUserE2eiCertificateStatusUseCaseTest {
                 "domain.com",
                 "certificate",
                 CryptoCertificateStatus.VALID,
-                "thumbprint"
+                "thumbprint",
+                "serialNumber"
             )
         private val E2EI_CERTIFICATE =
-            E2eiCertificate(issuer = "issue", status = CertificateStatus.VALID, serialNumber = "number", certificateDetail = "details")
+            E2eiCertificate(
+                status = CertificateStatus.VALID,
+                serialNumber = "number",
+                certificateDetail = "details"
+            )
     }
 }
