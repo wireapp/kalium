@@ -69,8 +69,7 @@ interface ReactionRepository {
 class ReactionRepositoryImpl(
     private val selfUserId: UserId,
     private val reactionsDAO: ReactionDAO,
-    private val reactionsMapper: ReactionsMapper = MapperProvider.reactionsMapper(),
-    private val idMapper: IdMapper = MapperProvider.idMapper()
+    private val reactionsMapper: ReactionsMapper = MapperProvider.reactionsMapper()
 ) : ReactionRepository {
 
     override suspend fun persistReaction(
