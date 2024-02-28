@@ -1752,6 +1752,7 @@ class MLSConversationRepositoryTest {
             val COMMIT_BUNDLE = CommitBundle(COMMIT, WELCOME, PUBLIC_GROUP_STATE_BUNDLE, null)
             val ROTATE_BUNDLE = RotateBundle(mapOf(RAW_GROUP_ID to COMMIT_BUNDLE), emptyList(), emptyList(), null)
             val CRYPTO_CLIENT_ID = CryptoQualifiedClientId("clientId", TestConversation.USER_1.toCrypto())
+<<<<<<< HEAD
             val WIRE_IDENTITY = WireIdentity(
                 CRYPTO_CLIENT_ID,
                 "user_handle",
@@ -1761,6 +1762,19 @@ class MLSConversationRepositoryTest {
                 CryptoCertificateStatus.VALID,
                 thumbprint = "thumbprint"
             )
+=======
+            val WIRE_IDENTITY =
+                WireIdentity(
+                    CRYPTO_CLIENT_ID,
+                    "user_handle",
+                    "User Test",
+                    "domain.com",
+                    "certificate",
+                    CryptoCertificateStatus.VALID,
+                    thumbprint = "thumbprint",
+                    serialNumber = "serialNumber"
+                )
+>>>>>>> e2b9a65de6 (feat: Remove third party library for certificate decoding (WPB-6765) (#2557))
             val E2EI_CONVERSATION_CLIENT_INFO_ENTITY =
                 E2EIConversationClientInfoEntity(UserIDEntity(uuid4().toString(), "domain.com"), "clientId", "groupId")
             val DECRYPTED_MESSAGE_BUNDLE = com.wire.kalium.cryptography.DecryptedMessageBundle(

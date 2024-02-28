@@ -58,48 +58,49 @@ class GetE2eiCertificateUseCaseTest {
     }
 
     @Test
-    fun givenRepositoryReturnsValidCertificateString_whenRunningUseCase_thenReturnCertificate() = runTest {
-        val (arrangement, getE2eiCertificateUseCase) = Arrangement()
-            .withRepositoryValidCertificate(IDENTITY)
-            .withDecodeSuccess()
-            .arrange()
+    fun givenRepositoryReturnsValidCertificateString_whenRunningUseCase_thenReturnCertificate() =
+        runTest {
+            val (arrangement, getE2eiCertificateUseCase) = Arrangement()
+                .withRepositoryValidCertificate(IDENTITY)
+                .withMapperReturning(CertificateStatus.EXPIRED)
+                .arrange()
 
-        val result = getE2eiCertificateUseCase.invoke(CLIENT_ID)
+            val result = getE2eiCertificateUseCase.invoke(CLIENT_ID)
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::getClientIdentity)
-            .with(any())
-            .wasInvoked(once)
+            verify(arrangement.mlsConversationRepository)
+                .suspendFunction(arrangement.mlsConversationRepository::getClientIdentity)
+                .with(any())
+                .wasInvoked(once)
 
-        verify(arrangement.pemCertificateDecoder)
-            .function(arrangement.pemCertificateDecoder::decode)
-            .with(any())
-            .wasInvoked(once)
+            verify(arrangement.certificateStatusMapper)
+                .function(arrangement.certificateStatusMapper::toCertificateStatus)
+                .with(any())
+                .wasInvoked(once)
 
-        assertEquals(true, result is GetE2EICertificateUseCaseResult.Success)
-    }
+            assertEquals(true, result is GetE2EICertificateUseCaseResult.Success)
+        }
 
     @Test
-    fun givenRepositoryReturnsNullCertificate_whenRunningUseCase_thenReturnNotActivated() = runTest {
-        val (arrangement, getE2eiCertificateUseCase) = Arrangement()
-            .withRepositoryValidCertificate(null)
-            .withDecodeSuccess()
-            .arrange()
+    fun givenRepositoryReturnsNullCertificate_whenRunningUseCase_thenReturnNotActivated() =
+        runTest {
+            val (arrangement, getE2eiCertificateUseCase) = Arrangement()
+                .withRepositoryValidCertificate(null)
+                .arrange()
 
-        val result = getE2eiCertificateUseCase.invoke(CLIENT_ID)
+            val result = getE2eiCertificateUseCase.invoke(CLIENT_ID)
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::getClientIdentity)
-            .with(any())
-            .wasInvoked(once)
+            verify(arrangement.mlsConversationRepository)
+                .suspendFunction(arrangement.mlsConversationRepository::getClientIdentity)
+                .with(any())
+                .wasInvoked(once)
 
-        verify(arrangement.pemCertificateDecoder)
-            .function(arrangement.pemCertificateDecoder::decode)
-            .with(any())
-            .wasNotInvoked()
+            verify(arrangement.certificateStatusMapper)
+                .function(arrangement.certificateStatusMapper::toCertificateStatus)
+                .with(any())
+                .wasNotInvoked()
 
-        assertEquals(true, result is GetE2EICertificateUseCaseResult.NotActivated)
-    }
+            assertEquals(true, result is GetE2EICertificateUseCaseResult.NotActivated)
+        }
 
     class Arrangement {
 
@@ -107,11 +108,11 @@ class GetE2eiCertificateUseCaseTest {
         val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
         @Mock
-        val pemCertificateDecoder = mock(classOf<PemCertificateDecoder>())
+        val certificateStatusMapper = mock(classOf<CertificateStatusMapper>())
 
         fun arrange() = this to GetE2eiCertificateUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,
-            pemCertificateDecoder = pemCertificateDecoder
+            certificateStatusMapper = certificateStatusMapper
         )
 
         fun withRepositoryFailure() = apply {
@@ -128,19 +129,27 @@ class GetE2eiCertificateUseCaseTest {
                 .thenReturn(Either.Right(identity))
         }
 
-        fun withDecodeSuccess() = apply {
-            given(pemCertificateDecoder)
-                .function(pemCertificateDecoder::decode)
+        fun withMapperReturning(status: CertificateStatus) = apply {
+            given(certificateStatusMapper)
+                .function(certificateStatusMapper::toCertificateStatus)
                 .whenInvokedWith(any())
-                .thenReturn(e2eiCertificate)
+                .thenReturn(status)
         }
     }
 
     companion object {
         val CLIENT_ID = ClientId("client-id")
         private val USER_ID = UserId("value", "domain")
+<<<<<<< HEAD
         private val CRYPTO_QUALIFIED_CLIENT_ID = CryptoQualifiedClientId("clientId", USER_ID.toCrypto())
         val e2eiCertificate = E2eiCertificate("certificate")
+=======
+        private val CRYPTO_QUALIFIED_CLIENT_ID =
+            CryptoQualifiedClientId("clientId", USER_ID.toCrypto())
+
+        val e2eiCertificate =
+            E2eiCertificate(CertificateStatus.EXPIRED, "serialNumber", "certificateDetail")
+>>>>>>> e2b9a65de6 (feat: Remove third party library for certificate decoding (WPB-6765) (#2557))
         val IDENTITY = WireIdentity(
             CRYPTO_QUALIFIED_CLIENT_ID,
             handle = "alic_test",
@@ -148,7 +157,8 @@ class GetE2eiCertificateUseCaseTest {
             domain = "test.com",
             certificate = "certificate",
             status = CryptoCertificateStatus.EXPIRED,
-            thumbprint = "thumbprint"
+            thumbprint = "thumbprint",
+            serialNumber = "serialNumber"
         )
     }
 }
