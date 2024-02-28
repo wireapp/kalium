@@ -379,16 +379,24 @@ LEFT JOIN Member ON Client.user_id = Member.user
 LEFT JOIN Conversation
 ON Member.conversation = Conversation.qualified_id OR Client.user_id = Conversation.qualified_id
 WHERE Conversation.mls_group_id IS NOT NULL AND Client.id = :clientId
+AND Conversation.mls_group_state IS 'ESTABLISHED'
 ORDER BY Conversation.type DESC LIMIT 1;
 
 getMLSGroupIdByUserId:
 SELECT Conversation.mls_group_id FROM Member
 JOIN Conversation ON Conversation.qualified_id = Member.conversation
-WHERE Conversation.mls_group_id IS NOT NULL AND Member.user = :userId LIMIT 1;
+WHERE Conversation.mls_group_id IS NOT NULL AND mls_group_state IS 'ESTABLISHED' AND Member.user = :userId LIMIT 1;
 
 getMLSGroupIdByConversationId:
 SELECT Conversation.mls_group_id FROM Conversation
-WHERE Conversation.qualified_id = :conversationId;
+WHERE Conversation.qualified_id = :conversationId
+AND Conversation.mls_group_state IS 'ESTABLISHED';
+
+getEstablishedSelfMLSGroupId:
+SELECT Conversation.mls_group_id FROM Conversation
+WHERE type = 'SELF'
+AND protocol = 'MLS'
+AND Conversation.mls_group_state IS 'ESTABLISHED';
 
 updateConversationReceiptMode:
 UPDATE Conversation
