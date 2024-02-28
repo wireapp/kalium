@@ -29,6 +29,7 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isAccessDenied
+import com.wire.kalium.network.exceptions.isConversationHasNoCode
 import com.wire.kalium.network.exceptions.isConversationNotFound
 import com.wire.kalium.network.exceptions.isGuestLinkDisabled
 import com.wire.kalium.network.exceptions.isNotTeamMember
@@ -87,7 +88,7 @@ class CheckConversationInviteCodeUseCase internal constructor(
                         errorResponse.code == HttpStatusCode.BadRequest.value -> Result.Failure.InvalidCodeOrKey
                         isNotTeamMember() -> Result.Failure.RequestingUserIsNotATeamMember
                         isAccessDenied() -> Result.Failure.AccessDenied
-                        isConversationNotFound() -> Result.Failure.ConversationNotFound
+                        isConversationNotFound() || isConversationHasNoCode() -> Result.Failure.ConversationNotFound
                         isGuestLinkDisabled() -> Result.Failure.GuestLinksDisabled
                         else -> Result.Failure.Generic(error)
                     }

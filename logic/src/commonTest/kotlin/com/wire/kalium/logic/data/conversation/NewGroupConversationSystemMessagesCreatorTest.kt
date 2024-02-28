@@ -87,7 +87,6 @@ class NewGroupConversationSystemMessagesCreatorTest {
             .wasInvoked(once)
     }
 
-
     @Test
     fun givenNotAGroupConversation_whenPersisting_ThenShouldNOTCreateAStartedSystemMessage() = runTest {
         val (arrangement, newGroupConversationCreatedHandler) = Arrangement()
@@ -146,7 +145,6 @@ class NewGroupConversationSystemMessagesCreatorTest {
             })
             .wasNotInvoked()
     }
-
 
     @Test
     fun givenAModelGroupConversation_whenPersistingAndValid_ThenShouldCreateASystemMessageForReceiptStatus() = runTest {
@@ -235,7 +233,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
                 .withPersistMessageSuccess()
                 .arrange()
 
-            val result = sysMessageCreator.conversationResolvedMembersAddedAndFailed(
+            val result = sysMessageCreator.conversationResolvedMembersAdded(
                 TestConversation.CONVERSATION_RESPONSE.id.toDao(),
                 otherMembersIds
             )
@@ -258,45 +256,14 @@ class NewGroupConversationSystemMessagesCreatorTest {
         }
 
     @Test
-    fun givenAGroupConversation_whenPersistingMembersAndSomeFailed_ThenShouldCreateASystemMessageForStartedWithAndFailedToAdd() =
+    fun givenAGroupConversation_whenPersistingMembersAndOtherMembersListIsEmpty_ThenShouldNOTCreateASystemMessage() =
         runTest {
             val (arrangement, sysMessageCreator) = Arrangement()
                 .withIsASelfTeamMember(false)
                 .withPersistMessageSuccess()
                 .arrange()
 
-            val result = sysMessageCreator.conversationResolvedMembersAddedAndFailed(
-                TestConversation.CONVERSATION_RESPONSE.id.toDao(),
-                otherMembersIds,
-                listOf(TestUser.USER_ID)
-            )
-
-            result.shouldSucceed()
-
-            verify(arrangement.persistMessage)
-                .suspendFunction(arrangement.persistMessage::invoke)
-                .with(matching {
-                    (it.content is MessageContent.System && it.content is MessageContent.MemberChange.CreationAdded)
-                })
-                .wasInvoked(once)
-
-            verify(arrangement.persistMessage)
-                .suspendFunction(arrangement.persistMessage::invoke)
-                .with(matching {
-                    (it.content is MessageContent.System && it.content is MessageContent.MemberChange.FailedToAdd)
-                })
-                .wasInvoked(once)
-        }
-
-    @Test
-    fun givenAGroupConversation_whenPersistingMembersAndAllFailed_ThenShouldCreateASystemMessageOnlyWithFailedToAdd() =
-        runTest {
-            val (arrangement, sysMessageCreator) = Arrangement()
-                .withIsASelfTeamMember(false)
-                .withPersistMessageSuccess()
-                .arrange()
-
-            val result = sysMessageCreator.conversationResolvedMembersAddedAndFailed(
+            val result = sysMessageCreator.conversationResolvedMembersAdded(
                 TestConversation.CONVERSATION_RESPONSE.id.toDao(),
                 TestConversation.CONVERSATION_RESPONSE.copy(
                     members = ConversationMembersResponse(
@@ -305,8 +272,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
                             "wire_admin"
                         ), emptyList()
                     )
-                ).members.otherMembers.map { it.id.toModel() },
-                listOf(TestUser.USER_ID)
+                ).members.otherMembers.map { it.id.toModel() }
             )
 
             result.shouldSucceed()
@@ -323,7 +289,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
                 .with(matching {
                     (it.content is MessageContent.System && it.content is MessageContent.MemberChange.FailedToAdd)
                 })
-                .wasInvoked(once)
+                .wasNotInvoked()
         }
 
     @Test
@@ -333,7 +299,9 @@ class NewGroupConversationSystemMessagesCreatorTest {
                 .withPersistMessageSuccess()
                 .arrange()
 
-            val result = sysMessageCreator.conversationFailedToAddMembers(TestConversation.ID, setOf(TestUser.OTHER.id))
+            val result = sysMessageCreator.conversationFailedToAddMembers(
+                TestConversation.ID, listOf(TestUser.OTHER.id), MessageContent.MemberChange.FailedToAdd.Type.Unknown
+            )
 
             result.shouldSucceed()
 

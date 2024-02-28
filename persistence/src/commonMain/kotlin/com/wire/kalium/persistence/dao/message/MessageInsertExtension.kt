@@ -85,8 +85,6 @@ internal class MessageInsertExtensionImpl(
                 assetName = assetName,
                 assetOtrKey = assetOtrKey,
                 assetSha256 = assetSha256Key,
-                assetUploadStatus = assetUploadStatus,
-                assetDownloadStatus = assetDownloadStatus,
                 assetEncryptionAlgorithm = assetEncryptionAlgorithm
             )
         }
@@ -157,8 +155,6 @@ internal class MessageInsertExtensionImpl(
                     asset_size = content.assetSizeInBytes,
                     asset_name = content.assetName,
                     asset_mime_type = content.assetMimeType,
-                    asset_upload_status = content.assetUploadStatus,
-                    asset_download_status = content.assetDownloadStatus,
                     asset_otr_key = content.assetOtrKey,
                     asset_sha256 = content.assetSha256Key,
                     asset_id = content.assetId,

@@ -19,8 +19,8 @@
 package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.*
@@ -28,12 +28,12 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-class UpdateAssetMessageDownloadStatusUseCaseTest {
+class UpdateAssetMessageTransferStatusUseCaseTest {
 
     @Test
     fun givenAValidDownloadStatusUpdateRequest_whenInvoked_thenResultSuccessIsReturned() = runTest {
         // Given
-        val newDownloadStatus = Message.DownloadStatus.DOWNLOAD_IN_PROGRESS
+        val newDownloadStatus = AssetTransferStatus.DOWNLOAD_IN_PROGRESS
         val dummyConvId = ConversationId("dummy-value", "dummy.domain")
         val dummyMessageId = "dummy-message-id"
         val (arrangement, useCase) = Arrangement().withSuccessfulResponse().arrange()
@@ -42,9 +42,9 @@ class UpdateAssetMessageDownloadStatusUseCaseTest {
         val result = useCase.invoke(newDownloadStatus, dummyConvId, dummyMessageId)
 
         // Then
-        assertTrue(result is UpdateDownloadStatusResult.Success)
+        assertTrue(result is UpdateTransferStatusResult.Success)
         verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::updateAssetMessageDownloadStatus)
+            .suspendFunction(arrangement.messageRepository::updateAssetMessageTransferStatus)
             .with(eq(newDownloadStatus), eq(dummyConvId), eq(dummyMessageId))
             .wasInvoked(exactly = once)
     }
@@ -52,7 +52,7 @@ class UpdateAssetMessageDownloadStatusUseCaseTest {
     @Test
     fun givenAnErrorDownloadStatusUpdateRequest_whenInvoked_thenCoreFailureIsReturned() = runTest {
         // Given
-        val newDownloadStatus = Message.DownloadStatus.SAVED_INTERNALLY
+        val newDownloadStatus = AssetTransferStatus.SAVED_INTERNALLY
         val dummyConvId = ConversationId("dummy-value", "dummy.domain")
         val dummyMessageId = "dummy-message-id"
         val (arrangement, useCase) = Arrangement().withErrorResponse().arrange()
@@ -61,9 +61,9 @@ class UpdateAssetMessageDownloadStatusUseCaseTest {
         val result = useCase.invoke(newDownloadStatus, dummyConvId, dummyMessageId)
 
         // Then
-        assertTrue(result is UpdateDownloadStatusResult.Failure)
+        assertTrue(result is UpdateTransferStatusResult.Failure)
         verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::updateAssetMessageDownloadStatus)
+            .suspendFunction(arrangement.messageRepository::updateAssetMessageTransferStatus)
             .with(eq(newDownloadStatus), eq(dummyConvId), eq(dummyMessageId))
             .wasInvoked(exactly = once)
     }
@@ -74,7 +74,7 @@ class UpdateAssetMessageDownloadStatusUseCaseTest {
 
         fun withSuccessfulResponse(): Arrangement {
             given(messageRepository)
-                .suspendFunction(messageRepository::updateAssetMessageDownloadStatus)
+                .suspendFunction(messageRepository::updateAssetMessageTransferStatus)
                 .whenInvokedWith(any(), any(), any())
                 .thenReturn(Either.Right(Unit))
             return this
@@ -82,13 +82,13 @@ class UpdateAssetMessageDownloadStatusUseCaseTest {
 
         fun withErrorResponse(): Arrangement {
             given(messageRepository)
-                .suspendFunction(messageRepository::updateAssetMessageDownloadStatus)
+                .suspendFunction(messageRepository::updateAssetMessageTransferStatus)
                 .whenInvokedWith(any(), any(), any())
                 .thenReturn(Either.Left(NetworkFailure.ServerMiscommunication(RuntimeException())))
             return this
         }
 
-        fun arrange() = this to UpdateAssetMessageDownloadStatusUseCaseImpl(messageRepository)
+        fun arrange() = this to UpdateAssetMessageTransferStatusUseCaseImpl(messageRepository)
 
     }
 }

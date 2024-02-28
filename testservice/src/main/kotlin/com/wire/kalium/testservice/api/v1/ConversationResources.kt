@@ -38,6 +38,7 @@ import com.wire.kalium.testservice.models.SendLocationRequest
 import com.wire.kalium.testservice.models.SendPingRequest
 import com.wire.kalium.testservice.models.SendReactionRequest
 import com.wire.kalium.testservice.models.SendTextRequest
+import com.wire.kalium.testservice.models.SendTypingRequest
 import com.wire.kalium.testservice.models.UpdateTextRequest
 import io.swagger.v3.oas.annotations.Operation
 import kotlinx.coroutines.runBlocking
@@ -297,8 +298,6 @@ class ConversationResources(private val instanceService: InstanceService) {
         }
     }
 
-    // POST /api/v1/instance/{instanceId}/sendButtonAction
-    // Send a button action to a poll.
     @POST
     @Path("/instance/{id}/sendButtonAction")
     @Operation(summary = "Send a button action to a poll.")
@@ -363,7 +362,7 @@ class ConversationResources(private val instanceService: InstanceService) {
     @Consumes(MediaType.APPLICATION_JSON)
     fun sendText(@PathParam("id") id: String, @Valid sendTextRequest: SendTextRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
-        // TODO Implement buttons and link previews here
+        // TODO Implement link previews here
         val quotedMessageId = sendTextRequest.quote?.quotedMessageId
         val mentions = when (sendTextRequest.mentions.size) {
             0 -> emptyList<MessageMention>()
@@ -386,7 +385,8 @@ class ConversationResources(private val instanceService: InstanceService) {
                     text,
                     mentions,
                     messageTimer,
-                    quotedMessageId
+                    quotedMessageId,
+                    buttons
                 )
             }
         }
@@ -426,6 +426,20 @@ class ConversationResources(private val instanceService: InstanceService) {
         }
     }
 
-    // POST /api/v1/instance/{instanceId}/sendTyping
-    // Send a typing indicator to a conversation.
+    @POST
+    @Path("/instance/{id}/sendTyping")
+    @Operation(summary = "Send a typing indicator to a conversation")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun sendTyping(@PathParam("id") id: String, @Valid request: SendTypingRequest): Response {
+        val instance = instanceService.getInstanceOrThrow(id)
+        return with(request) {
+            runBlocking {
+                ConversationRepository.sendTyping(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    status
+                )
+            }
+        }
+    }
 }
