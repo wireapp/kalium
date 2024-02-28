@@ -330,8 +330,9 @@ class E2EIRepositoryImpl(
                 mlsClientProvider.getMLSClient().fold({
                     E2EIFailure.MissingMLSClient(it).left()
                 }, { mlsClient ->
-                    mlsClient.registerIntermediateCa(data)
-                    Unit.right()
+                    wrapE2EIRequest {
+                        mlsClient.registerIntermediateCa(data)
+                    }
                 })
             })
 
