@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.feature.client
 
-import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -28,20 +27,19 @@ import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.right
 
 sealed class RegisterMLSClientResult {
     data object Success : RegisterMLSClientResult()
 
-    data class E2EICertificateRequired(val mlsClient: MLSClient) : RegisterMLSClientResult()
+    data object E2EICertificateRequired : RegisterMLSClientResult()
 }
 
 /**
  * Register an MLS client with an existing client already registered on the backend.
  */
 interface RegisterMLSClientUseCase {
-
     suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, RegisterMLSClientResult>
 }
 
@@ -54,15 +52,14 @@ internal class RegisterMLSClientUseCaseImpl(
 ) : RegisterMLSClientUseCase {
 
     override suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, RegisterMLSClientResult> =
-        mlsClientProvider.getMLSClient(clientId).flatMap { mlsClient ->
-            userConfigRepository.getE2EISettings().fold({
-                Either.Right(mlsClient)
-            }, { e2eiSettings ->
-                if (e2eiSettings.isRequired && !mlsClient.isE2EIEnabled()) {
-                    kaliumLogger.i("MLS Client registration stopped: e2ei is required and is not enrolled!")
-                    return Either.Right(RegisterMLSClientResult.E2EICertificateRequired(mlsClient))
-                } else Either.Right(mlsClient)
-            })
+        userConfigRepository.getE2EISettings().flatMap { e2eiSettings ->
+            if (e2eiSettings.isRequired && !mlsClientProvider.isMLSClientInitialised()) {
+                return RegisterMLSClientResult.E2EICertificateRequired.right()
+            } else {
+                mlsClientProvider.getMLSClient(clientId)
+            }
+        }.onFailure {
+            mlsClientProvider.getMLSClient(clientId)
         }.flatMap {
             clientRepository.registerMLSClient(clientId, it.getPublicKey())
         }.flatMap {

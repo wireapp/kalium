@@ -85,6 +85,7 @@ interface E2EIRepository {
     suspend fun checkOrderRequest(location: String, prevNonce: Nonce): Either<E2EIFailure, Pair<ACMEResponse, String>>
     suspend fun certificateRequest(location: String, prevNonce: Nonce): Either<E2EIFailure, ACMEResponse>
     suspend fun rotateKeysAndMigrateConversations(certificateChain: String, isNewClient: Boolean = false): Either<E2EIFailure, Unit>
+    suspend fun initiateMLSClient(certificateChain: String): Either<E2EIFailure, Unit>
     suspend fun getOAuthRefreshToken(): Either<E2EIFailure, String?>
     suspend fun nukeE2EIClient()
     suspend fun fetchFederationCertificates(): Either<E2EIFailure, Unit>
@@ -117,12 +118,16 @@ class E2EIRepositoryImpl(
         }.fold({
             E2EIFailure.TrustAnchors(it).left()
         }, { trustAnchors ->
-            mlsClientProvider.getMLSClient().fold({
+            currentClientIdProvider().fold({
+                E2EIFailure.TrustAnchors(it).left()
+            }, { clientId ->
+                mlsClientProvider.getCoreCrypto(clientId).fold({
                 E2EIFailure.MissingMLSClient(it).left()
-            }, { mlsClient ->
+                }, { coreCrypto ->
                 wrapE2EIRequest {
-                    mlsClient.registerTrustAnchors(trustAnchors.decodeToString())
+                    coreCrypto.registerTrustAnchors(trustAnchors.decodeToString())
                 }
+                })
             })
         })
     }
@@ -317,6 +322,16 @@ class E2EIRepositoryImpl(
             })
         }
 
+    override suspend fun initiateMLSClient(certificateChain: String): Either<E2EIFailure, Unit> {
+        return e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
+            currentClientIdProvider().fold({
+                E2EIFailure.InitMLSClient(it).left()
+            }, { clientId ->
+                mlsClientProvider.initMLSClientWithCertificate(e2eiClient, certificateChain, clientId)
+            })
+        }
+    }
+
     override suspend fun getOAuthRefreshToken() = e2EIClientProvider.getE2EIClient().flatMap { e2EIClient ->
         e2EIClient.getOAuthRefreshToken().right()
     }
@@ -327,15 +342,18 @@ class E2EIRepositoryImpl(
             }.fold({
                 E2EIFailure.IntermediateCert(it).left()
             }, { data ->
-                mlsClientProvider.getMLSClient().fold({
-                    E2EIFailure.MissingMLSClient(it).left()
-                }, { mlsClient ->
-                    wrapE2EIRequest {
-                        mlsClient.registerIntermediateCa(data)
-                    }
+                currentClientIdProvider().fold({
+                    E2EIFailure.TrustAnchors(it).left()
+                }, { clientId ->
+                    mlsClientProvider.getCoreCrypto(clientId).fold({
+                        E2EIFailure.MissingMLSClient(it).left()
+                    }, { coreCrypto ->
+                        wrapE2EIRequest {
+                            coreCrypto.registerIntermediateCa(data)
+                        }
+                    })
                 })
             })
-
         }
 
     override fun discoveryUrl() =
