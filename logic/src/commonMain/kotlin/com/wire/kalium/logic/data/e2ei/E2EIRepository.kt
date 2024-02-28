@@ -111,21 +111,6 @@ class E2EIRepositoryImpl(
         return e2EIClientProvider.getE2EIClient(clientId, isNewClient).fold({ it.left() }, { Unit.right() })
     }
 
-<<<<<<< HEAD
-    override suspend fun fetchAndSetTrustAnchors(): Either<E2EIFailure, Unit> = discoveryUrl().flatMap {
-        // todo: fetch only once!
-        wrapApiRequest {
-            acmeApi.getTrustAnchors(it)
-        }.fold({
-            E2EIFailure.TrustAnchors(it).left()
-        }, { trustAnchors ->
-            mlsClientProvider.getMLSClient().fold({
-                E2EIFailure.MissingMLSClient(it).left()
-            }, { mlsClient ->
-                wrapE2EIRequest {
-                    mlsClient.registerTrustAnchors(trustAnchors.decodeToString())
-                }
-=======
     override suspend fun fetchAndSetTrustAnchors(): Either<E2EIFailure, Unit> = if (userConfigRepository.getShouldFetchE2EITrustAnchor()) {
         discoveryUrl().flatMap {
             wrapApiRequest {
@@ -146,7 +131,6 @@ class E2EIRepositoryImpl(
                         }
                     })
                 })
->>>>>>> e849ba47dd (fix: Fetch GetTrustAnchors only once (WPB-6808) (#2558))
             })
         }
     } else {
