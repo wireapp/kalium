@@ -15,15 +15,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+
 package com.wire.kalium.logic.feature.e2ei
 
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 
-expect interface PemCertificateDecoder {
-    fun decode(certificate: String, status: CryptoCertificateStatus): E2eiCertificate
+interface CertificateStatusMapper {
+    fun toCertificateStatus(certificateStatus: CryptoCertificateStatus): CertificateStatus
 }
 
-expect class PemCertificateDecoderImpl(
-    x509CertificateGenerator: X509CertificateGenerator = X509CertificateGeneratorImpl(),
-    certificateStatusChecker: CertificateStatusChecker = CertificateStatusCheckerImpl()
-) : PemCertificateDecoder
+class CertificateStatusMapperImpl : CertificateStatusMapper {
+    override fun toCertificateStatus(certificateStatus: CryptoCertificateStatus): CertificateStatus {
+        when (certificateStatus) {
+            CryptoCertificateStatus.EXPIRED -> return CertificateStatus.EXPIRED
+            CryptoCertificateStatus.REVOKED -> return CertificateStatus.REVOKED
+            CryptoCertificateStatus.VALID -> return CertificateStatus.VALID
+        }
+    }
+}
