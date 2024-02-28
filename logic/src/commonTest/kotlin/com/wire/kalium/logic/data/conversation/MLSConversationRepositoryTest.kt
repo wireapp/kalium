@@ -1833,7 +1833,8 @@ class MLSConversationRepositoryTest {
                     "domain.com",
                     "certificate",
                     CryptoCertificateStatus.VALID,
-                    thumbprint = "thumbprint"
+                    thumbprint = "thumbprint",
+                    serialNumber = "serialNumber"
                 )
             val E2EI_CONVERSATION_CLIENT_INFO_ENTITY =
                 E2EIConversationClientInfoEntity(UserIDEntity(uuid4().toString(), "domain.com"), "clientId", "groupId")
