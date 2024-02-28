@@ -25,12 +25,15 @@ import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificatesUseCaseImpl
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangement
+import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.PemCertificateDecoderArrangement
 import com.wire.kalium.logic.util.arrangement.mls.PemCertificateDecoderArrangementImpl
 import io.mockative.any
 import io.mockative.eq
+import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -41,6 +44,7 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
     @Test
     fun givenErrorOnGettingUserIdentity_whenGetUserE2eiAllCertificateStatuses_thenEmptyMapResult() = runTest {
         val (_, getUserE2eiAllCertificateStatuses) = arrange {
+            withE2EIEnabledAndMLSEnabled(true)
             withUserIdentity(Either.Left(MLSFailure.WrongEpoch))
         }
 
@@ -52,6 +56,7 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
     @Test
     fun givenEmptyWireIdentityList_whenGetUserE2eiAllCertificateStatuses_thenEmptyMapResult() = runTest {
         val (_, getUserE2eiAllCertificateStatuses) = arrange {
+            withE2EIEnabledAndMLSEnabled(true)
             withUserIdentity(Either.Right(listOf()))
         }
 
@@ -66,6 +71,7 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
         val identity2 = WIRE_IDENTITY.copy(clientId = CRYPTO_QUALIFIED_CLIENT_ID.copy("id_2"), status = CryptoCertificateStatus.EXPIRED)
         val identity3 = WIRE_IDENTITY.copy(clientId = CRYPTO_QUALIFIED_CLIENT_ID.copy("id_3"), status = CryptoCertificateStatus.REVOKED)
         val (_, getUserE2eiAllCertificateStatuses) = arrange {
+            withE2EIEnabledAndMLSEnabled(true)
             withUserIdentity(Either.Right(listOf(identity1, identity2, identity3)))
         }
 
@@ -77,9 +83,31 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
         assertEquals(CertificateStatus.REVOKED, result[identity3.clientId.value]?.status)
     }
 
+    @Test
+    fun givenE2EIAndMLSIsDisabled_whenGettingUserE2EICertificate_thenEmptyMapIsReturned() = runTest {
+        // given
+        val (arrangement, getUserE2eiAllCertificateStatuses) = arrange {
+            withE2EIEnabledAndMLSEnabled(false)
+        }
+
+        // when
+        val result = getUserE2eiAllCertificateStatuses(USER_ID)
+
+        // then
+        assertEquals(
+            mapOf(),
+            result
+        )
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::getUserIdentity)
+            .with(any())
+            .wasNotInvoked()
+    }
+
     private class Arrangement(private val block: Arrangement.() -> Unit) :
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
-        PemCertificateDecoderArrangement by PemCertificateDecoderArrangementImpl() {
+        PemCertificateDecoderArrangement by PemCertificateDecoderArrangementImpl(),
+        IsE2EIEnabledUseCaseArrangement by IsE2EIEnabledUseCaseArrangementImpl() {
 
         fun arrange() = run {
             withPemCertificateDecode(E2EI_CERTIFICATE, any(), eq(CryptoCertificateStatus.VALID))
@@ -89,7 +117,8 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
             block()
             this@Arrangement to GetUserE2eiCertificatesUseCaseImpl(
                 mlsConversationRepository = mlsConversationRepository,
-                pemCertificateDecoder = pemCertificateDecoder
+                pemCertificateDecoder = pemCertificateDecoder,
+                isE2EIEnabledUseCase = isE2EIEnabledUseCase
             )
         }
     }

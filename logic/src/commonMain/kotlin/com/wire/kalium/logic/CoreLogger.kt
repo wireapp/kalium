@@ -61,7 +61,7 @@ object CoreLogger {
 internal fun KaliumLogger.logStructuredJson(
     level: KaliumLogLevel,
     leadingMessage: String,
-    jsonStringKeyValues: Map<String, Any>
+    jsonStringKeyValues: Map<String, Any?>
 ) {
     val logJson = jsonStringKeyValues.toJsonElement()
     val sanitizedLeadingMessage = if (leadingMessage.endsWith(":")) leadingMessage else "$leadingMessage:"
