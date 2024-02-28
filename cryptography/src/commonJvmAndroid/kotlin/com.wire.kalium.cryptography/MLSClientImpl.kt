@@ -279,37 +279,6 @@ class MLSClientImpl(
         }
     }
 
-<<<<<<< HEAD
-    override suspend fun registerTrustAnchors(pem: CertificateChain) {
-        try {
-            coreCrypto.e2eiRegisterAcmeCa(pem)
-        } catch (e: CryptographyException) {
-            kaliumLogger.w("Registering TrustAnchors failed")
-        }
-    }
-
-    @Suppress("TooGenericExceptionCaught")
-    override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration = try {
-        toCrlRegistration(coreCrypto.e2eiRegisterCrl(url, crl))
-    } catch (exception: Exception) {
-        kaliumLogger.w("Registering Crl failed, exception: $exception")
-        CrlRegistration(
-            dirty = false,
-            expiration = null
-        )
-    }
-
-    @Suppress("TooGenericExceptionCaught")
-    override suspend fun registerIntermediateCa(pem: CertificateChain) {
-        try {
-            coreCrypto.e2eiRegisterIntermediateCa(pem)
-        } catch (exception: Exception) {
-            kaliumLogger.w("Registering IntermediateCa failed, exception: $exception")
-        }
-    }
-
-=======
->>>>>>> c9759d4364 (fix(e2ei): create fresh MLS client with x509 with E2EI certificate (#2450))
     companion object {
         fun toUByteList(value: ByteArray): List<UByte> = value.asUByteArray().asList()
         fun toUByteList(value: String): List<UByte> = value.encodeToByteArray().asUByteArray().asList()
