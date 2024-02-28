@@ -55,29 +55,29 @@ internal class CertificateRevocationListRepositoryDataSource(
 
     override suspend fun addOrUpdateCRL(url: String, timestamp: ULong) {
         val newCRLUrls = metadataDAO.getSerializable(CRL_LIST_KEY, CRLUrlExpirationList.serializer())
-            ?.let { crlExpirationList ->
-                val crlWithExpiration = crlExpirationList.cRLWithExpirationList.find {
-                    it.url == url
-                }
-                crlWithExpiration?.let { item ->
-                    crlExpirationList.cRLWithExpirationList.map { current ->
-                        if (current.url == url) {
-                            return@map item.copy(expiration = timestamp)
-                        } else {
-                            return@map current
-                        }
+                ?.let { crlExpirationList ->
+                    val crlWithExpiration = crlExpirationList.cRLWithExpirationList.find {
+                        it.url == url
                     }
-                } ?: run {
-                    // add new CRL
-                    crlExpirationList.cRLWithExpirationList.plus(
-                        CRLWithExpiration(url, timestamp)
-                    )
-                }
+                    crlWithExpiration?.let { item ->
+                        crlExpirationList.cRLWithExpirationList.map { current ->
+                            if (current.url == url) {
+                                return@map item.copy(expiration = timestamp)
+                            } else {
+                                return@map current
+                            }
+                        }
+                    } ?: run {
+                        // add new CRL
+                        crlExpirationList.cRLWithExpirationList.plus(
+                            CRLWithExpiration(url, timestamp)
+                        )
+                    }
 
-            } ?: run {
-            // add new CRL
-            listOf(CRLWithExpiration(url, timestamp))
-        }
+                } ?: run {
+                // add new CRL
+                listOf(CRLWithExpiration(url, timestamp))
+            }
         metadataDAO.putSerializable(
             CRL_LIST_KEY,
             CRLUrlExpirationList(newCRLUrls),
