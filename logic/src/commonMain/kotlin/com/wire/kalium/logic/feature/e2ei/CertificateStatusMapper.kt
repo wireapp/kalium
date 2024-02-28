@@ -25,11 +25,10 @@ interface CertificateStatusMapper {
 }
 
 class CertificateStatusMapperImpl : CertificateStatusMapper {
-    override fun toCertificateStatus(certificateStatus: CryptoCertificateStatus): CertificateStatus {
+    override fun toCertificateStatus(certificateStatus: CryptoCertificateStatus): CertificateStatus =
         when (certificateStatus) {
-            CryptoCertificateStatus.EXPIRED -> return CertificateStatus.EXPIRED
-            CryptoCertificateStatus.REVOKED -> return CertificateStatus.REVOKED
-            CryptoCertificateStatus.VALID -> return CertificateStatus.VALID
+            CryptoCertificateStatus.EXPIRED -> CertificateStatus.EXPIRED
+            CryptoCertificateStatus.REVOKED -> CertificateStatus.REVOKED
+            CryptoCertificateStatus.VALID -> CertificateStatus.VALID
         }
-    }
 }
