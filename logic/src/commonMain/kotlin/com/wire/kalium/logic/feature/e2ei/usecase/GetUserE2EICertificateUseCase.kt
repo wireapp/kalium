@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.CertificateStatus
-import com.wire.kalium.logic.feature.e2ei.PemCertificateDecoder
+import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapper
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import com.wire.kalium.logic.functional.fold
 
@@ -33,7 +33,7 @@ interface GetUserE2eiCertificateStatusUseCase {
 
 class GetUserE2eiCertificateStatusUseCaseImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
-    private val pemCertificateDecoder: PemCertificateDecoder,
+    private val certificateStatusMapper: CertificateStatusMapper,
     private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase
 ) : GetUserE2eiCertificateStatusUseCase {
     override suspend operator fun invoke(userId: UserId): GetUserE2eiCertificateStatusResult =
@@ -43,7 +43,7 @@ class GetUserE2eiCertificateStatusUseCaseImpl internal constructor(
                     GetUserE2eiCertificateStatusResult.Failure.NotActivated
                 },
                 { identities ->
-                    identities.getUserCertificateStatus(pemCertificateDecoder)?.let {
+                    identities.getUserCertificateStatus(certificateStatusMapper)?.let {
                         GetUserE2eiCertificateStatusResult.Success(it)
                     } ?: GetUserE2eiCertificateStatusResult.Failure.NotActivated
                 }

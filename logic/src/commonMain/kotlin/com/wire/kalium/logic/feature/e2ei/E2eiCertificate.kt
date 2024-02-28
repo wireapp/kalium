@@ -18,8 +18,7 @@
 package com.wire.kalium.logic.feature.e2ei
 
 data class E2eiCertificate(
-    val issuer: String = "",
-    val status: CertificateStatus = CertificateStatus.EXPIRED,
-    val serialNumber: String = "",
-    val certificateDetail: String = ""
+    val status: CertificateStatus,
+    val serialNumber: String,
+    val certificateDetail: String
 )
