@@ -897,6 +897,8 @@ class E2EIRepositoryTest {
         // Given
 
         val (arrangement, e2eiRepository) = Arrangement()
+            .withSetShouldFetchE2EIGetTrustAnchors()
+            .withGetShouldFetchE2EITrustAnchors(true)
             .withGettingE2EISettingsReturns(Either.Left(StorageFailure.DataNotFound))
             .withFetchAcmeTrustAnchorsApiFails()
             .withGetMLSClientSuccessful()
@@ -929,6 +931,8 @@ class E2EIRepositoryTest {
         // Given
 
         val (arrangement, e2eiRepository) = Arrangement()
+            .withSetShouldFetchE2EIGetTrustAnchors()
+            .withGetShouldFetchE2EITrustAnchors(true)
             .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(discoverUrl = RANDOM_URL)))
             .withFetchAcmeTrustAnchorsApiSucceed()
             .withCurrentClientIdProviderSuccessful()
@@ -956,6 +960,36 @@ class E2EIRepositoryTest {
         verify(arrangement.coreCryptoCentral)
             .suspendFunction(arrangement.coreCryptoCentral::registerTrustAnchors)
             .with(eq(Arrangement.RANDOM_BYTE_ARRAY.decodeToString()))
+            .wasInvoked(once)
+
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setShouldFetchE2EITrustAnchors)
+            .with(eq(false))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenGetTrustAnchorsHasAlreadyFetchedOnce_whenFetchingTrustAnchors_thenReturnE2EIFailureTrustAnchorsAlreadyFetched() = runTest {
+        // given
+        val (arrangement, e2eiRepository) = Arrangement()
+            .withSetShouldFetchE2EIGetTrustAnchors()
+            .withGetShouldFetchE2EITrustAnchors(false)
+//             .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(discoverUrl = RANDOM_URL)))
+//             .withFetchAcmeTrustAnchorsApiSucceed()
+//             .withCurrentClientIdProviderSuccessful()
+//             .withCurrentClientIdProviderSuccessful()
+//             .withGetCoreCryptoSuccessful()
+//             .withRegisterTrustAnchors()
+            .arrange()
+
+        // when
+        val result = e2eiRepository.fetchAndSetTrustAnchors()
+
+        // then
+        result.shouldSucceed()
+
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::getShouldFetchE2EITrustAnchor)
             .wasInvoked(once)
     }
 
@@ -1137,6 +1171,20 @@ class E2EIRepositoryTest {
                 .function(userConfigRepository::getE2EISettings)
                 .whenInvoked()
                 .thenReturn(result)
+        }
+
+        fun withGetShouldFetchE2EITrustAnchors(result: Boolean) = apply {
+            given(userConfigRepository)
+                .function(userConfigRepository::getShouldFetchE2EITrustAnchor)
+                .whenInvoked()
+                .thenReturn(result)
+        }
+
+        fun withSetShouldFetchE2EIGetTrustAnchors() = apply {
+            given(userConfigRepository)
+                .function(userConfigRepository::setShouldFetchE2EITrustAnchors)
+                .whenInvokedWith(any())
+                .thenReturn(Unit)
         }
 
         fun withAcmeDirectoriesApiSucceed() = apply {
