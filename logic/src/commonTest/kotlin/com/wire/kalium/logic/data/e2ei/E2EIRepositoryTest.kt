@@ -974,12 +974,6 @@ class E2EIRepositoryTest {
         val (arrangement, e2eiRepository) = Arrangement()
             .withSetShouldFetchE2EIGetTrustAnchors()
             .withGetShouldFetchE2EITrustAnchors(false)
-//             .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(discoverUrl = RANDOM_URL)))
-//             .withFetchAcmeTrustAnchorsApiSucceed()
-//             .withCurrentClientIdProviderSuccessful()
-//             .withCurrentClientIdProviderSuccessful()
-//             .withGetCoreCryptoSuccessful()
-//             .withRegisterTrustAnchors()
             .arrange()
 
         // when
