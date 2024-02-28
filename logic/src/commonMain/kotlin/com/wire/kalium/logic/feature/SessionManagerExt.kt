@@ -26,7 +26,7 @@ import com.wire.kalium.network.session.SessionManager
 
 internal fun SessionManager.getProxyCredentials(): ProxyCredentials? {
     val cred = proxyCredentials()
-    kaliumLogger.d("getProxyCredentials: $cred")
+    kaliumLogger.d("getProxyCredentials: Proxy has username: ${cred?.username?.isNotBlank()}; has password ${cred?.password?.isNotBlank()}")
     return MapperProvider.sessionMapper().fromDTOToProxyCredentialsModel(cred)
 }
 
