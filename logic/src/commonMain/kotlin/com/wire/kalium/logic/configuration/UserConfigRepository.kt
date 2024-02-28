@@ -128,6 +128,8 @@ interface UserConfigRepository {
     suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean)
     suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Either<StorageFailure, Boolean>>
     suspend fun clearE2EISettings()
+    fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
+    fun getShouldFetchE2EITrustAnchor(): Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -464,4 +466,10 @@ internal class UserConfigDataSource internal constructor(
 
     override suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Either<StorageFailure, Boolean>> =
         userConfigDAO.observeShouldNotifyForRevokedCertificate().wrapStorageRequest()
+
+    override fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean) {
+        userConfigStorage.setShouldFetchE2EITrustAnchors(shouldFetch = shouldFetch)
+    }
+
+    override fun getShouldFetchE2EITrustAnchor(): Boolean = userConfigStorage.getShouldFetchE2EITrustAnchorHasRun()
 }
