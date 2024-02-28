@@ -640,7 +640,8 @@ class UserSessionScope internal constructor(
             certificateRevocationListRepository = certificateRevocationListRepository,
             currentClientIdProvider = clientIdProvider,
             mlsClientProvider = mlsClientProvider,
-            mLSConversationsVerificationStatusesHandler = mlsConversationsVerificationStatusesHandler
+            mLSConversationsVerificationStatusesHandler = mlsConversationsVerificationStatusesHandler,
+            isE2EIEnabledUseCase = isE2EIEnabled
         )
 
     private val mlsConversationRepository: MLSConversationRepository
@@ -658,7 +659,8 @@ class UserSessionScope internal constructor(
             proposalTimersFlow,
             keyPackageLimitsProvider,
             checkRevocationList,
-            certificateRevocationListRepository
+            certificateRevocationListRepository,
+            sessionManager.getServerConfig().links,
         )
 
     private val e2eiRepository: E2EIRepository
@@ -1367,7 +1369,8 @@ class UserSessionScope internal constructor(
 
     private val conversationCodeUpdateHandler: CodeUpdatedHandler
         get() = CodeUpdateHandlerImpl(
-            conversationDAO = userStorage.database.conversationDAO
+            conversationDAO = userStorage.database.conversationDAO,
+            sessionManager.getServerConfig().links
         )
 
     private val conversationCodeDeletedHandler: CodeDeletedHandler
@@ -1641,6 +1644,7 @@ class UserSessionScope internal constructor(
         ACMECertificatesSyncWorkerImpl(
             e2eiRepository = e2eiRepository,
             kaliumLogger = userScopedLogger,
+            isE2EIEnabledUseCase = isE2EIEnabled
         )
     }
 
@@ -1701,7 +1705,8 @@ class UserSessionScope internal constructor(
             oneOnOneResolver,
             this,
             userScopedLogger,
-            refreshUsersWithoutMetadata
+            refreshUsersWithoutMetadata,
+            sessionManager.getServerConfig().links
         )
     }
 
@@ -1786,7 +1791,8 @@ class UserSessionScope internal constructor(
             clientRepository,
             joinExistingMLSConversations,
             refreshUsersWithoutMetadata,
-            userScopedLogger,
+            isE2EIEnabled,
+            userScopedLogger
         )
 
     val search: SearchScope
@@ -1868,7 +1874,10 @@ class UserSessionScope internal constructor(
         get() = MarkFileSharingChangeAsNotifiedUseCase(userConfigRepository)
 
     val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(featureSupport, userConfigRepository)
-    val isE2EIEnabled: IsE2EIEnabledUseCase get() = IsE2EIEnabledUseCaseImpl(userConfigRepository)
+    val isE2EIEnabled: IsE2EIEnabledUseCase get() = IsE2EIEnabledUseCaseImpl(
+        userConfigRepository,
+        isMLSEnabled
+    )
 
     val getDefaultProtocol: GetDefaultProtocolUseCase
         get() = GetDefaultProtocolUseCaseImpl(

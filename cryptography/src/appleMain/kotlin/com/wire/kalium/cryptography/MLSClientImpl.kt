@@ -108,6 +108,10 @@ class MLSClientImpl(
         coreCrypto.createConversation(groupIdAsBytes, conf)
     }
 
+    override suspend fun getExternalSenders(groupId: MLSGroupId): ExternalSenderKey {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun wipeConversation(groupId: MLSGroupId) {
         coreCrypto.wipeConversation(toUByteList(groupId.decodeBase64Bytes()))
     }

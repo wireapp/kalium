@@ -51,7 +51,7 @@ class MLSClientImpl(
     }
 
     override suspend fun getPublicKey(): ByteArray {
-        return coreCrypto.clientPublicKey(defaultCiphersuite)
+        return coreCrypto.clientPublicKey(defaultCiphersuite, toCredentialType(getMLSCredentials()))
     }
 
     override suspend fun generateKeyPackages(amount: Int): List<ByteArray> {
@@ -112,6 +112,10 @@ class MLSClientImpl(
         )
 
         coreCrypto.createConversation(groupId.decodeBase64Bytes(), toCredentialType(getMLSCredentials()), conf)
+    }
+
+    override suspend fun getExternalSenders(groupId: MLSGroupId): ExternalSenderKey {
+        return toExternalSenderKey(coreCrypto.getExternalSender(groupId.decodeBase64Bytes()))
     }
 
     override suspend fun wipeConversation(groupId: MLSGroupId) {
@@ -280,16 +284,28 @@ class MLSClientImpl(
         try {
             coreCrypto.e2eiRegisterAcmeCa(pem)
         } catch (e: CryptographyException) {
-            kaliumLogger.i("Registering TrustAnchors failed: $e")
+            kaliumLogger.w("Registering TrustAnchors failed")
         }
     }
 
-    override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration {
-        return toCrlRegistration(coreCrypto.e2eiRegisterCrl(url, crl))
+    @Suppress("TooGenericExceptionCaught")
+    override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration = try {
+        toCrlRegistration(coreCrypto.e2eiRegisterCrl(url, crl))
+    } catch (exception: Exception) {
+        kaliumLogger.w("Registering Crl failed, exception: $exception")
+        CrlRegistration(
+            dirty = false,
+            expiration = null
+        )
     }
 
+    @Suppress("TooGenericExceptionCaught")
     override suspend fun registerIntermediateCa(pem: CertificateChain) {
-        coreCrypto.e2eiRegisterIntermediateCa(pem)
+        try {
+            coreCrypto.e2eiRegisterIntermediateCa(pem)
+        } catch (exception: Exception) {
+            kaliumLogger.w("Registering IntermediateCa failed, exception: $exception")
+        }
     }
 
 =======
@@ -303,6 +319,8 @@ class MLSClientImpl(
             groupId = value.id.encodeBase64(),
             crlNewDistributionPoints = value.crlNewDistributionPoints
         )
+
+        fun toExternalSenderKey(value: ByteArray) = ExternalSenderKey(value)
 
         fun toCommitBundle(value: com.wire.crypto.MemberAddedMessages) = CommitBundle(
             value.commit,

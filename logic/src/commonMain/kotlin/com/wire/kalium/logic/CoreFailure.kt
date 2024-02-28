@@ -20,7 +20,6 @@ package com.wire.kalium.logic
 
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.e2ei.usecase.E2EIEnrollmentResult
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.KaliumException
@@ -201,16 +200,8 @@ interface MLSFailure : CoreFailure {
 }
 
 interface E2EIFailure : CoreFailure {
-
     data object Disabled : E2EIFailure
     data object MissingDiscoveryUrl : E2EIFailure
-<<<<<<< HEAD
-    data class FailedInitialization(val step: E2EIEnrollmentResult.E2EIStep) : E2EIFailure
-    data class FailedOAuth(val reason: String) : E2EIFailure
-    data class FailedFinalization(val step: E2EIEnrollmentResult.E2EIStep) : E2EIFailure
-    data object FailedRotationAndMigration : E2EIFailure
-
-=======
     data class MissingMLSClient(internal val reason: CoreFailure) : E2EIFailure
     data class MissingE2EIClient(internal val reason: CoreFailure) : E2EIFailure
     data object MissingTeamSettings : E2EIFailure
@@ -235,7 +226,6 @@ interface E2EIFailure : CoreFailure {
     data class RotationAndMigration(internal val reason: CoreFailure) : E2EIFailure
     data class InitMLSClient(internal val reason: CoreFailure) : E2EIFailure
     data class Certificate(internal val reason: CoreFailure) : E2EIFailure
->>>>>>> c9759d4364 (fix(e2ei): create fresh MLS client with x509 with E2EI certificate (#2450))
     class Generic(internal val exception: Exception) : E2EIFailure {
         val rootCause: Throwable get() = exception
     }
@@ -349,6 +339,10 @@ internal inline fun <T> wrapE2EIRequest(e2eiRequest: () -> T): Either<E2EIFailur
     return try {
         Either.Right(e2eiRequest())
     } catch (e: Exception) {
+        kaliumLogger.e(
+            """{ "E2EIException": "${e.message},"
+                |"cause": ${e.cause} }" """.trimMargin()
+        )
         kaliumLogger.e(e.stackTraceToString())
         Either.Left(E2EIFailure.Generic(e))
     }

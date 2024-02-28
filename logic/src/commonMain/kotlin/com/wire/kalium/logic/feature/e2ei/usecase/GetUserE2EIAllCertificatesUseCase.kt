@@ -17,13 +17,14 @@
  */
 package com.wire.kalium.logic.feature.e2ei.usecase
 
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.E2eiCertificate
 import com.wire.kalium.logic.feature.e2ei.PemCertificateDecoder
+import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.data.conversation.ClientId
 
 /**
  * This use case is used to get all e2ei certificates of the user.
@@ -35,15 +36,17 @@ interface GetUserE2eiCertificatesUseCase {
 
 class GetUserE2eiCertificatesUseCaseImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
-    private val pemCertificateDecoder: PemCertificateDecoder
+    private val pemCertificateDecoder: PemCertificateDecoder,
+    private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase
 ) : GetUserE2eiCertificatesUseCase {
     override suspend operator fun invoke(userId: UserId): Map<String, E2eiCertificate> =
-        mlsConversationRepository.getUserIdentity(userId).map { identities ->
-            val result = mutableMapOf<String, E2eiCertificate>()
-            identities.forEach {
-                result[it.clientId.value] = pemCertificateDecoder.decode(it.certificate, it.status)
-            }
-            result
-        }.getOrElse(mapOf())
-
+        if (isE2EIEnabledUseCase()) {
+            mlsConversationRepository.getUserIdentity(userId).map { identities ->
+                val result = mutableMapOf<String, E2eiCertificate>()
+                identities.forEach {
+                    result[it.clientId.value] = pemCertificateDecoder.decode(it.certificate, it.status)
+                }
+                result
+            }.getOrElse(mapOf())
+        } else mapOf()
 }
