@@ -50,7 +50,7 @@ abstract class CoreLogicCommon internal constructor(
     protected val idMapper: IdMapper = MapperProvider.idMapper()
 ) {
     protected abstract val globalPreferences: GlobalPrefProvider
-    internal abstract val globalDatabase: GlobalDatabaseProvider
+    protected abstract val globalDatabase: GlobalDatabaseProvider
     protected abstract val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
     protected val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
 

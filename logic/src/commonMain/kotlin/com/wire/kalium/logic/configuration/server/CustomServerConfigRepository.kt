@@ -34,6 +34,10 @@ import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
+/**
+ * Repository for the fetching and storing wire server configurations
+ * If you are looking for doing operations related to API version or blacklisted then use [ServerConfigRepository]
+ */
 internal interface CustomServerConfigRepository {
     /**
      * download an on premise server configuration from a json file
