@@ -12,7 +12,9 @@ CREATE TABLE Reaction (
 );
 CREATE INDEX reaction_sender_index ON Reaction(sender_id);
 CREATE INDEX reaction_emoji_index ON Reaction(emoji);
-CREATE CONSTRAINT reaction_sender_emoji_unique UNIQUE (message_id, conversation_id, sender_id, emoji);
+
+doesMessageExist:
+SELECT 1 FROM Message WHERE id = :message_id AND conversation_id = :converssation_id;
 
 deleteAllReactionsOnMessageFromUser:
 DELETE FROM Reaction WHERE message_id = ? AND conversation_id = ? AND sender_id = ?;
