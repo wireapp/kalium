@@ -56,7 +56,6 @@ faker = "1.15.0"
 robolectric = "4.9"
 stately = "2.0.6"
 micrometer = "1.11.3"
-bouncy-castle = "1.70"
 konsist = "0.13.0"
 postgres = "1.0.2.RELEASE"
 r2dbc = "1.0.0.RELEASE"
@@ -204,6 +203,3 @@ jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 # logging
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 micrometer = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "micrometer" }
-
-# bouncy castle
-bouncy-castle = { module = "org.bouncycastle:bcprov-jdk15on", version.ref = "bouncy-castle" }

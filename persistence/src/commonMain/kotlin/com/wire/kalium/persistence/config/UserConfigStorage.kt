@@ -174,6 +174,8 @@ interface UserConfigStorage {
     fun getE2EINotificationTime(): Long?
     fun e2EINotificationTimeFlow(): Flow<Long?>
     fun updateE2EINotificationTime(timeStamp: Long)
+    fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
+    fun getShouldFetchE2EITrustAnchorHasRun(): Boolean
 }
 
 @Serializable
@@ -558,6 +560,13 @@ class UserConfigStorageImpl(
         }
     }
 
+    override fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean) {
+        kaliumPreferences.putBoolean(SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS, shouldFetch)
+    }
+
+    override fun getShouldFetchE2EITrustAnchorHasRun(): Boolean =
+        kaliumPreferences.getBoolean(SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS, true)
+
     private companion object {
         const val FILE_SHARING = "file_sharing"
         const val GUEST_ROOM_LINK = "guest_room_link"
@@ -574,5 +583,6 @@ class UserConfigStorageImpl(
         const val ENABLE_TYPING_INDICATOR = "enable_typing_indicator"
         const val APP_LOCK = "app_lock"
         const val DEFAULT_PROTOCOL = "default_protocol"
+        const val SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS = "should_fetch_e2ei_trust_anchors"
     }
 }

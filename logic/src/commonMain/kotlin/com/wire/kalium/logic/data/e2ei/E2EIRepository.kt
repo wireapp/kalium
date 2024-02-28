@@ -36,6 +36,7 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrFail
 import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapE2EIRequest
@@ -111,25 +112,30 @@ class E2EIRepositoryImpl(
         return e2EIClientProvider.getE2EIClient(clientId, isNewClient).fold({ it.left() }, { Unit.right() })
     }
 
-    override suspend fun fetchAndSetTrustAnchors(): Either<E2EIFailure, Unit> = discoveryUrl().flatMap {
-        // todo: fetch only once!
-        wrapApiRequest {
-            acmeApi.getTrustAnchors(it)
-        }.fold({
-            E2EIFailure.TrustAnchors(it).left()
-        }, { trustAnchors ->
-            currentClientIdProvider().fold({
+    override suspend fun fetchAndSetTrustAnchors(): Either<E2EIFailure, Unit> = if (userConfigRepository.getShouldFetchE2EITrustAnchor()) {
+        discoveryUrl().flatMap {
+            wrapApiRequest {
+                acmeApi.getTrustAnchors(it)
+            }.fold({
                 E2EIFailure.TrustAnchors(it).left()
-            }, { clientId ->
-                mlsClientProvider.getCoreCrypto(clientId).fold({
-                E2EIFailure.MissingMLSClient(it).left()
-                }, { coreCrypto ->
-                wrapE2EIRequest {
-                    coreCrypto.registerTrustAnchors(trustAnchors.decodeToString())
-                }
+            }, { trustAnchors ->
+                currentClientIdProvider().fold({
+                    E2EIFailure.TrustAnchors(it).left()
+                }, { clientId ->
+                    mlsClientProvider.getCoreCrypto(clientId).fold({
+                        E2EIFailure.MissingMLSClient(it).left()
+                    }, { coreCrypto ->
+                        wrapE2EIRequest {
+                            coreCrypto.registerTrustAnchors(trustAnchors.decodeToString())
+                        }.onSuccess {
+                            userConfigRepository.setShouldFetchE2EITrustAnchors(shouldFetch = false)
+                        }
+                    })
                 })
             })
-        })
+        }
+    } else {
+        Either.Right(Unit)
     }
 
     override suspend fun loadACMEDirectories() = discoveryUrl().flatMap {

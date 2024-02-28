@@ -77,7 +77,8 @@ data class WireIdentity(
     val domain: String,
     val certificate: String,
     val status: CryptoCertificateStatus,
-    val thumbprint: String
+    val thumbprint: String,
+    val serialNumber: String
 )
 
 enum class CryptoCertificateStatus {
