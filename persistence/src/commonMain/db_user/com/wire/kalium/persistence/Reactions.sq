@@ -23,7 +23,7 @@ deleteReaction:
 DELETE FROM Reaction WHERE message_id = ? AND conversation_id = ? AND sender_id = ? AND emoji = ?;
 
 insertReaction:
-INSERT OR IGNORE INTO Reaction(message_id, conversation_id, sender_id, emoji, date)
+INSERT INTO Reaction(message_id, conversation_id, sender_id, emoji, date)
 VALUES(?, ?, ?, ?, ?);
 
 deleteAllReactionsForMessage:
