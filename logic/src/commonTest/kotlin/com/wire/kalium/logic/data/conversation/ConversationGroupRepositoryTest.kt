@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.legalhold.ListUsersLegalHoldConsent
 import com.wire.kalium.logic.data.message.MessageContent
@@ -921,7 +922,7 @@ class ConversationGroupRepositoryTest {
         val conversationId = ConversationId("value", "domain")
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withSuccessfulCallToRevokeGuestRoomLinkApi()
-            .withSuccessfulUpdateOfGuestRoomLinkInDB(null)
+            .withDeleteGuestLink()
             .arrange()
 
         val result = conversationGroupRepository.revokeGuestRoomLink(conversationId)
@@ -934,8 +935,8 @@ class ConversationGroupRepositoryTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::updateGuestRoomLink)
-            .with(any(), eq(null))
+            .suspendFunction(arrangement.conversationDAO::deleteGuestRoomLink)
+            .with(any())
             .wasInvoked(exactly = once)
     }
 
@@ -1398,6 +1399,41 @@ class ConversationGroupRepositoryTest {
                 .wasInvoked(once)
         }
 
+    @Test
+    fun givenAFetchingConversationCodeSuccess_whenSyncingCode_thenUpdateLocally() = runTest {
+        val expected = NetworkResponse.Success(
+            ConversationInviteLinkResponse(
+                uri = "uri",
+                code = "code",
+                key = "key",
+                hasPassword = false
+            ),
+            emptyMap(),
+            200
+        )
+
+        val conversationId = ConversationId("value", "domain")
+
+        val accountUrl = "accountUrl.com"
+
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withRemoteFetchCode(expected)
+            .withInsertConversationSuccess()
+            .arrange()
+
+        conversationGroupRepository.updateGuestRoomLink(conversationId, accountUrl)
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::guestLinkInfo)
+            .with(eq(conversationId.toApi()))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::updateGuestRoomLink)
+            .with(eq(conversationId.toDao()), eq("uri"), eq(expected.value.hasPassword))
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
 
@@ -1701,10 +1737,10 @@ class ConversationGroupRepositoryTest {
                 )
         }
 
-        fun withSuccessfulUpdateOfGuestRoomLinkInDB(link: String?) = apply {
+        fun withDeleteGuestLink() = apply {
             given(conversationDAO)
-                .suspendFunction(conversationDAO::updateGuestRoomLink)
-                .whenInvokedWith(any(), eq(link))
+                .suspendFunction(conversationDAO::deleteGuestRoomLink)
+                .whenInvokedWith(any())
                 .thenReturn(Unit)
         }
 
@@ -1806,6 +1842,15 @@ class ConversationGroupRepositoryTest {
                 .suspendFunction(newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withRemoteFetchCode(
+            result: NetworkResponse<ConversationInviteLinkResponse>
+        ) = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::guestLinkInfo)
+                .whenInvokedWith(any())
+                .thenReturn(result)
         }
 
         fun withSuccessfulFetchUsersLegalHoldConsent(result: ListUsersLegalHoldConsent) = apply {

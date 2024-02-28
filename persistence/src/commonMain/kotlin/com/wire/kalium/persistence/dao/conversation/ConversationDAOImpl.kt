@@ -360,10 +360,14 @@ internal class ConversationDAOImpl internal constructor(
 
     override suspend fun updateGuestRoomLink(
         conversationId: QualifiedIDEntity,
-        link: String?,
+        link: String,
         isPasswordProtected: Boolean
     ) = withContext(coroutineContext) {
         conversationQueries.updateGuestRoomLink(link, isPasswordProtected, conversationId)
+    }
+
+    override suspend fun deleteGuestRoomLink(conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
+        conversationQueries.updateGuestRoomLink(null, false, conversationId)
     }
 
     override suspend fun observeGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): Flow<ConversationGuestLinkEntity?> =
@@ -431,4 +435,12 @@ internal class ConversationDAOImpl internal constructor(
             .asFlow()
             .mapToOneOrDefault(true)
             .flowOn(coroutineContext)
+
+    override suspend fun getEstablishedSelfMLSGroupId(): String? =
+        withContext(coroutineContext) {
+            conversationQueries
+                .getEstablishedSelfMLSGroupId()
+                .executeAsOneOrNull()
+                ?.mls_group_id
+        }
 }

@@ -15,18 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.testservice.models
 
-package com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink
-
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
-
-@Serializable
-data class ConversationInviteLinkResponse(
-    @SerialName("uri") val uri: String?,
-    @SerialName("key") val key: String,
-    @SerialName("code") val code: String,
-    // the initial value for has password because password protected invite links
-    // are supported on api v4+
-    @SerialName("has_password") val hasPassword: Boolean = false
+data class SendTypingRequest(
+    val conversationDomain: String = "staging.zinfra.io",
+    val conversationId: String = "",
+    val status: String = ""
 )
