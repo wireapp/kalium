@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.feature.e2ei.CertificateRevocationListCheckWorker
+import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -35,10 +36,11 @@ interface CheckRevocationListForCurrentClientUseCase {
 internal class CheckRevocationListForCurrentClientUseCaseImpl(
     private val checkRevocationList: CheckRevocationListUseCase,
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
-    private val userConfigRepository: UserConfigRepository
+    private val userConfigRepository: UserConfigRepository,
+    private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase
 ) : CheckRevocationListForCurrentClientUseCase {
     override suspend fun invoke() {
-        if (userConfigRepository.shouldCheckCrlForCurrentClient()) {
+        if (isE2EIEnabledUseCase() && userConfigRepository.shouldCheckCrlForCurrentClient()) {
             certificateRevocationListRepository.getCurrentClientCrlUrl().onSuccess { url ->
                 kaliumLogger.i("Checking CRL for current client..")
                 checkRevocationList(url)

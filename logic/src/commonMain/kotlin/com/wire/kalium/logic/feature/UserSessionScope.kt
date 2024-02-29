@@ -650,7 +650,8 @@ class UserSessionScope internal constructor(
         get() = CheckRevocationListForCurrentClientUseCaseImpl(
             checkRevocationList = checkRevocationList,
             certificateRevocationListRepository = certificateRevocationListRepository,
-            userConfigRepository = userConfigRepository
+            userConfigRepository = userConfigRepository,
+            isE2EIEnabledUseCase = isE2EIEnabled
         )
 
     private val mlsConversationRepository: MLSConversationRepository

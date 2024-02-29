@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
+import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -35,9 +36,23 @@ import kotlin.test.Test
 class CheckRevocationListForCurrentClientUseCaseTest {
 
     @Test
+    fun givenE2eiDisabled_whenRunningUseCase_thenDoNothing() = runTest {
+        val (arrangement, checkRevocationListForCurrentClient) = Arrangement()
+            .withE2eiDisabled()
+            .arrange()
+
+        checkRevocationListForCurrentClient()
+
+        verify(arrangement.certificateRevocationListRepository)
+            .suspendFunction(arrangement.certificateRevocationListRepository::getCurrentClientCrlUrl)
+            .wasNotInvoked()
+    }
+
+    @Test
     fun givenShouldCheckCrlIsFalse_whenRunningUseCase_thenDoNothing() = runTest {
         val (arrangement, checkRevocationListForCurrentClient) = Arrangement()
             .withShouldCheckCrlForCurrentClientReturning(false)
+            .withE2eiEnabled()
             .arrange()
 
         checkRevocationListForCurrentClient()
@@ -52,6 +67,7 @@ class CheckRevocationListForCurrentClientUseCaseTest {
         runTest {
             val (arrangement, checkRevocationListForCurrentClient) = Arrangement()
                 .withShouldCheckCrlForCurrentClientReturning(true)
+                .withE2eiEnabled()
                 .withGetCurrentClientCrlUrlReturning(Either.Left(CoreFailure.InvalidEventSenderID))
                 .arrange()
 
@@ -71,6 +87,7 @@ class CheckRevocationListForCurrentClientUseCaseTest {
     fun givenCheckRevocationListUseCaseReturnsFailure_whenRunningUseCase_thenDoNothing() = runTest {
         val (arrangement, checkRevocationListForCurrentClient) = Arrangement()
             .withShouldCheckCrlForCurrentClientReturning(true)
+            .withE2eiEnabled()
             .withGetCurrentClientCrlUrlReturning(Either.Right(URL))
             .withCheckRevocationListUseCaseReturning(Either.Left(CoreFailure.InvalidEventSenderID))
             .arrange()
@@ -94,6 +111,7 @@ class CheckRevocationListForCurrentClientUseCaseTest {
             val (arrangement, checkRevocationListForCurrentClient) = Arrangement()
                 .withShouldCheckCrlForCurrentClientReturning(true)
                 .withGetCurrentClientCrlUrlReturning(Either.Right(URL))
+                .withE2eiEnabled()
                 .withCheckRevocationListUseCaseReturning(Either.Right(EXPIRATION))
                 .withSetShouldCheckCrlForCurrentClient()
                 .arrange()
@@ -129,11 +147,30 @@ class CheckRevocationListForCurrentClientUseCaseTest {
         val userConfigRepository =
             mock(classOf<UserConfigRepository>())
 
+        @Mock
+        val isE2EIEnabled =
+            mock(classOf<IsE2EIEnabledUseCase>())
+
         fun arrange() = this to CheckRevocationListForCurrentClientUseCaseImpl(
             checkRevocationList = checkRevocationList,
             certificateRevocationListRepository = certificateRevocationListRepository,
-            userConfigRepository = userConfigRepository
+            userConfigRepository = userConfigRepository,
+            isE2EIEnabledUseCase = isE2EIEnabled
         )
+
+        fun withE2eiEnabled() = apply {
+            given(isE2EIEnabled)
+                .function(isE2EIEnabled::invoke)
+                .whenInvoked()
+                .thenReturn(true)
+        }
+
+        fun withE2eiDisabled() = apply {
+            given(isE2EIEnabled)
+                .function(isE2EIEnabled::invoke)
+                .whenInvoked()
+                .thenReturn(false)
+        }
 
         fun withShouldCheckCrlForCurrentClientReturning(value: Boolean) = apply {
             given(userConfigRepository)
@@ -155,6 +192,7 @@ class CheckRevocationListForCurrentClientUseCaseTest {
                 .whenInvokedWith(any())
                 .thenReturn(result)
         }
+
         fun withSetShouldCheckCrlForCurrentClient() = apply {
             given(userConfigRepository)
                 .suspendFunction(userConfigRepository::setShouldCheckCrlForCurrentClient)
