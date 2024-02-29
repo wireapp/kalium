@@ -34,9 +34,6 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 import io.ktor.http.isSuccess
-import io.ktor.serialization.ContentConvertException
-import io.ktor.serialization.JsonConvertException
-import kotlinx.serialization.MissingFieldException
 import kotlinx.serialization.SerializationException
 
 internal fun HttpRequestBuilder.setWSSUrl(baseUrl: Url, vararg path: String) {
