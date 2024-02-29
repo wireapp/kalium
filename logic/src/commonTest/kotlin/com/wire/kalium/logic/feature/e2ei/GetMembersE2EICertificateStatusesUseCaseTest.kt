@@ -55,7 +55,7 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
             withMembersIdentities(Either.Right(mapOf()))
         }
 
-        val result = getMembersE2EICertificateStatuses(conversationId, listOf())
+        val result = getMembersE2EICertificateStatuses(CONVERSATION_ID, listOf())
 
         assertEquals(mapOf(), result)
     }
@@ -76,7 +76,7 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
                 )
             }
 
-            val result = getMembersE2EICertificateStatuses(conversationId, listOf(USER_ID))
+            val result = getMembersE2EICertificateStatuses(CONVERSATION_ID, listOf(USER_ID))
 
             assertEquals(CertificateStatus.EXPIRED, result[USER_ID])
         }
