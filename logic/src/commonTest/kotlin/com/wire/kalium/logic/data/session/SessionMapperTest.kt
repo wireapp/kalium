@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.data.session
 
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.auth.AccountTokens
@@ -26,16 +25,16 @@ import com.wire.kalium.network.api.base.model.SessionDTO
 import com.wire.kalium.persistence.client.AuthTokenEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
-import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.given
-import io.mockative.mock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
 class SessionMapperTest {
+<<<<<<< HEAD
+=======
+
+>>>>>>> 119b02f5dd (fix: proxy issues 4.6 (#2520))
     private lateinit var sessionMapper: SessionMapper
 
     @BeforeTest
