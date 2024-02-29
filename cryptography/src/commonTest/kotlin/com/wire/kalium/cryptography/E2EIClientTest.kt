@@ -23,6 +23,7 @@ import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import kotlin.time.Duration.Companion.days
 
 @Ignore
 class E2EIClientTest : BaseMLSClientTest() {
@@ -33,8 +34,8 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     private suspend fun createE2EIClient(user: SampleUser): E2EIClient {
-        return createMLSClient(user.qualifiedClientId).newAcmeEnrollment(
-            user.qualifiedClientId, user.name, user.handle, user.teamId
+        return createMLSClient(user.qualifiedClientId).e2eiNewActivationEnrollment(
+            user.name, user.handle, user.teamId,90.days
         )
     }
 

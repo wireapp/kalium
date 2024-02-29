@@ -19,6 +19,7 @@
 package com.wire.kalium.cryptography
 
 import kotlin.jvm.JvmInline
+import kotlin.time.Duration
 
 typealias WelcomeMessage = ByteArray
 typealias HandshakeMessage = ByteArray
@@ -365,18 +366,6 @@ interface MLSClient {
     suspend fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray
 
     /**
-     * Enroll Wire E2EIdentity Client for E2EI before MLSClient Initialization
-     *
-     * @return wire end to end identity client
-     */
-    suspend fun newAcmeEnrollment(
-        clientId: CryptoQualifiedClientId,
-        displayName: String,
-        handle: String,
-        teamId: String?
-    ): E2EIClient
-
-    /**
      * Enroll Wire E2EIdentity Client for E2EI when MLSClient already initialized
      *
      * @return wire end to end identity client
@@ -384,7 +373,8 @@ interface MLSClient {
     suspend fun e2eiNewActivationEnrollment(
         displayName: String,
         handle: String,
-        teamId: String?
+        teamId: String?,
+        expiry: Duration
     ): E2EIClient
 
     /**
@@ -395,7 +385,8 @@ interface MLSClient {
     suspend fun e2eiNewRotateEnrollment(
         displayName: String?,
         handle: String?,
-        teamId: String?
+        teamId: String?,
+        expiry: Duration
     ): E2EIClient
 
     /**
@@ -458,23 +449,4 @@ interface MLSClient {
         groupId: MLSGroupId,
         users: List<CryptoQualifiedID>
     ): Map<String, List<WireIdentity>>
-
-    /**
-     * Register ACME-CA certificates for E2EI
-     * @param pem is the certificate string in pem format
-     */
-    suspend fun registerTrustAnchors(pem: CertificateChain)
-
-    /**
-     * Register Certificate Revocations List for a url for E2EI
-     * @param url that the CRL downloaded from
-     * @param crl fetched crl from the url
-     */
-    suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration
-
-    /**
-     * Register Intermediate CA for E2EI
-     * @param pem fetched certificate chain in pem format from the CA
-     */
-    suspend fun registerIntermediateCa(pem: CertificateChain)
 }
