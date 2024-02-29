@@ -19,8 +19,8 @@
 package com.wire.kalium.logic.feature.server
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.functional.fold
 import io.ktor.http.URLBuilder
 
@@ -37,7 +37,7 @@ fun interface StoreServerConfigUseCase {
 }
 
 internal class StoreServerConfigUseCaseImpl(
-    private val configRepository: ServerConfigRepository
+    private val configRepository: CustomServerConfigRepository
 ) : StoreServerConfigUseCase {
 
     override suspend fun invoke(links: ServerConfig.Links, versionInfo: ServerConfig.VersionInfo): StoreServerConfigResult {
