@@ -57,6 +57,7 @@ actual class CoreLogic(
             kaliumConfigs,
             globalPreferences,
             globalCallManager,
+            globalDatabase,
             userStorageProvider,
             networkStateObserver,
             logoutCallbackManager,
