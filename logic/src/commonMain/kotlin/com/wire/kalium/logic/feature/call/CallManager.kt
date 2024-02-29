@@ -51,6 +51,6 @@ interface CallManager {
     suspend fun reportProcessNotifications(isStarted: Boolean)
 
     suspend fun setTestVideoType(testVideoType: TestVideoType)
-    suspend fun setTestPreviewActive(shouldEnble: Boolean)
+    suspend fun setTestPreviewActive(shouldEnable: Boolean)
     suspend fun setTestRemoteVideoStates(conversationId: ConversationId, participants: List<Participant>)
 }
