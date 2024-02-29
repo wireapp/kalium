@@ -46,7 +46,6 @@ import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
 import io.ktor.http.Url
-import io.ktor.http.protocolWithAuthority
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
