@@ -96,6 +96,7 @@ class MonkeyPool(users: List<UserData>, testCase: String, config: MonkeyConfig) 
         }.awaitAll()
     }
 
+    @Suppress("TooGenericExceptionCaught")
     suspend fun warmUp(core: CoreLogic, sequentialWarmup: Boolean) = coroutineScope {
         // this is needed to create key packages for clients at least once
         if (sequentialWarmup) {
