@@ -27,7 +27,10 @@ import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.legalhold.ListUsersLegalHoldConsent
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConversation
@@ -171,6 +174,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+            .withInsertFailedToAddSystemMessageSuccess()
             .arrange()
 
         val unreachableUserId = TestUser.USER_ID.copy(domain = "unstableDomain2.com")
@@ -200,7 +204,12 @@ class ConversationGroupRepositoryTest {
 
             verify(newConversationMembersRepository)
                 .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
-                .with(anything(), anything(), eq(listOf(unreachableUserId)))
+                .with(anything(), anything())
+                .wasInvoked(once)
+
+            verify(newGroupConversationSystemMessagesCreator)
+                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+                .with(anything(),  eq(listOf(unreachableUserId)), eq(MessageContent.MemberChange.FailedToAdd.Type.Federation))
                 .wasInvoked(once)
         }
     }
@@ -244,6 +253,11 @@ class ConversationGroupRepositoryTest {
             verify(newConversationMembersRepository)
                 .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
                 .with(anything(), anything())
+                .wasNotInvoked()
+
+            verify(newGroupConversationSystemMessagesCreator)
+                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+                .with(anything(), anything(), anything())
                 .wasNotInvoked()
         }
     }
@@ -478,7 +492,6 @@ class ConversationGroupRepositoryTest {
             .withAddMemberAPISucceedChanged()
             .withSuccessfulAddMemberToMLSGroup()
             .withSuccessfulHandleMemberJoinEvent()
-            .withInsertAddedAndFailedSystemMessageSuccess()
             .arrange()
 
         conversationGroupRepository.addMembers(listOf(TestConversation.USER_1), TestConversation.ID)
@@ -909,7 +922,7 @@ class ConversationGroupRepositoryTest {
         val conversationId = ConversationId("value", "domain")
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withSuccessfulCallToRevokeGuestRoomLinkApi()
-            .withSuccessfulUpdateOfGuestRoomLinkInDB(null)
+            .withDeleteGuestLink()
             .arrange()
 
         val result = conversationGroupRepository.revokeGuestRoomLink(conversationId)
@@ -922,8 +935,8 @@ class ConversationGroupRepositoryTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::updateGuestRoomLink)
-            .with(any(), eq(null))
+            .suspendFunction(arrangement.conversationDAO::deleteGuestRoomLink)
+            .with(any())
             .wasInvoked(exactly = once)
     }
 
@@ -1312,6 +1325,115 @@ class ConversationGroupRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenAConversationAndAPIFailsWithMissingLHConsent_whenAddingMembersToConversation_thenShouldRetryWithValidUsers() =
+        runTest {
+            // given
+            val usersWithConsent = listOf(TestUser.OTHER_USER_ID.copy(value = "idWithConsent"))
+            val usersWithoutConsent = listOf(TestUser.OTHER_USER_ID.copy(value = "idWithoutConsent"))
+            val usersFailed = listOf(TestUser.OTHER_USER_ID.copy(value = "idFailed"))
+            val expectedInitialUsers = usersWithConsent + usersWithoutConsent + usersFailed
+            val (arrangement, conversationGroupRepository) = Arrangement()
+                .withConversationDetailsById(TestConversation.CONVERSATION)
+                .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
+                .withFetchUsersIfUnknownByIdsSuccessful()
+                .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(arrayOf(ERROR_MISSING_LEGALHOLD_CONSENT, API_SUCCESS_MEMBER_ADDED))
+                .withSuccessfulHandleMemberJoinEvent()
+                .withInsertFailedToAddSystemMessageSuccess()
+                .withSuccessfulFetchUsersLegalHoldConsent(ListUsersLegalHoldConsent(usersWithConsent, usersWithoutConsent, usersFailed))
+                .arrange()
+            // when
+            conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldSucceed()
+            // then
+            verify(arrangement.conversationApi)
+                .suspendFunction(arrangement.conversationApi::addMember)
+                .with(matching { it.users == expectedInitialUsers.map { it.toApi() } })
+                .wasInvoked(exactly = once)
+            verify(arrangement.conversationApi)
+                .suspendFunction(arrangement.conversationApi::addMember)
+                .with(matching { it.users == usersWithConsent.map { it.toApi() } })
+                .wasInvoked(exactly = once)
+            verify(arrangement.memberJoinEventHandler)
+                .suspendFunction(arrangement.memberJoinEventHandler::handle)
+                .with(anything())
+                .wasInvoked(exactly = once)
+            verify(arrangement.newGroupConversationSystemMessagesCreator)
+                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+                .with(anything(), eq(usersWithoutConsent + usersFailed))
+                .wasInvoked(exactly = once)
+        }
+
+    @Test
+    fun givenAConversationAndAPIFailsWithMissingLHConsent_whenAddingMembersToConversation_thenRetryIsExecutedWithValidUsersOnlyOnce() =
+        runTest {
+            // given
+            val usersWithConsent = listOf(TestUser.OTHER_USER_ID.copy(value = "idWithConsent"))
+            val usersWithoutConsent = listOf(TestUser.OTHER_USER_ID.copy(value = "idWithoutConsent"))
+            val usersFailed = listOf(TestUser.OTHER_USER_ID.copy(value = "idFailed"))
+            val expectedInitialUsers = usersWithConsent + usersWithoutConsent + usersFailed
+            val (arrangement, conversationGroupRepository) = Arrangement()
+                .withConversationDetailsById(TestConversation.CONVERSATION)
+                .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
+                .withFetchUsersIfUnknownByIdsSuccessful()
+                .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(
+                    arrayOf(ERROR_MISSING_LEGALHOLD_CONSENT, ERROR_MISSING_LEGALHOLD_CONSENT)
+                )
+                .withSuccessfulHandleMemberJoinEvent()
+                .withInsertFailedToAddSystemMessageSuccess()
+                .withSuccessfulFetchUsersLegalHoldConsent(ListUsersLegalHoldConsent(usersWithConsent, usersWithoutConsent, usersFailed))
+                .arrange()
+            // when
+            conversationGroupRepository.addMembers(expectedInitialUsers, TestConversation.ID).shouldFail()
+            // then
+            verify(arrangement.conversationApi)
+                .suspendFunction(arrangement.conversationApi::addMember)
+                .with(anything())
+                .wasInvoked(exactly = twice)
+            verify(arrangement.memberJoinEventHandler)
+                .suspendFunction(arrangement.memberJoinEventHandler::handle)
+                .with(anything())
+                .wasNotInvoked()
+            verify(arrangement.newGroupConversationSystemMessagesCreator)
+                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationFailedToAddMembers)
+                .with(anything(), eq(expectedInitialUsers))
+                .wasInvoked(once)
+        }
+
+    @Test
+    fun givenAFetchingConversationCodeSuccess_whenSyncingCode_thenUpdateLocally() = runTest {
+        val expected = NetworkResponse.Success(
+            ConversationInviteLinkResponse(
+                uri = "uri",
+                code = "code",
+                key = "key",
+                hasPassword = false
+            ),
+            emptyMap(),
+            200
+        )
+
+        val conversationId = ConversationId("value", "domain")
+
+        val accountUrl = "accountUrl.com"
+
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withRemoteFetchCode(expected)
+            .withInsertConversationSuccess()
+            .arrange()
+
+        conversationGroupRepository.updateGuestRoomLink(conversationId, accountUrl)
+
+        verify(arrangement.conversationApi)
+            .suspendFunction(arrangement.conversationApi::guestLinkInfo)
+            .with(eq(conversationId.toApi()))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.conversationDAO)
+            .suspendFunction(arrangement.conversationDAO::updateGuestRoomLink)
+            .with(eq(conversationId.toDao()), eq("uri"), eq(expected.value.hasPassword))
+            .wasInvoked(exactly = once)
+    }
+
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
 
@@ -1361,6 +1483,7 @@ class ConversationGroupRepositoryTest {
                 conversationDAO,
                 conversationApi,
                 newConversationMembersRepository,
+                userRepository,
                 lazy { newGroupConversationSystemMessagesCreator },
                 TestUser.SELF.id,
                 selfTeamIdProvider
@@ -1614,10 +1737,10 @@ class ConversationGroupRepositoryTest {
                 )
         }
 
-        fun withSuccessfulUpdateOfGuestRoomLinkInDB(link: String?) = apply {
+        fun withDeleteGuestLink() = apply {
             given(conversationDAO)
-                .suspendFunction(conversationDAO::updateGuestRoomLink)
-                .whenInvokedWith(any(), eq(link))
+                .suspendFunction(conversationDAO::deleteGuestRoomLink)
+                .whenInvokedWith(any())
                 .thenReturn(Unit)
         }
 
@@ -1706,13 +1829,6 @@ class ConversationGroupRepositoryTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withInsertAddedAndFailedSystemMessageSuccess(): Arrangement = apply {
-            given(newGroupConversationSystemMessagesCreator)
-                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(Either.Right(Unit))
-        }
-
         fun withAddMemberAPIFailsFirstWithUnreachableThenSucceed(networkResponses: Array<NetworkResponse<ConversationMemberAddedResponse>>) =
             apply {
                 given(conversationApi)
@@ -1726,6 +1842,22 @@ class ConversationGroupRepositoryTest {
                 .suspendFunction(newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withRemoteFetchCode(
+            result: NetworkResponse<ConversationInviteLinkResponse>
+        ) = apply {
+            given(conversationApi)
+                .suspendFunction(conversationApi::guestLinkInfo)
+                .whenInvokedWith(any())
+                .thenReturn(result)
+        }
+
+        fun withSuccessfulFetchUsersLegalHoldConsent(result: ListUsersLegalHoldConsent) = apply {
+            given(userRepository)
+                .suspendFunction(userRepository::fetchUsersLegalHoldConsent)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(result))
         }
 
         fun arrange() = this to conversationGroupRepository
@@ -1787,6 +1919,16 @@ class ConversationGroupRepositoryTest {
                         "unstableDomain1.com",
                         "unstableDomain2.com"
                     )
+                )
+            )
+        )
+
+        val ERROR_MISSING_LEGALHOLD_CONSENT = NetworkResponse.Error(
+            KaliumException.InvalidRequestError(
+                ErrorResponse(
+                    code = HttpStatusCode.Forbidden.value,
+                    message = "",
+                    label = "missing-legalhold-consent"
                 )
             )
         )

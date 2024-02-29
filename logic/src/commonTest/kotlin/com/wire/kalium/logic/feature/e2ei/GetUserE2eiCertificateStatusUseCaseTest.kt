@@ -26,12 +26,15 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificateStatusResult
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificateStatusUseCaseImpl
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangement
+import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.PemCertificateDecoderArrangement
 import com.wire.kalium.logic.util.arrangement.mls.PemCertificateDecoderArrangementImpl
 import io.mockative.any
 import io.mockative.eq
+import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -42,6 +45,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
     @Test
     fun givenErrorOnGettingUserIdentity_whenGetUserE2eiCertificateStatus_thenNotActivatedResult() = runTest {
         val (_, getUserE2eiCertificateStatus) = arrange {
+            withE2EIEnabledAndMLSEnabled(true)
             withUserIdentity(Either.Left(MLSFailure.WrongEpoch))
         }
 
@@ -53,6 +57,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
     @Test
     fun givenEmptyWireIdentityList_whenGetUserE2eiCertificateStatus_thenNotActivatedResult() = runTest {
         val (_, getUserE2eiCertificateStatus) = arrange {
+            withE2EIEnabledAndMLSEnabled(true)
             withUserIdentity(Either.Right(listOf()))
         }
 
@@ -64,6 +69,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
     @Test
     fun givenOneWireIdentityExpired_whenGetUserE2eiCertificateStatus_thenResultIsExpired() = runTest {
         val (_, getUserE2eiCertificateStatus) = arrange {
+            withE2EIEnabledAndMLSEnabled(true)
             withUserIdentity(Either.Right(listOf(WIRE_IDENTITY, WIRE_IDENTITY.copy(status = CryptoCertificateStatus.EXPIRED))))
         }
 
@@ -76,6 +82,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
     @Test
     fun givenOneWireIdentityRevoked_whenGetUserE2eiCertificateStatus_thenResultIsRevoked() = runTest {
         val (_, getUserE2eiCertificateStatus) = arrange {
+            withE2EIEnabledAndMLSEnabled(true)
             withUserIdentity(Either.Right(listOf(WIRE_IDENTITY, WIRE_IDENTITY.copy(status = CryptoCertificateStatus.REVOKED))))
         }
 
@@ -88,6 +95,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
     @Test
     fun givenOneWireIdentityRevoked_whenGetUserE2eiCertificateStatus_thenResultIsRevoked2() = runTest {
         val (_, getUserE2eiCertificateStatus) = arrange {
+            withE2EIEnabledAndMLSEnabled(true)
             withUserIdentity(
                 Either.Right(
                     listOf(
@@ -104,9 +112,31 @@ class GetUserE2eiCertificateStatusUseCaseTest {
         assertEquals(CertificateStatus.REVOKED, (result as GetUserE2eiCertificateStatusResult.Success).status)
     }
 
+    @Test
+    fun givenE2EIAndMLSIsDisabled_whenGettingUserE2EICertificateStatus_thenFailureNotActivatedIsReturned() = runTest {
+        // given
+        val (arrangement, getUserE2eiCertificateStatus) = arrange {
+            withE2EIEnabledAndMLSEnabled(false)
+        }
+
+        // when
+        val result = getUserE2eiCertificateStatus(USER_ID)
+
+        // then
+        assertEquals(
+            GetUserE2eiCertificateStatusResult.Failure.NotActivated,
+            result
+        )
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::getUserIdentity)
+            .with(any())
+            .wasNotInvoked()
+    }
+
     private class Arrangement(private val block: Arrangement.() -> Unit) :
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
-        PemCertificateDecoderArrangement by PemCertificateDecoderArrangementImpl() {
+        PemCertificateDecoderArrangement by PemCertificateDecoderArrangementImpl(),
+        IsE2EIEnabledUseCaseArrangement by IsE2EIEnabledUseCaseArrangementImpl() {
 
         fun arrange() = run {
             withPemCertificateDecode(E2EI_CERTIFICATE, any(), eq(CryptoCertificateStatus.VALID))
@@ -116,7 +146,8 @@ class GetUserE2eiCertificateStatusUseCaseTest {
             block()
             this@Arrangement to GetUserE2eiCertificateStatusUseCaseImpl(
                 mlsConversationRepository = mlsConversationRepository,
-                pemCertificateDecoder = pemCertificateDecoder
+                pemCertificateDecoder = pemCertificateDecoder,
+                isE2EIEnabledUseCase = isE2EIEnabledUseCase
             )
         }
     }

@@ -29,11 +29,9 @@ import com.wire.crypto.MlsGroupInfoEncryptionType
 import com.wire.crypto.MlsRatchetTreeType
 import com.wire.crypto.MlsWirePolicy
 import com.wire.crypto.client.Ciphersuites
-import com.wire.kalium.cryptography.exceptions.CryptographyException
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.days
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 import kotlin.time.toJavaDuration
@@ -48,13 +46,12 @@ class MLSClientImpl(
     private val keyRotationDuration: Duration = 30.toDuration(DurationUnit.DAYS)
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration.toJavaDuration(), MlsWirePolicy.PLAINTEXT)
     private val defaultCiphersuite = Ciphersuites.DEFAULT.lower().first()
-    private val defaultE2EIExpiry = 90.days.inWholeSeconds.toUInt()
     override suspend fun close() {
         coreCrypto.close()
     }
 
     override suspend fun getPublicKey(): ByteArray {
-        return coreCrypto.clientPublicKey(defaultCiphersuite)
+        return coreCrypto.clientPublicKey(defaultCiphersuite, toCredentialType(getMLSCredentials()))
     }
 
     override suspend fun generateKeyPackages(amount: Int): List<ByteArray> {
@@ -115,6 +112,10 @@ class MLSClientImpl(
         )
 
         coreCrypto.createConversation(groupId.decodeBase64Bytes(), toCredentialType(getMLSCredentials()), conf)
+    }
+
+    override suspend fun getExternalSenders(groupId: MLSGroupId): ExternalSenderKey {
+        return toExternalSenderKey(coreCrypto.getExternalSender(groupId.decodeBase64Bytes()))
     }
 
     override suspend fun wipeConversation(groupId: MLSGroupId) {
@@ -197,35 +198,18 @@ class MLSClientImpl(
         return coreCrypto.exportSecretKey(groupId.decodeBase64Bytes(), keyLength)
     }
 
-    override suspend fun newAcmeEnrollment(
-        clientId: CryptoQualifiedClientId,
-        displayName: String,
-        handle: String,
-        teamId: String?
-    ): E2EIClient {
-        return E2EIClientImpl(
-            coreCrypto.e2eiNewEnrollment(
-                clientId.toString(),
-                displayName,
-                handle,
-                teamId,
-                defaultE2EIExpiry,
-                defaultCiphersuite
-            )
-        )
-    }
-
     override suspend fun e2eiNewActivationEnrollment(
         displayName: String,
         handle: String,
-        teamId: String?
+        teamId: String?,
+        expiry: Duration
     ): E2EIClient {
         return E2EIClientImpl(
             coreCrypto.e2eiNewActivationEnrollment(
                 displayName,
                 handle,
                 teamId,
-                defaultE2EIExpiry,
+                expiry.inWholeSeconds.toUInt(),
                 defaultCiphersuite
             )
         )
@@ -234,14 +218,15 @@ class MLSClientImpl(
     override suspend fun e2eiNewRotateEnrollment(
         displayName: String?,
         handle: String?,
-        teamId: String?
+        teamId: String?,
+        expiry: Duration
     ): E2EIClient {
         return E2EIClientImpl(
             coreCrypto.e2eiNewRotateEnrollment(
                 displayName,
                 handle,
                 teamId,
-                defaultE2EIExpiry,
+                expiry.inWholeSeconds.toUInt(),
                 defaultCiphersuite
             )
         )
@@ -294,22 +279,6 @@ class MLSClientImpl(
         }
     }
 
-    override suspend fun registerTrustAnchors(pem: CertificateChain) {
-        try {
-            coreCrypto.e2eiRegisterAcmeCa(pem)
-        } catch (e: CryptographyException) {
-            kaliumLogger.i("Registering TrustAnchors failed: $e")
-        }
-    }
-
-    override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration {
-        return toCrlRegistration(coreCrypto.e2eiRegisterCrl(url, crl))
-    }
-
-    override suspend fun registerIntermediateCa(pem: CertificateChain) {
-        coreCrypto.e2eiRegisterIntermediateCa(pem)
-    }
-
     companion object {
         fun toUByteList(value: ByteArray): List<UByte> = value.asUByteArray().asList()
         fun toUByteList(value: String): List<UByte> = value.encodeToByteArray().asUByteArray().asList()
@@ -319,6 +288,8 @@ class MLSClientImpl(
             groupId = value.id.encodeBase64(),
             crlNewDistributionPoints = value.crlNewDistributionPoints
         )
+
+        fun toExternalSenderKey(value: ByteArray) = ExternalSenderKey(value)
 
         fun toCommitBundle(value: com.wire.crypto.MemberAddedMessages) = CommitBundle(
             value.commit,

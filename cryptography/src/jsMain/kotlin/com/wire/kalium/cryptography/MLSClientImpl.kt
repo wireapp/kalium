@@ -18,6 +18,8 @@
 
 package com.wire.kalium.cryptography
 
+import kotlin.time.Duration
+
 @Suppress("TooManyFunctions")
 class MLSClientImpl : MLSClient {
     override suspend fun close() {
@@ -68,6 +70,10 @@ class MLSClientImpl : MLSClient {
         TODO("Not yet implemented")
     }
 
+    override suspend fun getExternalSenders(groupId: MLSGroupId): ExternalSenderKey {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun wipeConversation(groupId: MLSGroupId) {
         TODO("Not yet implemented")
     }
@@ -112,19 +118,11 @@ class MLSClientImpl : MLSClient {
         TODO("Not yet implemented")
     }
 
-    override suspend fun newAcmeEnrollment(
-        clientId: CryptoQualifiedClientId,
-        displayName: String,
-        handle: String,
-        teamId: String?
-    ): E2EIClient {
-        TODO("Not yet implemented")
-    }
-
     override suspend fun e2eiNewActivationEnrollment(
         displayName: String,
         handle: String,
-        teamId: String?
+        teamId: String?,
+        expiry: Duration
     ): E2EIClient {
         TODO("Not yet implemented")
     }
@@ -132,7 +130,8 @@ class MLSClientImpl : MLSClient {
     override suspend fun e2eiNewRotateEnrollment(
         displayName: String?,
         handle: String?,
-        teamId: String?
+        teamId: String?,
+        expiry: Duration
     ): E2EIClient {
         TODO("Not yet implemented")
     }
@@ -166,18 +165,6 @@ class MLSClientImpl : MLSClient {
     }
 
     override suspend fun getUserIdentities(groupId: MLSGroupId, users: List<CryptoQualifiedID>): Map<String, List<WireIdentity>> {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun registerTrustAnchors(pem: CertificateChain) {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun registerIntermediateCa(pem: CertificateChain) {
         TODO("Not yet implemented")
     }
 }

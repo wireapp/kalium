@@ -40,6 +40,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConvers
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationProtocolResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationReceiptModeResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
@@ -396,6 +397,11 @@ internal open class ConversationApiV0 internal constructor(
         protocol: ConvProtocol
     ): NetworkResponse<UpdateConversationProtocolResponse> =
         ConversationApi.getApiNotSupportError("updateProtocol")
+
+    override suspend fun guestLinkInfo(conversationId: ConversationId): NetworkResponse<ConversationInviteLinkResponse> =
+        wrapKaliumResponse {
+            httpClient.get("$PATH_CONVERSATIONS/${conversationId.value}/$PATH_CODE")
+        }
 
     protected companion object {
         const val PATH_CONVERSATIONS = "conversations"

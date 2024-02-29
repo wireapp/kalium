@@ -89,8 +89,6 @@ CREATE TABLE MessageAssetContent (
       asset_size INTEGER NOT NULL,
       asset_name TEXT,
       asset_mime_type TEXT NOT NULL,
-      asset_upload_status TEXT AS MessageEntity.UploadStatus,
-      asset_download_status TEXT AS MessageEntity.DownloadStatus,
 
       -- remote data fields
       asset_otr_key BLOB NOT NULL,
@@ -376,8 +374,8 @@ INSERT OR IGNORE INTO MessageRestrictedAssetContent(message_id, conversation_id,
 VALUES(?, ?, ?,?,?);
 
 insertMessageAssetContent:
-INSERT OR IGNORE INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_upload_status, asset_download_status, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness)
-VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR IGNORE INTO MessageAssetContent(message_id, conversation_id, asset_size, asset_name, asset_mime_type, asset_otr_key, asset_sha256, asset_id, asset_token, asset_domain, asset_encryption_algorithm, asset_width, asset_height, asset_duration_ms, asset_normalized_loudness)
+VALUES(?, ?, ?, ?, ?, ? ,?, ?, ?, ?, ?, ?, ?,  ?, ?);
 
 insertMemberChangeMessage:
 INSERT OR IGNORE INTO MessageMemberChangeContent(message_id, conversation_id, member_change_list, member_change_type)
@@ -441,18 +439,8 @@ UPDATE MessageTextContent
 SET quoted_message_id = ?
 WHERE quoted_message_id = ? AND conversation_id = ?;
 
-updateAssetUploadStatus:
-UPDATE MessageAssetContent
-SET asset_upload_status = ?
-WHERE message_id = ? AND conversation_id = ?;
-
 selectMessageVisibility:
 SELECT visibility FROM Message WHERE id = ? AND conversation_id = ?;
-
-updateAssetDownloadStatus:
-UPDATE MessageAssetContent
-SET asset_download_status = ?
-WHERE message_id = ? AND conversation_id = ?;
 
 updateAssetContent {
     UPDATE OR ROLLBACK Message
@@ -460,7 +448,7 @@ updateAssetContent {
     WHERE id = :messageId AND conversation_id = :conversationId AND visibility IS NOT 'DELETED';
 
     UPDATE OR ROLLBACK MessageAssetContent
-    SET asset_id = :assetId, asset_domain = :assetDomain, asset_otr_key = :assetOtrKey, asset_sha256 = :assetSha256, asset_name = :assetName, asset_download_status = :assetDownloadStatus, asset_upload_status = :assetUploadStatus, asset_size = :assetSize, asset_mime_type = :assetMimeType, asset_token = :assetToken, asset_encryption_algorithm = :assetEncryptionAlgorithm
+    SET asset_id = :assetId, asset_domain = :assetDomain, asset_otr_key = :assetOtrKey, asset_sha256 = :assetSha256, asset_name = :assetName, asset_size = :assetSize, asset_mime_type = :assetMimeType, asset_token = :assetToken, asset_encryption_algorithm = :assetEncryptionAlgorithm
     WHERE message_id = :messageId AND conversation_id = :conversationId;
 }
 
@@ -512,16 +500,6 @@ SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? A
 
 selectByConversationIdAndSenderIdAndType:
 SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND contentType = ?;
-
-resetAssetUploadStatus:
-UPDATE MessageAssetContent
-SET asset_upload_status = 'FAILED'
-WHERE asset_upload_status = 'IN_PROGRESS';
-
-resetAssetDownloadStatus:
-UPDATE MessageAssetContent
-SET asset_download_status = 'FAILED'
-WHERE asset_download_status = 'IN_PROGRESS';
 
 selectPendingMessagesIdsByConversationIdAndVisibilityAfterDate:
 SELECT Message.id

@@ -55,8 +55,6 @@ INSERT OR IGNORE INTO MessageAssetContent SELECT
     asset_size,
     asset_name,
     asset_mime_type,
-    'NOT_UPLOADED',
-    'NOT_DOWNLOADED',
     asset_otr_key,
     asset_sha256,
     asset_id,

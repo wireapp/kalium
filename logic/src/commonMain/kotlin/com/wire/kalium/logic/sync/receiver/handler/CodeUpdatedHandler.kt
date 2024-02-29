@@ -18,8 +18,10 @@
 package com.wire.kalium.logic.sync.receiver.handler
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.conversation.link
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
@@ -29,11 +31,12 @@ internal interface CodeUpdatedHandler {
 }
 
 internal class CodeUpdateHandlerImpl internal constructor(
-    private val conversationDAO: ConversationDAO
+    private val conversationDAO: ConversationDAO,
+    private val serverConfigLinks: ServerConfig.Links
 ) : CodeUpdatedHandler {
     override suspend fun handle(event: Event.Conversation.CodeUpdated) = wrapStorageRequest {
         conversationDAO.updateGuestRoomLink(
-            event.conversationId.toDao(), event.uri, event.isPasswordProtected
+            event.conversationId.toDao(), event.link(serverConfigLinks.accounts), event.isPasswordProtected
         )
     }
 }

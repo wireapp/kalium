@@ -58,6 +58,7 @@ internal interface LegalHoldHandler {
         messageTimestampIso: String,
         handleFailure: suspend () -> Either<CoreFailure, Unit>
     ): Either<CoreFailure, Boolean>
+    suspend fun handleConversationMembersChanged(conversationId: ConversationId): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
@@ -157,6 +158,11 @@ internal class LegalHoldHandlerImpl internal constructor(
                 }
             }
         }
+
+    override suspend fun handleConversationMembersChanged(conversationId: ConversationId): Either<CoreFailure, Unit> =
+        membersHavingLegalHoldClient(conversationId)
+            .map { if (it.isEmpty()) Conversation.LegalHoldStatus.DISABLED else Conversation.LegalHoldStatus.ENABLED }
+            .map { newLegalHoldStatusAfterMembersChange -> handleForConversation(conversationId, newLegalHoldStatusAfterMembersChange) }
 
     private suspend fun processEvent(selfUserId: UserId, userId: UserId) {
         if (selfUserId == userId) {

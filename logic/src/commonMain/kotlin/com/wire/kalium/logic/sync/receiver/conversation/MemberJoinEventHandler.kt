@@ -34,6 +34,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.util.serialization.toJsonElement
 
 interface MemberJoinEventHandler {
@@ -44,6 +45,7 @@ internal class MemberJoinEventHandlerImpl(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val persistMessage: PersistMessageUseCase,
+    private val legalHoldHandler: LegalHoldHandler,
     private val selfUserId: UserId
 ) : MemberJoinEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
@@ -85,6 +87,7 @@ internal class MemberJoinEventHandlerImpl(
                     expirationData = null
                 )
                 persistMessage(message)
+                legalHoldHandler.handleConversationMembersChanged(event.conversationId)
                 kaliumLogger
                     .logEventProcessing(
                         EventLoggingStatus.SUCCESS,

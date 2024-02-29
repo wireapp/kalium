@@ -23,7 +23,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ConversationInviteLinkResponse(
-    @SerialName("uri") val uri: String,
+    @SerialName("uri") val uri: String?,
     @SerialName("key") val key: String,
     @SerialName("code") val code: String,
     // the initial value for has password because password protected invite links
