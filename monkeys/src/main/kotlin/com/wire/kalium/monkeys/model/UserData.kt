@@ -110,7 +110,7 @@ data class Backend(
 ) {
     companion object {
         fun fromConfig(config: BackendConfig): Backend = with(config) {
-            Backend(api, accounts, webSocket, blackList, teams, website, title, domain, secondFactorAuth, authUser, authPassword)
+            Backend(api, accounts, webSocket, blackList, teams, website, title, domain, !forceDisable2fa && secondFactorAuth, authUser, authPassword)
         }
     }
 }
