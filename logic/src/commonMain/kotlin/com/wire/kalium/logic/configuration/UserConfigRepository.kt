@@ -452,7 +452,7 @@ internal class UserConfigDataSource internal constructor(
     override suspend fun shouldUpdateClientLegalHoldCapability(): Boolean =
         userConfigDAO.shouldUpdateClientLegalHoldCapability()
 
-    override suspend fun shouldShouldCheckCrlForCurrentClient() = userConfigDAO.shouldCheckCrlForCurrentClient()
+    override suspend fun shouldCheckCrlForCurrentClient() = userConfigDAO.shouldCheckCrlForCurrentClient()
 
     override suspend fun setShouldCheckCrlForCurrentClient(shouldCheck: Boolean): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigDAO.setShouldCheckCrlForCurrentClient(shouldCheck) }
