@@ -22,6 +22,7 @@ import com.wire.crypto.ConversationId
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoCallbacks
 import platform.Foundation.NSFileManager
+import kotlin.time.Duration
 
 actual suspend fun coreCryptoCentral(rootDir: String, databaseKey: String): CoreCryptoCentral {
     val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
@@ -60,8 +61,38 @@ class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: Str
         return MLSClientImpl(cc)
     }
 
+    override suspend fun mlsClient(
+        enrollment: E2EIClient,
+        certificateChain: CertificateChain,
+        newMLSKeyPackageCount: UInt
+    ): MLSClient {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun proteusClient(): ProteusClient {
         return ProteusClientCoreCryptoImpl(cc, rootDir)
+    }
+
+    override suspend fun newAcmeEnrollment(
+        clientId: CryptoQualifiedClientId,
+        displayName: String,
+        handle: String,
+        teamId: String?,
+        expiry: Duration
+    ): E2EIClient {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun registerTrustAnchors(pem: CertificateChain) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun registerIntermediateCa(pem: CertificateChain) {
+        TODO("Not yet implemented")
     }
 
     companion object {
