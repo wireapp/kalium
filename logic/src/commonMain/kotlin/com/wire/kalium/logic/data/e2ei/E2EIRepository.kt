@@ -35,7 +35,6 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrFail
 import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.wrapApiRequest
