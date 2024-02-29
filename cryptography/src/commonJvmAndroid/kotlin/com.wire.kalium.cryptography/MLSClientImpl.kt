@@ -29,11 +29,9 @@ import com.wire.crypto.MlsGroupInfoEncryptionType
 import com.wire.crypto.MlsRatchetTreeType
 import com.wire.crypto.MlsWirePolicy
 import com.wire.crypto.client.Ciphersuites
-import com.wire.kalium.cryptography.exceptions.CryptographyException
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.days
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 import kotlin.time.toJavaDuration
@@ -48,7 +46,6 @@ class MLSClientImpl(
     private val keyRotationDuration: Duration = 30.toDuration(DurationUnit.DAYS)
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration.toJavaDuration(), MlsWirePolicy.PLAINTEXT)
     private val defaultCiphersuite = Ciphersuites.DEFAULT.lower().first()
-    private val defaultE2EIExpiry = 90.days.inWholeSeconds.toUInt()
     override suspend fun close() {
         coreCrypto.close()
     }
@@ -201,35 +198,18 @@ class MLSClientImpl(
         return coreCrypto.exportSecretKey(groupId.decodeBase64Bytes(), keyLength)
     }
 
-    override suspend fun newAcmeEnrollment(
-        clientId: CryptoQualifiedClientId,
-        displayName: String,
-        handle: String,
-        teamId: String?
-    ): E2EIClient {
-        return E2EIClientImpl(
-            coreCrypto.e2eiNewEnrollment(
-                clientId.toString(),
-                displayName,
-                handle,
-                teamId,
-                defaultE2EIExpiry,
-                defaultCiphersuite
-            )
-        )
-    }
-
     override suspend fun e2eiNewActivationEnrollment(
         displayName: String,
         handle: String,
-        teamId: String?
+        teamId: String?,
+        expiry: Duration
     ): E2EIClient {
         return E2EIClientImpl(
             coreCrypto.e2eiNewActivationEnrollment(
                 displayName,
                 handle,
                 teamId,
-                defaultE2EIExpiry,
+                expiry.inWholeSeconds.toUInt(),
                 defaultCiphersuite
             )
         )
@@ -238,14 +218,15 @@ class MLSClientImpl(
     override suspend fun e2eiNewRotateEnrollment(
         displayName: String?,
         handle: String?,
-        teamId: String?
+        teamId: String?,
+        expiry: Duration
     ): E2EIClient {
         return E2EIClientImpl(
             coreCrypto.e2eiNewRotateEnrollment(
                 displayName,
                 handle,
                 teamId,
-                defaultE2EIExpiry,
+                expiry.inWholeSeconds.toUInt(),
                 defaultCiphersuite
             )
         )
@@ -296,22 +277,6 @@ class MLSClientImpl(
         return coreCrypto.getUserIdentities(groupId.decodeBase64Bytes(), usersIds).mapValues {
             it.value.mapNotNull { identity -> toIdentity(identity) }
         }
-    }
-
-    override suspend fun registerTrustAnchors(pem: CertificateChain) {
-        try {
-            coreCrypto.e2eiRegisterAcmeCa(pem)
-        } catch (e: CryptographyException) {
-            kaliumLogger.w("Registering TrustAnchors failed")
-        }
-    }
-
-    override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration {
-        return toCrlRegistration(coreCrypto.e2eiRegisterCrl(url, crl))
-    }
-
-    override suspend fun registerIntermediateCa(pem: CertificateChain) {
-        coreCrypto.e2eiRegisterIntermediateCa(pem)
     }
 
     companion object {

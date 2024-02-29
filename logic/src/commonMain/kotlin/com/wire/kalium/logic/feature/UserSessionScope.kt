@@ -640,7 +640,8 @@ class UserSessionScope internal constructor(
             certificateRevocationListRepository = certificateRevocationListRepository,
             currentClientIdProvider = clientIdProvider,
             mlsClientProvider = mlsClientProvider,
-            mLSConversationsVerificationStatusesHandler = mlsConversationsVerificationStatusesHandler
+            mLSConversationsVerificationStatusesHandler = mlsConversationsVerificationStatusesHandler,
+            isE2EIEnabledUseCase = isE2EIEnabled
         )
 
     private val mlsConversationRepository: MLSConversationRepository
@@ -1643,6 +1644,7 @@ class UserSessionScope internal constructor(
         ACMECertificatesSyncWorkerImpl(
             e2eiRepository = e2eiRepository,
             kaliumLogger = userScopedLogger,
+            isE2EIEnabledUseCase = isE2EIEnabled
         )
     }
 
