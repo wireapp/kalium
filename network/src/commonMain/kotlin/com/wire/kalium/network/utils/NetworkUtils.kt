@@ -24,15 +24,20 @@ import com.wire.kalium.network.api.base.model.FederationConflictResponse
 import com.wire.kalium.network.api.base.model.FederationUnreachableResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
+import com.wire.kalium.network.tools.KtxSerializer
 import io.ktor.client.call.NoTransformationFoundException
 import io.ktor.client.call.body
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.statement.HttpResponse
+import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 import io.ktor.http.isSuccess
+import io.ktor.serialization.ContentConvertException
 import io.ktor.serialization.JsonConvertException
+import kotlinx.serialization.MissingFieldException
+import kotlinx.serialization.SerializationException
 
 internal fun HttpRequestBuilder.setWSSUrl(baseUrl: Url, vararg path: String) {
     url {
@@ -282,17 +287,21 @@ suspend fun <T : Any> wrapFederationResponse(
  * i.e.: '/commit-bundles' 409 for "mls-stale-message" and 409 for "federation-conflict"
  */
 private suspend fun resolveStatusCodeBasedFirstOrFederated(response: HttpResponse): NetworkResponse.Error {
+    val responseString = response.bodyAsText()
+
     val kaliumException = try {
-        val errorResponse = response.body<ErrorResponse>()
+        val errorResponse = KtxSerializer.json.decodeFromString<ErrorResponse>(responseString)
+
         toStatusCodeBasedKaliumException(
             response.status,
             response,
             errorResponse
         )
-    } catch (exception: JsonConvertException) {
+    } catch (exception: SerializationException) {
         try {
-            KaliumException.FederationConflictException(response.body<FederationConflictResponse>())
-        } catch (_: NoTransformationFoundException) {
+            val federationConflictResponse = KtxSerializer.json.decodeFromString<FederationConflictResponse>(responseString)
+            KaliumException.FederationConflictException(federationConflictResponse)
+        } catch (_: SerializationException) {
             KaliumException.FederationConflictException(FederationConflictResponse(emptyList()))
         }
     }
