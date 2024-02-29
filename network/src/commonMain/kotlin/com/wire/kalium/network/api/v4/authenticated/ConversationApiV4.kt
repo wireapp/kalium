@@ -32,7 +32,6 @@ import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.GenerateGuestLinkRequest
 import com.wire.kalium.network.api.base.model.JoinConversationRequestV4
 import com.wire.kalium.network.api.v3.authenticated.ConversationApiV3
-import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.handleUnsuccessfulResponse
 import com.wire.kalium.network.utils.mapSuccess
@@ -43,7 +42,6 @@ import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.preparePost
 import io.ktor.client.request.setBody
-import io.ktor.utils.io.errors.IOException
 
 internal open class ConversationApiV4 internal constructor(
     authenticatedNetworkClient: AuthenticatedNetworkClient,
@@ -88,15 +86,16 @@ internal open class ConversationApiV4 internal constructor(
     override suspend fun addMember(
         addParticipantRequest: AddConversationMembersRequest,
         conversationId: ConversationId
-    ): NetworkResponse<ConversationMemberAddedResponse> = try {
-        httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS") {
-            setBody(addParticipantRequest)
-        }.let { response ->
-            wrapFederationResponse(response) { handleConversationMemberAddedResponse(response) }
+    ): NetworkResponse<ConversationMemberAddedResponse> = wrapKaliumResponse(
+        performRequest = {
+            httpClient.post("$PATH_CONVERSATIONS/${conversationId.domain}/${conversationId.value}/$PATH_MEMBERS") {
+                setBody(addParticipantRequest)
+            }
+        },
+        unsuccessfulResponseOverride = {
+            wrapFederationResponse(it) { handleConversationMemberAddedResponse(it) }
         }
-    } catch (e: IOException) {
-        NetworkResponse.Error(KaliumException.GenericError(e))
-    }
+    )
 
     override suspend fun generateGuestRoomLink(
         conversationId: ConversationId,
