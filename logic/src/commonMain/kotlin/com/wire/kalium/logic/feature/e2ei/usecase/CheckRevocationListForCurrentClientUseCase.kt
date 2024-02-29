@@ -38,7 +38,7 @@ internal class CheckRevocationListForCurrentClientUseCaseImpl(
     private val userConfigRepository: UserConfigRepository
 ) : CheckRevocationListForCurrentClientUseCase {
     override suspend fun invoke() {
-        if (userConfigRepository.shouldShouldCheckCrlForCurrentClient()) {
+        if (userConfigRepository.shouldCheckCrlForCurrentClient()) {
             certificateRevocationListRepository.getCurrentClientCrlUrl().onSuccess { url ->
                 kaliumLogger.i("Checking CRL for current client..")
                 checkRevocationList(url)

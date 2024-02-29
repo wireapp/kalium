@@ -53,7 +53,7 @@ interface UserConfigDAO {
     suspend fun setShouldUpdateClientLegalHoldCapability(shouldUpdate: Boolean)
     suspend fun shouldUpdateClientLegalHoldCapability(): Boolean
     suspend fun setShouldCheckCrlForCurrentClient(shouldCheck: Boolean)
-    suspend fun shouldShouldCheckCrlForCurrentClient(): Boolean
+    suspend fun shouldCheckCrlForCurrentClient(): Boolean
     suspend fun setCRLExpirationTime(url: String, timestamp: ULong)
     suspend fun getCRLsPerDomain(url: String): ULong?
     suspend fun observeCertificateExpirationTime(url: String): Flow<ULong?>
@@ -162,7 +162,7 @@ internal class UserConfigDAOImpl internal constructor(
         metadataDAO.insertValue(shouldCheck.toString(), SHOULD_CHECK_CRL_CURRENT_CLIENT)
     }
 
-    override suspend fun shouldShouldCheckCrlForCurrentClient(): Boolean =
+    override suspend fun shouldCheckCrlForCurrentClient(): Boolean =
         metadataDAO.valueByKey(SHOULD_CHECK_CRL_CURRENT_CLIENT)?.toBoolean() ?: true
 
     override suspend fun setCRLExpirationTime(url: String, timestamp: ULong) {

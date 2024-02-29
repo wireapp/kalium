@@ -37,7 +37,7 @@ class CheckRevocationListForCurrentClientUseCaseTest {
     @Test
     fun givenShouldCheckCrlIsFalse_whenRunningUseCase_thenDoNothing() = runTest {
         val (arrangement, checkRevocationListForCurrentClient) = Arrangement()
-            .withShouldShouldCheckCrlForCurrentClientReturning(false)
+            .withShouldCheckCrlForCurrentClientReturning(false)
             .arrange()
 
         checkRevocationListForCurrentClient()
@@ -51,7 +51,7 @@ class CheckRevocationListForCurrentClientUseCaseTest {
     fun givenFailureWhenGettingCurrentClientCrlUrl_whenRunningUseCase_thenDoNotCheckCrl() =
         runTest {
             val (arrangement, checkRevocationListForCurrentClient) = Arrangement()
-                .withShouldShouldCheckCrlForCurrentClientReturning(true)
+                .withShouldCheckCrlForCurrentClientReturning(true)
                 .withGetCurrentClientCrlUrlReturning(Either.Left(CoreFailure.InvalidEventSenderID))
                 .arrange()
 
@@ -70,7 +70,7 @@ class CheckRevocationListForCurrentClientUseCaseTest {
     @Test
     fun givenCheckRevocationListUseCaseReturnsFailure_whenRunningUseCase_thenDoNothing() = runTest {
         val (arrangement, checkRevocationListForCurrentClient) = Arrangement()
-            .withShouldShouldCheckCrlForCurrentClientReturning(true)
+            .withShouldCheckCrlForCurrentClientReturning(true)
             .withGetCurrentClientCrlUrlReturning(Either.Right(URL))
             .withCheckRevocationListUseCaseReturning(Either.Left(CoreFailure.InvalidEventSenderID))
             .arrange()
@@ -92,7 +92,7 @@ class CheckRevocationListForCurrentClientUseCaseTest {
     fun givenCheckRevocationListUseCaseReturnsSuccess_whenRunningUseCase_thenInvokeAddOrUpdateCRLAndSetShouldCheckCrlForCurrentClientOnce() =
         runTest {
             val (arrangement, checkRevocationListForCurrentClient) = Arrangement()
-                .withShouldShouldCheckCrlForCurrentClientReturning(true)
+                .withShouldCheckCrlForCurrentClientReturning(true)
                 .withGetCurrentClientCrlUrlReturning(Either.Right(URL))
                 .withCheckRevocationListUseCaseReturning(Either.Right(EXPIRATION))
                 .withSetShouldCheckCrlForCurrentClient()
@@ -135,9 +135,9 @@ class CheckRevocationListForCurrentClientUseCaseTest {
             userConfigRepository = userConfigRepository
         )
 
-        fun withShouldShouldCheckCrlForCurrentClientReturning(value: Boolean) = apply {
+        fun withShouldCheckCrlForCurrentClientReturning(value: Boolean) = apply {
             given(userConfigRepository)
-                .suspendFunction(userConfigRepository::shouldShouldCheckCrlForCurrentClient)
+                .suspendFunction(userConfigRepository::shouldCheckCrlForCurrentClient)
                 .whenInvoked()
                 .thenReturn(value)
         }
