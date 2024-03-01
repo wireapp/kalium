@@ -27,6 +27,7 @@ import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.kaliumLogger
 
 /**
  * Use case to check if the CRL is expired and if so, register CRL and update conversation statuses if there is a change.
@@ -42,11 +43,14 @@ internal class CheckRevocationListUseCaseImpl(
     private val mLSConversationsVerificationStatusesHandler: MLSConversationsVerificationStatusesHandler,
     private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase
 ) : CheckRevocationListUseCase {
+    private val logger = kaliumLogger.withTextTag("CheckRevocationListUseCase")
     override suspend fun invoke(url: String): Either<CoreFailure, ULong?> {
         return if (isE2EIEnabledUseCase()) {
+            logger.i("getting client crl..")
             certificateRevocationListRepository.getClientDomainCRL(url).flatMap {
                 currentClientIdProvider().flatMap { clientId ->
                     mlsClientProvider.getCoreCrypto(clientId).map { coreCrypto ->
+                        logger.i("registering crl..")
                         coreCrypto.registerCrl(url, it).run {
                             if (dirty) {
                                 mLSConversationsVerificationStatusesHandler()
