@@ -35,7 +35,6 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrFail
 import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.wrapApiRequest
@@ -46,7 +45,6 @@ import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
 import io.ktor.http.Url
-import io.ktor.http.protocolWithAuthority
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -90,8 +88,6 @@ interface E2EIRepository {
     suspend fun getOAuthRefreshToken(): Either<E2EIFailure, String?>
     suspend fun nukeE2EIClient()
     suspend fun fetchFederationCertificates(): Either<E2EIFailure, Unit>
-    suspend fun getCurrentClientCrlUrl(): Either<E2EIFailure, String>
-    suspend fun getClientDomainCRL(url: String): Either<E2EIFailure, ByteArray>
     fun discoveryUrl(): Either<E2EIFailure, Url>
 }
 
@@ -377,12 +373,4 @@ class E2EIRepositoryImpl(
     override suspend fun nukeE2EIClient() {
         e2EIClientProvider.nuke()
     }
-
-    override suspend fun getCurrentClientCrlUrl(): Either<E2EIFailure, String> =
-        discoveryUrl().map { it.protocolWithAuthority }
-
-    override suspend fun getClientDomainCRL(url: String): Either<E2EIFailure, ByteArray> =
-        wrapApiRequest {
-            acmeApi.getClientDomainCRL(url)
-        }.fold({ E2EIFailure.CRL(it).left() }, { it.right() })
 }
