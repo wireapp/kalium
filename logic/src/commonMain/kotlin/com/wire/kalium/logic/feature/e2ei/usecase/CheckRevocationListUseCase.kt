@@ -46,8 +46,8 @@ internal class CheckRevocationListUseCaseImpl(
         return if (isE2EIEnabledUseCase()) {
             certificateRevocationListRepository.getClientDomainCRL(url).flatMap {
                 currentClientIdProvider().flatMap { clientId ->
-                    mlsClientProvider.getMLSClient(clientId).map { mlsClient ->
-                        mlsClient.registerCrl(url, it).run {
+                    mlsClientProvider.getCoreCrypto(clientId).map { coreCrypto ->
+                        coreCrypto.registerCrl(url, it).run {
                             if (dirty) {
                                 mLSConversationsVerificationStatusesHandler()
                             }
