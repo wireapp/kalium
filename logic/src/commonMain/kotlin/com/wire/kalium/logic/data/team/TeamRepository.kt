@@ -108,6 +108,7 @@ internal class TeamDataSource(
         var hasMore = true
         var error: CoreFailure? = null
         var pagesSynced = 0
+        var pagingState: String? = null
         while (
             hasMore &&
             error == null &&
@@ -116,10 +117,12 @@ internal class TeamDataSource(
             wrapApiRequest {
                 teamsApi.getTeamMembers(
                     teamId = teamId.value,
-                    limitTo = pageSize
+                    limitTo = pageSize,
+                    pagingState = pagingState
                 )
             }.onSuccess {
                 hasMore = it.hasMore
+                pagingState = it.pagingState
             }.map {
                 it.members.map { teamMember ->
                     val userId = QualifiedIDEntity(teamMember.nonQualifiedUserId, userDomain)
