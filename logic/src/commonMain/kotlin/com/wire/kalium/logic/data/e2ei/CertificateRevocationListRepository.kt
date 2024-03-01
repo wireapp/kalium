@@ -86,12 +86,11 @@ internal class CertificateRevocationListRepositoryDataSource(
     }
 
     override suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String> =
-
         userConfigRepository.getE2EISettings()
             .flatMap {
                 if (!it.isRequired) E2EIFailure.Disabled.left()
                 else if (it.discoverUrl == null) E2EIFailure.MissingDiscoveryUrl.left()
-                else Url(it.discoverUrl).authority.right()
+                else Url("${it.discoverUrl}/$PATH_CRL").authority.right()
             }
 
     override suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray> =
@@ -101,5 +100,6 @@ internal class CertificateRevocationListRepositoryDataSource(
 
     companion object {
         const val CRL_LIST_KEY = "crl_list_key"
+        const val PATH_CRL = "crl"
     }
 }
