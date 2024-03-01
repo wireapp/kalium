@@ -39,7 +39,7 @@ internal class VersionApiTest : ApiTest() {
     @Test
     fun givenSuccessResponse_whenFetchingSupportedRemoteVersion_thenRequestIsConfigureCorrectly() = runTest {
         val expected = ServerConfigDTO.MetaData(true, ApiVersionDTO.Valid(1), "wire.com")
-        val httpClient = mockUnboundNetworkClient(
+        val httpClient = mockUnauthenticatedNetworkClient(
             responseBody = VersionInfoDTOJson.valid.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -60,7 +60,7 @@ internal class VersionApiTest : ApiTest() {
     @Test
     fun givenDevelopmentApiEnabled_whenFetchingSupportedRemoteVersion_thenResultIsApiVersion2() = runTest {
         val expected = ServerConfigDTO.MetaData(true, ApiVersionDTO.Valid(2), "wire.com")
-        val httpClient = mockUnboundNetworkClient(
+        val httpClient = mockUnauthenticatedNetworkClient(
             responseBody = VersionInfoDTOJson.valid.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -81,7 +81,7 @@ internal class VersionApiTest : ApiTest() {
     @Test
     fun given404Response_whenFetchingSupportedRemoteVersion_thenResultIsApiVersion0AndFederationFalse() = runTest {
         val expected = ServerConfigDTO.MetaData(false, ApiVersionDTO.Valid(0), null)
-        val httpClient = mockUnboundNetworkClient(
+        val httpClient = mockUnauthenticatedNetworkClient(
             responseBody = "",
             statusCode = HttpStatusCode.NotFound
         )
