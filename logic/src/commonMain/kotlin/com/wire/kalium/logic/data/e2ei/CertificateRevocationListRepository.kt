@@ -30,7 +30,6 @@ import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.dao.MetadataDAO
 import io.ktor.http.URLBuilder
-import io.ktor.http.Url
 import io.ktor.http.authority
 
 interface CertificateRevocationListRepository {
