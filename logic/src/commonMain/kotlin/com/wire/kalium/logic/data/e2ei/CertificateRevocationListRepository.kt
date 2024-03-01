@@ -29,6 +29,7 @@ import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.dao.MetadataDAO
+import io.ktor.http.URLBuilder
 import io.ktor.http.Url
 import io.ktor.http.authority
 
@@ -90,7 +91,13 @@ internal class CertificateRevocationListRepositoryDataSource(
             .flatMap {
                 if (!it.isRequired) E2EIFailure.Disabled.left()
                 else if (it.discoverUrl == null) E2EIFailure.MissingDiscoveryUrl.left()
-                else Url("${it.discoverUrl}/$PATH_CRL").authority.right()
+                else URLBuilder(it.discoverUrl).apply {
+                    pathSegments.lastOrNull().let { segment ->
+                        if (segment == null || segment != PATH_CRL) {
+                            pathSegments = pathSegments + PATH_CRL
+                        }
+                    }
+                }.authority.right()
             }
 
     override suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray> =
