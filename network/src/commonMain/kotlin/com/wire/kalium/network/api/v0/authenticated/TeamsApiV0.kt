@@ -58,10 +58,11 @@ internal open class TeamsApiV0 internal constructor(
         }
     }
 
-    override suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?): NetworkResponse<TeamsApi.TeamMemberList> =
+    override suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?, pagingState: String?): NetworkResponse<TeamsApi.TeamMemberList> =
         wrapKaliumResponse {
             httpClient.get("$PATH_TEAMS/$teamId/$PATH_MEMBERS") {
                 limitTo?.let { parameter("maxResults", it) }
+                pagingState?.let { parameter("pagingState", it) }
             }
         }
 

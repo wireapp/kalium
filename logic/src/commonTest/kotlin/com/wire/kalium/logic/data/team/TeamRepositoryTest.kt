@@ -115,7 +115,8 @@ class TeamRepositoryTest {
             hasMore = false,
             members = listOf(
                 teamMember
-            )
+            ),
+            pagingState = "A=="
         )
 
         val (arrangement, teamRepository) = Arrangement()
@@ -176,7 +177,8 @@ class TeamRepositoryTest {
             hasMore = true,
             members = listOf(
                 teamMember
-            )
+            ),
+            "A=="
         )
 
 

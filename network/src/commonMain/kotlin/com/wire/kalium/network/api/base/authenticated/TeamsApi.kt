@@ -36,7 +36,8 @@ interface TeamsApi {
         // Please note that this is intentionally cased differently form the has_more in TeamsResponse
         // because the backend response contains a different casing
         @SerialName("hasMore") val hasMore: Boolean,
-        val members: List<TeamMemberDTO>
+        val members: List<TeamMemberDTO>,
+        @SerialName("pagingState") val pagingState: String
     )
 
     @Serializable
@@ -89,7 +90,7 @@ interface TeamsApi {
 
     suspend fun deleteConversation(conversationId: NonQualifiedConversationId, teamId: TeamId): NetworkResponse<Unit>
 
-    suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?): NetworkResponse<TeamMemberList>
+    suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?, pagingState: String? = null): NetworkResponse<TeamMemberList>
     suspend fun getTeamMembersByIds(teamId: TeamId, teamMemberIdList: TeamMemberIdList): NetworkResponse<TeamMemberList>
     suspend fun getTeamMember(teamId: TeamId, userId: NonQualifiedUserId): NetworkResponse<TeamMemberDTO>
     suspend fun getTeamInfo(teamId: TeamId): NetworkResponse<TeamDTO>
