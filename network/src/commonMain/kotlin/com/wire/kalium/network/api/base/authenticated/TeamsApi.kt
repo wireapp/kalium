@@ -32,10 +32,22 @@ import kotlinx.serialization.Serializable
 interface TeamsApi {
 
     @Serializable
-    data class TeamMemberList(
+    data class TeamMemberListPaginated(
         // Please note that this is intentionally cased differently form the has_more in TeamsResponse
         // because the backend response contains a different casing
         @SerialName("hasMore") val hasMore: Boolean,
+<<<<<<< HEAD
+=======
+        val members: List<TeamMemberDTO>,
+        @SerialName("pagingState") val pagingState: String? = null
+    )
+
+    @Serializable
+    data class TeamMemberListNonPaginated(
+        // Please note that this is intentionally cased differently form the has_more in TeamsResponse
+        // because the backend response contains a different casing
+        @SerialName("hasMore") val hasMore: Boolean,
+>>>>>>> 11bc5e6c20 (fix: missing json value pagingState when getting team member by ID (#2576))
         val members: List<TeamMemberDTO>
     )
 
@@ -89,8 +101,13 @@ interface TeamsApi {
 
     suspend fun deleteConversation(conversationId: NonQualifiedConversationId, teamId: TeamId): NetworkResponse<Unit>
 
+<<<<<<< HEAD
     suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?): NetworkResponse<TeamMemberList>
     suspend fun getTeamMembersByIds(teamId: TeamId, teamMemberIdList: TeamMemberIdList): NetworkResponse<TeamMemberList>
+=======
+    suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?, pagingState: String? = null): NetworkResponse<TeamMemberListPaginated>
+    suspend fun getTeamMembersByIds(teamId: TeamId, teamMemberIdList: TeamMemberIdList): NetworkResponse<TeamMemberListNonPaginated>
+>>>>>>> 11bc5e6c20 (fix: missing json value pagingState when getting team member by ID (#2576))
     suspend fun getTeamMember(teamId: TeamId, userId: NonQualifiedUserId): NetworkResponse<TeamMemberDTO>
     suspend fun getTeamInfo(teamId: TeamId): NetworkResponse<TeamDTO>
     suspend fun whiteListedServices(teamId: TeamId, size: Int = DEFAULT_SERVICES_SIZE): NetworkResponse<ServiceDetailResponse>

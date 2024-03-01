@@ -886,7 +886,11 @@ class UserRepositoryTest {
             given(teamsApi)
                 .suspendFunction(teamsApi::getTeamMembersByIds)
                 .whenInvokedWith(any(), any())
+<<<<<<< HEAD
                 .thenReturn(NetworkResponse.Success(TeamsApi.TeamMemberList(false, result), mapOf(), 200))
+=======
+                .thenReturn(NetworkResponse.Success(TeamsApi.TeamMemberListNonPaginated(false, result), mapOf(), 200))
+>>>>>>> 11bc5e6c20 (fix: missing json value pagingState when getting team member by ID (#2576))
         }
 
         fun withSuccessfulGetUsersByQualifiedIdList(knownUserEntities: List<UserDetailsEntity>) = apply {
