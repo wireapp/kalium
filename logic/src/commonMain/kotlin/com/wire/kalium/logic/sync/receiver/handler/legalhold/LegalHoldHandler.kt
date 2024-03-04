@@ -123,19 +123,19 @@ internal class LegalHoldHandlerImpl internal constructor(
         return Either.Right(Unit)
     }
 
-    override suspend fun handleNewConnection(event: Event.User.NewConnection): Either<CoreFailure, Unit> {
-        when (event.connection.status) {
+    override suspend fun handleNewConnection(event: Event.User.NewConnection): Either<CoreFailure, Unit> = with(event.connection) {
+        when (status) {
             ConnectionState.MISSING_LEGALHOLD_CONSENT -> {
-                kaliumLogger.i("missing legal hold consent for connection with user ${event.connection.qualifiedToId.toLogString()}")
-                handleForConversation(event.connection.qualifiedConversationId, Conversation.LegalHoldStatus.DEGRADED)
+                kaliumLogger.i("missing legal hold consent for connection with user ${qualifiedToId.toLogString()}")
+                conversationRepository.updateLegalHoldStatus(qualifiedConversationId, Conversation.LegalHoldStatus.DEGRADED)
             }
             ConnectionState.ACCEPTED -> {
-                isUserUnderLegalHold(event.connection.qualifiedToId).let { isUnderLegalHold ->
-                    kaliumLogger.i("accepted connection with user ${event.connection.qualifiedToId.toLogString()}" +
+                isUserUnderLegalHold(qualifiedToId).let { isUnderLegalHold ->
+                    kaliumLogger.i("accepted connection with user ${qualifiedToId.toLogString()}" +
                             "who is ${if (isUnderLegalHold) "" else "not"} under legal hold")
                     val newStatus = if (isUnderLegalHold) Conversation.LegalHoldStatus.ENABLED else Conversation.LegalHoldStatus.DISABLED
                     if (newStatus != Conversation.LegalHoldStatus.UNKNOWN) {
-                        conversationRepository.updateLegalHoldStatus(event.connection.qualifiedConversationId, newStatus)
+                        conversationRepository.updateLegalHoldStatus(qualifiedConversationId, newStatus)
                     }
                 }
             }
