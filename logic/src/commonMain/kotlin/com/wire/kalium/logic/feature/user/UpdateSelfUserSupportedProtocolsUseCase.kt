@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.user
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
@@ -35,7 +36,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.kaliumLogger
 import kotlinx.datetime.Instant
 
 /**
@@ -50,17 +50,18 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
     private val userRepository: UserRepository,
     private val userConfigRepository: UserConfigRepository,
     private val featureSupport: FeatureSupport,
-    private val currentClientIdProvider: CurrentClientIdProvider
+    private val currentClientIdProvider: CurrentClientIdProvider,
+    private val logger: KaliumLogger
 ) : UpdateSelfUserSupportedProtocolsUseCase {
 
     override suspend operator fun invoke(): Either<CoreFailure, Boolean> {
         return if (!featureSupport.isMLSSupported) {
-            kaliumLogger.d("Skip updating supported protocols, since MLS is not supported.")
+            logger.d("Skip updating supported protocols, since MLS is not supported.")
             Either.Right(false)
         } else {
             (userRepository.getSelfUser()?.let { selfUser ->
                 selfSupportedProtocols().flatMap { newSupportedProtocols ->
-                    kaliumLogger.i(
+                    logger.i(
                         "Updating supported protocols = $newSupportedProtocols previously = ${selfUser.supportedProtocols}"
                     )
                     if (newSupportedProtocols != selfUser.supportedProtocols) {
@@ -71,7 +72,7 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
                 }.flatMapLeft {
                     when (it) {
                         is StorageFailure.DataNotFound -> {
-                            kaliumLogger.w(
+                            logger.w(
                                 "Skip updating supported protocols since additional protocols are not configured"
                             )
                             Either.Right(false)
@@ -122,11 +123,11 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
         val allSelfClientsAreMLSCapable = selfClients
             .filter { it.isActive || it.id == selfClientId }
             .ifEmpty {
-                kaliumLogger.w("user have 0 active clients")
+                logger.w("user has 0 active clients")
                 emptyList()
             }.all { it.isMLSCapable }
 
-        kaliumLogger.d(
+        logger.d(
             "mls is supported = $mlsIsSupported, " +
                     "all active self clients are mls capable = $allSelfClientsAreMLSCapable " +
                     "migration has ended = $mlsMigrationHasEnded"
@@ -140,7 +141,7 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
     ): Boolean {
         val proteusIsSupported = supportedProtocols.contains(SupportedProtocol.PROTEUS)
         val mlsMigrationHasEnded = migrationConfiguration.hasMigrationEnded()
-        kaliumLogger.d(
+        logger.d(
             "proteus is supported = $proteusIsSupported, " +
                     "migration has ended = $mlsMigrationHasEnded"
         )
