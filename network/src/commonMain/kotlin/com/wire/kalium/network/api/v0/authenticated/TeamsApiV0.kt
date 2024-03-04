@@ -66,6 +66,7 @@ internal open class TeamsApiV0 internal constructor(
         wrapKaliumResponse<TeamsApi.TeamMemberListPaginated> {
             httpClient.get("$PATH_TEAMS/$teamId/$PATH_MEMBERS") {
                 limitTo?.let { parameter("maxResults", it) }
+                pagingState?.let { parameter("pagingState", it) }
             }
         }
 
