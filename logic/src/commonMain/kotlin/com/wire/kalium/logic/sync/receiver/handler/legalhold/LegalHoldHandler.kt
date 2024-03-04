@@ -134,7 +134,9 @@ internal class LegalHoldHandlerImpl internal constructor(
                     kaliumLogger.i("accepted connection with user ${event.connection.qualifiedToId.toLogString()}" +
                             "who is ${if (isUnderLegalHold) "" else "not"} under legal hold")
                     val newStatus = if (isUnderLegalHold) Conversation.LegalHoldStatus.ENABLED else Conversation.LegalHoldStatus.DISABLED
-                    handleForConversation(event.connection.qualifiedConversationId, newStatus)
+                    if (newStatus != Conversation.LegalHoldStatus.UNKNOWN) {
+                        conversationRepository.updateLegalHoldStatus(event.connection.qualifiedConversationId, newStatus)
+                    }
                 }
             }
             else -> { /* do nothing */ }
