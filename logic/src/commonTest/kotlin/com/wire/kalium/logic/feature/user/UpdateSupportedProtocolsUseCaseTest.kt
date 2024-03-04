@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.user
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.Client
@@ -335,6 +336,8 @@ class UpdateSupportedProtocolsUseCaseTest {
         @Mock
         val featureSupport = mock(FeatureSupport::class)
 
+        private var kaliumLogger = KaliumLogger.disabled()
+
         fun withIsMLSSupported(supported: Boolean) = apply {
             given(featureSupport)
                 .invocation { featureSupport.isMLSSupported }
@@ -400,7 +403,8 @@ class UpdateSupportedProtocolsUseCaseTest {
                 userRepository,
                 userConfigRepository,
                 featureSupport,
-                currentClientIdProvider
+                currentClientIdProvider,
+                kaliumLogger
             )
         }
 
