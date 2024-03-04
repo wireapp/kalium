@@ -416,12 +416,19 @@ internal class ConversationDAOImpl internal constructor(
         conversationId: QualifiedIDEntity,
         legalHoldStatus: ConversationEntity.LegalHoldStatus
     ) = withContext(coroutineContext) {
-        conversationQueries.updateLegalHoldStatus(legalHoldStatus, conversationId).executeAsOne() > 0
+        conversationQueries.transactionWithResult {
+            conversationQueries.updateLegalHoldStatus(legalHoldStatus, conversationId)
+            conversationQueries.selectChanges().executeAsOne() > 0
+        }
+
     }
 
     override suspend fun updateLegalHoldStatusChangeNotified(conversationId: QualifiedIDEntity, notified: Boolean) =
         withContext(coroutineContext) {
-            conversationQueries.upsertLegalHoldStatusChangeNotified(conversationId, notified).executeAsOne() > 0
+            conversationQueries.transactionWithResult {
+                conversationQueries.upsertLegalHoldStatusChangeNotified(conversationId, notified)
+                conversationQueries.selectChanges().executeAsOne() > 0
+            }
         }
 
     override suspend fun observeLegalHoldStatus(conversationId: QualifiedIDEntity) =
