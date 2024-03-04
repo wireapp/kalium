@@ -123,18 +123,21 @@ internal class LegalHoldHandlerImpl internal constructor(
         return Either.Right(Unit)
     }
 
-    override suspend fun handleNewConnection(event: Event.User.NewConnection): Either<CoreFailure, Unit> = with(event.connection) {
-        when (status) {
+    override suspend fun handleNewConnection(event: Event.User.NewConnection): Either<CoreFailure, Unit> {
+        val connection = event.connection
+        when (connection.status) {
             ConnectionState.MISSING_LEGALHOLD_CONSENT -> {
-                kaliumLogger.i("missing legal hold consent for connection with user ${qualifiedToId.toLogString()}")
-                conversationRepository.updateLegalHoldStatus(qualifiedConversationId, Conversation.LegalHoldStatus.DEGRADED)
+                kaliumLogger.i("missing legal hold consent for connection with user ${connection.qualifiedToId.toLogString()}")
+                conversationRepository.updateLegalHoldStatus(connection.qualifiedConversationId, Conversation.LegalHoldStatus.DEGRADED)
             }
             ConnectionState.ACCEPTED -> {
-                isUserUnderLegalHold(qualifiedToId).let { isUnderLegalHold ->
-                    kaliumLogger.i("accepted connection with user ${qualifiedToId.toLogString()}" +
-                            "who is ${if (isUnderLegalHold) "" else "not"} under legal hold")
+                isUserUnderLegalHold(connection.qualifiedToId).let { isUnderLegalHold ->
+                    kaliumLogger.i(
+                        "accepted connection with user ${connection.qualifiedToId.toLogString()}" +
+                                "who is ${if (isUnderLegalHold) "" else "not"} under legal hold"
+                    )
                     val newStatus = if (isUnderLegalHold) Conversation.LegalHoldStatus.ENABLED else Conversation.LegalHoldStatus.DISABLED
-                    conversationRepository.updateLegalHoldStatus(qualifiedConversationId, newStatus)
+                    conversationRepository.updateLegalHoldStatus(connection.qualifiedConversationId, newStatus)
                 }
             }
             else -> { /* do nothing */ }
