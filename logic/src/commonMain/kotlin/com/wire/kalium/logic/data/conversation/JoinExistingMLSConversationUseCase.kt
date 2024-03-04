@@ -31,6 +31,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrElse
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.logStructuredJson
@@ -183,7 +184,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                 mlsConversationRepository.establishMLSGroup(
                     protocol.groupId,
                     emptyList()
-                ).onSuccess {
+                ).map { Unit }.onSuccess {
                     kaliumLogger.logStructuredJson(
                         level = KaliumLogLevel.INFO,
                         leadingMessage = "Establish Group",
@@ -202,7 +203,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                     mlsConversationRepository.establishMLSGroup(
                         protocol.groupId,
                         members
-                    )
+                    ).map { Unit }
                 }.onSuccess {
                     kaliumLogger.logStructuredJson(
                         level = KaliumLogLevel.INFO,

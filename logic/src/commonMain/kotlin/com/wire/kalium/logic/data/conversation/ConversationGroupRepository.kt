@@ -33,6 +33,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
@@ -145,17 +146,21 @@ internal class ConversationGroupRepositoryImpl(
                         newGroupConversationSystemMessagesCreator.value.conversationStarted(conversationEntity)
                     }.flatMap {
                         when (protocol) {
-                            is Conversation.ProtocolInfo.Proteus -> Either.Right(Unit)
+                            is Conversation.ProtocolInfo.Proteus -> Either.Right(setOf())
                             is Conversation.ProtocolInfo.MLSCapable -> {
                                 mlsConversationRepository.establishMLSGroup(
                                     groupID = protocol.groupId,
                                     members = usersList + selfUserId,
                                     allowPartialMemberList = true
-                                )
+                                ).map { it.notAddedUsers }.flatMap { notAddedUsers ->
+
+                                    notAddedUsers.foldToEitherWhileRight(emptyList()) {
+                                    }
+                                }
                             }
-                        }.flatMap {
+                        }.flatMap { notAddedUsers ->
                             newConversationMembersRepository.persistMembersAdditionToTheConversation(
-                                conversationEntity.id, conversationResponse, failedUsersList
+                                conversationEntity.id, conversationResponse, failedUsersList + notAddedUsers
                             )
                         }
                     }.flatMap {

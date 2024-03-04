@@ -22,12 +22,14 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.mls.KeyPackageClaimResult
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
@@ -37,7 +39,15 @@ import io.ktor.util.encodeBase64
 
 interface KeyPackageRepository {
 
-    suspend fun claimKeyPackages(userIds: List<UserId>): Either<CoreFailure, List<KeyPackageDTO>>
+    /**
+     * Claims the key packages for the specified user IDs.
+     *
+     * @param userIds The list of user IDs for which to claim key packages.
+     * @return An [Either] instance representing the result of the operation. If the operation is successful, it will be [Either.Right] with a [KeyPackageClaimResult] object containing
+     *  the successfully fetched key packages and the user IDs without key packages available. If the operation fails, it will be [Either.Left] with a [CoreFailure] object indicating
+     *  the reason for the failure. If **no** KeyPackages are available, [CoreFailure.MissingKeyPackages] will be the cause.
+     */
+    suspend fun claimKeyPackages(userIds: List<UserId>): Either<CoreFailure, KeyPackageClaimResult>
 
     suspend fun uploadNewKeyPackages(clientId: ClientId, amount: Int = 100): Either<CoreFailure, Unit>
 
@@ -58,7 +68,7 @@ class KeyPackageDataSource(
     private val selfUserId: UserId,
 ) : KeyPackageRepository {
 
-    override suspend fun claimKeyPackages(userIds: List<UserId>): Either<CoreFailure, List<KeyPackageDTO>> =
+    override suspend fun claimKeyPackages(userIds: List<UserId>): Either<CoreFailure, KeyPackageClaimResult> =
         currentClientIdProvider().flatMap { selfClientId ->
             val failedUsers = mutableSetOf<UserId>()
             val claimedKeyPackages = mutableListOf<KeyPackageDTO>()
@@ -73,11 +83,10 @@ class KeyPackageDataSource(
                     }
                 }
             }
-
-            if (failedUsers.isNotEmpty()) {
-                Either.Left(CoreFailure.MissingKeyPackages(failedUsers, claimedKeyPackages))
+            if (claimedKeyPackages.isEmpty()) {
+                Either.Left(CoreFailure.MissingKeyPackages(failedUsers))
             } else {
-                Either.Right(claimedKeyPackages)
+                Either.Right(KeyPackageClaimResult(claimedKeyPackages, failedUsers))
             }
         }
 

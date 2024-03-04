@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.conversation.message.MLSMessageFailureHandler
@@ -94,7 +95,7 @@ internal class JoinSubconversationUseCaseImpl(
                     mlsConversationRepository.establishMLSGroup(
                         GroupID(subconversationDetails.groupId),
                         emptyList()
-                    )
+                    ).map { Unit }
                 }
             } else {
                 wrapApiRequest {

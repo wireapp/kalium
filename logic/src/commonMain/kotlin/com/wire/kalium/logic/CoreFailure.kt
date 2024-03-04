@@ -55,14 +55,12 @@ sealed interface CoreFailure {
     data object MissingClientRegistration : CoreFailure
 
     /**
-     * Represents a failure indicating that key packages are missing for certain user IDs.
+     * Represents a failure indicating that key packages are missing for user IDs.
      *
      * @property failedUserIds The set of user IDs for which key packages are missing.
-     * @property obtainedKeyPackages The list of obtained key packages.
      */
     data class MissingKeyPackages(
-        val failedUserIds: Set<UserId>,
-        val obtainedKeyPackages: List<KeyPackageDTO>
+        val failedUserIds: Set<UserId>
     ) : CoreFailure
 
     /**
