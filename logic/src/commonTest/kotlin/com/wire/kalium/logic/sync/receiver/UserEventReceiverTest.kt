@@ -290,6 +290,26 @@ class UserEventReceiverTest {
                 .wasNotInvoked()
         }
 
+    @Test
+    fun givenNewConnectionEvent_whenHandlingEvent_thenHandlePotentialLegalHoldChange() =
+        runTest(TestKaliumDispatcher.default) {
+            // given
+            val event = TestEvent.newConnection(status = ConnectionState.CANCELLED)
+            val (arrangement, eventReceiver) = arrange {
+                withFetchUserInfoReturning(Either.Right(Unit))
+                withInsertConnectionFromEventSucceeding()
+                withScheduleResolveOneOnOneConversationWithUserId()
+                withPersistUnverifiedWarningMessageSuccess()
+            }
+            // when
+            eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
+            // then
+            verify(arrangement.legalHoldHandler)
+                .suspendFunction(arrangement.legalHoldHandler::handleNewConnection)
+                .with(eq(event))
+                .wasInvoked(exactly = once)
+        }
+
     private class Arrangement(private val block: Arrangement.() -> Unit) :
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl() {
@@ -329,6 +349,7 @@ class UserEventReceiverTest {
 
         init {
             withSaveNewClientSucceeding()
+            withHandleLegalHoldNewConnectionSucceeding()
         }
 
         fun withInsertConnectionFromEventSucceeding() = apply {
@@ -361,6 +382,13 @@ class UserEventReceiverTest {
 
         fun withLogoutUseCaseSucceed() = apply {
             given(logoutUseCase).suspendFunction(logoutUseCase::invoke).whenInvokedWith(any()).thenReturn(Unit)
+        }
+
+        fun withHandleLegalHoldNewConnectionSucceeding() = apply {
+            given(legalHoldHandler)
+                .suspendFunction(legalHoldHandler::handleNewConnection)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(Unit))
         }
 
         fun arrange() = run {

@@ -120,6 +120,7 @@ internal class UserEventReceiverImpl internal constructor(
                             Either.Right(Unit)
                         }
                     }
+                    .flatMap { legalHoldHandler.handleNewConnection(event) }
             }
             .onSuccess {
                 kaliumLogger
