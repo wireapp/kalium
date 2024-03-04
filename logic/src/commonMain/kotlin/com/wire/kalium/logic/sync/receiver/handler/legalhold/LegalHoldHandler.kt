@@ -129,7 +129,7 @@ internal class LegalHoldHandlerImpl internal constructor(
                 kaliumLogger.i("missing legal hold consent for connection with user ${event.connection.qualifiedToId.toLogString()}")
                 handleForConversation(event.connection.qualifiedConversationId, Conversation.LegalHoldStatus.DEGRADED)
             }
-            ConnectionState.ACCEPTED -> { // TODO: check if user has a legal hold device ?
+            ConnectionState.ACCEPTED -> {
                 isUserUnderLegalHold(event.connection.qualifiedToId).let { isUnderLegalHold ->
                     kaliumLogger.i("accepted connection with user ${event.connection.qualifiedToId.toLogString()}" +
                             "who is ${if (isUnderLegalHold) "" else "not"} under legal hold")
