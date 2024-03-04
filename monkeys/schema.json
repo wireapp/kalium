@@ -198,6 +198,11 @@
                         "type": "integer",
                         "default": 10
                     },
+                    "disable2FA": {
+                        "description": "Force disable 2FA",
+                        "type": "boolean",
+                        "default": false
+                    },
                     "2FAEnabled": {
                         "description": "Does this server require 2FA authentication?",
                         "type": "boolean",
