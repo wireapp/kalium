@@ -197,7 +197,7 @@ internal class MessageDAOImpl internal constructor(
             messagesQuery
                 .executeAsList()
                 .firstOrNull {
-                    when (messageContent) {
+                    LocalId.check(it.id) && when (messageContent) {
                         is MessageEntityContent.MemberChange ->
                             messageContent.memberChangeType == it.memberChangeType &&
                                     it.memberChangeList?.toSet() == messageContent.memberUserIdList.toSet()
@@ -214,7 +214,7 @@ internal class MessageDAOImpl internal constructor(
                     }
                 }?.let {
                     // The message already exists in the local DB, if its id is different then just update id.
-                    if (LocalId.check(it.id) && it.id != message.id) queries.updateMessageId(message.id, it.id, message.conversationId)
+                    if (it.id != message.id) queries.updateMessageId(message.id, it.id, message.conversationId)
                     true
                 }
         } ?: false
