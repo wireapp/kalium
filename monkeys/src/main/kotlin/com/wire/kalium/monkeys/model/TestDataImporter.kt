@@ -103,11 +103,7 @@ object TestDataImporter {
                 )
                 backendConfig.presetTeam.users.map { user ->
                     UserData(
-                        user.email,
-                        backendConfig.passwordForUsers,
-                        UserId(user.unqualifiedId, backendConfig.domain),
-                        team,
-                        null
+                        user.email, backendConfig.passwordForUsers, UserId(user.unqualifiedId, backendConfig.domain), team, null
                     )
                 }
             } else {
@@ -154,6 +150,16 @@ private suspend fun HttpClient.createTeam(backendConfig: BackendConfig): Team {
                 ), "status" to "enabled"
             ).toJsonObject()
         )
+    }
+    if (backendConfig.forceDisable2fa) {
+        put("i/teams/$teamId/features/sndFactorPasswordChallenge/unlocked")
+        put("i/teams/$teamId/features/sndFactorPasswordChallenge") {
+            setBody(
+                mapOf(
+                    "status" to "disabled", "ttl" to "unlimited"
+                ).toJsonObject()
+            )
+        }
     }
 
     val backend = Backend.fromConfig(backendConfig)
