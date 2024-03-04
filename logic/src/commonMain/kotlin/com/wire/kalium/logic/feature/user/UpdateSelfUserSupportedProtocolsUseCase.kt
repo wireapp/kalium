@@ -59,7 +59,6 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
             Either.Right(false)
         } else {
             (userRepository.getSelfUser()?.let { selfUser ->
-                kaliumLogger.d("cccc Updating supported protocols for user = ${selfUser.supportedProtocols}")
                 selfSupportedProtocols().flatMap { newSupportedProtocols ->
                     kaliumLogger.i(
                         "Updating supported protocols = $newSupportedProtocols previously = ${selfUser.supportedProtocols}"
@@ -89,7 +88,13 @@ internal class UpdateSelfUserSupportedProtocolsUseCaseImpl(
         currentClientIdProvider().flatMap { currentClientId ->
             clientsRepository.selfListOfClients().flatMap { selfClients ->
                 userConfigRepository.getMigrationConfiguration()
-                    .flatMapLeft { if (it is StorageFailure.DataNotFound) Either.Right(MIGRATION_CONFIGURATION_DISABLED) else Either.Left(it) }
+                    .flatMapLeft {
+                        if (it is StorageFailure.DataNotFound) {
+                            Either.Right(MIGRATION_CONFIGURATION_DISABLED)
+                        } else {
+                            Either.Left(it)
+                        }
+                    }
                     .flatMap { migrationConfiguration ->
                         userConfigRepository.getSupportedProtocols().map { supportedProtocols ->
                             val selfSupportedProtocols = mutableSetOf<SupportedProtocol>()
