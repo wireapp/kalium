@@ -18,34 +18,33 @@
 package com.wire.kalium.logic.util.arrangement.mls
 
 import com.wire.kalium.cryptography.CryptoCertificateStatus
-import com.wire.kalium.logic.feature.e2ei.E2eiCertificate
-import com.wire.kalium.logic.feature.e2ei.PemCertificateDecoder
+import com.wire.kalium.logic.feature.e2ei.CertificateStatus
+import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapper
 import io.mockative.any
 import io.mockative.given
 import io.mockative.matchers.Matcher
 import io.mockative.mock
 
-interface PemCertificateDecoderArrangement {
-    val pemCertificateDecoder: PemCertificateDecoder
+interface CertificateStatusMapperArrangement {
+    val certificateStatusMapper: CertificateStatusMapper
 
-    fun withPemCertificateDecode(
-        result: E2eiCertificate,
-        certificateMatcher: Matcher<String> = any<String>(),
-        statusMatcher: Matcher<CryptoCertificateStatus> = any<CryptoCertificateStatus>()
+    fun withCertificateStatusMapperReturning(
+        result: CertificateStatus,
+        certificateMatcher: Matcher<CryptoCertificateStatus> = any<CryptoCertificateStatus>()
     )
 }
 
-class PemCertificateDecoderArrangementImpl : PemCertificateDecoderArrangement {
-    override val pemCertificateDecoder: PemCertificateDecoder = mock(PemCertificateDecoder::class)
+class CertificateStatusMapperArrangementImpl : CertificateStatusMapperArrangement {
+    override val certificateStatusMapper: CertificateStatusMapper =
+        mock(CertificateStatusMapper::class)
 
-    override fun withPemCertificateDecode(
-        result: E2eiCertificate,
-        certificateMatcher: Matcher<String>,
-        statusMatcher: Matcher<CryptoCertificateStatus>
+    override fun withCertificateStatusMapperReturning(
+        result: CertificateStatus,
+        certificateMatcher: Matcher<CryptoCertificateStatus>
     ) {
-        given(pemCertificateDecoder)
-            .function(pemCertificateDecoder::decode)
-            .whenInvokedWith(certificateMatcher, statusMatcher)
+        given(certificateStatusMapper)
+            .function(certificateStatusMapper::toCertificateStatus)
+            .whenInvokedWith(certificateMatcher)
             .thenReturn(result)
     }
 }
