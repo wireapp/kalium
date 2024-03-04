@@ -1011,7 +1011,9 @@ class UserSessionScope internal constructor(
             clientRepository,
             userRepository,
             userConfigRepository,
-            featureSupport
+            featureSupport,
+            clientIdProvider,
+            userScopedLogger
         )
 
     private val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
