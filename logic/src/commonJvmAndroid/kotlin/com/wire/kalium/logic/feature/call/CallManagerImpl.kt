@@ -420,12 +420,14 @@ class CallManagerImpl internal constructor(
         conversationId: ConversationId,
         clients: String
     ) {
-        withCalling {
-            wcall_set_clients_for_conv(
-                it,
-                federatedIdMapper.parseToFederatedId(conversationId),
-                clients
-            )
+        if (callRepository.getCallMetadataProfile()[conversationId]?.protocol is Conversation.ProtocolInfo.Proteus) {
+            withCalling {
+                wcall_set_clients_for_conv(
+                    it,
+                    federatedIdMapper.parseToFederatedId(conversationId),
+                    clients
+                )
+            }
         }
     }
 
