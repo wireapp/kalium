@@ -439,4 +439,20 @@ internal class ConversationDAOImpl internal constructor(
                 .executeAsOneOrNull()
                 ?.mls_group_id
         }
+
+    override suspend fun selectGroupStatusMembersNamesAndHandles(groupID: String): EpochChangesData? = withContext(coroutineContext) {
+        conversationQueries.transactionWithResult {
+            val (conversationId, mlsVerificationStatus) = conversationQueries.conversationIDByGroupId(groupID).executeAsOneOrNull()
+                ?: return@transactionWithResult null
+            memberQueries.selectMembersNamesAndHandle(conversationId).executeAsList()
+                .let { members ->
+                    val membersMap = members.associate { it.user to NameAndHandleEntity(it.name, it.handle) }
+                    EpochChangesData(
+                        conversationId,
+                        mlsVerificationStatus,
+                        membersMap
+                    )
+                }
+        }
+    }
 }

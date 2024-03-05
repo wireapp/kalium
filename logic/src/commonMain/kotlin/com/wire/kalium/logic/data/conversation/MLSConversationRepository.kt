@@ -143,6 +143,10 @@ interface MLSConversationRepository {
     suspend fun getClientIdentity(clientId: ClientId): Either<CoreFailure, WireIdentity?>
     suspend fun getUserIdentity(userId: UserId): Either<CoreFailure, List<WireIdentity>>
     suspend fun getMembersIdentities(
+        mlsGroupId: GroupID,
+    ): Either<CoreFailure, Map<UserId, List<WireIdentity>>>
+
+    suspend fun getMembersIdentities(
         conversationId: ConversationId,
         userIds: List<UserId>
     ): Either<CoreFailure, Map<UserId, List<WireIdentity>>>
@@ -642,6 +646,10 @@ internal class MLSConversationDataSource(
                 }
             }
         }
+
+    override suspend fun getMembersIdentities(mlsGroupId: GroupID): Either<CoreFailure, Map<UserId, List<WireIdentity>>> {
+        TODO("Not yet implemented")
+    }
 
     override suspend fun getMembersIdentities(
         conversationId: ConversationId,

@@ -30,6 +30,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapMLSRequest
 
 interface ConversationVerificationStatusChecker {
+    // TODO: remove not used
     suspend fun check(groupID: GroupID): Either<CoreFailure, Conversation.VerificationStatus>
 }
 

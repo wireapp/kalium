@@ -18,12 +18,18 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation.VerificationStatus
-import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -31,11 +37,13 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.conversation.mls.ConversationVerificationStatusChecker
 import com.wire.kalium.logic.feature.conversation.mls.EpochChangesObserver
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.functional.onlyRight
+import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.wrapMLSRequest
+import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.util.DateTimeUtil
-import kotlinx.coroutines.flow.mapLatest
-import kotlinx.coroutines.flow.onEach
 
 /**
  * Observes all the MLS Conversations Verification status.
@@ -45,10 +53,18 @@ internal interface MLSConversationsVerificationStatusesHandler {
     suspend operator fun invoke()
 }
 
+data class VerificationStatusData(
+    val conversationId: ConversationId,
+    val currentStatusInDatabase: VerificationStatus,
+    val newStatus: VerificationStatus
+)
+
 internal class MLSConversationsVerificationStatusesHandlerImpl(
     private val conversationRepository: ConversationRepository,
     private val persistMessage: PersistMessageUseCase,
-    private val conversationVerificationStatusChecker: ConversationVerificationStatusChecker,
+    private val mlsClientProvider: MLSClientProvider,
+    private val mlsConversationRepository: MLSConversationRepository,
+    private val conversationDAO: ConversationDAO,
     private val epochChangesObserver: EpochChangesObserver,
     private val selfUserId: UserId,
     kaliumLogger: KaliumLogger
@@ -59,32 +75,75 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
     override suspend fun invoke() {
         logger.d("Starting to monitor")
         epochChangesObserver.observe()
-            .mapLatest { groupId -> conversationVerificationStatusChecker.check(groupId).map { groupId to it } }
-            .onEach {
-                if (it is Either.Left) {
-                    val failure = it.value
-                    val throwable = if (failure is CoreFailure.Unknown) failure.rootCause else null
-                    logger.w("Error while checking conversation verification status: ${it.value}", throwable)
-                }
-            }
-            .onlyRight()
-            .collect { (groupId, newStatus) ->
-                conversationRepository.getConversationDetailsByMLSGroupId(groupId)
-                    .map { conversation -> updateStatusAndNotifyUserIfNeeded(newStatus, conversation) }
+            .collect { groupId ->
+
+                mlsClientProvider.getMLSClient()
+                    .flatMap { mlsClient ->
+                        wrapMLSRequest { mlsClient.isGroupVerified(groupId.value) }.map {
+                            it.toModel()
+                        }
+                    }.flatMap { ccGroupStatus ->
+                        if (ccGroupStatus == VerificationStatus.NOT_VERIFIED) {
+                            verifyUsersStatus(groupId)
+                        } else {
+                            conversationRepository.getConversationDetailsByMLSGroupId(groupId).map {
+                                VerificationStatusData(
+                                    conversationId = it.conversation.id,
+                                    currentStatusInDatabase = it.conversation.mlsVerificationStatus,
+                                    newStatus =
+                                    ccGroupStatus
+                                )
+                            }
+                        }
+                    }.onSuccess {
+                        updateStatusAndNotifyUserIfNeeded(it)
+                    }
             }
     }
 
-    private suspend fun updateStatusAndNotifyUserIfNeeded(newStatusFromCC: VerificationStatus, conversation: ConversationDetails) {
+    private suspend fun verifyUsersStatus(groupId: GroupID): Either<CoreFailure, VerificationStatusData> =
+        wrapStorageRequest {
+            conversationDAO.selectGroupStatusMembersNamesAndHandles(groupId.value)
+        }.flatMap { (conversationId, status, membersEntity) ->
+            mlsConversationRepository.getMembersIdentities(
+                conversationId.toModel(),
+                membersEntity.keys.map { it.toModel() })
+                .map {
+                    var newStatus: VerificationStatus = VerificationStatus.VERIFIED
+                    // check that all identities are valid and name and handle are matching
+                    for ((userId, wireIdentity) in it) {
+                        val memberInfoInDatabase = membersEntity[userId.toDao()]
+                        val isUserVerified = wireIdentity.firstOrNull {
+                            it.status != CryptoCertificateStatus.VALID ||
+                                    it.displayName != memberInfoInDatabase?.name ||
+                                    it.handle != memberInfoInDatabase.handle
+                        } != null
+                        if (!isUserVerified) {
+                            newStatus = VerificationStatus.NOT_VERIFIED
+                            break
+                        }
+                    }
+                    VerificationStatusData(
+                        conversationId = conversationId.toModel(),
+                        currentStatusInDatabase = status.toModel(),
+                        newStatus = newStatus
+                    )
+                }
+        }
+
+
+    private suspend fun updateStatusAndNotifyUserIfNeeded(
+        verificationStatusData: VerificationStatusData
+    ) {
         logger.i("Updating verification status and notifying user if needed")
-        val currentStatus = conversation.conversation.mlsVerificationStatus
-        val newStatus = getActualNewStatus(newStatusFromCC, currentStatus)
+        val newStatus = getActualNewStatus(verificationStatusData.newStatus, verificationStatusData.currentStatusInDatabase)
 
-        if (newStatus == currentStatus) return
+        if (newStatus == verificationStatusData.currentStatusInDatabase) return
 
-        conversationRepository.updateMlsVerificationStatus(newStatus, conversation.conversation.id)
+        conversationRepository.updateMlsVerificationStatus(newStatus, verificationStatusData.conversationId)
 
         if (newStatus == VerificationStatus.DEGRADED || newStatus == VerificationStatus.VERIFIED) {
-            notifyUserAboutStateChanges(conversation.conversation.id, newStatus)
+            notifyUserAboutStateChanges(verificationStatusData.conversationId, newStatus)
         }
     }
 
@@ -126,7 +185,6 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
         )
 
         persistMessage(conversationDegradedMessage)
-
         conversationRepository.setDegradedConversationNotifiedFlag(conversationId, updatedStatus == VerificationStatus.DEGRADED)
     }
 }

@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao.conversation
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.member.MemberEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
@@ -115,4 +116,18 @@ interface ConversationDAO {
     suspend fun getMLSGroupIdByUserId(userId: UserIDEntity): String?
     suspend fun getMLSGroupIdByConversationId(conversationId: QualifiedIDEntity): String?
     suspend fun getEstablishedSelfMLSGroupId(): String?
+
+    suspend fun selectGroupStatusMembersNamesAndHandles(groupID: String): EpochChangesData?
 }
+
+
+data class NameAndHandleEntity(
+    val name: String?,
+    val handle: String?
+)
+
+data class EpochChangesData(
+    val conversationId: QualifiedIDEntity,
+    val mlsVerificationStatus: ConversationEntity.VerificationStatus,
+    val members: Map<UserIDEntity, NameAndHandleEntity>
+)
