@@ -474,6 +474,7 @@ CREATE TRIGGER addMessageAfterProteusVerificationStatusChange
 AFTER UPDATE ON Conversation
 WHEN new.proteus_verification_status != old.proteus_verification_status
 AND (new.proteus_verification_status  = 'VERIFIED' OR old.proteus_verification_status = 'VERIFIED')
+AND new.protocol != 'MLS'
 BEGIN
     INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility)
     VALUES(
