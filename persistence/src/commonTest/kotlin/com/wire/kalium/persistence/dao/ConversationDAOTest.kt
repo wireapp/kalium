@@ -1810,6 +1810,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+<<<<<<< HEAD
     fun givenConversationWithGuestLink_whenCallingDelete_thenTheLinkIsDeleted() = runTest {
         val conversationId = QualifiedIDEntity("conversationId", "domain")
         conversationDAO.insertConversation(conversationEntity1.copy(conversationId))
@@ -1824,6 +1825,21 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.observeGuestRoomLinkByConversationId(conversationId).first().let {
             assertEquals(null, it)
         }
+=======
+    fun givenInsertedConversations_whenGettingConversationByInexistingGroupId_thenReturnNull() = runTest {
+        // given
+        val expected = null
+        conversationDAO.insertConversation(conversationEntity4)
+
+        // when
+        val result = conversationDAO.getConversationByGroupID("call_subconversation_groupid")
+
+        // then
+        assertEquals(
+            expected,
+            result
+        )
+>>>>>>> c73f595497 (fix: Change return type of getConversationByGroupID to nullable for epoch changes (#2585))
     }
 
     private fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity {
