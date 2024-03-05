@@ -1811,7 +1811,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenSubConversationGroupIdForCall_whenGettingConversationByGroupId_thenReturnNull() = runTest {
+    fun givenInsertedConversations_whenGettingConversationByInexistingGroupId_thenReturnNull() = runTest {
         // given
         val expected = null
         conversationDAO.insertConversation(conversationEntity4)
