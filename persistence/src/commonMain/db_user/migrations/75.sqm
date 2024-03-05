@@ -1,3 +1,5 @@
+DROP TRIGGER IF EXISTS addMessageAfterProteusVerificationStatusChange;
+
 CREATE TRIGGER addMessageAfterProteusVerificationStatusChange
 AFTER UPDATE ON Conversation
 WHEN new.proteus_verification_status != old.proteus_verification_status
