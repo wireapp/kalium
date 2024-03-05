@@ -34,11 +34,15 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.conversation.mls.EpochChangesObserver
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.getOrElse
+import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
@@ -68,6 +72,7 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
     private val conversationDAO: ConversationDAO,
     private val epochChangesObserver: EpochChangesObserver,
     private val selfUserId: UserId,
+    private val userRepository: UserRepository,
     kaliumLogger: KaliumLogger
 ) : MLSConversationsVerificationStatusesHandler {
 
@@ -105,32 +110,57 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
     private suspend fun verifyUsersStatus(groupId: GroupID): Either<CoreFailure, VerificationStatusData> =
         wrapStorageRequest {
             conversationDAO.selectGroupStatusMembersNamesAndHandles(groupId.value)
-        }.flatMap { (conversationId, status, membersEntity) ->
+        }.flatMap { epochChangesData ->
             mlsConversationRepository.getMembersIdentities(
-                conversationId.toModel(),
-                membersEntity.keys.map { it.toModel() })
-                .map {
-                    var newStatus: VerificationStatus = VerificationStatus.VERIFIED
-                    // check that all identities are valid and name and handle are matching
-                    for ((userId, wireIdentity) in it) {
-                        val memberInfoInDatabase = membersEntity[userId.toDao()]
-                        val isUserVerified = wireIdentity.firstOrNull {
-                            it.status != CryptoCertificateStatus.VALID ||
-                                    it.displayName != memberInfoInDatabase?.name ||
-                                    it.handle != memberInfoInDatabase.handle
-                        } != null
-                        if (!isUserVerified) {
-                            newStatus = VerificationStatus.NOT_VERIFIED
-                            break
-                        }
-                    }
-                    VerificationStatusData(
-                        conversationId = conversationId.toModel(),
-                        currentStatusInDatabase = status.toModel(),
-                        newStatus = newStatus
+                epochChangesData.conversationId.toModel(),
+                epochChangesData.members.keys.map { it.toModel() })
+                .flatMap { ccIdentities ->
+                    var dbData = epochChangesData
+
+                    val missingUsers = missingUsers(
+                        usersFromDB = epochChangesData.members.keys.map { it.toModel() }.toSet(),
+                        usersFromCC = ccIdentities.keys
                     )
+
+                    if (missingUsers.isNotEmpty()) {
+                        logger.i("Fetching missing users during verification process")
+                        wrapStorageRequest {
+                            conversationDAO.selectGroupStatusMembersNamesAndHandles(groupId.value)
+                        }.onSuccess {
+                            dbData = it
+                        }.getOrElse { error -> return error.left() }
+                    }
+
+                    (dbData to ccIdentities).right()
                 }
+        }.map { (dbData, ccIdentity) ->
+            var newStatus: VerificationStatus = VerificationStatus.VERIFIED
+            // check that all identities are valid and name and handle are matching
+            for ((userId, wireIdentity) in ccIdentity) {
+                val memberInfoInDatabase = dbData.members[userId.toDao()]
+                val isUserVerified = wireIdentity.firstOrNull {
+                    it.status != CryptoCertificateStatus.VALID ||
+                            it.displayName != memberInfoInDatabase?.name ||
+                            it.handle != memberInfoInDatabase.handle
+                } != null
+                if (!isUserVerified) {
+                    newStatus = VerificationStatus.NOT_VERIFIED
+                    break
+                }
+            }
+            VerificationStatusData(
+                conversationId = dbData.conversationId.toModel(),
+                currentStatusInDatabase = dbData.mlsVerificationStatus.toModel(),
+                newStatus = newStatus
+            )
         }
+
+    private suspend fun missingUsers(usersFromDB: Set<UserId>, usersFromCC: Set<UserId>): Set<UserId> {
+        (usersFromCC - usersFromDB).let {
+            if (it.isNotEmpty()) userRepository.fetchUsersByIds(it)
+            return it
+        }
+    }
 
     private suspend fun updateStatusAndNotifyUserIfNeeded(
         verificationStatusData: VerificationStatusData

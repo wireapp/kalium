@@ -1993,6 +1993,7 @@ class UserSessionScope internal constructor(
             userStorage.database.conversationDAO,
             epochChangesObserver,
             userId,
+            userRepository,
             userScopedLogger,
         )
     }
