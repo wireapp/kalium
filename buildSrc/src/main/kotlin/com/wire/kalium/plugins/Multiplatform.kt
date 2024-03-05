@@ -44,7 +44,7 @@ fun Project.configureDefaultMultiplatform(
         "No multiplatform extension found. Is the Kotlin Multiplatform plugin applied to this module?"
     }
     kotlinExtension.apply {
-        targetHierarchy.default()
+        applyDefaultHierarchyTemplate()
         jvm { commonJvmConfig(includeNativeInterop, enableIntegrationTests) }
 
         androidTarget { commmonKotlinAndroidTargetConfig() }

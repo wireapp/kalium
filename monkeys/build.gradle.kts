@@ -142,8 +142,3 @@ sqldelight {
 }
 
 commonDokkaConfig()
-
-tasks.withType<Wrapper> {
-    gradleVersion = "7.3.1"
-    distributionType = Wrapper.DistributionType.BIN
-}
