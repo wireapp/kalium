@@ -1,0 +1,27 @@
+CREATE TRIGGER addMessageAfterProteusVerificationStatusChange
+AFTER UPDATE ON Conversation
+WHEN new.proteus_verification_status != old.proteus_verification_status
+AND (new.proteus_verification_status  = 'VERIFIED' OR old.proteus_verification_status = 'VERIFIED')
+AND new.protocol != 'MLS'
+BEGIN
+    INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility)
+    VALUES(
+        (SELECT lower(hex(randomblob(4)) || '-' || lower(hex(randomblob(2))) || '-4' ||
+        substr(lower(hex(randomblob(2))),2) || '-a' || substr(lower(hex(randomblob(2))),2)
+        || '-' || lower(hex(randomblob(6))))),
+        (CASE (new.proteus_verification_status)
+            WHEN 'VERIFIED' THEN 'CONVERSATION_VERIFIED_PROTEUS'
+            ELSE 'CONVERSATION_DEGRADED_PROTEUS' END
+        ),
+        new.qualified_id,
+        (SELECT CAST((julianday('now') - 2440587.5) * 86400 * 1000 AS INTEGER)),
+        (SELECT SelfUser.id FROM SelfUser LIMIT 1),
+        (SELECT Client.id FROM Client WHERE Client.user_id = (SELECT SelfUser.id FROM SelfUser LIMIT 1) LIMIT 1),
+        'SENT',
+        'VISIBLE'
+    );
+
+    UPDATE Conversation
+    SET degraded_conversation_notified = (new.proteus_verification_status != 'DEGRADED')
+    WHERE qualified_id = new.qualified_id;
+END;
