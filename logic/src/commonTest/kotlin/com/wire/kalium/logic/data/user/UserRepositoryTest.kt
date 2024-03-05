@@ -848,7 +848,7 @@ class UserRepositoryTest {
             given(teamsApi)
                 .suspendFunction(teamsApi::getTeamMembersByIds)
                 .whenInvokedWith(any(), any())
-                .thenReturn(NetworkResponse.Success(TeamsApi.TeamMemberList(false, result), mapOf(), 200))
+                .thenReturn(NetworkResponse.Success(TeamsApi.TeamMemberListNonPaginated(false, result), mapOf(), 200))
         }
 
         fun withSuccessfulGetUsersByQualifiedIdList(knownUserEntities: List<UserDetailsEntity>) = apply {

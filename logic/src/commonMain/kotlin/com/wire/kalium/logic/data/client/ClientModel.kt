@@ -104,4 +104,4 @@ data class UpdateClientCapabilitiesParam(
  * the `INACTIVE_DURATION`.
  */
 val Client.isActive: Boolean
-    get() = lastActive?.let { (Clock.System.now() - it) < Client.INACTIVE_DURATION } ?: false
+    get() = (lastActive ?: registrationTime)?.let { (Clock.System.now() - it) < Client.INACTIVE_DURATION } ?: false

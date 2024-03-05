@@ -170,7 +170,7 @@ class ACMEApiImpl internal constructor(
 
     override suspend fun getClientDomainCRL(url: String): NetworkResponse<ByteArray> =
         wrapKaliumResponse {
-            clearTextTrafficHttpClient.get("$url/$PATH_CRL")
+            clearTextTrafficHttpClient.get(url)
         }
 
     private companion object {
@@ -179,6 +179,5 @@ class ACMEApiImpl internal constructor(
 
         const val NONCE_HEADER_KEY = "Replay-Nonce"
         const val LOCATION_HEADER_KEY = "location"
-        const val PATH_CRL = "crl"
     }
 }

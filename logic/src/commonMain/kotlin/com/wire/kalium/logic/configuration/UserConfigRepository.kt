@@ -44,6 +44,7 @@ import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
@@ -121,6 +122,8 @@ interface UserConfigRepository {
     suspend fun setLegalHoldChangeNotified(isNotified: Boolean): Either<StorageFailure, Unit>
     suspend fun observeLegalHoldChangeNotified(): Flow<Either<StorageFailure, Boolean>>
     suspend fun setShouldUpdateClientLegalHoldCapability(shouldUpdate: Boolean): Either<StorageFailure, Unit>
+    suspend fun shouldCheckCrlForCurrentClient(): Boolean
+    suspend fun setShouldCheckCrlForCurrentClient(shouldCheck: Boolean): Either<StorageFailure, Unit>
     suspend fun shouldUpdateClientLegalHoldCapability(): Boolean
     suspend fun setCRLExpirationTime(url: String, timestamp: ULong)
     suspend fun getCRLExpirationTime(url: String): ULong?
@@ -231,10 +234,8 @@ internal class UserConfigDataSource internal constructor(
 
     override fun snoozeE2EINotification(duration: Duration): Either<StorageFailure, Unit> =
         wrapStorageRequest {
-            getE2EINotificationTimeOrNull()?.let { current ->
-                val notifyUserAfterMs = current.plus(duration.inWholeMilliseconds)
-                userConfigStorage.updateE2EINotificationTime(notifyUserAfterMs)
-            }
+            val notifyUserAfterMs = DateTimeUtil.currentInstant().toEpochMilliseconds().plus(duration.inWholeMilliseconds)
+            userConfigStorage.updateE2EINotificationTime(notifyUserAfterMs)
         }
 
     override suspend fun clearE2EISettings() {
@@ -449,6 +450,11 @@ internal class UserConfigDataSource internal constructor(
 
     override suspend fun shouldUpdateClientLegalHoldCapability(): Boolean =
         userConfigDAO.shouldUpdateClientLegalHoldCapability()
+
+    override suspend fun shouldCheckCrlForCurrentClient() = userConfigDAO.shouldCheckCrlForCurrentClient()
+
+    override suspend fun setShouldCheckCrlForCurrentClient(shouldCheck: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest { userConfigDAO.setShouldCheckCrlForCurrentClient(shouldCheck) }
 
     override suspend fun setCRLExpirationTime(url: String, timestamp: ULong) {
         userConfigDAO.setCRLExpirationTime(url, timestamp)

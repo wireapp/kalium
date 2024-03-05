@@ -32,7 +32,16 @@ import kotlinx.serialization.Serializable
 interface TeamsApi {
 
     @Serializable
-    data class TeamMemberList(
+    data class TeamMemberListPaginated(
+        // Please note that this is intentionally cased differently form the has_more in TeamsResponse
+        // because the backend response contains a different casing
+        @SerialName("hasMore") val hasMore: Boolean,
+        val members: List<TeamMemberDTO>,
+        @SerialName("pagingState") val pagingState: String? = null
+    )
+
+    @Serializable
+    data class TeamMemberListNonPaginated(
         // Please note that this is intentionally cased differently form the has_more in TeamsResponse
         // because the backend response contains a different casing
         @SerialName("hasMore") val hasMore: Boolean,
@@ -89,8 +98,8 @@ interface TeamsApi {
 
     suspend fun deleteConversation(conversationId: NonQualifiedConversationId, teamId: TeamId): NetworkResponse<Unit>
 
-    suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?): NetworkResponse<TeamMemberList>
-    suspend fun getTeamMembersByIds(teamId: TeamId, teamMemberIdList: TeamMemberIdList): NetworkResponse<TeamMemberList>
+    suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?, pagingState: String? = null): NetworkResponse<TeamMemberListPaginated>
+    suspend fun getTeamMembersByIds(teamId: TeamId, teamMemberIdList: TeamMemberIdList): NetworkResponse<TeamMemberListNonPaginated>
     suspend fun getTeamMember(teamId: TeamId, userId: NonQualifiedUserId): NetworkResponse<TeamMemberDTO>
     suspend fun getTeamInfo(teamId: TeamId): NetworkResponse<TeamDTO>
     suspend fun whiteListedServices(teamId: TeamId, size: Int = DEFAULT_SERVICES_SIZE): NetworkResponse<ServiceDetailResponse>

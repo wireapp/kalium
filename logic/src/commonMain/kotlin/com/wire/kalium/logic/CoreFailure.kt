@@ -183,6 +183,8 @@ interface MLSFailure : CoreFailure {
     data object ConversationAlreadyExists : MLSFailure
 
     data object ConversationDoesNotSupportMLS : MLSFailure
+    data object StaleProposal : MLSFailure
+    data object StaleCommit : MLSFailure
 
     class Generic(internal val exception: Exception) : MLSFailure {
         val rootCause: Throwable get() = exception

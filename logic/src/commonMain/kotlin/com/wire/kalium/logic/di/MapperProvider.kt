@@ -103,8 +103,8 @@ import com.wire.kalium.logic.data.user.type.UserEntityTypeMapperImpl
 internal object MapperProvider {
     fun apiVersionMapper(): ApiVersionMapper = ApiVersionMapperImpl()
     fun idMapper(): IdMapper = IdMapperImpl()
-    fun serverConfigMapper(): ServerConfigMapper = ServerConfigMapperImpl(apiVersionMapper(), idMapper())
-    fun sessionMapper(): SessionMapper = SessionMapperImpl(idMapper())
+    fun serverConfigMapper(): ServerConfigMapper = ServerConfigMapperImpl(apiVersionMapper())
+    fun sessionMapper(): SessionMapper = SessionMapperImpl()
     fun availabilityStatusMapper(): AvailabilityStatusMapper = AvailabilityStatusMapperImpl()
     fun connectionStateMapper(): ConnectionStateMapper = ConnectionStateMapperImpl()
     fun userMapper(): UserMapper = UserMapperImpl()

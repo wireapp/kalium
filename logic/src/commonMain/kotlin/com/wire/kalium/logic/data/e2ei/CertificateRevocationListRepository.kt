@@ -29,8 +29,8 @@ import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.dao.MetadataDAO
-import io.ktor.http.Url
-import io.ktor.http.protocolWithAuthority
+import io.ktor.http.URLBuilder
+import io.ktor.http.authority
 
 interface CertificateRevocationListRepository {
 
@@ -55,29 +55,29 @@ internal class CertificateRevocationListRepositoryDataSource(
 
     override suspend fun addOrUpdateCRL(url: String, timestamp: ULong) {
         val newCRLUrls = metadataDAO.getSerializable(CRL_LIST_KEY, CRLUrlExpirationList.serializer())
-            ?.let { crlExpirationList ->
-                val crlWithExpiration = crlExpirationList.cRLWithExpirationList.find {
-                    it.url == url
-                }
-                crlWithExpiration?.let { item ->
-                    crlExpirationList.cRLWithExpirationList.map { current ->
-                        if (current.url == url) {
-                            return@map item.copy(expiration = timestamp)
-                        } else {
-                            return@map current
-                        }
+                ?.let { crlExpirationList ->
+                    val crlWithExpiration = crlExpirationList.cRLWithExpirationList.find {
+                        it.url == url
                     }
-                } ?: run {
-                    // add new CRL
-                    crlExpirationList.cRLWithExpirationList.plus(
-                        CRLWithExpiration(url, timestamp)
-                    )
-                }
+                    crlWithExpiration?.let { item ->
+                        crlExpirationList.cRLWithExpirationList.map { current ->
+                            if (current.url == url) {
+                                return@map item.copy(expiration = timestamp)
+                            } else {
+                                return@map current
+                            }
+                        }
+                    } ?: run {
+                        // add new CRL
+                        crlExpirationList.cRLWithExpirationList.plus(
+                            CRLWithExpiration(url, timestamp)
+                        )
+                    }
 
-            } ?: run {
-            // add new CRL
-            listOf(CRLWithExpiration(url, timestamp))
-        }
+                } ?: run {
+                // add new CRL
+                listOf(CRLWithExpiration(url, timestamp))
+            }
         metadataDAO.putSerializable(
             CRL_LIST_KEY,
             CRLUrlExpirationList(newCRLUrls),
@@ -86,12 +86,17 @@ internal class CertificateRevocationListRepositoryDataSource(
     }
 
     override suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String> =
-
         userConfigRepository.getE2EISettings()
             .flatMap {
                 if (!it.isRequired) E2EIFailure.Disabled.left()
                 else if (it.discoverUrl == null) E2EIFailure.MissingDiscoveryUrl.left()
-                else Url(it.discoverUrl).protocolWithAuthority.right()
+                else URLBuilder(it.discoverUrl).apply {
+                    pathSegments.lastOrNull().let { segment ->
+                        if (segment == null || segment != PATH_CRL) {
+                            pathSegments = pathSegments + PATH_CRL
+                        }
+                    }
+                }.authority.right()
             }
 
     override suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray> =
@@ -101,5 +106,6 @@ internal class CertificateRevocationListRepositoryDataSource(
 
     companion object {
         const val CRL_LIST_KEY = "crl_list_key"
+        const val PATH_CRL = "crl"
     }
 }
