@@ -34,7 +34,6 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.conversation.mls.ConversationVerificationStatusChecker
 import com.wire.kalium.logic.feature.conversation.mls.EpochChangesObserver
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -59,11 +58,13 @@ data class VerificationStatusData(
     val newStatus: VerificationStatus
 )
 
+@Suppress("LongParameterList")
 internal class MLSConversationsVerificationStatusesHandlerImpl(
     private val conversationRepository: ConversationRepository,
     private val persistMessage: PersistMessageUseCase,
     private val mlsClientProvider: MLSClientProvider,
     private val mlsConversationRepository: MLSConversationRepository,
+    // TODO: remove and move the function to mlsConversationRepository
     private val conversationDAO: ConversationDAO,
     private val epochChangesObserver: EpochChangesObserver,
     private val selfUserId: UserId,
@@ -130,7 +131,6 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
                     )
                 }
         }
-
 
     private suspend fun updateStatusAndNotifyUserIfNeeded(
         verificationStatusData: VerificationStatusData
