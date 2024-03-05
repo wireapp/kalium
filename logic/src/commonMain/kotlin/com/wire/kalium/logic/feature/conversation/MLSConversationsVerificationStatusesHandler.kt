@@ -84,7 +84,7 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
                             it.toModel()
                         }
                     }.flatMap { ccGroupStatus ->
-                        if (ccGroupStatus == VerificationStatus.NOT_VERIFIED) {
+                        if (ccGroupStatus == VerificationStatus.VERIFIED) {
                             verifyUsersStatus(groupId)
                         } else {
                             conversationRepository.getConversationDetailsByMLSGroupId(groupId).map {
