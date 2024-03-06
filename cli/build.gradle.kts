@@ -18,7 +18,6 @@
 
 import com.wire.kalium.plugins.commonDokkaConfig
 import com.wire.kalium.plugins.commonJvmConfig
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 
 @Suppress("DSL_SCOPE_VIOLATION")
 
