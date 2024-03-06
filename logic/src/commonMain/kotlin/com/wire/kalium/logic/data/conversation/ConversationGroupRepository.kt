@@ -229,7 +229,7 @@ internal class ConversationGroupRepositoryImpl(
     ): Either<CoreFailure, Unit> {
         return when {
             // claiming key packages offline or out of packages
-            this is CoreFailure.NoKeyPackagesAvailable && remainingAttempts > 0 -> {
+            this is CoreFailure.MissingKeyPackages && remainingAttempts > 0 -> {
                 val (validUsers, failedUsers) = userIdList.partition { !this.failedUserIds.contains(it) }
                 tryAddMembersToMLSGroup(
                     conversationId = conversationId,
