@@ -199,7 +199,6 @@ import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.TypingIndicatorSyncManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
-import com.wire.kalium.logic.feature.conversation.mls.ConversationVerificationStatusCheckerImpl
 import com.wire.kalium.logic.feature.conversation.mls.EpochChangesObserverImpl
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolverImpl
@@ -1982,7 +1981,6 @@ class UserSessionScope internal constructor(
     )
 
     private val epochChangesObserver by lazy { EpochChangesObserverImpl(epochsFlow) }
-    private val conversationVerificationStatusChecker by lazy { ConversationVerificationStatusCheckerImpl(mlsClientProvider) }
 
     private val mlsConversationsVerificationStatusesHandler: MLSConversationsVerificationStatusesHandler by lazy {
         MLSConversationsVerificationStatusesHandlerImpl(
@@ -1990,7 +1988,6 @@ class UserSessionScope internal constructor(
             persistMessage,
             mlsClientProvider,
             mlsConversationRepository,
-            userStorage.database.conversationDAO,
             epochChangesObserver,
             userId,
             userRepository,
