@@ -1826,6 +1826,22 @@ class ConversationDAOTest : BaseDatabaseTest() {
         }
     }
 
+    @Test
+    fun givenInsertedConversations_whenGettingConversationByInexistingGroupId_thenReturnNull() = runTest {
+        // given
+        val expected = null
+        conversationDAO.insertConversation(conversationEntity4)
+
+        // when
+        val result = conversationDAO.getConversationByGroupID("call_subconversation_groupid")
+
+        // then
+        assertEquals(
+            expected,
+            result
+        )
+    }
+
     private fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity {
         val protocol: ConversationEntity.Protocol
         val mlsGroupId: String?
