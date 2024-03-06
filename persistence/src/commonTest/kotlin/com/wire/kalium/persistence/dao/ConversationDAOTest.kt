@@ -1813,6 +1813,22 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenInsertedConversations_whenGettingConversationByInexistingGroupId_thenReturnNull() = runTest {
+        // given
+        val expected = null
+        conversationDAO.insertConversation(conversationEntity4)
+
+        // when
+        val result = conversationDAO.getConversationByGroupID("call_subconversation_groupid")
+
+        // then
+        assertEquals(
+            expected,
+            result
+        )
+    }
+
+    @Test
     fun givenConversationMembers_whenCallingSelectGroupStatusMembersNamesAndHandles_thenRerturn() = runTest {
         // given
         val conversationId = QualifiedIDEntity("conversationId", "domain")
