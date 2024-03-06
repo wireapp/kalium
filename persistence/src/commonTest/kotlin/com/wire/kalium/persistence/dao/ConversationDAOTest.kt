@@ -28,7 +28,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.E2EIConversationClientInfoEntity
-import com.wire.kalium.persistence.dao.conversation.EpochChangesData
+import com.wire.kalium.persistence.dao.conversation.EpochChangesDataEntity
 import com.wire.kalium.persistence.dao.conversation.MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI
 import com.wire.kalium.persistence.dao.conversation.NameAndHandleEntity
 import com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity
@@ -1836,7 +1836,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             MemberEntity(user3.id, MemberEntity.Role.Member)
         )
 
-        val expected = EpochChangesData(
+        val expected = EpochChangesDataEntity(
             conversationId,
             mlsVerificationStatus = mlsConversation.mlsVerificationStatus,
             members = mapOf(

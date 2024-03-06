@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.cryptography.CryptoCertificateStatus
+import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
@@ -44,6 +45,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.wrapMLSRequest
+import com.wire.kalium.persistence.dao.conversation.EpochChangesDataEntity
 import com.wire.kalium.util.DateTimeUtil
 
 /**
@@ -104,28 +106,13 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
     }
 
     private suspend fun verifyUsersStatus(groupId: GroupID): Either<CoreFailure, VerificationStatusData> =
-        conversationRepository.selectGroupStatusMembersNamesAndHandles(groupId)
+        conversationRepository.getGroupStatusMembersNamesAndHandles(groupId)
             .flatMap { epochChangesData ->
                 mlsConversationRepository.getMembersIdentities(
                     epochChangesData.conversationId.toModel(),
                     epochChangesData.members.keys.map { it.toModel() })
                     .flatMap { ccIdentities ->
-                        var dbData = epochChangesData
-
-                        val missingUsers = missingUsers(
-                            usersFromDB = epochChangesData.members.keys.map { it.toModel() }.toSet(),
-                            usersFromCC = ccIdentities.keys
-                        )
-
-                        if (missingUsers.isNotEmpty()) {
-                            logger.i("Fetching missing users during verification process")
-                            conversationRepository.selectGroupStatusMembersNamesAndHandles(groupId)
-                                .onSuccess {
-                                    dbData = it
-                                }.getOrElse { error -> return error.left() }
-                        }
-
-                        (dbData to ccIdentities).right()
+                        updateKnownUsersIfNeeded(epochChangesData, ccIdentities, groupId)
                     }
             }.map { (dbData, ccIdentity) ->
                 var newStatus: VerificationStatus = VerificationStatus.VERIFIED
@@ -148,6 +135,29 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
                     newStatus = newStatus
                 )
             }
+
+    private suspend fun updateKnownUsersIfNeeded(
+        epochChangesData: EpochChangesDataEntity,
+        ccIdentities: Map<UserId, List<WireIdentity>>,
+        groupId: GroupID
+    ): Either<CoreFailure, Pair<EpochChangesDataEntity, Map<UserId, List<WireIdentity>>>> {
+        var dbData = epochChangesData
+
+        val missingUsers = missingUsers(
+            usersFromDB = epochChangesData.members.keys.map { it.toModel() }.toSet(),
+            usersFromCC = ccIdentities.keys
+        )
+
+        if (missingUsers.isNotEmpty()) {
+            logger.i("Fetching missing users during verification process")
+            conversationRepository.getGroupStatusMembersNamesAndHandles(groupId)
+                .onSuccess {
+                    dbData = it
+                }.getOrElse { error -> return error.left() }
+        }
+
+        return (dbData to ccIdentities).right()
+    }
 
     private suspend fun missingUsers(usersFromDB: Set<UserId>, usersFromCC: Set<UserId>): Set<UserId> {
         (usersFromCC - usersFromDB).let {

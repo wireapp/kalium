@@ -116,7 +116,7 @@ interface ConversationDAO {
     suspend fun getMLSGroupIdByConversationId(conversationId: QualifiedIDEntity): String?
     suspend fun getEstablishedSelfMLSGroupId(): String?
 
-    suspend fun selectGroupStatusMembersNamesAndHandles(groupID: String): EpochChangesData?
+    suspend fun selectGroupStatusMembersNamesAndHandles(groupID: String): EpochChangesDataEntity?
 }
 
 data class NameAndHandleEntity(
@@ -124,7 +124,7 @@ data class NameAndHandleEntity(
     val handle: String?
 )
 
-data class EpochChangesData(
+data class EpochChangesDataEntity(
     val conversationId: QualifiedIDEntity,
     val mlsVerificationStatus: ConversationEntity.VerificationStatus,
     val members: Map<UserIDEntity, NameAndHandleEntity>

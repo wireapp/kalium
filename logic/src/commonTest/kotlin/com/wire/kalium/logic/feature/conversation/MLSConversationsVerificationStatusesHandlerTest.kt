@@ -46,7 +46,7 @@ import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArran
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import com.wire.kalium.persistence.dao.conversation.EpochChangesData
+import com.wire.kalium.persistence.dao.conversation.EpochChangesDataEntity
 import com.wire.kalium.persistence.dao.conversation.NameAndHandleEntity
 import io.mockative.Mock
 import io.mockative.any
@@ -163,7 +163,7 @@ class MLSConversationsVerificationStatusesHandlerTest {
         val user1 = UserIDEntity("user1", "domain1") to NameAndHandleEntity("name1", "device1")
         val user2 = UserIDEntity("user2", "domain2") to NameAndHandleEntity("name2", "device2")
 
-        val epochChangedData = EpochChangesData(
+        val epochChangedData = EpochChangesDataEntity(
             conversationId = TestConversation.CONVERSATION.id.toDao(),
             members = mapOf(user1, user2),
             mlsVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED
@@ -233,7 +233,7 @@ class MLSConversationsVerificationStatusesHandlerTest {
         val user1 = UserIDEntity("user1", "domain1") to NameAndHandleEntity("name1", "device1")
         val user2 = UserIDEntity("user2", "domain2") to NameAndHandleEntity("name2", "device2")
 
-        val epochChangedData = EpochChangesData(
+        val epochChangedData = EpochChangesDataEntity(
             conversationId = TestConversation.CONVERSATION.id.toDao(),
             members = mapOf(user1, user2),
             mlsVerificationStatus = ConversationEntity.VerificationStatus.VERIFIED
