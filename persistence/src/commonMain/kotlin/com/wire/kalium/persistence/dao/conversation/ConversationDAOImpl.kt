@@ -247,10 +247,10 @@ internal class ConversationDAOImpl internal constructor(
             .map { it?.let { conversationMapper.toModel(it) } }
     }
 
-    override suspend fun getConversationByGroupID(groupID: String): ConversationViewEntity {
+    override suspend fun getConversationByGroupID(groupID: String): ConversationViewEntity? {
         return conversationQueries.selectByGroupId(groupID)
-            .executeAsOne()
-            .let { it.let { conversationMapper.toModel(it) } }
+            .executeAsOneOrNull()
+            ?.let { it.let { conversationMapper.toModel(it) } }
     }
 
     override suspend fun getConversationIdByGroupID(groupID: String) = withContext(coroutineContext) {
