@@ -121,7 +121,6 @@ abstract class Monkey(val monkeyType: MonkeyType, val internalId: MonkeyId) {
 
     abstract suspend fun sendMessageTo(conversationId: ConversationId, message: String)
 
-<<<<<<< HEAD
     @Suppress("LongParameterList")
     abstract suspend fun createPrefixedConversation(
         name: String,
@@ -133,46 +132,4 @@ abstract class Monkey(val monkeyType: MonkeyType, val internalId: MonkeyId) {
     ): MonkeyConversation
 
     abstract suspend fun warmUp(core: CoreLogic)
-=======
-    suspend fun sendMessageTo(conversationId: ConversationId, message: String) {
-        this.monkeyState.readyThen {
-            val result = messages.sendTextMessage(conversationId, message)
-            if (result is Either.Left) {
-               error("Error sending message: ${result.value}")
-            }
-        }
-    }
-}
-
-private sealed class MonkeyState {
-    data object NotReady : MonkeyState()
-    data class Ready(val userSessionScope: UserSessionScope) : MonkeyState()
-
-    suspend fun <T> readyThen(func: suspend UserSessionScope.() -> T): T {
-        return when (this) {
-            is Ready -> this.userSessionScope.func()
-            is NotReady -> error("Monkey not ready")
-        }
-    }
-}
-
-private suspend fun getAuthScope(coreLogic: CoreLogic, backend: Backend): AuthenticationScope {
-    val result = coreLogic.versionedAuthenticationScope(
-        ServerConfig.Links(
-            api = backend.api,
-            accounts = backend.accounts,
-            webSocket = backend.webSocket,
-            blackList = backend.blackList,
-            teams = backend.teams,
-            website = backend.website,
-            title = backend.title,
-            isOnPremises = true,
-            apiProxy = null
-        )
-    ).invoke(null)
-    if (result !is AutoVersionAuthScopeUseCase.Result.Success) {
-        error("Failed getting AuthScope: $result")
-    }
-    return result.authenticationScope
->>>>>>> c73f595497 (fix: Change return type of getConversationByGroupID to nullable for epoch changes (#2585))
 }
