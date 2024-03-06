@@ -549,6 +549,39 @@ class E2EIRepositoryTest {
     }
 
     @Test
+    fun givenOIDCChallengeRequestSucceedWithInvalidStatus_whenCallingValidateDPoPChallenge_thenItFail() = runTest {
+        // Given
+        val (arrangement, e2eiRepository) = Arrangement()
+            .withGetCoreCryptoSuccessful()
+            .withSendChallengeRequestApiSucceedWithInvalidStatus()
+            .withGetE2EIClientSuccessful()
+            .withGetMLSClientSuccessful()
+            .withGetNewOidcChallengeRequest()
+            .arrange()
+
+        // When
+        val result = e2eiRepository.validateOIDCChallenge(RANDOM_ID_TOKEN, REFRESH_TOKEN, RANDOM_NONCE, ACME_CHALLENGE)
+
+        // Then
+        result.shouldFail()
+
+        verify(arrangement.e2eiClient)
+            .function(arrangement.e2eiClient::getNewOidcChallengeRequest)
+            .with(anyInstanceOf(String::class), anyInstanceOf(String::class), anyInstanceOf(String::class))
+            .wasInvoked(once)
+
+        verify(arrangement.acmeApi)
+            .suspendFunction(arrangement.acmeApi::sendChallengeRequest)
+            .with(anyInstanceOf(String::class), any())
+            .wasInvoked(once)
+
+        verify(arrangement.e2eiClient)
+            .function(arrangement.e2eiClient::setOIDCChallengeResponse)
+            .with(anyInstanceOf(CoreCryptoCentral::class), anyInstanceOf(ByteArray::class))
+            .wasNotInvoked()
+    }
+
+    @Test
     fun givenOIDCChallengeRequestFails_whenCallingValidateDPoPChallenge_thenItFail() = runTest {
         // Given
         val (arrangement, e2eiRepository) = Arrangement()
@@ -1231,6 +1264,13 @@ class E2EIRepositoryTest {
                 .suspendFunction(acmeApi::sendChallengeRequest)
                 .whenInvokedWith(any(), any())
                 .thenReturn(NetworkResponse.Success(ACME_CHALLENGE_RESPONSE, mapOf(), 200))
+        }
+
+        fun withSendChallengeRequestApiSucceedWithInvalidStatus() = apply {
+            given(acmeApi)
+                .suspendFunction(acmeApi::sendChallengeRequest)
+                .whenInvokedWith(any(), any())
+                .thenReturn(NetworkResponse.Success(ACME_CHALLENGE_RESPONSE.copy(status = "invalid"), mapOf(), 200))
         }
 
         fun withSendChallengeRequestApiFails() = apply {
