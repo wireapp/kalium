@@ -20,13 +20,13 @@ package com.wire.kalium
 
 import android.app.Application
 import androidx.work.Configuration
+import com.wire.kalium.android.R
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.ForegroundNotificationDetailsProvider
 import com.wire.kalium.logic.sync.WrapperWorkerFactory
-import com.wire.kalium.android.R
 import java.io.File
 
 class KaliumApplication : Application(), Configuration.Provider {
@@ -48,14 +48,15 @@ class KaliumApplication : Application(), Configuration.Provider {
         )
     }
 
-    override fun getWorkManagerConfiguration(): Configuration {
-        val myWorkerFactory = WrapperWorkerFactory(coreLogic, object : ForegroundNotificationDetailsProvider {
-            override fun getSmallIconResId(): Int = R.drawable.ic_launcher_foreground
-        })
+    override val workManagerConfiguration: Configuration
+        get() {
+            val myWorkerFactory = WrapperWorkerFactory(coreLogic, object : ForegroundNotificationDetailsProvider {
+                override fun getSmallIconResId(): Int = R.drawable.ic_launcher_foreground
+            })
 
-        return Configuration.Builder()
-            .setWorkerFactory(myWorkerFactory)
-            .build()
-    }
+            return Configuration.Builder()
+                .setWorkerFactory(myWorkerFactory)
+                .build()
+        }
 
 }
