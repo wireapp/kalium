@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.feature.conversation.mls.EpochChangesObserver
+import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 import io.mockative.Mock
 import io.mockative.given
 import io.mockative.mock

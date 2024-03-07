@@ -199,7 +199,7 @@ import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.TypingIndicatorSyncManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
-import com.wire.kalium.logic.feature.conversation.mls.EpochChangesObserverImpl
+import com.wire.kalium.logic.data.conversation.EpochChangesObserverImpl
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolverImpl
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigrator
