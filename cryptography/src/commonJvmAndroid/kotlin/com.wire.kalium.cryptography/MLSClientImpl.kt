@@ -63,6 +63,7 @@ class MLSClientImpl(
     }
 
     override suspend fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle {
+        kaliumLogger.d("CFCI -> MLSClientImpl.updateKeyingMaterial() | groupId: $groupId")
         return toCommitBundle(coreCrypto.updateKeyingMaterial(groupId.decodeBase64Bytes()))
     }
 
@@ -150,10 +151,12 @@ class MLSClientImpl(
     }
 
     override suspend fun commitAccepted(groupId: MLSGroupId) {
+        kaliumLogger.d("CFCI -> MLSClientImpl.commitAccepted() | groupId: $groupId")
         coreCrypto.commitAccepted(groupId.decodeBase64Bytes())
     }
 
     override suspend fun commitPendingProposals(groupId: MLSGroupId): CommitBundle? {
+        kaliumLogger.d("CFCI -> MLSClientImpl.commitPendingProposals() | groupId: $groupId")
         return coreCrypto.commitPendingProposals(groupId.decodeBase64Bytes())?.let { toCommitBundle(it) }
     }
 
@@ -171,6 +174,7 @@ class MLSClientImpl(
         groupId: MLSGroupId,
         membersKeyPackages: List<MLSKeyPackage>
     ): CommitBundle? {
+        kaliumLogger.d("CFCI -> MLSClientImpl.updateKeyingMaterial() | groupId: $groupId")
         if (membersKeyPackages.isEmpty()) {
             return null
         }

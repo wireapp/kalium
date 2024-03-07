@@ -349,6 +349,7 @@ internal class MLSConversationDataSource(
     }
 
     private suspend fun sendCommitBundle(groupID: GroupID, bundle: CommitBundle): Either<CoreFailure, Unit> {
+        kaliumLogger.d("CFCI -> MLSConversationRepository.sendCommitBundle() | groupID: $groupID")
         return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapApiRequest {
                 mlsMessageApi.sendCommitBundle(mlsCommitBundleMapper.toDTO(bundle))
@@ -384,6 +385,7 @@ internal class MLSConversationDataSource(
         }
 
     private suspend fun processCommitBundleEvents(events: List<EventContentDTO>) {
+        kaliumLogger.d("CFCI -> MLSConversationRepository.processCommitBundleEvents()")
         events.forEach { eventContentDTO ->
             val event = MapperProvider.eventMapper(selfUserId).fromEventContentDTO(LocalId.generate(), eventContentDTO)
             if (event is Event.Conversation) {
@@ -393,6 +395,7 @@ internal class MLSConversationDataSource(
     }
 
     override suspend fun commitPendingProposals(groupID: GroupID): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
+        kaliumLogger.d("CFCI -> MLSConversationRepository.commitPendingProposals() | groupID: $groupID")
         retryOnCommitFailure(groupID) {
             internalCommitPendingProposals(groupID)
         }
@@ -401,6 +404,7 @@ internal class MLSConversationDataSource(
     private suspend fun internalCommitPendingProposals(groupID: GroupID): Either<CoreFailure, Unit> =
         mlsClientProvider.getMLSClient()
             .flatMap { mlsClient ->
+                kaliumLogger.d("CFCI -> MLSConversationRepository.internalCommitPendingProposals() | groupID: $groupID")
                 wrapMLSRequest {
                     mlsClient.commitPendingProposals(idMapper.toCryptoModel(groupID))
                 }.flatMap { commitBundle ->
@@ -437,6 +441,7 @@ internal class MLSConversationDataSource(
         userIdList: List<UserId>,
         retryOnStaleMessage: Boolean
     ): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
+        kaliumLogger.d("CFCI -> MLSConversationRepository.internalAddMemberToMLSGroup()")
         commitPendingProposals(groupID).flatMap {
             retryOnCommitFailure(groupID, retryOnStaleMessage = retryOnStaleMessage) {
                 keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackages ->
@@ -550,6 +555,7 @@ internal class MLSConversationDataSource(
         members: List<UserId>,
         keys: List<Ed22519Key>
     ): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
+        kaliumLogger.d("CFCI -> MLSConversationRepository.establishMLSGroup() | groupID: $groupID")
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapMLSRequest {
                 mlsClient.createConversation(
@@ -674,6 +680,7 @@ internal class MLSConversationDataSource(
     ) =
         operation()
             .flatMapLeft {
+                kaliumLogger.d("CFCI -> MLSConversationRepository.retryOnCommitFailure() | groupID: $groupID")
                 handleCommitFailure(
                     failure = it,
                     groupID = groupID,
@@ -754,6 +761,7 @@ internal class MLSConversationDataSource(
     }
 
     private suspend fun checkRevocationList(crlNewDistributionPoints: List<String>) {
+        kaliumLogger.d("CFCI -> MLSConversationRepository.checkRevocationList()")
         crlNewDistributionPoints.forEach { url ->
             checkRevocationList(url).map { newExpiration ->
                 newExpiration?.let {

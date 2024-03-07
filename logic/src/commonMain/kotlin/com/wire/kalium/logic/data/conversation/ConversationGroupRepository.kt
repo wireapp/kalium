@@ -35,6 +35,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
@@ -178,6 +179,7 @@ internal class ConversationGroupRepositoryImpl(
     ): Either<CoreFailure, Unit> =
         wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationId.toDao()) }
             .flatMap { protocol ->
+                kaliumLogger.d("CFCI -> ConversationGroupRepository.addMembers() | protocol : $protocol")
                 when (protocol) {
                     is ConversationEntity.ProtocolInfo.Proteus ->
                         tryAddMembersToCloudAndStorage(userIdList, conversationId)
@@ -185,6 +187,7 @@ internal class ConversationGroupRepositoryImpl(
                     is ConversationEntity.ProtocolInfo.Mixed ->
                         tryAddMembersToCloudAndStorage(userIdList, conversationId)
                             .flatMap {
+                                kaliumLogger.d("CFCI -> ConversationGroupRepository.addMembers() | Mixed flatMap")
                                 // best effort approach for migrated conversations, no retries
                                 mlsConversationRepository.addMemberToMLSGroup(GroupID(protocol.groupId), userIdList)
                             }
@@ -309,8 +312,10 @@ internal class ConversationGroupRepositoryImpl(
         conversationId: ConversationId,
         failedUsersList: Set<UserId> = emptySet(),
     ): Either<CoreFailure, Unit> {
+        kaliumLogger.d("CFCI -> ConversationGroupRepository.tryAddMembersToCloudAndStorage()")
         val apiResult = wrapApiRequest {
             val users = userIdList.map { it.toApi() }
+            kaliumLogger.d("CFCI -> ConversationGroupRepository.tryAddMembersToCloudAndStorage() | users.size: ${users.size}")
             val addParticipantRequest = AddConversationMembersRequest(users, ConversationDataSource.DEFAULT_MEMBER_ROLE)
             conversationApi.addMember(addParticipantRequest, conversationId.toApi())
         }

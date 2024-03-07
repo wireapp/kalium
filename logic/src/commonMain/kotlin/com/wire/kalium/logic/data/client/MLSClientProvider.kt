@@ -79,6 +79,7 @@ class MLSClientProviderImpl(
     override fun isMLSClientInitialised() = mlsClient != null
 
     override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> = mlsClientMutex.withLock {
+        kaliumLogger.d("CFCI -> MLSClientProvider.getMLSClient() | clientId: $clientId")
         withContext(dispatchers.io) {
             val currentClientId = clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
             val cryptoUserId = CryptoUserID(value = userId.value, domain = userId.domain)

@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.kaliumLogger
 
 /**
  * This use case will add a member(s) to a given conversation.
@@ -49,11 +50,14 @@ internal class AddMemberToConversationUseCaseImpl(
     private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase
 ) : AddMemberToConversationUseCase {
     override suspend fun invoke(conversationId: ConversationId, userIdList: List<UserId>): AddMemberToConversationUseCase.Result {
+        kaliumLogger.d("CFCI -> AddMemberToConversationUseCaseImpl.invoke()")
         userRepository.insertOrIgnoreIncompleteUsers(userIdList)
         return conversationGroupRepository.addMembers(userIdList, conversationId)
             .fold({
+                kaliumLogger.d("CFCI -> AddMemberToConversationUseCaseImpl.invoke() FAILURE $it")
                 AddMemberToConversationUseCase.Result.Failure(it)
             }, {
+                kaliumLogger.d("CFCI -> AddMemberToConversationUseCaseImpl.invoke() SUCCESS")
                 AddMemberToConversationUseCase.Result.Success
             }).also {
                 refreshUsersWithoutMetadata()

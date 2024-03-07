@@ -44,6 +44,7 @@ internal open class KeyPackageApiV5 internal constructor(
     override suspend fun claimKeyPackages(
         param: KeyPackageApi.Param
     ): NetworkResponse<ClaimedKeyPackageList> = wrapKaliumResponse(unsuccessfulResponseOverride = { response ->
+        kaliumLogger.d("CFCI -> KeyPackageApiV5.claimKeyPackages() | response: ${response}")
         wrapFederationResponse(response, delegatedHandler = { handleUnsuccessfulResponse(response) })
     }) {
         httpClient.post("$PATH_KEY_PACKAGES/$PATH_CLAIM/${param.user.domain}/${param.user.value}") {

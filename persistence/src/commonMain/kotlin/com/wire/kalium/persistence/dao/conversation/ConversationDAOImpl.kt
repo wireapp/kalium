@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOne
 import com.wire.kalium.persistence.util.mapToOneOrDefault
@@ -317,6 +318,7 @@ internal class ConversationDAOImpl internal constructor(
     }
 
     override suspend fun clearProposalTimer(groupID: String) = withContext(coroutineContext) {
+        kaliumLogger.d("CFCI -> ConversationDAOImpl.clearProposalTimer() | groupID: $groupID")
         conversationQueries.clearProposalTimer(groupID)
     }
 

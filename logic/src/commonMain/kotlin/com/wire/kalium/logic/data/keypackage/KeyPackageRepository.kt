@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
@@ -60,6 +61,7 @@ class KeyPackageDataSource(
 
     override suspend fun claimKeyPackages(userIds: List<UserId>): Either<CoreFailure, List<KeyPackageDTO>> =
         currentClientIdProvider().flatMap { selfClientId ->
+            kaliumLogger.d("CFCI -> KeyPackageRepository.claimKeyPackages() | selfClientId: $selfClientId")
             val failedUsers = mutableSetOf<UserId>()
             val claimedKeyPackages = mutableListOf<KeyPackageDTO>()
             userIds.forEach { userId ->
@@ -67,8 +69,10 @@ class KeyPackageDataSource(
                     keyPackageApi.claimKeyPackages(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), selfClientId.value))
                 }.fold({ failedUsers.add(userId) }) {
                     if (it.keyPackages.isEmpty() && userId != selfUserId) {
+                        kaliumLogger.d("CFCI -> KeyPackageRepository.claimKeyPackages() | failedUsers.add")
                         failedUsers.add(userId)
                     } else {
+                        kaliumLogger.d("CFCI -> KeyPackageRepository.claimKeyPackages() | claimedKeyPackages.addAll")
                         claimedKeyPackages.addAll(it.keyPackages)
                     }
                 }
