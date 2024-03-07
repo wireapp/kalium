@@ -45,13 +45,11 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class KeyPackageRepositoryTest {
 
     @Test
@@ -86,7 +84,6 @@ class KeyPackageRepositoryTest {
 
     @Test
     fun givenExistingClient_whenClaimingKeyPackages_thenResultShouldBePropagated() = runTest {
-
         val (_, keyPackageRepository) = Arrangement()
             .withCurrentClientId()
             .withClaimKeyPackagesSuccessful(Arrangement.USER_ID)
@@ -94,13 +91,58 @@ class KeyPackageRepositoryTest {
 
         val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.USER_ID))
 
-        result.shouldSucceed { keyPackages ->
-            assertEquals(listOf(Arrangement.CLAIMED_KEY_PACKAGES.keyPackages[0]), keyPackages)
+        result.shouldSucceed { keyPackageResult ->
+            assertEquals(listOf(Arrangement.CLAIMED_KEY_PACKAGES.keyPackages[0]), keyPackageResult.successfullyFetchedKeyPackages)
         }
     }
 
     @Test
-    fun givenUserWithNoKeyPackages_whenClaimingKeyPackages_thenResultShouldFailWithError() = runTest {
+    fun givenSomeUsersHaveNoKeyPackagesAvailable_whenClaimingKeyPackages_thenSuccessShouldBePropagatedWithInformationMissing() = runTest {
+        val userWith = Arrangement.USER_ID
+        val userWithout = userWith.copy(value = "missingKP")
+        val (_, keyPackageRepository) = Arrangement()
+            .withCurrentClientId()
+            .withClaimKeyPackagesSuccessful(userWith)
+            .withClaimKeyPackagesSuccessfulWithEmptyResponse(userWithout)
+            .arrange()
+
+        val result = keyPackageRepository.claimKeyPackages(listOf(userWith, userWithout))
+
+        result.shouldSucceed { keyPackageResult ->
+            assertEquals(
+                listOf(Arrangement.CLAIMED_KEY_PACKAGES.keyPackages[0]),
+                keyPackageResult.successfullyFetchedKeyPackages
+            )
+            assertEquals(
+                setOf(userWithout),
+                keyPackageResult.usersWithoutKeyPackagesAvailable
+            )
+        }
+    }
+
+    @Test
+    fun givenAllUsersHaveNoKeyPackagesAvailable_whenClaimingKeyPackagesFromMultipleUsers_thenSuccessFailWithMissingKeyPackages() = runTest {
+        val usersWithout = setOf(
+            Arrangement.USER_ID.copy(value = "missingKP"),
+            Arrangement.USER_ID.copy(value = "alsoMissingKP"),
+        )
+        val (_, keyPackageRepository) = Arrangement()
+            .withCurrentClientId().also { arrangement ->
+                usersWithout.forEach { userWithout ->
+                    arrangement.withClaimKeyPackagesSuccessfulWithEmptyResponse(userWithout)
+                }
+            }
+            .arrange()
+
+        val result = keyPackageRepository.claimKeyPackages(usersWithout.toList())
+
+        result.shouldFail { failure ->
+            assertIs<CoreFailure.MissingKeyPackages>(failure)
+        }
+    }
+
+    @Test
+    fun givenUserWithNoKeyPackages_whenClaimingKeyPackagesFromSingleUser_thenResultShouldFailWithError() = runTest {
 
         val (_, keyPackageRepository) = Arrangement()
             .withCurrentClientId()
@@ -110,7 +152,7 @@ class KeyPackageRepositoryTest {
         val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.USER_ID))
 
         result.shouldFail { failure ->
-            assertEquals(CoreFailure.NoKeyPackagesAvailable(setOf(Arrangement.USER_ID)), failure)
+            assertEquals(CoreFailure.MissingKeyPackages(setOf(Arrangement.USER_ID)), failure)
         }
     }
 
@@ -125,7 +167,7 @@ class KeyPackageRepositoryTest {
         val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.SELF_USER_ID))
 
         result.shouldSucceed { keyPackages ->
-            assertEquals(emptyList(), keyPackages)
+            assertEquals(emptyList(), keyPackages.successfullyFetchedKeyPackages)
         }
     }
 
