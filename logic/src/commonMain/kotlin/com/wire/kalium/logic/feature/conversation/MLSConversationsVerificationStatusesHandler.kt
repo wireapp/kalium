@@ -48,6 +48,7 @@ import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.persistence.dao.conversation.EpochChangesDataEntity
 import com.wire.kalium.util.DateTimeUtil
 
+typealias UserToWireIdentity = Map<UserId, List<WireIdentity>>
 /**
  * Observes all the MLS Conversations Verification status.
  * Notify user (by adding System message in conversation) if needed about changes.
@@ -58,7 +59,7 @@ internal interface MLSConversationsVerificationStatusesHandler {
 
 data class VerificationStatusData(
     val conversationId: ConversationId,
-    val currentStatusInDatabase: VerificationStatus,
+    val currentPersistedStatus: VerificationStatus,
     val newStatus: VerificationStatus
 )
 
@@ -93,7 +94,7 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
                             conversationRepository.getConversationDetailsByMLSGroupId(groupId).map {
                                 VerificationStatusData(
                                     conversationId = it.conversation.id,
-                                    currentStatusInDatabase = it.conversation.mlsVerificationStatus,
+                                    currentPersistedStatus = it.conversation.mlsVerificationStatus,
                                     newStatus =
                                     ccGroupStatus
                                 )
@@ -118,11 +119,11 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
                 var newStatus: VerificationStatus = VerificationStatus.VERIFIED
                 // check that all identities are valid and name and handle are matching
                 for ((userId, wireIdentity) in ccIdentity) {
-                    val memberInfoInDatabase = dbData.members[userId.toDao()]
+                    val persistedMemberInfo = dbData.members[userId.toDao()]
                     val isUserVerified = wireIdentity.firstOrNull {
                         it.status != CryptoCertificateStatus.VALID ||
-                                it.displayName != memberInfoInDatabase?.name ||
-                                it.handle != memberInfoInDatabase.handle
+                                it.displayName != persistedMemberInfo?.name ||
+                                it.handle != persistedMemberInfo.handle
                     } == null
                     if (!isUserVerified) {
                         newStatus = VerificationStatus.NOT_VERIFIED
@@ -131,16 +132,16 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
                 }
                 VerificationStatusData(
                     conversationId = dbData.conversationId.toModel(),
-                    currentStatusInDatabase = dbData.mlsVerificationStatus.toModel(),
+                    currentPersistedStatus = dbData.mlsVerificationStatus.toModel(),
                     newStatus = newStatus
                 )
             }
 
     private suspend fun updateKnownUsersIfNeeded(
         epochChangesData: EpochChangesDataEntity,
-        ccIdentities: Map<UserId, List<WireIdentity>>,
+        ccIdentities: UserToWireIdentity,
         groupId: GroupID
-    ): Either<CoreFailure, Pair<EpochChangesDataEntity, Map<UserId, List<WireIdentity>>>> {
+    ): Either<CoreFailure, Pair<EpochChangesDataEntity, UserToWireIdentity>> {
         var dbData = epochChangesData
 
         val missingUsers = missingUsers(
@@ -172,10 +173,10 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
         logger.i("Updating verification status and notifying user if needed")
         val newStatus = getActualNewStatus(
             newStatusFromCC = verificationStatusData.newStatus,
-            currentStatus = verificationStatusData.currentStatusInDatabase
+            currentStatus = verificationStatusData.currentPersistedStatus
         )
 
-        if (newStatus == verificationStatusData.currentStatusInDatabase) return
+        if (newStatus == verificationStatusData.currentPersistedStatus) return
 
         conversationRepository.updateMlsVerificationStatus(newStatus, verificationStatusData.conversationId)
 
