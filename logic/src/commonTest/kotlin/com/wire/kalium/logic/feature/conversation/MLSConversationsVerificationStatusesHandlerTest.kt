@@ -294,7 +294,7 @@ class MLSConversationsVerificationStatusesHandlerTest {
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::setDegradedConversationNotifiedFlag)
-            .with(any(), eq(true))
+            .with(any(), eq(false))
             .wasInvoked(once)
     }
 
