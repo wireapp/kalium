@@ -444,7 +444,12 @@ internal class MLSConversationDataSource(
         kaliumLogger.d("CFCI -> MLSConversationRepository.internalAddMemberToMLSGroup()")
         commitPendingProposals(groupID).flatMap {
             retryOnCommitFailure(groupID, retryOnStaleMessage = retryOnStaleMessage) {
-                keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackages ->
+                keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackageResult ->
+                    val keyPackages = keyPackageResult.successfullyFetchedKeyPackages
+                    val usersMissingKeyPackages = keyPackageResult.usersWithoutKeyPackagesAvailable
+                    if (usersMissingKeyPackages.isNotEmpty()) {
+                        return@retryOnCommitFailure Either.Left(CoreFailure.MissingKeyPackages(usersMissingKeyPackages))
+                    }
                     mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                         val clientKeyPackageList = keyPackages.map { it.keyPackage.decodeBase64Bytes() }
 

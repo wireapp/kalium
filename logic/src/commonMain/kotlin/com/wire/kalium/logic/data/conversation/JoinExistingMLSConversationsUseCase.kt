@@ -67,7 +67,7 @@ internal class JoinExistingMLSConversationsUseCaseImpl(
                                     )
                                     Either.Left(it)
                                 }
-                                is CoreFailure.NoKeyPackagesAvailable -> {
+                                is CoreFailure.MissingKeyPackages -> {
                                     kaliumLogger.w(
                                         "Failed to establish mls group for ${conversation.id.toLogString()} " +
                                                 "since some participants are out of key packages, skipping."
