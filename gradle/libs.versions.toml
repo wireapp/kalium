@@ -38,11 +38,7 @@ pbandk = "0.14.2"
 turbine = "1.0.0"
 avs = "9.6.13"
 jna = "5.14.0"
-<<<<<<< HEAD
-core-crypto = "1.0.0-rc.46"
-=======
 core-crypto = "1.0.0-rc.48"
->>>>>>> e6afa97aad (chore: update CC to 1.0.0-rc.48 (#2598))
 core-crypto-multiplatform = "0.6.0-rc.3-multiplatform-pre1"
 completeKotlin = "1.1.0"
 desugar-jdk = "2.0.4"
