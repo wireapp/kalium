@@ -313,7 +313,7 @@ private suspend fun getAuthScope(coreLogic: CoreLogic, backend: Backend): Authen
             isOnPremises = true,
             apiProxy = null
         )
-    ).invoke()
+    ).invoke(null)
     if (result !is AutoVersionAuthScopeUseCase.Result.Success) {
         error("Failed getting AuthScope: $result")
     }
