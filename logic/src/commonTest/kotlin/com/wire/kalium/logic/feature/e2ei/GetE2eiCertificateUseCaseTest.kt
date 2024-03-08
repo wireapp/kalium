@@ -143,8 +143,6 @@ class GetE2eiCertificateUseCaseTest {
         private val CRYPTO_QUALIFIED_CLIENT_ID =
             CryptoQualifiedClientId("clientId", USER_ID.toCrypto())
 
-        val e2eiCertificate =
-            E2eiCertificate(CertificateStatus.EXPIRED, "serialNumber", "certificateDetail")
         val IDENTITY = WireIdentity(
             CRYPTO_QUALIFIED_CLIENT_ID,
             handle = "alic_test",
@@ -153,7 +151,8 @@ class GetE2eiCertificateUseCaseTest {
             certificate = "certificate",
             status = CryptoCertificateStatus.EXPIRED,
             thumbprint = "thumbprint",
-            serialNumber = "serialNumber"
+            serialNumber = "serialNumber",
+            endTimestamp = 1899105093
         )
     }
 }
