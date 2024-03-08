@@ -1,3 +1,7 @@
+<<<<<<< HEAD
 UPDATE MessageMemberChangeContent
 SET member_change_type = 'FAILED_TO_ADD_FEDERATION'
 WHERE member_change_type == 'FAILED_TO_ADD';
+=======
+CREATE INDEX IF NOT EXISTS conversation_verification_status ON Conversation(verification_status);
+>>>>>>> 9ff506c273 (fix: Clients should verify user identifiers inside certificate [WPB-6193] (#2587))
