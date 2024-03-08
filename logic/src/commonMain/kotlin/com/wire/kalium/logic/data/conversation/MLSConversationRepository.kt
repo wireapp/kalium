@@ -142,6 +142,7 @@ interface MLSConversationRepository {
 
     suspend fun getClientIdentity(clientId: ClientId): Either<CoreFailure, WireIdentity?>
     suspend fun getUserIdentity(userId: UserId): Either<CoreFailure, List<WireIdentity>>
+
     suspend fun getMembersIdentities(
         conversationId: ConversationId,
         userIds: List<UserId>
@@ -439,7 +440,12 @@ internal class MLSConversationDataSource(
     ): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
         commitPendingProposals(groupID).flatMap {
             retryOnCommitFailure(groupID, retryOnStaleMessage = retryOnStaleMessage) {
-                keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackages ->
+                keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackageResult ->
+                    val keyPackages = keyPackageResult.successfullyFetchedKeyPackages
+                    val usersMissingKeyPackages = keyPackageResult.usersWithoutKeyPackagesAvailable
+                    if (usersMissingKeyPackages.isNotEmpty()) {
+                        return@retryOnCommitFailure Either.Left(CoreFailure.MissingKeyPackages(usersMissingKeyPackages))
+                    }
                     mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                         val clientKeyPackageList = keyPackages.map { it.keyPackage.decodeBase64Bytes() }
 
