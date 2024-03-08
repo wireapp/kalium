@@ -157,6 +157,7 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
                 "certificate",
                 CryptoCertificateStatus.VALID,
                 "thumbprint",
+<<<<<<< HEAD
                 "serialNumber"
             )
         private val E2EI_CERTIFICATE =
@@ -164,6 +165,10 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
                 status = CertificateStatus.VALID,
                 serialNumber = "number",
                 certificateDetail = "details"
+=======
+                serialNumber = "serialNumber",
+                endTimestamp = 1899105093
+>>>>>>> 565345ade4 (fix: Suggestion to renew E2EI certificate RC (WPB-3326) (#2601))
             )
     }
 }

@@ -167,9 +167,54 @@ class MLSConversationsVerificationStatusesHandlerTest {
 
     @Test
     fun givenDegradedConversation_whenVerifiedStatusComes_thenStatusUpdated() = runTest {
+<<<<<<< HEAD
         val conversationDetails = TestConversationDetails.CONVERSATION_GROUP.copy(
             conversation = TestConversation.MLS_CONVERSATION.copy(
                 mlsVerificationStatus = Conversation.VerificationStatus.DEGRADED
+=======
+
+        val user1 = UserIDEntity("user1", "domain1") to NameAndHandleEntity("name1", "device1")
+        val user2 = UserIDEntity("user2", "domain2") to NameAndHandleEntity("name2", "device2")
+
+        val epochChangedData = EpochChangesDataEntity(
+            conversationId = TestConversation.CONVERSATION.id.toDao(),
+            members = mapOf(user1, user2),
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED
+        )
+
+        val ccMembersIdentity: Map<UserId, List<WireIdentity>> = mapOf(
+            user1.first.toModel() to listOf(
+                WireIdentity(
+                    CryptoQualifiedClientId(
+                        value = "client_user_1",
+                        userId = user1.first.toModel().toCrypto()
+                    ),
+                    handle = user1.second.handle!!,
+                    displayName = user1.second.name!!,
+                    certificate = "cert1",
+                    domain = "domain1",
+                    serialNumber = "serial1",
+                    status = CryptoCertificateStatus.VALID,
+                    thumbprint = "thumbprint1",
+                    endTimestamp = 0L
+                )
+            ),
+            user2.first.toModel() to listOf(
+                WireIdentity(
+                    CryptoQualifiedClientId(
+                        value = "client_user_2",
+                        userId = user2.first.toModel().toCrypto()
+                    ),
+                    handle = user2.second.handle!!,
+                    displayName = user2.second.name!!,
+                    certificate = "cert2",
+                    domain = "domain2",
+                    serialNumber = "serial2",
+                    status = CryptoCertificateStatus.VALID,
+                    thumbprint = "thumbprint2",
+                    endTimestamp = 0L
+                )
+>>>>>>> 565345ade4 (fix: Suggestion to renew E2EI certificate RC (WPB-3326) (#2601))
             )
         )
         val (arrangement, handler) = arrange {
@@ -183,7 +228,83 @@ class MLSConversationsVerificationStatusesHandlerTest {
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::updateMlsVerificationStatus)
+<<<<<<< HEAD
             .with(eq(Conversation.VerificationStatus.VERIFIED), eq(conversationDetails.conversation.id))
+=======
+            .with(eq(Conversation.VerificationStatus.VERIFIED), eq(epochChangedData.conversationId.toModel()))
+            .wasInvoked(once)
+
+        verify(arrangement.persistMessageUseCase)
+            .suspendFunction(arrangement.persistMessageUseCase::invoke)
+            .with(anyInstanceOf(Message.System::class))
+            .wasInvoked(once)
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::setDegradedConversationNotifiedFlag)
+            .with(any(), eq(true))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenVerifiedConversation_whenVerifiedStatusComesAndUserNamesDivergeFromCC_thenStatusUpdatedToDegraded() = runTest {
+
+        val user1 = UserIDEntity("user1", "domain1") to NameAndHandleEntity("name1", "device1")
+        val user2 = UserIDEntity("user2", "domain2") to NameAndHandleEntity("name2", "device2")
+
+        val epochChangedData = EpochChangesDataEntity(
+            conversationId = TestConversation.CONVERSATION.id.toDao(),
+            members = mapOf(user1, user2),
+            mlsVerificationStatus = ConversationEntity.VerificationStatus.VERIFIED
+        )
+
+        val ccMembersIdentity: Map<UserId, List<WireIdentity>> = mapOf(
+            user1.first.toModel() to listOf(
+                WireIdentity(
+                    CryptoQualifiedClientId(
+                        value = "client_user_1",
+                        userId = user1.first.toModel().toCrypto()
+                    ),
+                    handle = user1.second.handle!! + "1", // this user name changed
+                    displayName = user1.second.name!! + "1",
+                    certificate = "cert1",
+                    domain = "domain1",
+                    serialNumber = "serial1",
+                    status = CryptoCertificateStatus.VALID,
+                    thumbprint = "thumbprint1",
+                    endTimestamp = 0L
+                )
+            ),
+            user2.first.toModel() to listOf(
+                WireIdentity(
+                    CryptoQualifiedClientId(
+                        value = "client_user_2",
+                        userId = user2.first.toModel().toCrypto()
+                    ),
+                    handle = user2.second.handle!!,
+                    displayName = user2.second.name!!,
+                    certificate = "cert2",
+                    domain = "domain2",
+                    serialNumber = "serial2",
+                    status = CryptoCertificateStatus.VALID,
+                    thumbprint = "thumbprint2",
+                    endTimestamp = 0L
+                )
+            )
+        )
+        val (arrangement, handler) = arrange {
+            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
+            withIsGroupVerified(E2EIConversationState.VERIFIED)
+            withSelectGroupStatusMembersNamesAndHandles(Either.Right(epochChangedData))
+            withGetMembersIdentities(Either.Right(ccMembersIdentity))
+        }
+
+        handler()
+        advanceUntilIdle()
+
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateMlsVerificationStatus)
+            .with(eq(Conversation.VerificationStatus.DEGRADED), eq(epochChangedData.conversationId.toModel()))
+>>>>>>> 565345ade4 (fix: Suggestion to renew E2EI certificate RC (WPB-3326) (#2601))
             .wasInvoked(once)
 
         verify(arrangement.persistMessageUseCase)

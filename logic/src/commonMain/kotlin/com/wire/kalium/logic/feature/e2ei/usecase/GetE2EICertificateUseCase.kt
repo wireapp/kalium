@@ -41,11 +41,7 @@ class GetE2eiCertificateUseCaseImpl internal constructor(
             },
             {
                 it?.let {
-                    val certificate = E2eiCertificate(
-                        status = certificateStatusMapper.toCertificateStatus(it.status),
-                        serialNumber = it.serialNumber,
-                        certificateDetail = it.certificate
-                    )
+                    val certificate = E2eiCertificate.fromWireIdentity(it, certificateStatusMapper)
                     GetE2EICertificateUseCaseResult.Success(certificate)
                 } ?: GetE2EICertificateUseCaseResult.NotActivated
             }
