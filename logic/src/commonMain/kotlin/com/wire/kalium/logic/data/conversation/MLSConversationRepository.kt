@@ -142,6 +142,7 @@ interface MLSConversationRepository {
 
     suspend fun getClientIdentity(clientId: ClientId): Either<CoreFailure, WireIdentity?>
     suspend fun getUserIdentity(userId: UserId): Either<CoreFailure, List<WireIdentity>>
+
     suspend fun getMembersIdentities(
         conversationId: ConversationId,
         userIds: List<UserId>
