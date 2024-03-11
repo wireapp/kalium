@@ -158,7 +158,7 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
                 CryptoCertificateStatus.VALID,
                 "thumbprint",
                 serialNumber = "serialNumber",
-                endTimestamp = 1899105093
+                endTimestampSeconds = 1899105093
             )
     }
 }
