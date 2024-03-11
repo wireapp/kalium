@@ -32,7 +32,7 @@ data class E2eiCertificate(
                 status = certificateStatusMapper.toCertificateStatus(identity.status),
                 serialNumber = identity.serialNumber,
                 certificateDetail = identity.certificate,
-                endAt = Instant.fromEpochMilliseconds(identity.endTimestamp)
+                endAt = Instant.fromEpochSeconds(identity.endTimestampSeconds)
             )
     }
 }

@@ -152,7 +152,7 @@ class GetE2eiCertificateUseCaseTest {
             status = CryptoCertificateStatus.EXPIRED,
             thumbprint = "thumbprint",
             serialNumber = "serialNumber",
-            endTimestamp = 1899105093
+            endTimestampSeconds = 1899105093
         )
     }
 }
