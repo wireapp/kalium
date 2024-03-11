@@ -1574,6 +1574,50 @@ class MLSConversationRepositoryTest {
                 .wasInvoked(once)
         }
 
+    @Test
+    fun givenHandleWithSchemeAndDomain_whenGetUserIdentity_thenHandleWithoutSchemeAtSignAndDomainShouldReturnProperValue() = runTest {
+        // given
+        val handleWithSchemeAndDomain = "wireapp://%40handle@domain.com"
+        val handle = "handle"
+        val groupId = Arrangement.GROUP_ID.value
+        val (_, mlsConversationRepository) = Arrangement()
+            .withGetEstablishedSelfMLSGroupIdReturns(groupId)
+            .withGetMLSClientSuccessful()
+            .withGetUserIdentitiesReturn(mapOf(groupId to listOf(WIRE_IDENTITY.copy(handle = handleWithSchemeAndDomain))))
+            .arrange()
+        // when
+        val result = mlsConversationRepository.getUserIdentity(TestUser.USER_ID)
+        // then
+        result.shouldSucceed() {
+            it.forEach {
+                assertEquals(handle, it.handleWithoutSchemeAtSignAndDomain)
+            }
+        }
+    }
+
+    @Test
+    fun givenHandleWithSchemeAndDomain_whenGetMemberIdentities_thenHandleWithoutSchemeAtSignAndDomainShouldReturnProperValue() = runTest {
+        // given
+        val handleWithSchemeAndDomain = "wireapp://%40handle@domain.com"
+        val handle = "handle"
+        val groupId = Arrangement.GROUP_ID.value
+        val (_, mlsConversationRepository) = Arrangement()
+            .withGetMLSGroupIdByConversationIdReturns(groupId)
+            .withGetMLSClientSuccessful()
+            .withGetUserIdentitiesReturn(mapOf(groupId to listOf(WIRE_IDENTITY.copy(handle = handleWithSchemeAndDomain))))
+            .arrange()
+        // when
+        val result = mlsConversationRepository.getMembersIdentities(TestConversation.ID, listOf(TestUser.USER_ID))
+        // then
+        result.shouldSucceed() {
+            it.values.forEach {
+                it.forEach {
+                    assertEquals(handle, it.handleWithoutSchemeAtSignAndDomain)
+                }
+            }
+        }
+    }
+
     private class Arrangement {
 
         @Mock
