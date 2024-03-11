@@ -112,7 +112,8 @@ internal class TeamDataSource(
         while (
             hasMore &&
             error == null &&
-            fetchedUsersLimit?.let { limit -> pagesSynced * pageSize >= limit } != true
+            fetchedUsersLimit?.let { limit -> pagesSynced * pageSize >= limit } != true &&
+            !(hasMore && pagingState == null && pagesSynced > 0)
         ) {
             wrapApiRequest {
                 teamsApi.getTeamMembers(

@@ -200,6 +200,37 @@ class TeamRepositoryTest {
     }
 
     @Test
+    fun givenHasMoreIsTruePagingStateIsNullAndWeFetchedMoreThanZeroPages_thenAbort() = runTest {
+        val teamMember = TestTeam.memberDTO(
+            nonQualifiedUserId = "teamMember1"
+        )
+
+        val teamMembersList = TeamsApi.TeamMemberListPaginated(
+            hasMore = true,
+            members = listOf(
+                teamMember
+            ),
+            pagingState = null
+        )
+
+        val pageSize = 100
+        val limit = 200
+
+        val (arrangement, teamRepository) = Arrangement()
+            .withGetTeamMembers(NetworkResponse.Success(teamMembersList, mapOf(), 200))
+            .arrange()
+
+        val result = teamRepository.fetchMembersByTeamId(teamId = TeamId("teamId"), userDomain = "userDomain", limit, pageSize = pageSize)
+
+        result.shouldSucceed()
+
+        verify(arrangement.teamsApi)
+            .suspendFunction(arrangement.teamsApi::getTeamMembers)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
     fun givenSelfUserExists_whenGettingTeamById_thenTeamDataShouldBePassed() = runTest {
         val teamEntity = TeamEntity(id = "teamId", name = "teamName", icon = "icon")
         val team = Team(id = "teamId", name = "teamName", icon = "icon")
