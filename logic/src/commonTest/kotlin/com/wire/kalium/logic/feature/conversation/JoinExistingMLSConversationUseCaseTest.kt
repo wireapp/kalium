@@ -116,7 +116,6 @@ class JoinExistingMLSConversationUseCaseTest {
                 .withIsMLSSupported(true)
                 .withHasRegisteredMLSClient(true)
                 .withGetConversationsByIdSuccessful(Arrangement.MLS_UNESTABLISHED_GROUP_CONVERSATION)
-//                 .withEstablishMLSGroupSuccessful(MLSAdditionResult(emptySet(), emptySet()))
                 .arrange()
 
             joinExistingMLSConversationsUseCase(Arrangement.MLS_UNESTABLISHED_GROUP_CONVERSATION.id).shouldSucceed()
