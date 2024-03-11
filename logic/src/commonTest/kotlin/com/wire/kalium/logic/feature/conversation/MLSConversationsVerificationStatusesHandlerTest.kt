@@ -130,7 +130,7 @@ class MLSConversationsVerificationStatusesHandlerTest {
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::setDegradedConversationNotifiedFlag)
-            .with(any(), eq(true))
+            .with(any(), eq(false))
             .wasInvoked(once)
     }
 
@@ -193,7 +193,7 @@ class MLSConversationsVerificationStatusesHandlerTest {
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::setDegradedConversationNotifiedFlag)
-            .with(any(), eq(false))
+            .with(any(), eq(true))
             .wasInvoked(once)
     }
 

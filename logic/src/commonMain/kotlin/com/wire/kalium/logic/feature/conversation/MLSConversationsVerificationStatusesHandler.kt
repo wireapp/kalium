@@ -127,6 +127,6 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
 
         persistMessage(conversationDegradedMessage)
 
-        conversationRepository.setDegradedConversationNotifiedFlag(conversationId, updatedStatus == VerificationStatus.DEGRADED)
+        conversationRepository.setDegradedConversationNotifiedFlag(conversationId, updatedStatus != VerificationStatus.DEGRADED)
     }
 }
