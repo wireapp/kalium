@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.user.UserId
@@ -115,7 +116,7 @@ class JoinExistingMLSConversationUseCaseTest {
                 .withIsMLSSupported(true)
                 .withHasRegisteredMLSClient(true)
                 .withGetConversationsByIdSuccessful(Arrangement.MLS_UNESTABLISHED_GROUP_CONVERSATION)
-                .withEstablishMLSGroupSuccessful()
+//                 .withEstablishMLSGroupSuccessful(MLSAdditionResult(emptySet(), emptySet()))
                 .arrange()
 
             joinExistingMLSConversationsUseCase(Arrangement.MLS_UNESTABLISHED_GROUP_CONVERSATION.id).shouldSucceed()
@@ -133,7 +134,7 @@ class JoinExistingMLSConversationUseCaseTest {
                 .withIsMLSSupported(true)
                 .withHasRegisteredMLSClient(true)
                 .withGetConversationsByIdSuccessful(Arrangement.MLS_UNESTABLISHED_SELF_CONVERSATION)
-                .withEstablishMLSGroupSuccessful()
+                .withEstablishMLSGroupSuccessful(MLSAdditionResult(emptySet(), emptySet()))
                 .arrange()
 
             joinExistingMLSConversationsUseCase(Arrangement.MLS_UNESTABLISHED_SELF_CONVERSATION.id).shouldSucceed()
@@ -153,7 +154,7 @@ class JoinExistingMLSConversationUseCaseTest {
                 .withHasRegisteredMLSClient(true)
                 .withGetConversationsByIdSuccessful(Arrangement.MLS_UNESTABLISHED_ONE_ONE_ONE_CONVERSATION)
                 .withGetConversationMembersSuccessful(members)
-                .withEstablishMLSGroupSuccessful()
+                .withEstablishMLSGroupSuccessful(MLSAdditionResult(emptySet(), emptySet()))
                 .arrange()
 
             joinExistingMLSConversationsUseCase(Arrangement.MLS_UNESTABLISHED_ONE_ONE_ONE_CONVERSATION.id).shouldSucceed()
@@ -251,11 +252,11 @@ class JoinExistingMLSConversationUseCaseTest {
                 .then { Either.Right(members) }
         }
 
-        fun withEstablishMLSGroupSuccessful() = apply {
+        fun withEstablishMLSGroupSuccessful(additionResult: MLSAdditionResult) = apply {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::establishMLSGroup)
                 .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(Unit))
+                .thenReturn(Either.Right(additionResult))
         }
 
         fun withJoinByExternalCommitSuccessful() = apply {
