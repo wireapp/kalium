@@ -38,6 +38,7 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.COMMIT_BUNDLE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.CRYPTO_CLIENT_ID
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.E2EI_CONVERSATION_CLIENT_INFO_ENTITY
+import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.KEY_PACKAGE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.ROTATE_BUNDLE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.TEST_FAILURE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.WIRE_IDENTITY
@@ -193,6 +194,109 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
+<<<<<<< HEAD
+=======
+    fun givenPartialKeyClaimingResponses_whenCallingEstablishMLSGroup_thenMissingKeyPackagesFailureIsReturned() = runTest {
+        val userMissingKeyPackage = TestUser.USER_ID.copy(value = "missingKP")
+        val usersMissingKeyPackages = setOf(userMissingKeyPackage)
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsReturningNothing()
+            .withClaimKeyPackagesSuccessful(usersWithoutKeyPackages = usersMissingKeyPackages)
+            .withGetMLSClientSuccessful()
+            .withGetPublicKeysSuccessful()
+            .withAddMLSMemberSuccessful()
+            .withSendCommitBundleSuccessful()
+            .arrange()
+
+        val result = mlsConversationRepository.establishMLSGroup(
+            Arrangement.GROUP_ID,
+            listOf(TestConversation.USER_1, userMissingKeyPackage)
+        )
+        result.shouldFail {
+            assertIs<CoreFailure.MissingKeyPackages>(it)
+            assertEquals(usersMissingKeyPackages, it.failedUserIds)
+        }
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::createConversation)
+            .with(eq(Arrangement.RAW_GROUP_ID), eq(listOf(Arrangement.CRYPTO_MLS_PUBLIC_KEY)))
+            .wasInvoked(once)
+
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::addMember)
+            .with(eq(Arrangement.RAW_GROUP_ID), anything())
+            .wasNotInvoked()
+
+        verify(arrangement.mlsMessageApi)
+            .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
+            .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
+            .wasNotInvoked()
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::commitAccepted)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasNotInvoked()
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::wipeConversation)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenPartialKeyClaimingResponsesAndAllowPartial_whenCallingEstablishMLSGroup_thenPartialGroupCreatedAndSuccessReturned() = runTest {
+        val userMissingKeyPackage = TestUser.USER_ID.copy(value = "missingKP")
+        val userWithKeyPackage = TestConversation.USER_1
+        val usersMissingKeyPackages = setOf(userMissingKeyPackage)
+        val usersWithKeyPackages = setOf(userWithKeyPackage)
+        val keyPackageSuccess = KEY_PACKAGE.copy(userId = userWithKeyPackage.value, domain = userWithKeyPackage.domain)
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsReturningNothing()
+            .withClaimKeyPackagesSuccessful(keyPackages = listOf(keyPackageSuccess), usersWithoutKeyPackages = usersMissingKeyPackages)
+            .withGetMLSClientSuccessful()
+            .withGetPublicKeysSuccessful()
+            .withAddMLSMemberSuccessful()
+            .withSendCommitBundleSuccessful()
+            .arrange()
+
+        val result = mlsConversationRepository.establishMLSGroup(
+            Arrangement.GROUP_ID,
+            (usersWithKeyPackages + userMissingKeyPackage).toList(),
+            allowSkippingUsersWithoutKeyPackages = true
+        )
+        result.shouldSucceed {
+            assertEquals(usersMissingKeyPackages, it.notAddedUsers)
+            assertEquals(usersWithKeyPackages, it.successfullyAddedUsers)
+        }
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::createConversation)
+            .with(eq(Arrangement.RAW_GROUP_ID), eq(listOf(Arrangement.CRYPTO_MLS_PUBLIC_KEY)))
+            .wasInvoked(once)
+
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::addMember)
+            .with(eq(Arrangement.RAW_GROUP_ID), matching { it.size == usersWithKeyPackages.size })
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.mlsMessageApi)
+            .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
+            .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::commitAccepted)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::wipeConversation)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasNotInvoked()
+    }
+
+    @Test
+>>>>>>> 79a7a573b2 (feat(MLS): allow creating mls conversations with partial success [WPB-3694] (#2623))
     fun givenNewCrlDistributionPoints_whenEstablishingMLSGroup_thenCheckRevocationList() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withCommitPendingProposalsReturningNothing()

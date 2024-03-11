@@ -149,6 +149,7 @@ internal class ConversationGroupRepositoryImpl(
             }
         }
 
+<<<<<<< HEAD
     private suspend fun handleGroupConversationCreated(
         conversationResponse: ConversationResponse,
         selfTeamId: TeamId?,
@@ -194,6 +195,38 @@ internal class ConversationGroupRepositoryImpl(
             wrapStorageRequest {
                 conversationDAO.getConversationByQualifiedID(conversationEntity.id)?.let {
                     conversationMapper.fromDaoModel(it)
+=======
+                    wrapStorageRequest {
+                        conversationDAO.insertConversation(conversationEntity)
+                    }.flatMap {
+                        newGroupConversationSystemMessagesCreator.value.conversationStarted(conversationEntity)
+                    }.flatMap {
+                        when (protocol) {
+                            is Conversation.ProtocolInfo.Proteus -> Either.Right(setOf())
+                            is Conversation.ProtocolInfo.MLSCapable -> mlsConversationRepository.establishMLSGroup(
+                                groupID = protocol.groupId,
+                                members = usersList + selfUserId,
+                                allowSkippingUsersWithoutKeyPackages = true
+                            ).map { it.notAddedUsers }
+                        }
+                    }.flatMap { additionalFailedUsers ->
+                        newConversationMembersRepository.persistMembersAdditionToTheConversation(
+                            conversationEntity.id, conversationResponse, failedUsersList + additionalFailedUsers
+                        )
+                    }.flatMap {
+                        wrapStorageRequest {
+                            newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
+                                conversationEntity.id.toModel()
+                            )
+                        }
+                    }.flatMap {
+                        wrapStorageRequest {
+                            conversationDAO.getConversationByQualifiedID(conversationEntity.id)?.let {
+                                conversationMapper.fromDaoModel(it)
+                            }
+                        }
+                    }
+>>>>>>> 79a7a573b2 (feat(MLS): allow creating mls conversations with partial success [WPB-3694] (#2623))
                 }
             }
         }
