@@ -34,6 +34,7 @@ import com.wire.kalium.persistence.dao.member.MemberDAO
  * Either all users are added or some of them could fail to be added.
  */
 internal interface NewConversationMembersRepository {
+    // TODO(refactor): Use Set<UserId> instead of List to avoid duplications
     suspend fun persistMembersAdditionToTheConversation(
         conversationId: ConversationIDEntity,
         conversationResponse: ConversationResponse,

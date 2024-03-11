@@ -123,7 +123,7 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
                     val isUserVerified = wireIdentity.firstOrNull {
                         it.status != CryptoCertificateStatus.VALID ||
                                 it.displayName != persistedMemberInfo?.name ||
-                                it.handle != persistedMemberInfo.handle
+                                it.handleWithoutSchemeAtSignAndDomain != persistedMemberInfo.handle
                     } == null
                     if (!isUserVerified) {
                         newStatus = VerificationStatus.NOT_VERIFIED
