@@ -1,0 +1,30 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: "{{ .Values.service.serverName }}-podmonitor"
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.service.serverName }}
+  podMetricsEndpoints:
+    - path: /metrics
+      port: monkeyport
+  namespaceSelector:
+    any: true
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: "{{ .Values.service.controllerName }}-podmonitor"
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.service.controllerName }}
+  podMetricsEndpoints:
+    - path: /
+      port: monkeymetrics
+  namespaceSelector:
+    any: true

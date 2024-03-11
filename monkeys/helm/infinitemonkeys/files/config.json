@@ -1,0 +1,100 @@
+{
+    "externalMonkey": {
+        "startCommand": "{{`echo {{monkeyIndex}}`}}",
+        "addressTemplate": "http://monkey-server-{{`{{monkeyIndex}}`}}.monkey-server.default.svc.cluster.local:8080",
+        "waitTime": 0
+    },
+    "backends": [
+        {
+            "api": "https://nginz-https.{{ .Values.monkeyController.instanceURL }}",
+            "webSocket": "https://nginz-ssl.{{ .Values.monkeyController.instanceURL }}",
+            "blackList": "https://clientblacklist.wire.com/staging",
+            "teams": "https://teams.{{ .Values.monkeyController.instanceURL }}",
+            "accounts": "https://account.{{ .Values.monkeyController.instanceURL }}",
+            "website": "https://wire.com",
+            "title": "{{ .Values.monkeyController.instanceURL }}",
+            "passwordForUsers": "{{ randAlphaNum 18 }}@",
+            "domain": "{{ .Values.monkeyController.instanceURL }}",
+            "teamName": "{{ .Values.monkeyController.teamName }}",
+            "authUser": "{{ .Values.monkeyController.authUser }}",
+            "authPassword": "{{ .Values.monkeyController.authPassword }}",
+            "userCount": "{{ .Values.monkeyController.userCount }}",
+            "disable2FA": true,
+            "dumpUsers": true
+        }
+    ],
+    "testCases": [
+        {
+            "name": "Example Test Case",
+            "setup": [
+                {
+                    "description": "Log everyone in",
+                    "config": {
+                        "type": "LOGIN",
+                        "userCount": {
+                            "type": "PERCENTAGE",
+                            "value": 100
+                        }
+                    }
+                }
+            ],
+            "actions": [
+                {
+                    "description": "Send messages",
+                    "repeatInterval": 1000,
+                    "config": {
+                        "type": "SEND_MESSAGE",
+                        "count": 3,
+                        "countGroups": 3,
+                        "userCount": {
+                            "type": "PERCENTAGE",
+                            "value": 100
+                        }
+                    }
+                },
+                {
+                    "description": "Send messages",
+                    "count": 1,
+                    "repeatInterval": 500,
+                    "config": {
+                        "type": "SEND_MESSAGE",
+                        "count": 3,
+                        "userCount": {
+                            "type": "PERCENTAGE",
+                            "value": 100
+                        },
+                        "targets": [
+                            "One21"
+                        ]
+                    }
+                },
+                {
+                    "description": "Create groups",
+                    "repeatInterval": 10000,
+                    "config": {
+                        "type": "CREATE_CONVERSATION",
+                        "userCount": {
+                            "type": "PERCENTAGE",
+                            "value": 100
+                        },
+                        "protocol": "MLS",
+                        "teamOwner": "monkeytest"
+                    }
+                },
+                {
+                    "description": "Create groups",
+                    "repeatInterval": 10000,
+                    "config": {
+                        "type": "CREATE_CONVERSATION",
+                        "userCount": {
+                            "type": "PERCENTAGE",
+                            "value": 100
+                        },
+                        "protocol": "MLS",
+                        "teamOwner": "monkeytest"
+                    }
+                }
+            ]
+        }
+    ]
+}

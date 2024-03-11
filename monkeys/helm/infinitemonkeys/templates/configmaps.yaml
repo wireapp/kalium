@@ -1,0 +1,23 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboards-monkey-status
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    grafana_dashboard: "1"
+data:
+{{ (.Files.Glob "dashboards/*.*").AsConfig | indent 2}}
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "{{ .Values.service.controllerName }}-config"
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+data:
+{{ (tpl (.Files.Glob "files/*.*").AsConfig .) | indent 2}}
+

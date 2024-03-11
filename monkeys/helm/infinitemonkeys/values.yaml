@@ -1,0 +1,22 @@
+service:
+  appName: infinitemonkeys
+  controllerName: monkey-controller
+  serverName: monkey-server
+
+monkeyController:
+  name: Diya
+  teamName: Diya
+  instanceURL: diya.wire.link
+  userCount: 3
+  authUser: basic-auth-user
+  authPassword: "..."
+
+# replicaCount needs to be one more than userCount above
+# as monkeyController expects an additional owner
+monkeyServer:
+  replicaCount: 4
+
+image:
+  repository: quay.io/wire/infinitemonkeys
+  pullPolicy: IfNotPresent
+  tag: "latest"

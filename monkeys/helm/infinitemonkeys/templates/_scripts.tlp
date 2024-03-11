@@ -1,0 +1,14 @@
+{{/*
+Wait until all monkey-server pods are ready
+*/}}
+{{- define "service.waitMonkeyServerReady" }}
+- >-
+  for i in $( eval echo {0..`expr {{ .Values.monkeyServer.replicaCount }} - 1`} ); do
+    sleep 2
+      while curl http://{{ .Values.service.serverName }}-"$i".{{ .Values.service.serverName }}.default.svc.cluster.local:8080/metrics -o /dev/null -w '%{http_code}\n' -s | grep -Fqv 200 ; do
+        echo "{{ .Values.service.serverName }}-"$i" not yet ready"
+        sleep 5
+      done
+  done
+{{- end -}}
+
