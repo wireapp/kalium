@@ -226,6 +226,9 @@ interface E2EIFailure : CoreFailure {
     data class WireAccessToken(internal val reason: CoreFailure) : E2EIFailure
     data class DPoPChallenge(internal val reason: CoreFailure) : E2EIFailure
     data class OIDCChallenge(internal val reason: CoreFailure) : E2EIFailure
+
+    // returned as success from ChallengeResponse with status=invalid when user tries to login with different credentials
+    object InvalidChallenge : E2EIFailure
     data class CheckOrderRequest(internal val reason: CoreFailure) : E2EIFailure
     data class FinalizeRequest(internal val reason: CoreFailure) : E2EIFailure
     data class RotationAndMigration(internal val reason: CoreFailure) : E2EIFailure
