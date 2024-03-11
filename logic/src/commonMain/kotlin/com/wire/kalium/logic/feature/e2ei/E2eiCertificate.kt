@@ -20,5 +20,21 @@ package com.wire.kalium.logic.feature.e2ei
 data class E2eiCertificate(
     val status: CertificateStatus,
     val serialNumber: String,
+<<<<<<< HEAD
     val certificateDetail: String
 )
+=======
+    val certificateDetail: String,
+    val endAt: Instant
+) {
+    companion object {
+        fun fromWireIdentity(identity: WireIdentity, certificateStatusMapper: CertificateStatusMapper): E2eiCertificate =
+            E2eiCertificate(
+                status = certificateStatusMapper.toCertificateStatus(identity.status),
+                serialNumber = identity.serialNumber,
+                certificateDetail = identity.certificate,
+                endAt = Instant.fromEpochSeconds(identity.endTimestampSeconds)
+            )
+    }
+}
+>>>>>>> 6f2869df0c (fix: Request to update E2eI certificate when should not (#2620))

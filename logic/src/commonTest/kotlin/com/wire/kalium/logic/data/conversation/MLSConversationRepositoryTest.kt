@@ -1761,7 +1761,12 @@ class MLSConversationRepositoryTest {
                     "certificate",
                     CryptoCertificateStatus.VALID,
                     thumbprint = "thumbprint",
+<<<<<<< HEAD
                     serialNumber = "serialNumber"
+=======
+                    serialNumber = "serialNumber",
+                    endTimestampSeconds = 1899105093
+>>>>>>> 6f2869df0c (fix: Request to update E2eI certificate when should not (#2620))
                 )
             val E2EI_CONVERSATION_CLIENT_INFO_ENTITY =
                 E2EIConversationClientInfoEntity(UserIDEntity(uuid4().toString(), "domain.com"), "clientId", "groupId")

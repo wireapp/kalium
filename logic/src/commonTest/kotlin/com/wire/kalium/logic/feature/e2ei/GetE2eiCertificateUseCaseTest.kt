@@ -153,7 +153,12 @@ class GetE2eiCertificateUseCaseTest {
             certificate = "certificate",
             status = CryptoCertificateStatus.EXPIRED,
             thumbprint = "thumbprint",
+<<<<<<< HEAD
             serialNumber = "serialNumber"
+=======
+            serialNumber = "serialNumber",
+            endTimestampSeconds = 1899105093
+>>>>>>> 6f2869df0c (fix: Request to update E2eI certificate when should not (#2620))
         )
     }
 }
