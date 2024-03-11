@@ -4,7 +4,7 @@ metadata:
   name: {{ .Values.service.controllerName }}
   namespace: {{ .Values.namespace }}
   labels:
-    app: {{ .Values.service.appName }}
+    app: {{ .Values.service.controllerName }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     release: "{{ .Release.Name }}"
 spec:
@@ -21,7 +21,7 @@ metadata:
   name: {{ .Values.service.controllerName }}
   namespace: {{ .Values.namespace }}
   labels:
-    app: {{ .Values.service.appName }}
+    app: {{ .Values.service.controllerName }}
     chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
     release: "{{ .Release.Name }}"
 spec:

@@ -3,7 +3,7 @@
 This Helm chart provides:
 
 - A group of StatefulSets deploying one monkeyController and N monkeyServers
-- Integration with Prometheus and Grafana via dependency "kube-prometheus-stack"
+- Integration Prometheus-Operator via PodMonitors and a Grafana Dashboard
 
 ## Architecture
 

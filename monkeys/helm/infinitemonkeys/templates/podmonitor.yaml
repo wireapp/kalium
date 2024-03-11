@@ -1,8 +1,12 @@
+{{- if .Values.podMonitorIntegration.enabled -}}
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
   name: "{{ .Values.service.serverName }}-podmonitor"
   namespace: {{ .Values.namespace }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
 spec:
   selector:
     matchLabels:
@@ -12,13 +16,18 @@ spec:
       port: monkeyport
   namespaceSelector:
     any: true
+{{- end }}
 
 ---
+{{- if .Values.podMonitorIntegration.enabled -}}
 apiVersion: monitoring.coreos.com/v1
 kind: PodMonitor
 metadata:
   name: "{{ .Values.service.controllerName }}-podmonitor"
   namespace: {{ .Values.namespace }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
 spec:
   selector:
     matchLabels:
@@ -28,3 +37,4 @@ spec:
       port: monkeymetrics
   namespaceSelector:
     any: true
+{{- end }}

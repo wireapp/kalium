@@ -3,6 +3,9 @@ service:
   controllerName: monkey-controller
   serverName: monkey-server
 
+podMonitorIntegration:
+  enabled: true
+
 monkeyController:
   name: Diya
   teamName: Diya
