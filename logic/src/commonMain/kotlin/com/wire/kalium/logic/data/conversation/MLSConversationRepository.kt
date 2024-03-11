@@ -277,7 +277,7 @@ internal class MLSConversationDataSource(
             }
 
     override suspend fun requestToJoinGroup(groupID: GroupID, epoch: ULong): Either<CoreFailure, Unit> {
-        kaliumLogger.d("Requesting to re-join MLS group $groupID with epoch $epoch")
+        kaliumLogger.d("Requesting to re-join MLS group ${groupID.toLogString()} with epoch $epoch")
         return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapMLSRequest {
                 mlsClient.joinConversation(idMapper.toCryptoModel(groupID), epoch)
@@ -300,7 +300,7 @@ internal class MLSConversationDataSource(
         groupID: GroupID,
         groupInfo: ByteArray
     ): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
-        kaliumLogger.d("Requesting to re-join MLS group $groupID via external commit")
+        kaliumLogger.d("Requesting to re-join MLS group ${groupID.toLogString()} via external commit")
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapMLSRequest {
                 mlsClient.joinByExternalCommit(groupInfo)
