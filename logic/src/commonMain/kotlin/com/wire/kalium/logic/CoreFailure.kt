@@ -184,7 +184,7 @@ interface MLSFailure : CoreFailure {
     data object UnmergedPendingGroup : MLSFailure
 
     data object ConversationAlreadyExists : MLSFailure
-
+    data object MessageEpochTooOld : MLSFailure
     data object ConversationDoesNotSupportMLS : MLSFailure
     data object StaleProposal : MLSFailure
     data object StaleCommit : MLSFailure
