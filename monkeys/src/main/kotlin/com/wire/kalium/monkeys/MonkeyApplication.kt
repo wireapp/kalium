@@ -73,6 +73,7 @@ fun CoroutineScope.stopIM() {
 class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
     private val dataFilePath by argument(help = "path to the test data file")
     private val skipWarmup by option("-s", "--skip-warmup", help = "Should the warmup be skipped?").flag()
+    private val sequentialWarmup by option("-w", "--sequential-warmup", help = "Should the warmup happen sequentially?").flag()
     private val logLevel by option("-l", "--log-level", help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.INFO)
     private val logOutputFile by option("-f", "--log-file", help = "output file for logs")
     private val monkeysLogOutputFile by option("-m", "--monkeys-log-file", help = "output file for monkey logs")
@@ -156,7 +157,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
             if (index == 0) {
                 if (!this.skipWarmup) {
                     logger.i("Creating initial key packages for clients (logging everyone in and out). This can take a while...")
-                    monkeyPool.warmUp(coreLogic)
+                    monkeyPool.warmUp(coreLogic, sequentialWarmup)
                 }
                 logger.i("Creating prefixed groups")
                 testData.conversationDistribution.forEach { (prefix, config) ->

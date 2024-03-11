@@ -96,13 +96,24 @@ class MonkeyPool(users: List<UserData>, testCase: String, config: MonkeyConfig) 
         }.awaitAll()
     }
 
-    suspend fun warmUp(core: CoreLogic) = coroutineScope {
+    @Suppress("TooGenericExceptionCaught")
+    suspend fun warmUp(core: CoreLogic, sequentialWarmup: Boolean) = coroutineScope {
         // this is needed to create key packages for clients at least once
-        poolById.values.map {
-            async {
-                it.warmUp(core)
+        if (sequentialWarmup) {
+            poolById.values.forEach {
+                try {
+                    it.warmUp(core)
+                } catch (e: Exception) {
+                    logger.w("Error warming up monkey ${it.monkeyType.userId()}", e)
+                }
             }
-        }.awaitAll()
+        } else {
+            poolById.values.map {
+                async {
+                    it.warmUp(core)
+                }
+            }.awaitAll()
+        }
     }
 
     fun randomMonkeysFromTeam(team: String, userCount: UserCount): List<Monkey> {
