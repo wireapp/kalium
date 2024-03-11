@@ -646,7 +646,6 @@ class UserSessionScope internal constructor(
             certificateRevocationListRepository = certificateRevocationListRepository,
             currentClientIdProvider = clientIdProvider,
             mlsClientProvider = mlsClientProvider,
-            mLSConversationsVerificationStatusesHandler = mlsConversationsVerificationStatusesHandler,
             isE2EIEnabledUseCase = isE2EIEnabled
         )
     private val checkRevocationListForCurrentClient: CheckRevocationListForCurrentClientUseCase

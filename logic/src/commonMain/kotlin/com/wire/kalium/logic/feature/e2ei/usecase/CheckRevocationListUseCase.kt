@@ -40,7 +40,6 @@ internal class CheckRevocationListUseCaseImpl(
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val mlsClientProvider: MLSClientProvider,
-    private val mLSConversationsVerificationStatusesHandler: MLSConversationsVerificationStatusesHandler,
     private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase
 ) : CheckRevocationListUseCase {
     private val logger = kaliumLogger.withTextTag("CheckRevocationListUseCase")
@@ -52,9 +51,6 @@ internal class CheckRevocationListUseCaseImpl(
                     mlsClientProvider.getCoreCrypto(clientId).map { coreCrypto ->
                         logger.i("registering crl..")
                         coreCrypto.registerCrl(url, it).run {
-                            if (dirty) {
-                                mLSConversationsVerificationStatusesHandler()
-                            }
                             this.expiration
                         }
                     }

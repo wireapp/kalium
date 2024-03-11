@@ -233,7 +233,6 @@ class CheckRevocationListUseCaseTest {
             certificateRevocationListRepository = certificateRevocationListRepository,
             currentClientIdProvider = currentClientIdProvider,
             mlsClientProvider = mlsClientProvider,
-            mLSConversationsVerificationStatusesHandler = mLSConversationsVerificationStatusesHandler,
             isE2EIEnabledUseCase =  isE2EIEnabledUseCase
         )
 
