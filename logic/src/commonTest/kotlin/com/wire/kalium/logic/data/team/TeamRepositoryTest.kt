@@ -111,11 +111,12 @@ class TeamRepositoryTest {
             nonQualifiedUserId = "teamMember1"
         )
 
-        val teamMembersList = TeamsApi.TeamMemberList(
+        val teamMembersList = TeamsApi.TeamMemberListPaginated(
             hasMore = false,
             members = listOf(
                 teamMember
-            )
+            ),
+            pagingState = "A=="
         )
 
         val (arrangement, teamRepository) = Arrangement()
@@ -172,11 +173,12 @@ class TeamRepositoryTest {
             nonQualifiedUserId = "teamMember1"
         )
 
-        val teamMembersList = TeamsApi.TeamMemberList(
+        val teamMembersList = TeamsApi.TeamMemberListPaginated(
             hasMore = true,
             members = listOf(
                 teamMember
-            )
+            ),
+            "A=="
         )
 
 
@@ -521,7 +523,7 @@ class TeamRepositoryTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withGetTeamMembers(result: NetworkResponse<TeamsApi.TeamMemberList>) = apply {
+        fun withGetTeamMembers(result: NetworkResponse<TeamsApi.TeamMemberListPaginated>) = apply {
             given(teamsApi)
                 .suspendFunction(teamsApi::getTeamMembers)
                 .whenInvokedWith(any(), any())
