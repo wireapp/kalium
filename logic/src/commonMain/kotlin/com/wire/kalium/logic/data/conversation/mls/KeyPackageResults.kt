@@ -24,3 +24,8 @@ data class KeyPackageClaimResult(
     val successfullyFetchedKeyPackages: List<KeyPackageDTO>,
     val usersWithoutKeyPackagesAvailable: Set<UserId>
 )
+
+data class MLSAdditionResult(
+    val successfullyAddedUsers: Set<UserId>,
+    val notAddedUsers: Set<UserId>
+)
