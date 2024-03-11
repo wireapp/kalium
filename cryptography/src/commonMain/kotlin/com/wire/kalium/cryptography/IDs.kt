@@ -79,7 +79,7 @@ data class WireIdentity(
     val status: CryptoCertificateStatus,
     val thumbprint: String,
     val serialNumber: String,
-    val endTimestamp: Long
+    val endTimestampSeconds: Long
 ) {
     val handleWithoutSchemeAtSignAndDomain: String
         get() = handle.substringAfter("://%40").removeSuffix("@$domain")
