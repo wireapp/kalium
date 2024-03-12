@@ -21,11 +21,12 @@ import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.model.ActionType
 import com.wire.kalium.monkeys.model.Event
 import com.wire.kalium.monkeys.model.EventType
+import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 import kotlinx.coroutines.delay
 
 open class SendRequestAction(val config: ActionType.SendRequest, sender: suspend (Event) -> Unit) : Action(sender) {
-    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
+    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool, conversationPool: ConversationPool) {
         val monkeys = monkeyPool.randomLoggedInMonkeysFromTeam(this.config.originTeam, this.config.userCount)
         monkeys.forEach { origin ->
             val targets = monkeyPool.randomLoggedInMonkeysFromTeam(this.config.targetTeam, this.config.targetUserCount)
