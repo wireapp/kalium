@@ -36,9 +36,13 @@ class GetE2eiCertificateUseCaseImpl internal constructor(
 ) : GetE2eiCertificateUseCase {
     override suspend operator fun invoke(clientId: ClientId): GetE2EICertificateUseCaseResult =
         mlsConversationRepository.getClientIdentity(clientId).fold(
+<<<<<<< HEAD
             {
                 GetE2EICertificateUseCaseResult.Failure
             },
+=======
+            { GetE2EICertificateUseCaseResult.Failure },
+>>>>>>> 982f616a6a (fix: E2EI enroll twice on login (#2633))
             {
                 it?.let {
                     val certificate = E2eiCertificate(
