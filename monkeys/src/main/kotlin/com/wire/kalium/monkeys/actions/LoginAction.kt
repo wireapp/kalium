@@ -23,11 +23,12 @@ import com.wire.kalium.monkeys.logger
 import com.wire.kalium.monkeys.model.ActionType
 import com.wire.kalium.monkeys.model.Event
 import com.wire.kalium.monkeys.model.EventType
+import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 import kotlinx.coroutines.delay
 
 open class LoginAction(val config: ActionType.Login, sender: suspend (Event) -> Unit) : Action(sender) {
-    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
+    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool, conversationPool: ConversationPool) {
         val monkeys = monkeys(monkeyPool)
         logger.i("Logging ${monkeys.count()} monkeys in")
         monkeys.forEach {
