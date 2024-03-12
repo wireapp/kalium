@@ -191,6 +191,28 @@ interface Calling : Library {
         isStarted: Boolean,
     )
 
+    fun kcall_init(env: Int)
+    fun kcall_close()
+
+    fun kcall_set_local_user(
+        userid: String,
+        clientid: String
+    )
+
+    fun kcall_set_wuser(
+        inst: Handle
+    )
+
+    fun kcall_preview_start()
+    fun kcall_preview_stop()
+
+    fun kcall_set_user_vidstate(
+        convid: String,
+        userid: String,
+        clientid: String,
+        state: Int
+    )
+
     companion object {
         val INSTANCE by lazy { Native.load("avs", Calling::class.java)!! }
     }
