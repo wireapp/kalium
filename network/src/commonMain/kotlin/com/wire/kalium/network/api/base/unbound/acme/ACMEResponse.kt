@@ -31,7 +31,6 @@ data class AcmeDirectoriesResponse(
     val keyChange: String
 )
 
-@Suppress("EnforceSerializableFields")
 @Serializable
 data class ACMEResponse(
     @SerialName("nonce") val nonce: String,
