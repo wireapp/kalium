@@ -123,6 +123,10 @@ class ConnectionDAOImpl(
             .map { it.map(connectionMapper::toModel) }
     }
 
+    override suspend fun getConnection(conversationId: QualifiedIDEntity): ConnectionEntity? = withContext(queriesContext) {
+        connectionsQueries.selectConnection(conversationId).executeAsOneOrNull()?.let { connectionMapper.toModel(it) }
+    }
+
     override suspend fun getConnectionRequests(): Flow<List<ConnectionEntity>> {
         return connectionsQueries.selectConnectionRequests(connectionMapper::toModel)
             .asFlow()
