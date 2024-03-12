@@ -56,6 +56,9 @@ import com.wire.kalium.network.tools.KtxSerializer
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.engine.okhttp.OkHttp
+import io.ktor.client.plugins.HttpRequestRetry
+import io.ktor.client.plugins.HttpTimeout
+import io.ktor.client.plugins.HttpTimeout.Plugin.INFINITE_TIMEOUT_MS
 import io.ktor.client.plugins.UserAgent
 import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
 import io.ktor.client.request.get
@@ -75,9 +78,14 @@ import kotlinx.coroutines.flow.retry
 
 private const val RETRY_COUNT = 3L
 
+private fun String.parseIgnoreError(default: Long? = null): Long? = try {
+    this.toLong()
+} catch (_: NumberFormatException) {
+    default
+}
+
 @Suppress("TooManyFunctions")
-class RemoteMonkey(monkeyConfig: MonkeyConfig.Remote, monkeyType: MonkeyType, internalId: MonkeyId) :
-    Monkey(monkeyType, internalId) {
+class RemoteMonkey(monkeyConfig: MonkeyConfig.Remote, monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyType, internalId) {
     private val baseUrl: String
 
     init {
@@ -92,6 +100,12 @@ class RemoteMonkey(monkeyConfig: MonkeyConfig.Remote, monkeyType: MonkeyType, in
         private val httpClient by lazy {
 
             HttpClient(OkHttp.create()) {
+                install(HttpTimeout) {
+                    socketTimeoutMillis = System.getenv("MONKEYS_SOCKET_TIMEOUT").parseIgnoreError(INFINITE_TIMEOUT_MS)
+                    requestTimeoutMillis = System.getenv("MONKEYS_REQUEST_TIMEOUT").parseIgnoreError(INFINITE_TIMEOUT_MS)
+                    connectTimeoutMillis = System.getenv("MONKEYS_CONNECT_TIMEOUT").parseIgnoreError(INFINITE_TIMEOUT_MS)
+                }
+                install(HttpRequestRetry)
                 expectSuccess = true
                 install(KaliumKtorCustomLogging)
                 install(UserAgent) {
@@ -235,10 +249,7 @@ class RemoteMonkey(monkeyConfig: MonkeyConfig.Remote, monkeyType: MonkeyType, in
     }
 
     override suspend fun createConversation(
-        name: String,
-        monkeyList: List<Monkey>,
-        protocol: ConversationOptions.Protocol,
-        isDestroyable: Boolean
+        name: String, monkeyList: List<Monkey>, protocol: ConversationOptions.Protocol, isDestroyable: Boolean
     ): MonkeyConversation {
         val result: ConversationId = post(
             CREATE_CONVERSATION, CreateConversationRequest(name, monkeyList.map { it.monkeyType.userId() }, protocol, isDestroyable)
