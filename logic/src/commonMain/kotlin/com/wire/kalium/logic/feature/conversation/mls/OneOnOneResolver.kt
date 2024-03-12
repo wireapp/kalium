@@ -106,7 +106,7 @@ internal class OneOnOneResolverImpl(
         }
 
     private fun handleBatchEntryFailure(it: CoreFailure) = when (it) {
-        is CoreFailure.NoKeyPackagesAvailable,
+        is CoreFailure.MissingKeyPackages,
         is NetworkFailure.ServerMiscommunication,
         is NetworkFailure.FederatedBackendFailure,
         is CoreFailure.NoCommonProtocolFound
