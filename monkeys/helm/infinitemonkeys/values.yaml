@@ -23,3 +23,15 @@ image:
   repository: quay.io/wire/infinitemonkeys
   pullPolicy: IfNotPresent
   tag: "latest"
+
+jvm:
+ garbageCollector: -XX:+UseG1GC
+ # values in Mi
+ memory:
+   heap: 96
+   metaspace: 96
+   compressedClassSpaceSize: 128
+   nonMethodCodeHeapSize: 5
+   profiledCodeHeapSize: 48
+   nonProfiledCodeHeapSize: 48
+   buffer: 128

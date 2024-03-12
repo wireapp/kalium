@@ -27,7 +27,7 @@ metadata:
     release: "{{ .Release.Name }}"
 spec:
   replicas: {{ .Values.monkeyServer.replicaCount }}
-  podManagementPolicy: "Parallel"
+  podManagementPolicy: "OrderedReady"
   selector:
     matchLabels:
       app: {{ .Values.service.serverName }}
@@ -40,10 +40,16 @@ spec:
       containers:
         - name: monkey-server
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
-          command:
-            - /opt/app/bin/monkey-server
-          args:
-            - -lDEBUG
+          command: ["/opt/app/bin/monkey-server"]
+          args: ["-lDEBUG"]
+          resources:
+            requests:
+              memory: {{ add .Values.jvm.memory.heap .Values.jvm.memory.metaspace .Values.jvm.memory.nonMethodCodeHeapSize .Values.jvm.memory.profiledCodeHeapSize .Values.jvm.memory.nonProfiledCodeHeapSize | printf "%dMi"}}
+            limits:
+              memory: {{ add .Values.jvm.memory.heap .Values.jvm.memory.heap .Values.jvm.memory.metaspace .Values.jvm.memory.nonMethodCodeHeapSize .Values.jvm.memory.profiledCodeHeapSize .Values.jvm.memory.nonProfiledCodeHeapSize .Values.jvm.memory.buffer | printf "%dMi"}}
+          env:
+            - name: JAVA_TOOL_OPTS
+              value: {{ include "chart.javaToolOptions" . }}
           ports:
             - name: monkeyport
               containerPort: 8080
@@ -51,5 +57,5 @@ spec:
             httpGet:
               path: /metrics
               port: 8080
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
