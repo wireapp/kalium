@@ -62,6 +62,7 @@ class MLSWelcomeEventHandlerTest {
         val exception = RuntimeException()
 
         val (arrangement, mlsWelcomeEventHandler) = arrange {
+            withFetchConversationIfUnknownSucceeding()
             withMLSClientProcessingOfWelcomeMessageFailsWith(exception)
         }
 
