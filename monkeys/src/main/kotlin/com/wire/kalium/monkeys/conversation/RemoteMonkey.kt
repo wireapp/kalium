@@ -249,10 +249,7 @@ class RemoteMonkey(monkeyConfig: MonkeyConfig.Remote, monkeyType: MonkeyType, in
     }
 
     override suspend fun createConversation(
-        name: String,
-        monkeyList: List<Monkey>,
-        protocol: ConversationOptions.Protocol,
-        isDestroyable: Boolean
+        name: String, monkeyList: List<Monkey>, protocol: ConversationOptions.Protocol, isDestroyable: Boolean
     ): MonkeyConversation {
         val result: ConversationId = post(
             CREATE_CONVERSATION, CreateConversationRequest(name, monkeyList.map { it.monkeyType.userId() }, protocol, isDestroyable)
