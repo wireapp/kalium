@@ -247,10 +247,10 @@ internal class ConversationDAOImpl internal constructor(
             .map { it?.let { conversationMapper.toModel(it) } }
     }
 
-    override suspend fun getConversationByGroupID(groupID: String): ConversationViewEntity {
+    override suspend fun getConversationByGroupID(groupID: String): ConversationViewEntity? {
         return conversationQueries.selectByGroupId(groupID)
-            .executeAsOne()
-            .let { it.let { conversationMapper.toModel(it) } }
+            .executeAsOneOrNull()
+            ?.let { it.let { conversationMapper.toModel(it) } }
     }
 
     override suspend fun getConversationIdByGroupID(groupID: String) = withContext(coroutineContext) {
@@ -416,12 +416,19 @@ internal class ConversationDAOImpl internal constructor(
         conversationId: QualifiedIDEntity,
         legalHoldStatus: ConversationEntity.LegalHoldStatus
     ) = withContext(coroutineContext) {
-        conversationQueries.updateLegalHoldStatus(legalHoldStatus, conversationId).executeAsOne() > 0
+        conversationQueries.transactionWithResult {
+            conversationQueries.updateLegalHoldStatus(legalHoldStatus, conversationId)
+            conversationQueries.selectChanges().executeAsOne() > 0
+        }
+
     }
 
     override suspend fun updateLegalHoldStatusChangeNotified(conversationId: QualifiedIDEntity, notified: Boolean) =
         withContext(coroutineContext) {
-            conversationQueries.upsertLegalHoldStatusChangeNotified(conversationId, notified).executeAsOne() > 0
+            conversationQueries.transactionWithResult {
+                conversationQueries.upsertLegalHoldStatusChangeNotified(conversationId, notified)
+                conversationQueries.selectChanges().executeAsOne() > 0
+            }
         }
 
     override suspend fun observeLegalHoldStatus(conversationId: QualifiedIDEntity) =
