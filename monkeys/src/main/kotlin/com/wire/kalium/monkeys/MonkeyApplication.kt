@@ -31,6 +31,7 @@ import com.github.ajalt.clikt.parameters.types.long
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreLogger
+import com.wire.kalium.monkeys.MetricsCollector.configureMicrometer
 import com.wire.kalium.monkeys.conversation.RemoteMonkey
 import com.wire.kalium.monkeys.model.Event
 import com.wire.kalium.monkeys.model.EventType
@@ -43,13 +44,9 @@ import com.wire.kalium.monkeys.storage.DummyEventStorage
 import com.wire.kalium.monkeys.storage.EventStorage
 import com.wire.kalium.monkeys.storage.FileStorage
 import com.wire.kalium.monkeys.storage.PostgresStorage
-import io.ktor.server.application.call
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.engine.stopServerOnCancellation
 import io.ktor.server.netty.Netty
-import io.ktor.server.response.respondText
-import io.ktor.server.routing.get
-import io.ktor.server.routing.routing
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -106,11 +103,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
             logger.i("Initializing Metrics Endpoint")
             embeddedServer(Netty, port = 9090) {
-                routing {
-                    get("/") {
-                        call.respondText(MetricsCollector.metrics())
-                    }
-                }
+                configureMicrometer("/")
             }.start(false).stopServerOnCancellation()
 
             logger.i("Initializing Infinite Monkeys - CC: ${getCCVersion()}")
