@@ -46,7 +46,7 @@ internal class ACMEApiTest : ApiTest() {
         )
         val acmeApi: ACMEApi = ACMEApiImpl(networkClient, networkClient)
 
-        acmeApi.getTrustAnchors(Url(ACME_DISCOVERY_URL)).also { actual ->
+        acmeApi.getTrustAnchors(ACME_DISCOVERY_URL).also { actual ->
             assertIs<NetworkResponse.Success<CertificateChain>>(actual)
             assertEquals(expected, actual.value)
         }
@@ -67,7 +67,7 @@ internal class ACMEApiTest : ApiTest() {
         )
         val acmeApi: ACMEApi = ACMEApiImpl(networkClient, networkClient)
 
-        acmeApi.getACMEDirectories(Url(ACME_DISCOVERY_URL)).also { actual ->
+        acmeApi.getACMEDirectories(ACME_DISCOVERY_URL).also { actual ->
             assertIs<NetworkResponse.Success<AcmeDirectoriesResponse>>(actual)
             assertEquals(expected, actual.value)
         }
