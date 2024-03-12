@@ -29,6 +29,7 @@ import com.github.ajalt.clikt.parameters.options.validate
 import com.github.ajalt.clikt.parameters.types.enum
 import com.github.ajalt.clikt.parameters.types.file
 import com.github.ajalt.clikt.parameters.types.int
+import com.github.ajalt.clikt.parameters.types.long
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreLogger
@@ -37,6 +38,7 @@ import com.wire.kalium.monkeys.actions.Action
 import com.wire.kalium.monkeys.model.Event
 import com.wire.kalium.monkeys.model.TestDataImporter
 import com.wire.kalium.monkeys.model.UserData
+import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyConfig
 import com.wire.kalium.monkeys.pool.MonkeyPool
 import com.wire.kalium.monkeys.storage.EventStorage
@@ -80,6 +82,12 @@ class ReplayApplication : CliktCommand(allowMultipleSubcommands = true) {
     private val failFast by option(
         "-f", help = "Stop the application if an action fails, otherwise ignore and continue processing next events"
     ).flag()
+    @Suppress("MagicNumber")
+    private val delayPool by option(
+        "-d",
+        "--delay-pool",
+        help = "Time in milliseconds it will wait for a conversation to be added to the pool."
+    ).long().default(1000L)
     private val logLevel by option("-l", "--log-level", help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.INFO)
     private val logOutputFile by option("-o", "--log-file", help = "output file for logs")
     private val monkeysLogOutputFile by option("-m", "--monkeys-log-file", help = "output file for monkey logs")
@@ -106,6 +114,7 @@ class ReplayApplication : CliktCommand(allowMultipleSubcommands = true) {
     @Suppress("TooGenericExceptionCaught")
     private suspend fun processEvents(users: List<UserData>, events: ReceiveChannel<Event>) {
         val logicClients = mutableMapOf<Int, CoreLogic>()
+        val conversationPool = ConversationPool(delayPool)
         events.consumeEach { config ->
             val actionName = config.eventType::class.serializer().descriptor.serialName
             try {
@@ -115,7 +124,11 @@ class ReplayApplication : CliktCommand(allowMultipleSubcommands = true) {
                 }
                 logger.i("Running action $actionName")
                 val startTime = System.currentTimeMillis()
-                Action.eventFromConfig(config.monkeyOrigin, config.eventType).execute(coreLogic, monkeyPool)
+                Action.eventFromConfig(config.monkeyOrigin, config.eventType).execute(
+                    coreLogic,
+                    monkeyPool,
+                    conversationPool
+                )
                 logger.d("Action $actionName took ${System.currentTimeMillis() - startTime} milliseconds")
             } catch (e: Exception) {
                 logger.e("Failed processing event: $actionName: $e", e)
