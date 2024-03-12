@@ -58,6 +58,7 @@ abstract class Monkey(val monkeyType: MonkeyType, val internalId: MonkeyId) {
         // MonkeyId is irrelevant for external users as we will never be able to act on their behalf
         fun external(userId: UserId) = LocalMonkey(MonkeyType.External(userId), MonkeyId(-1, "", -1))
         fun internal(user: UserData, monkeyId: MonkeyId) = LocalMonkey(MonkeyType.Internal(user), monkeyId)
+
         fun remote(monkeyConfig: MonkeyConfig.Remote, user: UserData, monkeyId: MonkeyId) =
             RemoteMonkey(monkeyConfig, MonkeyType.Remote(user), monkeyId)
     }
@@ -109,9 +110,9 @@ abstract class Monkey(val monkeyType: MonkeyType, val internalId: MonkeyId) {
         isDestroyable: Boolean = true
     ): MonkeyConversation
 
-    abstract suspend fun leaveConversation(conversationId: ConversationId)
+    abstract suspend fun leaveConversation(conversationId: ConversationId, creatorId: UserId)
 
-    abstract suspend fun destroyConversation(conversationId: ConversationId)
+    abstract suspend fun destroyConversation(conversationId: ConversationId, creatorId: UserId)
 
     abstract suspend fun addMonkeysToConversation(conversationId: ConversationId, monkeys: List<Monkey>)
 

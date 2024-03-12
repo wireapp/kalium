@@ -17,18 +17,33 @@
  */
 package com.wire.kalium.monkeys
 
+import io.ktor.server.application.Application
+import io.ktor.server.application.call
+import io.ktor.server.application.install
+import io.ktor.server.metrics.micrometer.MicrometerMetrics
+import io.ktor.server.response.respond
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
 import io.micrometer.core.instrument.DistributionSummary
 import io.micrometer.core.instrument.Tag
 import io.micrometer.core.instrument.Timer
+import io.micrometer.prometheus.PrometheusConfig
 import io.micrometer.prometheus.PrometheusMeterRegistry
 import kotlin.time.measureTimedValue
 import kotlin.time.toJavaDuration
 
 object MetricsCollector {
-    private val registry = PrometheusMeterRegistry { null }
+    private val registry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
-    fun metrics(): String {
-        return this.registry.scrape()
+    fun Application.configureMicrometer(route: String) {
+        install(MicrometerMetrics) {
+            registry = registry
+        }
+        routing {
+            get(route) {
+                call.respond(registry.scrape())
+            }
+        }
     }
 
     fun count(key: String, tags: List<Tag>) {

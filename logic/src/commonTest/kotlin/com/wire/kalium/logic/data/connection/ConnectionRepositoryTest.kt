@@ -19,12 +19,14 @@
 package com.wire.kalium.logic.data.connection
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -46,6 +48,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionEntity
+import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -63,7 +66,10 @@ import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.toInstant
 import kotlin.test.Test
+import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import com.wire.kalium.network.api.base.model.UserId as NetworkUserId
 
 class ConnectionRepositoryTest {
@@ -309,6 +315,42 @@ class ConnectionRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Test
+    fun givenConnectionExists_whenGettingConnection_thenConnectionShouldBeReturned() = runTest {
+        // given
+        val (arrangement, connectionRepository) = Arrangement().arrange()
+        val connection = arrangement.stubConnectionEntity
+        arrangement.withGetConnection(connection)
+        // when
+        val result = connectionRepository.getConnection(connection.qualifiedConversationId.toModel())
+        // then
+        result.shouldSucceed {
+            assertEquals(connection.qualifiedConversationId.toModel(), it.conversationId)
+        }
+        verify(arrangement.connectionDAO)
+            .suspendFunction(arrangement.connectionDAO::getConnection)
+            .with(eq(connection.qualifiedConversationId))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenConnectionDoesNotExist_whenGettingConnection_thenErrorNotFoundShouldBeReturned() = runTest {
+        // given
+        val (arrangement, connectionRepository) = Arrangement().arrange()
+        val connection = arrangement.stubConnectionEntity
+        arrangement.withGetConnection(null)
+        // when
+        val result = connectionRepository.getConnection(connection.qualifiedConversationId.toModel())
+        // then
+        result.shouldFail {
+            assertIs<StorageFailure.DataNotFound>(it)
+        }
+        verify(arrangement.connectionDAO)
+            .suspendFunction(arrangement.connectionDAO::getConnection)
+            .with(eq(connection.qualifiedConversationId))
+            .wasInvoked(once)
+    }
+
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
         @Mock
@@ -378,6 +420,15 @@ class ConnectionRepositoryTest {
             nonQualifiedId = "value",
             service = null,
             supportedProtocols = null
+        )
+        val stubConnectionEntity = ConnectionEntity(
+            conversationId = "conversationId1",
+            from = "fromId",
+            lastUpdateDate = UNIX_FIRST_DATE.toInstant(),
+            qualifiedConversationId = ConversationIDEntity("conversationId", "domain"),
+            qualifiedToId = ConversationIDEntity("userId", "domain"),
+            status = ConnectionEntity.State.ACCEPTED,
+            toId = "connectionId1"
         )
 
         val stubUserEntity = TestUser.DETAILS_ENTITY
@@ -508,6 +559,13 @@ class ConnectionRepositoryTest {
                 .then { flowOf(stubUserEntity) }
 
             return this
+        }
+
+        fun withGetConnection(connection: ConnectionEntity?): Arrangement = apply {
+            given(connectionDAO)
+                .suspendFunction(connectionDAO::getConnection)
+                .whenInvokedWith(any())
+                .thenReturn(connection)
         }
 
         fun arrange() = this to connectionRepository

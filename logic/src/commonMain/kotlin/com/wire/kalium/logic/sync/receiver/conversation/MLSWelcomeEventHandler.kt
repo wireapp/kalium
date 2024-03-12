@@ -56,14 +56,14 @@ internal class MLSWelcomeEventHandlerImpl(
     private val certificateRevocationListRepository: CertificateRevocationListRepository
 ) : MLSWelcomeEventHandler {
     override suspend fun handle(event: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit> =
-        mlsClientProvider
-            .getMLSClient()
+        conversationRepository.fetchConversationIfUnknown(event.conversationId)
+            .flatMap {
+                mlsClientProvider.getMLSClient()
+            }
             .flatMap { client ->
                 wrapMLSRequest {
                     client.processWelcomeMessage(event.message.decodeBase64Bytes())
                 }
-            }.flatMap { groupID ->
-                conversationRepository.fetchConversationIfUnknown(event.conversationId).map { groupID }
             }.flatMap { welcomeBundle ->
                 welcomeBundle.crlNewDistributionPoints?.let {
                     checkRevocationList(it)
