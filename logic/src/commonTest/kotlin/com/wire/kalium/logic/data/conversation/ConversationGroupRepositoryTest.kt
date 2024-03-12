@@ -22,6 +22,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
@@ -255,7 +256,7 @@ class ConversationGroupRepositoryTest {
             .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(conversationResponse, emptyMap(), 201)))
             .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
             .withInsertConversationSuccess()
-            .withMlsConversationEstablished()
+            .withMlsConversationEstablished(MLSAdditionResult(setOf(TestUser.USER_ID), emptySet()))
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
@@ -278,7 +279,7 @@ class ConversationGroupRepositoryTest {
 
             verify(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::establishMLSGroup)
-                .with(anything(), anything())
+                .with(anything(), anything(), eq(true))
                 .wasInvoked(once)
 
             verify(newConversationMembersRepository)
@@ -287,6 +288,50 @@ class ConversationGroupRepositoryTest {
                 .wasInvoked(once)
         }
     }
+
+    @Test
+    fun givenMLSProtocolIsUsedAndSomeUsersAreNotAddedToMLSGroup_whenCallingCreateGroupConversation_thenMissingMembersArePersisted() =
+        runTest {
+            val conversationResponse = CONVERSATION_RESPONSE.copy(protocol = MLS)
+            val missingMembersFromMLSGroup = setOf(TestUser.OTHER_USER_ID, TestUser.OTHER_USER_ID_2)
+            val successfullyAddedUsers = setOf(TestUser.USER_ID)
+            val allWantedMembers = successfullyAddedUsers + missingMembersFromMLSGroup
+            val (arrangement, conversationGroupRepository) = Arrangement()
+                .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(conversationResponse, emptyMap(), 201)))
+                .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
+                .withInsertConversationSuccess()
+                .withMlsConversationEstablished(MLSAdditionResult(setOf(TestUser.USER_ID), notAddedUsers = missingMembersFromMLSGroup))
+                .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+                .withSuccessfulNewConversationGroupStartedHandled()
+                .withSuccessfulNewConversationMemberHandled()
+                .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+                .arrange()
+
+            val result = conversationGroupRepository.createGroupConversation(
+                GROUP_NAME,
+                allWantedMembers.toList(),
+                ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
+            )
+
+            result.shouldSucceed()
+
+            with(arrangement) {
+                verify(conversationDAO)
+                    .suspendFunction(conversationDAO::insertConversation)
+                    .with(anything())
+                    .wasInvoked(once)
+
+                verify(mlsConversationRepository)
+                    .suspendFunction(mlsConversationRepository::establishMLSGroup)
+                    .with(anything(), anything(), eq(true))
+                    .wasInvoked(once)
+
+                verify(newConversationMembersRepository)
+                    .suspendFunction(newConversationMembersRepository::persistMembersAdditionToTheConversation)
+                    .with(anything(), anything(), eq(missingMembersFromMLSGroup.toList()))
+                    .wasInvoked(once)
+            }
+        }
 
     @Test
     fun givenProteusConversation_whenAddingMembersToConversation_thenShouldSucceed() = runTest {
@@ -1366,11 +1411,11 @@ class ConversationGroupRepositoryTest {
                 selfTeamIdProvider
             )
 
-        fun withMlsConversationEstablished(): Arrangement {
+        fun withMlsConversationEstablished(additionResult: MLSAdditionResult): Arrangement {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::establishMLSGroup)
                 .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(Unit))
+                .thenReturn(Either.Right(additionResult))
             return this
         }
 
@@ -1801,6 +1846,6 @@ class ConversationGroupRepositoryTest {
             NetworkFailure.FederatedBackendFailure.FailedDomains(domains.toList())
         )
 
-        val KEY_PACKAGES_NOT_AVAILABLE_FAILURE = Either.Left(CoreFailure.NoKeyPackagesAvailable(setOf(TestUser.OTHER_FEDERATED_USER_ID)))
+        val KEY_PACKAGES_NOT_AVAILABLE_FAILURE = Either.Left(CoreFailure.MissingKeyPackages(setOf(TestUser.OTHER_FEDERATED_USER_ID)))
     }
 }

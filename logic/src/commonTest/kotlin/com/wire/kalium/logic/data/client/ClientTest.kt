@@ -50,4 +50,31 @@ class ClientTest {
         assertTrue(client.isActive)
     }
 
+    @Test
+    fun givenLastActiveIsNull_whenRegistrationTRimeIsNotOld_thenIsActiveIsTrue() {
+        val client = TestClient.CLIENT.copy(
+            lastActive = null,
+            registrationTime = Clock.System.now() - (Client.INACTIVE_DURATION - 1.days)
+        )
+        assertTrue(client.isActive)
+    }
+
+    @Test
+    fun givenLastActiveIsNull_whenRegistrationTRimeIsOld_thenIsActiveIsFalse() {
+        val client = TestClient.CLIENT.copy(
+            lastActive = null,
+            registrationTime = Clock.System.now() - (Client.INACTIVE_DURATION + 1.days)
+        )
+        assertFalse(client.isActive)
+    }
+
+    @Test
+    fun givenLastActiveIsNull_whenRegistrationTRimeIsNull_thenIsActiveIsFalse() {
+        val client = TestClient.CLIENT.copy(
+            lastActive = null,
+            registrationTime = null
+        )
+        assertFalse(client.isActive)
+    }
+
 }

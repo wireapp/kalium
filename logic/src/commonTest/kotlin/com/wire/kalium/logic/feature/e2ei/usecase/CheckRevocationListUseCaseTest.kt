@@ -19,13 +19,11 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.cryptography.CoreCryptoCentral
 import com.wire.kalium.cryptography.CrlRegistration
-import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.feature.conversation.MLSConversationsVerificationStatusesHandler
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
@@ -176,10 +174,6 @@ class CheckRevocationListUseCaseTest {
                 .suspendFunction(arrangement.coreCrypto::registerCrl)
                 .with(any())
                 .wasInvoked(once)
-
-            verify(arrangement.mLSConversationsVerificationStatusesHandler)
-                .suspendFunction(arrangement.mLSConversationsVerificationStatusesHandler::invoke)
-                .wasInvoked(once)
         }
 
     @Test
@@ -201,10 +195,6 @@ class CheckRevocationListUseCaseTest {
             .suspendFunction(arrangement.coreCrypto::registerCrl)
             .with(any())
             .wasNotInvoked()
-
-        verify(arrangement.mLSConversationsVerificationStatusesHandler)
-            .suspendFunction(arrangement.mLSConversationsVerificationStatusesHandler::invoke)
-            .wasNotInvoked()
     }
 
     internal class Arrangement {
@@ -214,10 +204,6 @@ class CheckRevocationListUseCaseTest {
 
         @Mock
         val coreCrypto = mock(classOf<CoreCryptoCentral>())
-
-        @Mock
-        val mLSConversationsVerificationStatusesHandler =
-            mock(classOf<MLSConversationsVerificationStatusesHandler>())
 
         @Mock
         val currentClientIdProvider =
@@ -234,7 +220,6 @@ class CheckRevocationListUseCaseTest {
             certificateRevocationListRepository = certificateRevocationListRepository,
             currentClientIdProvider = currentClientIdProvider,
             mlsClientProvider = mlsClientProvider,
-            mLSConversationsVerificationStatusesHandler = mLSConversationsVerificationStatusesHandler,
             isE2EIEnabledUseCase =  isE2EIEnabledUseCase
         )
 

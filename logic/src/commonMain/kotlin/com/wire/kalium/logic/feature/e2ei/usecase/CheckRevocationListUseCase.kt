@@ -22,7 +22,6 @@ import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.feature.conversation.MLSConversationsVerificationStatusesHandler
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -40,7 +39,6 @@ internal class CheckRevocationListUseCaseImpl(
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val mlsClientProvider: MLSClientProvider,
-    private val mLSConversationsVerificationStatusesHandler: MLSConversationsVerificationStatusesHandler,
     private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase
 ) : CheckRevocationListUseCase {
     private val logger = kaliumLogger.withTextTag("CheckRevocationListUseCase")
@@ -52,9 +50,6 @@ internal class CheckRevocationListUseCaseImpl(
                     mlsClientProvider.getCoreCrypto(clientId).map { coreCrypto ->
                         logger.i("registering crl..")
                         coreCrypto.registerCrl(url, it).run {
-                            if (dirty) {
-                                mLSConversationsVerificationStatusesHandler()
-                            }
                             this.expiration
                         }
                     }

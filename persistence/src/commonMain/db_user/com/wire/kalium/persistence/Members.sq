@@ -22,6 +22,15 @@ VALUES (?, ?, ?)
 ON CONFLICT(user, conversation) DO UPDATE SET
 role = excluded.role;
 
+selectMembersNamesAndHandle:
+SELECT
+    mem.user,
+    usr.name,
+    usr.handle
+FROM Member AS mem
+JOIN User AS usr ON usr.qualified_id = mem.user
+WHERE mem.conversation = :conversationId;
+
 deleteMember:
 DELETE FROM Member WHERE conversation = :conversationId AND user = :userId;
 

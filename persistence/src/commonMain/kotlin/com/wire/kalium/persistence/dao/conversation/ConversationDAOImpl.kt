@@ -247,10 +247,10 @@ internal class ConversationDAOImpl internal constructor(
             .map { it?.let { conversationMapper.toModel(it) } }
     }
 
-    override suspend fun getConversationByGroupID(groupID: String): ConversationViewEntity {
+    override suspend fun getConversationByGroupID(groupID: String): ConversationViewEntity? {
         return conversationQueries.selectByGroupId(groupID)
-            .executeAsOne()
-            .let { it.let { conversationMapper.toModel(it) } }
+            .executeAsOneOrNull()
+            ?.let { it.let { conversationMapper.toModel(it) } }
     }
 
     override suspend fun getConversationIdByGroupID(groupID: String) = withContext(coroutineContext) {
@@ -439,4 +439,20 @@ internal class ConversationDAOImpl internal constructor(
                 .executeAsOneOrNull()
                 ?.mls_group_id
         }
+
+    override suspend fun selectGroupStatusMembersNamesAndHandles(groupID: String): EpochChangesDataEntity? = withContext(coroutineContext) {
+        conversationQueries.transactionWithResult {
+            val (conversationId, mlsVerificationStatus) = conversationQueries.conversationIDByGroupId(groupID).executeAsOneOrNull()
+                ?: return@transactionWithResult null
+            memberQueries.selectMembersNamesAndHandle(conversationId).executeAsList()
+                .let { members ->
+                    val membersMap = members.associate { it.user to NameAndHandleEntity(it.name, it.handle) }
+                    EpochChangesDataEntity(
+                        conversationId,
+                        mlsVerificationStatus,
+                        membersMap
+                    )
+                }
+        }
+    }
 }

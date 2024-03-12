@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.filter
 import kotlinx.datetime.Clock
 
