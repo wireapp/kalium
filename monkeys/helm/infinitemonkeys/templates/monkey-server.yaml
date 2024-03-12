@@ -48,7 +48,7 @@ spec:
             limits:
               memory: {{ add .Values.jvm.memory.heap .Values.jvm.memory.heap .Values.jvm.memory.metaspace .Values.jvm.memory.nonMethodCodeHeapSize .Values.jvm.memory.profiledCodeHeapSize .Values.jvm.memory.nonProfiledCodeHeapSize .Values.jvm.memory.buffer | printf "%dMi"}}
           env:
-            - name: JAVA_TOOL_OPTS
+            - name: JAVA_OPTS
               value: {{ include "chart.javaToolOptions" . }}
           ports:
             - name: monkeyport
