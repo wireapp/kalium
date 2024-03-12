@@ -246,11 +246,11 @@ class RemoteMonkey(monkeyConfig: MonkeyConfig.Remote, monkeyType: MonkeyType, in
         return MonkeyConversation(this, result, isDestroyable, monkeyList)
     }
 
-    override suspend fun leaveConversation(conversationId: ConversationId) {
+    override suspend fun leaveConversation(conversationId: ConversationId, creatorId: UserId) {
         postNoBody(LEAVE_CONVERSATION, conversationId)
     }
 
-    override suspend fun destroyConversation(conversationId: ConversationId) {
+    override suspend fun destroyConversation(conversationId: ConversationId, creatorId: UserId) {
         postNoBody(DESTROY_CONVERSATION, conversationId)
     }
 

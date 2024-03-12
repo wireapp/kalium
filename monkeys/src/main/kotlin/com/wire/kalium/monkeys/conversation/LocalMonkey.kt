@@ -43,7 +43,6 @@ import com.wire.kalium.monkeys.model.Backend
 import com.wire.kalium.monkeys.model.ConversationDef
 import com.wire.kalium.monkeys.model.MonkeyId
 import com.wire.kalium.monkeys.model.UserCount
-import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 import kotlinx.coroutines.flow.first
 
@@ -219,8 +218,8 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
         }
     }
 
-    override suspend fun leaveConversation(conversationId: ConversationId) {
-        if (this.monkeyType.userId() == ConversationPool.conversationCreator(conversationId)?.monkeyType?.userId()) {
+    override suspend fun leaveConversation(conversationId: ConversationId, creatorId: UserId) {
+        if (this.monkeyType.userId() == creatorId) {
             error("Creator of the group can't leave")
         }
         this.monkeyState.readyThen {
@@ -228,8 +227,8 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
         }
     }
 
-    override suspend fun destroyConversation(conversationId: ConversationId) {
-        if (this.monkeyType.userId() != ConversationPool.conversationCreator(conversationId)?.monkeyType?.userId()) {
+    override suspend fun destroyConversation(conversationId: ConversationId, creatorId: UserId) {
+        if (this.monkeyType.userId() != creatorId) {
             error("Only the creator can destroy a group")
         }
 

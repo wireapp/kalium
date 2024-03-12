@@ -15,16 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.monkeys.actions.replay
+package com.wire.kalium.logic.data.conversation.mls
 
-import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.monkeys.actions.Action
-import com.wire.kalium.monkeys.model.EventType
-import com.wire.kalium.monkeys.pool.ConversationPool
-import com.wire.kalium.monkeys.pool.MonkeyPool
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
 
-class CreateConversationEventAction(private val config: EventType.CreateConversation) : Action({}) {
-    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool, conversationPool: ConversationPool) {
-        conversationPool.createDynamicConversation(config.conversation, monkeyPool)
-    }
-}
+data class KeyPackageClaimResult(
+    val successfullyFetchedKeyPackages: List<KeyPackageDTO>,
+    val usersWithoutKeyPackagesAvailable: Set<UserId>
+)

@@ -62,3 +62,10 @@ data class CreateConversationRequest(
     @SerialName("isDestroyable")
     val isDestroyable: Boolean
 )
+@Serializable
+data class ConversationIdRequest(
+    @SerialName("conversationId")
+    val conversationId: ConversationId,
+    @SerialName("creator")
+    val creator: UserId
+)
