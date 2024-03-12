@@ -25,6 +25,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.Connection
@@ -75,6 +76,7 @@ interface ConnectionRepository {
     suspend fun setConnectionAsNotified(userId: UserId)
     suspend fun setAllConnectionsAsNotified()
     suspend fun deleteConnection(connection: Connection): Either<StorageFailure, Unit>
+    suspend fun getConnection(conversationId: ConversationId): Either<StorageFailure, ConversationDetails.Connection>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -252,6 +254,10 @@ internal class ConnectionDataSource(
     override suspend fun deleteConnection(connection: Connection) = wrapStorageRequest {
         connectionDAO.deleteConnectionDataAndConversation(connection.qualifiedConversationId.toDao())
         userDAO.upsertConnectionStatuses(mapOf(connection.qualifiedToId.toDao() to ConnectionEntity.State.CANCELLED))
+    }
+
+    override suspend fun getConnection(conversationId: ConversationId) = wrapStorageRequest {
+            connectionDAO.getConnection(conversationId.toDao())?.let { connectionMapper.fromDaoToConversationDetails(it) }
     }
 
     /**
