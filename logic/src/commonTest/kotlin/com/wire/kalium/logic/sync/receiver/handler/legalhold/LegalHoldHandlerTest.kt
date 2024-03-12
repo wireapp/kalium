@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.sync.SyncState
+import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCase
@@ -34,6 +35,7 @@ import com.wire.kalium.logic.feature.legalhold.LegalHoldState
 import com.wire.kalium.logic.feature.legalhold.MembersHavingLegalHoldClientUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
@@ -691,6 +693,49 @@ class LegalHoldHandlerTest {
             legalHoldStatusForConversationChanged = false,
             handleEnabledForConversationInvoked = false,
             handleDisabledForConversationInvoked = false,
+        )
+
+    private fun testHandlingNewConnection(
+        userLegalHoldStatus: LegalHoldState,
+        connectionStatus: ConnectionState,
+        expectedConversationLegalHoldStatus: Conversation.LegalHoldStatus,
+    ) = runTest {
+        // given
+        val newConnectionEvent = TestEvent.newConnection(status = connectionStatus)
+        val (arrangement, handler) = Arrangement()
+            .withObserveLegalHoldStateForUserSuccess(userLegalHoldStatus)
+            .withUpdateLegalHoldStatusSuccess(isChanged = true)
+            .arrange()
+        // when
+        val result = handler.handleNewConnection(newConnectionEvent)
+        // then
+        result.shouldSucceed()
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateLegalHoldStatus)
+            .with(eq(newConnectionEvent.connection.qualifiedConversationId), eq(expectedConversationLegalHoldStatus))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenNewConnectionMissingLegalHoldConsent_whenHandling_thenUpdateConversationLegalHoldStatusToDegraded() =
+        testHandlingNewConnection(
+            userLegalHoldStatus = LegalHoldState.Disabled,
+            connectionStatus = ConnectionState.MISSING_LEGALHOLD_CONSENT,
+            expectedConversationLegalHoldStatus = Conversation.LegalHoldStatus.DEGRADED,
+        )
+    @Test
+    fun givenNewConnectionAcceptedAndUserUnderLegalHold_whenHandling_thenUpdateConversationLegalHoldStatusToEnabled() =
+        testHandlingNewConnection(
+            userLegalHoldStatus = LegalHoldState.Enabled,
+            connectionStatus = ConnectionState.ACCEPTED,
+            expectedConversationLegalHoldStatus = Conversation.LegalHoldStatus.ENABLED,
+        )
+    @Test
+    fun givenNewConnectionAcceptedAndUserNotUnderLegalHold_whenHandling_thenUpdateConversationLegalHoldStatusToDisabled() =
+        testHandlingNewConnection(
+            userLegalHoldStatus = LegalHoldState.Disabled,
+            connectionStatus = ConnectionState.ACCEPTED,
+            expectedConversationLegalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
         )
 
     private class Arrangement {
