@@ -438,7 +438,6 @@ updateLegalHoldStatus {
 UPDATE Conversation
 SET legal_hold_status = :legal_hold_status
 WHERE qualified_id = :qualified_id AND legal_hold_status != :legal_hold_status;
-SELECT changes();
 }
 
 upsertLegalHoldStatusChangeNotified {
@@ -447,7 +446,6 @@ VALUES (:conversationId, :notified)
 ON CONFLICT(conversation_id) DO UPDATE SET
     legal_hold_status_change_notified = excluded.legal_hold_status_change_notified
     WHERE legal_hold_status_change_notified != excluded.legal_hold_status_change_notified;
-SELECT changes();
 }
 
 selectLegalHoldStatus:
