@@ -63,7 +63,15 @@ class ACMEApiImpl internal constructor(
         val protocolWithAuthority = Url(discoveryUrl).protocolWithAuthority
 
         if (discoveryUrl.isBlank() || protocolWithAuthority.isBlank()) {
-            return NetworkResponse.Error(KaliumException.GenericError(IllegalArgumentException("getTrustAnchors: Url cannot be empty or protocolWithAuthority cannot be empty, is urlBlank = ${discoveryUrl.isBlank()}, is protocolWithAuthorityBlank = ${protocolWithAuthority.isBlank()}")))
+            return NetworkResponse.Error(
+                KaliumException.GenericError(
+                    IllegalArgumentException(
+                        "getTrustAnchors: Url cannot be empty or protocolWithAuthority cannot be empty" +
+                                ", is urlBlank = ${discoveryUrl.isBlank()}" +
+                                ", is protocolWithAuthorityBlank = ${protocolWithAuthority.isBlank()}"
+                    )
+                )
+            )
         }
 
         return wrapKaliumResponse {
@@ -126,7 +134,11 @@ class ACMEApiImpl internal constructor(
 
     override suspend fun sendAuthorizationRequest(url: String, body: ByteArray?): NetworkResponse<ACMEAuthorizationResponse> {
         if (url.isBlank()) {
-            return NetworkResponse.Error(KaliumException.GenericError(IllegalArgumentException("sendAuthorizationRequest: Url cannot be empty")))
+            return NetworkResponse.Error(
+                KaliumException.GenericError(
+                    IllegalArgumentException("sendAuthorizationRequest: Url cannot be empty")
+                )
+            )
         }
 
         return wrapKaliumResponse<String> {
@@ -181,7 +193,11 @@ class ACMEApiImpl internal constructor(
 
     override suspend fun sendChallengeRequest(url: String, body: ByteArray): NetworkResponse<ChallengeResponse> {
         if (url.isBlank()) {
-            return NetworkResponse.Error(KaliumException.GenericError(IllegalArgumentException("sendChallengeRequest: Url cannot be empty")))
+            return NetworkResponse.Error(
+                KaliumException.GenericError(
+                    IllegalArgumentException("sendChallengeRequest: Url cannot be empty")
+                )
+            )
         }
 
         return wrapKaliumResponse<ChallengeResponse> {
@@ -210,7 +226,15 @@ class ACMEApiImpl internal constructor(
     override suspend fun getACMEFederation(discoveryUrl: String): NetworkResponse<String> {
         val protocolWithAuthority = Url(discoveryUrl).protocolWithAuthority
         if (discoveryUrl.isBlank() || protocolWithAuthority.isBlank()) {
-            return NetworkResponse.Error(KaliumException.GenericError(IllegalArgumentException("getACMEFederation: Url cannot be empty, is urlBlank = ${discoveryUrl.isBlank()}, is protocolWithAuthorityBlank = ${protocolWithAuthority.isBlank()}")))
+            return NetworkResponse.Error(
+                KaliumException.GenericError(
+                    IllegalArgumentException(
+                        "getACMEFederation: Url cannot be empty, " +
+                                "is urlBlank = ${discoveryUrl.isBlank()}, " +
+                                "is protocolWithAuthorityBlank = ${protocolWithAuthority.isBlank()}"
+                    )
+                )
+            )
         }
 
         return wrapKaliumResponse {
