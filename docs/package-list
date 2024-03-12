@@ -404,6 +404,7 @@ com.wire.kalium.logic.data.client
 com.wire.kalium.logic.data.client.remote
 com.wire.kalium.logic.data.connection
 com.wire.kalium.logic.data.conversation
+com.wire.kalium.logic.data.conversation.mls
 com.wire.kalium.logic.data.e2ei
 com.wire.kalium.logic.data.event
 com.wire.kalium.logic.data.featureConfig
