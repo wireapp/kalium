@@ -25,12 +25,15 @@ import com.wire.kalium.monkeys.conversation.Monkey
 import com.wire.kalium.monkeys.conversation.MonkeyConversation
 import com.wire.kalium.monkeys.model.ConversationDef
 import com.wire.kalium.monkeys.model.UserCount
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
 import kotlin.random.nextUInt
 
 @Suppress("TooManyFunctions")
-object ConversationPool {
+class ConversationPool(private val delayPool: Long) {
     private val pool: ConcurrentHashMap<ConversationId, MonkeyConversation> = ConcurrentHashMap()
 
     // pool from conversations from an old run
@@ -51,8 +54,11 @@ object ConversationPool {
         this.pool.remove(id)
     }
 
-    private fun addToPool(monkeyConversation: MonkeyConversation) {
-        this.pool[monkeyConversation.conversationId] = monkeyConversation
+    private suspend fun addToPool(monkeyConversation: MonkeyConversation) = coroutineScope {
+        launch {
+            delay(delayPool)
+            pool[monkeyConversation.conversationId] = monkeyConversation
+        }
     }
 
     fun conversationCreator(conversationId: ConversationId): Monkey? {
@@ -70,7 +76,7 @@ object ConversationPool {
 
     suspend fun destroyRandomConversation() {
         val conversation = this.pool.values.filter { it.isDestroyable }.random()
-        conversation.creator.destroyConversation(conversation.conversationId)
+        conversation.creator.destroyConversation(conversation.conversationId, conversation.creator.monkeyType.userId())
         this.pool.remove(conversation.conversationId)
     }
 
