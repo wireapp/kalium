@@ -63,10 +63,13 @@ sealed interface CoreFailure {
     data object MissingClientRegistration : CoreFailure
 
     /**
-     * Key packages requested not available which prevents them from being added
-     * to an existing or new conversation.
+     * Represents a failure indicating that key packages are missing for user IDs.
+     *
+     * @property failedUserIds The set of user IDs for which key packages are missing.
      */
-    data class NoKeyPackagesAvailable(val failedUserIds: Set<UserId>) : CoreFailure
+    data class MissingKeyPackages(
+        val failedUserIds: Set<UserId>
+    ) : CoreFailure
 
     /**
      * It's not allowed to run the application with development API enabled when
