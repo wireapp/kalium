@@ -171,7 +171,16 @@ class EnrollE2EIUseCaseImpl internal constructor(
             ).onFailure { return it.left() }
         }
 
-        return E2EIEnrollmentResult.Finalized(certificateRequest.response.decodeToString()).right()
+        val e2eiCert = certificateRequest.response.decodeToString().let {theDoubleCert ->
+            try {
+                val firstCertEndIndex = theDoubleCert.indexOf("-----END CERTIFICATE-----") + "-----END CERTIFICATE-----".length
+                theDoubleCert.substring(0, firstCertEndIndex)
+            } catch (e: Exception) {
+                theDoubleCert
+            }
+        }
+
+        return E2EIEnrollmentResult.Finalized(e2eiCert).right()
     }
 
     private fun getOAuthClaims(keyAuth: String, acmeAud: String) = JsonObject(
