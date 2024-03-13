@@ -20,6 +20,12 @@
 
 package com.wire.kalium.cryptography
 
+import io.ktor.http.URLBuilder
+import io.ktor.http.URLProtocol
+import io.ktor.http.decodeURLPart
+import io.ktor.http.encodedPath
+import io.ktor.http.takeFrom
+
 typealias MLSGroupId = String
 
 data class CryptoClientId(val value: String) {
@@ -72,7 +78,7 @@ data class CryptoQualifiedClientId(
 
 data class WireIdentity(
     val clientId: CryptoQualifiedClientId,
-    val handle: String, // handle format is "{scheme}%40{handle}@{domain}", example: "wireapp://%40hans.wurst@elna.wire.link"
+    val handle: Handle,
     val displayName: String,
     val domain: String,
     val certificate: String,
@@ -81,8 +87,48 @@ data class WireIdentity(
     val serialNumber: String,
     val endTimestampSeconds: Long
 ) {
-    val handleWithoutSchemeAtSignAndDomain: String
-        get() = handle.substringAfter("://%40").removeSuffix("@$domain")
+    constructor(
+        clientId: CryptoQualifiedClientId,
+        handle: String,
+        displayName: String,
+        domain: String,
+        certificate: String,
+        status: CryptoCertificateStatus,
+        thumbprint: String,
+        serialNumber: String,
+        endTimestampSeconds: Long
+    ) : this(
+        clientId = clientId,
+        handle = Handle.fromString(handle, domain),
+        displayName = displayName,
+        domain = domain,
+        certificate = certificate,
+        status = status,
+        thumbprint = thumbprint,
+        serialNumber = serialNumber,
+        endTimestampSeconds = endTimestampSeconds
+    )
+
+    // WireIdentity handle format is "{scheme}%40{username}@{domain}"
+    // Example: wireapp://%40hans.wurst@elna.wire.link
+    data class Handle(val scheme: String, val handle: String, val domain: String) {
+        companion object {
+            fun fromString(rawValue: String, domain: String): Handle = URLBuilder(
+                protocol = URLProtocol("", 0), // need to overwrite the protocol, otherwise it will use default HTTP
+            ).takeFrom(rawValue).let {
+                val handleWithOptionalAtSignAndDomain = when {
+                    it.user != null && it.user!!.isNotBlank() -> it.user!!
+                    it.encodedPath.isNotBlank() -> it.encodedPath.decodeURLPart()
+                    else -> it.host.decodeURLPart()
+                }
+                Handle(
+                    scheme = it.protocol.name,
+                    handle = handleWithOptionalAtSignAndDomain.removeSuffix(domain).trim('@'),
+                    domain = domain
+                )
+            }
+        }
+    }
 }
 
 enum class CryptoCertificateStatus {
