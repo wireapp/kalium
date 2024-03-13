@@ -46,6 +46,7 @@ spec:
           command:
             - /opt/app/bin/monkeys
           args:
+            - '-d1500'
             - /config/config.json
           ports:
             - containerPort: 9090
