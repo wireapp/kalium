@@ -49,7 +49,7 @@ fun Project.configureDefaultMultiplatform(
         androidTarget {
             commmonKotlinAndroidTargetConfig()
             dependencies {
-                add("coreLibraryDesugaring", libs.findLibrary("desugarJdkLibs").get())
+                add("coreLibraryDesugaring", library("desugarJdkLibs"))
             }
         }
 
