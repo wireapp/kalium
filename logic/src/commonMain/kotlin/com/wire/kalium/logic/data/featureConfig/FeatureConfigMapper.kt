@@ -77,13 +77,13 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
     override fun fromDTO(data: FeatureConfigData.MLS?): MLSModel =
         data?.let {
             MLSModel(
-                it.config.protocolToggleUsers.map { userId -> PlainId(userId) },
+                it.config.protocolToggleUsers?.map { userId -> PlainId(userId) },
                 it.config.defaultProtocol.toModel(),
                 it.config.supportedProtocols.map { it.toModel() }.toSet(),
                 fromDTO(it.status)
             )
         } ?: MLSModel(
-            listOf(),
+            null,
             SupportedProtocol.PROTEUS,
             setOf(SupportedProtocol.PROTEUS),
             Status.DISABLED

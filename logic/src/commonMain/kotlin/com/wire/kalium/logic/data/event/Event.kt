@@ -473,7 +473,7 @@ sealed class Event(open val id: String) {
                 typeKey to "FeatureConfig.MLSUpdated",
                 idKey to id.obfuscateId(),
                 featureStatusKey to model.status.name,
-                "allowedUsers" to model.allowedUsers.map { it.value.obfuscateId() }
+                "allowedUsers" to model.allowedUsers?.map { it.value.obfuscateId() }
             )
         }
 
