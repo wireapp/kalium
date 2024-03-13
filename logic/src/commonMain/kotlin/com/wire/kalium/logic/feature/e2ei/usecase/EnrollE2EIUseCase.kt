@@ -184,6 +184,7 @@ class EnrollE2EIUseCaseImpl internal constructor(
             ).onFailure { return it.left() }
         }
 
+        @Suppress("TooGenericExceptionCaught")
         val e2eiCert = certificateRequest.response.decodeToString().let { theDoubleCert ->
             try {
                 val firstCertEndIndex = theDoubleCert.indexOf(CERT_END) + CERT_END_LENGTH
