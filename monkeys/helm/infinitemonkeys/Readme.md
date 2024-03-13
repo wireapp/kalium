@@ -19,6 +19,12 @@ the config.json file directly prior (re)deployment.
 The Servers echo all logging to stdout. The Controller writes to a local log within it's pod in `/wire/cryptobox/monkeys.log`.
 
 
+## JVM Optimizations
+
+We've added a block in `values.yaml` exposing various Java options in order to reduce memory footprint of the monkey servers.
+At this point, the amount of RAM needed by each monkey is down about 50% compared to non-optimized defaults.
+
+
 ## Limitations
 
 The total number of all users as defined via `monkeyController.userCount` (or directly in config.json backend sections) needs
@@ -27,4 +33,5 @@ to be matched by `monkeyServer.replicaCount`, as N+1, since there's always one a
 
 ## References
 
-- [Infinite Monkeys documentation](https://wearezeta.atlassian.net/wiki/spaces/ENGINEERIN/pages/878182477/Infinite+Monkeys+IM)
+1. - [Infinite Monkeys documentation](https://wearezeta.atlassian.net/wiki/spaces/ENGINEERIN/pages/878182477/Infinite+Monkeys+IM)
+2. - [JVM tuning in K8s](https://www.padok.fr/en/blog/jvm-oom)
