@@ -61,6 +61,7 @@ import com.wire.kalium.logic.data.conversation.ConversationDataSource
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepositoryImpl
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.EpochChangesObserverImpl
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCase
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
@@ -81,6 +82,8 @@ import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepositoryDataSource
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryImpl
+import com.wire.kalium.logic.data.e2ei.MLSConversationsVerificationStatusesHandler
+import com.wire.kalium.logic.data.e2ei.MLSConversationsVerificationStatusesHandlerImpl
 import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
@@ -186,8 +189,11 @@ import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
+<<<<<<< HEAD
 import com.wire.kalium.logic.feature.conversation.MLSConversationsVerificationStatusesHandler
 import com.wire.kalium.logic.feature.conversation.MLSConversationsVerificationStatusesHandlerImpl
+=======
+>>>>>>> 9233d5fae3 (fix: MLS enabling setting [WPB-7097] (#2643))
 import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCase
 import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
@@ -199,8 +205,11 @@ import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.TypingIndicatorSyncManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
+<<<<<<< HEAD
 import com.wire.kalium.logic.feature.conversation.mls.ConversationVerificationStatusCheckerImpl
 import com.wire.kalium.logic.feature.conversation.mls.EpochChangesObserverImpl
+=======
+>>>>>>> 9233d5fae3 (fix: MLS enabling setting [WPB-7097] (#2643))
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolverImpl
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigrator
@@ -1531,7 +1540,7 @@ class UserSessionScope internal constructor(
         get() = FileSharingConfigHandler(userConfigRepository)
 
     private val mlsConfigHandler
-        get() = MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes, userId)
+        get() = MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes)
 
     private val mlsMigrationConfigHandler
         get() = MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes)
