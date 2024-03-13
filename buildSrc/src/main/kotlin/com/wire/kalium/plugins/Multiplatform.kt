@@ -19,7 +19,7 @@
 package com.wire.kalium.plugins
 
 import org.gradle.api.Project
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.gradle.kotlin.dsl.dependencies
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
 /**
@@ -30,7 +30,6 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
  *
  * @see commonDokkaConfig
  */
-@OptIn(ExperimentalKotlinGradlePluginApi::class)
 fun Project.configureDefaultMultiplatform(
     enableApple: Boolean,
     enableJs: Boolean,
@@ -47,7 +46,12 @@ fun Project.configureDefaultMultiplatform(
         applyDefaultHierarchyTemplate()
         jvm { commonJvmConfig(includeNativeInterop, enableIntegrationTests) }
 
-        androidTarget { commmonKotlinAndroidTargetConfig() }
+        androidTarget {
+            commmonKotlinAndroidTargetConfig()
+            dependencies {
+                add("coreLibraryDesugaring", libs.findLibrary("desugarJdkLibs").get())
+            }
+        }
 
         if (enableJs) {
             js { commonJsConfig(enableJsTests) }

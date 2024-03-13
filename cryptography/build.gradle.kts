@@ -33,12 +33,6 @@ kaliumLibrary {
 }
 
 kotlin {
-    androidTarget {
-        dependencies {
-            coreLibraryDesugaring(libs.desugarJdkLibs)
-        }
-    }
-
     ios {
         binaries.all {
             linkerOpts("-framework", "Security")
