@@ -32,19 +32,19 @@ import io.micrometer.prometheus.PrometheusMeterRegistry
 import kotlin.time.measureTimedValue
 import kotlin.time.toJavaDuration
 
-object MetricsCollector {
-    private val registry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
-
-    fun Application.configureMicrometer(route: String) {
-        install(MicrometerMetrics) {
-            registry = registry
-        }
-        routing {
-            get(route) {
-                call.respond(registry.scrape())
-            }
+fun Application.configureMicrometer(route: String) {
+    install(MicrometerMetrics) {
+        registry = MetricsCollector.registry
+    }
+    routing {
+        get(route) {
+            call.respond(MetricsCollector.registry.scrape())
         }
     }
+}
+
+object MetricsCollector {
+    internal val registry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
     fun count(key: String, tags: List<Tag>) {
         this.registry.counter(key, tags).increment()
