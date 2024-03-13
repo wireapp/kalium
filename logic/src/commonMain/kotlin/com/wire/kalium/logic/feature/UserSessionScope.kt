@@ -215,8 +215,6 @@ import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListForCurrentC
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListForCurrentClientUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCaseImpl
-import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
-import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.FeatureFlagSyncWorkerImpl
 import com.wire.kalium.logic.feature.featureConfig.FeatureFlagsSyncWorker
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
@@ -692,8 +690,6 @@ class UserSessionScope internal constructor(
             userRepository = userRepository
         )
     }
-
-    val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2eiRepository)
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
 
