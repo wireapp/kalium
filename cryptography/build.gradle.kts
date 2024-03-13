@@ -32,12 +32,6 @@ kaliumLibrary {
     }
 }
 
-android {
-    compileOptions {
-        isCoreLibraryDesugaringEnabled = true
-    }
-}
-
 kotlin {
     androidTarget {
         dependencies {
