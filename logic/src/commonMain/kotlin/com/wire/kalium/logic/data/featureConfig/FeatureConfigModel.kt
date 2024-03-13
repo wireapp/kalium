@@ -18,9 +18,8 @@
 
 package com.wire.kalium.logic.data.featureConfig
 
-import com.wire.kalium.logic.data.id.PlainId
-import com.wire.kalium.util.time.Second
 import com.wire.kalium.logic.data.user.SupportedProtocol
+import com.wire.kalium.util.time.Second
 import kotlinx.datetime.Instant
 
 data class FeatureConfigModel(
