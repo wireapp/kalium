@@ -673,7 +673,6 @@ internal class MLSConversationDataSource(
 
     override suspend fun getClientIdentity(clientId: ClientId) =
         wrapStorageRequest { conversationDAO.getE2EIConversationClientInfoByClientId(clientId.value) }.flatMap {
-            kaliumLogger.i("#### conversation id for e2ei: ${it.clientId}, $it.")
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
 

@@ -693,8 +693,6 @@ class UserSessionScope internal constructor(
         )
     }
 
-    val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2eiRepository)
-
     private val notificationTokenRepository get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
 
     private val subconversationRepository = SubconversationRepositoryImpl()
