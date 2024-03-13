@@ -105,33 +105,12 @@ class MLSConfigHandlerTest {
 
         handler.handle(MLS_CONFIG.copy(
             status = Status.ENABLED,
-            allowedUsers = listOf(SELF_USER_ID.toPlainID()),
             supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS)
         ), duringSlowSync = false)
 
         verify(arrangement.userConfigRepository)
             .suspendFunction(arrangement.userConfigRepository::setMLSEnabled)
             .with(eq(true))
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenMlsIsEnabledAndSelfUserIsNotWhitelisted_whenSyncing_thenSetMlsDisabled() = runTest {
-        val (arrangement, handler) = arrange {
-            withGetSupportedProtocolsReturning(Either.Right(setOf(SupportedProtocol.PROTEUS)))
-            withSetSupportedProtocolsSuccessful()
-            withSetDefaultProtocolSuccessful()
-            withSetMLSEnabledSuccessful()
-        }
-
-        handler.handle(MLS_CONFIG.copy(
-            status = Status.ENABLED,
-            allowedUsers = listOf(TestUser.OTHER_USER_ID.toPlainID())
-        ), duringSlowSync = false)
-
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::setMLSEnabled)
-            .with(eq(false))
             .wasInvoked(exactly = once)
     }
 
@@ -214,7 +193,6 @@ class MLSConfigHandlerTest {
 
         val SELF_USER_ID = TestUser.USER_ID
         val MLS_CONFIG = MLSModel(
-            allowedUsers = null,
             defaultProtocol = SupportedProtocol.MLS,
             supportedProtocols = setOf(SupportedProtocol.PROTEUS),
             status = Status.ENABLED

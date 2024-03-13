@@ -77,7 +77,6 @@ data class SelfDeletingMessagesConfigModel(
 )
 
 data class MLSModel(
-    val allowedUsers: List<PlainId>?,
     val defaultProtocol: SupportedProtocol,
     val supportedProtocols: Set<SupportedProtocol>,
     val status: Status
