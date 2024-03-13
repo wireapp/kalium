@@ -101,9 +101,9 @@ class RemoteMonkey(monkeyConfig: MonkeyConfig.Remote, monkeyType: MonkeyType, in
 
             HttpClient(OkHttp.create()) {
                 install(HttpTimeout) {
-                    socketTimeoutMillis = System.getenv("MONKEYS_SOCKET_TIMEOUT").parseIgnoreError(INFINITE_TIMEOUT_MS)
-                    requestTimeoutMillis = System.getenv("MONKEYS_REQUEST_TIMEOUT").parseIgnoreError(INFINITE_TIMEOUT_MS)
-                    connectTimeoutMillis = System.getenv("MONKEYS_CONNECT_TIMEOUT").parseIgnoreError(INFINITE_TIMEOUT_MS)
+                    socketTimeoutMillis = System.getenv("MONKEYS_SOCKET_TIMEOUT")?.parseIgnoreError(INFINITE_TIMEOUT_MS)
+                    requestTimeoutMillis = System.getenv("MONKEYS_REQUEST_TIMEOUT")?.parseIgnoreError(INFINITE_TIMEOUT_MS)
+                    connectTimeoutMillis = System.getenv("MONKEYS_CONNECT_TIMEOUT")?.parseIgnoreError(INFINITE_TIMEOUT_MS)
                 }
                 install(HttpRequestRetry)
                 expectSuccess = true
