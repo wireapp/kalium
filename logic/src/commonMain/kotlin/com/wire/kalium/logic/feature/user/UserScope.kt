@@ -115,7 +115,6 @@ class UserScope internal constructor(
 
     private val certificateStatusMapper by lazy { CertificateStatusMapperImpl() }
     val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository, userRepository)
-    val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2EIRepository)
 
     val finalizeMLSClientAfterE2EIEnrollment: FinalizeMLSClientAfterE2EIEnrollment
         get() = FinalizeMLSClientAfterE2EIEnrollmentImpl(

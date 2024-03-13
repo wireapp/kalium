@@ -19,10 +19,17 @@ package com.wire.kalium.logic.feature.e2ei
 
 import com.wire.kalium.cryptography.AcmeChallenge
 import com.wire.kalium.cryptography.AcmeDirectory
+import com.wire.kalium.cryptography.CryptoCertificateStatus
+import com.wire.kalium.cryptography.CryptoQualifiedClientId
+import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.cryptography.NewAcmeAuthz
 import com.wire.kalium.cryptography.NewAcmeOrder
+import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
+import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.e2ei.AuthorizationResult
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.Nonce
@@ -31,6 +38,9 @@ import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.left
+import com.wire.kalium.logic.functional.right
+import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangement
+import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.e2ei.AccessTokenResponse
@@ -58,12 +68,12 @@ class EnrollE2EICertificateUseCaseTest {
 
     @Test
     fun givenLoadACMEDirectoriesFails_whenInvokeUseCase_thenReturnFailure() = runTest {
-        val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
-
         // given
-        arrangement.withInitializingE2EIClientSucceed()
-        arrangement.withLoadTrustAnchorsResulting(Either.Right(Unit))
-        arrangement.withLoadACMEDirectoriesResulting(E2EIFailure.AcmeDirectories(TEST_CORE_FAILURE).left())
+        val (arrangement, enrollE2EICertificateUseCase) = Arrangement()
+            .withInitializingE2EIClientSucceed()
+            .withLoadTrustAnchorsResulting(Either.Right(Unit))
+            .withLoadACMEDirectoriesResulting(E2EIFailure.AcmeDirectories(TEST_CORE_FAILURE).left())
+            .arrange()
 
         // when
         val result = enrollE2EICertificateUseCase.initialEnrollment()
@@ -1028,25 +1038,42 @@ class EnrollE2EICertificateUseCaseTest {
     }
 
     @Test
-    fun givenUseCase_whenEveryStepSucceed_thenShouldSucceed() = runTest {
-        val (arrangement, enrollE2EICertificateUseCase) = Arrangement().arrange()
+    fun givenUseCase_whenEveryStepSucceedAndCCReturnedIdentity_thenShouldSucceedWithTheSameIdentity() = runTest {
 
+        val clientIdentity = WireIdentity(
+            clientId = CryptoQualifiedClientId("clientId", CryptoQualifiedID("id", "domain")),
+            handle = WireIdentity.Handle("wireapp", "handle", "domain"),
+            displayName = "display",
+            domain = "domain",
+            certificate = "certificate",
+            status = CryptoCertificateStatus.VALID,
+            thumbprint = "thumbprint",
+            serialNumber = "serial",
+            endTimestampSeconds = 0
+        )
         // given
-        arrangement.withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
-        arrangement.withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
-        arrangement.withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
-        arrangement.withValidateDPoPChallengeResulting(Either.Right(ACME_CHALLENGE_RESPONSE))
-        arrangement.withValidateOIDCChallengeResulting(Either.Right(ACME_CHALLENGE_RESPONSE))
-        arrangement.withCheckOrderRequestResulting(Either.Right((ACME_RESPONSE to RANDOM_LOCATION)))
-        arrangement.withFinalizeResulting(Either.Right((ACME_RESPONSE to RANDOM_LOCATION)))
-        arrangement.withCertificateRequestResulting(Either.Right(ACME_RESPONSE))
-        arrangement.withRotateKeysAndMigrateConversations(Either.Right(Unit))
+        val (arrangement, enrollE2EICertificateUseCase) = Arrangement()
+            .arrange {
+                withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
+                withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
+                withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
+                withValidateDPoPChallengeResulting(Either.Right(ACME_CHALLENGE_RESPONSE))
+                withValidateOIDCChallengeResulting(Either.Right(ACME_CHALLENGE_RESPONSE))
+                withCheckOrderRequestResulting(Either.Right((ACME_RESPONSE to RANDOM_LOCATION)))
+                withFinalizeResulting(Either.Right((ACME_RESPONSE to RANDOM_LOCATION)))
+                withCertificateRequestResulting(Either.Right(ACME_RESPONSE))
+                withRotateKeysAndMigrateConversations(Either.Right(Unit))
+                withCurrentClientIdSuccess(ClientId("test"))
+                withCCClientIdentity(clientIdentity.right())
+            }
 
         // when
         val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
 
         // then
-        result.shouldSucceed()
+        result.shouldSucceed {
+            assertEquals(clientIdentity.certificate, it.certificate)
+        }
 
         verify(arrangement.e2EIRepository)
             .function(arrangement.e2EIRepository::getWireNonce)
@@ -1093,14 +1120,90 @@ class EnrollE2EICertificateUseCaseTest {
             .wasInvoked(exactly = once)
     }
 
-    private class Arrangement {
+    @Test
+    fun givenUseCase_whenEveryStepSucceedAndNoIdentity_thenShouldSucceedWithTheIdentityFromRemoteServer() = runTest {
+        // given
+        val certFromRemote = ACME_RESPONSE
+        val (arrangement, enrollE2EICertificateUseCase) = Arrangement()
+            .arrange {
+                withGetWireNonceResulting(Either.Right(RANDOM_NONCE))
+                withGetDPoPTokenResulting(Either.Right(RANDOM_DPoP_TOKEN))
+                withGetWireAccessTokenResulting(Either.Right(WIRE_ACCESS_TOKEN))
+                withValidateDPoPChallengeResulting(Either.Right(ACME_CHALLENGE_RESPONSE))
+                withValidateOIDCChallengeResulting(Either.Right(ACME_CHALLENGE_RESPONSE))
+                withCheckOrderRequestResulting(Either.Right((certFromRemote to RANDOM_LOCATION)))
+                withFinalizeResulting(Either.Right((certFromRemote to RANDOM_LOCATION)))
+                withCertificateRequestResulting(Either.Right(certFromRemote))
+                withRotateKeysAndMigrateConversations(Either.Right(Unit))
+                withCurrentClientIdSuccess(ClientId("test"))
+                withCCClientIdentity(StorageFailure.DataNotFound.left())
+            }
+
+        // when
+        val result = enrollE2EICertificateUseCase.finalizeEnrollment(RANDOM_ID_TOKEN, REFRESH_TOKEN, INITIALIZATION_RESULT)
+
+        // then
+        result.shouldSucceed {
+            assertEquals(certFromRemote.response.decodeToString(), it.certificate)
+        }
+
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::getWireNonce)
+            .with()
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::getDPoPToken)
+            .with(any<Nonce>())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::getWireAccessToken).with(eq(RANDOM_DPoP_TOKEN))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::validateDPoPChallenge)
+            .with(eq(WIRE_ACCESS_TOKEN.token), any<Nonce>(), eq(DPOP_AUTHZ.challenge))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::validateOIDCChallenge)
+            .with(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any<Nonce>(), eq(OIDC_AUTHZ.challenge))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::checkOrderRequest)
+            .with(any<String>(), any<Nonce>())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::finalize)
+            .with(any<String>(), any<Nonce>())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::certificateRequest)
+            .with(any<String>(), any<Nonce>())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.e2EIRepository)
+            .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
+            .with(any<String>(), any<Boolean>())
+            .wasInvoked(exactly = once)
+    }
+
+
+    private class Arrangement : CurrentClientIdProviderArrangement by CurrentClientIdProviderArrangementImpl() {
 
         @Mock
         val e2EIRepository = mock(classOf<E2EIRepository>())
 
+        @Mock
+        val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
+
         fun withInitializingE2EIClientSucceed() = apply {
             given(e2EIRepository).suspendFunction(e2EIRepository::initFreshE2EIClient)
-                .whenInvokedWith(anything(), anything() )
+                .whenInvokedWith(anything(), anything())
                 .thenReturn(Either.Right(Unit))
         }
 
@@ -1214,7 +1317,20 @@ class EnrollE2EICertificateUseCaseTest {
                 .thenReturn(result)
         }
 
-        fun arrange(): Pair<Arrangement, EnrollE2EIUseCase> = this to EnrollE2EIUseCaseImpl(e2EIRepository)
+        fun withCCClientIdentity(result: Either<CoreFailure, WireIdentity?>) = apply {
+            given(mlsConversationRepository)
+                .suspendFunction(mlsConversationRepository::getClientIdentity)
+                .whenInvokedWith(any())
+                .thenReturn(result)
+        }
+
+        fun arrange(block: Arrangement.() -> Unit = { }): Pair<Arrangement, EnrollE2EIUseCase> = apply(block).let {
+            this to EnrollE2EIUseCaseImpl(
+                e2EIRepository,
+                mlsConversationRepository,
+                currentClientIdProvider
+            )
+        }
     }
 
     companion object {

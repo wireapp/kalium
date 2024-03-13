@@ -693,7 +693,7 @@ class UserSessionScope internal constructor(
         )
     }
 
-    val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2eiRepository)
+    val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2eiRepository, mlsConversationRepository, clientIdProvider)
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
 

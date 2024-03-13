@@ -19,6 +19,7 @@ package com.wire.kalium.network.api.base.unbound.acme
 
 import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.serialization.JoseJson
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.CustomErrors
@@ -177,14 +178,17 @@ class ACMEApiImpl internal constructor(
     private suspend fun handleACMERequestResponse(httpResponse: HttpResponse): NetworkResponse<ACMEResponse> =
         if (httpResponse.status.isSuccess()) {
             httpResponse.headers[NONCE_HEADER_KEY]?.let { nonce ->
+                val body = httpResponse.body<ByteArray>()
+                kaliumLogger.e("ACME response: ${body.decodeToString()}")
                 NetworkResponse.Success(
                     ACMEResponse(
                         nonce,
-                        response = httpResponse.body(),
+                        response = body,
                         location = httpResponse.headers[LOCATION_HEADER_KEY].toString()
                     ), httpResponse
                 )
             } ?: run {
+                kaliumLogger.e("ACME response: missing ${httpResponse.body<ByteArray>().decodeToString()}")
                 CustomErrors.MISSING_NONCE
             }
         } else {
