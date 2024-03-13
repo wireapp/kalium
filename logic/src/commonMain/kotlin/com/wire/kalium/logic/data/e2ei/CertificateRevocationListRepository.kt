@@ -30,6 +30,7 @@ import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.dao.MetadataDAO
 import io.ktor.http.URLBuilder
+import io.ktor.http.URLProtocol
 import io.ktor.http.authority
 
 interface CertificateRevocationListRepository {
@@ -101,7 +102,10 @@ internal class CertificateRevocationListRepositoryDataSource(
 
     override suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray> =
         wrapApiRequest {
-            acmeApi.getClientDomainCRL(url)
+            val httpUrl = URLBuilder(url).apply {
+                this.protocol = URLProtocol.HTTP
+            }.buildString()
+            acmeApi.getClientDomainCRL(httpUrl)
         }
 
     companion object {
