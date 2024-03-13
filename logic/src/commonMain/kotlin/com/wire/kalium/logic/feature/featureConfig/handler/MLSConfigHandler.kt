@@ -35,8 +35,8 @@ class MLSConfigHandler(
 ) {
     suspend fun handle(mlsConfig: MLSModel, duringSlowSync: Boolean): Either<CoreFailure, Unit> {
         val mlsEnabled = mlsConfig.status == Status.ENABLED
-        val isMLSSupported = mlsConfig.supportedProtocols.contains(SupportedProtocol.MLS)
-        val selfUserIsWhitelisted = mlsConfig.allowedUsers.contains(selfUserId.toPlainID())
+        val isMLSSupported = mlsConfig.defaultProtocol == SupportedProtocol.MLS
+        val selfUserIsWhitelisted = mlsConfig.allowedUsers?.contains(selfUserId.toPlainID()) ?: false
         val previousSupportedProtocols = userConfigRepository.getSupportedProtocols().getOrElse(setOf(SupportedProtocol.PROTEUS))
         val supportedProtocolsHasChanged = !previousSupportedProtocols.equals(mlsConfig.supportedProtocols)
 
