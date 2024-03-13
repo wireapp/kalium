@@ -41,7 +41,6 @@ interface CertificateRevocationListRepository {
      */
     suspend fun getCRLs(): CRLUrlExpirationList?
     suspend fun addOrUpdateCRL(url: String, timestamp: ULong)
-    suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String>
     suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray>
 }
 
@@ -85,20 +84,6 @@ internal class CertificateRevocationListRepositoryDataSource(
         )
     }
 
-    override suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String> =
-        userConfigRepository.getE2EISettings()
-            .flatMap {
-                if (!it.isRequired) E2EIFailure.Disabled.left()
-                else if (it.discoverUrl == null) E2EIFailure.MissingDiscoveryUrl.left()
-                else URLBuilder(it.discoverUrl).apply {
-                    pathSegments.lastOrNull().let { segment ->
-                        if (segment == null || segment != PATH_CRL) {
-                            pathSegments = pathSegments + PATH_CRL
-                        }
-                    }
-                }.authority.right()
-            }
-
     override suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray> =
         wrapApiRequest {
             acmeApi.getClientDomainCRL(url)
@@ -106,6 +91,5 @@ internal class CertificateRevocationListRepositoryDataSource(
 
     companion object {
         const val CRL_LIST_KEY = "crl_list_key"
-        const val PATH_CRL = "crl"
     }
 }

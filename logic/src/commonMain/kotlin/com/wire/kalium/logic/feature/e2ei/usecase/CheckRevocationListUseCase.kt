@@ -45,7 +45,7 @@ internal class CheckRevocationListUseCaseImpl(
     override suspend fun invoke(url: String): Either<CoreFailure, ULong?> {
         return if (isE2EIEnabledUseCase()) {
             logger.i("getting client crl..")
-            certificateRevocationListRepository.getClientDomainCRL(url).flatMap {
+            return certificateRevocationListRepository.getClientDomainCRL(url).flatMap {
                 currentClientIdProvider().flatMap { clientId ->
                     mlsClientProvider.getCoreCrypto(clientId).map { coreCrypto ->
                         logger.i("registering crl..")
