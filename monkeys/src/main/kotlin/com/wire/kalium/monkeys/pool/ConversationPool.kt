@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.monkeys.MetricsCollector
 import com.wire.kalium.monkeys.conversation.Monkey
 import com.wire.kalium.monkeys.conversation.MonkeyConversation
+import com.wire.kalium.monkeys.logger
 import com.wire.kalium.monkeys.model.ConversationDef
 import com.wire.kalium.monkeys.model.UserCount
 import kotlinx.coroutines.coroutineScope
@@ -65,8 +66,11 @@ class ConversationPool(private val delayPool: Long) {
         return this.pool[conversationId]?.creator
     }
 
-    fun randomConversations(count: UInt): List<MonkeyConversation> {
-        return (1u..count).map { pool.values.random() }
+    fun randomConversations(count: UInt): List<MonkeyConversation> = try {
+        (1u..count).map { pool.values.random() }
+    } catch (_: NoSuchElementException) {
+        logger.w("No conversation is available yet")
+        listOf()
     }
 
     fun randomDynamicConversations(count: Int): List<MonkeyConversation> {
