@@ -87,5 +87,5 @@ dependencies {
     implementation(libs.okio.core)
 
     // Test
-    testImplementation(kotlin("test"))
+    testImplementation(libs.kotlin.test)
 }
