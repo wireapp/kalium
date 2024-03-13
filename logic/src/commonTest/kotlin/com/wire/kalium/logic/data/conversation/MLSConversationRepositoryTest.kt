@@ -1483,6 +1483,63 @@ class MLSConversationRepositoryTest {
                 .wasInvoked(once)
         }
 
+<<<<<<< HEAD
+=======
+    @Test
+    fun givenHandleWithSchemeAndDomain_whenGetUserIdentity_thenHandleShouldReturnProperValues() = runTest {
+        // given
+        val scheme = "wireapp"
+        val handle = "handle"
+        val domain = "domain.com"
+        val handleWithSchemeAndDomain = "$scheme://%40$handle@$domain"
+        val groupId = Arrangement.GROUP_ID.value
+        val wireIdentity = WIRE_IDENTITY.copy(handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain))
+        val (_, mlsConversationRepository) = Arrangement()
+            .withGetEstablishedSelfMLSGroupIdReturns(groupId)
+            .withGetMLSClientSuccessful()
+            .withGetUserIdentitiesReturn(mapOf(groupId to listOf(wireIdentity)))
+            .arrange()
+        // when
+        val result = mlsConversationRepository.getUserIdentity(TestUser.USER_ID)
+        // then
+        result.shouldSucceed() {
+            it.forEach {
+                assertEquals(scheme, it.handle.scheme)
+                assertEquals(handle, it.handle.handle)
+                assertEquals(domain, it.handle.domain)
+            }
+        }
+    }
+
+    @Test
+    fun givenHandleWithSchemeAndDomain_whenGetMemberIdentities_thenHandleShouldReturnProperValues() = runTest {
+        // given
+        val scheme = "wireapp"
+        val handle = "handle"
+        val domain = "domain.com"
+        val handleWithSchemeAndDomain = "$scheme://%40$handle@$domain"
+        val groupId = Arrangement.GROUP_ID.value
+        val wireIdentity = WIRE_IDENTITY.copy(handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain))
+        val (_, mlsConversationRepository) = Arrangement()
+            .withGetMLSGroupIdByConversationIdReturns(groupId)
+            .withGetMLSClientSuccessful()
+            .withGetUserIdentitiesReturn(mapOf(groupId to listOf(wireIdentity)))
+            .arrange()
+        // when
+        val result = mlsConversationRepository.getMembersIdentities(TestConversation.ID, listOf(TestUser.USER_ID))
+        // then
+        result.shouldSucceed() {
+            it.values.forEach {
+                it.forEach {
+                    assertEquals(scheme, it.handle.scheme)
+                    assertEquals(handle, it.handle.handle)
+                    assertEquals(domain, it.handle.domain)
+                }
+            }
+        }
+    }
+
+>>>>>>> cfceb4af87 (refactor: create a dedicated class for WireIdentity handle (#2636))
     private class Arrangement {
 
         @Mock
