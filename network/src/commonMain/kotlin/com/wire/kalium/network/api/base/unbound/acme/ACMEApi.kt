@@ -35,6 +35,8 @@ import io.ktor.client.request.preparePost
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
+import io.ktor.http.URLBuilder
+import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
@@ -244,7 +246,10 @@ class ACMEApiImpl internal constructor(
 
     override suspend fun getClientDomainCRL(url: String): NetworkResponse<ByteArray> =
         wrapKaliumResponse {
-            clearTextTrafficHttpClient.get(url)
+            val httpUrl = URLBuilder(url).apply {
+                this.protocol = URLProtocol.HTTP
+            }.buildString()
+            clearTextTrafficHttpClient.get(httpUrl)
         }
 
     private companion object {
