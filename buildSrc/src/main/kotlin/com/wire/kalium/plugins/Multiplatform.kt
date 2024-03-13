@@ -68,8 +68,6 @@ fun Project.configureDefaultMultiplatform(
         }
 
     kotlinExtension.sourceSets.getByName("androidInstrumentedTest") {
-        // Add dependency to commonTest, as it isn't added by default anymore since Kotlin 1.9
-        dependsOn(kotlinExtension.sourceSets.getByName("commonTest"))
 
         dependencies {
             // Add common runner and rules to Android Instrumented Tests
