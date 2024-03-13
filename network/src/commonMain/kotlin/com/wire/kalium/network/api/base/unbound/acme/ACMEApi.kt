@@ -244,13 +244,22 @@ class ACMEApiImpl internal constructor(
         }
     }
 
-    override suspend fun getClientDomainCRL(url: String): NetworkResponse<ByteArray> =
-        wrapKaliumResponse {
+    override suspend fun getClientDomainCRL(url: String): NetworkResponse<ByteArray> {
+        if (url.isBlank()) {
+            return NetworkResponse.Error(
+                KaliumException.GenericError(
+                    IllegalArgumentException("getClientDomainCRL: Url cannot be empty")
+                )
+            )
+        }
+
+        return wrapKaliumResponse {
             val httpUrl = URLBuilder(url).apply {
                 this.protocol = URLProtocol.HTTP
-            }.buildString()
+            }.build()
             clearTextTrafficHttpClient.get(httpUrl)
         }
+    }
 
     private companion object {
         const val PATH_ACME_FEDERATION = "federation"
