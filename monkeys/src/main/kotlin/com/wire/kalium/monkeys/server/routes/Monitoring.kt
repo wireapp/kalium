@@ -1,6 +1,6 @@
 package com.wire.kalium.monkeys.server.routes
 
-import com.wire.kalium.monkeys.MetricsCollector.configureMicrometer
+import com.wire.kalium.monkeys.configureMicrometer
 import io.ktor.http.HttpHeaders
 import io.ktor.server.application.Application
 import io.ktor.server.application.install
