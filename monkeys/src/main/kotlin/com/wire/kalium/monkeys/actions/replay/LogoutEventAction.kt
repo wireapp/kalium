@@ -20,10 +20,11 @@ package com.wire.kalium.monkeys.actions.replay
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.actions.Action
 import com.wire.kalium.monkeys.model.MonkeyId
+import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 
 class LogoutEventAction(private val monkey: MonkeyId) : Action({}) {
-    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
+    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool, conversationPool: ConversationPool) {
         monkeyPool.getFromTeam(this.monkey.team, this.monkey.index).logout(monkeyPool::loggedOut)
     }
 }

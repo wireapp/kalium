@@ -114,9 +114,9 @@ private val MESSAGES = listOf(
 )
 
 open class SendMessageAction(val config: ActionType.SendMessage, sender: suspend (Event) -> Unit) : Action(sender) {
-    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
+    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool, conversationPool: ConversationPool) {
         repeat(this.config.count.toInt()) {
-            sendersTargets(monkeyPool).forEach {
+            sendersTargets(monkeyPool, conversationPool).forEach {
                 when (it) {
                     is Either.Left -> {
                         it.value.forEach { (monkeySender, monkeyReceiver) ->
@@ -134,17 +134,17 @@ open class SendMessageAction(val config: ActionType.SendMessage, sender: suspend
         }
     }
 
-    open suspend fun sendersTargets(monkeyPool: MonkeyPool):
+    open suspend fun sendersTargets(monkeyPool: MonkeyPool, conversationPool: ConversationPool):
             List<Either<List<Pair<Monkey, Monkey>>, List<Pair<MonkeyConversation, List<Monkey>>>>> {
         return this.config.targets.map { target ->
             if (target == ONE_2_1) {
                 Either.Left(monkeyPool.randomLoggedInMonkeys(this.config.userCount).map { it to it.randomPeer(monkeyPool) })
             } else {
-                Either.Right(ConversationPool.getFromPrefixed(target).map { it to it.randomMonkeys(this.config.userCount) })
+                Either.Right(conversationPool.getFromPrefixed(target).map { it to it.randomMonkeys(this.config.userCount) })
             }
         }.ifEmpty {
             listOf(
-                Either.Right(ConversationPool.randomConversations(this.config.countGroups)
+                Either.Right(conversationPool.randomConversations(this.config.countGroups)
                     .map { it to it.randomMonkeys(this.config.userCount) })
             )
         }
