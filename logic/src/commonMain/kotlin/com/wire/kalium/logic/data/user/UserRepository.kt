@@ -184,7 +184,7 @@ internal class UserDataSource internal constructor(
     private val userDetailsRefreshInstantCache = ConcurrentMutableMap<UserId, Instant>()
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
-        .flatMap { selfUserDTO ->  fetchSelfTeamMemberData().map { selfUserDTO to it } }
+        .flatMap { selfUserDTO -> fetchSelfTeamMemberData().map { selfUserDTO to it } }
         .flatMap { (userDTO, teamMemberDTO) ->
             if (userDTO.deleted == true) {
                 Either.Left(SelfUserDeleted)
