@@ -54,7 +54,7 @@ object ACMEActions {
     /**
      * URL Paths
      */
-    private val ACME_BASE_URL = Url("https://balderdash.hogwash.work:9000/acme/google-android/")
+    private val ACME_BASE_URL = "https://balderdash.hogwash.work:9000/acme/google-android/"
     private const val ACME_DIRECTORIES_PATH = "https://balderdash.hogwash.work:9000/acme/google-android/directory"
 
     /**

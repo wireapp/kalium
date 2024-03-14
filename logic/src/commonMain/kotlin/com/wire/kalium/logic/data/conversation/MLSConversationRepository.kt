@@ -35,6 +35,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
@@ -118,7 +119,28 @@ data class E2EIdentity(
 @Suppress("TooManyFunctions", "LongParameterList")
 interface MLSConversationRepository {
     suspend fun decryptMessage(message: ByteArray, groupID: GroupID): Either<CoreFailure, List<DecryptedMessageBundle>>
-    suspend fun establishMLSGroup(groupID: GroupID, members: List<UserId>): Either<CoreFailure, Unit>
+
+    /**
+     * Establishes an MLS (Messaging Layer Security) group with the specified group ID and members.
+     *
+     * Allows partial addition of members through the [allowSkippingUsersWithoutKeyPackages] parameter.
+     * If this parameter is set to true, users without key packages will be ignored and the rest will be added to the group.
+     *
+     * @param groupID The ID of the group to be established. Must be of type [GroupID].
+     * @param members The list of user IDs (of type [UserId]) to be added as members to the group.
+     * @param allowSkippingUsersWithoutKeyPackages Flag indicating whether to allow a partial member list in case of some users
+     * not having key packages available. Default value is false. If false, will return [Either.Left] containing
+     * [CoreFailure.MissingKeyPackages] for the missing users.
+     * @return An instance of [Either] indicating the result of the operation. It can be either [Either.Right] if the
+     *         group was successfully established, or [Either.Left] if an error occurred. If successful, returns [Unit].
+     *         Possible types of [Either.Left] are defined in the sealed interface [CoreFailure].
+     */
+    suspend fun establishMLSGroup(
+        groupID: GroupID,
+        members: List<UserId>,
+        allowSkippingUsersWithoutKeyPackages: Boolean = false
+    ): Either<CoreFailure, MLSAdditionResult>
+
     suspend fun establishMLSSubConversationGroup(groupID: GroupID, parentId: ConversationId): Either<CoreFailure, Unit>
     suspend fun hasEstablishedMLSGroup(groupID: GroupID): Either<CoreFailure, Boolean>
     suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
@@ -428,17 +450,23 @@ internal class MLSConversationDataSource(
         )
 
     override suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =
-        internalAddMemberToMLSGroup(groupID, userIdList, retryOnStaleMessage = true)
+        internalAddMemberToMLSGroup(
+            groupID = groupID,
+            userIdList = userIdList,
+            retryOnStaleMessage = true,
+            allowPartialMemberList = false
+        ).map { Unit }
 
     private suspend fun internalAddMemberToMLSGroup(
         groupID: GroupID,
         userIdList: List<UserId>,
-        retryOnStaleMessage: Boolean
-    ): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
+        retryOnStaleMessage: Boolean,
+        allowPartialMemberList: Boolean = false,
+    ): Either<CoreFailure, MLSAdditionResult> = withContext(serialDispatcher) {
         commitPendingProposals(groupID).flatMap {
-            produceAndSendCommitWithRetry(groupID, retryOnStaleMessage = retryOnStaleMessage) {
+            produceAndSendCommitWithRetryAndResult(groupID, retryOnStaleMessage = retryOnStaleMessage) {
                 keyPackageRepository.claimKeyPackages(userIdList).flatMap { result ->
-                    if (result.usersWithoutKeyPackagesAvailable.isNotEmpty()) {
+                    if (result.usersWithoutKeyPackagesAvailable.isNotEmpty() && !allowPartialMemberList) {
                         Either.Left(CoreFailure.MissingKeyPackages(result.usersWithoutKeyPackagesAvailable))
                     } else {
                         Either.Right(result)
@@ -446,7 +474,6 @@ internal class MLSConversationDataSource(
                 }.flatMap { result ->
                     val keyPackages = result.successfullyFetchedKeyPackages
                     val clientKeyPackageList = keyPackages.map { it.keyPackage.decodeBase64Bytes() }
-
                     wrapMLSRequest {
                         if (userIdList.isEmpty()) {
                             // We are creating a group with only our self client which technically
@@ -460,6 +487,12 @@ internal class MLSConversationDataSource(
                         commitBundle?.crlNewDistributionPoints?.let { revocationList ->
                             checkRevocationList(revocationList)
                         }
+                    }.map {
+                        val additionResult = MLSAdditionResult(
+                            result.successfullyFetchedKeyPackages.map { user -> UserId(user.userId, user.domain) }.toSet(),
+                            result.usersWithoutKeyPackagesAvailable.toSet()
+                        )
+                        CommitOperationResult(it, additionResult)
                     }
                 }
             }
@@ -517,11 +550,17 @@ internal class MLSConversationDataSource(
 
     override suspend fun establishMLSGroup(
         groupID: GroupID,
-        members: List<UserId>
-    ): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
+        members: List<UserId>,
+        allowSkippingUsersWithoutKeyPackages: Boolean,
+    ): Either<CoreFailure, MLSAdditionResult> = withContext(serialDispatcher) {
         mlsPublicKeysRepository.getKeys().flatMap { publicKeys ->
             val keys = publicKeys.map { mlsPublicKeysMapper.toCrypto(it) }
-            establishMLSGroup(groupID, members, keys)
+            establishMLSGroup(
+                groupID = groupID,
+                members = members,
+                keys = keys,
+                allowPartialMemberList = allowSkippingUsersWithoutKeyPackages
+            )
         }
     }
 
@@ -532,7 +571,12 @@ internal class MLSConversationDataSource(
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             conversationDAO.getMLSGroupIdByConversationId(parentId.toDao())?.let { parentGroupId ->
                 val externalSenderKey = mlsClient.getExternalSenders(GroupID(parentGroupId).toCrypto())
-                establishMLSGroup(groupID, emptyList(), listOf(mlsPublicKeysMapper.toCrypto(externalSenderKey)))
+                establishMLSGroup(
+                    groupID = groupID,
+                    members = emptyList(),
+                    keys = listOf(mlsPublicKeysMapper.toCrypto(externalSenderKey)),
+                    allowPartialMemberList = false
+                ).map { Unit }
             } ?: Either.Left(StorageFailure.DataNotFound)
         }
     }
@@ -540,8 +584,9 @@ internal class MLSConversationDataSource(
     private suspend fun establishMLSGroup(
         groupID: GroupID,
         members: List<UserId>,
-        keys: List<Ed22519Key>
-    ): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
+        keys: List<Ed22519Key>,
+        allowPartialMemberList: Boolean = false,
+    ): Either<CoreFailure, MLSAdditionResult> = withContext(serialDispatcher) {
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapMLSRequest {
                 mlsClient.createConversation(
@@ -555,18 +600,23 @@ internal class MLSConversationDataSource(
                     Either.Left(it)
                 }
             }.flatMap {
-                internalAddMemberToMLSGroup(groupID, members, retryOnStaleMessage = false).onFailure {
+                internalAddMemberToMLSGroup(
+                    groupID = groupID,
+                    userIdList = members,
+                    retryOnStaleMessage = false,
+                    allowPartialMemberList = allowPartialMemberList
+                ).onFailure {
                     wrapMLSRequest {
                         mlsClient.wipeConversation(groupID.toCrypto())
                     }
                 }
-            }.flatMap {
+            }.flatMap { additionResult ->
                 wrapStorageRequest {
                     conversationDAO.updateConversationGroupState(
                         ConversationEntity.GroupState.ESTABLISHED,
                         idMapper.toGroupIDEntity(groupID)
                     )
-                }
+                }.map { additionResult }
             }
         }
     }
