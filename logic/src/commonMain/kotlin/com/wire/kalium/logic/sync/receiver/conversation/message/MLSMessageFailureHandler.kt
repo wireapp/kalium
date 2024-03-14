@@ -41,6 +41,7 @@ internal object MLSMessageFailureHandler {
             is MLSFailure.UnmergedPendingGroup -> MLSMessageFailureResolution.Ignore
             is MLSFailure.StaleProposal -> MLSMessageFailureResolution.Ignore
             is MLSFailure.StaleCommit -> MLSMessageFailureResolution.Ignore
+            is MLSFailure.MessageEpochTooOld -> MLSMessageFailureResolution.Ignore
             else -> MLSMessageFailureResolution.InformUser
         }
     }

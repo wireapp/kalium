@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.sync.SyncState
+import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCase
@@ -52,6 +53,7 @@ import kotlinx.coroutines.launch
 internal interface LegalHoldHandler {
     suspend fun handleEnable(legalHoldEnabled: Event.User.LegalHoldEnabled): Either<CoreFailure, Unit>
     suspend fun handleDisable(legalHoldDisabled: Event.User.LegalHoldDisabled): Either<CoreFailure, Unit>
+    suspend fun handleNewConnection(event: Event.User.NewConnection): Either<CoreFailure, Unit>
     suspend fun handleNewMessage(message: MessageUnpackResult.ApplicationMessage, isLive: Boolean): Either<CoreFailure, Unit>
     suspend fun handleMessageSendFailure(
         conversationId: ConversationId,
@@ -118,6 +120,28 @@ internal class LegalHoldHandlerImpl internal constructor(
             legalHoldSystemMessagesHandler.handleDisabledForUser(legalHoldDisabled.userId, DateTimeUtil.currentIsoDateTimeString())
         }
 
+        return Either.Right(Unit)
+    }
+
+    override suspend fun handleNewConnection(event: Event.User.NewConnection): Either<CoreFailure, Unit> {
+        val connection = event.connection
+        when (connection.status) {
+            ConnectionState.MISSING_LEGALHOLD_CONSENT -> {
+                kaliumLogger.i("missing legal hold consent for connection with user ${connection.qualifiedToId.toLogString()}")
+                conversationRepository.updateLegalHoldStatus(connection.qualifiedConversationId, Conversation.LegalHoldStatus.DEGRADED)
+            }
+            ConnectionState.ACCEPTED -> {
+                isUserUnderLegalHold(connection.qualifiedToId).let { isUnderLegalHold ->
+                    kaliumLogger.i(
+                        "accepted connection with user ${connection.qualifiedToId.toLogString()}" +
+                                "who is ${if (isUnderLegalHold) "" else "not"} under legal hold"
+                    )
+                    val newStatus = if (isUnderLegalHold) Conversation.LegalHoldStatus.ENABLED else Conversation.LegalHoldStatus.DISABLED
+                    conversationRepository.updateLegalHoldStatus(connection.qualifiedConversationId, newStatus)
+                }
+            }
+            else -> { /* do nothing */ }
+        }
         return Either.Right(Unit)
     }
 

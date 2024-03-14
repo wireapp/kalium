@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.message.SystemMessageInserter
@@ -65,7 +66,7 @@ class MLSMigratorTest {
             .withUpdateProtocolReturns()
             .withFetchConversationSucceeding()
             .withGetConversationProtocolInfoReturning(Arrangement.MIXED_PROTOCOL_INFO)
-            .withEstablishGroupSucceeds()
+            .withEstablishGroupSucceeds(Arrangement.SUCCESSFUL_ADDITION_RESULT)
             .withGetConversationMembersReturning(Arrangement.MEMBERS)
             .withAddMembersSucceeds()
             .withoutAnyEstablishedCall()
@@ -99,7 +100,7 @@ class MLSMigratorTest {
             .withUpdateProtocolReturns()
             .withFetchConversationSucceeding()
             .withGetConversationProtocolInfoReturning(Arrangement.MIXED_PROTOCOL_INFO)
-            .withEstablishGroupSucceeds()
+            .withEstablishGroupSucceeds(Arrangement.SUCCESSFUL_ADDITION_RESULT)
             .withGetConversationMembersReturning(Arrangement.MEMBERS)
             .withAddMembersSucceeds()
             .withEstablishedCall()
@@ -262,11 +263,11 @@ class MLSMigratorTest {
                 .thenReturn(result)
         }
 
-        fun withEstablishGroupSucceeds() = apply {
+        fun withEstablishGroupSucceeds(additionResult: MLSAdditionResult) = apply {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::establishMLSGroup)
                 .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(Unit))
+                .thenReturn(Either.Right(additionResult))
         }
 
         fun withEstablishGroupFails() = apply {
@@ -319,6 +320,7 @@ class MLSMigratorTest {
                 ErrorResponse(409, "", "mls-stale-message")
             )
             val MEMBERS = listOf(TestUser.USER_ID)
+            val SUCCESSFUL_ADDITION_RESULT = MLSAdditionResult(MEMBERS.toSet(), emptySet())
             val MIXED_PROTOCOL_INFO = Conversation.ProtocolInfo.Mixed(
                 TestConversation.GROUP_ID,
                 Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,

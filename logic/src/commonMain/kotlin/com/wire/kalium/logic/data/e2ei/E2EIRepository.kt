@@ -16,6 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 @file:Suppress("TooManyFunctions")
+
 package com.wire.kalium.logic.data.e2ei
 
 import com.wire.kalium.cryptography.AcmeChallenge
@@ -44,7 +45,6 @@ import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
-import io.ktor.http.Url
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -88,7 +88,7 @@ interface E2EIRepository {
     suspend fun getOAuthRefreshToken(): Either<E2EIFailure, String?>
     suspend fun nukeE2EIClient()
     suspend fun fetchFederationCertificates(): Either<E2EIFailure, Unit>
-    fun discoveryUrl(): Either<E2EIFailure, Url>
+    fun discoveryUrl(): Either<E2EIFailure, String>
 }
 
 @Suppress("LongParameterList")
@@ -230,9 +230,9 @@ class E2EIRepositoryImpl(
 
     override suspend fun getWireAccessToken(dpopToken: String) =
         currentClientIdProvider().fold({ E2EIFailure.WireAccessToken(it).left() }, { clientId ->
-        wrapApiRequest {
-            e2EIApi.getAccessToken(clientId.value, dpopToken)
-        }.fold({ E2EIFailure.WireAccessToken(it).left() }, { it.right() })
+            wrapApiRequest {
+                e2EIApi.getAccessToken(clientId.value, dpopToken)
+            }.fold({ E2EIFailure.WireAccessToken(it).left() }, { it.right() })
         })
 
     override suspend fun getDPoPToken(wireNonce: Nonce) =
@@ -259,8 +259,12 @@ class E2EIRepositoryImpl(
             }.fold({
                 E2EIFailure.OIDCChallenge(it).left()
             }, { apiResponse ->
-                setOIDCChallengeResponse(apiResponse)
-                apiResponse.right()
+                if (apiResponse.status == "invalid") {
+                    E2EIFailure.InvalidChallenge.left()
+                } else {
+                    setOIDCChallengeResponse(apiResponse)
+                    apiResponse.right()
+                }
             })
         }
 
@@ -364,8 +368,8 @@ class E2EIRepositoryImpl(
         }, { settings ->
             when {
                 !settings.isRequired -> E2EIFailure.Disabled.left()
-                settings.discoverUrl == null -> E2EIFailure.MissingDiscoveryUrl.left()
-                else -> Url(settings.discoverUrl).right()
+                settings.discoverUrl.isNullOrBlank() -> E2EIFailure.MissingDiscoveryUrl.left()
+                else -> settings.discoverUrl.right()
             }
         })
 
