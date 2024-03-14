@@ -35,6 +35,7 @@ import io.mockative.any
 import io.mockative.eq
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -157,18 +158,15 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
                 "certificate",
                 CryptoCertificateStatus.VALID,
                 "thumbprint",
-<<<<<<< HEAD
-                "serialNumber"
+                "serialNumber",
+                1899105093
             )
         private val E2EI_CERTIFICATE =
             E2eiCertificate(
                 status = CertificateStatus.VALID,
-                serialNumber = "number",
-                certificateDetail = "details"
-=======
+                certificateDetail = "details",
                 serialNumber = "serialNumber",
-                endTimestamp = 1899105093
->>>>>>> 565345ade4 (fix: Suggestion to renew E2EI certificate RC (WPB-3326) (#2601))
+                endAt = Instant.DISTANT_FUTURE
             )
     }
 }
