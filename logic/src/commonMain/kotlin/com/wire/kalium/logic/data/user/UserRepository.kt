@@ -184,12 +184,19 @@ internal class UserDataSource internal constructor(
     private val userDetailsRefreshInstantCache = ConcurrentMutableMap<UserId, Instant>()
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
-        .flatMap { userDTO ->
+        .flatMap { selfUserDTO ->  fetchSelfTeamMemberData().map { selfUserDTO to it } }
+        .flatMap { (userDTO, teamMemberDTO) ->
             if (userDTO.deleted == true) {
                 Either.Left(SelfUserDeleted)
             } else {
                 updateSelfUserProviderAccountInfo(userDTO)
-                    .map { userMapper.fromSelfUserDtoToUserEntity(userDTO).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
+                    .map {
+                        userMapper.fromSelfUserDtoToUserEntity(
+                            userDTO = userDTO,
+                            connectionState = ConnectionEntity.State.ACCEPTED,
+                            userTypeEntity = userTypeEntityMapper.teamRoleCodeToUserType(teamMemberDTO?.permissions?.own)
+                        )
+                    }
                     .flatMap { userEntity ->
                         wrapStorageRequest { userDAO.upsertUser(userEntity) }
                             .flatMap {
@@ -223,15 +230,18 @@ internal class UserDataSource internal constructor(
      * @see userDetailsRefreshInstantCache
      * @see USER_DETAILS_MAX_AGE
      */
-    private suspend fun refreshUserDetailsIfNeeded(userId: UserId) {
+    private suspend fun refreshUserDetailsIfNeeded(userId: UserId): Either<CoreFailure, Unit> {
         val now = DateTimeUtil.currentInstant()
         val wasFetchedRecently = userDetailsRefreshInstantCache[userId]?.let { now < it + USER_DETAILS_MAX_AGE } ?: false
-        if (!wasFetchedRecently) {
-            fetchUserInfo(userId).also {
-                kaliumLogger.d("Federated user, refreshing user info from API after $USER_DETAILS_MAX_AGE")
+        return if (!wasFetchedRecently) {
+            when (userId) {
+                selfUserId -> fetchSelfUser()
+                else -> fetchUserInfo(userId)
+            }.also {
+                kaliumLogger.d("Refreshing user info from API after $USER_DETAILS_MAX_AGE")
+                userDetailsRefreshInstantCache[userId] = now
             }
-            userDetailsRefreshInstantCache[userId] = now
-        }
+        } else Either.Right(Unit)
     }
 
     override suspend fun fetchAllOtherUsers(): Either<CoreFailure, Unit> {
@@ -300,6 +310,12 @@ internal class UserDataSource internal constructor(
 
     override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> =
         fetchUsersByIdsReturningListUsersDTO(qualifiedUserIdList).map { }
+
+    private suspend fun fetchSelfTeamMemberData(): Either<CoreFailure, TeamsApi.TeamMemberDTO?> =
+        selfTeamIdProvider().getOrNull().let { selfUserTeamId ->
+            if (selfUserTeamId != null) wrapApiRequest { teamsApi.getTeamMember(selfUserTeamId.value, selfUserId.value) }
+            else Either.Right(null)
+        }
 
     private suspend fun fetchTeamMembersByIds(userProfileList: List<UserProfileDTO>): Either<CoreFailure, List<TeamsApi.TeamMemberDTO>> {
         val selfUserDomain = selfUserId.domain
@@ -386,8 +402,9 @@ internal class UserDataSource internal constructor(
                     kaliumLogger.e("""$logPrefix failed: {"failure":"$failure"}""")
                 }, {
                     kaliumLogger.i("$logPrefix: Succeeded")
+                    userDetailsRefreshInstantCache[selfUserId] = DateTimeUtil.currentInstant()
                 })
-            }
+            } else { refreshUserDetailsIfNeeded(selfUserId) }
         }.filterNotNull().flatMapMerge { encodedValue ->
             val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
             userDAO.observeUserDetailsByQualifiedID(selfUserID)
