@@ -100,10 +100,7 @@ internal class SlowSyncWorkerImpl(
             .continueWithStep(SlowSyncStep.LEGAL_HOLD) { fetchLegalHoldForSelfUserFromRemoteUseCase().map { } }
             .continueWithStep(SlowSyncStep.CONTACTS, syncContacts::invoke)
             .continueWithStep(SlowSyncStep.JOINING_MLS_CONVERSATIONS, joinMLSConversations::invoke)
-            .continueWithStep(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS) {
-                oneOnOneResolver.resolveAllOneOnOneConversations()
-                Unit.right()
-            }
+            .continueWithStep(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS, oneOnOneResolver::resolveAllOneOnOneConversations)
             .flatMap {
                 saveLastProcessedEventIdIfNeeded(lastProcessedEventIdToSaveOnSuccess)
             }

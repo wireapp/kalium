@@ -34,6 +34,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.getOrFail
 import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.onSuccess
@@ -345,23 +346,28 @@ class E2EIRepositoryImpl(
     override suspend fun fetchFederationCertificates() =
         discoveryUrl().flatMap {
             wrapApiRequest {
-                acmeApi.getACMEFederation(it)
+                acmeApi.getACMEFederationCertificateChain(it)
             }.fold({
                 E2EIFailure.IntermediateCert(it).left()
             }, { data ->
-                currentClientIdProvider().fold({
-                    E2EIFailure.TrustAnchors(it).left()
-                }, { clientId ->
-                    mlsClientProvider.getCoreCrypto(clientId).fold({
-                        E2EIFailure.MissingMLSClient(it).left()
-                    }, { coreCrypto ->
-                        wrapE2EIRequest {
-                            coreCrypto.registerIntermediateCa(data)
-                        }
-                    })
-                })
+                registerIntermediateCAs(data)
             })
         }
+
+    private suspend fun E2EIRepositoryImpl.registerIntermediateCAs(data: List<String>) =
+        currentClientIdProvider().fold({
+            E2EIFailure.TrustAnchors(it).left()
+        }, { clientId ->
+            mlsClientProvider.getCoreCrypto(clientId).fold({
+                E2EIFailure.MissingMLSClient(it).left()
+            }, { coreCrypto ->
+                data.foldToEitherWhileRight(Unit) { item, _ ->
+                    wrapE2EIRequest {
+                        coreCrypto.registerIntermediateCa(item)
+                    }
+                }
+            })
+        })
 
     override fun discoveryUrl() =
         userConfigRepository.getE2EISettings().fold({
