@@ -987,7 +987,7 @@ class E2EIRepositoryTest {
 
         verify(arrangement.acmeApi)
             .suspendFunction(arrangement.acmeApi::getTrustAnchors)
-            .with(eq(Url(RANDOM_URL)))
+            .with(eq(RANDOM_URL))
             .wasInvoked(once)
 
         verify(arrangement.coreCryptoCentral)
@@ -1057,7 +1057,7 @@ class E2EIRepositoryTest {
             .arrange()
 
         e2eiRepository.discoveryUrl().shouldSucceed {
-            assertEquals(Url(RANDOM_URL), it)
+            assertEquals(RANDOM_URL, it)
         }
 
         verify(arrangement.userConfigRepository)
