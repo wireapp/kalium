@@ -17,13 +17,12 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
+import com.wire.kalium.cryptography.WireIdentity
+import kotlinx.datetime.Instant
+
 data class E2eiCertificate(
     val status: CertificateStatus,
     val serialNumber: String,
-<<<<<<< HEAD
-    val certificateDetail: String
-)
-=======
     val certificateDetail: String,
     val endAt: Instant
 ) {
@@ -37,4 +36,3 @@ data class E2eiCertificate(
             )
     }
 }
->>>>>>> 6f2869df0c (fix: Request to update E2eI certificate when should not (#2620))

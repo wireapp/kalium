@@ -298,7 +298,8 @@ class ObserveE2EIRequiredUseCaseTest {
         private val VALID_CERTIFICATE = E2eiCertificate(
             serialNumber = "serialNumber",
             certificateDetail = "certificateDetail",
-            status = CertificateStatus.VALID
+            status = CertificateStatus.VALID,
+            endAt = Instant.DISTANT_FUTURE
         )
     }
 }

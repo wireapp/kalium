@@ -78,12 +78,8 @@ data class WireIdentity(
     val certificate: String,
     val status: CryptoCertificateStatus,
     val thumbprint: String,
-<<<<<<< HEAD
-    val serialNumber: String
-=======
     val serialNumber: String,
     val endTimestampSeconds: Long
->>>>>>> 6f2869df0c (fix: Request to update E2eI certificate when should not (#2620))
 )
 
 enum class CryptoCertificateStatus {
