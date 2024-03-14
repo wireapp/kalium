@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2023 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,16 +15,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.monkeys.actions.replay
 
-import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.monkeys.actions.Action
-import com.wire.kalium.monkeys.model.EventType
-import com.wire.kalium.monkeys.pool.ConversationPool
-import com.wire.kalium.monkeys.pool.MonkeyPool
+package com.wire.kalium.logic.feature.call.usecase
 
-class CreateConversationEventAction(private val config: EventType.CreateConversation) : Action({}) {
-    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool, conversationPool: ConversationPool) {
-        conversationPool.createDynamicConversation(config.conversation, monkeyPool)
+import com.wire.kalium.logic.data.call.TestVideoType
+import com.wire.kalium.logic.feature.call.CallManager
+/**
+ * This use case is responsible for enabling the test preview.
+ */
+class SetTestVideoTypeUseCase internal constructor(
+    private val callManager: Lazy<CallManager>
+) {
+
+    suspend operator fun invoke(
+        testVideoType: TestVideoType
+    ) {
+        callManager.value.setTestVideoType(testVideoType)
     }
 }

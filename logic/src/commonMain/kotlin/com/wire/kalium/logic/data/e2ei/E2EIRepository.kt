@@ -45,7 +45,6 @@ import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
-import io.ktor.http.Url
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -89,7 +88,7 @@ interface E2EIRepository {
     suspend fun getOAuthRefreshToken(): Either<E2EIFailure, String?>
     suspend fun nukeE2EIClient()
     suspend fun fetchFederationCertificates(): Either<E2EIFailure, Unit>
-    fun discoveryUrl(): Either<E2EIFailure, Url>
+    fun discoveryUrl(): Either<E2EIFailure, String>
 }
 
 @Suppress("LongParameterList")
@@ -369,8 +368,8 @@ class E2EIRepositoryImpl(
         }, { settings ->
             when {
                 !settings.isRequired -> E2EIFailure.Disabled.left()
-                settings.discoverUrl == null -> E2EIFailure.MissingDiscoveryUrl.left()
-                else -> Url(settings.discoverUrl).right()
+                settings.discoverUrl.isNullOrBlank() -> E2EIFailure.MissingDiscoveryUrl.left()
+                else -> settings.discoverUrl.right()
             }
         })
 

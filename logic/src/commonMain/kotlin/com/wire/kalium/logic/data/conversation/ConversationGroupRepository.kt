@@ -165,23 +165,32 @@ internal class ConversationGroupRepositoryImpl(
         }.flatMap {
             newGroupConversationSystemMessagesCreator.value.conversationStarted(conversationEntity)
         }.flatMap {
+            when (protocol) {
+                is Conversation.ProtocolInfo.Proteus -> Either.Right(setOf())
+                is Conversation.ProtocolInfo.MLSCapable -> mlsConversationRepository.establishMLSGroup(
+                    groupID = protocol.groupId,
+                    members = usersList + selfUserId,
+                    allowSkippingUsersWithoutKeyPackages = true
+                ).map { it.notAddedUsers }
+            }
+        }.flatMap { protocolSpecificAdditionFailures ->
             newConversationMembersRepository.persistMembersAdditionToTheConversation(
                 conversationEntity.id, conversationResponse
             ).flatMap {
+                if (protocolSpecificAdditionFailures.isEmpty()) {
+                    Either.Right(Unit)
+                } else {
+                    newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
+                        conversationEntity.id.toModel(), protocolSpecificAdditionFailures.toList(), FailedToAdd.Type.Unknown
+                    )
+                }
+            }.flatMap {
                 when (lastUsersAttempt) {
                     is LastUsersAttempt.None -> Either.Right(Unit)
                     is LastUsersAttempt.Failed ->
                         newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
                             conversationEntity.id.toModel(), lastUsersAttempt.failedUsers, lastUsersAttempt.failType
                         )
-                }
-            }.flatMap {
-                when (protocol) {
-                    is Conversation.ProtocolInfo.Proteus -> Either.Right(Unit)
-                    is Conversation.ProtocolInfo.MLSCapable -> mlsConversationRepository.establishMLSGroup(
-                        groupID = protocol.groupId,
-                        members = usersList + selfUserId
-                    )
                 }
             }
         }.flatMap {
@@ -256,7 +265,7 @@ internal class ConversationGroupRepositoryImpl(
     ): Either<CoreFailure, Unit> {
         return when {
             // claiming key packages offline or out of packages
-            this is CoreFailure.NoKeyPackagesAvailable && remainingAttempts > 0 -> {
+            this is CoreFailure.MissingKeyPackages && remainingAttempts > 0 -> {
                 val (validUsers, failedUsers) = userIdList.partition { !this.failedUserIds.contains(it) }
                 tryAddMembersToMLSGroup(
                     conversationId = conversationId,
@@ -325,6 +334,7 @@ internal class ConversationGroupRepositoryImpl(
             is LastUsersAttempt.Failed -> newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
                 conversationId, lastUsersAttempt.failedUsers, lastUsersAttempt.failType
             )
+
             is LastUsersAttempt.None -> Either.Right(Unit)
         }
 
@@ -579,8 +589,10 @@ internal class ConversationGroupRepositoryImpl(
     ): Either<CoreFailure, ValidToInvalidUsers> = when {
         failure is NetworkFailure.FederatedBackendFailure.RetryableFailure ->
             Either.Right(extractValidUsersForRetryableFederationError(userIdList, failure))
+
         failure.isMissingLegalHoldConsentError ->
             fetchAndExtractValidUsersForRetryableLegalHoldError(userIdList)
+
         else ->
             Either.Right(ValidToInvalidUsers(userIdList, emptyList(), FailedToAdd.Type.Unknown))
     }

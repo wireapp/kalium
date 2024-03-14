@@ -83,6 +83,19 @@ class ConnectionDaoTest : BaseDatabaseTest() {
         assertEquals(false, result[1].shouldNotify)
     }
 
+    @Test
+    fun givenConnectionExists_WhenGettingConnection_ThenItIsReturned() = runTest {
+        db.connectionDAO.insertConnection(connection1)
+        val result = db.connectionDAO.getConnection(connection1.qualifiedConversationId)
+        assertEquals(connection1, result)
+    }
+
+    @Test
+    fun givenConnectionNotExists_WhenGettingConnection_ThenNullIsReturned() = runTest {
+        val result = db.connectionDAO.getConnection(connection1.qualifiedConversationId)
+        assertEquals(null, result)
+    }
+
     companion object {
         val OTHER_USER_ID = QualifiedIDEntity("me", "wire.com")
 
