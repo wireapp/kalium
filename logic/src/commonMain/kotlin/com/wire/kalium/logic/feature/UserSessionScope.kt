@@ -212,8 +212,6 @@ import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorker
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorkerImpl
 import com.wire.kalium.logic.feature.e2ei.CertificateRevocationListCheckWorker
 import com.wire.kalium.logic.feature.e2ei.CertificateRevocationListCheckWorkerImpl
-import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListForCurrentClientUseCase
-import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListForCurrentClientUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
@@ -643,13 +641,6 @@ class UserSessionScope internal constructor(
             currentClientIdProvider = clientIdProvider,
             mlsClientProvider = mlsClientProvider,
             mLSConversationsVerificationStatusesHandler = mlsConversationsVerificationStatusesHandler,
-            isE2EIEnabledUseCase = isE2EIEnabled
-        )
-    private val checkRevocationListForCurrentClient: CheckRevocationListForCurrentClientUseCase
-        get() = CheckRevocationListForCurrentClientUseCaseImpl(
-            checkRevocationList = checkRevocationList,
-            certificateRevocationListRepository = certificateRevocationListRepository,
-            userConfigRepository = userConfigRepository,
             isE2EIEnabledUseCase = isE2EIEnabled
         )
 
@@ -2044,10 +2035,6 @@ class UserSessionScope internal constructor(
 
         launch {
             certificateRevocationListCheckWorker.execute()
-        }
-
-        launch {
-            checkRevocationListForCurrentClient.invoke()
         }
 
         launch {

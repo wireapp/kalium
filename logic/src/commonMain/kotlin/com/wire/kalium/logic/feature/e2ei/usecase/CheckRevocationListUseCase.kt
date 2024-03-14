@@ -46,7 +46,11 @@ internal class CheckRevocationListUseCaseImpl(
     private val logger = kaliumLogger.withTextTag("CheckRevocationListUseCase")
     override suspend fun invoke(url: String): Either<CoreFailure, ULong?> {
         return if (isE2EIEnabledUseCase()) {
+<<<<<<< HEAD
             logger.i("getting client crl..")
+=======
+            logger.i("checking crl url: $url")
+>>>>>>> 16bfd5d771 (fix: remove CRL check for current client (WPB-7125) (#2655))
             certificateRevocationListRepository.getClientDomainCRL(url).flatMap {
                 currentClientIdProvider().flatMap { clientId ->
                     mlsClientProvider.getCoreCrypto(clientId).map { coreCrypto ->
