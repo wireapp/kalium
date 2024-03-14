@@ -77,6 +77,12 @@ fun Project.configureDefaultMultiplatform(
         }
     }
 
+    kotlinExtension.sourceSets.getByName("commonTest") {
+        dependencies {
+            implementation(library("kotlin.test"))
+        }
+    }
+
     kotlinExtension.sourceSets.all {
         languageSettings {
             // Most of the native code requires this opt-in
