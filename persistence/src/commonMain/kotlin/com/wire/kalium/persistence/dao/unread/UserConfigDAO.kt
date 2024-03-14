@@ -52,8 +52,6 @@ interface UserConfigDAO {
     suspend fun observeLegalHoldChangeNotified(): Flow<Boolean?>
     suspend fun setShouldUpdateClientLegalHoldCapability(shouldUpdate: Boolean)
     suspend fun shouldUpdateClientLegalHoldCapability(): Boolean
-    suspend fun setShouldCheckCrlForCurrentClient(shouldCheck: Boolean)
-    suspend fun shouldCheckCrlForCurrentClient(): Boolean
     suspend fun setCRLExpirationTime(url: String, timestamp: ULong)
     suspend fun getCRLsPerDomain(url: String): ULong?
     suspend fun observeCertificateExpirationTime(url: String): Flow<ULong?>
@@ -158,13 +156,6 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun shouldUpdateClientLegalHoldCapability(): Boolean =
         metadataDAO.valueByKey(SHOULD_UPDATE_CLIENT_LEGAL_HOLD_CAPABILITY)?.toBoolean() ?: true
 
-    override suspend fun setShouldCheckCrlForCurrentClient(shouldCheck: Boolean) {
-        metadataDAO.insertValue(shouldCheck.toString(), SHOULD_CHECK_CRL_CURRENT_CLIENT)
-    }
-
-    override suspend fun shouldCheckCrlForCurrentClient(): Boolean =
-        metadataDAO.valueByKey(SHOULD_CHECK_CRL_CURRENT_CLIENT)?.toBoolean() ?: true
-
     override suspend fun setCRLExpirationTime(url: String, timestamp: ULong) {
         metadataDAO.insertValue(
             key = url,
@@ -194,7 +185,5 @@ internal class UserConfigDAOImpl internal constructor(
         const val LEGAL_HOLD_CHANGE_NOTIFIED = "legal_hold_change_notified"
         const val SHOULD_UPDATE_CLIENT_LEGAL_HOLD_CAPABILITY =
             "should_update_client_legal_hold_capability"
-        const val SHOULD_CHECK_CRL_CURRENT_CLIENT =
-            "should_check_crl_current_client"
     }
 }
