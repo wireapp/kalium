@@ -354,7 +354,7 @@ class E2EIRepositoryImpl(
             })
         }
 
-    private suspend fun E2EIRepositoryImpl.registerIntermediateCAs(data: List<String>) =
+    private suspend fun registerIntermediateCAs(data: List<String>) =
         currentClientIdProvider().fold({
             E2EIFailure.TrustAnchors(it).left()
         }, { clientId ->
