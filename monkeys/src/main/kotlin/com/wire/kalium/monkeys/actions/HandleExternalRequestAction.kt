@@ -20,6 +20,7 @@ package com.wire.kalium.monkeys.actions
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.conversation.Monkey
 import com.wire.kalium.monkeys.model.ActionType
+import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 
 private val DIRECT_MESSAGES = arrayOf(
@@ -49,7 +50,7 @@ private val DIRECT_MESSAGES = arrayOf(
 )
 
 class HandleExternalRequestAction(val config: ActionType.HandleExternalRequest) : Action({}) {
-    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
+    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool, conversationPool: ConversationPool) {
         val monkeys = monkeyPool.randomMonkeysWithConnectionRequests(config.userCount)
         monkeys.forEach { (monkey, pendingConnections) ->
             if (config.shouldAccept) {

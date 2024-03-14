@@ -23,27 +23,37 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.E2EIModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.util.DateTimeUtil
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
-class E2EIConfigHandler(
-    private val userConfigRepository: UserConfigRepository,
-) {
+class E2EIConfigHandler(private val userConfigRepository: UserConfigRepository) {
+
     fun handle(e2eiConfig: E2EIModel): Either<CoreFailure, Unit> {
+        setSettingsIfNeeded(e2eiConfig)
+        return userConfigRepository.setE2EINotificationTime(DateTimeUtil.currentInstant())
+    }
+
+    private fun setSettingsIfNeeded(e2eiConfig: E2EIModel) {
         val gracePeriodEnd = e2eiConfig.config.verificationExpirationSeconds
             .toDuration(DurationUnit.SECONDS)
-            .let {
-            DateTimeUtil.currentInstant().plus(it)
+            .let { DateTimeUtil.currentInstant().plus(it) }
+
+        val currentSettings = userConfigRepository.getE2EISettings().getOrNull()
+
+        val newSettings = E2EISettings(
+            isRequired = e2eiConfig.status == Status.ENABLED,
+            discoverUrl = e2eiConfig.config.discoverUrl,
+            gracePeriodEnd = gracePeriodEnd
+        )
+
+        if (currentSettings?.isRequired == newSettings.isRequired && currentSettings?.discoverUrl == newSettings.discoverUrl) {
+            // that settings were already handled,
+            // no need to re-write as it will reset gracePeriod
+            return
         }
 
-        userConfigRepository.setE2EISettings(
-            E2EISettings(
-                isRequired = e2eiConfig.status == Status.ENABLED,
-                discoverUrl = e2eiConfig.config.discoverUrl,
-                gracePeriodEnd = gracePeriodEnd
-            )
-        )
-        return userConfigRepository.setE2EINotificationTime(DateTimeUtil.currentInstant())
+        userConfigRepository.setE2EISettings(newSettings)
     }
 }
