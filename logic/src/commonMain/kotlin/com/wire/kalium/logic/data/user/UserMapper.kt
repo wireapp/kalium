@@ -106,37 +106,39 @@ internal class UserMapperImpl(
 
     override fun fromUserEntityToSelfUser(userEntity: UserEntity) = with(userEntity) {
         SelfUser(
-            id.toModel(),
-            name,
-            handle,
-            email,
-            phone,
-            accentId,
-            team?.let { TeamId(it) },
-            connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
-            previewAssetId?.toModel(),
-            completeAssetId?.toModel(),
-            availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
+            id = id.toModel(),
+            name = name,
+            handle = handle,
+            email = email,
+            phone = phone,
+            accentId = accentId,
+            teamId = team?.let { TeamId(it) },
+            connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
+            previewPicture = previewAssetId?.toModel(),
+            completePicture = completeAssetId?.toModel(),
+            userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
+            availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
             expiresAt = expiresAt,
-            supportedProtocols?.toModel()
+            supportedProtocols = supportedProtocols?.toModel()
         )
     }
 
     override fun fromUserDetailsEntityToSelfUser(userEntity: UserDetailsEntity): SelfUser = with(userEntity) {
         SelfUser(
-            id.toModel(),
-            name,
-            handle,
-            email,
-            phone,
-            accentId,
-            team?.let { TeamId(it) },
-            connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
-            previewAssetId?.toModel(),
-            completeAssetId?.toModel(),
-            availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
+            id = id.toModel(),
+            name = name,
+            handle = handle,
+            email = email,
+            phone = phone,
+            accentId = accentId,
+            teamId = team?.let { TeamId(it) },
+            connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
+            previewPicture = previewAssetId?.toModel(),
+            completePicture = completeAssetId?.toModel(),
+            userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
+            availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
             expiresAt = expiresAt,
-            supportedProtocols?.toModel()
+            supportedProtocols = supportedProtocols?.toModel()
         )
     }
 
