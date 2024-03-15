@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2023 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,18 +15,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.conversation.mls
 
-import com.wire.kalium.logic.data.id.GroupID
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
+package com.wire.kalium.logic.feature.call.usecase
 
-interface EpochChangesObserver {
-    fun observe(): Flow<GroupID>
-}
+import com.wire.kalium.logic.data.call.Participant
+import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.feature.call.CallManager
 
-internal class EpochChangesObserverImpl(
-    private val epochsFlow: MutableSharedFlow<GroupID>,
-) : EpochChangesObserver {
-    override fun observe(): Flow<GroupID> = epochsFlow
+/**
+ * Forward the calling participants' video state to the calling test tool
+ */
+class SetTestRemoteVideoStatesUseCase internal constructor(
+    private val callManager: Lazy<CallManager>
+) {
+
+    suspend operator fun invoke(
+        conversationId: ConversationId,
+        participants: List<Participant>
+    ) {
+        callManager.value.setTestRemoteVideoStates(conversationId, participants)
+    }
 }

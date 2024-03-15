@@ -284,12 +284,12 @@ class EventMapper(
         id: String,
         eventContentDTO: EventContentDTO.Conversation.NewMLSMessageDTO,
     ) = Event.Conversation.NewMLSMessage(
-        id,
-        eventContentDTO.qualifiedConversation.toModel(),
-        eventContentDTO.subconversation?.let { SubconversationId(it) },
-        eventContentDTO.qualifiedFrom.toModel(),
-        eventContentDTO.time,
-        eventContentDTO.message
+        id = id,
+        conversationId = eventContentDTO.qualifiedConversation.toModel(),
+        subconversationId = eventContentDTO.subconversation?.let { SubconversationId(it) },
+        senderUserId = eventContentDTO.qualifiedFrom.toModel(),
+        timestampIso = eventContentDTO.time,
+        content = eventContentDTO.message
     )
 
     private fun connectionUpdate(

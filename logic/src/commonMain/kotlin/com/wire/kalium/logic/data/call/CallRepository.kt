@@ -51,7 +51,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
 import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
-import com.wire.kalium.logic.feature.conversation.mls.EpochChangesObserver
+import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.getOrNull
@@ -59,7 +59,6 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.onlyRight
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.logStructuredJson
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
@@ -566,7 +565,7 @@ internal class CallDataSource(
             callJobs[conversationId] = scope.launch {
                 observeEpochInfo(conversationId).onSuccess {
                     it.collectLatest { epochInfo ->
-                        kaliumLogger.logStructuredJson(
+                        callingLogger.logStructuredJson(
                             level = KaliumLogLevel.DEBUG,
                             leadingMessage = "[CallRepository] Received epoch change",
                             jsonStringKeyValues = mapOf(
@@ -617,6 +616,16 @@ internal class CallDataSource(
                         subconversationMembers.contains(it)
                     )
                 }
+
+                callingLogger.logStructuredJson(
+                    level = KaliumLogLevel.DEBUG,
+                    leadingMessage = "[CallRepository] Created epoch info",
+                    jsonStringKeyValues = mapOf(
+                        "groupId" to parentGroupID.toLogString(),
+                        "subConversationGroupID" to subconversationGroupID.toLogString(),
+                        "epoch" to epoch
+                    )
+                )
 
                 val epochInfo = EpochInfo(
                     epoch,

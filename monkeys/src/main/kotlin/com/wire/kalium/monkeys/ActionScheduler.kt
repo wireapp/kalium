@@ -21,6 +21,7 @@ import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.actions.Action
 import com.wire.kalium.monkeys.model.ActionConfig
 import com.wire.kalium.monkeys.model.Event
+import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 import io.micrometer.core.instrument.Tag
 import kotlinx.coroutines.CoroutineScope
@@ -32,13 +33,14 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.serializer
 
-@Suppress("TooGenericExceptionCaught")
+@Suppress("TooGenericExceptionCaught", "LongParameterList")
 @OptIn(InternalSerializationApi::class, ExperimentalSerializationApi::class)
 suspend fun start(
     testCase: String,
     actions: List<ActionConfig>,
     coreLogic: CoreLogic,
     monkeyPool: MonkeyPool,
+    conversationPool: ConversationPool,
     producer: SendChannel<Event>
 ) {
     actions.forEach { actionConfig ->
@@ -51,7 +53,7 @@ suspend fun start(
                     repeat(actionConfig.count.toInt()) {
                         val startTime = System.currentTimeMillis()
                         MetricsCollector.time("t_$actionName", tags) {
-                            Action.fromConfig(actionConfig, producer).execute(coreLogic, monkeyPool)
+                            Action.fromConfig(actionConfig, producer).execute(coreLogic, monkeyPool, conversationPool)
                         }
                         MetricsCollector.count("c_$actionName", tags)
                         logger.d("Action $actionName took ${System.currentTimeMillis() - startTime} milliseconds")
@@ -70,8 +72,14 @@ suspend fun start(
     }
 }
 
-suspend fun runSetup(actions: List<ActionConfig>, coreLogic: CoreLogic, monkeyPool: MonkeyPool, producer: SendChannel<Event>) {
+suspend fun runSetup(
+    actions: List<ActionConfig>,
+    coreLogic: CoreLogic,
+    monkeyPool: MonkeyPool,
+    conversationPool: ConversationPool,
+    producer: SendChannel<Event>
+) {
     actions.forEach { actionConfig ->
-        Action.fromConfig(actionConfig, producer).execute(coreLogic, monkeyPool)
+        Action.fromConfig(actionConfig, producer).execute(coreLogic, monkeyPool, conversationPool)
     }
 }
