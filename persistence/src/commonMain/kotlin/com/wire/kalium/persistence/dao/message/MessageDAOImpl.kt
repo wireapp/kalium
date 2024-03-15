@@ -332,6 +332,7 @@ internal class MessageDAOImpl internal constructor(
             queries.markMessageAsEdited(editTimeStamp.toInstant(), currentMessageId, conversationId)
             reactionsQueries.deleteAllReactionsForMessage(currentMessageId, conversationId)
             queries.deleteMessageMentions(currentMessageId, conversationId)
+            unreadEventsQueries.deleteUnreadEvent(currentMessageId, conversationId)
             queries.updateMessageTextContent(newTextContent.messageBody, currentMessageId, conversationId)
             newTextContent.mentions.forEach {
                 queries.insertMessageMention(
@@ -343,14 +344,15 @@ internal class MessageDAOImpl internal constructor(
                 )
             }
             val selfMention = newTextContent.mentions.firstNotNullOfOrNull { it.userId == selfUserId }
-            if (selfMention != null) {
-                unreadEventsQueries.updateEvent(UnreadEventTypeEntity.MENTION, currentMessageId, conversationId)
-            } else {
-                unreadEventsQueries.updateEvent(UnreadEventTypeEntity.MESSAGE, currentMessageId, conversationId)
-            }
 
             queries.updateMessageId(newMessageId, currentMessageId, conversationId)
             queries.updateQuotedMessageId(newMessageId, currentMessageId, conversationId)
+
+            if (selfMention != null) {
+                unreadEventsQueries.upsertEvent(newMessageId, UnreadEventTypeEntity.MENTION, conversationId, editTimeStamp.toInstant())
+            } else {
+                unreadEventsQueries.upsertEvent(newMessageId, UnreadEventTypeEntity.MESSAGE, conversationId, editTimeStamp.toInstant())
+            }
         }
     }
 

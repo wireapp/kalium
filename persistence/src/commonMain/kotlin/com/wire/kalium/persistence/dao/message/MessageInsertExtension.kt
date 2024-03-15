@@ -308,7 +308,7 @@ internal class MessageInsertExtensionImpl(
 
         if (!message.isSelfMessage && message.date > lastRead) {
             when (message.content) {
-                is MessageEntityContent.Knock -> unreadEventsQueries.insertEvent(
+                is MessageEntityContent.Knock -> unreadEventsQueries.upsertEvent(
                     message.id,
                     UnreadEventTypeEntity.KNOCK,
                     message.conversationId,
@@ -324,14 +324,14 @@ internal class MessageInsertExtensionImpl(
                 is MessageEntityContent.RestrictedAsset,
                 is MessageEntityContent.Composite,
                 is MessageEntityContent.Location,
-                is MessageEntityContent.FailedDecryption -> unreadEventsQueries.insertEvent(
+                is MessageEntityContent.FailedDecryption -> unreadEventsQueries.upsertEvent(
                     message.id,
                     UnreadEventTypeEntity.MESSAGE,
                     message.conversationId,
                     message.date
                 )
 
-                MessageEntityContent.MissedCall -> unreadEventsQueries.insertEvent(
+                MessageEntityContent.MissedCall -> unreadEventsQueries.upsertEvent(
                     message.id,
                     UnreadEventTypeEntity.MISSED_CALL,
                     message.conversationId,
@@ -377,7 +377,7 @@ internal class MessageInsertExtensionImpl(
             isQuotingSelfUser = senderId == selfUserIDEntity
         }
         when {
-            isQuotingSelfUser -> unreadEventsQueries.insertEvent(
+            isQuotingSelfUser -> unreadEventsQueries.upsertEvent(
                 message.id,
                 UnreadEventTypeEntity.REPLY,
                 message.conversationId,
@@ -385,14 +385,14 @@ internal class MessageInsertExtensionImpl(
             )
 
             textContent.mentions.map { it.userId }.contains(selfUserIDEntity) ->
-                unreadEventsQueries.insertEvent(
+                unreadEventsQueries.upsertEvent(
                     message.id,
                     UnreadEventTypeEntity.MENTION,
                     message.conversationId,
                     message.date
                 )
 
-            else -> unreadEventsQueries.insertEvent(
+            else -> unreadEventsQueries.upsertEvent(
                 message.id,
                 UnreadEventTypeEntity.MESSAGE,
                 message.conversationId,

@@ -18,14 +18,12 @@ DELETE FROM UnreadEvent WHERE id = ? AND conversation_id = ?;
 deleteUnreadEvents:
 DELETE FROM UnreadEvent WHERE creation_date <= ? AND conversation_id = ?;
 
-insertEvent:
-INSERT OR IGNORE INTO UnreadEvent(id, type, conversation_id, creation_date)
-VALUES(?, ?, ?, ?);
-
-updateEvent:
-UPDATE OR IGNORE UnreadEvent
-SET type = :type
-WHERE id = :id AND conversation_id = :conversation_id;
+upsertEvent:
+INSERT INTO UnreadEvent(id, type, conversation_id, creation_date)
+VALUES (?, ?, ?, ?)
+ON CONFLICT(id, conversation_id) DO UPDATE SET
+type = excluded.type,
+creation_date = excluded.creation_date;
 
 getUnreadEvents:
 SELECT conversation_id, type FROM UnreadEvent;
