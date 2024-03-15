@@ -186,8 +186,8 @@ import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.ConversationsRecoveryManagerImpl
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManager
 import com.wire.kalium.logic.feature.conversation.MLSConversationsRecoveryManagerImpl
-import com.wire.kalium.logic.feature.conversation.MLSConversationsVerificationStatusesHandler
-import com.wire.kalium.logic.feature.conversation.MLSConversationsVerificationStatusesHandlerImpl
+import com.wire.kalium.logic.data.e2ei.MLSConversationsVerificationStatusesHandler
+import com.wire.kalium.logic.data.e2ei.MLSConversationsVerificationStatusesHandlerImpl
 import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCase
 import com.wire.kalium.logic.feature.conversation.ObserveOtherUserSecurityClassificationLabelUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.ObserveSecurityClassificationLabelUseCase
@@ -199,8 +199,7 @@ import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.TypingIndicatorSyncManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManager
 import com.wire.kalium.logic.feature.conversation.keyingmaterials.KeyingMaterialsManagerImpl
-import com.wire.kalium.logic.feature.conversation.mls.ConversationVerificationStatusCheckerImpl
-import com.wire.kalium.logic.feature.conversation.mls.EpochChangesObserverImpl
+import com.wire.kalium.logic.data.conversation.EpochChangesObserverImpl
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolver
 import com.wire.kalium.logic.feature.conversation.mls.MLSOneOnOneConversationResolverImpl
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigrator
@@ -216,8 +215,6 @@ import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListForCurrentC
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListForCurrentClientUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCaseImpl
-import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
-import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.FeatureFlagSyncWorkerImpl
 import com.wire.kalium.logic.feature.featureConfig.FeatureFlagsSyncWorker
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
@@ -690,8 +687,6 @@ class UserSessionScope internal constructor(
             userRepository = userRepository
         )
     }
-
-    val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2eiRepository)
 
     private val notificationTokenRepository get() = NotificationTokenDataSource(globalPreferences.tokenStorage)
 
@@ -1990,15 +1985,16 @@ class UserSessionScope internal constructor(
     )
 
     private val epochChangesObserver by lazy { EpochChangesObserverImpl(epochsFlow) }
-    private val conversationVerificationStatusChecker by lazy { ConversationVerificationStatusCheckerImpl(mlsClientProvider) }
 
     private val mlsConversationsVerificationStatusesHandler: MLSConversationsVerificationStatusesHandler by lazy {
         MLSConversationsVerificationStatusesHandlerImpl(
             conversationRepository,
             persistMessage,
-            conversationVerificationStatusChecker,
+            mlsClientProvider,
+            mlsConversationRepository,
             epochChangesObserver,
             userId,
+            userRepository,
             userScopedLogger,
         )
     }

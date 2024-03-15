@@ -566,3 +566,9 @@ internal fun E2EIConversationState.toModel(): Conversation.VerificationStatus = 
     E2EIConversationState.NOT_VERIFIED -> Conversation.VerificationStatus.NOT_VERIFIED
     E2EIConversationState.NOT_ENABLED -> Conversation.VerificationStatus.NOT_VERIFIED
 }
+
+internal fun ConversationEntity.VerificationStatus.toModel(): Conversation.VerificationStatus = when (this) {
+    ConversationEntity.VerificationStatus.VERIFIED -> Conversation.VerificationStatus.VERIFIED
+    ConversationEntity.VerificationStatus.NOT_VERIFIED -> Conversation.VerificationStatus.NOT_VERIFIED
+    ConversationEntity.VerificationStatus.DEGRADED -> Conversation.VerificationStatus.DEGRADED
+}
