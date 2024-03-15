@@ -1536,6 +1536,60 @@ class MLSConversationRepositoryTest {
                 .wasInvoked(once)
         }
 
+    @Test
+    fun givenHandleWithSchemeAndDomain_whenGetUserIdentity_thenHandleShouldReturnProperValues() = runTest {
+        // given
+        val scheme = "wireapp"
+        val handle = "handle"
+        val domain = "domain.com"
+        val handleWithSchemeAndDomain = "$scheme://%40$handle@$domain"
+        val groupId = Arrangement.GROUP_ID.value
+        val wireIdentity = WIRE_IDENTITY.copy(handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain))
+        val (_, mlsConversationRepository) = Arrangement()
+            .withGetEstablishedSelfMLSGroupIdReturns(groupId)
+            .withGetMLSClientSuccessful()
+            .withGetUserIdentitiesReturn(mapOf(groupId to listOf(wireIdentity)))
+            .arrange()
+        // when
+        val result = mlsConversationRepository.getUserIdentity(TestUser.USER_ID)
+        // then
+        result.shouldSucceed() {
+            it.forEach {
+                assertEquals(scheme, it.handle.scheme)
+                assertEquals(handle, it.handle.handle)
+                assertEquals(domain, it.handle.domain)
+            }
+        }
+    }
+
+    @Test
+    fun givenHandleWithSchemeAndDomain_whenGetMemberIdentities_thenHandleShouldReturnProperValues() = runTest {
+        // given
+        val scheme = "wireapp"
+        val handle = "handle"
+        val domain = "domain.com"
+        val handleWithSchemeAndDomain = "$scheme://%40$handle@$domain"
+        val groupId = Arrangement.GROUP_ID.value
+        val wireIdentity = WIRE_IDENTITY.copy(handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain))
+        val (_, mlsConversationRepository) = Arrangement()
+            .withGetMLSGroupIdByConversationIdReturns(groupId)
+            .withGetMLSClientSuccessful()
+            .withGetUserIdentitiesReturn(mapOf(groupId to listOf(wireIdentity)))
+            .arrange()
+        // when
+        val result = mlsConversationRepository.getMembersIdentities(TestConversation.ID, listOf(TestUser.USER_ID))
+        // then
+        result.shouldSucceed() {
+            it.values.forEach {
+                it.forEach {
+                    assertEquals(scheme, it.handle.scheme)
+                    assertEquals(handle, it.handle.handle)
+                    assertEquals(domain, it.handle.domain)
+                }
+            }
+        }
+    }
+
     private class Arrangement {
 
         @Mock
@@ -1655,12 +1709,14 @@ class MLSConversationRepositoryTest {
                 .whenInvokedWith(anything())
                 .then { Either.Right(mlsClient) }
         }
+
         fun withGetExternalSenderKeySuccessful() = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::getExternalSenders)
                 .whenInvokedWith(anything())
                 .thenReturn(EXTERNAL_SENDER_KEY)
         }
+
         fun withRotateAllSuccessful(rotateBundle: RotateBundle = ROTATE_BUNDLE) = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::e2eiRotateAll)
@@ -1870,7 +1926,8 @@ class MLSConversationRepositoryTest {
                     "certificate",
                     CryptoCertificateStatus.VALID,
                     thumbprint = "thumbprint",
-                    serialNumber = "serialNumber"
+                    serialNumber = "serialNumber",
+                    endTimestampSeconds = 1899105093
                 )
             val E2EI_CONVERSATION_CLIENT_INFO_ENTITY =
                 E2EIConversationClientInfoEntity(UserIDEntity(uuid4().toString(), "domain.com"), "clientId", "groupId")

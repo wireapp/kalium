@@ -196,7 +196,7 @@ object NotificationEventsResponseJson {
     private val newMlsFeatureConfigUpdate = ValidJsonProvider(
         EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO(
             MLS(
-                MLSConfigDTO(emptyList(), SupportedProtocolDTO.MLS, listOf(SupportedProtocolDTO.PROTEUS), listOf(1), 1),
+                MLSConfigDTO(SupportedProtocolDTO.MLS, listOf(SupportedProtocolDTO.PROTEUS), listOf(1), 1),
                 FeatureFlagStatusDTO.ENABLED,
             )
         ),
