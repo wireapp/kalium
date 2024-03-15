@@ -31,6 +31,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrElse
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.logStructuredJson
@@ -194,7 +195,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                             "protocolInfo" to conversation.protocol.toLogMap(),
                         )
                     )
-                }
+                }.map { Unit }
             }
 
             type == Conversation.Type.ONE_ON_ONE -> {
@@ -214,7 +215,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                             "protocolInfo" to conversation.protocol.toLogMap(),
                         )
                     )
-                }
+                }.map { Unit }
             }
 
             else -> Either.Right(Unit)

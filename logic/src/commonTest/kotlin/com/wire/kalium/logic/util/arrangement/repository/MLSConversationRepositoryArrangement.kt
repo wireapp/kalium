@@ -17,24 +17,19 @@
  */
 package com.wire.kalium.logic.util.arrangement.repository
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.feature.conversation.mls.ConversationVerificationStatusChecker
-import com.wire.kalium.logic.feature.conversation.mls.EpochChangesObserver
-import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.given
 import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
 
 internal interface MLSConversationRepositoryArrangement {
     val epochChangesObserver: EpochChangesObserver
-    val conversationVerificationStatusChecker: ConversationVerificationStatusChecker
+
+
 
     fun withObserveEpochChanges(result: Flow<GroupID>)
-    fun withMLSConversationVerificationStatus(result: Either<CoreFailure, Conversation.VerificationStatus>)
 }
 
 internal open class MLSConversationRepositoryArrangementImpl :
@@ -43,21 +38,10 @@ internal open class MLSConversationRepositoryArrangementImpl :
     @Mock
     override val epochChangesObserver: EpochChangesObserver = mock(EpochChangesObserver::class)
 
-    @Mock
-    override val conversationVerificationStatusChecker =
-        mock(ConversationVerificationStatusChecker::class)
-
     override fun withObserveEpochChanges(result: Flow<GroupID>) {
         given(epochChangesObserver)
             .function(epochChangesObserver::observe)
             .whenInvoked()
-            .thenReturn(result)
-    }
-
-    override fun withMLSConversationVerificationStatus(result: Either<CoreFailure, Conversation.VerificationStatus>) {
-        given(conversationVerificationStatusChecker)
-            .suspendFunction(conversationVerificationStatusChecker::check)
-            .whenInvokedWith(any())
             .thenReturn(result)
     }
 }

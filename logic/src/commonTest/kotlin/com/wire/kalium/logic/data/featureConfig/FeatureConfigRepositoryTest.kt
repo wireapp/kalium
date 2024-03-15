@@ -75,7 +75,6 @@ class FeatureConfigRepositoryTest {
             ConfigsStatusModel(Status.ENABLED),
             ConfigsStatusModel(Status.ENABLED),
             MLSModel(
-                emptyList(),
                 SupportedProtocol.PROTEUS,
                 setOf(SupportedProtocol.PROTEUS),
                 Status.ENABLED
@@ -158,7 +157,6 @@ class FeatureConfigRepositoryTest {
             FeatureConfigData.ValidateSAMLEmails(FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.MLS(
                 MLSConfigDTO(
-                    emptyList(),
                     SupportedProtocolDTO.PROTEUS,
                     listOf(SupportedProtocolDTO.PROTEUS),
                     emptyList(),

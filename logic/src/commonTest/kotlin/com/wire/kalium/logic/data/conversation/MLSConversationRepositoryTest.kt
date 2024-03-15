@@ -38,6 +38,7 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.COMMIT_BUNDLE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.CRYPTO_CLIENT_ID
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.E2EI_CONVERSATION_CLIENT_INFO_ENTITY
+import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.KEY_PACKAGE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.ROTATE_BUNDLE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.TEST_FAILURE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.WIRE_IDENTITY
@@ -242,6 +243,58 @@ class MLSConversationRepositoryTest {
             .function(arrangement.mlsClient::wipeConversation)
             .with(eq(Arrangement.RAW_GROUP_ID))
             .wasInvoked(once)
+    }
+
+    @Test
+    fun givenPartialKeyClaimingResponsesAndAllowPartial_whenCallingEstablishMLSGroup_thenPartialGroupCreatedAndSuccessReturned() = runTest {
+        val userMissingKeyPackage = TestUser.USER_ID.copy(value = "missingKP")
+        val userWithKeyPackage = TestConversation.USER_1
+        val usersMissingKeyPackages = setOf(userMissingKeyPackage)
+        val usersWithKeyPackages = setOf(userWithKeyPackage)
+        val keyPackageSuccess = KEY_PACKAGE.copy(userId = userWithKeyPackage.value, domain = userWithKeyPackage.domain)
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsReturningNothing()
+            .withClaimKeyPackagesSuccessful(keyPackages = listOf(keyPackageSuccess), usersWithoutKeyPackages = usersMissingKeyPackages)
+            .withGetMLSClientSuccessful()
+            .withGetPublicKeysSuccessful()
+            .withAddMLSMemberSuccessful()
+            .withSendCommitBundleSuccessful()
+            .arrange()
+
+        val result = mlsConversationRepository.establishMLSGroup(
+            Arrangement.GROUP_ID,
+            (usersWithKeyPackages + userMissingKeyPackage).toList(),
+            allowSkippingUsersWithoutKeyPackages = true
+        )
+        result.shouldSucceed {
+            assertEquals(usersMissingKeyPackages, it.notAddedUsers)
+            assertEquals(usersWithKeyPackages, it.successfullyAddedUsers)
+        }
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::createConversation)
+            .with(eq(Arrangement.RAW_GROUP_ID), eq(listOf(Arrangement.CRYPTO_MLS_PUBLIC_KEY)))
+            .wasInvoked(once)
+
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::addMember)
+            .with(eq(Arrangement.RAW_GROUP_ID), matching { it.size == usersWithKeyPackages.size })
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.mlsMessageApi)
+            .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
+            .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::commitAccepted)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::wipeConversation)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasNotInvoked()
     }
 
     @Test
@@ -1483,8 +1536,6 @@ class MLSConversationRepositoryTest {
                 .wasInvoked(once)
         }
 
-<<<<<<< HEAD
-=======
     @Test
     fun givenHandleWithSchemeAndDomain_whenGetUserIdentity_thenHandleShouldReturnProperValues() = runTest {
         // given
@@ -1539,7 +1590,6 @@ class MLSConversationRepositoryTest {
         }
     }
 
->>>>>>> cfceb4af87 (refactor: create a dedicated class for WireIdentity handle (#2636))
     private class Arrangement {
 
         @Mock
@@ -1874,7 +1924,8 @@ class MLSConversationRepositoryTest {
                     "certificate",
                     CryptoCertificateStatus.VALID,
                     thumbprint = "thumbprint",
-                    serialNumber = "serialNumber"
+                    serialNumber = "serialNumber",
+                    endTimestamp = 1899105093
                 )
             val E2EI_CONVERSATION_CLIENT_INFO_ENTITY =
                 E2EIConversationClientInfoEntity(UserIDEntity(uuid4().toString(), "domain.com"), "clientId", "groupId")

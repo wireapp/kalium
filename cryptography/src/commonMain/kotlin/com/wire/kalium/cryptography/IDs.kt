@@ -78,22 +78,14 @@ data class CryptoQualifiedClientId(
 
 data class WireIdentity(
     val clientId: CryptoQualifiedClientId,
-<<<<<<< HEAD
-    val handle: String,
-=======
     val handle: Handle,
->>>>>>> cfceb4af87 (refactor: create a dedicated class for WireIdentity handle (#2636))
     val displayName: String,
     val domain: String,
     val certificate: String,
     val status: CryptoCertificateStatus,
     val thumbprint: String,
-<<<<<<< HEAD
-    val serialNumber: String
-)
-=======
     val serialNumber: String,
-    val endTimestampSeconds: Long
+    val endTimestamp: Long
 ) {
     constructor(
         clientId: CryptoQualifiedClientId,
@@ -138,7 +130,6 @@ data class WireIdentity(
         }
     }
 }
->>>>>>> cfceb4af87 (refactor: create a dedicated class for WireIdentity handle (#2636))
 
 enum class CryptoCertificateStatus {
     VALID, EXPIRED, REVOKED;

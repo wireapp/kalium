@@ -94,42 +94,23 @@ class MLSConfigHandlerTest {
     }
 
     @Test
-    fun givenMlsIsEnabledAndSelfUserIsWhitelisted_whenSyncing_thenSetMlsEnabled() = runTest {
+    fun givenMlsIsEnabledAndMlsIsSupported_whenSyncing_thenSetMlsEnabled() = runTest {
         val (arrangement, handler) = arrange {
             withGetSupportedProtocolsReturning(Either.Right(setOf(SupportedProtocol.PROTEUS)))
             withSetSupportedProtocolsSuccessful()
             withSetDefaultProtocolSuccessful()
             withSetMLSEnabledSuccessful()
+            withUpdateSupportedProtocolsAndResolveOneOnOnesSuccessful()
         }
 
         handler.handle(MLS_CONFIG.copy(
             status = Status.ENABLED,
-            allowedUsers = listOf(SELF_USER_ID.toPlainID())
+            supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS)
         ), duringSlowSync = false)
 
         verify(arrangement.userConfigRepository)
             .suspendFunction(arrangement.userConfigRepository::setMLSEnabled)
             .with(eq(true))
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenMlsIsEnabledAndSelfUserIsNotWhitelisted_whenSyncing_thenSetMlsDisabled() = runTest {
-        val (arrangement, handler) = arrange {
-            withGetSupportedProtocolsReturning(Either.Right(setOf(SupportedProtocol.PROTEUS)))
-            withSetSupportedProtocolsSuccessful()
-            withSetDefaultProtocolSuccessful()
-            withSetMLSEnabledSuccessful()
-        }
-
-        handler.handle(MLS_CONFIG.copy(
-            status = Status.ENABLED,
-            allowedUsers = listOf(TestUser.OTHER_USER_ID.toPlainID())
-        ), duringSlowSync = false)
-
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::setMLSEnabled)
-            .with(eq(false))
             .wasInvoked(exactly = once)
     }
 
@@ -202,8 +183,7 @@ class MLSConfigHandlerTest {
             block()
             this@Arrangement to MLSConfigHandler(
                 userConfigRepository = userConfigRepository,
-                updateSupportedProtocolsAndResolveOneOnOnes = updateSupportedProtocolsAndResolveOneOnOnes,
-                SELF_USER_ID
+                updateSupportedProtocolsAndResolveOneOnOnes = updateSupportedProtocolsAndResolveOneOnOnes
             )
         }
     }
@@ -213,7 +193,6 @@ class MLSConfigHandlerTest {
 
         val SELF_USER_ID = TestUser.USER_ID
         val MLS_CONFIG = MLSModel(
-            allowedUsers = emptyList(),
             defaultProtocol = SupportedProtocol.MLS,
             supportedProtocols = setOf(SupportedProtocol.PROTEUS),
             status = Status.ENABLED

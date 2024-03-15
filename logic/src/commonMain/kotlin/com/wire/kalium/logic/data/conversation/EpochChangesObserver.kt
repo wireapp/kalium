@@ -15,12 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.data.conversation.mls
+package com.wire.kalium.logic.data.conversation
 
-import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
+import com.wire.kalium.logic.data.id.GroupID
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 
-data class KeyPackageClaimResult(
-    val successfullyFetchedKeyPackages: List<KeyPackageDTO>,
-    val usersWithoutKeyPackagesAvailable: Set<UserId>
-)
+interface EpochChangesObserver {
+    fun observe(): Flow<GroupID>
+}
+
+internal class EpochChangesObserverImpl(
+    private val epochsFlow: MutableSharedFlow<GroupID>,
+) : EpochChangesObserver {
+    override fun observe(): Flow<GroupID> = epochsFlow
+}
