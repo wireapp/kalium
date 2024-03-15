@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.feature.e2ei.usecase
 
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapper
@@ -37,10 +36,7 @@ class GetE2eiCertificateUseCaseImpl internal constructor(
 ) : GetE2eiCertificateUseCase {
     override suspend operator fun invoke(clientId: ClientId): GetE2EICertificateUseCaseResult =
         mlsConversationRepository.getClientIdentity(clientId).fold(
-            {
-                if (it is StorageFailure.DataNotFound) GetE2EICertificateUseCaseResult.NotActivated
-                else GetE2EICertificateUseCaseResult.Failure
-            },
+            { GetE2EICertificateUseCaseResult.Failure },
             {
                 it?.let {
                     val certificate = E2eiCertificate.fromWireIdentity(it, certificateStatusMapper)
