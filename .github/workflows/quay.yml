@@ -29,7 +29,7 @@ jobs:
         name: Build and push
         uses: docker/build-push-action@v5
         with:
-          context: ./monkeys/docker
+          context: .
           file: ./monkeys/docker/Dockerfile
           platforms: linux/amd64
           tags: quay.io/wire/infinitemonkeys:latest
