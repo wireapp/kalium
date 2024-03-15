@@ -347,7 +347,7 @@ class ObserveE2EIRequiredUseCaseTest {
             serialNumber = "serialNumber",
             certificateDetail = "certificateDetail",
             status = CertificateStatus.VALID,
-            endAt = Instant.DISTANT_FUTURE
+            endAt = DateTimeUtil.currentInstant().plus(1.days)
         )
     }
 }
