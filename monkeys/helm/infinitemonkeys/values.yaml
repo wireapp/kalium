@@ -10,14 +10,14 @@ monkeyController:
   name: Diya
   teamName: Diya
   instanceURL: diya.wire.link
-  userCount: 3
+  userCount: 4
   authUser: basic-auth-user
   authPassword: "..."
 
 # replicaCount needs to be one more than userCount above
 # as monkeyController expects an additional owner
 monkeyServer:
-  replicaCount: 4
+  replicaCount: 5
 
 image:
   repository: quay.io/wire/infinitemonkeys
