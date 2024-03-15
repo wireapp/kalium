@@ -27,6 +27,7 @@ import com.github.ajalt.clikt.parameters.options.default
 import com.github.ajalt.clikt.parameters.options.flag
 import com.github.ajalt.clikt.parameters.options.option
 import com.github.ajalt.clikt.parameters.types.enum
+import com.github.ajalt.clikt.parameters.types.long
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreLogger
@@ -42,13 +43,9 @@ import com.wire.kalium.monkeys.storage.DummyEventStorage
 import com.wire.kalium.monkeys.storage.EventStorage
 import com.wire.kalium.monkeys.storage.FileStorage
 import com.wire.kalium.monkeys.storage.PostgresStorage
-import io.ktor.server.application.call
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.engine.stopServerOnCancellation
 import io.ktor.server.netty.Netty
-import io.ktor.server.response.respondText
-import io.ktor.server.routing.get
-import io.ktor.server.routing.routing
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.NonCancellable
@@ -72,6 +69,12 @@ fun CoroutineScope.stopIM() {
 
 class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
     private val dataFilePath by argument(help = "path to the test data file")
+    @Suppress("MagicNumber")
+    private val delayPool by option(
+        "-d",
+        "--delay-pool",
+        help = "Time in milliseconds it will wait for a conversation to be added to the pool."
+    ).long().default(1000L)
     private val skipWarmup by option("-s", "--skip-warmup", help = "Should the warmup be skipped?").flag()
     private val sequentialWarmup by option("-w", "--sequential-warmup", help = "Should the warmup happen sequentially?").flag()
     private val logLevel by option("-l", "--log-level", help = "log level").enum<KaliumLogLevel>().default(KaliumLogLevel.INFO)
@@ -99,11 +102,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
             logger.i("Initializing Metrics Endpoint")
             embeddedServer(Netty, port = 9090) {
-                routing {
-                    get("/") {
-                        call.respondText(MetricsCollector.metrics())
-                    }
-                }
+                configureMicrometer("/")
             }.start(false).stopServerOnCancellation()
 
             logger.i("Initializing Infinite Monkeys - CC: ${getCCVersion()}")
@@ -138,6 +137,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
 
     private suspend fun runMonkeys(testData: TestData, eventStorage: EventStorage) {
         val users = TestDataImporter.generateUserData(testData.backends)
+        val conversationPool = ConversationPool(delayPool)
         testData.testCases.forEachIndexed { index, testCase ->
             val monkeyConfig = if (testData.externalMonkey != null) {
                 logger.i("Starting ${users.size} external monkeys")
@@ -161,7 +161,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
                 }
                 logger.i("Creating prefixed groups")
                 testData.conversationDistribution.forEach { (prefix, config) ->
-                    ConversationPool.createPrefixedConversations(
+                    conversationPool.createPrefixedConversations(
                         coreLogic, prefix, config.groupCount, config.userCount, config.protocol, monkeyPool
                     ).forEach {
                         eventChannel.send(Event(it.owner, EventType.CreateConversation(it)))
@@ -169,9 +169,9 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
                 }
             }
             logger.i("Running setup for test case ${testCase.name}")
-            runSetup(testCase.setup, coreLogic, monkeyPool, eventChannel)
+            runSetup(testCase.setup, coreLogic, monkeyPool, conversationPool, eventChannel)
             logger.i("Starting actions for test case ${testCase.name}")
-            start(testCase.name, testCase.actions, coreLogic, monkeyPool, eventChannel)
+            start(testCase.name, testCase.actions, coreLogic, monkeyPool, conversationPool, eventChannel)
             eventStorage.processEvents(eventChannel)
         }
     }
@@ -184,8 +184,7 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
             this::class.java.classLoader?.getResources("META-INF/MANIFEST.MF")?.asIterator()?.forEach { url ->
                 url.openStream().use {
                     val manifest = Manifest(it)
-                    if (manifest.mainAttributes.getValue("CC-Version") != null)
-                        return manifest.mainAttributes.getValue("CC-Version")
+                    if (manifest.mainAttributes.getValue("CC-Version") != null) return manifest.mainAttributes.getValue("CC-Version")
                 }
             }
             return "Not-Found"

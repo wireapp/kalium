@@ -36,9 +36,7 @@ class GetE2eiCertificateUseCaseImpl internal constructor(
 ) : GetE2eiCertificateUseCase {
     override suspend operator fun invoke(clientId: ClientId): GetE2EICertificateUseCaseResult =
         mlsConversationRepository.getClientIdentity(clientId).fold(
-            {
-                GetE2EICertificateUseCaseResult.Failure
-            },
+            { GetE2EICertificateUseCaseResult.Failure },
             {
                 it?.let {
                     val certificate = E2eiCertificate(
