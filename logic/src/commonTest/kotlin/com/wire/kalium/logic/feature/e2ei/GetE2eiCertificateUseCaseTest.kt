@@ -38,6 +38,7 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -161,6 +162,8 @@ class GetE2eiCertificateUseCaseTest {
         private val CRYPTO_QUALIFIED_CLIENT_ID =
             CryptoQualifiedClientId("clientId", USER_ID.toCrypto())
 
+        val e2eiCertificate =
+            E2eiCertificate(CertificateStatus.EXPIRED, "serialNumber", "certificateDetail", Instant.DISTANT_FUTURE)
         val IDENTITY = WireIdentity(
             CRYPTO_QUALIFIED_CLIENT_ID,
             handle = "alic_test",
@@ -170,7 +173,7 @@ class GetE2eiCertificateUseCaseTest {
             status = CryptoCertificateStatus.EXPIRED,
             thumbprint = "thumbprint",
             serialNumber = "serialNumber",
-            endTimestamp = 1899105093
+            endTimestampSeconds = 1899105093
         )
     }
 }

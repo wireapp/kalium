@@ -1709,12 +1709,14 @@ class MLSConversationRepositoryTest {
                 .whenInvokedWith(anything())
                 .then { Either.Right(mlsClient) }
         }
+
         fun withGetExternalSenderKeySuccessful() = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::getExternalSenders)
                 .whenInvokedWith(anything())
                 .thenReturn(EXTERNAL_SENDER_KEY)
         }
+
         fun withRotateAllSuccessful(rotateBundle: RotateBundle = ROTATE_BUNDLE) = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::e2eiRotateAll)
@@ -1925,7 +1927,7 @@ class MLSConversationRepositoryTest {
                     CryptoCertificateStatus.VALID,
                     thumbprint = "thumbprint",
                     serialNumber = "serialNumber",
-                    endTimestamp = 1899105093
+                    endTimestampSeconds = 1899105093
                 )
             val E2EI_CONVERSATION_CLIENT_INFO_ENTITY =
                 E2EIConversationClientInfoEntity(UserIDEntity(uuid4().toString(), "domain.com"), "clientId", "groupId")

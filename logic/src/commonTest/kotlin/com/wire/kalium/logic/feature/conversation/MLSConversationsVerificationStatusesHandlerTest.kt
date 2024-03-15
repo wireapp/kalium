@@ -184,7 +184,7 @@ class MLSConversationsVerificationStatusesHandlerTest {
                     serialNumber = "serial1",
                     status = CryptoCertificateStatus.VALID,
                     thumbprint = "thumbprint1",
-                    endTimestamp = 1899105093
+                    endTimestampSeconds = 1899105093
                 )
             ),
             user2.first.toModel() to listOf(
@@ -200,7 +200,7 @@ class MLSConversationsVerificationStatusesHandlerTest {
                     serialNumber = "serial2",
                     status = CryptoCertificateStatus.VALID,
                     thumbprint = "thumbprint2",
-                    endTimestamp = 1899105093
+                    endTimestampSeconds = 1899105093
                 )
             )
         )
@@ -256,7 +256,7 @@ class MLSConversationsVerificationStatusesHandlerTest {
                     serialNumber = "serial1",
                     status = CryptoCertificateStatus.VALID,
                     thumbprint = "thumbprint1",
-                    endTimestamp = 1899105093
+                    endTimestampSeconds = 1899105093
                 )
             ),
             user2.first.toModel() to listOf(
@@ -272,7 +272,7 @@ class MLSConversationsVerificationStatusesHandlerTest {
                     serialNumber = "serial2",
                     status = CryptoCertificateStatus.VALID,
                     thumbprint = "thumbprint2",
-                    endTimestamp = 1899105093
+                    endTimestampSeconds = 1899105093
                 )
             )
         )
