@@ -89,7 +89,7 @@ data class WireIdentity(
 ) {
     constructor(
         clientId: CryptoQualifiedClientId,
-        handle: String,
+        rawHandle: String,
         displayName: String,
         domain: String,
         certificate: String,
@@ -99,7 +99,7 @@ data class WireIdentity(
         endTimestamp: Long
     ) : this(
         clientId = clientId,
-        handle = Handle.fromString(handle, domain),
+        handle = Handle.fromString(rawHandle, domain),
         displayName = displayName,
         domain = domain,
         certificate = certificate,
