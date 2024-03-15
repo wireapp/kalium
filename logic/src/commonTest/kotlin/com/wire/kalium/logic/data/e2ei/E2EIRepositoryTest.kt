@@ -55,7 +55,6 @@ import com.wire.kalium.network.api.base.unbound.acme.DtoAuthorizationChallengeTy
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.util.DateTimeUtil
-import io.ktor.http.Url
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anyInstanceOf
@@ -881,7 +880,7 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::getACMEFederation)
+            .suspendFunction(arrangement.acmeApi::getACMEFederationCertificateChain)
             .with(any())
             .wasNotInvoked()
 
@@ -892,12 +891,12 @@ class E2EIRepositoryTest {
     }
 
     @Test
-    fun givenACMEFederationApiSucceed_whenFetchACMECertificates_thenItSucceed() = runTest {
+    fun givenACMEFederationApiSucceeds_whenFetchACMECertificates_thenAllCertificatesAreRegistered() = runTest {
+        val certificateList = listOf("a", "b", "potato")
         // Given
-
         val (arrangement, e2eiRepository) = Arrangement()
             .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS))
-            .withAcmeFederationApiSucceed()
+            .withAcmeFederationApiSucceed(certificateList)
             .withCurrentClientIdProviderSuccessful()
             .withGetCoreCryptoSuccessful()
             .withRegisterIntermediateCABag()
@@ -915,14 +914,16 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::getACMEFederation)
+            .suspendFunction(arrangement.acmeApi::getACMEFederationCertificateChain)
             .with(any())
             .wasInvoked(once)
 
-        verify(arrangement.coreCryptoCentral)
-            .suspendFunction(arrangement.coreCryptoCentral::registerIntermediateCa)
-            .with(any())
-            .wasInvoked(once)
+        certificateList.forEach { certificateValue ->
+            verify(arrangement.coreCryptoCentral)
+                .suspendFunction(arrangement.coreCryptoCentral::registerIntermediateCa)
+                .with(eq(certificateValue))
+                .wasInvoked(once)
+        }
     }
 
     @Test
@@ -949,7 +950,7 @@ class E2EIRepositoryTest {
             .wasInvoked(once)
 
         verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::getACMEFederation)
+            .suspendFunction(arrangement.acmeApi::getACMEFederationCertificateChain)
             .with(any())
             .wasNotInvoked()
 
@@ -1280,16 +1281,16 @@ class E2EIRepositoryTest {
                 .thenReturn(NetworkResponse.Error(INVALID_REQUEST_ERROR))
         }
 
-        fun withAcmeFederationApiSucceed() = apply {
+        fun withAcmeFederationApiSucceed(certificateList: List<String>) = apply {
             given(acmeApi)
-                .suspendFunction(acmeApi::getACMEFederation)
+                .suspendFunction(acmeApi::getACMEFederationCertificateChain)
                 .whenInvokedWith(any())
-                .thenReturn(NetworkResponse.Success("", mapOf(), 200))
+                .thenReturn(NetworkResponse.Success(certificateList, mapOf(), 200))
         }
 
         fun withAcmeFederationApiFails() = apply {
             given(acmeApi)
-                .suspendFunction(acmeApi::getACMEFederation)
+                .suspendFunction(acmeApi::getACMEFederationCertificateChain)
                 .whenInvokedWith(any())
                 .thenReturn(NetworkResponse.Error(INVALID_REQUEST_ERROR))
         }
