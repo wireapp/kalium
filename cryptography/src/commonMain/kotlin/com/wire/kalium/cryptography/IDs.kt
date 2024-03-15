@@ -78,17 +78,12 @@ data class WireIdentity(
     val certificate: String,
     val status: CryptoCertificateStatus,
     val thumbprint: String,
-<<<<<<< HEAD
-    val serialNumber: String
-)
-=======
     val serialNumber: String,
     val endTimestampSeconds: Long
 ) {
     val handleWithoutSchemeAtSignAndDomain: String
         get() = handle.substringAfter("://%40").removeSuffix("@$domain")
 }
->>>>>>> d77079f86d (fix: handle with scheme and domain from corecrypto [WPB-7084] (#2624))
 
 enum class CryptoCertificateStatus {
     VALID, EXPIRED, REVOKED;
