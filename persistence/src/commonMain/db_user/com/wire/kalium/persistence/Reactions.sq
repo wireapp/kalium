@@ -13,6 +13,9 @@ CREATE TABLE Reaction (
 CREATE INDEX reaction_sender_index ON Reaction(sender_id);
 CREATE INDEX reaction_emoji_index ON Reaction(emoji);
 
+doesMessageExist:
+SELECT 1 FROM Message WHERE id = :message_id AND conversation_id = :conversation_id;
+
 deleteAllReactionsOnMessageFromUser:
 DELETE FROM Reaction WHERE message_id = ? AND conversation_id = ? AND sender_id = ?;
 
@@ -20,7 +23,7 @@ deleteReaction:
 DELETE FROM Reaction WHERE message_id = ? AND conversation_id = ? AND sender_id = ? AND emoji = ?;
 
 insertReaction:
-INSERT OR REPLACE INTO Reaction(message_id, conversation_id, sender_id, emoji, date)
+INSERT INTO Reaction(message_id, conversation_id, sender_id, emoji, date)
 VALUES(?, ?, ?, ?, ?);
 
 deleteAllReactionsForMessage:
