@@ -183,7 +183,8 @@ class MLSConversationsVerificationStatusesHandlerTest {
                     domain = "domain1",
                     serialNumber = "serial1",
                     status = CryptoCertificateStatus.VALID,
-                    thumbprint = "thumbprint1"
+                    thumbprint = "thumbprint1",
+                    endTimestamp = 1899105093
                 )
             ),
             user2.first.toModel() to listOf(
@@ -198,7 +199,8 @@ class MLSConversationsVerificationStatusesHandlerTest {
                     domain = "domain2",
                     serialNumber = "serial2",
                     status = CryptoCertificateStatus.VALID,
-                    thumbprint = "thumbprint2"
+                    thumbprint = "thumbprint2",
+                    endTimestamp = 1899105093
                 )
             )
         )
@@ -253,7 +255,8 @@ class MLSConversationsVerificationStatusesHandlerTest {
                     domain = "domain1",
                     serialNumber = "serial1",
                     status = CryptoCertificateStatus.VALID,
-                    thumbprint = "thumbprint1"
+                    thumbprint = "thumbprint1",
+                    endTimestamp = 1899105093
                 )
             ),
             user2.first.toModel() to listOf(
@@ -268,7 +271,8 @@ class MLSConversationsVerificationStatusesHandlerTest {
                     domain = "domain2",
                     serialNumber = "serial2",
                     status = CryptoCertificateStatus.VALID,
-                    thumbprint = "thumbprint2"
+                    thumbprint = "thumbprint2",
+                    endTimestamp = 1899105093
                 )
             )
         )

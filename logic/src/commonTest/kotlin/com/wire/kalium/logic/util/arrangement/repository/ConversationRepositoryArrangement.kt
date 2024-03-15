@@ -260,7 +260,7 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
     override fun withSetDegradedConversationNotifiedFlag(result: Either<CoreFailure, Unit>) {
         given(conversationRepository)
             .suspendFunction(conversationRepository::setDegradedConversationNotifiedFlag)
-            .whenInvokedWith(any())
+            .whenInvokedWith(any(), any())
             .thenReturn(result)
     }
 
