@@ -1914,7 +1914,8 @@ class MLSConversationRepositoryTest {
                     "certificate",
                     CryptoCertificateStatus.VALID,
                     thumbprint = "thumbprint",
-                    serialNumber = "serialNumber"
+                    serialNumber = "serialNumber",
+                    endTimestamp = 1899105093
                 )
             val E2EI_CONVERSATION_CLIENT_INFO_ENTITY =
                 E2EIConversationClientInfoEntity(UserIDEntity(uuid4().toString(), "domain.com"), "clientId", "groupId")
