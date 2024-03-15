@@ -36,6 +36,8 @@ import io.ktor.client.request.preparePost
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
+import io.ktor.http.URLBuilder
+import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
@@ -250,10 +252,22 @@ class ACMEApiImpl internal constructor(
         }.mapSuccess { it.certificates }
     }
 
-    override suspend fun getClientDomainCRL(url: String): NetworkResponse<ByteArray> =
-        wrapKaliumResponse {
-            clearTextTrafficHttpClient.get(url)
+    override suspend fun getClientDomainCRL(url: String): NetworkResponse<ByteArray> {
+        if (url.isBlank()) {
+            return NetworkResponse.Error(
+                KaliumException.GenericError(
+                    IllegalArgumentException("getClientDomainCRL: Url cannot be empty")
+                )
+            )
         }
+
+        return wrapKaliumResponse {
+            val httpUrl = URLBuilder(url).apply {
+                this.protocol = URLProtocol.HTTP
+            }.build()
+            clearTextTrafficHttpClient.get(httpUrl)
+        }
+    }
 
     private companion object {
         const val PATH_ACME_FEDERATION = "federation"
