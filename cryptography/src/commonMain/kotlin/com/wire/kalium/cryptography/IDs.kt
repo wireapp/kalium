@@ -89,24 +89,24 @@ data class WireIdentity(
 ) {
     constructor(
         clientId: CryptoQualifiedClientId,
-        rawHandle: String,
+        handle: String,
         displayName: String,
         domain: String,
         certificate: String,
         status: CryptoCertificateStatus,
         thumbprint: String,
         serialNumber: String,
-        endTimestamp: Long
+        endTimestampSeconds: Long
     ) : this(
         clientId = clientId,
-        handle = Handle.fromString(rawHandle, domain),
+        handle = Handle.fromString(handle, domain),
         displayName = displayName,
         domain = domain,
         certificate = certificate,
         status = status,
         thumbprint = thumbprint,
         serialNumber = serialNumber,
-        endTimestamp = endTimestamp
+        endTimestampSeconds = endTimestampSeconds
     )
 
     // WireIdentity handle format is "{scheme}%40{username}@{domain}"
