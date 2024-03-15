@@ -32,6 +32,6 @@ jobs:
           context: .
           file: ./monkeys/docker/Dockerfile
           platforms: linux/amd64
-          tags: quay.io/wire/infinitemonkeys:latest
+          tags: wire/infinitemonkeys:latest
           push: true
 
