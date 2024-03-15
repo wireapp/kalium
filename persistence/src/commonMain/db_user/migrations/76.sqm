@@ -1,3 +1,1 @@
-UPDATE MessageMemberChangeContent
-SET member_change_type = 'FAILED_TO_ADD_FEDERATION'
-WHERE member_change_type == 'FAILED_TO_ADD';
+CREATE INDEX IF NOT EXISTS conversation_verification_status ON Conversation(verification_status);

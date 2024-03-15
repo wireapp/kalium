@@ -472,8 +472,7 @@ sealed class Event(open val id: String) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.MLSUpdated",
                 idKey to id.obfuscateId(),
-                featureStatusKey to model.status.name,
-                "allowedUsers" to model.allowedUsers.map { it.value.obfuscateId() }
+                featureStatusKey to model.status.name
             )
         }
 

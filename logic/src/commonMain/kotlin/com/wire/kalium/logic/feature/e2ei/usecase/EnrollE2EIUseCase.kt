@@ -58,6 +58,10 @@ class EnrollE2EIUseCaseImpl internal constructor(
         e2EIRepository.initFreshE2EIClient(isNewClient = isNewClientRegistration)
 
         e2EIRepository.fetchAndSetTrustAnchors()
+        e2EIRepository.fetchFederationCertificates().getOrFail {
+            kaliumLogger.e("Failure fetching federation certificates during E2EI Enrolling!. Failure:$it")
+            return it.left()
+        }
 
         val acmeDirectories = e2EIRepository.loadACMEDirectories().getOrFail {
             return it.left()
@@ -129,41 +133,49 @@ class EnrollE2EIUseCaseImpl internal constructor(
         val isNewClientRegistration = initializationResult.isNewClientRegistration
 
         val wireNonce = e2EIRepository.getWireNonce().getOrFail {
-            return it.left() }
+            return it.left()
+        }
 
         val dpopToken = e2EIRepository.getDPoPToken(wireNonce).getOrFail {
-            return it.left() }
+            return it.left()
+        }
 
         val wireAccessToken = e2EIRepository.getWireAccessToken(dpopToken).getOrFail {
-            return it.left() }
+            return it.left()
+        }
 
         val dpopChallengeResponse = e2EIRepository.validateDPoPChallenge(
             wireAccessToken.token, prevNonce, dPopAuthorizations.challenge
         ).getOrFail {
-            return it.left() }
+            return it.left()
+        }
 
         prevNonce = Nonce(dpopChallengeResponse.nonce)
 
         val oidcChallengeResponse = e2EIRepository.validateOIDCChallenge(
             idToken, oAuthState, prevNonce, oidcAuthorizations.challenge
         ).getOrFail {
-            return it.left() }
+            return it.left()
+        }
 
         prevNonce = Nonce(oidcChallengeResponse.nonce)
 
         val orderResponse = e2EIRepository.checkOrderRequest(orderLocation, prevNonce).getOrFail {
-            return it.left() }
+            return it.left()
+        }
 
         prevNonce = Nonce(orderResponse.first.nonce)
 
         val finalizeResponse = e2EIRepository.finalize(orderResponse.second, prevNonce).getOrFail {
-            return it.left() }
+            return it.left()
+        }
 
         prevNonce = Nonce(finalizeResponse.first.nonce)
 
         val certificateRequest =
             e2EIRepository.certificateRequest(finalizeResponse.second, prevNonce).getOrFail {
-                return it.left() }
+                return it.left()
+            }
 
         if (isNewClientRegistration) {
             e2EIRepository.initiateMLSClient(certificateRequest.response.decodeToString()).onFailure {
@@ -171,12 +183,22 @@ class EnrollE2EIUseCaseImpl internal constructor(
             }
         } else {
             e2EIRepository.rotateKeysAndMigrateConversations(
-                    certificateRequest.response.decodeToString(),
-                    initializationResult.isNewClientRegistration
+                certificateRequest.response.decodeToString(),
+                initializationResult.isNewClientRegistration
             ).onFailure { return it.left() }
         }
 
-        return E2EIEnrollmentResult.Finalized(certificateRequest.response.decodeToString()).right()
+        @Suppress("TooGenericExceptionCaught")
+        val e2eiCert = certificateRequest.response.decodeToString().let { theDoubleCert ->
+            try {
+                val firstCertEndIndex = theDoubleCert.indexOf(CERT_END) + CERT_END_LENGTH
+                theDoubleCert.substring(0, firstCertEndIndex)
+            } catch (e: IndexOutOfBoundsException) {
+                theDoubleCert
+            }
+        }
+
+        return E2EIEnrollmentResult.Finalized(e2eiCert).right()
     }
 
     private fun getOAuthClaims(keyAuth: String, acmeAud: String) = JsonObject(
@@ -203,6 +225,8 @@ class EnrollE2EIUseCaseImpl internal constructor(
         private const val ESSENTIAL = "essential"
         private const val VALUE = "value"
         private const val ACME_AUD = "acme_aud"
+        private const val CERT_END = "-----END CERTIFICATE-----"
+        private const val CERT_END_LENGTH = CERT_END.length
     }
 }
 

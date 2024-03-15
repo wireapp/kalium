@@ -20,7 +20,9 @@ package com.wire.kalium.logic.feature.e2ei
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.WireIdentity
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.toCrypto
@@ -36,6 +38,7 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -45,6 +48,22 @@ class GetE2eiCertificateUseCaseTest {
     fun givenRepositoryReturnsFailure_whenRunningUseCase_thenReturnFailure() = runTest {
         val (arrangement, getE2eiCertificateUseCase) = Arrangement()
             .withRepositoryFailure()
+            .arrange()
+
+        val result = getE2eiCertificateUseCase.invoke(CLIENT_ID)
+
+        verify(arrangement.mlsConversationRepository)
+            .suspendFunction(arrangement.mlsConversationRepository::getClientIdentity)
+            .with(any())
+            .wasInvoked(once)
+
+        assertEquals(GetE2EICertificateUseCaseResult.Failure, result)
+    }
+
+    @Test
+    fun givenRepositoryReturnsStorageFailure_whenRunningUseCase_thenReturnFailure() = runTest {
+        val (arrangement, getE2eiCertificateUseCase) = Arrangement()
+            .withRepositoryFailure(StorageFailure.DataNotFound)
             .arrange()
 
         val result = getE2eiCertificateUseCase.invoke(CLIENT_ID)
@@ -115,11 +134,11 @@ class GetE2eiCertificateUseCaseTest {
             certificateStatusMapper = certificateStatusMapper
         )
 
-        fun withRepositoryFailure() = apply {
+        fun withRepositoryFailure(failure: CoreFailure = E2EIFailure.Generic(Exception())) = apply {
             given(mlsConversationRepository)
                 .suspendFunction(mlsConversationRepository::getClientIdentity)
                 .whenInvokedWith(any())
-                .thenReturn(Either.Left(E2EIFailure.Generic(Exception())))
+                .thenReturn(Either.Left(failure))
         }
 
         fun withRepositoryValidCertificate(identity: WireIdentity?) = apply {
@@ -144,7 +163,7 @@ class GetE2eiCertificateUseCaseTest {
             CryptoQualifiedClientId("clientId", USER_ID.toCrypto())
 
         val e2eiCertificate =
-            E2eiCertificate(CertificateStatus.EXPIRED, "serialNumber", "certificateDetail")
+            E2eiCertificate(CertificateStatus.EXPIRED, "serialNumber", "certificateDetail", Instant.DISTANT_FUTURE)
         val IDENTITY = WireIdentity(
             CRYPTO_QUALIFIED_CLIENT_ID,
             handle = "alic_test",
@@ -153,7 +172,8 @@ class GetE2eiCertificateUseCaseTest {
             certificate = "certificate",
             status = CryptoCertificateStatus.EXPIRED,
             thumbprint = "thumbprint",
-            serialNumber = "serialNumber"
+            serialNumber = "serialNumber",
+            endTimestampSeconds = 1899105093
         )
     }
 }

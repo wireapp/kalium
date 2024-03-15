@@ -36,6 +36,8 @@ import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.EpochInfo
+import com.wire.kalium.logic.data.call.TestVideoType
+import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.CallMapper
@@ -358,6 +360,56 @@ class CallManagerImpl internal constructor(
         callingLogger.d("$TAG - wcall_set_mute() called")
     }
 
+    override suspend fun setTestVideoType(testVideoType: TestVideoType) = withCalling {
+        val logString = when (testVideoType) {
+            TestVideoType.NONE -> "NONE"
+            TestVideoType.PLATFORM -> "PLATFORM"
+            TestVideoType.FAKE -> "FAKE"
+            else -> "????"
+        }
+        callingLogger.d("$TAG -> set test video to $logString")
+
+        val selfUserId = federatedIdMapper.parseToFederatedId(userId.await())
+        val selfClientId = clientId.await().value
+        val handle = deferredHandle.await()
+
+        when (testVideoType) {
+            TestVideoType.NONE -> kcall_close()
+            TestVideoType.PLATFORM -> {
+                kcall_init(0)
+                kcall_set_local_user(selfUserId, selfClientId)
+                kcall_set_wuser(handle)
+
+            }
+            TestVideoType.FAKE -> {
+                kcall_init(1)
+                kcall_set_local_user(selfUserId, selfClientId)
+                kcall_set_wuser(handle)
+            }
+        }
+    }
+
+    override suspend fun setTestPreviewActive(shouldEnable: Boolean) = withCalling {
+        val logString = if (shouldEnable) "enabling" else "disabling"
+        callingLogger.d("$TAG -> $logString preview..")
+        if (shouldEnable)
+            kcall_preview_start()
+        else
+            kcall_preview_stop()
+    }
+
+    override suspend fun setTestRemoteVideoStates(conversationId: ConversationId, participants: List<Participant>) = withCalling {
+        for (participant in participants) {
+            val videoState = if (participant.isCameraOn) 1 else 0
+            kcall_set_user_vidstate(
+                federatedIdMapper.parseToFederatedId(conversationId),
+                federatedIdMapper.parseToFederatedId(participant.id),
+                clientid = participant.clientId,
+                videoState
+            )
+        }
+    }
+
     /**
      * This method should NOT be called while the call is still incoming or outgoing and not established yet.
      */
@@ -420,12 +472,14 @@ class CallManagerImpl internal constructor(
         conversationId: ConversationId,
         clients: String
     ) {
-        withCalling {
-            wcall_set_clients_for_conv(
-                it,
-                federatedIdMapper.parseToFederatedId(conversationId),
-                clients
-            )
+        if (callRepository.getCallMetadataProfile()[conversationId]?.protocol is Conversation.ProtocolInfo.Proteus) {
+            withCalling {
+                wcall_set_clients_for_conv(
+                    it,
+                    federatedIdMapper.parseToFederatedId(conversationId),
+                    clients
+                )
+            }
         }
     }
 

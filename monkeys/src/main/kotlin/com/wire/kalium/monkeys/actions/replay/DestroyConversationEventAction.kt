@@ -25,8 +25,8 @@ import com.wire.kalium.monkeys.pool.ConversationPool
 
 class DestroyConversationEventAction(private val eventConfig: EventType.DestroyConversation) :
     DestroyConversationAction(ActionType.DestroyConversation(1u), {}) {
-    override fun conversationTargets(): List<MonkeyConversation> {
-        val conversation = ConversationPool.getFromOldId(this.eventConfig.conversationId)
+    override fun conversationTargets(conversationPool: ConversationPool): List<MonkeyConversation> {
+        val conversation = conversationPool.getFromOldId(this.eventConfig.conversationId)
         return listOf(conversation)
     }
 }

@@ -18,19 +18,13 @@
 package com.wire.kalium.logic.data.e2ei
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.dao.MetadataDAO
-import io.ktor.http.Url
-import io.ktor.http.protocolWithAuthority
 
 interface CertificateRevocationListRepository {
 
@@ -41,7 +35,6 @@ interface CertificateRevocationListRepository {
      */
     suspend fun getCRLs(): CRLUrlExpirationList?
     suspend fun addOrUpdateCRL(url: String, timestamp: ULong)
-    suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String>
     suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray>
 }
 
@@ -55,43 +48,35 @@ internal class CertificateRevocationListRepositoryDataSource(
 
     override suspend fun addOrUpdateCRL(url: String, timestamp: ULong) {
         val newCRLUrls = metadataDAO.getSerializable(CRL_LIST_KEY, CRLUrlExpirationList.serializer())
-            ?.let { crlExpirationList ->
-                val crlWithExpiration = crlExpirationList.cRLWithExpirationList.find {
-                    it.url == url
-                }
-                crlWithExpiration?.let { item ->
-                    crlExpirationList.cRLWithExpirationList.map { current ->
-                        if (current.url == url) {
-                            return@map item.copy(expiration = timestamp)
-                        } else {
-                            return@map current
-                        }
+                ?.let { crlExpirationList ->
+                    val crlWithExpiration = crlExpirationList.cRLWithExpirationList.find {
+                        it.url == url
                     }
-                } ?: run {
-                    // add new CRL
-                    crlExpirationList.cRLWithExpirationList.plus(
-                        CRLWithExpiration(url, timestamp)
-                    )
-                }
+                    crlWithExpiration?.let { item ->
+                        crlExpirationList.cRLWithExpirationList.map { current ->
+                            if (current.url == url) {
+                                return@map item.copy(expiration = timestamp)
+                            } else {
+                                return@map current
+                            }
+                        }
+                    } ?: run {
+                        // add new CRL
+                        crlExpirationList.cRLWithExpirationList.plus(
+                            CRLWithExpiration(url, timestamp)
+                        )
+                    }
 
-            } ?: run {
-            // add new CRL
-            listOf(CRLWithExpiration(url, timestamp))
-        }
+                } ?: run {
+                // add new CRL
+                listOf(CRLWithExpiration(url, timestamp))
+            }
         metadataDAO.putSerializable(
             CRL_LIST_KEY,
             CRLUrlExpirationList(newCRLUrls),
             CRLUrlExpirationList.serializer()
         )
     }
-
-    override suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String> =
-        userConfigRepository.getE2EISettings()
-            .flatMap {
-                if (!it.isRequired) E2EIFailure.Disabled.left()
-                else if (it.discoverUrl == null) E2EIFailure.MissingDiscoveryUrl.left()
-                else Url(it.discoverUrl).protocolWithAuthority.right()
-            }
 
     override suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray> =
         wrapApiRequest {
