@@ -2,7 +2,7 @@ name: quay.io infinitemonkeys image build & push
 
 on:
   push:
-    branches: ['develop', 'monkeys_k8s_helm']
+    branches: ['develop']
     paths: ['monkeys/**']
 
 jobs:
