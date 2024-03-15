@@ -1,0 +1,29 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.message.MessageEntity.Mention;
+import kotlin.collections.List;
+
+CREATE TABLE MessageDrafts (
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      text TEXT,
+      edit_message_id TEXT,
+      quoted_message_id TEXT,
+      mention_list TEXT AS List<Mention> NOT NULL,
+
+    FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    PRIMARY KEY (conversation_id)
+);
+
+deleteDraft:
+DELETE FROM MessageDrafts WHERE conversation_id = ?;
+
+upsertDraft:
+INSERT INTO MessageDrafts(conversation_id, text, edit_message_id, quoted_message_id, mention_list)
+VALUES( ?, ?, ?, ?, ?)
+ON CONFLICT(conversation_id) DO UPDATE SET
+text = excluded.text,
+edit_message_id = excluded.edit_message_id,
+quoted_message_id = excluded.quoted_message_id,
+mention_list = excluded.mention_list;
+
+getDraft:
+SELECT * FROM MessageDrafts WHERE conversation_id = ?;
