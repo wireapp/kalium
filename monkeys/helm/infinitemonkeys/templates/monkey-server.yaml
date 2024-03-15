@@ -27,7 +27,7 @@ metadata:
     release: "{{ .Release.Name }}"
 spec:
   replicas: {{ .Values.monkeyServer.replicaCount }}
-  podManagementPolicy: "OrderedReady"
+  podManagementPolicy: "Parallel"
   selector:
     matchLabels:
       app: {{ .Values.service.serverName }}

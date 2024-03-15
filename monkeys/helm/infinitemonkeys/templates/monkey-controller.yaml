@@ -48,6 +48,13 @@ spec:
           args:
             - '-d1500'
             - /config/config.json
+          env:
+            - name: MONKEYS_SOCKET_TIMEOUT
+              value: MAX_LONG
+            - name: MONKEYS_REQUEST_TIMEOUT
+              value: MAX_LONG
+            - name: MONKEYS_CONNECT_TIMEOUT
+              value: MAX_LONG
           ports:
             - containerPort: 9090
               name: monkeymetrics
