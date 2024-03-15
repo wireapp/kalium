@@ -164,6 +164,7 @@ interface MLSConversationRepository {
 
     suspend fun getClientIdentity(clientId: ClientId): Either<CoreFailure, WireIdentity?>
     suspend fun getUserIdentity(userId: UserId): Either<CoreFailure, List<WireIdentity>>
+
     suspend fun getMembersIdentities(
         conversationId: ConversationId,
         userIds: List<UserId>
@@ -655,7 +656,6 @@ internal class MLSConversationDataSource(
 
     override suspend fun getClientIdentity(clientId: ClientId) =
         wrapStorageRequest { conversationDAO.getE2EIConversationClientInfoByClientId(clientId.value) }.flatMap {
-            kaliumLogger.i("#### conversation id for e2ei: ${it.clientId}, $it.")
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
 
