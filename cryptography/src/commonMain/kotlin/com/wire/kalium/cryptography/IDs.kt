@@ -72,14 +72,18 @@ data class CryptoQualifiedClientId(
 
 data class WireIdentity(
     val clientId: CryptoQualifiedClientId,
-    val handle: String,
+    val handle: String, // handle format is "{scheme}%40{handle}@{domain}", example: "wireapp://%40hans.wurst@elna.wire.link"
     val displayName: String,
     val domain: String,
     val certificate: String,
     val status: CryptoCertificateStatus,
     val thumbprint: String,
-    val serialNumber: String
-)
+    val serialNumber: String,
+    val endTimestamp: Long
+) {
+    val handleWithoutSchemeAtSignAndDomain: String
+        get() = handle.substringAfter("://%40").removeSuffix("@$domain")
+}
 
 enum class CryptoCertificateStatus {
     VALID, EXPIRED, REVOKED;

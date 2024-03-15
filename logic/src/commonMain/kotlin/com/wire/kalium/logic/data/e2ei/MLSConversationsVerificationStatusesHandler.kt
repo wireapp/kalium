@@ -49,6 +49,7 @@ import com.wire.kalium.persistence.dao.conversation.EpochChangesDataEntity
 import com.wire.kalium.util.DateTimeUtil
 
 typealias UserToWireIdentity = Map<UserId, List<WireIdentity>>
+
 /**
  * Observes all the MLS Conversations Verification status.
  * Notify user (by adding System message in conversation) if needed about changes.
@@ -123,7 +124,7 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
                     val isUserVerified = wireIdentity.firstOrNull {
                         it.status != CryptoCertificateStatus.VALID ||
                                 it.displayName != persistedMemberInfo?.name ||
-                                it.handle != persistedMemberInfo.handle
+                                it.handleWithoutSchemeAtSignAndDomain != persistedMemberInfo.handle
                     } == null
                     if (!isUserVerified) {
                         newStatus = VerificationStatus.NOT_VERIFIED

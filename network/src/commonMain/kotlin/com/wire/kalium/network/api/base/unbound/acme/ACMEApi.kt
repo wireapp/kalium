@@ -25,6 +25,7 @@ import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.handleUnsuccessfulResponse
+import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.call.body
 import io.ktor.client.request.accept
@@ -50,7 +51,14 @@ interface ACMEApi {
     suspend fun sendACMERequest(url: String, body: ByteArray? = null): NetworkResponse<ACMEResponse>
     suspend fun sendAuthorizationRequest(url: String, body: ByteArray? = null): NetworkResponse<ACMEAuthorizationResponse>
     suspend fun sendChallengeRequest(url: String, body: ByteArray): NetworkResponse<ChallengeResponse>
-    suspend fun getACMEFederation(discoveryUrl: String): NetworkResponse<String>
+
+    /**
+     * Retrieves the ACME federation certificate chain from the specified discovery URL.
+     *
+     * @param discoveryUrl The non-blank URL of the ACME federation discovery endpoint.
+     * @return A [NetworkResponse] object containing the certificate chain as a list of strings.
+     */
+    suspend fun getACMEFederationCertificateChain(discoveryUrl: String): NetworkResponse<List<String>>
     suspend fun getClientDomainCRL(url: String): NetworkResponse<ByteArray>
 }
 
@@ -225,7 +233,7 @@ class ACMEApiImpl internal constructor(
         }
     }
 
-    override suspend fun getACMEFederation(discoveryUrl: String): NetworkResponse<String> {
+    override suspend fun getACMEFederationCertificateChain(discoveryUrl: String): NetworkResponse<List<String>> {
         val protocolWithAuthority = Url(discoveryUrl).protocolWithAuthority
         if (discoveryUrl.isBlank() || protocolWithAuthority.isBlank()) {
             return NetworkResponse.Error(
@@ -239,9 +247,9 @@ class ACMEApiImpl internal constructor(
             )
         }
 
-        return wrapKaliumResponse {
+        return wrapKaliumResponse<FederationCertificateChainResponse> {
             httpClient.get("$protocolWithAuthority/$PATH_ACME_FEDERATION")
-        }
+        }.mapSuccess { it.certificates }
     }
 
     override suspend fun getClientDomainCRL(url: String): NetworkResponse<ByteArray> {
