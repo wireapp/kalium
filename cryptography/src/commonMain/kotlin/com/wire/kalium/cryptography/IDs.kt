@@ -96,7 +96,7 @@ data class WireIdentity(
         status: CryptoCertificateStatus,
         thumbprint: String,
         serialNumber: String,
-        endTimestampSeconds: Long
+        endTimestamp: Long
     ) : this(
         clientId = clientId,
         handle = Handle.fromString(handle, domain),
@@ -106,7 +106,7 @@ data class WireIdentity(
         status = status,
         thumbprint = thumbprint,
         serialNumber = serialNumber,
-        endTimestampSeconds = endTimestampSeconds
+        endTimestamp = endTimestamp
     )
 
     // WireIdentity handle format is "{scheme}%40{username}@{domain}"
