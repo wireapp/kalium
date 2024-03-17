@@ -23,5 +23,5 @@ data class MessageDraft(
     val text: String,
     val editMessageId: String?,
     val quotedMessageId: String?,
-    val selectedMentionList : List<MessageMention>
+    val selectedMentionList: List<MessageMention>
 )
