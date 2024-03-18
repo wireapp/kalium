@@ -161,12 +161,5 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
                 "serialNumber",
                 1899105093
             )
-        private val E2EI_CERTIFICATE =
-            E2eiCertificate(
-                status = CertificateStatus.VALID,
-                certificateDetail = "details",
-                serialNumber = "serialNumber",
-                endAt = Instant.DISTANT_FUTURE
-            )
     }
 }
