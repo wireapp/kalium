@@ -14,6 +14,21 @@ to add several backends and let the Servers send messages between them. In that 
 the config.json file directly prior (re)deployment.
 
 
+## Scaling
+
+The application is capable scaling to 100s of monkeys, given sufficient cluster resources. We've determined
+that as of now (2024-03), one Controller can handle about 350 monkeys before running into concurrency issues.
+
+In order to support a deployment with 350 monkeys (plus Owner plus Controller), the cluster should have a total of at least:
+
+ * 192 GiB RAM
+ * 40 (v)CPU
+
+Equivalent to about 500 MiB RAM and per monkey and 10 monkeys per vCPU. During tests it's been determined that
+a minimum of six nodes with 32G RAM and 8 vCPU each are sufficient, with about 87% total cluster RAM usage.
+Depending on the specific actions which the monkeys are supposed to perform, more compute power might be needed down the line.
+
+
 ## Log output
 
 The Servers echo all logging to stdout. The Controller writes to a local log within it's pod in `/wire/cryptobox/monkeys.log`.
@@ -21,7 +36,7 @@ The Servers echo all logging to stdout. The Controller writes to a local log wit
 
 ## JVM Optimizations
 
-We've added a block in `values.yaml` exposing various Java options in order to reduce memory footprint of the monkey servers.
+JVM options are exposed as a config block in `values.yaml`, in order to reduce memory footprint of the monkey servers.
 At this point, the amount of RAM needed by each monkey is down about 50% compared to non-optimized defaults.
 
 
