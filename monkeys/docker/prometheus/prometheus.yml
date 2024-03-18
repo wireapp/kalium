@@ -11,4 +11,4 @@ scrape_configs:
         scheme: http
         static_configs:
             -   targets:
-                    - monkeys:9090
+                    - monkeys-controller:9090
