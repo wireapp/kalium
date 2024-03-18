@@ -70,7 +70,7 @@ jobs:
               ./**/build/test-results/**/*.xml
 
       - name: Publish Unit Test Results
-        uses: EnricoMi/publish-unit-test-result-action/composite@v2.11.0
+        uses: EnricoMi/publish-unit-test-result-action/composite@v2.15.1
         if: always()
         with:
           files: |
