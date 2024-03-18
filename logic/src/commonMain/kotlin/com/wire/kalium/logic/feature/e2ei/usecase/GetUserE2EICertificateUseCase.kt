@@ -17,12 +17,16 @@
  */
 package com.wire.kalium.logic.feature.e2ei.usecase
 
+import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.CertificateStatus
 import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapper
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrElse
+import com.wire.kalium.logic.functional.map
 
 /**
  * This use case is used to get the e2ei certificate status of specific user
@@ -34,20 +38,21 @@ interface GetUserE2eiCertificateStatusUseCase {
 class GetUserE2eiCertificateStatusUseCaseImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
     private val certificateStatusMapper: CertificateStatusMapper,
-    private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase
+    private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase,
+    private val clientRepository: ClientRepository
 ) : GetUserE2eiCertificateStatusUseCase {
     override suspend operator fun invoke(userId: UserId): GetUserE2eiCertificateStatusResult =
         if (isE2EIEnabledUseCase()) {
-            mlsConversationRepository.getUserIdentity(userId).fold(
-                {
-                    GetUserE2eiCertificateStatusResult.Failure.NotActivated
-                },
-                { identities ->
-                    identities.getUserCertificateStatus(certificateStatusMapper)?.let {
-                        GetUserE2eiCertificateStatusResult.Success(it)
-                    } ?: GetUserE2eiCertificateStatusResult.Failure.NotActivated
+            mlsConversationRepository.getUserIdentity(userId)
+                .flatMap { identities ->
+                    clientRepository.getClientsByUserId(userId).map { clients ->
+                        val clientIds = clients.filter { it.isValid }.map { it.id }
+                        identities.getUserCertificateStatus(certificateStatusMapper, clientIds)?.let {
+                            GetUserE2eiCertificateStatusResult.Success(it)
+                        } ?: GetUserE2eiCertificateStatusResult.Failure.NotActivated
+                    }
                 }
-            )
+                .getOrElse { GetUserE2eiCertificateStatusResult.Failure.NotActivated }
         } else {
             GetUserE2eiCertificateStatusResult.Failure.NotActivated
         }

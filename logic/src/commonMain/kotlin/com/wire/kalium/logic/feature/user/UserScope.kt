@@ -131,7 +131,8 @@ class UserScope internal constructor(
         get() = GetUserE2eiCertificateStatusUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,
             certificateStatusMapper = certificateStatusMapper,
-            isE2EIEnabledUseCase = isE2EIEnabledUseCase
+            isE2EIEnabledUseCase = isE2EIEnabledUseCase,
+            clientRepository = clientRepository
         )
     val getUserE2eiCertificates: GetUserE2eiCertificatesUseCase
         get() = GetUserE2eiCertificatesUseCaseImpl(
@@ -142,7 +143,8 @@ class UserScope internal constructor(
     val getMembersE2EICertificateStatuses: GetMembersE2EICertificateStatusesUseCase
         get() = GetMembersE2EICertificateStatusesUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,
-            certificateStatusMapper = certificateStatusMapper
+            certificateStatusMapper = certificateStatusMapper,
+            clientRepository = clientRepository
         )
     val deleteAsset: DeleteAssetUseCase get() = DeleteAssetUseCaseImpl(assetRepository)
     val setUserHandle: SetUserHandleUseCase get() = SetUserHandleUseCase(accountRepository, validateUserHandleUseCase, syncManager)
