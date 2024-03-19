@@ -15,6 +15,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.e2ei
+package com.wire.kalium.logic.data.conversation
 
-expect class PlatformX509Certificate
+import com.wire.kalium.logic.data.id.GroupID
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+
+interface EpochChangesObserver {
+    fun observe(): Flow<GroupID>
+}
+
+internal class EpochChangesObserverImpl(
+    private val epochsFlow: MutableSharedFlow<GroupID>,
+) : EpochChangesObserver {
+    override fun observe(): Flow<GroupID> = epochsFlow
+}

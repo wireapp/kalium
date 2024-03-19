@@ -28,7 +28,10 @@ actual fun mapMLSException(exception: Exception): MLSFailure =
                 is CryptoError.BufferedFutureMessage -> MLSFailure.BufferedFutureMessage
                 is CryptoError.SelfCommitIgnored -> MLSFailure.SelfCommitIgnored
                 is CryptoError.UnmergedPendingGroup -> MLSFailure.UnmergedPendingGroup
+                is CryptoError.StaleProposal -> MLSFailure.StaleProposal
+                is CryptoError.StaleCommit -> MLSFailure.StaleCommit
                 is CryptoError.ConversationAlreadyExists -> MLSFailure.ConversationAlreadyExists
+                is CryptoError.MessageEpochTooOld -> MLSFailure.MessageEpochTooOld
                 else -> MLSFailure.Generic(exception)
             }
         } else {

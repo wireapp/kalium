@@ -15,14 +15,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+
 package com.wire.kalium.logic.feature.e2ei
 
-actual interface X509CertificateGenerator {
-    actual fun generate(certificateByteArray: ByteArray): PlatformX509Certificate
+import com.wire.kalium.cryptography.CryptoCertificateStatus
+
+interface CertificateStatusMapper {
+    fun toCertificateStatus(certificateStatus: CryptoCertificateStatus): CertificateStatus
 }
 
-actual class X509CertificateGeneratorImpl : X509CertificateGenerator {
-    override fun generate(certificateByteArray: ByteArray): PlatformX509Certificate {
-        TODO("Not yet implemented")
-    }
+class CertificateStatusMapperImpl : CertificateStatusMapper {
+    override fun toCertificateStatus(certificateStatus: CryptoCertificateStatus): CertificateStatus =
+        when (certificateStatus) {
+            CryptoCertificateStatus.EXPIRED -> CertificateStatus.EXPIRED
+            CryptoCertificateStatus.REVOKED -> CertificateStatus.REVOKED
+            CryptoCertificateStatus.VALID -> CertificateStatus.VALID
+        }
 }

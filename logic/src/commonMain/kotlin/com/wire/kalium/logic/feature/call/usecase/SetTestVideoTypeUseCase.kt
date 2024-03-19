@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2023 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,12 +15,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.e2ei
 
-import com.wire.kalium.cryptography.CryptoCertificateStatus
+package com.wire.kalium.logic.feature.call.usecase
 
-expect interface CertificateStatusChecker {
-    fun status(notAfterTimestamp: Long, certificateStatus: CryptoCertificateStatus): CertificateStatus
+import com.wire.kalium.logic.data.call.TestVideoType
+import com.wire.kalium.logic.feature.call.CallManager
+/**
+ * This use case is responsible for enabling the test preview.
+ */
+class SetTestVideoTypeUseCase internal constructor(
+    private val callManager: Lazy<CallManager>
+) {
+
+    suspend operator fun invoke(
+        testVideoType: TestVideoType
+    ) {
+        callManager.value.setTestVideoType(testVideoType)
+    }
 }
-
-expect class CertificateStatusCheckerImpl() : CertificateStatusChecker

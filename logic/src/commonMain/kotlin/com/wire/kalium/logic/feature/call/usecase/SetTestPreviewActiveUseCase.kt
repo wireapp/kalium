@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2024 Wire Swiss GmbH
+ * Copyright (C) 2023 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,10 +15,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.e2ei
 
-expect interface X509CertificateGenerator {
-    fun generate(certificateByteArray: ByteArray): PlatformX509Certificate
+package com.wire.kalium.logic.feature.call.usecase
+
+import com.wire.kalium.logic.feature.call.CallManager
+
+/**
+ * Enable / disable preview video when running the calling test tool
+ */
+class SetTestPreviewActiveUseCase internal constructor(
+    private val callManager: Lazy<CallManager>
+) {
+
+    suspend operator fun invoke(
+        active: Boolean
+    ) {
+        callManager.value.setTestPreviewActive(active)
+    }
 }
-
-expect class X509CertificateGeneratorImpl : X509CertificateGenerator

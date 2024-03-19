@@ -331,7 +331,9 @@ class MLSClientImpl(
                     value.domain,
                     value.certificate,
                     toDeviceStatus(value.status),
-                    value.thumbprint
+                    value.thumbprint,
+                    value.serialNumber,
+                    value.notAfter.toLong()
                 )
             }
         }

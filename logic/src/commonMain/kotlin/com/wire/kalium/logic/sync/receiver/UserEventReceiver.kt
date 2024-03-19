@@ -37,6 +37,7 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
+import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
@@ -106,6 +107,8 @@ internal class UserEventReceiverImpl internal constructor(
     private suspend fun handleNewConnection(event: Event.User.NewConnection, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> =
         userRepository.fetchUserInfo(event.connection.qualifiedToId)
             .flatMap {
+                val previousStatus = connectionRepository.getConnection(event.connection.qualifiedConversationId)
+                    .map { it.connection.status }.getOrNull()
                 connectionRepository.insertConnectionFromEvent(event)
                     .flatMap {
                         if (event.connection.status == ConnectionState.ACCEPTED) {
@@ -113,13 +116,16 @@ internal class UserEventReceiverImpl internal constructor(
                                 event.connection.qualifiedToId,
                                 delay = if (deliveryInfo.source == EventSource.LIVE) 3.seconds else ZERO
                             )
-                            newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
-                                event.connection.qualifiedConversationId
-                            )
+                            if (previousStatus != ConnectionState.MISSING_LEGALHOLD_CONSENT) {
+                                newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
+                                    event.connection.qualifiedConversationId
+                                )
+                            } else Either.Right(Unit)
                         } else {
                             Either.Right(Unit)
                         }
                     }
+                    .flatMap { legalHoldHandler.handleNewConnection(event) }
             }
             .onSuccess {
                 kaliumLogger

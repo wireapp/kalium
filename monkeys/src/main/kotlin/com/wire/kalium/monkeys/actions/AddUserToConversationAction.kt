@@ -27,8 +27,8 @@ import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 
 open class AddUserToConversationAction(val config: ActionType.AddUsersToConversation, sender: suspend (Event) -> Unit) : Action(sender) {
-    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
-        val targets = pickConversations(monkeyPool)
+    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool, conversationPool: ConversationPool) {
+        val targets = pickConversations(monkeyPool, conversationPool)
         targets.forEach { (monkeyConversation, participants) ->
             monkeyConversation.addMonkeys(participants)
             this.sender(
@@ -40,8 +40,11 @@ open class AddUserToConversationAction(val config: ActionType.AddUsersToConversa
         }
     }
 
-    open suspend fun pickConversations(monkeyPool: MonkeyPool): List<Pair<MonkeyConversation, List<Monkey>>> {
-        val targets = ConversationPool.randomDynamicConversations(this.config.countGroups.toInt())
+    open suspend fun pickConversations(
+        monkeyPool: MonkeyPool,
+        conversationPool: ConversationPool
+    ): List<Pair<MonkeyConversation, List<Monkey>>> {
+        val targets = conversationPool.randomDynamicConversations(this.config.countGroups.toInt())
         return targets.map { target ->
             val filterOut = target.membersIds()
             val participants = target.creator.randomPeers(this.config.userCount, monkeyPool, filterOut)

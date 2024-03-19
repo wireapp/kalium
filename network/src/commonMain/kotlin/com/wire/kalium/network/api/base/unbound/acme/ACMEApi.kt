@@ -25,6 +25,7 @@ import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.handleUnsuccessfulResponse
+import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.call.body
 import io.ktor.client.request.accept
@@ -35,19 +36,29 @@ import io.ktor.client.request.preparePost
 import io.ktor.client.request.setBody
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.ContentType
+import io.ktor.http.URLBuilder
+import io.ktor.http.URLProtocol
 import io.ktor.http.Url
 import io.ktor.http.contentType
 import io.ktor.http.isSuccess
 import io.ktor.http.protocolWithAuthority
+import okio.IOException
 
 interface ACMEApi {
-    suspend fun getTrustAnchors(discoveryUrl: Url): NetworkResponse<ByteArray>
-    suspend fun getACMEDirectories(discoveryUrl: Url): NetworkResponse<AcmeDirectoriesResponse>
+    suspend fun getTrustAnchors(discoveryUrl: String): NetworkResponse<ByteArray>
+    suspend fun getACMEDirectories(discoveryUrl: String): NetworkResponse<AcmeDirectoriesResponse>
     suspend fun getACMENonce(url: String): NetworkResponse<String>
     suspend fun sendACMERequest(url: String, body: ByteArray? = null): NetworkResponse<ACMEResponse>
     suspend fun sendAuthorizationRequest(url: String, body: ByteArray? = null): NetworkResponse<ACMEAuthorizationResponse>
     suspend fun sendChallengeRequest(url: String, body: ByteArray): NetworkResponse<ChallengeResponse>
-    suspend fun getACMEFederation(discoveryUrl: Url): NetworkResponse<String>
+
+    /**
+     * Retrieves the ACME federation certificate chain from the specified discovery URL.
+     *
+     * @param discoveryUrl The non-blank URL of the ACME federation discovery endpoint.
+     * @return A [NetworkResponse] object containing the certificate chain as a list of strings.
+     */
+    suspend fun getACMEFederationCertificateChain(discoveryUrl: String): NetworkResponse<List<String>>
     suspend fun getClientDomainCRL(url: String): NetworkResponse<ByteArray>
 }
 
@@ -58,42 +69,89 @@ class ACMEApiImpl internal constructor(
     private val httpClient get() = unboundNetworkClient.httpClient
     private val clearTextTrafficHttpClient get() = unboundClearTextTrafficNetworkClient.httpClient
 
-    override suspend fun getTrustAnchors(discoveryUrl: Url): NetworkResponse<ByteArray> = wrapKaliumResponse {
-        httpClient.get("${discoveryUrl.protocolWithAuthority}/$PATH_ACME_ROOTS_PEM")
-    }
+    override suspend fun getTrustAnchors(discoveryUrl: String): NetworkResponse<ByteArray> {
+        val protocolWithAuthority = Url(discoveryUrl).protocolWithAuthority
 
-    override suspend fun getACMEDirectories(discoveryUrl: Url): NetworkResponse<AcmeDirectoriesResponse> = wrapKaliumResponse {
-        httpClient.get(discoveryUrl)
-    }
-
-    override suspend fun getACMENonce(url: String): NetworkResponse<String> =
-        httpClient.prepareHead(url).execute { httpResponse ->
-            handleACMENonceResponse(httpResponse)
+        if (discoveryUrl.isBlank() || protocolWithAuthority.isBlank()) {
+            return NetworkResponse.Error(
+                KaliumException.GenericError(
+                    IllegalArgumentException(
+                        "getTrustAnchors: Url cannot be empty or protocolWithAuthority cannot be empty" +
+                                ", is urlBlank = ${discoveryUrl.isBlank()}" +
+                                ", is protocolWithAuthorityBlank = ${protocolWithAuthority.isBlank()}"
+                    )
+                )
+            )
         }
+
+        return wrapKaliumResponse {
+            httpClient.get("$protocolWithAuthority/$PATH_ACME_ROOTS_PEM")
+        }
+
+    }
+
+    override suspend fun getACMEDirectories(discoveryUrl: String): NetworkResponse<AcmeDirectoriesResponse> {
+        if (discoveryUrl.isBlank()) {
+            return NetworkResponse.Error(KaliumException.GenericError(IllegalArgumentException("getACMEDirectories: Url cannot be empty")))
+        }
+
+        return wrapKaliumResponse {
+            httpClient.get(discoveryUrl)
+        }
+    }
+
+    override suspend fun getACMENonce(url: String): NetworkResponse<String> {
+        return try {
+            if (url.isBlank()) {
+                return NetworkResponse.Error(KaliumException.GenericError(IllegalArgumentException("sendACMERequest: Url cannot be empty")))
+            }
+            httpClient.prepareHead(url).execute { httpResponse ->
+                handleACMENonceResponse(httpResponse)
+
+            }
+        } catch (e: IOException) {
+            NetworkResponse.Error(KaliumException.GenericError(e))
+        }
+    }
 
     private suspend fun handleACMENonceResponse(httpResponse: HttpResponse): NetworkResponse<String> =
         if (httpResponse.status.isSuccess()) httpResponse.headers[NONCE_HEADER_KEY]?.let { nonce ->
             NetworkResponse.Success(nonce, httpResponse)
         } ?: run {
             CustomErrors.MISSING_NONCE
-        }
-        else {
+        } else {
             handleUnsuccessfulResponse(httpResponse)
         }
 
     override suspend fun sendACMERequest(
         url: String,
         body: ByteArray?
-    ): NetworkResponse<ACMEResponse> =
-        httpClient.preparePost(url) {
-            contentType(ContentType.Application.JoseJson)
-            body?.let { setBody(body) }
-        }.execute { httpResponse ->
-            handleACMERequestResponse(httpResponse)
+    ): NetworkResponse<ACMEResponse> {
+        return try {
+            if (url.isBlank()) {
+                return NetworkResponse.Error(KaliumException.GenericError(IllegalArgumentException("sendACMERequest: Url cannot be empty")))
+            }
+            httpClient.preparePost(url) {
+                contentType(ContentType.Application.JoseJson)
+                body?.let { setBody(body) }
+            }.execute { httpResponse ->
+                handleACMERequestResponse(httpResponse)
+            }
+        } catch (e: IOException) {
+            NetworkResponse.Error(KaliumException.GenericError(e))
+        }
+    }
+
+    override suspend fun sendAuthorizationRequest(url: String, body: ByteArray?): NetworkResponse<ACMEAuthorizationResponse> {
+        if (url.isBlank()) {
+            return NetworkResponse.Error(
+                KaliumException.GenericError(
+                    IllegalArgumentException("sendAuthorizationRequest: Url cannot be empty")
+                )
+            )
         }
 
-    override suspend fun sendAuthorizationRequest(url: String, body: ByteArray?): NetworkResponse<ACMEAuthorizationResponse> =
-        wrapKaliumResponse<String> {
+        return wrapKaliumResponse<String> {
             httpClient.post(url) {
                 contentType(ContentType.Application.JoseJson)
                 setBody(body)
@@ -124,6 +182,8 @@ class ACMEApiImpl internal constructor(
             }
         }
 
+    }
+
     private suspend fun handleACMERequestResponse(httpResponse: HttpResponse): NetworkResponse<ACMEResponse> =
         if (httpResponse.status.isSuccess()) {
             httpResponse.headers[NONCE_HEADER_KEY]?.let { nonce ->
@@ -141,8 +201,16 @@ class ACMEApiImpl internal constructor(
             handleUnsuccessfulResponse(httpResponse)
         }
 
-    override suspend fun sendChallengeRequest(url: String, body: ByteArray): NetworkResponse<ChallengeResponse> =
-        wrapKaliumResponse<ChallengeResponse> {
+    override suspend fun sendChallengeRequest(url: String, body: ByteArray): NetworkResponse<ChallengeResponse> {
+        if (url.isBlank()) {
+            return NetworkResponse.Error(
+                KaliumException.GenericError(
+                    IllegalArgumentException("sendChallengeRequest: Url cannot be empty")
+                )
+            )
+        }
+
+        return wrapKaliumResponse<ChallengeResponse> {
             httpClient.post(url) {
                 contentType(ContentType.Application.JoseJson)
                 setBody(body)
@@ -163,15 +231,43 @@ class ACMEApiImpl internal constructor(
                 CustomErrors.MISSING_NONCE
             }
         }
-
-    override suspend fun getACMEFederation(discoveryUrl: Url): NetworkResponse<String> = wrapKaliumResponse {
-        httpClient.get("${discoveryUrl.protocolWithAuthority}/$PATH_ACME_FEDERATION")
     }
 
-    override suspend fun getClientDomainCRL(url: String): NetworkResponse<ByteArray> =
-        wrapKaliumResponse {
-            clearTextTrafficHttpClient.get("$url/$PATH_CRL")
+    override suspend fun getACMEFederationCertificateChain(discoveryUrl: String): NetworkResponse<List<String>> {
+        val protocolWithAuthority = Url(discoveryUrl).protocolWithAuthority
+        if (discoveryUrl.isBlank() || protocolWithAuthority.isBlank()) {
+            return NetworkResponse.Error(
+                KaliumException.GenericError(
+                    IllegalArgumentException(
+                        "getACMEFederation: Url cannot be empty, " +
+                                "is urlBlank = ${discoveryUrl.isBlank()}, " +
+                                "is protocolWithAuthorityBlank = ${protocolWithAuthority.isBlank()}"
+                    )
+                )
+            )
         }
+
+        return wrapKaliumResponse<FederationCertificateChainResponse> {
+            httpClient.get("$protocolWithAuthority/$PATH_ACME_FEDERATION")
+        }.mapSuccess { it.certificates }
+    }
+
+    override suspend fun getClientDomainCRL(url: String): NetworkResponse<ByteArray> {
+        if (url.isBlank()) {
+            return NetworkResponse.Error(
+                KaliumException.GenericError(
+                    IllegalArgumentException("getClientDomainCRL: Url cannot be empty")
+                )
+            )
+        }
+
+        return wrapKaliumResponse {
+            val httpUrl = URLBuilder(url).apply {
+                this.protocol = URLProtocol.HTTP
+            }.build()
+            clearTextTrafficHttpClient.get(httpUrl)
+        }
+    }
 
     private companion object {
         const val PATH_ACME_FEDERATION = "federation"
@@ -179,6 +275,5 @@ class ACMEApiImpl internal constructor(
 
         const val NONCE_HEADER_KEY = "Replay-Nonce"
         const val LOCATION_HEADER_KEY = "location"
-        const val PATH_CRL = "crl"
     }
 }

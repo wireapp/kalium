@@ -29,7 +29,9 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationGuestLinkEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.E2EIConversationClientInfoEntity
+import com.wire.kalium.persistence.dao.conversation.EpochChangesDataEntity
 import com.wire.kalium.persistence.dao.conversation.MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI
+import com.wire.kalium.persistence.dao.conversation.NameAndHandleEntity
 import com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberEntity
@@ -1824,6 +1826,67 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.observeGuestRoomLinkByConversationId(conversationId).first().let {
             assertEquals(null, it)
         }
+    }
+
+    @Test
+    fun givenInsertedConversations_whenGettingConversationByInexistingGroupId_thenReturnNull() = runTest {
+        // given
+        val expected = null
+        conversationDAO.insertConversation(conversationEntity4)
+
+        // when
+        val result = conversationDAO.getConversationByGroupID("call_subconversation_groupid")
+
+        // then
+        assertEquals(
+            expected,
+            result
+        )
+    }
+
+    @Test
+    fun givenConversationMembers_whenCallingSelectGroupStatusMembersNamesAndHandles_thenRerturn() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("conversationId", "domain")
+        val groupId = "groupId"
+
+        val mlsConversation = conversationEntity1.copy(
+            id = conversationId,
+            protocolInfo = ConversationEntity.ProtocolInfo.MLS(
+                groupId = groupId,
+                groupState = ConversationEntity.GroupState.ESTABLISHED,
+                keyingMaterialLastUpdate = Instant.fromEpochMilliseconds(0),
+                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+                epoch = 0UL
+            )
+        )
+
+        val users = listOf(user1, user2, user3)
+        val members = listOf(
+            MemberEntity(user1.id, MemberEntity.Role.Admin),
+            MemberEntity(user2.id, MemberEntity.Role.Member),
+            MemberEntity(user3.id, MemberEntity.Role.Member)
+        )
+
+        val expected = EpochChangesDataEntity(
+            conversationId,
+            mlsVerificationStatus = mlsConversation.mlsVerificationStatus,
+            members = mapOf(
+                user1.id to NameAndHandleEntity(user1.name, user1.handle),
+                user2.id to NameAndHandleEntity(user2.name, user2.handle),
+                user3.id to NameAndHandleEntity(user3.name, user3.handle)
+            )
+        )
+
+        conversationDAO.insertConversation(mlsConversation)
+        userDAO.insertOrIgnoreUsers(users)
+        memberDAO.insertMembersWithQualifiedId(members, conversationId)
+
+        // when
+        val result = conversationDAO.selectGroupStatusMembersNamesAndHandles(groupId)
+
+        // then
+        assertEquals(expected, result)
     }
 
     private fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity {

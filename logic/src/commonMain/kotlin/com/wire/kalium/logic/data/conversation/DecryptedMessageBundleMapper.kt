@@ -36,7 +36,7 @@ fun com.wire.kalium.cryptography.DecryptedMessageBundle.toModel(groupID: GroupID
         identity?.let { identity ->
             E2EIdentity(
                 identity.clientId,
-                identity.handle,
+                identity.handle.handle,
                 identity.displayName,
                 identity.domain,
                 identity.certificate,

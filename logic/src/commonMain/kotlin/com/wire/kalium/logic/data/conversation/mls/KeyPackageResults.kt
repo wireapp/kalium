@@ -15,6 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.e2ei
+package com.wire.kalium.logic.data.conversation.mls
 
-actual class PlatformX509Certificate
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
+
+data class KeyPackageClaimResult(
+    val successfullyFetchedKeyPackages: List<KeyPackageDTO>,
+    val usersWithoutKeyPackagesAvailable: Set<UserId>
+)
+
+data class MLSAdditionResult(
+    val successfullyAddedUsers: Set<UserId>,
+    val notAddedUsers: Set<UserId>
+)

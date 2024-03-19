@@ -59,6 +59,10 @@ CREATE INDEX conversation_modified_date_index ON Conversation(last_modified_date
 CREATE INDEX conversation_notified_date_index ON Conversation(last_notified_date);
 CREATE INDEX conversation_read_date_index ON Conversation(last_read_date);
 CREATE INDEX conversation_creator_index ON Conversation(creator_id);
+CREATE INDEX conversation_verification_status ON Conversation(verification_status);
+
+conversationIDByGroupId:
+SELECT qualified_id, verification_status FROM Conversation WHERE mls_group_id = :groupId;
 
 deleteAllConversations:
 DELETE FROM Conversation;
@@ -438,7 +442,6 @@ updateLegalHoldStatus {
 UPDATE Conversation
 SET legal_hold_status = :legal_hold_status
 WHERE qualified_id = :qualified_id AND legal_hold_status != :legal_hold_status;
-SELECT changes();
 }
 
 upsertLegalHoldStatusChangeNotified {
@@ -447,7 +450,6 @@ VALUES (:conversationId, :notified)
 ON CONFLICT(conversation_id) DO UPDATE SET
     legal_hold_status_change_notified = excluded.legal_hold_status_change_notified
     WHERE legal_hold_status_change_notified != excluded.legal_hold_status_change_notified;
-SELECT changes();
 }
 
 selectLegalHoldStatus:
@@ -474,6 +476,7 @@ CREATE TRIGGER addMessageAfterProteusVerificationStatusChange
 AFTER UPDATE ON Conversation
 WHEN new.proteus_verification_status != old.proteus_verification_status
 AND (new.proteus_verification_status  = 'VERIFIED' OR old.proteus_verification_status = 'VERIFIED')
+AND new.protocol != 'MLS'
 BEGIN
     INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility)
     VALUES(

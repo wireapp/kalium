@@ -21,7 +21,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.monkeys.MetricsCollector
 import com.wire.kalium.monkeys.model.UserCount
-import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.resolveUserCount
 import io.micrometer.core.instrument.Tag
 
@@ -63,9 +62,9 @@ class MonkeyConversation(
         this.creator.removeMonkeyFromConversation(conversationId, monkey)
     }
 
-    suspend fun destroy() {
-        this.creator.destroyConversation(this.conversationId)
-        ConversationPool.conversationDestroyed(this.conversationId)
+    suspend fun destroy(callback: (ConversationId) -> Unit) {
+        this.creator.destroyConversation(this.conversationId, this.creator.monkeyType.userId())
+        callback(this.conversationId)
     }
 
     fun membersIds(): List<UserId> {

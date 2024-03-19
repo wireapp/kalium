@@ -180,7 +180,7 @@ class ObserveE2EIRequiredUseCaseTest {
     }
 
     @Test
-    fun givenSettingWithNotifyDateInPastAndUserHasCertificate_thenEmitNotRequiredResult() = runTest(TestKaliumDispatcher.io) {
+    fun givenSettingWithNotifyDateInPastAndUserHasCertificate_thenEmitRenewResult() = runTest(TestKaliumDispatcher.io) {
         val setting = MLS_E2EI_SETTING.copy(
             gracePeriodEnd = DateTimeUtil.currentInstant()
         )
@@ -194,7 +194,7 @@ class ObserveE2EIRequiredUseCaseTest {
 
         useCase().test {
             advanceTimeBy(1000L)
-            assertEquals(E2EIRequiredResult.NotRequired, awaitItem())
+            assertTrue(awaitItem() is E2EIRequiredResult.WithGracePeriod.Renew)
             awaitComplete()
         }
     }
@@ -236,6 +236,54 @@ class ObserveE2EIRequiredUseCaseTest {
 
         useCase().test {
             assertTrue { awaitItem() is E2EIRequiredResult.NotRequired }
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun givenSettingWithNotifyDateInPastAndUserHasEndedCertificate_thenEmitRenewResult() = runTest(TestKaliumDispatcher.io) {
+        val setting = MLS_E2EI_SETTING.copy(
+            gracePeriodEnd = DateTimeUtil.currentInstant()
+        )
+        val (_, useCase) = Arrangement(TestKaliumDispatcher.io)
+            .withMLSE2EISetting(setting)
+            .withE2EINotificationTime(DateTimeUtil.currentInstant())
+            .withIsMLSSupported(true)
+            .withCurrentClientProviderSuccess()
+            .withGetE2EICertificateUseCaseResult(
+                GetE2EICertificateUseCaseResult.Success(
+                    VALID_CERTIFICATE.copy(endAt = DateTimeUtil.currentInstant().minus(1.days))
+                )
+            )
+            .arrange()
+
+        useCase().test {
+            advanceTimeBy(1000L)
+            assertTrue(awaitItem() is E2EIRequiredResult.NoGracePeriod.Renew)
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun givenSettingWithNotifyDateInPastAndUserHasValidCertificate_thenEmitNotRequiredResult() = runTest(TestKaliumDispatcher.io) {
+        val setting = MLS_E2EI_SETTING.copy(
+            gracePeriodEnd = DateTimeUtil.currentInstant()
+        )
+        val (_, useCase) = Arrangement(TestKaliumDispatcher.io)
+            .withMLSE2EISetting(setting)
+            .withE2EINotificationTime(DateTimeUtil.currentInstant())
+            .withIsMLSSupported(true)
+            .withCurrentClientProviderSuccess()
+            .withGetE2EICertificateUseCaseResult(
+                GetE2EICertificateUseCaseResult.Success(
+                    VALID_CERTIFICATE.copy(endAt = DateTimeUtil.currentInstant().plus(40.days))
+                )
+            )
+            .arrange()
+
+        useCase().test {
+            advanceTimeBy(1000L)
+            assertEquals(E2EIRequiredResult.NotRequired, awaitItem())
             awaitComplete()
         }
     }
@@ -295,6 +343,11 @@ class ObserveE2EIRequiredUseCaseTest {
 
     companion object {
         private val MLS_E2EI_SETTING = E2EISettings(true, "some_url", null)
-        private val VALID_CERTIFICATE = E2eiCertificate(status = CertificateStatus.VALID)
+        private val VALID_CERTIFICATE = E2eiCertificate(
+            serialNumber = "serialNumber",
+            certificateDetail = "certificateDetail",
+            status = CertificateStatus.VALID,
+            endAt = DateTimeUtil.currentInstant().plus(1.days)
+        )
     }
 }

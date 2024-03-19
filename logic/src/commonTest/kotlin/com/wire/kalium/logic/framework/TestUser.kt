@@ -71,7 +71,8 @@ object TestUser {
         previewPicture = UserAssetId("value1", "domain"),
         completePicture = UserAssetId("value2", "domain"),
         availabilityStatus = UserAvailabilityStatus.NONE,
-        supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS)
+        supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS),
+        userType = UserType.INTERNAL,
     )
 
     val OTHER = OtherUser(
@@ -166,9 +167,9 @@ object TestUser {
         email = null,
         handle = null,
         service = null,
-        teamId = null,
-        expiresAt = "",
-        nonQualifiedId = "",
+        teamId = "teamId",
+        expiresAt = null,
+        nonQualifiedId = NETWORK_ID.value,
         locale = "",
         managedByDTO = null,
         phone = null,
