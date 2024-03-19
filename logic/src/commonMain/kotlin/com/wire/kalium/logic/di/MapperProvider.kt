@@ -103,11 +103,7 @@ import com.wire.kalium.logic.data.user.type.UserEntityTypeMapperImpl
 internal object MapperProvider {
     fun apiVersionMapper(): ApiVersionMapper = ApiVersionMapperImpl()
     fun idMapper(): IdMapper = IdMapperImpl()
-<<<<<<< HEAD
-    fun serverConfigMapper(): ServerConfigMapper = ServerConfigMapperImpl(apiVersionMapper(), idMapper())
-=======
     fun serverConfigMapper(): ServerConfigMapper = ServerConfigMapperImpl(apiVersionMapper())
->>>>>>> 119b02f5dd (fix: proxy issues 4.6 (#2520))
     fun sessionMapper(): SessionMapper = SessionMapperImpl()
     fun availabilityStatusMapper(): AvailabilityStatusMapper = AvailabilityStatusMapperImpl()
     fun connectionStateMapper(): ConnectionStateMapper = ConnectionStateMapperImpl()

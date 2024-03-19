@@ -31,10 +31,6 @@ import kotlin.test.assertEquals
 import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
 class SessionMapperTest {
-<<<<<<< HEAD
-=======
-
->>>>>>> 119b02f5dd (fix: proxy issues 4.6 (#2520))
     private lateinit var sessionMapper: SessionMapper
 
     @BeforeTest
