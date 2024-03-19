@@ -78,8 +78,8 @@ import kotlinx.coroutines.flow.retry
 
 private const val RETRY_COUNT = 3L
 
-private fun String.parseIgnoreError(default: Long? = null): Long? = try {
-    this.toLong()
+private fun String?.parseIgnoreError(default: Long? = null): Long? = try {
+    this?.toLong() ?: default
 } catch (_: NumberFormatException) {
     default
 }
@@ -101,9 +101,9 @@ class RemoteMonkey(monkeyConfig: MonkeyConfig.Remote, monkeyType: MonkeyType, in
 
             HttpClient(OkHttp.create()) {
                 install(HttpTimeout) {
-                    socketTimeoutMillis = System.getenv("MONKEYS_SOCKET_TIMEOUT")?.parseIgnoreError(INFINITE_TIMEOUT_MS)
-                    requestTimeoutMillis = System.getenv("MONKEYS_REQUEST_TIMEOUT")?.parseIgnoreError(INFINITE_TIMEOUT_MS)
-                    connectTimeoutMillis = System.getenv("MONKEYS_CONNECT_TIMEOUT")?.parseIgnoreError(INFINITE_TIMEOUT_MS)
+                    socketTimeoutMillis = System.getenv("MONKEYS_SOCKET_TIMEOUT").parseIgnoreError(INFINITE_TIMEOUT_MS)
+                    requestTimeoutMillis = System.getenv("MONKEYS_REQUEST_TIMEOUT").parseIgnoreError(INFINITE_TIMEOUT_MS)
+                    connectTimeoutMillis = System.getenv("MONKEYS_CONNECT_TIMEOUT").parseIgnoreError(INFINITE_TIMEOUT_MS)
                 }
                 install(HttpRequestRetry)
                 expectSuccess = true
@@ -249,7 +249,10 @@ class RemoteMonkey(monkeyConfig: MonkeyConfig.Remote, monkeyType: MonkeyType, in
     }
 
     override suspend fun createConversation(
-        name: String, monkeyList: List<Monkey>, protocol: ConversationOptions.Protocol, isDestroyable: Boolean
+        name: String,
+        monkeyList: List<Monkey>,
+        protocol: ConversationOptions.Protocol,
+        isDestroyable: Boolean
     ): MonkeyConversation {
         val result: ConversationId = post(
             CREATE_CONVERSATION, CreateConversationRequest(name, monkeyList.map { it.monkeyType.userId() }, protocol, isDestroyable)
