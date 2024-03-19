@@ -81,7 +81,11 @@ interface UserMapper {
 
     fun fromUserUpdateEventToPartialUserEntity(event: Event.User.Update): PartialUserEntity
 
-    fun fromSelfUserDtoToUserEntity(userDTO: SelfUserDTO): UserEntity
+    fun fromSelfUserDtoToUserEntity(
+        userDTO: SelfUserDTO,
+        connectionState: ConnectionEntity.State,
+        userTypeEntity: UserTypeEntity
+    ): UserEntity
 
     fun fromUserProfileDtoToUserEntity(
         userProfile: UserProfileDTO,
@@ -106,37 +110,39 @@ internal class UserMapperImpl(
 
     override fun fromUserEntityToSelfUser(userEntity: UserEntity) = with(userEntity) {
         SelfUser(
-            id.toModel(),
-            name,
-            handle,
-            email,
-            phone,
-            accentId,
-            team?.let { TeamId(it) },
-            connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
-            previewAssetId?.toModel(),
-            completeAssetId?.toModel(),
-            availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
+            id = id.toModel(),
+            name = name,
+            handle = handle,
+            email = email,
+            phone = phone,
+            accentId = accentId,
+            teamId = team?.let { TeamId(it) },
+            connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
+            previewPicture = previewAssetId?.toModel(),
+            completePicture = completeAssetId?.toModel(),
+            userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
+            availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
             expiresAt = expiresAt,
-            supportedProtocols?.toModel()
+            supportedProtocols = supportedProtocols?.toModel()
         )
     }
 
     override fun fromUserDetailsEntityToSelfUser(userEntity: UserDetailsEntity): SelfUser = with(userEntity) {
         SelfUser(
-            id.toModel(),
-            name,
-            handle,
-            email,
-            phone,
-            accentId,
-            team?.let { TeamId(it) },
-            connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
-            previewAssetId?.toModel(),
-            completeAssetId?.toModel(),
-            availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
+            id = id.toModel(),
+            name = name,
+            handle = handle,
+            email = email,
+            phone = phone,
+            accentId = accentId,
+            teamId = team?.let { TeamId(it) },
+            connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(connectionState = connectionStatus),
+            previewPicture = previewAssetId?.toModel(),
+            completePicture = completeAssetId?.toModel(),
+            userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
+            availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
             expiresAt = expiresAt,
-            supportedProtocols?.toModel()
+            supportedProtocols = supportedProtocols?.toModel()
         )
     }
 
@@ -252,7 +258,11 @@ internal class UserMapperImpl(
         )
     }
 
-    override fun fromSelfUserDtoToUserEntity(userDTO: SelfUserDTO): UserEntity = with(userDTO) {
+    override fun fromSelfUserDtoToUserEntity(
+        userDTO: SelfUserDTO,
+        connectionState: ConnectionEntity.State,
+        userTypeEntity: UserTypeEntity
+    ): UserEntity = with(userDTO) {
         UserEntity(
             id = idMapper.fromApiToDao(id),
             name = name,
@@ -261,16 +271,17 @@ internal class UserMapperImpl(
             phone = phone,
             accentId = accentId,
             team = teamId,
+            connectionStatus = connectionState,
             previewAssetId = assets.getPreviewAssetOrNull()?.let { QualifiedIDEntity(it.key, id.domain) },
             completeAssetId = assets.getCompleteAssetOrNull()?.let { QualifiedIDEntity(it.key, id.domain) },
             availabilityStatus = UserAvailabilityStatusEntity.NONE,
-            userType = UserTypeEntity.STANDARD,
+            userType = userTypeEntity,
             botService = null,
             deleted = userDTO.deleted ?: false,
             expiresAt = expiresAt?.toInstant(),
             defederated = false,
             supportedProtocols = supportedProtocols?.toDao() ?: setOf(SupportedProtocolEntity.PROTEUS),
-            activeOneOnOneConversationId = null
+            activeOneOnOneConversationId = null,
         )
     }
 
