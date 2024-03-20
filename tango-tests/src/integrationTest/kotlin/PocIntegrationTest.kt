@@ -118,7 +118,7 @@ class PocIntegrationTest {
                 isOnPremises = true,
                 apiProxy = null
             )
-        ).invoke()
+        ).invoke(null)
         if (result !is AutoVersionAuthScopeUseCase.Result.Success) {
             error("Failed getting AuthScope: $result")
         }
