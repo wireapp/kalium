@@ -19,7 +19,6 @@ package com.wire.kalium.logic.feature.e2ei
 
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.functional.map
 import kotlinx.datetime.Clock
@@ -28,14 +27,14 @@ class CheckCrlRevocationListUseCase internal constructor(
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val checkRevocationList: CheckRevocationListUseCase,
     kaliumLogger: KaliumLogger
-) : CertificateRevocationListCheckWorker {
+) {
 
     private val logger = kaliumLogger.withTextTag("CheckCrlRevocationListUseCase")
 
-    override suspend fun execute() {
-        logger.i("Checking certificate revocation list (CRL)..")
+    suspend operator fun invoke(forceUpdate: Boolean) {
+        logger.i("Checking certificate revocation list (CRL). Force update: $forceUpdate")
         certificateRevocationListRepository.getCRLs()?.cRLWithExpirationList?.forEach { crl ->
-            if (crl.expiration < Clock.System.now().epochSeconds.toULong()) {
+            if (forceUpdate || (crl.expiration < Clock.System.now().epochSeconds.toULong())) {
                 checkRevocationList(crl.url).map { newExpirationTime ->
                     newExpirationTime?.let {
                         certificateRevocationListRepository.addOrUpdateCRL(crl.url, it)
