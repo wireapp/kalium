@@ -184,7 +184,12 @@ internal class UserDataSource internal constructor(
     private val userDetailsRefreshInstantCache = ConcurrentMutableMap<UserId, Instant>()
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
-        .flatMap { selfUserDTO -> fetchSelfTeamMemberData().map { selfUserDTO to it } }
+        .flatMap { selfUserDTO ->
+            selfUserDTO.teamId.let { selfUserTeamId ->
+                if (selfUserTeamId.isNullOrEmpty()) Either.Right(null)
+                else wrapApiRequest { teamsApi.getTeamMember(selfUserTeamId, selfUserId.value) }
+            }.map { selfUserDTO to it }
+        }
         .flatMap { (userDTO, teamMemberDTO) ->
             if (userDTO.deleted == true) {
                 Either.Left(SelfUserDeleted)
@@ -310,12 +315,6 @@ internal class UserDataSource internal constructor(
 
     override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> =
         fetchUsersByIdsReturningListUsersDTO(qualifiedUserIdList).map { }
-
-    private suspend fun fetchSelfTeamMemberData(): Either<CoreFailure, TeamsApi.TeamMemberDTO?> =
-        selfTeamIdProvider().getOrNull().let { selfUserTeamId ->
-            if (selfUserTeamId != null) wrapApiRequest { teamsApi.getTeamMember(selfUserTeamId.value, selfUserId.value) }
-            else Either.Right(null)
-        }
 
     private suspend fun fetchTeamMembersByIds(userProfileList: List<UserProfileDTO>): Either<CoreFailure, List<TeamsApi.TeamMemberDTO>> {
         val selfUserDomain = selfUserId.domain
