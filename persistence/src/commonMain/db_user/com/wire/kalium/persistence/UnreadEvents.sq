@@ -41,17 +41,6 @@ SELECT
 FROM UnreadEvent
 GROUP BY conversation_id;
 
-getConversationsUnreadEventsByConversation:
-SELECT
-    conversation_id AS conversationId,
-    SUM(CASE WHEN type = 'KNOCK' THEN 1 ELSE 0 END) AS knocksCount,
-    SUM(CASE WHEN type = 'MISSED_CALL' THEN 1 ELSE 0 END) AS missedCallsCount,
-    SUM(CASE WHEN type = 'MENTION' THEN 1 ELSE 0 END) AS mentionsCount,
-    SUM(CASE WHEN type = 'REPLY' THEN 1 ELSE 0 END) AS repliesCount,
-    SUM(CASE WHEN type = 'MESSAGE' THEN 1 ELSE 0 END) AS messagesCount
-FROM UnreadEvent
-WHERE conversation_id = :conversation_id;
-
 getPaginatedUnreadEvents:
 SELECT * FROM UnreadEvent LIMIT ? OFFSET ?;
 
