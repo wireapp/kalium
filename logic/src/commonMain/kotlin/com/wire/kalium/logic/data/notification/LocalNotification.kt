@@ -100,10 +100,6 @@ sealed class LocalNotificationMessage(
         override val time: Instant
     ) : LocalNotificationMessage(messageId, author, time)
 
-    data class ConversationSeen(
-        override val messageId: String,
-        override val time: Instant
-    ) : LocalNotificationMessage(messageId, null, time)
 }
 
 data class LocalNotificationMessageAuthor(val name: String, val imageUri: UserAssetId?)
