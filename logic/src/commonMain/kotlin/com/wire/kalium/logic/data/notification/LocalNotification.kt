@@ -40,6 +40,8 @@ sealed class LocalNotification(open val conversationId: ConversationId) {
         val messageId: String,
         val action: LocalNotificationUpdateMessageAction
     ) : LocalNotification(conversationId)
+
+    data class ConversationSeen(override val conversationId: ConversationId) : LocalNotification(conversationId)
 }
 
 sealed class LocalNotificationUpdateMessageAction {
@@ -97,6 +99,11 @@ sealed class LocalNotificationMessage(
         override val author: LocalNotificationMessageAuthor,
         override val time: Instant
     ) : LocalNotificationMessage(messageId, author, time)
+
+    data class ConversationSeen(
+        override val messageId: String,
+        override val time: Instant
+    ) : LocalNotificationMessage(messageId, null, time)
 }
 
 data class LocalNotificationMessageAuthor(val name: String, val imageUri: UserAssetId?)

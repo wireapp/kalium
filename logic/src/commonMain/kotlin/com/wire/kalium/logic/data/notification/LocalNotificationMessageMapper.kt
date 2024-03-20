@@ -21,10 +21,12 @@ package com.wire.kalium.logic.data.notification
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.datetime.toInstant
 
 interface LocalNotificationMessageMapper {
@@ -38,6 +40,7 @@ interface LocalNotificationMessageMapper {
 
     fun fromMessageToMessageDeletedLocalNotification(message: Message): LocalNotification
     fun fromMessageToMessageEditedLocalNotification(message: Message, messageContent: MessageContent.TextEdited): LocalNotification
+    fun toConversationSeen(conversationId: ConversationId): LocalNotification
 }
 
 class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
@@ -86,6 +89,9 @@ class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
             else -> throw IllegalArgumentException("This event is not supported yet as a onetime notification")
         }
     }
+
+    override fun toConversationSeen(conversationId: ConversationId): LocalNotification =
+        LocalNotification.ConversationSeen(conversationId = conversationId)
 
     override fun fromMessageToMessageDeletedLocalNotification(message: Message): LocalNotification =
         LocalNotification.UpdateMessage(
