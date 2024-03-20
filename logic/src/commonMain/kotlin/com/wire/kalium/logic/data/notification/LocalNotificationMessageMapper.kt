@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
-import com.wire.kalium.util.DateTimeUtil
 import kotlinx.datetime.toInstant
 
 interface LocalNotificationMessageMapper {
