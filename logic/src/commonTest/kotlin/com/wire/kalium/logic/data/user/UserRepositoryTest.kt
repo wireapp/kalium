@@ -996,7 +996,7 @@ class UserRepositoryTest {
             given(selfApi)
                 .suspendFunction(selfApi::getSelfInfo)
                 .whenInvoked()
-                .thenReturn(NetworkResponse.Success(TestUser.SELF_USER_DTO, mapOf(), 200))
+                .thenReturn(NetworkResponse.Success(TestUser.SELF_USER_DTO.copy(teamId = TestTeam.TEAM_ID.value), mapOf(), 200))
         }
 
         fun withRemoteGetSelfReturningDeletedUser(): Arrangement = apply {
