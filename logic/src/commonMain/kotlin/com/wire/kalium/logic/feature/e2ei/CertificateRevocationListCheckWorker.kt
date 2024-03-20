@@ -30,7 +30,7 @@ import kotlinx.datetime.Clock
  * This worker will wait until the sync is done and then check the CRLs if needed.
  *
  */
-internal interface CertificateRevocationListCheckWorker {
+interface CertificateRevocationListCheckWorker {
     suspend fun execute()
 }
 
