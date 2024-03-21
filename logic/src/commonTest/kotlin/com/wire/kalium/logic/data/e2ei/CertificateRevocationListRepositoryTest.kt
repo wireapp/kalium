@@ -17,11 +17,10 @@
  */
 package com.wire.kalium.logic.data.e2ei
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepositoryDataSource.Companion.CRL_LIST_KEY
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
-import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
+import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.dao.MetadataDAO
 import io.mockative.Mock
 import io.mockative.classOf
@@ -50,6 +49,7 @@ class CertificateRevocationListRepositoryTest {
             )
         }.wasInvoked(once)
     }
+
     @Test
     fun givenNoStoredList_whenUpdatingCRLs_thenAddNewCRL() = runTest {
         val (arrangement, crlRepository) = Arrangement()
@@ -114,10 +114,7 @@ class CertificateRevocationListRepositoryTest {
         @Mock
         val metadataDAO = mock(classOf<MetadataDAO>())
 
-        @Mock
-        val userConfigRepository = mock(classOf<UserConfigRepository>())
-
-        fun arrange() = this to CertificateRevocationListRepositoryDataSource(acmeApi, metadataDAO, userConfigRepository)
+        fun arrange() = this to CertificateRevocationListRepositoryDataSource(acmeApi, metadataDAO)
 
         suspend fun withEmptyList() = apply {
             given(metadataDAO).coroutine {
@@ -127,6 +124,7 @@ class CertificateRevocationListRepositoryTest {
                 )
             }.thenReturn(CRLUrlExpirationList(listOf()))
         }
+
         suspend fun withNullCRLResult() = apply {
             given(metadataDAO).coroutine {
                 metadataDAO.getSerializable(
