@@ -116,6 +116,8 @@ import com.wire.kalium.logic.data.message.PersistReactionUseCaseImpl
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.ProtoContentMapperImpl
 import com.wire.kalium.logic.data.message.SystemMessageInserterImpl
+import com.wire.kalium.logic.data.message.draft.MessageDraftDataSource
+import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
 import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
@@ -735,6 +737,11 @@ class UserSessionScope internal constructor(
 
     private val compositeMessageRepository: CompositeMessageRepository
         get() = CompositeMessageDataSource(compositeMessageDAO = userStorage.database.compositeMessageDAO)
+
+    private val messageDraftRepository: MessageDraftRepository
+        get() = MessageDraftDataSource(
+            messageDraftDAO = userStorage.database.messageDraftDAO,
+        )
 
     private val userRepository: UserRepository = UserDataSource(
         userStorage.database.userDAO,
@@ -1743,6 +1750,7 @@ class UserSessionScope internal constructor(
     val messages: MessageScope
         get() = MessageScope(
             connectionRepository,
+            messageDraftRepository,
             userId,
             clientIdProvider,
             selfConversationIdProvider,
