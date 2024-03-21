@@ -1272,7 +1272,12 @@ class UserSessionScope internal constructor(
             persistMessage,
             persistReaction,
             MessageTextEditHandlerImpl(messageRepository, EphemeralEventsNotificationManagerImpl),
-            LastReadContentHandlerImpl(conversationRepository, userId, isMessageSentInSelfConversation),
+            LastReadContentHandlerImpl(
+                conversationRepository,
+                userId,
+                isMessageSentInSelfConversation,
+                EphemeralEventsNotificationManagerImpl
+            ),
             ClearConversationContentHandlerImpl(
                 conversationRepository,
                 userId,
