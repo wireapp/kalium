@@ -425,6 +425,7 @@ com.wire.kalium.logic.data.keypackage
 com.wire.kalium.logic.data.legalhold
 com.wire.kalium.logic.data.logout
 com.wire.kalium.logic.data.message
+com.wire.kalium.logic.data.message.draft
 com.wire.kalium.logic.data.message.mention
 com.wire.kalium.logic.data.message.reaction
 com.wire.kalium.logic.data.message.receipt
@@ -474,6 +475,7 @@ com.wire.kalium.logic.feature.keypackage
 com.wire.kalium.logic.feature.legalhold
 com.wire.kalium.logic.feature.message
 com.wire.kalium.logic.feature.message.composite
+com.wire.kalium.logic.feature.message.draft
 com.wire.kalium.logic.feature.message.ephemeral
 com.wire.kalium.logic.feature.migration
 com.wire.kalium.logic.feature.mlsmigration
@@ -591,6 +593,7 @@ com.wire.kalium.persistence.dao.client
 com.wire.kalium.persistence.dao.conversation
 com.wire.kalium.persistence.dao.member
 com.wire.kalium.persistence.dao.message
+com.wire.kalium.persistence.dao.message.draft
 com.wire.kalium.persistence.dao.newclient
 com.wire.kalium.persistence.dao.reaction
 com.wire.kalium.persistence.dao.receipt
