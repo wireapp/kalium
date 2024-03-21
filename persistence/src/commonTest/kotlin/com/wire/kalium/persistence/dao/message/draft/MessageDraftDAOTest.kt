@@ -20,10 +20,14 @@ package com.wire.kalium.persistence.dao.message.draft
 
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
+import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
+import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -33,9 +37,12 @@ import kotlin.test.assertEquals
 class MessageDraftDAOTest : BaseDatabaseTest() {
 
     private lateinit var messageDraftDAO: MessageDraftDAO
+    private lateinit var messageDAO: MessageDAO
     private lateinit var conversationDAO: ConversationDAO
+    private lateinit var userDAO: UserDAO
 
     private val conversationEntity1 = newConversationEntity("Test1")
+    private val userEntity1 = newUserEntity()
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
@@ -44,6 +51,8 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
         val db = createDatabase(selfUserId, encryptedDBSecret, true)
         messageDraftDAO = db.messageDraftDAO
         conversationDAO = db.conversationDAO
+        messageDAO = db.messageDAO
+        userDAO = db.userDAO
     }
 
     @Test
@@ -52,7 +61,7 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
         insertInitialData()
 
         // When
-        messageDraftDAO.upsertMessageDraft(conversationEntity1.id,MESSAGE_DRAFT)
+        messageDraftDAO.upsertMessageDraft(conversationEntity1.id, MESSAGE_DRAFT)
 
         // Then
         val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
@@ -63,10 +72,10 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
     fun givenAlreadyExistingMessageDraft_whenUpserting_thenItShouldBeProperlyUpdatedInDb() = runTest {
         // Given
         insertInitialData()
-        messageDraftDAO.upsertMessageDraft(conversationEntity1.id,MESSAGE_DRAFT.copy("@John I need"))
+        messageDraftDAO.upsertMessageDraft(conversationEntity1.id, MESSAGE_DRAFT.copy("@John I need"))
 
         // When
-        messageDraftDAO.upsertMessageDraft(conversationEntity1.id,MESSAGE_DRAFT)
+        messageDraftDAO.upsertMessageDraft(conversationEntity1.id, MESSAGE_DRAFT)
 
         // Then
         val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
@@ -77,7 +86,7 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
     fun givenAlreadyExistingMessageDraft_whenDeletingIt_thenItShouldBeProperlyRemovedInDb() = runTest {
         // Given
         insertInitialData()
-        messageDraftDAO.upsertMessageDraft(conversationEntity1.id,MESSAGE_DRAFT)
+        messageDraftDAO.upsertMessageDraft(conversationEntity1.id, MESSAGE_DRAFT)
         val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
         assertEquals(MESSAGE_DRAFT, result)
 
@@ -93,7 +102,7 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
     fun givenAlreadyExistingMessageDraft_whenConversationIsRemoved_thenItShouldBeProperlyRemovedInDb() = runTest {
         // Given
         insertInitialData()
-        messageDraftDAO.upsertMessageDraft(conversationEntity1.id,MESSAGE_DRAFT)
+        messageDraftDAO.upsertMessageDraft(conversationEntity1.id, MESSAGE_DRAFT)
         val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
         assertEquals(MESSAGE_DRAFT, result)
 
@@ -106,19 +115,36 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
     }
 
     private suspend fun insertInitialData() {
+        userDAO.upsertUsers(listOf(userEntity1))
         conversationDAO.insertConversation(conversationEntity1)
+        messageDAO.insertOrIgnoreMessage(
+            newRegularMessageEntity(
+                id = "editMessageId",
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id
+            )
+        )
+        messageDAO.insertOrIgnoreMessage(
+            newRegularMessageEntity(
+                id = "quotedMessageId",
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id
+            )
+        )
     }
 
     companion object {
         val MESSAGE_DRAFT = MessageDraftEntity(
-            "@John I need help",
-            "message_id",
+            text = "@John I need help",
+            editMessageId = "editMessageId",
             quotedMessageId = "quotedMessageId",
-            selectedMentionList = listOf(MessageEntity.Mention(
-                0,
-                4,
-                QualifiedIDEntity("userId", "domain")
-            ))
+            selectedMentionList = listOf(
+                MessageEntity.Mention(
+                    0,
+                    4,
+                    QualifiedIDEntity("userId", "domain")
+                )
+            )
         )
     }
 }

@@ -10,7 +10,7 @@ CREATE TABLE MessageDraft (
       mention_list TEXT AS List<Mention> NOT NULL,
 
     FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (edit_message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE SET NULL ON UPDATE CASCADE,
-    FOREIGN KEY (quoted_message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE SET NULL ON UPDATE CASCADE,
+    FOREIGN KEY (edit_message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (quoted_message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
     PRIMARY KEY (conversation_id)
 );
