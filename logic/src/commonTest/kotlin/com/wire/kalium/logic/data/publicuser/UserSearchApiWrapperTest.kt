@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
@@ -406,6 +407,7 @@ class UserSearchApiWrapperTest {
                     availabilityStatus = UserAvailabilityStatus.AVAILABLE,
                     expiresAt = null,
                     supportedProtocols = null,
+                    userType = UserType.INTERNAL,
                 )
             }
 
@@ -422,7 +424,8 @@ class UserSearchApiWrapperTest {
                 completePicture = null,
                 availabilityStatus = UserAvailabilityStatus.AVAILABLE,
                 expiresAt = null,
-                supportedProtocols = null
+                supportedProtocols = null,
+                userType = UserType.INTERNAL,
             )
         }
     }

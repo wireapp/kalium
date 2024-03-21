@@ -23,13 +23,11 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.failure.ServerConfigFailure
-import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.logic.util.stubs.newServerConfigDTO
 import com.wire.kalium.logic.util.stubs.newServerConfigEntity
-import com.wire.kalium.network.BackendMetaDataUtil
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
 import com.wire.kalium.network.tools.ApiVersionDTO
@@ -46,106 +44,13 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
 
 @ExperimentalCoroutinesApi
 class ServerConfigRepositoryTest {
-
-    @Test
-    fun givenUrl_whenFetchingServerConfigSuccess_thenTheSuccessIsReturned() = runTest {
-        val (arrangement, repository) = Arrangement().withSuccessConfigResponse().arrange()
-        val expected = arrangement.SERVER_CONFIG.links
-        val serverConfigUrl = arrangement.SERVER_CONFIG_URL
-
-        val actual = repository.fetchRemoteConfig(serverConfigUrl)
-
-        actual.shouldSucceed { assertEquals(expected, it) }
-        verify(arrangement.serverConfigApi)
-            .coroutine { arrangement.serverConfigApi.fetchServerConfig(serverConfigUrl) }
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenStoredConfig_thenItCanBeRetrievedAsList() = runTest {
-        val (arrangement, repository) = Arrangement().withDaoEntityResponse().arrange()
-        val expected = listOf(newServerConfig(1), newServerConfig(2), newServerConfig(3))
-
-        repository.configList().shouldSucceed { assertEquals(it, expected) }
-        verify(arrangement.serverConfigDAO)
-            .suspendFunction(arrangement.serverConfigDAO::allConfig)
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenStoredConfig_thenItCanBeRetrievedAsFlow() = runTest {
-        val (arrangement, repository) = Arrangement().withDaoEntityFlowResponse().arrange()
-        val expected = listOf(newServerConfig(1), newServerConfig(2), newServerConfig(3))
-
-        val actual = repository.configFlow()
-
-        assertIs<Either.Right<Flow<List<ServerConfig>>>>(actual)
-        assertEquals(expected.first(), actual.value.first()[0])
-
-        verify(arrangement.serverConfigDAO)
-            .suspendFunction(arrangement.serverConfigDAO::allConfigFlow)
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenStoredConfig_thenItCanBeRetrievedById() = runTest {
-        val (arrangement, repository) = Arrangement()
-            .withConfigById(newServerConfigEntity(1))
-            .arrange()
-        val expected = newServerConfig(1)
-
-        val actual = repository.configById(expected.id)
-        assertIs<Either.Right<ServerConfig>>(actual)
-        assertEquals(expected, actual.value)
-
-        verify(arrangement.serverConfigDAO)
-            .function(arrangement.serverConfigDAO::configById)
-            .with(any())
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenStoredConfig_thenItCanBeDeleted() = runTest {
-        val serverConfigId = "1"
-        val (arrangement, repository) = Arrangement()
-            .withConfigById(newServerConfigEntity(1))
-            .arrange()
-
-        val actual = repository.deleteById(serverConfigId)
-
-        actual.shouldSucceed()
-        verify(arrangement.serverConfigDAO)
-            .suspendFunction(arrangement.serverConfigDAO::deleteById)
-            .with(any())
-            .wasInvoked(exactly = once)
-    }
-
-    @Test
-    fun givenStoredConfig_whenDeleting_thenItCanBeDeleted() = runTest {
-        val serverConfig = newServerConfig(1)
-        val (arrangement, repository) = Arrangement()
-            .withConfigById(newServerConfigEntity(1))
-            .arrange()
-
-        val actual = repository.delete(serverConfig)
-
-        actual.shouldSucceed()
-        verify(arrangement.serverConfigDAO)
-            .suspendFunction(arrangement.serverConfigDAO::deleteById)
-            .with(any())
-            .wasInvoked(exactly = once)
-    }
-
     @Test
     fun givenValidCompatibleApiVersion_whenStoringConfigLocally_thenConfigIsStored() = runTest {
         val expected = newServerConfig(1)
@@ -279,51 +184,6 @@ class ServerConfigRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
-    @Test
-    fun givenStoredConfigLinksAndVersionInfoData_whenAddingNewOne_thenCommonApiShouldBeCalculatedAndConfigShouldBeStored() = runTest {
-        val expectedServerConfig = newServerConfig(1)
-        val expectedServerConfigDTO = newServerConfigDTO(1)
-        val expectedVersionInfo = ServerConfig.VersionInfo(
-            expectedServerConfig.metaData.federation,
-            listOf(expectedServerConfig.metaData.commonApiVersion.version),
-            expectedServerConfig.metaData.domain,
-            null
-        )
-        val (arrangement, repository) = Arrangement()
-            .withConfigForNewRequest(newServerConfigEntity(1))
-            .withCalculateApiVersion(expectedServerConfigDTO.metaData)
-            .arrange()
-
-        repository
-            .storeConfig(expectedServerConfig.links, expectedVersionInfo)
-            .shouldSucceed { assertEquals(it, expectedServerConfig) }
-
-        verify(arrangement.backendMetaDataUtil)
-            .function(arrangement.backendMetaDataUtil::calculateApiVersion)
-            .with(any(), any(), any(), any())
-            .wasInvoked(exactly = once)
-        verify(arrangement.serverConfigDAO)
-            .suspendFunction(arrangement.serverConfigDAO::configByLinks)
-            .with(any())
-            .wasInvoked(exactly = once)
-        verify(arrangement.serverConfigDAO)
-            .suspendFunction(arrangement.serverConfigDAO::insert)
-            .with(any())
-            .wasInvoked(exactly = once)
-        verify(arrangement.serverConfigDAO)
-            .suspendFunction(arrangement.serverConfigDAO::updateApiVersion)
-            .with(any(), any())
-            .wasNotInvoked()
-        verify(arrangement.serverConfigDAO)
-            .suspendFunction(arrangement.serverConfigDAO::setFederationToTrue)
-            .with(any())
-            .wasNotInvoked()
-        verify(arrangement.serverConfigDAO)
-            .function(arrangement.serverConfigDAO::configById)
-            .with(any())
-            .wasInvoked(exactly = once)
-    }
-
     private class Arrangement {
         val SERVER_CONFIG_URL = "https://test.test/test.json"
         val SERVER_CONFIG_RESPONSE = newServerConfigDTO(1)
@@ -340,11 +200,8 @@ class ServerConfigRepositoryTest {
         @Mock
         val versionApi = mock(classOf<VersionApi>())
 
-        @Mock
-        val backendMetaDataUtil = mock(classOf<BackendMetaDataUtil>())
-
         private var serverConfigRepository: ServerConfigRepository =
-            ServerConfigDataSource(serverConfigApi, serverConfigDAO, versionApi, true, backendMetaDataUtil)
+            ServerConfigDataSource(serverConfigDAO, versionApi)
 
         val serverConfigEntity = newServerConfigEntity(1)
         val expectedServerConfig = newServerConfig(1).copy(
@@ -426,14 +283,6 @@ class ServerConfigRepositoryTest {
                 .whenInvokedWith(any())
                 .then { newServerConfigEntity }
 
-            return this
-        }
-
-        fun withCalculateApiVersion(result: ServerConfigDTO.MetaData): Arrangement {
-            given(backendMetaDataUtil)
-                .function(backendMetaDataUtil::calculateApiVersion)
-                .whenInvokedWith(any(), any(), any(), any())
-                .thenReturn(result)
             return this
         }
 

@@ -18,8 +18,14 @@
 
 package com.wire.kalium.logic.data.user
 
+import com.wire.kalium.logic.data.id.TeamId
+import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.dao.ConnectionEntity
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.SupportedProtocolEntity
+import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
+import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -43,6 +49,52 @@ class UserMapperTest {
             expectedResult.connectionStatus,
             givenUserTypeEntity
         )
+        // Then
+        assertEquals(expectedResult, result)
+    }
+
+    @Test
+    fun givenUserDetailsEntity_whenMappingToSelfUser_thenSelfUserWithProperDataIsReturned() = runTest {
+        // Given
+        val givenUserDetailsEntity = UserDetailsEntity(
+            id = TestUser.ENTITY_ID,
+            name = "username",
+            handle = "handle",
+            email = "email",
+            phone = "phone",
+            accentId = 0,
+            team = "teamId",
+            connectionStatus = ConnectionEntity.State.ACCEPTED,
+            previewAssetId = QualifiedIDEntity("value1", "domain"),
+            completeAssetId = QualifiedIDEntity("value2", "domain"),
+            availabilityStatus = UserAvailabilityStatusEntity.NONE,
+            supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS, SupportedProtocolEntity.MLS),
+            userType = UserTypeEntity.EXTERNAL,
+            botService = null,
+            deleted = false,
+            expiresAt = null,
+            defederated = false,
+            isProteusVerified = false,
+            activeOneOnOneConversationId = null
+        )
+        val expectedResult = SelfUser(
+            TestUser.USER_ID,
+            name = "username",
+            handle = "handle",
+            email = "email",
+            phone = "phone",
+            accentId = 0,
+            teamId = TeamId("teamId"),
+            connectionStatus = ConnectionState.ACCEPTED,
+            previewPicture = UserAssetId("value1", "domain"),
+            completePicture = UserAssetId("value2", "domain"),
+            availabilityStatus = UserAvailabilityStatus.NONE,
+            supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS),
+            userType = UserType.EXTERNAL,
+        )
+        val (_, userMapper) = Arrangement().arrange()
+        // When
+        val result = userMapper.fromUserDetailsEntityToSelfUser(givenUserDetailsEntity)
         // Then
         assertEquals(expectedResult, result)
     }
