@@ -2,7 +2,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.dao.message.MessageEntity.Mention;
 import kotlin.collections.List;
 
-CREATE TABLE MessageDrafts (
+CREATE TABLE MessageDraft (
       conversation_id TEXT AS QualifiedIDEntity NOT NULL,
       text TEXT,
       edit_message_id TEXT,
@@ -10,5 +10,7 @@ CREATE TABLE MessageDrafts (
       mention_list TEXT AS List<Mention> NOT NULL,
 
     FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    FOREIGN KEY (edit_message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE SET NULL ON UPDATE CASCADE,
+    FOREIGN KEY (quoted_message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE SET NULL ON UPDATE CASCADE,
     PRIMARY KEY (conversation_id)
 );

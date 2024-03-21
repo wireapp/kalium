@@ -36,7 +36,7 @@ import com.wire.kalium.persistence.MessageConversationProtocolChangedContent
 import com.wire.kalium.persistence.MessageConversationProtocolChangedDuringACallContent
 import com.wire.kalium.persistence.MessageConversationReceiptModeChangedContent
 import com.wire.kalium.persistence.MessageConversationTimerChangedContent
-import com.wire.kalium.persistence.MessageDrafts
+import com.wire.kalium.persistence.MessageDraft
 import com.wire.kalium.persistence.MessageFailedToDecryptContent
 import com.wire.kalium.persistence.MessageFederationTerminatedContent
 import com.wire.kalium.persistence.MessageLegalHoldContent
@@ -257,7 +257,7 @@ internal object TableMapper {
         transfer_statusAdapter = EnumColumnAdapter(),
     )
 
-    val messageDraftsAdapter = MessageDrafts.Adapter(
+    val messageDraftsAdapter = MessageDraft.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
         mention_listAdapter = MentionListAdapter()
     )
