@@ -230,14 +230,14 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
     }
 
     @Test
-    fun givenConversationLegalHoldIsEnabled_whenInvokingInteractionForConversation_thenInteractionShouldBeLegalHold() = runTest {
+    fun givenConversationLegalHoldIsEnabled_whenInvokingInteractionForConversation_thenInteractionShouldBeEnabled() = runTest {
         val conversationId = TestConversation.ID
         val (_, observeConversationInteractionAvailability) = arrange {
             withLegalHoldOneOnOneConversation(Conversation.LegalHoldStatus.ENABLED)
         }
         observeConversationInteractionAvailability(conversationId).test {
             val interactionResult = awaitItem()
-            assertEquals(IsInteractionAvailableResult.Success(InteractionAvailability.LEGAL_HOLD), interactionResult)
+            assertEquals(IsInteractionAvailableResult.Success(InteractionAvailability.ENABLED), interactionResult)
             awaitComplete()
         }
     }
