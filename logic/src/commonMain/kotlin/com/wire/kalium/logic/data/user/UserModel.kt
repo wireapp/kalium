@@ -46,6 +46,7 @@ sealed class User {
     abstract val expiresAt: Instant?
     abstract val supportedProtocols: Set<SupportedProtocol>?
     abstract val userType: UserType
+    abstract val isUnderLegalHold: Boolean
 }
 
 // TODO we should extract ConnectionModel and ConnectionState to separate logic AR-1734
@@ -134,7 +135,8 @@ data class SelfUser(
     override val userType: UserType,
     override val availabilityStatus: UserAvailabilityStatus,
     override val expiresAt: Instant? = null,
-    override val supportedProtocols: Set<SupportedProtocol>?
+    override val supportedProtocols: Set<SupportedProtocol>?,
+    override val isUnderLegalHold: Boolean = false,
 ) : User()
 
 data class OtherUserMinimized(
@@ -163,7 +165,8 @@ data class OtherUser(
     val defederated: Boolean,
     override val expiresAt: Instant? = null,
     val isProteusVerified: Boolean,
-    val activeOneOnOneConversationId: ConversationId? = null
+    val activeOneOnOneConversationId: ConversationId? = null,
+    override val isUnderLegalHold: Boolean = false,
 ) : User() {
 
     /**

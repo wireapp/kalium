@@ -18,16 +18,20 @@
 
 package com.wire.kalium.logic.data.user
 
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -72,10 +76,11 @@ class UserMapperTest {
             userType = UserTypeEntity.EXTERNAL,
             botService = null,
             deleted = false,
-            expiresAt = null,
+            expiresAt = Instant.UNIX_FIRST_DATE,
             defederated = false,
             isProteusVerified = false,
-            activeOneOnOneConversationId = null
+            activeOneOnOneConversationId = null,
+            isUnderLegalHold = false,
         )
         val expectedResult = SelfUser(
             TestUser.USER_ID,
@@ -91,10 +96,66 @@ class UserMapperTest {
             availabilityStatus = UserAvailabilityStatus.NONE,
             supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS),
             userType = UserType.EXTERNAL,
+            expiresAt = Instant.UNIX_FIRST_DATE,
+            isUnderLegalHold = false,
         )
         val (_, userMapper) = Arrangement().arrange()
         // When
         val result = userMapper.fromUserDetailsEntityToSelfUser(givenUserDetailsEntity)
+        // Then
+        assertEquals(expectedResult, result)
+    }
+
+    @Test
+    fun givenUserDetailsEntity_whenMappingToOtherUser_thenOtherUserWithProperDataIsReturned() = runTest {
+        // Given
+        val givenUserDetailsEntity = UserDetailsEntity(
+            id = TestUser.ENTITY_ID,
+            name = "username",
+            handle = "handle",
+            email = "email",
+            phone = "phone",
+            accentId = 0,
+            team = "teamId",
+            connectionStatus = ConnectionEntity.State.ACCEPTED,
+            previewAssetId = QualifiedIDEntity("value1", "domain"),
+            completeAssetId = QualifiedIDEntity("value2", "domain"),
+            availabilityStatus = UserAvailabilityStatusEntity.NONE,
+            supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS, SupportedProtocolEntity.MLS),
+            userType = UserTypeEntity.EXTERNAL,
+            botService = BotIdEntity("botid", "provider"),
+            deleted = false,
+            expiresAt = Instant.UNIX_FIRST_DATE,
+            defederated = false,
+            isProteusVerified = false,
+            activeOneOnOneConversationId = QualifiedIDEntity("convid", "domain"),
+            isUnderLegalHold = false,
+        )
+        val expectedResult = OtherUser(
+            TestUser.USER_ID,
+            name = "username",
+            handle = "handle",
+            email = "email",
+            phone = "phone",
+            accentId = 0,
+            teamId = TeamId("teamId"),
+            connectionStatus = ConnectionState.ACCEPTED,
+            previewPicture = UserAssetId("value1", "domain"),
+            completePicture = UserAssetId("value2", "domain"),
+            userType = UserType.EXTERNAL,
+            availabilityStatus = UserAvailabilityStatus.NONE,
+            supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS),
+            botService = BotService("botid", "provider"),
+            deleted = false,
+            expiresAt = Instant.UNIX_FIRST_DATE,
+            defederated = false,
+            isProteusVerified = false,
+            activeOneOnOneConversationId = ConversationId("convid", "domain"),
+            isUnderLegalHold = false,
+        )
+        val (_, userMapper) = Arrangement().arrange()
+        // When
+        val result = userMapper.fromUserDetailsEntityToOtherUser(givenUserDetailsEntity)
         // Then
         assertEquals(expectedResult, result)
     }
