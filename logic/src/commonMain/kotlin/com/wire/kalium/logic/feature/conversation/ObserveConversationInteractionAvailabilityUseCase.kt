@@ -76,9 +76,8 @@ class ObserveConversationInteractionAvailabilityUseCase internal constructor(
                         conversationDetails.otherUser.defederated -> InteractionAvailability.DISABLED
                         conversationDetails.otherUser.deleted -> InteractionAvailability.DELETED_USER
                         conversationDetails.otherUser.connectionStatus == ConnectionState.BLOCKED -> InteractionAvailability.BLOCKED_USER
-                        conversationDetails.conversation.legalHoldStatus in listOf(
-                            Conversation.LegalHoldStatus.ENABLED, Conversation.LegalHoldStatus.DEGRADED
-                        ) -> InteractionAvailability.LEGAL_HOLD
+                        conversationDetails.conversation.legalHoldStatus == Conversation.LegalHoldStatus.DEGRADED ->
+                            InteractionAvailability.LEGAL_HOLD
                         else -> InteractionAvailability.ENABLED
                     }
 
