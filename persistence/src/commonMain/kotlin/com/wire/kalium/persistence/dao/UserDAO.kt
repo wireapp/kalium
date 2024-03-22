@@ -104,7 +104,8 @@ data class UserDetailsEntity(
     val defederated: Boolean,
     val isProteusVerified: Boolean,
     val supportedProtocols: Set<SupportedProtocolEntity>?,
-    val activeOneOnOneConversationId: QualifiedIDEntity?
+    val activeOneOnOneConversationId: QualifiedIDEntity?,
+    val isUnderLegalHold: Boolean,
 ) {
     fun toSimpleEntity() = UserEntity(
         id = id,

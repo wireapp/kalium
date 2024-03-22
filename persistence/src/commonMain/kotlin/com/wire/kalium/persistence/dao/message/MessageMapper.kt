@@ -23,7 +23,7 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
-import com.wire.kalium.persistence.dao.UserEntity
+import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
@@ -331,7 +331,7 @@ object MessageMapper {
         readCount: Long,
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
         recipientsFailedDeliveryList: List<QualifiedIDEntity>?,
-        sender: UserEntity
+        sender: UserDetailsEntity
     ): MessageEntity = when (content) {
         is MessageEntityContent.Regular -> {
             MessageEntity.Regular(
@@ -446,6 +446,8 @@ object MessageMapper {
         senderDefederated: Boolean,
         senderSupportedProtocols: Set<SupportedProtocolEntity>?,
         senderActiveOneOnOneConversationId: QualifiedIDEntity?,
+        senderIsProteusVerified: Long,
+        senderIsUnderLegalHold: Long,
         isSelfMessage: Boolean,
         text: String?,
         isQuotingSelfUser: Boolean?,
@@ -653,7 +655,7 @@ object MessageMapper {
             )
         }
 
-        val sender = UserEntity(
+        val sender = UserDetailsEntity(
             id = senderUserId,
             name = senderName,
             handle = senderHandle,
@@ -671,7 +673,9 @@ object MessageMapper {
             defederated = senderDefederated,
             supportedProtocols = senderSupportedProtocols,
             activeOneOnOneConversationId = senderActiveOneOnOneConversationId,
-            connectionStatus = senderConnectionStatus
+            connectionStatus = senderConnectionStatus,
+            isProteusVerified = senderIsProteusVerified == 1L,
+            isUnderLegalHold = senderIsUnderLegalHold == 1L,
         )
 
         return createMessageEntity(
