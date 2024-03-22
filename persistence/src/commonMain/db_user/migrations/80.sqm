@@ -1,14 +1,6 @@
-import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.LegalHoldType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
-import com.wire.kalium.persistence.dao.message.MessageEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntityContent;
-import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
-import kotlin.Boolean;
-import kotlin.Int;
-import kotlin.collections.List;
-import kotlinx.datetime.Instant;
+-- Re-create MessageDetailsView
+
+DROP VIEW IF EXISTS MessageDetailsView;
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
@@ -172,4 +164,41 @@ LEFT JOIN MessageConversationProtocolChangedContent AS ConversationProtocolChang
 LEFT JOIN MessageConversationLocationContent AS ConversationLocationContent ON Message.id = ConversationLocationContent.message_id AND Message.conversation_id = ConversationLocationContent.conversation_id
 LEFT JOIN MessageLegalHoldContent AS LegalHoldContent ON Message.id = LegalHoldContent.message_id AND Message.conversation_id = LegalHoldContent.conversation_id
 LEFT JOIN SelfUser;
--- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
+
+
+-- Re-create UserDetails view
+
+DROP VIEW IF EXISTS UserDetails;
+
+CREATE VIEW IF NOT EXISTS UserDetails AS
+SELECT
+User.qualified_id,
+User.name,
+User.handle,
+User.email,
+User.phone,
+User.accent_id,
+User.team,
+User.connection_status,
+User.preview_asset_id,
+User.complete_asset_id,
+User.user_availability_status,
+User.user_type,
+User.bot_service,
+User.deleted,
+User.incomplete_metadata,
+User.expires_at,
+User.defederated,
+User.supported_protocols,
+User.active_one_on_one_conversation_id,
+CASE
+    WHEN SUM(Client.is_verified) = COUNT(*) THEN 1
+    ELSE 0
+END AS is_proteus_verified,
+CASE
+    WHEN SUM(Client.device_type = 'LegalHold') > 0 THEN 1
+    ELSE 0
+END AS is_under_legal_hold
+FROM User
+LEFT JOIN Client ON User.qualified_id = Client.user_id
+GROUP BY User.qualified_id;

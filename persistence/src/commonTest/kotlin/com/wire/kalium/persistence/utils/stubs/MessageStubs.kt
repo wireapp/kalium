@@ -19,7 +19,7 @@
 package com.wire.kalium.persistence.utils.stubs
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.UserEntity
+import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -40,7 +40,7 @@ fun newRegularMessageEntity(
     expectsReadConfirmation: Boolean = false,
     expireAfterMs: Long? = null,
     selfDeletionStartDate: Instant? = null,
-    sender: UserEntity? = null
+    sender: UserDetailsEntity? = null
 ) = MessageEntity.Regular(
     id = id,
     content = content,

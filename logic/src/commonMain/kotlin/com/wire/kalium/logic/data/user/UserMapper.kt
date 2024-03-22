@@ -142,7 +142,8 @@ internal class UserMapperImpl(
             userType = domainUserTypeMapper.fromUserTypeEntity(userEntity.userType),
             availabilityStatus = availabilityStatusMapper.fromDaoAvailabilityStatusToModel(availabilityStatus),
             expiresAt = expiresAt,
-            supportedProtocols = supportedProtocols?.toModel()
+            supportedProtocols = supportedProtocols?.toModel(),
+            isUnderLegalHold = userEntity.isUnderLegalHold,
         )
     }
 
@@ -187,7 +188,8 @@ internal class UserMapperImpl(
         defederated = userEntity.defederated,
         isProteusVerified = userEntity.isProteusVerified,
         supportedProtocols = userEntity.supportedProtocols?.toModel(),
-        activeOneOnOneConversationId = userEntity.activeOneOnOneConversationId?.toModel()
+        activeOneOnOneConversationId = userEntity.activeOneOnOneConversationId?.toModel(),
+        isUnderLegalHold = userEntity.isUnderLegalHold,
     )
 
     override fun fromUserEntityToOtherUserMinimized(userEntity: UserEntityMinimized): OtherUserMinimized =
