@@ -18,7 +18,6 @@
 package com.wire.kalium.logic.data.e2ei
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
@@ -26,7 +25,7 @@ import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.dao.MetadataDAO
 
-interface CertificateRevocationListRepository {
+internal interface CertificateRevocationListRepository {
 
     /**
      * Returns CRLs with expiration time.
@@ -40,8 +39,7 @@ interface CertificateRevocationListRepository {
 
 internal class CertificateRevocationListRepositoryDataSource(
     private val acmeApi: ACMEApi,
-    private val metadataDAO: MetadataDAO,
-    private val userConfigRepository: UserConfigRepository
+    private val metadataDAO: MetadataDAO
 ) : CertificateRevocationListRepository {
     override suspend fun getCRLs(): CRLUrlExpirationList? =
         metadataDAO.getSerializable(CRL_LIST_KEY, CRLUrlExpirationList.serializer())
