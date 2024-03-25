@@ -344,7 +344,7 @@ class CallManagerImpl internal constructor(
     /**
      * This method should NOT be called while the call is still incoming or outgoing and not established yet.
      */
-    override suspend fun updateVideoState(conversationId: ConversationId, videoState: VideoState) {
+    override suspend fun setVideoSendState(conversationId: ConversationId, videoState: VideoState) {
         withCalling {
             callingLogger.d("$TAG -> changing video state to ${videoState.name}..")
             scope.launch {
