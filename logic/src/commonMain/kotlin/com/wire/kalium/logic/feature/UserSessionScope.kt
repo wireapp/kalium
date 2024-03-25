@@ -211,13 +211,9 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolverImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorker
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorkerImpl
-import com.wire.kalium.logic.feature.e2ei.CertificateRevocationListCheckWorker
-import com.wire.kalium.logic.feature.e2ei.CertificateRevocationListCheckWorkerImpl
 import com.wire.kalium.logic.feature.e2ei.CheckCrlRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCaseImpl
-import com.wire.kalium.logic.feature.featureConfig.FeatureFlagSyncWorkerImpl
-import com.wire.kalium.logic.feature.featureConfig.FeatureFlagsSyncWorker
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
@@ -1596,23 +1592,6 @@ class UserSessionScope internal constructor(
         )
     }
 
-    private val certificateRevocationListCheckWorker: CertificateRevocationListCheckWorker by lazy {
-        CertificateRevocationListCheckWorkerImpl(
-            certificateRevocationListRepository = certificateRevocationListRepository,
-            incrementalSyncRepository = incrementalSyncRepository,
-            checkRevocationList = checkRevocationList,
-            kaliumLogger = userScopedLogger,
-        )
-    }
-
-    private val featureFlagsSyncWorker: FeatureFlagsSyncWorker by lazy {
-        FeatureFlagSyncWorkerImpl(
-            incrementalSyncRepository = incrementalSyncRepository,
-            syncFeatureConfigs = syncFeatureConfigsUseCase,
-            kaliumLogger = userScopedLogger,
-        )
-    }
-
     private val keyPackageRepository: KeyPackageRepository
         get() = KeyPackageDataSource(
             clientIdProvider, authenticatedNetworkContainer.keyPackageApi, mlsClientProvider, userId
@@ -1784,12 +1763,9 @@ class UserSessionScope internal constructor(
             userRepository,
             userConfigRepository,
             accountRepository,
-            searchUserRepository,
             syncManager,
             assetRepository,
             teamRepository,
-            connectionRepository,
-            qualifiedIdMapper,
             globalScope.sessionRepository,
             authenticationScope.serverConfigRepository,
             userId,
@@ -1805,6 +1781,10 @@ class UserSessionScope internal constructor(
             joinExistingMLSConversations,
             refreshUsersWithoutMetadata,
             isE2EIEnabled,
+            certificateRevocationListRepository,
+            incrementalSyncRepository,
+            checkRevocationList,
+            syncFeatureConfigsUseCase,
             userScopedLogger
         )
 
@@ -2054,10 +2034,6 @@ class UserSessionScope internal constructor(
         }
 
         launch {
-            certificateRevocationListCheckWorker.execute()
-        }
-
-        launch {
             avsSyncStateReporter.execute()
         }
 
@@ -2070,18 +2046,11 @@ class UserSessionScope internal constructor(
         }
 
         launch {
-            featureFlagsSyncWorker.execute()
-        }
-
-        launch {
             acmeCertificatesSyncWorker.execute()
         }
 
         launch {
             updateSelfClientCapabilityToLegalHoldConsent()
-        }
-        launch {
-            users.observeCertificateRevocationForSelfClient()
         }
     }
 
