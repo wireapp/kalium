@@ -209,6 +209,9 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolverImpl
 import com.wire.kalium.logic.feature.debug.DebugScope
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorker
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorkerImpl
+import com.wire.kalium.logic.feature.e2ei.CertificateRevocationListCheckWorker
+import com.wire.kalium.logic.feature.e2ei.CertificateRevocationListCheckWorkerImpl
+import com.wire.kalium.logic.feature.e2ei.CheckCrlRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
@@ -1553,8 +1556,7 @@ class UserSessionScope internal constructor(
     private val certificateRevocationListRepository: CertificateRevocationListRepository
         get() = CertificateRevocationListRepositoryDataSource(
             acmeApi = globalScope.unboundNetworkContainer.acmeApi,
-            metadataDAO = userStorage.database.metadataDAO,
-            userConfigRepository = userConfigRepository
+            metadataDAO = userStorage.database.metadataDAO
         )
 
     private val proteusPreKeyRefiller: ProteusPreKeyRefiller
@@ -1842,10 +1844,11 @@ class UserSessionScope internal constructor(
         get() = MarkFileSharingChangeAsNotifiedUseCase(userConfigRepository)
 
     val isMLSEnabled: IsMLSEnabledUseCase get() = IsMLSEnabledUseCaseImpl(featureSupport, userConfigRepository)
-    val isE2EIEnabled: IsE2EIEnabledUseCase get() = IsE2EIEnabledUseCaseImpl(
-        userConfigRepository,
-        isMLSEnabled
-    )
+    val isE2EIEnabled: IsE2EIEnabledUseCase
+        get() = IsE2EIEnabledUseCaseImpl(
+            userConfigRepository,
+            isMLSEnabled
+        )
 
     val getDefaultProtocol: GetDefaultProtocolUseCase
         get() = GetDefaultProtocolUseCaseImpl(
@@ -1938,6 +1941,13 @@ class UserSessionScope internal constructor(
                 it.createDirectories(dataStoragePaths.assetStoragePath.value.toPath())
         }
     }
+
+    val checkCrlRevocationList: CheckCrlRevocationListUseCase
+        get() = CheckCrlRevocationListUseCase(
+            certificateRevocationListRepository,
+            checkRevocationList,
+            userScopedLogger
+        )
 
     internal val getProxyCredentials: GetProxyCredentialsUseCase
         get() = GetProxyCredentialsUseCaseImpl(sessionManager)

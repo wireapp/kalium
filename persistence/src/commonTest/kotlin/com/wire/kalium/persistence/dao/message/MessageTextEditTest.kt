@@ -20,13 +20,17 @@ package com.wire.kalium.persistence.dao.message
 
 import app.cash.turbine.test
 import com.wire.kalium.persistence.dao.receipt.ReceiptTypeEntity
+import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.test.Test
+import kotlin.test.assertContains
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -184,6 +188,109 @@ class MessageTextEditTest : BaseMessageTest() {
         val editStatus = result.editStatus
         assertIs<MessageEntity.EditStatus.Edited>(editStatus)
         assertEquals(editDate, editStatus.lastDate)
+    }
+
+    @Test
+    fun givenUnreadTextWasInserted_whenUpdatingContentWithSelfMention_thenShouldUpdateUnreadEvent() = runTest {
+        // Given
+        insertInitialData()
+
+        // When
+        val mentions = listOf(MessageEntity.Mention(0, 1, SELF_USER_ID))
+        messageDAO.updateTextMessageContent(
+            editTimeStamp = Instant.DISTANT_FUTURE.toIsoDateTimeString(),
+            conversationId = CONVERSATION_ID,
+            currentMessageId = ORIGINAL_MESSAGE_ID,
+            newTextContent = ORIGINAL_CONTENT.copy(
+                messageBody = "Howdy",
+                mentions = mentions
+            ),
+            newMessageId = NEW_MESSAGE_ID
+        )
+
+        // Then
+        val unreadEvents = messageDAO.observeUnreadEvents()
+            .map { it[CONVERSATION_ID]!!.map { event -> event.type } }
+            .first()
+
+        assertContains(unreadEvents, UnreadEventTypeEntity.MENTION)
+    }
+
+    @Test
+    fun givenUnreadTextWasInsertedWithSelfMention_whenUpdatingContentWithoutSelfMention_thenShouldUpdateUnreadEvent() = runTest {
+        // Given
+        val initMentions = listOf(MessageEntity.Mention(0, 1, SELF_USER_ID), MessageEntity.Mention(2, 3, OTHER_USER.id))
+
+        insertInitialDataWithMentions(
+            mentions = initMentions,
+        )
+
+        // When
+        val mentions = listOf(MessageEntity.Mention(0, 1, OTHER_USER.id))
+        messageDAO.updateTextMessageContent(
+            editTimeStamp = Instant.DISTANT_FUTURE.toIsoDateTimeString(),
+            conversationId = CONVERSATION_ID,
+            currentMessageId = ORIGINAL_MESSAGE_ID,
+            newTextContent = ORIGINAL_CONTENT.copy(
+                messageBody = "Howdy",
+                mentions = mentions
+            ),
+            newMessageId = NEW_MESSAGE_ID
+        )
+
+        // Then
+        val unreadEvents = messageDAO.observeUnreadEvents()
+            .map { it[CONVERSATION_ID]!!.map { event -> event.type } }
+            .first()
+
+        assertContains(unreadEvents, UnreadEventTypeEntity.MESSAGE)
+    }
+
+    @Test
+    fun givenTextWasInsertedAndIsRead_whenUpdatingContentWithSelfMention_thenUnreadEventShouldNotChange() = runTest {
+        // Given
+        val initMentions = listOf(
+            MessageEntity.Mention(0, 1, SELF_USER_ID),
+            MessageEntity.Mention(2, 3, OTHER_USER.id)
+        )
+
+        insertInitialDataWithMentions(
+            mentions = initMentions,
+            updateConversationReadDate = true
+        )
+
+        // When
+        val mentions = listOf(MessageEntity.Mention(0, 1, OTHER_USER.id))
+        messageDAO.updateTextMessageContent(
+            editTimeStamp = Instant.DISTANT_FUTURE.toIsoDateTimeString(),
+            conversationId = CONVERSATION_ID,
+            currentMessageId = ORIGINAL_MESSAGE_ID,
+            newTextContent = ORIGINAL_CONTENT.copy(
+                messageBody = "Howdy",
+                mentions = mentions
+            ),
+            newMessageId = NEW_MESSAGE_ID
+        )
+
+        // Then
+        val unreadEvents = messageDAO.observeUnreadEvents()
+            .first()[CONVERSATION_ID]
+
+        assertTrue(unreadEvents.isNullOrEmpty())
+    }
+
+    private suspend fun insertInitialDataWithMentions(
+        mentions: List<MessageEntity.Mention>,
+        updateConversationReadDate: Boolean = false
+    ) {
+        super.insertInitialData()
+
+        messageDAO.insertOrIgnoreMessage(
+            ORIGINAL_MESSAGE.copy(
+                content = ORIGINAL_CONTENT.copy(mentions = mentions)
+            ),
+            updateConversationReadDate = updateConversationReadDate
+        )
     }
 
     override suspend fun insertInitialData() {
