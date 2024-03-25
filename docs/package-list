@@ -360,14 +360,14 @@ $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/setTestRemote
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/setTestRemoteVideoStates/#com.wire.kalium.logic.data.id.QualifiedID#kotlin.collections.List[com.wire.kalium.logic.data.call.Participant]/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/set-test-remote-video-states.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/setTestVideoType/#[Error type: Unresolved type for TestVideoType]/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[apple]-call-manager-impl/set-test-video-type.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/setTestVideoType/#com.wire.kalium.logic.data.call.TestVideoType/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/set-test-video-type.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/setVideoSendState/#[Error type: Unresolved type for ConversationId]#[Error type: Unresolved type for VideoState]/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[apple]-call-manager-impl/set-video-send-state.html
+$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/setVideoSendState/#com.wire.kalium.logic.data.id.QualifiedID#com.wire.kalium.logic.data.call.VideoState/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/set-video-send-state.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/startCall/#[Error type: Unresolved type for ConversationId]#[Error type: Unresolved type for CallType]#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[apple]-call-manager-impl/start-call.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/startCall/#com.wire.kalium.logic.data.id.QualifiedID#com.wire.kalium.logic.data.call.CallType#kotlin.Boolean/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/start-call.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/updateConversationClients/#[Error type: Unresolved type for ConversationId]#kotlin.String/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[apple]-call-manager-impl/update-conversation-clients.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/updateConversationClients/#com.wire.kalium.logic.data.id.QualifiedID#kotlin.String/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/update-conversation-clients.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/updateEpochInfo/#[Error type: Unresolved type for ConversationId]#[Error type: Unresolved type for EpochInfo]/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[apple]-call-manager-impl/update-epoch-info.html
 $dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/updateEpochInfo/#com.wire.kalium.logic.data.id.QualifiedID#com.wire.kalium.logic.data.call.EpochInfo/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/update-epoch-info.html
-$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/updateVideoState/#[Error type: Unresolved type for ConversationId]#[Error type: Unresolved type for VideoState]/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[apple]-call-manager-impl/update-video-state.html
-$dokka.location:com.wire.kalium.logic.feature.call/CallManagerImpl/updateVideoState/#com.wire.kalium.logic.data.id.QualifiedID#com.wire.kalium.logic.data.call.VideoState/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-call-manager-impl/update-video-state.html
 $dokka.location:com.wire.kalium.logic.feature.call/LogHandlerImpl///PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-log-handler-impl/index.html
 $dokka.location:com.wire.kalium.logic.feature.call/LogHandlerImpl/onLog/#kotlin.Int#kotlin.String#[Error type: Unresolved type for Pointer]?/PointingToDeclaration/logic/com.wire.kalium.logic.feature.call/[jvm]-log-handler-impl/on-log.html
 $dokka.location:com.wire.kalium.network//buildClearTextTrafficOkhttpClient/#/PointingToDeclaration/network/com.wire.kalium.network/[jvm]build-clear-text-traffic-okhttp-client.html
@@ -459,6 +459,7 @@ com.wire.kalium.logic.feature.backup
 com.wire.kalium.logic.feature.call
 com.wire.kalium.logic.feature.call.scenario
 com.wire.kalium.logic.feature.call.usecase
+com.wire.kalium.logic.feature.call.usecase.video
 com.wire.kalium.logic.feature.client
 com.wire.kalium.logic.feature.connection
 com.wire.kalium.logic.feature.conversation
