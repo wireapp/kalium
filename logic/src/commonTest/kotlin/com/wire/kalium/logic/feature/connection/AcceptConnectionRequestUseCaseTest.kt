@@ -105,7 +105,7 @@ class AcceptConnectionRequestUseCaseTest {
         assertEquals(AcceptConnectionRequestUseCaseResult.Success, result)
         verify(arrangement.oneOnOneResolver)
             .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUserId)
-            .with(eq(CONNECTION.qualifiedToId))
+            .with(eq(CONNECTION.qualifiedToId), eq(true))
             .wasInvoked(once)
     }
 

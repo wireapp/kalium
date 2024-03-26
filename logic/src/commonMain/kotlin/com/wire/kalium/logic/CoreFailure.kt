@@ -20,12 +20,12 @@ package com.wire.kalium.logic
 
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.e2ei.usecase.E2EIEnrollmentResult
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isFederationDenied
 import com.wire.kalium.network.exceptions.isFederationNotEnabled
+import com.wire.kalium.network.exceptions.isMissingLegalHoldConsent
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.utils.io.errors.IOException
 import kotlinx.coroutines.flow.Flow
@@ -46,7 +46,16 @@ sealed interface CoreFailure {
         get() = this is NetworkFailure.FederatedBackendFailure.ConflictingBackends && this.domains.isNotEmpty()
 
     val isRetryable: Boolean
-        get() = this is NetworkFailure.FederatedBackendFailure.RetryableFailure
+        get() = when {
+            this is NetworkFailure.FederatedBackendFailure.RetryableFailure -> true
+            isMissingLegalHoldConsentError -> true
+            else -> false
+        }
+
+    val isMissingLegalHoldConsentError: Boolean
+        get() = this is NetworkFailure.ServerMiscommunication
+                && this.kaliumException is KaliumException.InvalidRequestError
+                && this.kaliumException.isMissingLegalHoldConsent()
 
     /**
      * The attempted operation requires that this client is registered.
@@ -54,10 +63,13 @@ sealed interface CoreFailure {
     data object MissingClientRegistration : CoreFailure
 
     /**
-     * Key packages requested not available which prevents them from being added
-     * to an existing or new conversation.
+     * Represents a failure indicating that key packages are missing for user IDs.
+     *
+     * @property failedUserIds The set of user IDs for which key packages are missing.
      */
-    data class NoKeyPackagesAvailable(val failedUserIds: Set<UserId>) : CoreFailure
+    data class MissingKeyPackages(
+        val failedUserIds: Set<UserId>
+    ) : CoreFailure
 
     /**
      * It's not allowed to run the application with development API enabled when
@@ -182,8 +194,10 @@ interface MLSFailure : CoreFailure {
     data object UnmergedPendingGroup : MLSFailure
 
     data object ConversationAlreadyExists : MLSFailure
-
+    data object MessageEpochTooOld : MLSFailure
     data object ConversationDoesNotSupportMLS : MLSFailure
+    data object StaleProposal : MLSFailure
+    data object StaleCommit : MLSFailure
 
     class Generic(internal val exception: Exception) : MLSFailure {
         val rootCause: Throwable get() = exception
@@ -191,11 +205,35 @@ interface MLSFailure : CoreFailure {
 }
 
 interface E2EIFailure : CoreFailure {
-    data class FailedInitialization(val step: E2EIEnrollmentResult.E2EIStep) : E2EIFailure
-    data class FailedOAuth(val reason: String) : E2EIFailure
-    data class FailedFinalization(val step: E2EIEnrollmentResult.E2EIStep) : E2EIFailure
-    data object FailedRotationAndMigration : E2EIFailure
+    data object Disabled : E2EIFailure
+    data object MissingDiscoveryUrl : E2EIFailure
+    data class MissingMLSClient(internal val reason: CoreFailure) : E2EIFailure
+    data class MissingE2EIClient(internal val reason: CoreFailure) : E2EIFailure
+    data object MissingTeamSettings : E2EIFailure
+    data class GettingE2EIClient(internal val reason: CoreFailure) : E2EIFailure
+    data class TrustAnchors(internal val reason: CoreFailure) : E2EIFailure
+    data class IntermediateCert(internal val reason: CoreFailure) : E2EIFailure
+    data class CRL(internal val reason: CoreFailure) : E2EIFailure
+    data class OAuthRefreshToken(internal val reason: CoreFailure) : E2EIFailure
+    data class AcmeNonce(internal val reason: CoreFailure) : E2EIFailure
+    data class AcmeNewAccount(internal val reason: CoreFailure) : E2EIFailure
+    data class AcmeDirectories(internal val reason: CoreFailure) : E2EIFailure
+    data class AcmeNewOrder(internal val reason: CoreFailure) : E2EIFailure
+    data object AcmeAuthorizations : E2EIFailure
+    data class OAuth(val reason: String) : E2EIFailure
+    data class WireNonce(internal val reason: CoreFailure) : E2EIFailure
+    data class DPoPToken(internal val reason: CoreFailure) : E2EIFailure
+    data class WireAccessToken(internal val reason: CoreFailure) : E2EIFailure
+    data class DPoPChallenge(internal val reason: CoreFailure) : E2EIFailure
+    data class OIDCChallenge(internal val reason: CoreFailure) : E2EIFailure
 
+    // returned as success from ChallengeResponse with status=invalid when user tries to login with different credentials
+    object InvalidChallenge : E2EIFailure
+    data class CheckOrderRequest(internal val reason: CoreFailure) : E2EIFailure
+    data class FinalizeRequest(internal val reason: CoreFailure) : E2EIFailure
+    data class RotationAndMigration(internal val reason: CoreFailure) : E2EIFailure
+    data class InitMLSClient(internal val reason: CoreFailure) : E2EIFailure
+    data class Certificate(internal val reason: CoreFailure) : E2EIFailure
     class Generic(internal val exception: Exception) : E2EIFailure {
         val rootCause: Throwable get() = exception
     }
@@ -296,6 +334,10 @@ internal inline fun <T> wrapMLSRequest(mlsRequest: () -> T): Either<MLSFailure, 
     return try {
         Either.Right(mlsRequest())
     } catch (e: Exception) {
+        kaliumLogger.e(
+            """{ "MLSException": "${e.message},"
+                |"cause": ${e.cause} }" """.trimMargin()
+        )
         kaliumLogger.e(e.stackTraceToString())
         Either.Left(mapMLSException(e))
     }
@@ -305,6 +347,10 @@ internal inline fun <T> wrapE2EIRequest(e2eiRequest: () -> T): Either<E2EIFailur
     return try {
         Either.Right(e2eiRequest())
     } catch (e: Exception) {
+        kaliumLogger.e(
+            """{ "E2EIException": "${e.message},"
+                |"cause": ${e.cause} }" """.trimMargin()
+        )
         kaliumLogger.e(e.stackTraceToString())
         Either.Left(E2EIFailure.Generic(e))
     }

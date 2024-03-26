@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.user
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.asset.KaliumFileSystem
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
@@ -29,6 +28,7 @@ import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -120,19 +120,20 @@ class UploadUserAvatarUseCaseTest {
         val fakeFileSystem = FakeFileSystem().also { it.createDirectories(userHomePath) }
 
         private val dummySelfUser = SelfUser(
-            UserId("some_id", "some_domain"),
-            "some_name",
-            "some_handle",
-            "some_email",
-            null,
-            1,
-            null,
-            ConnectionState.ACCEPTED,
-            UserAssetId("value1", "domain"),
-            UserAssetId("value2", "domain"),
-            UserAvailabilityStatus.NONE,
-            null,
-            setOf(SupportedProtocol.PROTEUS)
+            id = UserId("some_id", "some_domain"),
+            name = "some_name",
+            handle = "some_handle",
+            email = "some_email",
+            phone = null,
+            accentId = 1,
+            teamId = null,
+            connectionStatus = ConnectionState.ACCEPTED,
+            previewPicture = UserAssetId("value1", "domain"),
+            completePicture = UserAssetId("value2", "domain"),
+            userType = UserType.INTERNAL,
+            availabilityStatus = UserAvailabilityStatus.NONE,
+            expiresAt = null,
+            supportedProtocols = setOf(SupportedProtocol.PROTEUS)
         )
 
         fun withStoredData(data: ByteArray, dataNamePath: Path): Arrangement {

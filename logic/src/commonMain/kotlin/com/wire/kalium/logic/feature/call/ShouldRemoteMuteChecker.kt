@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.call
 
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 
@@ -27,28 +28,41 @@ import com.wire.kalium.logic.data.user.UserId
  */
 internal interface ShouldRemoteMuteChecker {
     fun check(
+        senderUserId: UserId,
         selfUserId: UserId,
         selfClientId: String,
-        targets: MessageContent.Calling.Targets?
+        targets: MessageContent.Calling.Targets?,
+        conversationMembers: List<Conversation.Member>
     ): Boolean
 }
 
 internal class ShouldRemoteMuteCheckerImpl : ShouldRemoteMuteChecker {
     override fun check(
+        senderUserId: UserId,
         selfUserId: UserId,
         selfClientId: String,
-        targets: MessageContent.Calling.Targets?
-    ) = targets?.let {
-        // Having targets means that we are in an MLS call.
-        it.domainToUserIdToClients.values.any { userClientsMap ->
-            userClientsMap[selfUserId.value]?.any { client ->
-                client == selfClientId
-            } ?: run {
-                false
-            }
+        targets: MessageContent.Calling.Targets?,
+        conversationMembers: List<Conversation.Member>
+    ): Boolean {
+        val isAdmin = conversationMembers.any { member ->
+            member.id == senderUserId && member.role == Conversation.Member.Role.Admin
         }
-    } ?: run {
-        // If there are no targets, we should mute. It's a proteus message with no targets.
-        true
+        return if (isAdmin) {
+            targets?.let {
+                // Having targets means that we are in an MLS call.
+                it.domainToUserIdToClients.values.any { userClientsMap ->
+                    userClientsMap[selfUserId.value]?.any { client ->
+                        client == selfClientId
+                    } ?: run {
+                        false
+                    }
+                }
+            } ?: run {
+                // If there are no targets, we should mute. It's a proteus message with no targets.
+                true
+            }
+        } else {
+            false
+        }
     }
 }

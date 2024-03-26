@@ -104,7 +104,8 @@ data class UserDetailsEntity(
     val defederated: Boolean,
     val isProteusVerified: Boolean,
     val supportedProtocols: Set<SupportedProtocolEntity>?,
-    val activeOneOnOneConversationId: QualifiedIDEntity?
+    val activeOneOnOneConversationId: QualifiedIDEntity?,
+    val isUnderLegalHold: Boolean,
 ) {
     fun toSimpleEntity() = UserEntity(
         id = id,
@@ -142,6 +143,7 @@ data class BotIdEntity(
 )
 
 data class PartialUserEntity(
+    val id: QualifiedIDEntity,
     val name: String? = null,
     val handle: String? = null,
     val email: String? = null,
@@ -213,7 +215,9 @@ interface UserDAO {
      *
      * @return true if the user was updated
      */
-    suspend fun updateUser(id: UserIDEntity, update: PartialUserEntity): Boolean
+    suspend fun updateUser(update: PartialUserEntity)
+
+    suspend fun updateUser(users: List<PartialUserEntity>)
 
     /**
      * This will update all columns (or insert a new record), except:
@@ -272,7 +276,7 @@ interface UserDAO {
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
     suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
     fun observeUsersDetailsNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserDetailsEntity>>
-    suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State)
+    suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedIDEntity>)
     suspend fun getUsersDetailsNotInConversationByNameOrHandleOrEmail(
         conversationId: QualifiedIDEntity,
         searchQuery: String,

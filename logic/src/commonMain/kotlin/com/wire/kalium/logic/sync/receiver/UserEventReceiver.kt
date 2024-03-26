@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -36,10 +37,12 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
+import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
 import kotlin.time.Duration.Companion.ZERO
@@ -61,9 +64,9 @@ internal class UserEventReceiverImpl internal constructor(
     private val legalHoldHandler: LegalHoldHandler
 ) : UserEventReceiver {
 
-    override suspend fun onEvent(event: Event.User): Either<CoreFailure, Unit> {
+    override suspend fun onEvent(event: Event.User, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
         return when (event) {
-            is Event.User.NewConnection -> handleNewConnection(event)
+            is Event.User.NewConnection -> handleNewConnection(event, deliveryInfo)
             is Event.User.ClientRemove -> handleClientRemove(event)
             is Event.User.UserDelete -> handleUserDelete(event)
             is Event.User.Update -> handleUserUpdate(event)
@@ -101,23 +104,28 @@ internal class UserEventReceiverImpl internal constructor(
                 }
             }
 
-    private suspend fun handleNewConnection(event: Event.User.NewConnection): Either<CoreFailure, Unit> =
+    private suspend fun handleNewConnection(event: Event.User.NewConnection, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> =
         userRepository.fetchUserInfo(event.connection.qualifiedToId)
             .flatMap {
+                val previousStatus = connectionRepository.getConnection(event.connection.qualifiedConversationId)
+                    .map { it.connection.status }.getOrNull()
                 connectionRepository.insertConnectionFromEvent(event)
                     .flatMap {
                         if (event.connection.status == ConnectionState.ACCEPTED) {
                             oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(
                                 event.connection.qualifiedToId,
-                                delay = if (event.live) 3.seconds else ZERO
+                                delay = if (deliveryInfo.source == EventSource.LIVE) 3.seconds else ZERO
                             )
-                            newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
-                                event.connection.qualifiedConversationId
-                            )
+                            if (previousStatus != ConnectionState.MISSING_LEGALHOLD_CONSENT) {
+                                newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
+                                    event.connection.qualifiedConversationId
+                                )
+                            } else Either.Right(Unit)
                         } else {
                             Either.Right(Unit)
                         }
                     }
+                    .flatMap { legalHoldHandler.handleNewConnection(event) }
             }
             .onSuccess {
                 kaliumLogger

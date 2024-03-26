@@ -165,8 +165,8 @@ class NewConversationEventHandlerTest {
             .wasInvoked(exactly = once)
 
         verify(arrangement.newGroupConversationSystemMessagesCreator)
-            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
-            .with(eq(event.conversationId.toDao()), eq(event.conversation.members.otherMembers.map { it.id.toModel() }), any())
+            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAdded)
+            .with(eq(event.conversationId.toDao()), eq(event.conversation.members.otherMembers.map { it.id.toModel() }))
             .wasInvoked(exactly = once)
 
         verify(arrangement.newGroupConversationSystemMessagesCreator)
@@ -224,7 +224,7 @@ class NewConversationEventHandlerTest {
                 .wasNotInvoked()
 
             verify(arrangement.newGroupConversationSystemMessagesCreator)
-                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
+                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAdded)
                 .with(eq(event.conversationId.toDao()), eq(event.conversation))
                 .wasNotInvoked()
 
@@ -264,7 +264,7 @@ class NewConversationEventHandlerTest {
             // then
             verify(arrangement.oneOnOneResolver)
                 .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUserId)
-                .with(any())
+                .with(any(), eq(true))
                 .wasNotInvoked()
             verify(arrangement.oneOnOneResolver)
                 .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUser)
@@ -305,7 +305,7 @@ class NewConversationEventHandlerTest {
             // then
             verify(arrangement.oneOnOneResolver)
                 .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUserId)
-                .with(eq(otherUserId))
+                .with(eq(otherUserId), eq(true))
                 .wasInvoked(exactly = once)
         }
 
@@ -364,7 +364,7 @@ class NewConversationEventHandlerTest {
         fun withConversationResolvedMembersSystemMessage() = apply {
             given(newGroupConversationSystemMessagesCreator)
                 .suspendFunction(
-                    newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed
+                    newGroupConversationSystemMessagesCreator::conversationResolvedMembersAdded
                 )
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
@@ -408,7 +408,7 @@ class NewConversationEventHandlerTest {
         fun withResolveOneOnOneConversationWithUserId(result: Either<CoreFailure, ConversationId>) = apply {
             given(oneOnOneResolver)
                 .suspendFunction(oneOnOneResolver::resolveOneOnOneConversationWithUserId)
-                .whenInvokedWith(any())
+                .whenInvokedWith(any(), eq(true))
                 .thenReturn(result)
         }
 
@@ -421,8 +421,6 @@ class NewConversationEventHandlerTest {
         ) = Event.Conversation.NewConversation(
             id = "eventId",
             conversationId = TestConversation.ID,
-            transient = false,
-            live = false,
             timestampIso = "timestamp",
             conversation = conversation,
             senderUserId = TestUser.SELF.id

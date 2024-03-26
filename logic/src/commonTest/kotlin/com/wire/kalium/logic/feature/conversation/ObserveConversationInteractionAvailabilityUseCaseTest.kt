@@ -229,6 +229,31 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
         }
     }
 
+    @Test
+    fun givenConversationLegalHoldIsEnabled_whenInvokingInteractionForConversation_thenInteractionShouldBeEnabled() = runTest {
+        val conversationId = TestConversation.ID
+        val (_, observeConversationInteractionAvailability) = arrange {
+            withLegalHoldOneOnOneConversation(Conversation.LegalHoldStatus.ENABLED)
+        }
+        observeConversationInteractionAvailability(conversationId).test {
+            val interactionResult = awaitItem()
+            assertEquals(IsInteractionAvailableResult.Success(InteractionAvailability.ENABLED), interactionResult)
+            awaitComplete()
+        }
+    }
+    @Test
+    fun givenConversationLegalHoldIsDegraded_whenInvokingInteractionForConversation_thenInteractionShouldBeLegalHold() = runTest {
+        val conversationId = TestConversation.ID
+        val (_, observeConversationInteractionAvailability) = arrange {
+            withLegalHoldOneOnOneConversation(Conversation.LegalHoldStatus.DEGRADED)
+        }
+        observeConversationInteractionAvailability(conversationId).test {
+            val interactionResult = awaitItem()
+            assertEquals(IsInteractionAvailableResult.Success(InteractionAvailability.LEGAL_HOLD), interactionResult)
+            awaitComplete()
+        }
+    }
+
     private class Arrangement(
         private val configure: Arrangement.() -> Unit
     ) : UserRepositoryArrangement by UserRepositoryArrangementImpl(),
@@ -271,6 +296,16 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
                         otherUser = TestUser.OTHER.copy(
                             deleted = true
                         )
+                    )
+                )
+            )
+        }
+
+        fun withLegalHoldOneOnOneConversation(legalHoldStatus: Conversation.LegalHoldStatus) = apply {
+            withObserveConversationDetailsByIdReturning(
+                Either.Right(
+                    TestConversationDetails.CONVERSATION_ONE_ONE.copy(
+                        conversation = TestConversation.ONE_ON_ONE().copy(legalHoldStatus = legalHoldStatus)
                     )
                 )
             )

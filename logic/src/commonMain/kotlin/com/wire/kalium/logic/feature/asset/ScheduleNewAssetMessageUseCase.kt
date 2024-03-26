@@ -25,10 +25,12 @@ import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.asset.isAudioMimeType
 import com.wire.kalium.logic.data.asset.isDisplayableImageMimeType
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -39,7 +41,6 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
@@ -96,7 +97,7 @@ interface ScheduleNewAssetMessageUseCase {
 @Suppress("LongParameterList")
 internal class ScheduleNewAssetMessageUseCaseImpl(
     private val persistMessage: PersistMessageUseCase,
-    private val updateAssetMessageUploadStatus: UpdateAssetMessageUploadStatusUseCase,
+    private val updateAssetMessageTransferStatus: UpdateAssetMessageTransferStatusUseCase,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val assetDataSource: AssetRepository,
     private val userId: UserId,
@@ -151,25 +152,14 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             ).onSuccess { (currentAssetMessageContent, message) ->
                 // We schedule the asset upload and return Either.Right so later it's transformed to Success(message.id)
                 outGoingAssetUploadJob = scope.launch(dispatcher.io) {
+                    launch(block = monitorAndCancelUploadOnMessageVisibilityChange(message, conversationId))
                     launch {
-                        messageRepository.observeMessageVisibility(message.id, conversationId).collect { visibility ->
-                            visibility.fold(
-                                {
-                                    outGoingAssetUploadJob?.cancel()
-                                },
-                                {
-                                    if (it == MessageEntity.Visibility.DELETED) {
-                                        outGoingAssetUploadJob?.cancel()
-                                    }
-                                }
-                            )
-                        }
-                    }
-                    launch {
+                        updateAssetMessageTransferStatus(AssetTransferStatus.UPLOAD_IN_PROGRESS, conversationId, generatedMessageUuid)
                         uploadAssetAndUpdateMessage(currentAssetMessageContent, message, conversationId, expectsReadConfirmation)
                             .onSuccess {
                                 // We delete asset added temporarily that was used to show the loading
                                 assetDataSource.deleteAssetLocally(currentAssetMessageContent.assetId.key)
+                                updateAssetMessageTransferStatus(AssetTransferStatus.UPLOADED, conversationId, generatedMessageUuid)
                             }
                     }
                 }
@@ -179,6 +169,24 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         }, { (_, message) ->
             ScheduleNewAssetMessageResult.Success(message.id)
         })
+    }
+
+    private fun monitorAndCancelUploadOnMessageVisibilityChange(
+        message: Message.Regular,
+        conversationId: ConversationId
+    ): suspend CoroutineScope.() -> Unit = {
+        messageRepository.observeMessageVisibility(message.id, conversationId).collect { visibility ->
+            visibility.fold(
+                {
+                    outGoingAssetUploadJob?.cancel()
+                },
+                {
+                    if (it == MessageEntity.Visibility.DELETED) {
+                        outGoingAssetUploadJob?.cancel()
+                    }
+                }
+            )
+        }
     }
 
     private suspend fun persistInitiallyAssetAndMessage(
@@ -222,8 +230,6 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                         content = MessageContent.Asset(
                             provideAssetMessageContent(
                                 assetMessageMetadata = currentAssetMessageContent,
-                                // We set UPLOAD_IN_PROGRESS when persisting the message for the first time
-                                uploadStatus = Message.UploadStatus.UPLOAD_IN_PROGRESS
                             )
                         ),
                         conversationId = conversationId,
@@ -240,7 +246,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                     persistMessage(message).map { currentAssetMessageContent to message }
                 }
                 .onFailure {
-                    updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, messageId)
+                    updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, conversationId, messageId)
                     messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, messageId, TYPE)
                 }
         }
@@ -259,18 +265,16 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             currentAssetMessageContent.otrKey,
             currentAssetMessageContent.assetName.fileExtension()
         ).onFailure {
-            updateAssetMessageUploadStatus(Message.UploadStatus.FAILED_UPLOAD, conversationId, message.id)
+            updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD, conversationId, message.id)
             messageSendFailureHandler.handleFailureAndUpdateMessageStatus(it, conversationId, message.id, TYPE)
         }.flatMap { (assetId, sha256) ->
             // We update the message with the remote data (assetId & sha256 key) obtained by the successful asset upload and we persist
             // and update the message on the DB layer to display the changes on the Conversation screen
             val updatedAssetMessageContent = currentAssetMessageContent.copy(sha256Key = sha256, assetId = assetId)
             val updatedMessage = message.copy(
-                // We update the upload status to UPLOADED as the upload succeeded
                 content = MessageContent.Asset(
                     value = provideAssetMessageContent(
-                        updatedAssetMessageContent,
-                        Message.UploadStatus.UPLOADED
+                        updatedAssetMessageContent
                     )
                 ),
                 expectsReadConfirmation = expectsReadConfirmation
@@ -303,8 +307,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
 
     @Suppress("LongParameterList")
     private fun provideAssetMessageContent(
-        assetMessageMetadata: AssetMessageMetadata,
-        uploadStatus: Message.UploadStatus
+        assetMessageMetadata: AssetMessageMetadata
     ): AssetContent {
         with(assetMessageMetadata) {
             return AssetContent(
@@ -333,10 +336,6 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                     assetDomain = assetId.domain,
                     assetToken = assetId.assetToken
                 ),
-                // Asset is already in our local storage and therefore accessible but until we don't save it to external storage the asset
-                // will only be treated as "SAVED_INTERNALLY"
-                downloadStatus = Message.DownloadStatus.SAVED_INTERNALLY,
-                uploadStatus = uploadStatus
             )
         }
     }

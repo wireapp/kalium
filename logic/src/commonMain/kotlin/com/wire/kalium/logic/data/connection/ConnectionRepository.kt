@@ -54,6 +54,7 @@ import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionStateDTO
 import com.wire.kalium.persistence.dao.ConnectionDAO
+import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -74,7 +75,8 @@ interface ConnectionRepository {
     suspend fun observeConnectionRequestsForNotification(): Flow<List<ConversationDetails>>
     suspend fun setConnectionAsNotified(userId: UserId)
     suspend fun setAllConnectionsAsNotified()
-    suspend fun deleteConnection(conversationId: ConversationId): Either<StorageFailure, Unit>
+    suspend fun deleteConnection(connection: Connection): Either<StorageFailure, Unit>
+    suspend fun getConnection(conversationId: ConversationId): Either<StorageFailure, ConversationDetails.Connection>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -249,8 +251,13 @@ internal class ConnectionDataSource(
         }
     }
 
-    override suspend fun deleteConnection(conversationId: ConversationId) = wrapStorageRequest {
-        connectionDAO.deleteConnectionDataAndConversation(conversationId.toDao())
+    override suspend fun deleteConnection(connection: Connection) = wrapStorageRequest {
+        connectionDAO.deleteConnectionDataAndConversation(connection.qualifiedConversationId.toDao())
+        userDAO.upsertConnectionStatuses(mapOf(connection.qualifiedToId.toDao() to ConnectionEntity.State.CANCELLED))
+    }
+
+    override suspend fun getConnection(conversationId: ConversationId) = wrapStorageRequest {
+            connectionDAO.getConnection(conversationId.toDao())?.let { connectionMapper.fromDaoToConversationDetails(it) }
     }
 
     /**
@@ -260,6 +267,6 @@ internal class ConnectionDataSource(
     private suspend fun handleUserConnectionStatusPersistence(connection: Connection): Either<CoreFailure, Unit> =
         when (connection.status) {
             ACCEPTED, MISSING_LEGALHOLD_CONSENT, NOT_CONNECTED, PENDING, SENT, BLOCKED, IGNORED -> persistConnection(connection)
-            CANCELLED -> deleteConnection(connection.qualifiedConversationId)
+            CANCELLED -> deleteConnection(connection)
         }
 }

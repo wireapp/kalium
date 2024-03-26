@@ -87,16 +87,12 @@ class LegalHoldRequestHandlerTest {
 
     companion object {
         private val legalHoldRequestSelfUser = Event.User.LegalHoldRequest(
-            transient = false,
-            live = false,
             id = "event-id",
             clientId = ClientId("client-id"),
             lastPreKey = LastPreKey(3, "key"),
             userId = TestUser.SELF.id
         )
         private val legalHoldRequestOtherUser = Event.User.LegalHoldRequest(
-            transient = false,
-            live = false,
             id = "event-id",
             clientId = ClientId("client-id"),
             lastPreKey = LastPreKey(3, "key"),

@@ -37,7 +37,7 @@ interface UpdateSupportedProtocolsAndResolveOneOnOnesUseCase {
 }
 
 internal class UpdateSupportedProtocolsAndResolveOneOnOnesUseCaseImpl(
-    private val updateSupportedProtocols: UpdateSupportedProtocolsUseCase,
+    private val updateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase,
     private val oneOnOneResolver: OneOnOneResolver
 ) : UpdateSupportedProtocolsAndResolveOneOnOnesUseCase {
 

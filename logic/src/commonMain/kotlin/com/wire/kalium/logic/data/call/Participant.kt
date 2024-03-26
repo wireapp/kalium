@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.user.type.UserType
 data class Participant(
     val id: QualifiedID,
     val clientId: String,
-    val name: String = "",
+    val name: String? = null,
     val isMuted: Boolean,
     val isCameraOn: Boolean,
     val isSpeaking: Boolean = false,

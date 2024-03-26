@@ -19,8 +19,8 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapper
 import com.wire.kalium.logic.feature.e2ei.E2eiCertificate
-import com.wire.kalium.logic.feature.e2ei.PemCertificateDecoder
 import com.wire.kalium.logic.functional.fold
 
 /**
@@ -32,23 +32,22 @@ interface GetE2eiCertificateUseCase {
 
 class GetE2eiCertificateUseCaseImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
-    private val pemCertificateDecoder: PemCertificateDecoder
+    private val certificateStatusMapper: CertificateStatusMapper
 ) : GetE2eiCertificateUseCase {
     override suspend operator fun invoke(clientId: ClientId): GetE2EICertificateUseCaseResult =
         mlsConversationRepository.getClientIdentity(clientId).fold(
+            { GetE2EICertificateUseCaseResult.Failure },
             {
-                GetE2EICertificateUseCaseResult.Failure.NotActivated
-            },
-            {
-                val certificate = pemCertificateDecoder.decode(it.certificate, it.status)
-                GetE2EICertificateUseCaseResult.Success(certificate)
+                it?.let {
+                    val certificate = E2eiCertificate.fromWireIdentity(it, certificateStatusMapper)
+                    GetE2EICertificateUseCaseResult.Success(certificate)
+                } ?: GetE2EICertificateUseCaseResult.NotActivated
             }
         )
 }
 
 sealed class GetE2EICertificateUseCaseResult {
     class Success(val certificate: E2eiCertificate) : GetE2EICertificateUseCaseResult()
-    sealed class Failure : GetE2EICertificateUseCaseResult() {
-        data object NotActivated : Failure()
-    }
+    data object NotActivated : GetE2EICertificateUseCaseResult()
+    data object Failure : GetE2EICertificateUseCaseResult()
 }

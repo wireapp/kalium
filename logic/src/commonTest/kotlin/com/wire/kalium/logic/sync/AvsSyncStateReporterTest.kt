@@ -21,6 +21,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.call.CallManager
+import com.wire.kalium.logic.kaliumLogger
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.eq
@@ -105,7 +106,8 @@ class AvsSyncStateReporterTest {
 
         fun arrange() = this to AvsSyncStateReporterImpl(
             callManager = lazy { callManager },
-            incrementalSyncRepository = incrementalSyncRepository
+            incrementalSyncRepository = incrementalSyncRepository,
+            kaliumLogger = kaliumLogger
         )
 
         fun withGatheringEventsIncrementalSyncState() = apply {

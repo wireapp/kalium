@@ -21,6 +21,8 @@ package com.wire.kalium.logic.sync.incremental
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventDeliveryInfo
+import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.event.logEventProcessing
@@ -33,7 +35,6 @@ import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
-import com.wire.kalium.util.serialization.toJsonElement
 
 /**
  * Handles incoming events from remote.
@@ -47,14 +48,17 @@ internal interface EventProcessor {
     var disableEventProcessing: Boolean
 
     /**
-     * Process the [event], and persist the last processed event ID if the event
-     * is not transient.
+     * Process the [eventEnvelope], persisting the last processed event ID if the event
+     * is not transient (see [EventDeliveryInfo.isTransient]).
      * If the processing fails, the last processed event ID will not be updated.
      * @return [Either] [CoreFailure] if the event processing failed, or [Unit] if the event was processed successfully.
      * @see EventRepository.lastProcessedEventId
+     * @see EventDeliveryInfo.isTransient
      * @see EventRepository.updateLastProcessedEventId
+     * @see EventDeliveryInfo
+     * @see Event
      */
-    suspend fun processEvent(event: Event): Either<CoreFailure, Unit>
+    suspend fun processEvent(eventEnvelope: EventEnvelope): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
@@ -74,16 +78,17 @@ internal class EventProcessorImpl(
 
     override var disableEventProcessing: Boolean = false
 
-    override suspend fun processEvent(event: Event): Either<CoreFailure, Unit> {
+    override suspend fun processEvent(eventEnvelope: EventEnvelope): Either<CoreFailure, Unit> {
+        val (event, deliveryInfo) = eventEnvelope
         if (disableEventProcessing) {
-            logger.w("Skipping processing of $event due to debug option")
+            logger.w("Skipping processing of ${event.toLogString()} due to debug option")
             return Either.Right(Unit)
         }
 
         return when (event) {
-            is Event.Conversation -> conversationEventReceiver.onEvent(event)
-            is Event.User -> userEventReceiver.onEvent(event)
-            is Event.FeatureConfig -> featureConfigEventReceiver.onEvent(event)
+            is Event.Conversation -> conversationEventReceiver.onEvent(event, deliveryInfo)
+            is Event.User -> userEventReceiver.onEvent(event, deliveryInfo)
+            is Event.FeatureConfig -> featureConfigEventReceiver.onEvent(event, deliveryInfo)
             is Event.Unknown -> {
                 kaliumLogger
                     .logEventProcessing(
@@ -94,21 +99,18 @@ internal class EventProcessorImpl(
                 Either.Right(Unit)
             }
 
-            is Event.UserProperty -> userPropertiesEventReceiver.onEvent(event)
-            is Event.Federation -> federationEventReceiver.onEvent(event)
-            is Event.Team.MemberLeave -> teamEventReceiver.onEvent(event)
+            is Event.UserProperty -> userPropertiesEventReceiver.onEvent(event, deliveryInfo)
+            is Event.Federation -> federationEventReceiver.onEvent(event, deliveryInfo)
+            is Event.Team.MemberLeave -> teamEventReceiver.onEvent(event, deliveryInfo)
         }.onSuccess {
-            val logMap = mapOf<String, Any>(
-                "event" to event.toLogMap()
-            )
-            if (event.shouldUpdateLastProcessedEventId()) {
+            if (deliveryInfo.shouldUpdateLastProcessedEventId()) {
                 eventRepository.updateLastProcessedEventId(event.id)
-                logger.i("Updated lastProcessedEventId: ${logMap.toJsonElement()}")
+                logger.i("Updated lastProcessedEventId: ${eventEnvelope.toLogString()}")
             } else {
-                logger.i("Skipping update of lastProcessedEventId: ${logMap.toJsonElement()}")
+                logger.i("Skipping update of lastProcessedEventId: ${eventEnvelope.toLogString()}")
             }
         }
     }
 
-    private fun Event.shouldUpdateLastProcessedEventId(): Boolean = !transient
+    private fun EventDeliveryInfo.shouldUpdateLastProcessedEventId(): Boolean = !isTransient
 }

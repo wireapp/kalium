@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.sync.SyncState
+import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.client.FetchSelfClientsFromRemoteUseCase
 import com.wire.kalium.logic.feature.client.FetchUsersClientsFromRemoteUseCase
@@ -34,6 +35,7 @@ import com.wire.kalium.logic.feature.legalhold.LegalHoldState
 import com.wire.kalium.logic.feature.legalhold.MembersHavingLegalHoldClientUseCase
 import com.wire.kalium.logic.feature.legalhold.ObserveLegalHoldStateForUserUseCase
 import com.wire.kalium.logic.framework.TestConversation
+import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
@@ -629,6 +631,113 @@ class LegalHoldHandlerTest {
             .wasInvoked()
     }
 
+    private fun testHandlingConversationMembersChanged(
+        thereAreMembersWithLegalHoldEnabledAfterChange: Boolean,
+        legalHoldStatusForConversationChanged: Boolean,
+        handleEnabledForConversationInvoked: Boolean,
+        handleDisabledForConversationInvoked: Boolean,
+    ) = runTest {
+        // given
+        val conversationId = TestConversation.CONVERSATION.id
+        val userId = TestUser.OTHER_USER_ID
+        val membersHavingLegalHoldClient = if(thereAreMembersWithLegalHoldEnabledAfterChange) listOf(userId) else emptyList()
+        val (arrangement, handler) = Arrangement()
+            .withMembersHavingLegalHoldClientSuccess(membersHavingLegalHoldClient)
+            .withUpdateLegalHoldStatusSuccess(isChanged = legalHoldStatusForConversationChanged)
+            .arrange()
+        // when
+        val result = handler.handleConversationMembersChanged(conversationId)
+        // then
+        result.shouldSucceed()
+        verify(arrangement.legalHoldSystemMessagesHandler)
+            .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleEnabledForConversation)
+            .with(eq(conversationId), any())
+            .let { if(handleEnabledForConversationInvoked) it.wasInvoked() else it.wasNotInvoked() }
+        verify(arrangement.legalHoldSystemMessagesHandler)
+            .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleDisabledForConversation)
+            .with(eq(conversationId), any())
+            .let { if(handleDisabledForConversationInvoked) it.wasInvoked() else it.wasNotInvoked() }
+    }
+
+    @Test
+    fun givenAtLeastOneMemberWithLHEnabled_AndLHForConversationChanged_whenHandlingMembersChanged_thenHandleEnabledForConversation() =
+        testHandlingConversationMembersChanged(
+            thereAreMembersWithLegalHoldEnabledAfterChange = true,
+            legalHoldStatusForConversationChanged = true,
+            handleEnabledForConversationInvoked = true,
+            handleDisabledForConversationInvoked = false,
+        )
+
+    @Test
+    fun givenNoMemberWithLHEnabled_AndLHForConversationChanged_whenHandlingMembersChanged_thenHandleDisabledForConversation() =
+        testHandlingConversationMembersChanged(
+            thereAreMembersWithLegalHoldEnabledAfterChange = false,
+            legalHoldStatusForConversationChanged = true,
+            handleEnabledForConversationInvoked = false,
+            handleDisabledForConversationInvoked = true,
+        )
+
+    @Test
+    fun givenAtLeastOneMemberWithLHEnabled_AndLHForConversationDidNotChange_whenHandlingMembersChanged_thenDoNotHandleForConversation() =
+        testHandlingConversationMembersChanged(
+            thereAreMembersWithLegalHoldEnabledAfterChange = true,
+            legalHoldStatusForConversationChanged = false,
+            handleEnabledForConversationInvoked = false,
+            handleDisabledForConversationInvoked = false,
+        )
+
+    @Test
+    fun givenNoMemberWithLHEnabled_AndLHForConversationDidNotChange_whenHandlingMembersChanged_thenDoNotHandleForConversation() =
+        testHandlingConversationMembersChanged(
+            thereAreMembersWithLegalHoldEnabledAfterChange = true,
+            legalHoldStatusForConversationChanged = false,
+            handleEnabledForConversationInvoked = false,
+            handleDisabledForConversationInvoked = false,
+        )
+
+    private fun testHandlingNewConnection(
+        userLegalHoldStatus: LegalHoldState,
+        connectionStatus: ConnectionState,
+        expectedConversationLegalHoldStatus: Conversation.LegalHoldStatus,
+    ) = runTest {
+        // given
+        val newConnectionEvent = TestEvent.newConnection(status = connectionStatus)
+        val (arrangement, handler) = Arrangement()
+            .withObserveLegalHoldStateForUserSuccess(userLegalHoldStatus)
+            .withUpdateLegalHoldStatusSuccess(isChanged = true)
+            .arrange()
+        // when
+        val result = handler.handleNewConnection(newConnectionEvent)
+        // then
+        result.shouldSucceed()
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateLegalHoldStatus)
+            .with(eq(newConnectionEvent.connection.qualifiedConversationId), eq(expectedConversationLegalHoldStatus))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenNewConnectionMissingLegalHoldConsent_whenHandling_thenUpdateConversationLegalHoldStatusToDegraded() =
+        testHandlingNewConnection(
+            userLegalHoldStatus = LegalHoldState.Disabled,
+            connectionStatus = ConnectionState.MISSING_LEGALHOLD_CONSENT,
+            expectedConversationLegalHoldStatus = Conversation.LegalHoldStatus.DEGRADED,
+        )
+    @Test
+    fun givenNewConnectionAcceptedAndUserUnderLegalHold_whenHandling_thenUpdateConversationLegalHoldStatusToEnabled() =
+        testHandlingNewConnection(
+            userLegalHoldStatus = LegalHoldState.Enabled,
+            connectionStatus = ConnectionState.ACCEPTED,
+            expectedConversationLegalHoldStatus = Conversation.LegalHoldStatus.ENABLED,
+        )
+    @Test
+    fun givenNewConnectionAcceptedAndUserNotUnderLegalHold_whenHandling_thenUpdateConversationLegalHoldStatusToDisabled() =
+        testHandlingNewConnection(
+            userLegalHoldStatus = LegalHoldState.Disabled,
+            connectionStatus = ConnectionState.ACCEPTED,
+            expectedConversationLegalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+        )
+
     private class Arrangement {
 
         @Mock
@@ -754,14 +863,10 @@ class LegalHoldHandlerTest {
     companion object {
         private val testDispatchers: KaliumDispatcher = TestKaliumDispatcher
         private val legalHoldEventEnabled = Event.User.LegalHoldEnabled(
-            transient = false,
-            live = false,
             id = "id-1",
             userId = TestUser.SELF.id,
         )
         private val legalHoldEventDisabled = Event.User.LegalHoldDisabled(
-            transient = false,
-            live = false,
             id = "id-2",
             userId = TestUser.OTHER_USER_ID
         )

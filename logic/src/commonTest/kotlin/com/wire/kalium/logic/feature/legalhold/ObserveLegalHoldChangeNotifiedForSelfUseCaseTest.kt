@@ -19,8 +19,10 @@ package com.wire.kalium.logic.feature.legalhold
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.given
 import io.mockative.mock
 import kotlinx.coroutines.flow.first
@@ -82,18 +84,19 @@ class ObserveLegalHoldChangeNotifiedForSelfUseCaseTest {
     )
 
     private class Arrangement {
+        val selfUserId = TestUser.SELF.id
         @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
         @Mock
-        val observeLegalHoldForSelfUser = mock(ObserveLegalHoldForSelfUserUseCase::class)
+        val observeLegalHoldForUser = mock(ObserveLegalHoldStateForUserUseCase::class)
         val useCase: ObserveLegalHoldChangeNotifiedForSelfUseCase =
-            ObserveLegalHoldChangeNotifiedForSelfUseCaseImpl(userConfigRepository, observeLegalHoldForSelfUser)
+            ObserveLegalHoldChangeNotifiedForSelfUseCaseImpl(selfUserId, userConfigRepository, observeLegalHoldForUser)
 
         fun arrange() = this to useCase
         fun withLegalHoldEnabledState(result: LegalHoldState) = apply {
-            given(observeLegalHoldForSelfUser)
-                .suspendFunction(observeLegalHoldForSelfUser::invoke)
-                .whenInvoked()
+            given(observeLegalHoldForUser)
+                .suspendFunction(observeLegalHoldForUser::invoke)
+                .whenInvokedWith(any())
                 .then { flowOf(result) }
         }
         fun withLegalHoldChangeNotified(result: Either<StorageFailure, Boolean>) = apply {

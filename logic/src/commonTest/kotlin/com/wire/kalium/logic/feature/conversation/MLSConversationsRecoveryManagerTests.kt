@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.kaliumLogger
 import io.mockative.Mock
 import io.mockative.anything
 import io.mockative.classOf
@@ -192,7 +193,8 @@ class MLSConversationsRecoveryManagerTests {
             incrementalSyncRepository,
             clientRepository,
             recoverMLSConversationsUseCase,
-            slowSyncRepository
+            slowSyncRepository,
+            kaliumLogger
         )
     }
 }

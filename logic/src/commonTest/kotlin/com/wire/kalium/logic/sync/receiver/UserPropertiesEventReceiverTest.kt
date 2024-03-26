@@ -40,7 +40,7 @@ class UserPropertiesEventReceiverTest {
             .withUpdateReadReceiptsSuccess()
             .arrange()
 
-        eventReceiver.onEvent(event)
+        eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.userConfigRepository)
             .function(arrangement.userConfigRepository::setReadReceiptsStatus)

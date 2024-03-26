@@ -49,7 +49,7 @@ class TeamEventReceiverTest {
                 withPersistMessageSuccess()
             }
 
-        eventReceiver.onEvent(event)
+        eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.persistMessageUseCase)
             .suspendFunction(arrangement.persistMessageUseCase::invoke)

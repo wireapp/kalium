@@ -35,6 +35,7 @@ data class RegisterClientParam(
     val model: String?,
     val cookieLabel: String?,
     val secondFactorVerificationCode: String? = null,
+    val modelPostfix: String? = null
 )
 
 data class DeleteClientParam(
@@ -104,4 +105,4 @@ data class UpdateClientCapabilitiesParam(
  * the `INACTIVE_DURATION`.
  */
 val Client.isActive: Boolean
-    get() = lastActive?.let { (Clock.System.now() - it) < Client.INACTIVE_DURATION } ?: false
+    get() = (lastActive ?: registrationTime)?.let { (Clock.System.now() - it) < Client.INACTIVE_DURATION } ?: false

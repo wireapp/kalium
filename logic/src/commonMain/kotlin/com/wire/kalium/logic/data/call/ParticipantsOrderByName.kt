@@ -23,5 +23,5 @@ interface ParticipantsOrderByName {
 }
 
 class ParticipantsOrderByNameImpl : ParticipantsOrderByName {
-    override fun sortItems(participants: List<Participant>) = participants.sortedBy { it.name.uppercase() }
+    override fun sortItems(participants: List<Participant>) = participants.sortedBy { it.name?.uppercase() }
 }

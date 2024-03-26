@@ -19,6 +19,7 @@
 package com.wire.kalium.testservice.managed
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.mention.MessageMention
@@ -28,6 +29,9 @@ import com.wire.kalium.logic.feature.conversation.ClearConversationContentUseCas
 import com.wire.kalium.logic.feature.debug.BrokenState
 import com.wire.kalium.logic.feature.debug.SendBrokenAssetMessageResult
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
+import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
@@ -48,6 +52,7 @@ import kotlin.time.toDuration
 
 sealed class ConversationRepository {
 
+    @Suppress("TooManyFunctions")
     companion object {
         private val log = LoggerFactory.getLogger(ConversationRepository::class.java.name)
 
@@ -119,6 +124,67 @@ sealed class ConversationRepository {
                     }
                 }
             }
+
+        suspend fun sendButtonAction(
+            instance: Instance,
+            conversationId: ConversationId,
+            referenceMessageId: String,
+            buttonId: String
+        ): Response = instance.coreLogic.globalScope {
+            when (val session = session.currentSession()) {
+                is CurrentSessionResult.Success -> {
+                    instance.coreLogic.sessionScope(session.accountInfo.userId) {
+                        log.info("Instance ${instance.instanceId}: Send button action for button $buttonId")
+                        when (val result = messages.sendButtonActionMessage(conversationId, referenceMessageId, buttonId)) {
+                            is SendButtonActionMessageUseCase.Result.Failure ->
+                                Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(result).build()
+
+                            else -> {
+                                Response.status(Response.Status.OK)
+                                    .entity(SendTextResponse(instance.instanceId, "", "")).build()
+                            }
+                        }
+                    }
+                }
+
+                is CurrentSessionResult.Failure -> {
+                    Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Session failure").build()
+                }
+            }
+        }
+
+        suspend fun sendButtonActionConfirmation(
+            instance: Instance,
+            conversationId: ConversationId,
+            referenceMessageId: String,
+            buttonId: String,
+            userIds: List<UserId>
+        ): Response = instance.coreLogic.globalScope {
+            when (val session = session.currentSession()) {
+                is CurrentSessionResult.Success -> {
+                    instance.coreLogic.sessionScope(session.accountInfo.userId) {
+                        log.info("Instance ${instance.instanceId}: Send button action confirmation for button $buttonId")
+                        when (val result = messages.sendButtonActionConfirmationMessage(
+                            conversationId,
+                            referenceMessageId,
+                            buttonId,
+                            userIds
+                        )) {
+                            is SendButtonActionConfirmationMessageUseCase.Result.Failure -> Response
+                                .status(Response.Status.INTERNAL_SERVER_ERROR).entity(result).build()
+
+                            else -> {
+                                Response.status(Response.Status.OK).entity(SendTextResponse(instance.instanceId, "", "")).build()
+                            }
+                        }
+                    }
+                }
+
+                is CurrentSessionResult.Failure -> {
+                    Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Session failure").build()
+                }
+            }
+        }
 
         suspend fun sendReaction(
             instance: Instance,
@@ -214,6 +280,30 @@ sealed class ConversationRepository {
                         } else {
                             Response.status(Response.Status.EXPECTATION_FAILED).entity("No text to send").build()
                         }
+                    }
+                }
+
+                is CurrentSessionResult.Failure -> {
+                    Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Session failure").build()
+                }
+            }
+        }
+
+        suspend fun sendTyping(
+            instance: Instance,
+            conversationId: ConversationId,
+            status: String
+        ): Response = instance.coreLogic.globalScope {
+            when (val session = session.currentSession()) {
+                is CurrentSessionResult.Success -> {
+                    instance.coreLogic.sessionScope(session.accountInfo.userId) {
+                        log.info("Instance ${instance.instanceId}: $status typing")
+                        if (status.equals("started")) {
+                            conversations.sendTypingEvent(conversationId, Conversation.TypingIndicatorMode.STARTED)
+                        } else {
+                            conversations.sendTypingEvent(conversationId, Conversation.TypingIndicatorMode.STOPPED)
+                        }
+                        Response.status(Response.Status.OK).build()
                     }
                 }
 

@@ -22,6 +22,15 @@ VALUES (?, ?, ?)
 ON CONFLICT(user, conversation) DO UPDATE SET
 role = excluded.role;
 
+selectMembersNamesAndHandle:
+SELECT
+    mem.user,
+    usr.name,
+    usr.handle
+FROM Member AS mem
+JOIN User AS usr ON usr.qualified_id = mem.user
+WHERE mem.conversation = :conversationId;
+
 deleteMember:
 DELETE FROM Member WHERE conversation = :conversationId AND user = :userId;
 
@@ -97,8 +106,8 @@ BEGIN
             LEFT JOIN Client AS client ON client.user_id = mem.user
             WHERE mem.conversation = new.conversation
             GROUP BY mem.conversation)
-        WHEN 1 THEN "VERIFIED"
-        ELSE "DEGRADED" END)
+        WHEN 1 THEN 'VERIFIED'
+        ELSE 'DEGRADED' END)
     WHERE qualified_id = new.conversation;
 END;
 
@@ -113,8 +122,8 @@ BEGIN
             LEFT JOIN Client AS client ON client.user_id = mem.user
             WHERE mem.conversation = old.conversation
             GROUP BY mem.conversation)
-        WHEN 1 THEN "VERIFIED"
-        ELSE "DEGRADED" END)
+        WHEN 1 THEN 'VERIFIED'
+        ELSE 'DEGRADED' END)
     WHERE qualified_id = old.conversation;
 END;
 

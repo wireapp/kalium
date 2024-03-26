@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessagesAfterEndDateUseCase
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
@@ -24,8 +25,12 @@ import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
+import io.mockative.Mock
 import io.mockative.any
+import io.mockative.classOf
 import io.mockative.eq
+import io.mockative.given
+import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
@@ -40,6 +45,8 @@ class NotifyConversationIsOpenUseCaseTest {
             withObserveConversationDetailsByIdReturning(
                 Either.Right(details)
             )
+
+            withDeleteEphemeralMessageEndDateSuccess()
         }
         notifyConversationIsOpenUseCase.invoke(details.conversation.id)
 
@@ -56,6 +63,8 @@ class NotifyConversationIsOpenUseCaseTest {
             withObserveConversationDetailsByIdReturning(
                 Either.Right(details)
             )
+
+            withDeleteEphemeralMessageEndDateSuccess()
         }
         notifyConversationIsOpenUseCase.invoke(details.conversation.id)
 
@@ -75,6 +84,8 @@ class NotifyConversationIsOpenUseCaseTest {
             withResolveOneOnOneConversationWithUserReturning(
                 Either.Right(details.conversation.id)
             )
+
+            withDeleteEphemeralMessageEndDateSuccess()
         }
         notifyConversationIsOpenUseCase.invoke(details.conversation.id)
 
@@ -88,12 +99,24 @@ class NotifyConversationIsOpenUseCaseTest {
         private val configure: Arrangement.() -> Unit
     ) : OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
+
+        @Mock
+        private val deleteEphemeralMessageEndDate = mock(classOf<DeleteEphemeralMessagesAfterEndDateUseCase>())
+
+        fun withDeleteEphemeralMessageEndDateSuccess() {
+            given(deleteEphemeralMessageEndDate)
+                .suspendFunction(deleteEphemeralMessageEndDate::invoke)
+                .whenInvoked()
+                .thenReturn(Unit)
+        }
+
         fun arrange(): Pair<Arrangement, NotifyConversationIsOpenUseCase> = run {
             configure()
             this@Arrangement to NotifyConversationIsOpenUseCaseImpl(
                 oneOnOneResolver = oneOnOneResolver,
                 conversationRepository = conversationRepository,
-                kaliumLogger = kaliumLogger
+                kaliumLogger = kaliumLogger,
+                deleteEphemeralMessageEndDate = deleteEphemeralMessageEndDate
             )
         }
     }

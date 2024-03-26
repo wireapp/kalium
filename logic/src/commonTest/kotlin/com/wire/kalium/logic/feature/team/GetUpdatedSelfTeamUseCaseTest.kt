@@ -42,7 +42,7 @@ class GetUpdatedSelfTeamUseCaseTest {
         // given
         val (arrangement, sut) = Arrangement()
             .withSelfTeamIdProvider(Either.Right(null))
-            .withFetchingIdReturning(Either.Right(TestTeam.TEAM))
+            .withSyncingByIdReturning(Either.Right(TestTeam.TEAM))
             .arrange()
 
         // when
@@ -61,7 +61,7 @@ class GetUpdatedSelfTeamUseCaseTest {
         // given
         val (arrangement, sut) = Arrangement()
             .withSelfTeamIdProvider(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
-            .withFetchingIdReturning(Either.Right(TestTeam.TEAM))
+            .withSyncingByIdReturning(Either.Right(TestTeam.TEAM))
             .arrange()
 
         // when
@@ -80,7 +80,7 @@ class GetUpdatedSelfTeamUseCaseTest {
         // given
         val (arrangement, sut) = Arrangement()
             .withSelfTeamIdProvider(Either.Right(TestTeam.TEAM_ID))
-            .withFetchingIdReturning(Either.Right(TestTeam.TEAM))
+            .withSyncingByIdReturning(Either.Right(TestTeam.TEAM))
             .arrange()
 
         // when
@@ -89,7 +89,7 @@ class GetUpdatedSelfTeamUseCaseTest {
         // then
         result.shouldSucceed()
         verify(arrangement.teamRepository)
-            .suspendFunction(arrangement.teamRepository::fetchTeamById)
+            .suspendFunction(arrangement.teamRepository::syncTeam)
             .with(eq(TestTeam.TEAM_ID))
             .wasInvoked()
     }
@@ -109,9 +109,9 @@ class GetUpdatedSelfTeamUseCaseTest {
                 .thenReturn(result)
         }
 
-        fun withFetchingIdReturning(result: Either<CoreFailure, Team>) = apply {
+        fun withSyncingByIdReturning(result: Either<CoreFailure, Team>) = apply {
             given(teamRepository)
-                .suspendFunction(teamRepository::fetchTeamById)
+                .suspendFunction(teamRepository::syncTeam)
                 .whenInvokedWith(any())
                 .thenReturn(result)
         }

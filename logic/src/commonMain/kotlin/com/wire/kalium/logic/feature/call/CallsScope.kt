@@ -31,6 +31,9 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.AnswerCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
+import com.wire.kalium.logic.feature.call.usecase.SetTestPreviewActiveUseCase
+import com.wire.kalium.logic.feature.call.usecase.SetTestVideoTypeUseCase
+import com.wire.kalium.logic.feature.call.usecase.SetTestRemoteVideoStatesUseCase
 import com.wire.kalium.logic.feature.call.usecase.EndCallResultListenerImpl
 import com.wire.kalium.logic.feature.call.usecase.EndCallOnConversationChangeUseCase
 import com.wire.kalium.logic.feature.call.usecase.EndCallOnConversationChangeUseCaseImpl
@@ -66,7 +69,8 @@ import com.wire.kalium.logic.feature.call.usecase.UnMuteCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.UnMuteCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCaseImpl
-import com.wire.kalium.logic.feature.call.usecase.UpdateVideoStateUseCase
+import com.wire.kalium.logic.feature.call.usecase.video.SetVideoSendStateUseCase
+import com.wire.kalium.logic.feature.call.usecase.video.UpdateVideoStateUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.util.KaliumDispatcher
@@ -154,11 +158,16 @@ class CallsScope internal constructor(
 
     val unMuteCall: UnMuteCallUseCase get() = UnMuteCallUseCaseImpl(callManager, callRepository)
 
-    val updateVideoState: UpdateVideoStateUseCase get() = UpdateVideoStateUseCase(callManager, callRepository)
+    val updateVideoState: UpdateVideoStateUseCase get() = UpdateVideoStateUseCase(callRepository)
+    val setVideoSendState: SetVideoSendStateUseCase get() = SetVideoSendStateUseCase(callManager)
 
     val setVideoPreview: SetVideoPreviewUseCase get() = SetVideoPreviewUseCase(flowManagerService)
     val flipToFrontCamera: FlipToFrontCameraUseCase get() = FlipToFrontCameraUseCase(flowManagerService)
     val flipToBackCamera: FlipToBackCameraUseCase get() = FlipToBackCameraUseCase(flowManagerService)
+
+    val setTestVideoType: SetTestVideoTypeUseCase get() = SetTestVideoTypeUseCase(callManager)
+    val setTestPreviewActive: SetTestPreviewActiveUseCase get() = SetTestPreviewActiveUseCase(callManager)
+    val setTestRemoteVideoStates: SetTestRemoteVideoStatesUseCase get() = SetTestRemoteVideoStatesUseCase(callManager)
 
     val turnLoudSpeakerOff: TurnLoudSpeakerOffUseCase get() = TurnLoudSpeakerOffUseCase(mediaManagerService)
 

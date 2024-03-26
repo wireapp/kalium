@@ -46,6 +46,7 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
@@ -1199,8 +1200,8 @@ class CallRepositoryTest {
         yield()
         advanceUntilIdle()
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::observeEpochChanges)
+        verify(arrangement.epochChangesObserver)
+            .function(arrangement.epochChangesObserver::observe)
             .wasInvoked(exactly = once)
 
         assertEquals(1, onEpochChangeCallCount)
@@ -1513,6 +1514,9 @@ class CallRepositoryTest {
         val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
 
         @Mock
+        val epochChangesObserver = mock(classOf<EpochChangesObserver>())
+
+        @Mock
         val callDAO = configure(mock(classOf<CallDAO>())) {
             stubsUnitByDefault = true
         }
@@ -1528,6 +1532,7 @@ class CallRepositoryTest {
             subconversationRepository = subconversationRepository,
             mlsConversationRepository = mlsConversationRepository,
             userRepository = userRepository,
+            epochChangesObserver = epochChangesObserver,
             teamRepository = teamRepository,
             persistMessage = persistMessage,
             mlsClientProvider = mlsClientProvider,
@@ -1666,8 +1671,8 @@ class CallRepositoryTest {
         }
 
         fun givenObserveEpochChangesReturns(flow: Flow<GroupID>) = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::observeEpochChanges)
+            given(epochChangesObserver)
+                .function(epochChangesObserver::observe)
                 .whenInvoked()
                 .thenReturn(flow)
         }

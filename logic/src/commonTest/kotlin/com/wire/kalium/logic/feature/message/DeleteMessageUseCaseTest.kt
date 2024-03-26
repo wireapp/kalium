@@ -379,7 +379,6 @@ class DeleteMessageUseCaseTest {
             AssetContent(
                 remoteData = DUMMY_ASSET_REMOTE_DATA,
                 sizeInBytes = 0,
-                downloadStatus = Message.DownloadStatus.SAVED_EXTERNALLY,
                 mimeType = "image/jpeg"
             ),
         )

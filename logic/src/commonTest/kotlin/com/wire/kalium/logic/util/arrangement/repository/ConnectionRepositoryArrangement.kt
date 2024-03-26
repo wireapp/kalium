@@ -21,14 +21,10 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetails
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.Connection
-import com.wire.kalium.logic.data.user.ConnectionState
-import com.wire.kalium.logic.feature.connection.AcceptConnectionRequestUseCaseTest
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.given
 import io.mockative.matchers.Matcher
 import io.mockative.mock
@@ -38,7 +34,7 @@ internal interface ConnectionRepositoryArrangement {
     val connectionRepository: ConnectionRepository
 
     fun withGetConnections(result: Either<StorageFailure, Flow<List<ConversationDetails>>>)
-    fun withDeleteConnection(result: Either<StorageFailure, Unit>, conversationId: Matcher<ConversationId> = any())
+    fun withDeleteConnection(result: Either<StorageFailure, Unit>, connection: Matcher<Connection> = any())
     fun withConnectionList(connectionsFlow: Flow<List<ConversationDetails>>)
     fun withUpdateConnectionStatus(result: Either<CoreFailure, Connection>)
 }
@@ -58,11 +54,11 @@ internal open class ConnectionRepositoryArrangementImpl : ConnectionRepositoryAr
 
     override fun withDeleteConnection(
         result: Either<StorageFailure, Unit>,
-        conversationId: Matcher<ConversationId>,
+        connection: Matcher<Connection>,
     ) {
         given(connectionRepository)
             .suspendFunction(connectionRepository::deleteConnection)
-            .whenInvokedWith(conversationId)
+            .whenInvokedWith(connection)
             .thenReturn(result)
     }
 

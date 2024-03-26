@@ -73,7 +73,7 @@ class MessageMentionMapperImpl(
     )
 }
 
-fun MessageEntity.Mention.toModel(selfUserId: UserId): MessageMention = MessageMention(
+fun MessageEntity.Mention.toModel(selfUserId: UserId?): MessageMention = MessageMention(
     start = start,
     length = length,
     userId = userId.toModel(),

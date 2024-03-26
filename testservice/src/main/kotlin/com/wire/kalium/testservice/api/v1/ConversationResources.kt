@@ -28,6 +28,8 @@ import com.wire.kalium.testservice.managed.InstanceService
 import com.wire.kalium.testservice.models.ClearConversationRequest
 import com.wire.kalium.testservice.models.DeleteMessageRequest
 import com.wire.kalium.testservice.models.GetMessagesRequest
+import com.wire.kalium.testservice.models.SendButtonActionConfirmationRequest
+import com.wire.kalium.testservice.models.SendButtonActionRequest
 import com.wire.kalium.testservice.models.SendConfirmationReadRequest
 import com.wire.kalium.testservice.models.SendEphemeralConfirmationDeliveredRequest
 import com.wire.kalium.testservice.models.SendFileRequest
@@ -36,6 +38,7 @@ import com.wire.kalium.testservice.models.SendLocationRequest
 import com.wire.kalium.testservice.models.SendPingRequest
 import com.wire.kalium.testservice.models.SendReactionRequest
 import com.wire.kalium.testservice.models.SendTextRequest
+import com.wire.kalium.testservice.models.SendTypingRequest
 import com.wire.kalium.testservice.models.UpdateTextRequest
 import io.swagger.v3.oas.annotations.Operation
 import kotlinx.coroutines.runBlocking
@@ -250,8 +253,8 @@ class ConversationResources(private val instanceService: InstanceService) {
                     ConversationId(conversationId, conversationDomain),
                     data,
                     type,
-                    height,
                     width,
+                    height,
                     messageTimer
                 )
             }
@@ -295,11 +298,42 @@ class ConversationResources(private val instanceService: InstanceService) {
         }
     }
 
-    // POST /api/v1/instance/{instanceId}/sendButtonAction
-    // Send a button action to a poll.
+    @POST
+    @Path("/instance/{id}/sendButtonAction")
+    @Operation(summary = "Send a button action to a poll.")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun sendButtonActionConfirmation(@PathParam("id") id: String, @Valid request: SendButtonActionRequest): Response {
+        val instance = instanceService.getInstanceOrThrow(id)
+        return with(request) {
+            runBlocking {
+                ConversationRepository.sendButtonAction(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    referenceMessageId,
+                    buttonId
+                )
+            }
+        }
+    }
 
-    // POST /api/v1/instance/{instanceId}/sendButtonActionConfirmation
-    // Send a confirmation to a button action.
+    @POST
+    @Path("/instance/{id}/sendButtonActionConfirmation")
+    @Operation(summary = "Send a confirmation to a button action.")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun sendButtonActionConfirmation(@PathParam("id") id: String, @Valid request: SendButtonActionConfirmationRequest): Response {
+        val instance = instanceService.getInstanceOrThrow(id)
+        return with(request) {
+            runBlocking {
+                ConversationRepository.sendButtonActionConfirmation(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    referenceMessageId,
+                    buttonId,
+                    userIds.map { UserId(it, conversationDomain) }
+                )
+            }
+        }
+    }
 
     @POST
     @Path("/instance/{id}/sendReaction")
@@ -392,6 +426,20 @@ class ConversationResources(private val instanceService: InstanceService) {
         }
     }
 
-    // POST /api/v1/instance/{instanceId}/sendTyping
-    // Send a typing indicator to a conversation.
+    @POST
+    @Path("/instance/{id}/sendTyping")
+    @Operation(summary = "Send a typing indicator to a conversation")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun sendTyping(@PathParam("id") id: String, @Valid request: SendTypingRequest): Response {
+        val instance = instanceService.getInstanceOrThrow(id)
+        return with(request) {
+            runBlocking {
+                ConversationRepository.sendTyping(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    status
+                )
+            }
+        }
+    }
 }

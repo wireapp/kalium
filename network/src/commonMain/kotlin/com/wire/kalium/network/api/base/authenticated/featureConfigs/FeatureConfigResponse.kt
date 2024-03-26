@@ -84,8 +84,6 @@ data class ClassifiedDomainsConfigDTO(
 
 @Serializable
 data class MLSConfigDTO(
-    @SerialName("protocolToggleUsers")
-    val protocolToggleUsers: List<String>,
     @SerialName("defaultProtocol")
     val defaultProtocol: SupportedProtocolDTO,
     @SerialName("supportedProtocols")
@@ -117,7 +115,7 @@ data class E2EIConfigDTO(
     @SerialName("acmeDiscoveryUrl")
     val url: String?,
     @SerialName("verificationExpiration")
-    val verificationExpirationSeconds: Long = 0L
+    val verificationExpirationSeconds: Long
 )
 
 @OptIn(ExperimentalSerializationApi::class)

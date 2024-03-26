@@ -57,7 +57,8 @@ class UserMapper {
             defederated = user.defederated,
             supportedProtocols = user.supported_protocols,
             isProteusVerified = user.is_proteus_verified == 1L,
-            activeOneOnOneConversationId = user.active_one_on_one_conversation_id
+            activeOneOnOneConversationId = user.active_one_on_one_conversation_id,
+            isUnderLegalHold = user.is_under_legal_hold == 1L,
         )
     }
 
@@ -107,6 +108,7 @@ class UserMapper {
         supportedProtocols: Set<SupportedProtocolEntity>?,
         oneOnOneConversationId: QualifiedIDEntity?,
         isVerifiedProteus: Long,
+        isUnderLegalHold: Long,
         id: String?,
         teamName: String?,
         teamIcon: String?,
@@ -131,7 +133,8 @@ class UserMapper {
             defederated = defederated,
             isProteusVerified = isVerifiedProteus == 1L,
             supportedProtocols = supportedProtocols,
-            activeOneOnOneConversationId = oneOnOneConversationId
+            activeOneOnOneConversationId = oneOnOneConversationId,
+            isUnderLegalHold = isUnderLegalHold == 1L,
         )
 
         val teamEntity = if (team != null && teamName != null && teamIcon != null) {
@@ -192,7 +195,7 @@ class UserDAOImpl internal constructor(
         }
     }
 
-    override suspend fun updateUser(id: UserIDEntity, update: PartialUserEntity) = withContext(queriesContext) {
+    override suspend fun updateUser(update: PartialUserEntity) = withContext(queriesContext) {
         userQueries.updateUser(
             name = update.name,
             handle = update.handle,
@@ -201,8 +204,25 @@ class UserDAOImpl internal constructor(
             preview_asset_id = update.previewAssetId,
             complete_asset_id = update.completeAssetId,
             supported_protocols = update.supportedProtocols,
-            id
-        ).executeAsOne() > 0
+            update.id
+        )
+    }
+
+    override suspend fun updateUser(users: List<PartialUserEntity>) = withContext(queriesContext) {
+        userQueries.transaction {
+            for (user: PartialUserEntity in users) {
+                userQueries.updatePartialUserInformation(
+                    name = user.name,
+                    handle = user.handle,
+                    email = user.email,
+                    accent_id = user.accentId?.toLong(),
+                    preview_asset_id = user.previewAssetId,
+                    complete_asset_id = user.completeAssetId,
+                    supported_protocols = user.supportedProtocols,
+                    user.id
+                )
+            }
+        }
     }
 
     override suspend fun upsertUsers(users: List<UserEntity>) = withContext(queriesContext) {
@@ -368,9 +388,13 @@ class UserDAOImpl internal constructor(
             .mapToList()
             .map { it.map(mapper::toDetailsModel) }
 
-    override suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State) =
+    override suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedIDEntity>) =
         withContext(queriesContext) {
-            userQueries.insertOrIgnoreUserIdWithConnectionStatus(qualifiedID, connectionStatus)
+            userQueries.transaction {
+                for (userId: QualifiedIDEntity in userIds) {
+                    userQueries.insertOrIgnoreUserId(userId)
+                }
+            }
         }
 
     override suspend fun observeAllUsersDetailsByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserDetailsEntity>> =

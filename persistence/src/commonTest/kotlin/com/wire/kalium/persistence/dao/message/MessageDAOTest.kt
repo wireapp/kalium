@@ -24,6 +24,7 @@ import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetDAO
 import com.wire.kalium.persistence.dao.asset.AssetEntity
+import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.receipt.ReceiptDAO
@@ -33,8 +34,8 @@ import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
+import com.wire.kalium.persistence.utils.stubs.newUserDetailsEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.test.runTest
@@ -53,7 +54,6 @@ import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
 @Suppress("LargeClass")
-@OptIn(ExperimentalCoroutinesApi::class)
 class MessageDAOTest : BaseDatabaseTest() {
 
     private lateinit var messageDAO: MessageDAO
@@ -67,6 +67,8 @@ class MessageDAOTest : BaseDatabaseTest() {
     private val conversationEntity3 = newConversationEntity("Test3")
     private val userEntity1 = newUserEntity("userEntity1")
     private val userEntity2 = newUserEntity("userEntity2")
+    private val userDetailsEntity1 = newUserDetailsEntity("userEntity1")
+    private val userDetailsEntity2 = newUserDetailsEntity("userEntity2")
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
@@ -84,8 +86,8 @@ class MessageDAOTest : BaseDatabaseTest() {
     fun givenMessagesAreInserted_whenGettingPendingMessagesByUser_thenOnlyRelevantMessagesAreReturned() = runTest {
         insertInitialData()
 
-        val userInQuestion = userEntity1
-        val otherUser = userEntity2
+        val userInQuestion = userDetailsEntity1
+        val otherUser = userDetailsEntity2
 
         val expectedMessages = listOf(
             newRegularMessageEntity(
@@ -93,14 +95,16 @@ class MessageDAOTest : BaseDatabaseTest() {
                 conversationId = conversationEntity1.id,
                 senderUserId = userInQuestion.id,
                 status = MessageEntity.Status.PENDING,
-                senderName = userInQuestion.name!!
+                senderName = userInQuestion.name!!,
+                sender = userInQuestion
             ),
             newRegularMessageEntity(
                 "2",
                 conversationId = conversationEntity1.id,
                 senderUserId = userInQuestion.id,
                 status = MessageEntity.Status.PENDING,
-                senderName = userInQuestion.name!!
+                senderName = userInQuestion.name!!,
+                sender = userInQuestion
             )
         )
 
@@ -111,7 +115,8 @@ class MessageDAOTest : BaseDatabaseTest() {
                 senderUserId = userInQuestion.id,
                 // Different status
                 status = MessageEntity.Status.READ,
-                senderName = userInQuestion.name!!
+                senderName = userInQuestion.name!!,
+                sender = userInQuestion
             ),
             newRegularMessageEntity(
                 "4",
@@ -119,7 +124,8 @@ class MessageDAOTest : BaseDatabaseTest() {
                 // Different user
                 senderUserId = otherUser.id,
                 status = MessageEntity.Status.PENDING,
-                senderName = otherUser.name!!
+                senderName = otherUser.name!!,
+                sender = otherUser
             )
         )
 
@@ -304,7 +310,8 @@ class MessageDAOTest : BaseDatabaseTest() {
                 status = MessageEntity.Status.PENDING,
                 visibility = visibilityInQuestion,
                 senderName = userEntity1.name!!,
-                date = baseInstant + 10.seconds
+                date = baseInstant + 10.seconds,
+                sender = userDetailsEntity1
             ),
             newRegularMessageEntity(
                 "2",
@@ -313,7 +320,8 @@ class MessageDAOTest : BaseDatabaseTest() {
                 status = MessageEntity.Status.PENDING,
                 visibility = visibilityInQuestion,
                 senderName = userEntity1.name!!,
-                date = baseInstant + 5.seconds
+                date = baseInstant + 5.seconds,
+                sender = userDetailsEntity1
             )
         )
 
@@ -325,7 +333,8 @@ class MessageDAOTest : BaseDatabaseTest() {
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.READ,
                 visibility = visibilityInQuestion,
-                senderName = userEntity1.name!!
+                senderName = userEntity1.name!!,
+                sender = userDetailsEntity1
             ),
             newRegularMessageEntity(
                 "4",
@@ -334,7 +343,8 @@ class MessageDAOTest : BaseDatabaseTest() {
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.PENDING,
                 visibility = visibilityInQuestion,
-                senderName = userEntity1.name!!
+                senderName = userEntity1.name!!,
+                sender = userDetailsEntity1
             ),
             newRegularMessageEntity(
                 "5",
@@ -343,7 +353,8 @@ class MessageDAOTest : BaseDatabaseTest() {
                 senderUserId = userEntity1.id,
                 status = MessageEntity.Status.PENDING,
                 visibility = otherVisibility,
-                senderName = userEntity1.name!!
+                senderName = userEntity1.name!!,
+                sender = userDetailsEntity1
             )
         )
 
@@ -372,7 +383,8 @@ class MessageDAOTest : BaseDatabaseTest() {
                 status = MessageEntity.Status.PENDING,
                 // date after
                 date = "2022-03-30T15:37:00.000Z".toInstant(),
-                senderName = userEntity1.name!!
+                senderName = userEntity1.name!!,
+                sender = userDetailsEntity1
             )
         )
 
@@ -384,7 +396,8 @@ class MessageDAOTest : BaseDatabaseTest() {
                 status = MessageEntity.Status.READ,
                 // date before
                 date = "2022-03-30T15:35:00.000Z".toInstant(),
-                senderName = userEntity1.name!!
+                senderName = userEntity1.name!!,
+                sender = userDetailsEntity1
             )
         )
 
@@ -418,7 +431,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                         1000,
                         assetName = "test name",
                         assetMimeType = "MP4",
-                        assetDownloadStatus = null,
                         assetOtrKey = byteArrayOf(1),
                         assetSha256Key = byteArrayOf(1),
                         assetId = "assetId",
@@ -468,7 +480,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                         1000,
                         assetName = "test name",
                         assetMimeType = mimeType,
-                        assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
                         assetOtrKey = byteArrayOf(1),
                         assetSha256Key = byteArrayOf(1),
                         assetId = assetId,
@@ -489,7 +500,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                         1000,
                         assetName = "test name",
                         assetMimeType = "image/jpeg",
-                        assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
                         assetOtrKey = byteArrayOf(1),
                         assetSha256Key = byteArrayOf(1),
                         assetId = assetId,
@@ -511,7 +521,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                         1000,
                         assetName = "test name",
                         assetMimeType = "image/png",
-                        assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
                         assetOtrKey = byteArrayOf(1),
                         assetSha256Key = byteArrayOf(1),
                         assetId = assetId,
@@ -533,7 +542,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                         1000,
                         assetName = "test name",
                         assetMimeType = "image/png",
-                        assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
                         assetOtrKey = byteArrayOf(1),
                         assetSha256Key = byteArrayOf(1),
                         assetId = assetId,
@@ -1145,10 +1153,6 @@ class MessageDAOTest : BaseDatabaseTest() {
         val senderClientId = "someClient"
         val dummyOtrKey = byteArrayOf(1, 2, 3)
         val dummySha256Key = byteArrayOf(10, 9, 8, 7, 6)
-        val initialUploadStatus = MessageEntity.UploadStatus.IN_PROGRESS
-        val updatedUploadStatus = MessageEntity.UploadStatus.UPLOADED
-        val initialDownloadStatus = MessageEntity.DownloadStatus.IN_PROGRESS
-        val updatedDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY
         val initialAssetSize = 1000L
         val updatedAssetSize = 2000L
         val initialAssetName = "Some asset name.zip"
@@ -1184,8 +1188,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                 assetId = initialAssetId,
                 assetDomain = initialDomain,
                 assetEncryptionAlgorithm = initialAssetEncryption,
-                assetUploadStatus = initialUploadStatus,
-                assetDownloadStatus = initialDownloadStatus,
                 assetToken = initialAssetToken,
                 assetWidth = initialMetadataWidth,
                 assetHeight = initialMetadataHeight
@@ -1201,8 +1203,6 @@ class MessageDAOTest : BaseDatabaseTest() {
                 assetId = updatedAssetId,
                 assetDomain = updatedAssetDomain,
                 assetEncryptionAlgorithm = updatedAssetEncryption,
-                assetUploadStatus = updatedUploadStatus,
-                assetDownloadStatus = updatedDownloadStatus,
                 assetToken = updatedAssetToken,
                 assetWidth = updatedMetadataWidth,
                 assetHeight = updatedMetadataHeight
@@ -1236,10 +1236,8 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertEquals(initialDomain, updatedMessageContent.assetDomain)
         assertTrue(updatedMessageContent.assetOtrKey.contentEquals(dummyOtrKey))
         assertTrue(updatedMessageContent.assetSha256Key.contentEquals(dummySha256Key))
-        assertEquals(initialDownloadStatus, updatedMessageContent.assetDownloadStatus)
         assertEquals(initialMetadataWidth, updatedMessageContent.assetWidth)
         assertEquals(initialMetadataHeight, updatedMessageContent.assetHeight)
-        assertEquals(initialUploadStatus, updatedMessageContent.assetUploadStatus)
     }
 
     @Test
@@ -1261,6 +1259,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             conversationId = conversationId,
             senderUserId = userEntity1.id,
             senderName = userEntity1.name!!,
+            sender = userDetailsEntity1,
             senderClientId = "someClient",
             content = MessageEntityContent.Text("hello, world!", emptyList())
         )
@@ -1297,13 +1296,15 @@ class MessageDAOTest : BaseDatabaseTest() {
             senderUserId = userEntity1.id,
             senderName = userEntity1.name!!,
             senderClientId = "someClient",
-            content = MessageEntityContent.Text("hello, world!", emptyList())
+            content = MessageEntityContent.Text("hello, world!", emptyList()),
+            sender = userDetailsEntity1
         )
 
         val messageFromUser2 = messageFromUser1.copy(
             senderName = userEntity2.name!!,
             senderUserId = userEntity2.id,
-            content = MessageEntityContent.Text("new message content", emptyList())
+            content = MessageEntityContent.Text("new message content", emptyList()),
+            sender = userDetailsEntity1
         )
         messageDAO.insertOrIgnoreMessages(
             listOf(messageFromUser1, messageFromUser2)
@@ -1955,7 +1956,8 @@ class MessageDAOTest : BaseDatabaseTest() {
             conversationId = conversationId,
             date = date,
             senderUserId = userEntity1.id,
-            senderName = userEntity1.name!!
+            senderName = userEntity1.name!!,
+            sender = userDetailsEntity1
         )
 
         val baseInstant = Instant.parse("2022-01-01T00:00:00.000Z")
@@ -2005,6 +2007,185 @@ class MessageDAOTest : BaseDatabaseTest() {
         assertEquals(1, result.size)
         assertEquals(message1.id, result[0].id)
         assertEquals(message0.date, result[0].date)
+    }
+
+    @Test
+    fun givenMessagesAreInserted_whenGettingEphemeraMessagesForEndDeletion_thenOnlyRelevantMessagesAreReturned() = runTest {
+        insertInitialData()
+
+        val expectedMessages = listOf(
+            newRegularMessageEntity(
+                "1",
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.SENT,
+                senderName = userEntity1.name!!,
+                selfDeletionStartDate = Instant.DISTANT_PAST,
+                expireAfterMs = 1.seconds.inWholeSeconds
+            )
+        )
+
+        val allMessages = expectedMessages + listOf(
+            newRegularMessageEntity(
+                "2",
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                status = MessageEntity.Status.SENT,
+                senderName = userEntity1.name!!
+            ),
+            newRegularMessageEntity(
+                "3",
+                conversationId = conversationEntity2.id,
+                senderUserId = userEntity2.id,
+                status = MessageEntity.Status.SENT,
+                senderName = userEntity2.name!!
+            )
+        )
+
+        messageDAO.insertOrIgnoreMessages(allMessages)
+
+        messageDAO.updateSelfDeletionEndDate(
+            conversationId = conversationEntity1.id,
+            messageId = "1",
+            selfDeletionEndDate = Instant.DISTANT_PAST.plus(1.seconds)
+        )
+
+        val result = messageDAO.getEphemeralMessagedMarkedForEndDeletion()
+
+        assertEquals(result.size, 1)
+        assertEquals(result.first().id, "1")
+    }
+
+    @Test
+    fun givenAssetTransferStatusInProgress_whenResettingAssetTransferStatus_thenTransferStatusesAreRemoved() = runTest {
+        // given
+        val source = conversationEntity1
+        val destination = conversationEntity2
+        userDAO.upsertUsers(listOf(userEntity1, userEntity2))
+        conversationDAO.insertConversation(source)
+        conversationDAO.insertConversation(destination)
+        val messageId = "messageid"
+        val message2Id = "messageid2"
+        val messages = listOf(
+            newRegularMessageEntity(
+                id = messageId,
+                date = "2000-01-01T13:00:00.000Z".toInstant(),
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                expireAfterMs = 2000,
+                content = MessageEntityContent.Asset(
+                    1000,
+                    assetName = "test name",
+                    assetMimeType = "image/png",
+                    assetOtrKey = byteArrayOf(1),
+                    assetSha256Key = byteArrayOf(1),
+                    assetId = "assetId",
+                    assetToken = "",
+                    assetDomain = "",
+                    assetEncryptionAlgorithm = "",
+                    assetWidth = 20,
+                    assetHeight = 20,
+                )
+            ),
+            newRegularMessageEntity(
+                id = message2Id,
+                date = "2000-01-01T13:00:00.000Z".toInstant(),
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                expireAfterMs = 2000,
+                content = MessageEntityContent.Asset(
+                    1000,
+                    assetName = "test name2",
+                    assetMimeType = "image/png",
+                    assetOtrKey = byteArrayOf(1),
+                    assetSha256Key = byteArrayOf(1),
+                    assetId = "assetId2",
+                    assetToken = "",
+                    assetDomain = "",
+                    assetEncryptionAlgorithm = "",
+                    assetWidth = 20,
+                    assetHeight = 20,
+                )
+            )
+        )
+
+        messageDAO.insertOrIgnoreMessages(messages)
+
+        messageDAO.updateAssetTransferStatus(AssetTransferStatusEntity.DOWNLOAD_IN_PROGRESS, messageId, conversationEntity1.id)
+        messageDAO.updateAssetTransferStatus(AssetTransferStatusEntity.UPLOAD_IN_PROGRESS, message2Id, conversationEntity1.id)
+
+        // when
+        messageDAO.resetAssetTransferStatus()
+
+        // then
+        val assetStatuses = messageDAO.observeAssetStatuses(conversationEntity1.id).first()
+
+        assertTrue(assetStatuses.isEmpty())
+    }
+
+    @Test
+    fun givenEmptyAssetTransferStatus_whenUpdatingMessageAssetTransferStatus_thenSourceIsProperlyPropagated() = runTest {
+        // given
+        val source = conversationEntity1
+        val destination = conversationEntity2
+        userDAO.upsertUsers(listOf(userEntity1, userEntity2))
+        conversationDAO.insertConversation(source)
+        conversationDAO.insertConversation(destination)
+        val messageId = "messageid"
+        val message2Id = "messageid2"
+        val messages = listOf(
+            newRegularMessageEntity(
+                id = messageId,
+                date = "2000-01-01T13:00:00.000Z".toInstant(),
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                expireAfterMs = 2000,
+                content = MessageEntityContent.Asset(
+                    1000,
+                    assetName = "test name",
+                    assetMimeType = "image/png",
+                    assetOtrKey = byteArrayOf(1),
+                    assetSha256Key = byteArrayOf(1),
+                    assetId = "assetId",
+                    assetToken = "",
+                    assetDomain = "",
+                    assetEncryptionAlgorithm = "",
+                    assetWidth = 20,
+                    assetHeight = 20,
+                )
+            ),
+            newRegularMessageEntity(
+                id = message2Id,
+                date = "2000-01-01T13:00:00.000Z".toInstant(),
+                conversationId = conversationEntity1.id,
+                senderUserId = userEntity1.id,
+                expireAfterMs = 2000,
+                content = MessageEntityContent.Asset(
+                    1000,
+                    assetName = "test name2",
+                    assetMimeType = "image/png",
+                    assetOtrKey = byteArrayOf(1),
+                    assetSha256Key = byteArrayOf(1),
+                    assetId = "assetId2",
+                    assetToken = "",
+                    assetDomain = "",
+                    assetEncryptionAlgorithm = "",
+                    assetWidth = 20,
+                    assetHeight = 20,
+                )
+            )
+        )
+
+        messageDAO.insertOrIgnoreMessages(messages)
+
+        // when
+        messageDAO.updateAssetTransferStatus(AssetTransferStatusEntity.DOWNLOAD_IN_PROGRESS, messageId, conversationEntity1.id)
+        messageDAO.updateAssetTransferStatus(AssetTransferStatusEntity.UPLOAD_IN_PROGRESS, message2Id, conversationEntity1.id)
+
+        // then
+        val assetStatuses = messageDAO.observeAssetStatuses(conversationEntity1.id).first()
+
+        assertEquals(messages.size, assetStatuses.size)
     }
 
     private suspend fun insertInitialData() {

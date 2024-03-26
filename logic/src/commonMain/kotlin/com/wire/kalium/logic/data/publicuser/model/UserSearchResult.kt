@@ -18,6 +18,22 @@
 
 package com.wire.kalium.logic.data.publicuser.model
 
+import com.wire.kalium.logic.data.user.AssetId
+import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.OtherUser
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.type.UserType
+import kotlin.jvm.JvmInline
 
-data class UserSearchResult(val result: List<OtherUser>)
+@JvmInline
+value class UserSearchResult(val result: List<OtherUser>)
+
+data class UserSearchDetails(
+    val id: UserId,
+    val name: String?,
+    val handle: String?,
+    val completeAssetId: AssetId?,
+    val previewAssetId: AssetId?,
+    val type: UserType,
+    val connectionStatus: ConnectionState
+)

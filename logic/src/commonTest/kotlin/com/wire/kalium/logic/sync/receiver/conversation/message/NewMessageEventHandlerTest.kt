@@ -59,7 +59,7 @@ class NewMessageEventHandlerTest {
 
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(newMessageEvent)
+        newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.proteusMessageUnpacker)
             .suspendFunction(arrangement.proteusMessageUnpacker::unpackProteusMessage)
@@ -84,7 +84,7 @@ class NewMessageEventHandlerTest {
 
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(newMessageEvent)
+        newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.proteusMessageUnpacker)
             .suspendFunction(arrangement.proteusMessageUnpacker::unpackProteusMessage)
@@ -114,7 +114,7 @@ class NewMessageEventHandlerTest {
 
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(newMessageEvent)
+        newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.proteusMessageUnpacker)
             .suspendFunction(arrangement.proteusMessageUnpacker::unpackProteusMessage)
@@ -135,7 +135,7 @@ class NewMessageEventHandlerTest {
 
         val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
 
-        newMessageEventHandler.handleNewMLSMessage(newMessageEvent)
+        newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.mlsMessageUnpacker)
             .suspendFunction(arrangement.mlsMessageUnpacker::unpackMlsMessage)
@@ -162,7 +162,7 @@ class NewMessageEventHandlerTest {
 
         val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
 
-        newMessageEventHandler.handleNewMLSMessage(newMessageEvent)
+        newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.legalHoldHandler)
             .suspendFunction(arrangement.legalHoldHandler::handleNewMessage)
@@ -184,7 +184,7 @@ class NewMessageEventHandlerTest {
 
         val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
 
-        newMessageEventHandler.handleNewMLSMessage(newMessageEvent)
+        newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.mlsMessageUnpacker)
             .suspendFunction(arrangement.mlsMessageUnpacker::unpackMlsMessage)
@@ -216,7 +216,7 @@ class NewMessageEventHandlerTest {
 
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(newMessageEvent)
+        newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.proteusMessageUnpacker)
             .suspendFunction(arrangement.proteusMessageUnpacker::unpackProteusMessage)
@@ -243,7 +243,7 @@ class NewMessageEventHandlerTest {
 
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(newMessageEvent)
+        newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.proteusMessageUnpacker)
             .suspendFunction(arrangement.proteusMessageUnpacker::unpackProteusMessage)
@@ -278,7 +278,7 @@ class NewMessageEventHandlerTest {
 
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(newMessageEvent)
+        newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.proteusMessageUnpacker)
             .suspendFunction(arrangement.proteusMessageUnpacker::unpackProteusMessage)
@@ -300,7 +300,7 @@ class NewMessageEventHandlerTest {
 
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
 
-        newMessageEventHandler.handleNewProteusMessage(newMessageEvent)
+        newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.proteusMessageUnpacker)
             .suspendFunction(arrangement.proteusMessageUnpacker::unpackProteusMessage)
@@ -332,7 +332,7 @@ class NewMessageEventHandlerTest {
 
         val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
 
-        newMessageEventHandler.handleNewMLSMessage(newMessageEvent)
+        newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         verify(arrangement.staleEpochVerifier)
             .suspendFunction(arrangement.staleEpochVerifier::verifyEpoch)
@@ -350,7 +350,7 @@ class NewMessageEventHandlerTest {
 
             val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
 
-            newMessageEventHandler.handleNewMLSMessage(newMessageEvent)
+            newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
             verify(arrangement.applicationMessageHandler)
                 .suspendFunction(arrangement.applicationMessageHandler::handleDecryptionError)

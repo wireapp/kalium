@@ -103,6 +103,63 @@ You can run locally in your terminal:
 ./gradlew clean detekt
 ```
 
+#### Dependency Graph
+
+```mermaid
+%%{
+  init: {
+    'theme': 'neutral'
+  }
+}%%
+
+graph LR
+
+  persistence --> logger
+  persistence --> util
+  samples --> logic
+  samples --> calling
+  samples --> network
+  samples --> cryptography
+  samples --> persistence
+  samples --> protobuf
+  samples --> logger
+  tango-tests --> network
+  tango-tests --> logic
+  tango-tests --> persistence
+  persistence-test --> persistence
+  testservice --> network
+  testservice --> cryptography
+  testservice --> logic
+  network --> logger
+  network --> protobuf
+  network --> util
+  network --> network-util
+  cryptography --> logger
+  monkeys --> network
+  monkeys --> cryptography
+  monkeys --> logic
+  monkeys --> util
+  android --> network
+  android --> cryptography
+  android --> logic
+  logic --> network-util
+  logic --> logger
+  logic --> calling
+  logic --> network
+  logic --> cryptography
+  logic --> persistence
+  logic --> protobuf
+  logic --> util
+  logic --> persistence-test
+  cli --> network
+  cli --> cryptography
+  cli --> logic
+  cli --> util
+  network-util --> logger
+```
+
+This graph is generated using `./gradlew createModuleGraph`. More about it [here](https://github.com/iurysza/module-graph).
+
 #### Logo
 
 The logo is adapted from [OpenMoji](https://openmoji.org/) – the open-source emoji and icon project. License: [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)

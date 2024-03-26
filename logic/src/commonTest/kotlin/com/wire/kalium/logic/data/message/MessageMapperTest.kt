@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.message.mention.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.message.DeliveryStatusEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -260,6 +261,7 @@ class MessageMapperTest {
             reactions: ReactionsEntity = ReactionsEntity.EMPTY,
             expectsReadConfirmation: Boolean = false,
             deliveryStatus: DeliveryStatusEntity = DeliveryStatusEntity.CompleteDelivery,
+            sender : UserDetailsEntity? = null
         ): Message.Standalone {
             return messageMapper.fromEntityToMessage(
                 MessageEntity.Regular(
@@ -274,6 +276,7 @@ class MessageMapperTest {
                     readCount,
                     expireAfterMs,
                     selfDeletionStartDate,
+                    sender,
                     senderName,
                     senderClientId,
                     editStatus,

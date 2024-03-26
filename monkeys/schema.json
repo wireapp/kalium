@@ -9,6 +9,36 @@
         "backends"
     ],
     "properties": {
+        "externalMonkey": {
+            "description": "Defines the configuration for executing the external monkeys in separate processes",
+            "type": "object",
+            "required": [
+                "startCommand",
+                "addressTemplate"
+            ],
+            "properties": {
+                "startCommand": {
+                    "description": "The command to start the process. For example kubectl to start a pod or docker to start a container. It can be templated with the following fields: teamName, email, userId, teamId, monkeyIndex, monkeyClientId",
+                    "type": "string",
+                    "examples": [
+                        "/opt/app/monkeys/bin/monkey-server -p 80{{monkeyIndex}}",
+                        "kubectl run monkey --image monkeys --overrides='{\"spec\": {\"hostname\": \"monkey-{{monkeyIndex}}\"}}' --command -- /opt/app/monkeys/bin/monkey-server"
+                    ]
+                },
+                "addressTemplate": {
+                    "description": "The template to resolve the address of the individual monkey. It can be templated with the following fields: teamName, email, userId, teamId, monkeyIndex, monkeyClientId",
+                    "type": "string",
+                    "examples": [
+                        "http://localhost:80{{monkeyIndex}}",
+                        "http://monkey-{{monkeyIndex}}.my-namespace.svc.cluster.local"
+                    ]
+                },
+                "waitTime": {
+                    "description": "Time in seconds to wait for the process to be ready. It won't verify if it was successful",
+                    "type": "integer"
+                }
+            }
+        },
         "eventStorage": {
             "description": "Defines the storage of events for replaying the test later",
             "type": "object",
@@ -17,6 +47,8 @@
             ],
             "properties": {
                 "type": {
+                    "description": "The type of file storage.",
+                    "type": "string",
                     "enum": [
                         "FILE",
                         "POSTGRES"
@@ -114,8 +146,7 @@
                     "passwordForUsers",
                     "domain",
                     "authUser",
-                    "authPassword",
-                    "userCount"
+                    "authPassword"
                 ],
                 "properties": {
                     "api": {
@@ -164,7 +195,18 @@
                     },
                     "userCount": {
                         "description": "How many users should be created in this team",
-                        "type": "integer"
+                        "type": "integer",
+                        "default": 10
+                    },
+                    "disable2FA": {
+                        "description": "Force disable 2FA",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "2FAEnabled": {
+                        "description": "Does this server require 2FA authentication?",
+                        "type": "boolean",
+                        "default": false
                     },
                     "dumpUsers": {
                         "description": "Should the application dump the users created into a file",

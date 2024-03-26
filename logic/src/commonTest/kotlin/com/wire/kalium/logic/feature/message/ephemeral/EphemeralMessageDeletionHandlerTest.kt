@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.Times
@@ -69,6 +70,7 @@ class EphemeralMessageDeletionHandlerTest {
             dispatcher = testDispatcher
         ).withMessageRepositoryReturningMessage(oneSecondEphemeralMessage)
             .withMessageRepositoryMarkingSelfDeletionStartDate()
+            .withMessageRepositoryMarkingSelfDeletionEndDate()
             .withDeletingMessage()
             .arrange()
 
@@ -85,6 +87,10 @@ class EphemeralMessageDeletionHandlerTest {
             .suspendFunction(arrangement.messageRepository::markSelfDeletionStartDate)
             .with(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id), any())
             .wasInvoked(exactly = once)
+
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::markSelfDeletionEndDate)
+            .with(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id), any())
 
         verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::getMessageById)
@@ -108,6 +114,7 @@ class EphemeralMessageDeletionHandlerTest {
         val (arrangement, ephemeralMessageDeletionHandler) = Arrangement(this, testDispatcher)
             .withMessageRepositoryReturningMessage(oneSecondEphemeralMessage)
             .withMessageRepositoryMarkingSelfDeletionStartDate()
+            .withMessageRepositoryMarkingSelfDeletionEndDate()
             .withDeletingMessage()
             .arrange()
 
@@ -125,6 +132,10 @@ class EphemeralMessageDeletionHandlerTest {
             .suspendFunction(arrangement.messageRepository::markSelfDeletionStartDate)
             .with(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id), any())
             .wasInvoked(exactly = once)
+
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::markSelfDeletionEndDate)
+            .with(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id), any())
 
         verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::getMessageById)
@@ -170,6 +181,7 @@ class EphemeralMessageDeletionHandlerTest {
                 dispatcher = testDispatcher
             ).withMessageRepositoryReturningMessage(oneSecondEphemeralMessage)
                 .withMessageRepositoryMarkingSelfDeletionStartDate()
+                .withMessageRepositoryMarkingSelfDeletionEndDate()
                 .withDeletingMessage()
                 .arrange()
 
@@ -209,6 +221,7 @@ class EphemeralMessageDeletionHandlerTest {
                 dispatcher = testDispatcher
             ).withMessageRepositoryReturningMessage(oneSecondEphemeralMessage)
                 .withMessageRepositoryMarkingSelfDeletionStartDate()
+                .withMessageRepositoryMarkingSelfDeletionEndDate()
                 .withDeletingMessage()
                 .arrange()
 
@@ -245,6 +258,7 @@ class EphemeralMessageDeletionHandlerTest {
             val (arrangement, ephemeralMessageDeletionHandler) = Arrangement(this, testDispatcher)
                 .withMessageRepositoryReturningMessage(oneSecondEphemeralMessage)
                 .withMessageRepositoryMarkingSelfDeletionStartDate()
+                .withMessageRepositoryMarkingSelfDeletionEndDate()
                 .withDeletingMessage()
                 .arrange()
 
@@ -280,6 +294,7 @@ class EphemeralMessageDeletionHandlerTest {
             val (arrangement, ephemeralMessageDeletionHandler) = Arrangement(this, testDispatcher)
                 .withMessageRepositoryReturningMessage(oneSecondEphemeralMessage)
                 .withMessageRepositoryMarkingSelfDeletionStartDate()
+                .withMessageRepositoryMarkingSelfDeletionEndDate()
                 .withDeletingMessage()
                 .arrange()
 
@@ -331,6 +346,7 @@ class EphemeralMessageDeletionHandlerTest {
             val (arrangement, ephemeralMessageDeletionHandler) = Arrangement(this, testDispatcher)
                 .withMessageRepositoryReturningPendingEphemeralMessages(messages = pendingMessagesToDelete)
                 .withMessageRepositoryMarkingSelfDeletionStartDate()
+                .withMessageRepositoryMarkingSelfDeletionEndDate()
                 .withDeletingMessage()
                 .arrange()
 
@@ -379,6 +395,7 @@ class EphemeralMessageDeletionHandlerTest {
             val (arrangement, ephemeralMessageDeletionHandler) = Arrangement(this, testDispatcher)
                 .withMessageRepositoryReturningPendingEphemeralMessages(messages = pendingMessagesToDelete)
                 .withMessageRepositoryMarkingSelfDeletionStartDate()
+                .withMessageRepositoryMarkingSelfDeletionEndDate()
                 .withDeletingMessage()
                 .arrange()
 
@@ -449,6 +466,7 @@ class EphemeralMessageDeletionHandlerTest {
                 dispatcher = testDispatcher
             ).withMessageRepositoryReturningPendingEphemeralMessages(messages = pendingMessagesToDelete)
                 .withMessageRepositoryMarkingSelfDeletionStartDate()
+                .withMessageRepositoryMarkingSelfDeletionEndDate()
                 .withDeletingMessage()
                 .arrange()
 
@@ -545,6 +563,7 @@ class EphemeralMessageDeletionHandlerTest {
                 dispatcher = testDispatcher
             ).withMessageRepositoryReturningPendingEphemeralMessages(messages = pendingMessagesToDelete)
                 .withMessageRepositoryMarkingSelfDeletionStartDate()
+                .withMessageRepositoryMarkingSelfDeletionEndDate()
                 .withDeletingMessage()
                 .arrange()
 
@@ -618,6 +637,7 @@ class EphemeralMessageDeletionHandlerTest {
                     messages = pendingMessagesToDeletePastTheTime + pendingMessagesToDeleteBeforeTime
                 )
                 .withMessageRepositoryMarkingSelfDeletionStartDate()
+                .withMessageRepositoryMarkingSelfDeletionEndDate()
                 .withDeletingMessage()
                 .arrange()
             // when
@@ -669,6 +689,7 @@ class EphemeralMessageDeletionHandlerTest {
                     messages = pendingMessagesToDeletePastTheTime + pendingMessagesToDeleteBeforeTime
                 )
                 .withMessageRepositoryMarkingSelfDeletionStartDate()
+                .withMessageRepositoryMarkingSelfDeletionEndDate()
                 .withDeletingMessage()
                 .arrange()
             // when
@@ -703,6 +724,7 @@ class EphemeralMessageDeletionHandlerTest {
             dispatcher = testDispatcher
         ).withMessageRepositoryReturningMessage(oneSecondEphemeralMessage)
             .withMessageRepositoryMarkingSelfDeletionStartDate()
+            .withMessageRepositoryMarkingSelfDeletionEndDate()
             .withDeletingMessage()
             .arrange()
 
@@ -719,6 +741,10 @@ class EphemeralMessageDeletionHandlerTest {
             .suspendFunction(arrangement.messageRepository::markSelfDeletionStartDate)
             .with(any())
             .wasNotInvoked()
+
+        verify(arrangement.messageRepository)
+            .suspendFunction(arrangement.messageRepository::markSelfDeletionEndDate)
+            .with(eq(oneSecondEphemeralMessage.conversationId), eq(oneSecondEphemeralMessage.id), any())
 
         verify(arrangement.messageRepository)
             .suspendFunction(arrangement.messageRepository::getMessageById)
@@ -767,6 +793,15 @@ class EphemeralMessageDeletionHandlerTest {
             return this
         }
 
+        fun withMessageRepositoryMarkingSelfDeletionEndDate(): Arrangement {
+            given(messageRepository)
+                .suspendFunction(messageRepository::markSelfDeletionEndDate)
+                .whenInvokedWith(any(), any(), any())
+                .then { _, _, _ -> Either.Right(Unit) }
+
+            return this
+        }
+
         fun withDeletingMessage(): Arrangement {
             given(deleteEphemeralMessageForSelfUserAsReceiver)
                 .suspendFunction(deleteEphemeralMessageForSelfUserAsReceiver::invoke)
@@ -795,7 +830,8 @@ class EphemeralMessageDeletionHandlerTest {
             dispatcher,
             deleteEphemeralMessageForSelfUserAsReceiver,
             deleteEphemeralMessageForSelfUserAsSender,
-            coroutineScope
+            kaliumLogger,
+            coroutineScope,
         )
     }
 

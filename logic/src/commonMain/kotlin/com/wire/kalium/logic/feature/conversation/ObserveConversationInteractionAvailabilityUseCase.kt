@@ -72,15 +72,13 @@ class ObserveConversationInteractionAvailabilityUseCase internal constructor(
                         else InteractionAvailability.NOT_MEMBER
                     }
 
-                    is ConversationDetails.OneOne -> {
-                        when {
-                            conversationDetails.otherUser.defederated -> InteractionAvailability.DISABLED
-                            conversationDetails.otherUser.deleted -> InteractionAvailability.DELETED_USER
-                            conversationDetails.otherUser.connectionStatus == ConnectionState.BLOCKED ->
-                                InteractionAvailability.BLOCKED_USER
-
-                            else -> InteractionAvailability.ENABLED
-                        }
+                    is ConversationDetails.OneOne -> when {
+                        conversationDetails.otherUser.defederated -> InteractionAvailability.DISABLED
+                        conversationDetails.otherUser.deleted -> InteractionAvailability.DELETED_USER
+                        conversationDetails.otherUser.connectionStatus == ConnectionState.BLOCKED -> InteractionAvailability.BLOCKED_USER
+                        conversationDetails.conversation.legalHoldStatus == Conversation.LegalHoldStatus.DEGRADED ->
+                            InteractionAvailability.LEGAL_HOLD
+                        else -> InteractionAvailability.ENABLED
                     }
 
                     is ConversationDetails.Self, is ConversationDetails.Team -> InteractionAvailability.DISABLED
@@ -132,5 +130,11 @@ enum class InteractionAvailability {
     UNSUPPORTED_PROTOCOL,
 
     /**Conversation type doesn't support messaging */
-    DISABLED
+    DISABLED,
+
+    /**
+     * One of conversation members is under legal hold and self user is not able to interact with it.
+     * This applies to 1:1 conversations only when other member is a guest.
+     */
+    LEGAL_HOLD
 }

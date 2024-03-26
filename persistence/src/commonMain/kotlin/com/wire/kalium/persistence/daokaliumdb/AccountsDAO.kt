@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.dao.ManagedByEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.model.LogoutReason
+import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
@@ -95,6 +96,55 @@ internal object AccountMapper {
     } else {
         SsoIdEntity(scim_external_id, subject, tenant)
     }
+
+    fun fromUserIDWithServerConfig(
+        userId: QualifiedIDEntity,
+        serverConfigId: String,
+        apiBaseUrl: String,
+        accountBaseUrl: String,
+        webSocketBaseUrl: String,
+        blackListUrl: String,
+        teamsUrl: String,
+        websiteUrl: String,
+        isOnPremises: Boolean,
+        domain: String?,
+        commonApiVersion: Int,
+        federation: Boolean,
+        apiProxyHost: String?,
+        apiProxyPort: Int?,
+        apiProxyNeedsAuthentication: Boolean?,
+        title: String
+    ): Pair<UserIDEntity, ServerConfigEntity> {
+        val apiProxy: ServerConfigEntity.ApiProxy? =
+            if (apiProxyHost != null && apiProxyPort != null && apiProxyNeedsAuthentication != null) {
+                ServerConfigEntity.ApiProxy(apiProxyNeedsAuthentication, apiProxyHost, apiProxyPort)
+            } else {
+                null
+            }
+
+        val serverConfig = ServerConfigEntity(
+            id = serverConfigId,
+            links = ServerConfigEntity.Links(
+                api = apiBaseUrl,
+                accounts = accountBaseUrl,
+                webSocket = webSocketBaseUrl,
+                blackList = blackListUrl,
+                teams = teamsUrl,
+                website = websiteUrl,
+                isOnPremises = isOnPremises,
+                apiProxy = apiProxy,
+                title = title
+            ),
+            metaData = ServerConfigEntity.MetaData(
+                domain = domain,
+                apiVersion = commonApiVersion,
+                federation = federation,
+            )
+        )
+
+        return userId to serverConfig
+    }
+
 }
 
 @Suppress("TooManyFunctions")
@@ -112,7 +162,7 @@ interface AccountsDAO {
     suspend fun allValidAccountList(): List<AccountInfoEntity>
     fun observerValidAccountList(): Flow<List<AccountInfoEntity>>
     suspend fun observeAllAccountList(): Flow<List<AccountInfoEntity>>
-    fun isFederated(userIDEntity: UserIDEntity): Boolean?
+    suspend fun isFederated(userIDEntity: UserIDEntity): Boolean?
     suspend fun doesValidAccountExists(userIDEntity: UserIDEntity): Boolean
     suspend fun currentAccount(): AccountInfoEntity?
     fun observerCurrentAccount(): Flow<AccountInfoEntity?>
@@ -126,6 +176,7 @@ interface AccountsDAO {
     fun fullAccountInfo(userIDEntity: UserIDEntity): FullAccountEntity?
     suspend fun getAllValidAccountPersistentWebSocketStatus(): Flow<List<PersistentWebSocketStatusEntity>>
     suspend fun getAccountManagedBy(userIDEntity: UserIDEntity): ManagedByEntity?
+    suspend fun validAccountWithServerConfigId(): Map<UserIDEntity, ServerConfigEntity>
 }
 
 @Suppress("TooManyFunctions")
@@ -189,8 +240,10 @@ internal class AccountsDAOImpl internal constructor(
             .flowOn(queriesContext)
             .mapToList()
 
-    override fun isFederated(userIDEntity: UserIDEntity): Boolean? =
-        queries.isFederationEnabled(userIDEntity).executeAsOneOrNull()
+    override suspend fun isFederated(userIDEntity: UserIDEntity): Boolean? =
+        withContext(queriesContext) {
+            queries.isFederationEnabled(userIDEntity).executeAsOneOrNull()
+        }
 
     override suspend fun doesValidAccountExists(userIDEntity: UserIDEntity): Boolean = withContext(queriesContext) {
         queries.doesValidAccountExist(userIDEntity).executeAsOne()
@@ -249,6 +302,10 @@ internal class AccountsDAOImpl internal constructor(
 
     override suspend fun getAccountManagedBy(userIDEntity: UserIDEntity): ManagedByEntity? = withContext(queriesContext) {
         queries.managedBy(userIDEntity).executeAsOneOrNull()?.managed_by
+    }
+
+    override suspend fun validAccountWithServerConfigId(): Map<UserIDEntity, ServerConfigEntity> = withContext(queriesContext) {
+        queries.allValidAccountsWithServerConfig(mapper = mapper::fromUserIDWithServerConfig).executeAsList().toMap()
     }
 
     override suspend fun accountInfo(userIDEntity: UserIDEntity): AccountInfoEntity? = withContext(queriesContext) {
