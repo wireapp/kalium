@@ -32,19 +32,7 @@ kaliumLibrary {
     }
 }
 
-android {
-    compileOptions {
-        isCoreLibraryDesugaringEnabled = true
-    }
-}
-
 kotlin {
-    androidTarget {
-        dependencies {
-            coreLibraryDesugaring(libs.desugarJdkLibs)
-        }
-    }
-
     ios {
         binaries.all {
             linkerOpts("-framework", "Security")
@@ -71,7 +59,6 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                implementation(kotlin("test"))
                 implementation(libs.coroutines.test)
                 implementation(libs.okio.test)
             }
