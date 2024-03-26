@@ -78,8 +78,8 @@ import kotlinx.coroutines.flow.retry
 
 private const val RETRY_COUNT = 3L
 
-private fun String.parseIgnoreError(default: Long? = null): Long? = try {
-    this.toLong()
+private fun String?.parseIgnoreError(default: Long? = null): Long? = try {
+    this?.toLong() ?: default
 } catch (_: NumberFormatException) {
     default
 }

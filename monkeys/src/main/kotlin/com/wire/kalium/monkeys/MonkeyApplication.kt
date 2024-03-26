@@ -98,7 +98,11 @@ class MonkeyApplication : CliktCommand(allowMultipleSubcommands = true) {
             } else {
                 CoreLogger.init(KaliumLogger.Config(logLevel))
             }
-            MonkeyLogger.init(KaliumLogger.Config(logLevel, listOf(monkeyFileLogger)))
+            if (monkeysLogOutputFile != null) {
+                MonkeyLogger.init(KaliumLogger.Config(logLevel, listOf(monkeyFileLogger)))
+            } else {
+                MonkeyLogger.init(KaliumLogger.Config(logLevel))
+            }
 
             logger.i("Initializing Metrics Endpoint")
             embeddedServer(Netty, port = 9090) {

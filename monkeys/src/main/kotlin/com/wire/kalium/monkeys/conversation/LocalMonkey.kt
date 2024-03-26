@@ -38,6 +38,7 @@ import com.wire.kalium.logic.feature.conversation.CreateConversationResult
 import com.wire.kalium.logic.feature.conversation.CreateGroupConversationUseCase
 import com.wire.kalium.logic.feature.publicuser.GetAllContactsResult
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.monkeys.MetricsCollector
 import com.wire.kalium.monkeys.logger
 import com.wire.kalium.monkeys.model.Backend
 import com.wire.kalium.monkeys.model.ConversationDef
@@ -198,9 +199,11 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
     ): MonkeyConversation {
         val self = this
         return this.monkeyState.readyThen {
-            val result = conversations.createGroupConversation(
-                name, monkeyList.map { it.monkeyType.userId() }, ConversationOptions(protocol = protocol)
-            )
+            val result = MetricsCollector.time("t_kalium_create_conversation", listOf()) {
+                conversations.createGroupConversation(
+                    name, monkeyList.map { it.monkeyType.userId() }, ConversationOptions(protocol = protocol)
+                )
+            }
             if (result is CreateGroupConversationUseCase.Result.Success) {
                 MonkeyConversation(self, result.conversation.id, isDestroyable, monkeyList)
             } else {
@@ -223,7 +226,9 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
             error("Creator of the group can't leave")
         }
         this.monkeyState.readyThen {
-            conversations.leaveConversation(conversationId)
+            MetricsCollector.time("t_kalium_leave_conversation", listOf()) {
+                conversations.leaveConversation(conversationId)
+            }
         }
     }
 
@@ -233,30 +238,41 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
         }
 
         this.monkeyState.readyThen {
-            conversations.deleteTeamConversation
+            MetricsCollector.time("t_kalium_destroy_conversation", listOf()) {
+                conversations.deleteTeamConversation
+            }
         }
     }
 
     override suspend fun addMonkeysToConversation(conversationId: ConversationId, monkeys: List<Monkey>) {
         this.monkeyState.readyThen {
-            conversations.addMemberToConversationUseCase(conversationId, monkeys.map { it.monkeyType.userId() })
+            MetricsCollector.time("t_kalium_add_members_to_conversation", listOf()) {
+                conversations.addMemberToConversationUseCase(conversationId, monkeys.map { it.monkeyType.userId() })
+            }
         }
     }
 
     override suspend fun removeMonkeyFromConversation(id: ConversationId, monkey: Monkey) {
         this.monkeyState.readyThen {
-            conversations.removeMemberFromConversation(
-                id, monkey.monkeyType.userId()
-            )
+            MetricsCollector.time("t_kalium_remove_members_from_conversation", listOf()) {
+                conversations.removeMemberFromConversation(
+                    id, monkey.monkeyType.userId()
+                )
+            }
         }
     }
 
     override suspend fun sendDirectMessageTo(anotherMonkey: Monkey, message: String) {
         val self = this.monkeyType.userId()
         this.monkeyState.readyThen {
-            val result = conversations.getOrCreateOneToOneConversationUseCase(anotherMonkey.monkeyType.userId())
+
+            val result = MetricsCollector.time("t_kalium_get_create_dm", listOf()) {
+                conversations.getOrCreateOneToOneConversationUseCase(anotherMonkey.monkeyType.userId())
+            }
             if (result is CreateConversationResult.Success) {
-                messages.sendTextMessage(result.conversation.id, message)
+                MetricsCollector.time("t_kalium_send_dm", listOf()) {
+                    messages.sendTextMessage(result.conversation.id, message)
+                }
             } else {
                 error("$self failed contacting ${anotherMonkey.monkeyType.userId()}: $result")
             }
@@ -265,7 +281,9 @@ class LocalMonkey(monkeyType: MonkeyType, internalId: MonkeyId) : Monkey(monkeyT
 
     override suspend fun sendMessageTo(conversationId: ConversationId, message: String) {
         this.monkeyState.readyThen {
-            val result = messages.sendTextMessage(conversationId, message)
+            val result = MetricsCollector.time("t_kalium_send_message_conversation", listOf()) {
+                messages.sendTextMessage(conversationId, message)
+            }
             if (result is Either.Left) {
                 error("Error sending message: ${result.value}")
             }
