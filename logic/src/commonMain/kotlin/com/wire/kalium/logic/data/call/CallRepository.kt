@@ -15,7 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-@file:Suppress("konsist.repositoriesShouldNotAccessFeaturePackageClasses")
 
 package com.wire.kalium.logic.data.call
 
@@ -51,7 +50,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
 import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
-import com.wire.kalium.logic.feature.conversation.mls.EpochChangesObserver
+import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.getOrNull

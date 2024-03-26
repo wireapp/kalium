@@ -72,5 +72,6 @@ fun newUserDetailsEntity(id: String = "test") =
         defederated = false,
         isProteusVerified = false,
         supportedProtocols = setOf(SupportedProtocolEntity.PROTEUS),
-        activeOneOnOneConversationId = null
+        activeOneOnOneConversationId = null,
+        isUnderLegalHold = false,
     )

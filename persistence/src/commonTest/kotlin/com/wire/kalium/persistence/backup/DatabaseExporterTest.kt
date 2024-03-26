@@ -26,7 +26,7 @@ import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.IgnoreJvm
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
-import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import com.wire.kalium.persistence.utils.stubs.newUserDetailsEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -50,9 +50,9 @@ class DatabaseExporterTest : BaseDatabaseTest() {
 
         runTest {
             with(localDB.userDAO) {
-                upsertUser(SELF_USER)
-                upsertUser(OTHER_USER)
-                upsertUser(OTHER_USER_2)
+                upsertUser(SELF_USER.toSimpleEntity())
+                upsertUser(OTHER_USER.toSimpleEntity())
+                upsertUser(OTHER_USER_2.toSimpleEntity())
             }
 
             with(localDB.conversationDAO) {
@@ -89,9 +89,9 @@ class DatabaseExporterTest : BaseDatabaseTest() {
     private companion object {
         val TEST_CONVERSATION_1 = newConversationEntity("testConversation1")
         val TEST_CONVERSATION_2 = newConversationEntity("testConversation2")
-        val SELF_USER = newUserEntity("selfUser").copy(name = "selfUser")
-        val OTHER_USER = newUserEntity("otherUser").copy(name = "otherUser")
-        val OTHER_USER_2 = newUserEntity("otherUser2").copy(name = "otherUser2")
+        val SELF_USER = newUserDetailsEntity("selfUser").copy(name = "selfUser")
+        val OTHER_USER = newUserDetailsEntity("otherUser").copy(name = "otherUser")
+        val OTHER_USER_2 = newUserDetailsEntity("otherUser2").copy(name = "otherUser2")
         val SELF_USER_ID = SELF_USER.id
 
         val ORIGINAL_MESSAGE_SENDER = OTHER_USER

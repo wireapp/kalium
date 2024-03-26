@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -178,7 +179,8 @@ class CallingParticipantsOrderTest {
             completePicture = null,
             availabilityStatus = UserAvailabilityStatus.AVAILABLE,
             expiresAt = null,
-            supportedProtocols = null
+            supportedProtocols = null,
+            userType = UserType.INTERNAL,
         )
 
         const val selfClientId = "client1"

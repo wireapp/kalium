@@ -20,18 +20,22 @@ package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.Account
 import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.session.token.AccessToken
 import com.wire.kalium.logic.data.session.token.RefreshToken
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.stubs.newServerConfig
+import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
+import com.wire.kalium.persistence.model.ServerConfigEntity
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
@@ -116,12 +120,13 @@ class AddAuthenticatedUserUseCaseTest {
 
         val proxyCredentials = PROXY_CREDENTIALS
 
+
         val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
             .withDoesValidSessionExistResult(newSession.userId, Either.Right(true))
             .withStoreSessionResult(TEST_SERVER_CONFIG.id, TEST_SSO_ID, newSession, proxyCredentials, Either.Right(Unit))
             .withUpdateCurrentSessionResult(newSession.userId, Either.Right(Unit))
             .withFullAccountInfoResult(newSession.userId, Either.Right(oldSessionFullInfo))
-            .withConfigByIdResult(TEST_SERVER_CONFIG.id, Either.Right(TEST_SERVER_CONFIG))
+            .withConfigByIdSuccess(TEST_SERVER_CONFIG.id, TEST_SERVER_CONFIG_ENTITY)
             .arrange()
 
         val actual = addAuthenticatedUserUseCase(TEST_SERVER_CONFIG.id, TEST_SSO_ID, newSession, proxyCredentials, true)
@@ -138,8 +143,8 @@ class AddAuthenticatedUserUseCaseTest {
             .with(any())
             .wasInvoked(exactly = once)
 
-        verify(arrangement.serverConfigRepository)
-            .function(arrangement.serverConfigRepository::configById)
+        verify(arrangement.serverConfigurationDAO)
+            .function(arrangement.serverConfigurationDAO::configById)
             .with(any())
             .wasInvoked(exactly = once)
 
@@ -155,24 +160,32 @@ class AddAuthenticatedUserUseCaseTest {
 
     @Test
     fun givenUserWithAlreadyStoredSessionWithDifferentServerConfig_whenInvokedWithReplace_thenUserAlreadyExistsReturned() = runTest {
+        val serverConfigMapper = MapperProvider.serverConfigMapper()
+
         val oldSession = TEST_AUTH_TOKENS.copy(
             accessToken = AccessToken("oldAccessToken", TEST_AUTH_TOKENS.tokenType),
             refreshToken = RefreshToken("oldRefreshToken")
         )
         val oldSessionServer = newServerConfig(id = 11)
+        val oldSessionServerEntity = oldSessionServer.let {
+            serverConfigMapper.toEntity(it)
+        }
 
         val newSession = TEST_AUTH_TOKENS.copy(
             accessToken = AccessToken("newAccessToken", TEST_AUTH_TOKENS.tokenType),
             refreshToken = RefreshToken("newRefreshToken")
         )
         val newSessionServer = newServerConfig(id = 22)
+        val newSessionServerEntity = newSessionServer.let {
+            serverConfigMapper.toEntity(it)
+        }
 
         val proxyCredentials = PROXY_CREDENTIALS
 
         val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
             .withDoesValidSessionExistResult(newSession.userId, Either.Right(true))
-            .withConfigForUserIdResult(oldSession.userId, Either.Right(oldSessionServer))
-            .withConfigByIdResult(newSessionServer.id, Either.Right(newSessionServer))
+            .withConfigForUserIdSuccess(oldSession.userId.toDao(), oldSessionServerEntity)
+            .withConfigByIdSuccess(newSessionServer.id, newSessionServerEntity)
             .withFullAccountInfoResult(
                 oldSession.userId,
                 Either.Right(Account(AccountInfo.Valid(oldSession.userId), oldSessionServer, TEST_SSO_ID))
@@ -198,14 +211,17 @@ class AddAuthenticatedUserUseCaseTest {
         verify(arrangement.sessionRepository)
             .function(arrangement.sessionRepository::fullAccountInfo).with(any())
             .wasInvoked(exactly = once)
-        verify(arrangement.serverConfigRepository)
-            .function(arrangement.serverConfigRepository::configById).with(any())
+        verify(arrangement.serverConfigurationDAO)
+            .function(arrangement.serverConfigurationDAO::configById).with(any())
             .wasInvoked(exactly = once)
     }
 
     private companion object {
         val TEST_USERID = UserId("user_id", "domain.de")
         val TEST_SERVER_CONFIG: ServerConfig = newServerConfig(1)
+        val TEST_SERVER_CONFIG_ENTITY = TEST_SERVER_CONFIG.let {
+            MapperProvider.serverConfigMapper().toEntity(it)
+        }
         val TEST_AUTH_TOKENS = AccountTokens(
             TEST_USERID,
             "access-token",
@@ -226,9 +242,9 @@ class AddAuthenticatedUserUseCaseTest {
         val sessionRepository = mock(SessionRepository::class)
 
         @Mock
-        val serverConfigRepository = mock(ServerConfigRepository::class)
+        val serverConfigurationDAO = mock(ServerConfigurationDAO::class)
 
-        private val addAuthenticatedUserUseCase = AddAuthenticatedUserUseCase(sessionRepository, serverConfigRepository)
+        private val addAuthenticatedUserUseCase = AddAuthenticatedUserUseCase(sessionRepository, serverConfigurationDAO)
 
         suspend fun withDoesValidSessionExistResult(
             userId: UserId,
@@ -237,11 +253,11 @@ class AddAuthenticatedUserUseCaseTest {
             given(sessionRepository).coroutine { doesValidSessionExist(userId) }.then { result }
         }
 
-        suspend fun withConfigForUserIdResult(
-            userId: UserId,
-            result: Either<StorageFailure, ServerConfig>
+        suspend fun withConfigForUserIdSuccess(
+            userId: UserIDEntity,
+            result: ServerConfigEntity
         ) = apply {
-            given(serverConfigRepository).coroutine { configForUser(userId) }.then { result }
+            given(serverConfigurationDAO).coroutine { configForUser(userId) }.then { result }
         }
 
         fun withFullAccountInfoResult(
@@ -251,11 +267,11 @@ class AddAuthenticatedUserUseCaseTest {
             given(sessionRepository).invocation { fullAccountInfo(userId) }.then { result }
         }
 
-        fun withConfigByIdResult(
+        fun withConfigByIdSuccess(
             serverConfigId: String,
-            result: Either<StorageFailure, ServerConfig>
+            result: ServerConfigEntity
         ) = apply {
-            given(serverConfigRepository).invocation { configById(serverConfigId) }.then { result }
+            given(serverConfigurationDAO).invocation { configById(serverConfigId) }.then { result }
         }
 
         suspend fun withStoreSessionResult(

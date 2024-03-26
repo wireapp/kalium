@@ -84,8 +84,6 @@ data class ClassifiedDomainsConfigDTO(
 
 @Serializable
 data class MLSConfigDTO(
-    @SerialName("protocolToggleUsers")
-    val protocolToggleUsers: List<String>,
     @SerialName("defaultProtocol")
     val defaultProtocol: SupportedProtocolDTO,
     @SerialName("supportedProtocols")

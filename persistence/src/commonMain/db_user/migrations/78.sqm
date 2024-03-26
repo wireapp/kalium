@@ -1,0 +1,3 @@
+UPDATE MessageMemberChangeContent
+SET member_change_type = 'FAILED_TO_ADD_FEDERATION'
+WHERE member_change_type == 'FAILED_TO_ADD';

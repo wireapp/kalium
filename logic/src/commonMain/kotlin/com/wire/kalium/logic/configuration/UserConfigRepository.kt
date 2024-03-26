@@ -122,8 +122,6 @@ interface UserConfigRepository {
     suspend fun setLegalHoldChangeNotified(isNotified: Boolean): Either<StorageFailure, Unit>
     suspend fun observeLegalHoldChangeNotified(): Flow<Either<StorageFailure, Boolean>>
     suspend fun setShouldUpdateClientLegalHoldCapability(shouldUpdate: Boolean): Either<StorageFailure, Unit>
-    suspend fun shouldCheckCrlForCurrentClient(): Boolean
-    suspend fun setShouldCheckCrlForCurrentClient(shouldCheck: Boolean): Either<StorageFailure, Unit>
     suspend fun shouldUpdateClientLegalHoldCapability(): Boolean
     suspend fun setCRLExpirationTime(url: String, timestamp: ULong)
     suspend fun getCRLExpirationTime(url: String): ULong?
@@ -450,11 +448,6 @@ internal class UserConfigDataSource internal constructor(
 
     override suspend fun shouldUpdateClientLegalHoldCapability(): Boolean =
         userConfigDAO.shouldUpdateClientLegalHoldCapability()
-
-    override suspend fun shouldCheckCrlForCurrentClient() = userConfigDAO.shouldCheckCrlForCurrentClient()
-
-    override suspend fun setShouldCheckCrlForCurrentClient(shouldCheck: Boolean): Either<StorageFailure, Unit> =
-        wrapStorageRequest { userConfigDAO.setShouldCheckCrlForCurrentClient(shouldCheck) }
 
     override suspend fun setCRLExpirationTime(url: String, timestamp: ULong) {
         userConfigDAO.setCRLExpirationTime(url, timestamp)

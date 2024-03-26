@@ -117,7 +117,7 @@ internal class MessageDAOImpl internal constructor(
     }
 
     private fun nonSuspendNeedsToBeNotified(id: String, conversationId: QualifiedIDEntity) =
-        queries.needsToBeNotified(id, conversationId).executeAsList().first() == 1L
+        queries.needsToBeNotified(id, conversationId).executeAsList().firstOrNull() == 1L
 
     @Deprecated("For test only!")
     override suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>) = withContext(coroutineContext) {
@@ -342,7 +342,8 @@ internal class MessageDAOImpl internal constructor(
                     user_id = it.userId
                 )
             }
-            val selfMention = newTextContent.mentions.firstNotNullOfOrNull { it.userId == selfUserId }
+
+            val selfMention = newTextContent.mentions.firstOrNull { it.userId == selfUserId }
             if (selfMention != null) {
                 unreadEventsQueries.updateEvent(UnreadEventTypeEntity.MENTION, currentMessageId, conversationId)
             } else {

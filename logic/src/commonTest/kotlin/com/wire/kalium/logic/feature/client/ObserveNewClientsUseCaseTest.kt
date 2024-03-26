@@ -100,7 +100,7 @@ class ObserveNewClientsUseCaseTest {
             )
 
             verify(arrangement.observeValidAccounts)
-                .function(arrangement.observeValidAccounts::invoke)
+                .suspendFunction(arrangement.observeValidAccounts::invoke)
                 .wasInvoked(exactly = once)
 
             awaitComplete()
@@ -211,7 +211,7 @@ class ObserveNewClientsUseCaseTest {
 
         init {
             given(observeValidAccounts)
-                .function(observeValidAccounts::invoke)
+                .suspendFunction(observeValidAccounts::invoke)
                 .whenInvoked()
                 .thenReturn(flowOf(listOf()))
 
@@ -250,13 +250,13 @@ class ObserveNewClientsUseCaseTest {
 
         fun withValidAccounts(result: List<Pair<SelfUser, Team?>>) = apply {
             given(observeValidAccounts)
-                .function(observeValidAccounts::invoke)
+                .suspendFunction(observeValidAccounts::invoke)
                 .whenInvoked()
                 .thenReturn(flowOf(result))
         }
         fun withValidAccountsFlow(flowResult: Flow<List<Pair<SelfUser, Team?>>>) = apply {
             given(observeValidAccounts)
-                .function(observeValidAccounts::invoke)
+                .suspendFunction(observeValidAccounts::invoke)
                 .whenInvoked()
                 .thenReturn(flowResult)
         }

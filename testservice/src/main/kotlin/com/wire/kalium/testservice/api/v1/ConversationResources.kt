@@ -253,8 +253,8 @@ class ConversationResources(private val instanceService: InstanceService) {
                     ConversationId(conversationId, conversationDomain),
                     data,
                     type,
-                    height,
                     width,
+                    height,
                     messageTimer
                 )
             }

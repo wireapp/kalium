@@ -57,11 +57,7 @@ class GetMembersE2EICertificateStatusesUseCaseImpl internal constructor(
  */
 fun List<WireIdentity>.getUserCertificateStatus(certificateStatusMapper: CertificateStatusMapper): CertificateStatus? {
     val certificates = this.map {
-        E2eiCertificate(
-            status = certificateStatusMapper.toCertificateStatus(it.status),
-            serialNumber = it.serialNumber,
-            certificateDetail = it.certificate
-        )
+        E2eiCertificate.fromWireIdentity(it, certificateStatusMapper)
     }
     return if (certificates.isEmpty()) {
         null

@@ -124,5 +124,11 @@ enum class DtoAuthorizationChallengeType {
     OIDC
 }
 
+@Serializable
+data class FederationCertificateChainResponse(
+    @SerialName("crts")
+    val certificates: List<String>
+)
+
 @JvmInline
 value class CertificateChain(val value: String)

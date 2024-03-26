@@ -30,6 +30,27 @@ import kotlin.test.*
 
 internal class ACMEApiTest : ApiTest() {
 
+    @Test
+    fun givingASuccessfulResponse_whenGettingACMEFederationCertificateChain_thenAllCertificatesShouldBeParsed() = runTest {
+        val expected = listOf("a", "b", "potato")
+
+        val networkClient = mockUnboundNetworkClient(
+            responseBody = """
+                 {
+                     "crts": ["a", "b", "potato"]
+                 }
+            """.trimIndent(),
+            statusCode = HttpStatusCode.OK
+        )
+
+        val acmeApi: ACMEApi = ACMEApiImpl(networkClient, networkClient)
+
+        val result = acmeApi.getACMEFederationCertificateChain("someURL")
+
+        assertTrue(result.isSuccessful())
+        assertContentEquals(expected, result.value)
+    }
+
     @Ignore
     @Test
     fun whenCallingGeTrustAnchorsApi_theResponseShouldBeConfigureCorrectly() = runTest {
@@ -185,6 +206,7 @@ internal class ACMEApiTest : ApiTest() {
             assertEquals(expected, actual.value)
         }
     }
+
     companion object {
         private const val ACME_DISCOVERY_URL = "https://balderdash.hogwash.work:9000/acme/google-android/directory"
         private const val ACME_DIRECTORIES_PATH = "https://balderdash.hogwash.work:9000/acme/google-android/directory"

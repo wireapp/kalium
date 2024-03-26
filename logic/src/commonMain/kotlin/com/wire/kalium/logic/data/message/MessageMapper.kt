@@ -179,9 +179,9 @@ class MessageMapperImpl(
         },
         sender = message.sender?.let {
             if (message.isSelfMessage) {
-                userMapper.fromUserEntityToSelfUser(it)
+                userMapper.fromUserDetailsEntityToSelfUser(it)
             } else {
-                userMapper.fromUserEntityToOtherUser(it)
+                userMapper.fromUserDetailsEntityToOtherUser(it)
             }
         }
     )
@@ -204,9 +204,9 @@ class MessageMapperImpl(
         },
         sender = message.sender?.let {
             if (message.isSelfMessage) {
-                userMapper.fromUserEntityToSelfUser(it)
+                userMapper.fromUserDetailsEntityToSelfUser(it)
             } else {
-                userMapper.fromUserEntityToOtherUser(it)
+                userMapper.fromUserDetailsEntityToOtherUser(it)
             }
         }
     )

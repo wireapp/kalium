@@ -24,8 +24,6 @@ import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApiImpl
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApiImpl
-import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
-import com.wire.kalium.network.api.base.unbound.versioning.VersionApiImpl
 import com.wire.kalium.network.clearTextTrafficEngine
 import com.wire.kalium.network.defaultHttpEngine
 import com.wire.kalium.network.session.CertificatePinning
@@ -33,7 +31,6 @@ import io.ktor.client.engine.HttpClientEngine
 
 interface UnboundNetworkContainer {
     val serverConfigApi: ServerConfigApi
-    val remoteVersion: VersionApi
     val acmeApi: ACMEApi
 }
 
@@ -77,18 +74,19 @@ internal class UnboundClearTextTrafficNetworkClientProviderImpl(
 
 class UnboundNetworkContainerCommon(
     networkStateObserver: NetworkStateObserver,
-    private val developmentApiEnabled: Boolean,
     userAgent: String,
-    private val ignoreSSLCertificates: Boolean,
+    ignoreSSLCertificates: Boolean,
     certificatePinning: CertificatePinning,
     mockEngine: HttpClientEngine?
 ) : UnboundNetworkContainer,
     UnboundNetworkClientProvider by UnboundNetworkClientProviderImpl(
-        networkStateObserver = networkStateObserver,
-        userAgent = userAgent,
+        networkStateObserver,
+        userAgent,
         engine = mockEngine ?: defaultHttpEngine(
-            ignoreSSLCertificates = ignoreSSLCertificates,
-            certificatePinning = certificatePinning
+            certificatePinning = certificatePinning,
+            proxyCredentials = null,
+            serverConfigDTOApiProxy = null,
+            ignoreSSLCertificates = ignoreSSLCertificates
         )
     ),
     UnboundClearTextTrafficNetworkClientProvider by UnboundClearTextTrafficNetworkClientProviderImpl(
@@ -97,11 +95,7 @@ class UnboundNetworkContainerCommon(
         engine = mockEngine ?: clearTextTrafficEngine()
     ) {
     override val serverConfigApi: ServerConfigApi get() = ServerConfigApiImpl(unboundNetworkClient)
-    override val remoteVersion: VersionApi
-        get() = VersionApiImpl(
-            unboundNetworkClient,
-            developmentApiEnabled
-        )
+
     override val acmeApi: ACMEApi
         get() = ACMEApiImpl(
             unboundNetworkClient,

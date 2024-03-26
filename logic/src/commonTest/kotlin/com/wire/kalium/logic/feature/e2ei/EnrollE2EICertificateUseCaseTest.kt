@@ -63,6 +63,7 @@ class EnrollE2EICertificateUseCaseTest {
         // given
         arrangement.withInitializingE2EIClientSucceed()
         arrangement.withLoadTrustAnchorsResulting(Either.Right(Unit))
+        arrangement.withFetchFederationCertificateChainResulting(Either.Right(Unit))
         arrangement.withLoadACMEDirectoriesResulting(E2EIFailure.AcmeDirectories(TEST_CORE_FAILURE).left())
 
         // when
@@ -144,6 +145,7 @@ class EnrollE2EICertificateUseCaseTest {
         // given
         arrangement.withInitializingE2EIClientSucceed()
         arrangement.withLoadTrustAnchorsResulting(Either.Right(Unit))
+        arrangement.withFetchFederationCertificateChainResulting(Either.Right(Unit))
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
         arrangement.withGetACMENonceResulting(E2EIFailure.AcmeNonce(TEST_CORE_FAILURE).left())
 
@@ -224,6 +226,7 @@ class EnrollE2EICertificateUseCaseTest {
         // given
         arrangement.withInitializingE2EIClientSucceed()
         arrangement.withLoadTrustAnchorsResulting(Either.Right(Unit))
+        arrangement.withFetchFederationCertificateChainResulting(Either.Right(Unit))
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
         arrangement.withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewAccountResulting(E2EIFailure.AcmeNewAccount(TEST_CORE_FAILURE).left())
@@ -309,6 +312,7 @@ class EnrollE2EICertificateUseCaseTest {
         // given
         arrangement.withInitializingE2EIClientSucceed()
         arrangement.withLoadTrustAnchorsResulting(Either.Right(Unit))
+        arrangement.withFetchFederationCertificateChainResulting(Either.Right(Unit))
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
         arrangement.withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
@@ -396,6 +400,7 @@ class EnrollE2EICertificateUseCaseTest {
         // given
         arrangement.withInitializingE2EIClientSucceed()
         arrangement.withLoadTrustAnchorsResulting(Either.Right(Unit))
+        arrangement.withFetchFederationCertificateChainResulting(Either.Right(Unit))
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
         arrangement.withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
@@ -487,6 +492,7 @@ class EnrollE2EICertificateUseCaseTest {
         // given
         arrangement.withInitializingE2EIClientSucceed()
         arrangement.withLoadTrustAnchorsResulting(Either.Right(Unit))
+        arrangement.withFetchFederationCertificateChainResulting(Either.Right(Unit))
         arrangement.withLoadACMEDirectoriesResulting(Either.Right(ACME_DIRECTORIES))
         arrangement.withGetACMENonceResulting(Either.Right(RANDOM_NONCE))
         arrangement.withCreateNewAccountResulting(Either.Right(RANDOM_NONCE))
@@ -1107,6 +1113,13 @@ class EnrollE2EICertificateUseCaseTest {
         fun withLoadTrustAnchorsResulting(result: Either<E2EIFailure, Unit>) = apply {
             given(e2EIRepository)
                 .suspendFunction(e2EIRepository::fetchAndSetTrustAnchors)
+                .whenInvoked()
+                .thenReturn(result)
+        }
+
+        fun withFetchFederationCertificateChainResulting(result: Either<E2EIFailure, Unit>) = apply {
+            given(e2EIRepository)
+                .suspendFunction(e2EIRepository::fetchFederationCertificates)
                 .whenInvoked()
                 .thenReturn(result)
         }

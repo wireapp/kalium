@@ -20,8 +20,8 @@ package com.wire.kalium.logic
 
 import com.wire.kalium.logic.configuration.notification.NotificationTokenDataSource
 import com.wire.kalium.logic.configuration.notification.NotificationTokenRepository
-import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.configuration.server.CustomServerConfigDataSource
+import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.data.client.UserClientRepositoryProvider
 import com.wire.kalium.logic.data.client.UserClientRepositoryProviderImpl
 import com.wire.kalium.logic.data.session.SessionDataSource
@@ -49,10 +49,7 @@ import com.wire.kalium.logic.feature.notificationToken.SaveNotificationTokenUseC
 import com.wire.kalium.logic.feature.rootDetection.CheckSystemIntegrityUseCase
 import com.wire.kalium.logic.feature.rootDetection.CheckSystemIntegrityUseCaseImpl
 import com.wire.kalium.logic.feature.rootDetection.RootDetectorImpl
-import com.wire.kalium.logic.feature.server.FetchApiVersionUseCase
-import com.wire.kalium.logic.feature.server.FetchApiVersionUseCaseImpl
 import com.wire.kalium.logic.feature.server.GetServerConfigUseCase
-import com.wire.kalium.logic.feature.server.ObserveServerConfigUseCase
 import com.wire.kalium.logic.feature.server.ServerConfigForAccountUseCase
 import com.wire.kalium.logic.feature.server.StoreServerConfigUseCase
 import com.wire.kalium.logic.feature.server.StoreServerConfigUseCaseImpl
@@ -102,7 +99,6 @@ class GlobalKaliumScope internal constructor(
     val unboundNetworkContainer: UnboundNetworkContainer by lazy {
         UnboundNetworkContainerCommon(
             networkStateObserver,
-            kaliumConfigs.developmentApiEnabled,
             userAgent,
             kaliumConfigs.ignoreSSLCertificatesForUnboundCalls,
             kaliumConfigs.certPinningConfig,
@@ -110,19 +106,11 @@ class GlobalKaliumScope internal constructor(
         )
     }
 
-    internal val serverConfigRepository: ServerConfigRepository
-        get() = ServerConfigDataSource(
-            unboundNetworkContainer.serverConfigApi,
-            globalDatabase.serverConfigurationDAO,
-            unboundNetworkContainer.remoteVersion,
-            kaliumConfigs.developmentApiEnabled
-        )
-
     val sessionRepository: SessionRepository
         get() = SessionDataSource(
             globalDatabase.accountsDAO,
             globalPreferences.authTokenStorage,
-            serverConfigRepository,
+            globalDatabase.serverConfigurationDAO,
             kaliumConfigs
         )
 
@@ -133,24 +121,41 @@ class GlobalKaliumScope internal constructor(
         get() =
             NotificationTokenDataSource(globalPreferences.tokenStorage)
 
+    private val customServerConfigRepository: CustomServerConfigRepository
+        get() = CustomServerConfigDataSource(
+            unboundNetworkContainer.serverConfigApi,
+            developmentApiEnabled = kaliumConfigs.developmentApiEnabled,
+            globalDatabase.serverConfigurationDAO
+        )
     val validateEmailUseCase: ValidateEmailUseCase get() = ValidateEmailUseCaseImpl()
     val validateUserHandleUseCase: ValidateUserHandleUseCase get() = ValidateUserHandleUseCaseImpl()
     val validatePasswordUseCase: ValidatePasswordUseCase get() = ValidatePasswordUseCaseImpl()
 
     val addAuthenticatedAccount: AddAuthenticatedUserUseCase
         get() =
-            AddAuthenticatedUserUseCase(sessionRepository, serverConfigRepository)
+            AddAuthenticatedUserUseCase(sessionRepository, globalDatabase.serverConfigurationDAO)
     val getSessions: GetSessionsUseCase get() = GetSessionsUseCase(sessionRepository)
     val doesValidSessionExist: DoesValidSessionExistUseCase get() = DoesValidSessionExistUseCase(sessionRepository)
     val observeValidAccounts: ObserveValidAccountsUseCase
         get() = ObserveValidAccountsUseCaseImpl(sessionRepository, userSessionScopeProvider.value)
 
     val session: SessionScope get() = SessionScope(sessionRepository)
-    val fetchServerConfigFromDeepLink: GetServerConfigUseCase get() = GetServerConfigUseCase(serverConfigRepository)
-    val fetchApiVersion: FetchApiVersionUseCase get() = FetchApiVersionUseCaseImpl(serverConfigRepository)
-    val observeServerConfig: ObserveServerConfigUseCase get() = ObserveServerConfigUseCase(serverConfigRepository)
-    val updateApiVersions: UpdateApiVersionsUseCase get() = UpdateApiVersionsUseCaseImpl(serverConfigRepository)
-    val storeServerConfig: StoreServerConfigUseCase get() = StoreServerConfigUseCaseImpl(serverConfigRepository)
+    val fetchServerConfigFromDeepLink: GetServerConfigUseCase get() = GetServerConfigUseCase(customServerConfigRepository)
+    val updateApiVersions: UpdateApiVersionsUseCase
+        get() = UpdateApiVersionsUseCaseImpl(
+            sessionRepository,
+            globalPreferences.authTokenStorage,
+            { serverConfig, proxyCredentials ->
+                authenticationScopeProvider.provide(
+                    serverConfig,
+                    proxyCredentials,
+                    networkStateObserver,
+                    globalDatabase = globalDatabase,
+                    kaliumConfigs = kaliumConfigs,
+                ).serverConfigRepository
+            },
+        )
+    val storeServerConfig: StoreServerConfigUseCase get() = StoreServerConfigUseCaseImpl(customServerConfigRepository)
 
     val saveNotificationToken: SaveNotificationTokenUseCase
         get() = SaveNotificationTokenUseCaseImpl(
@@ -163,15 +168,15 @@ class GlobalKaliumScope internal constructor(
         get() = DeleteSessionUseCase(sessionRepository, userSessionScopeProvider.value)
 
     val serverConfigForAccounts: ServerConfigForAccountUseCase
-        get() =
-            ServerConfigForAccountUseCase(serverConfigRepository)
+        get() = ServerConfigForAccountUseCase(globalDatabase.serverConfigurationDAO)
 
     val observeIfAppUpdateRequired: ObserveIfAppUpdateRequiredUseCase
         get() = ObserveIfAppUpdateRequiredUseCaseImpl(
-            serverConfigRepository,
+            customServerConfigRepository,
             authenticationScopeProvider,
             userSessionScopeProvider.value,
             networkStateObserver,
+            globalDatabase,
             kaliumConfigs
         )
 

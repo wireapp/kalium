@@ -15,14 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-@file:Suppress("konsist.useCasesShouldNotAccessNetworkLayerDirectly")
+@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly", "konsist.useCasesShouldNotAccessNetworkLayerDirectly")
 
 package com.wire.kalium.logic.feature.auth
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepository
 import com.wire.kalium.logic.configuration.appVersioning.AppVersionRepositoryImpl
+import com.wire.kalium.logic.configuration.server.CustomServerConfigDataSource
+import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepository
 import com.wire.kalium.logic.data.auth.login.LoginRepositoryImpl
@@ -39,10 +42,10 @@ import com.wire.kalium.logic.feature.appVersioning.CheckIfUpdateRequiredUseCaseI
 import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.logic.feature.register.RegisterScope
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
-import com.wire.kalium.network.session.CertificatePinning
-import io.ktor.client.engine.HttpClientEngine
+import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 
 class AuthenticationScopeProvider internal constructor(
     private val userAgent: String
@@ -57,44 +60,49 @@ class AuthenticationScopeProvider internal constructor(
     internal fun provide(
         serverConfig: ServerConfig,
         proxyCredentials: ProxyCredentials?,
-        serverConfigRepository: ServerConfigRepository,
         networkStateObserver: NetworkStateObserver,
-        certConfig: () -> CertificatePinning,
-        mockEngine: HttpClientEngine?
+        globalDatabase: GlobalDatabaseProvider,
+        kaliumConfigs: KaliumConfigs
     ): AuthenticationScope =
         authenticationScopeStorage.computeIfAbsent(serverConfig to proxyCredentials) {
             AuthenticationScope(
                 userAgent,
                 serverConfig,
                 proxyCredentials,
-                serverConfigRepository,
                 networkStateObserver,
-                certConfig,
-                mockEngine
+                kaliumConfigs = kaliumConfigs,
+                globalDatabase = globalDatabase
             )
         }
 }
 
-@Suppress("LongParameterList")
 class AuthenticationScope internal constructor(
     private val userAgent: String,
     private val serverConfig: ServerConfig,
     private val proxyCredentials: ProxyCredentials?,
-    private val serverConfigRepository: ServerConfigRepository,
     private val networkStateObserver: NetworkStateObserver,
-    certConfig: () -> CertificatePinning,
-    mockEngine: HttpClientEngine?
+    private val globalDatabase: GlobalDatabaseProvider,
+    private val kaliumConfigs: KaliumConfigs,
 ) {
+
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
         UnauthenticatedNetworkContainer.create(
             networkStateObserver,
-            MapperProvider.serverConfigMapper().toDTO(serverConfig),
-            proxyCredentials?.let { MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(it) },
-            userAgent,
-            certificatePinning = certConfig(),
-            mockEngine
+            serverConfigDTO = MapperProvider.serverConfigMapper().toDTO(serverConfig),
+            proxyCredentials = proxyCredentials?.let { MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(it) },
+            userAgent = userAgent,
+            developmentApiEnabled = kaliumConfigs.developmentApiEnabled,
+            certificatePinning = kaliumConfigs.certPinningConfig,
+            mockEngine = kaliumConfigs.kaliumMockEngine?.mockEngine
         )
     }
+
+    internal val serverConfigRepository: ServerConfigRepository
+        get() = ServerConfigDataSource(
+            globalDatabase.serverConfigurationDAO,
+            unauthenticatedNetworkContainer.remoteVersion,
+        )
+
     private val loginRepository: LoginRepository
         get() = LoginRepositoryImpl(unauthenticatedNetworkContainer.loginApi)
 
@@ -102,6 +110,14 @@ class AuthenticationScope internal constructor(
         get() = RegisterAccountDataSource(
             unauthenticatedNetworkContainer.registerApi
         )
+
+    private val customServerConfigRepository: CustomServerConfigRepository
+        get() = CustomServerConfigDataSource(
+            unauthenticatedNetworkContainer.serverConfigApi,
+            kaliumConfigs.developmentApiEnabled,
+            globalDatabase.serverConfigurationDAO
+        )
+
     internal val ssoLoginRepository: SSOLoginRepository
         get() = SSOLoginRepositoryImpl(unauthenticatedNetworkContainer.sso, unauthenticatedNetworkContainer.domainLookupApi)
 
@@ -134,7 +150,11 @@ class AuthenticationScope internal constructor(
 
     val domainLookup: DomainLookupUseCase
         get() = DomainLookupUseCase(
-            serverConfigRepository = serverConfigRepository,
+            customServerConfigRepository = customServerConfigRepository,
             ssoLoginRepository = ssoLoginRepository
         )
+
+    val currentServerConfig: () -> ServerConfig = {
+        serverConfig
+    }
 }

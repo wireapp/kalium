@@ -80,9 +80,11 @@ class ReactionDAOImpl(
         reactions: UserReactionsEntity
     ) = withContext(queriesContext) {
         reactionsQueries.transaction {
-            reactionsQueries.deleteAllReactionsOnMessageFromUser(originalMessageId, conversationId, senderUserId)
-            reactions.forEach {
-                reactionsQueries.insertReaction(originalMessageId, conversationId, senderUserId, it, date)
+            reactionsQueries.doesMessageExist(originalMessageId, conversationId).executeAsOneOrNull()?.let {
+                reactionsQueries.deleteAllReactionsOnMessageFromUser(originalMessageId, conversationId, senderUserId)
+                reactions.forEach {
+                    reactionsQueries.insertReaction(originalMessageId, conversationId, senderUserId, it, date)
+                }
             }
         }
     }

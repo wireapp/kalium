@@ -58,6 +58,10 @@ class EnrollE2EIUseCaseImpl internal constructor(
         e2EIRepository.initFreshE2EIClient(isNewClient = isNewClientRegistration)
 
         e2EIRepository.fetchAndSetTrustAnchors()
+        e2EIRepository.fetchFederationCertificates().getOrFail {
+            kaliumLogger.e("Failure fetching federation certificates during E2EI Enrolling!. Failure:$it")
+            return it.left()
+        }
 
         val acmeDirectories = e2EIRepository.loadACMEDirectories().getOrFail {
             return it.left()

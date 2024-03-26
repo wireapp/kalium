@@ -205,13 +205,8 @@ class GetUserE2eiCertificateStatusUseCaseTest {
                 "certificate",
                 CryptoCertificateStatus.VALID,
                 "thumbprint",
-                "serialNumber"
-            )
-        private val E2EI_CERTIFICATE =
-            E2eiCertificate(
-                status = CertificateStatus.VALID,
-                serialNumber = "number",
-                certificateDetail = "details"
+                "serialNumber",
+                1899105093
             )
     }
 }

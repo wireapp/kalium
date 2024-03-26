@@ -69,7 +69,8 @@ import com.wire.kalium.logic.feature.call.usecase.UnMuteCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.UnMuteCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCaseImpl
-import com.wire.kalium.logic.feature.call.usecase.UpdateVideoStateUseCase
+import com.wire.kalium.logic.feature.call.usecase.video.SetVideoSendStateUseCase
+import com.wire.kalium.logic.feature.call.usecase.video.UpdateVideoStateUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.util.KaliumDispatcher
@@ -157,7 +158,8 @@ class CallsScope internal constructor(
 
     val unMuteCall: UnMuteCallUseCase get() = UnMuteCallUseCaseImpl(callManager, callRepository)
 
-    val updateVideoState: UpdateVideoStateUseCase get() = UpdateVideoStateUseCase(callManager, callRepository)
+    val updateVideoState: UpdateVideoStateUseCase get() = UpdateVideoStateUseCase(callRepository)
+    val setVideoSendState: SetVideoSendStateUseCase get() = SetVideoSendStateUseCase(callManager)
 
     val setVideoPreview: SetVideoPreviewUseCase get() = SetVideoPreviewUseCase(flowManagerService)
     val flipToFrontCamera: FlipToFrontCameraUseCase get() = FlipToFrontCameraUseCase(flowManagerService)

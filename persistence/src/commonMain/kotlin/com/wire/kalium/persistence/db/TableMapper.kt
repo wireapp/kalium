@@ -36,6 +36,7 @@ import com.wire.kalium.persistence.MessageConversationProtocolChangedContent
 import com.wire.kalium.persistence.MessageConversationProtocolChangedDuringACallContent
 import com.wire.kalium.persistence.MessageConversationReceiptModeChangedContent
 import com.wire.kalium.persistence.MessageConversationTimerChangedContent
+import com.wire.kalium.persistence.MessageDraft
 import com.wire.kalium.persistence.MessageFailedToDecryptContent
 import com.wire.kalium.persistence.MessageFederationTerminatedContent
 import com.wire.kalium.persistence.MessageLegalHoldContent
@@ -61,6 +62,7 @@ import com.wire.kalium.persistence.adapter.ConversationAccessRoleListAdapter
 import com.wire.kalium.persistence.adapter.InstantTypeAdapter
 import com.wire.kalium.persistence.adapter.MLSPublicKeysAdapter
 import com.wire.kalium.persistence.adapter.MemberRoleAdapter
+import com.wire.kalium.persistence.adapter.MentionListAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDListAdapter
 import com.wire.kalium.persistence.adapter.ServiceTagListAdapter
@@ -253,5 +255,10 @@ internal object TableMapper {
     val messageAssetTransferStatusAdapter = MessageAssetTransferStatus.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,
         transfer_statusAdapter = EnumColumnAdapter(),
+    )
+
+    val messageDraftsAdapter = MessageDraft.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        mention_listAdapter = MentionListAdapter()
     )
 }

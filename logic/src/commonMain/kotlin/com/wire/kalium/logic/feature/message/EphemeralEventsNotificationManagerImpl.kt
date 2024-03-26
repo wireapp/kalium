@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.notification.LocalNotification
@@ -58,6 +59,11 @@ object EphemeralEventsNotificationManagerImpl : EphemeralEventsNotificationManag
         val localNotification = mapper.fromMessageToMessageEditedLocalNotification(message, messageContent)
         notifications.emit(localNotification)
     }
+
+    override suspend fun scheduleConversationSeenNotification(conversationId: ConversationId) {
+        val localNotification = mapper.toConversationSeen(conversationId)
+        notifications.emit(localNotification)
+    }
 }
 
 interface EphemeralEventsNotificationManager {
@@ -65,6 +71,7 @@ interface EphemeralEventsNotificationManager {
     suspend fun scheduleDeleteConversationNotification(ephemeralConversationNotification: EphemeralConversationNotification)
     suspend fun scheduleDeleteMessageNotification(message: Message)
     suspend fun scheduleEditMessageNotification(message: Message, messageContent: MessageContent.TextEdited)
+    suspend fun scheduleConversationSeenNotification(conversationId: ConversationId)
 }
 
 /**

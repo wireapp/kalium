@@ -18,21 +18,14 @@
 package com.wire.kalium.logic.data.e2ei
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.E2EIFailure
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.left
-import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.dao.MetadataDAO
-import io.ktor.http.URLBuilder
-import io.ktor.http.authority
 
-interface CertificateRevocationListRepository {
+internal interface CertificateRevocationListRepository {
 
     /**
      * Returns CRLs with expiration time.
@@ -41,14 +34,12 @@ interface CertificateRevocationListRepository {
      */
     suspend fun getCRLs(): CRLUrlExpirationList?
     suspend fun addOrUpdateCRL(url: String, timestamp: ULong)
-    suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String>
     suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray>
 }
 
 internal class CertificateRevocationListRepositoryDataSource(
     private val acmeApi: ACMEApi,
-    private val metadataDAO: MetadataDAO,
-    private val userConfigRepository: UserConfigRepository
+    private val metadataDAO: MetadataDAO
 ) : CertificateRevocationListRepository {
     override suspend fun getCRLs(): CRLUrlExpirationList? =
         metadataDAO.getSerializable(CRL_LIST_KEY, CRLUrlExpirationList.serializer())
@@ -85,20 +76,6 @@ internal class CertificateRevocationListRepositoryDataSource(
         )
     }
 
-    override suspend fun getCurrentClientCrlUrl(): Either<CoreFailure, String> =
-        userConfigRepository.getE2EISettings()
-            .flatMap {
-                if (!it.isRequired) E2EIFailure.Disabled.left()
-                else if (it.discoverUrl == null) E2EIFailure.MissingDiscoveryUrl.left()
-                else URLBuilder(it.discoverUrl).apply {
-                    pathSegments.lastOrNull().let { segment ->
-                        if (segment == null || segment != PATH_CRL) {
-                            pathSegments = pathSegments + PATH_CRL
-                        }
-                    }
-                }.authority.right()
-            }
-
     override suspend fun getClientDomainCRL(url: String): Either<CoreFailure, ByteArray> =
         wrapApiRequest {
             acmeApi.getClientDomainCRL(url)
@@ -106,6 +83,5 @@ internal class CertificateRevocationListRepositoryDataSource(
 
     companion object {
         const val CRL_LIST_KEY = "crl_list_key"
-        const val PATH_CRL = "crl"
     }
 }

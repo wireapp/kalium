@@ -15,18 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.conversation.mls
+package com.wire.kalium.persistence.dao.message.draft
 
-import com.wire.kalium.logic.data.id.GroupID
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
+import com.wire.kalium.persistence.dao.message.MessageEntity
 
-interface EpochChangesObserver {
-    fun observe(): Flow<GroupID>
-}
-
-internal class EpochChangesObserverImpl(
-    private val epochsFlow: MutableSharedFlow<GroupID>,
-) : EpochChangesObserver {
-    override fun observe(): Flow<GroupID> = epochsFlow
-}
+data class MessageDraftEntity(
+    val text: String,
+    val editMessageId: String?,
+    val quotedMessageId: String?,
+    val selectedMentionList: List<MessageEntity.Mention>
+)

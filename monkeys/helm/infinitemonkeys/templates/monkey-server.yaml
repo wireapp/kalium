@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.service.serverName }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.service.serverName }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+spec:
+  ports:
+    - name: monkeyport
+      port: 8080
+      targetPort: 8080
+  selector:
+    app: {{ .Values.service.serverName }}
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.service.serverName }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.service.serverName }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+spec:
+  replicas: {{ .Values.monkeyServer.replicaCount }}
+  podManagementPolicy: "Parallel"
+  selector:
+    matchLabels:
+      app: {{ .Values.service.serverName }}
+  serviceName: {{ .Values.service.serverName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.service.serverName }}
+    spec:
+      containers:
+        - name: monkey-server
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ["/opt/app/bin/monkey-server"]
+          args: ["-lDEBUG"]
+          resources:
+            requests:
+              memory: {{ add .Values.jvm.memory.heap .Values.jvm.memory.metaspace .Values.jvm.memory.nonMethodCodeHeapSize .Values.jvm.memory.profiledCodeHeapSize .Values.jvm.memory.nonProfiledCodeHeapSize | printf "%dMi"}}
+            limits:
+              memory: {{ add .Values.jvm.memory.heap .Values.jvm.memory.heap .Values.jvm.memory.metaspace .Values.jvm.memory.nonMethodCodeHeapSize .Values.jvm.memory.profiledCodeHeapSize .Values.jvm.memory.nonProfiledCodeHeapSize .Values.jvm.memory.buffer | printf "%dMi"}}
+          env:
+            - name: JAVA_OPTS
+              value: {{ include "chart.javaToolOptions" . }}
+          ports:
+            - name: monkeyport
+              containerPort: 8080
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10

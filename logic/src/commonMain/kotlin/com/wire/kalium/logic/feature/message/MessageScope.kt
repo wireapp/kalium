@@ -39,6 +39,7 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCaseImpl
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.message.SessionEstablisher
 import com.wire.kalium.logic.data.message.SessionEstablisherImpl
+import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
 import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
@@ -61,6 +62,12 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCa
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonMessageUseCase
+import com.wire.kalium.logic.feature.message.draft.GetMessageDraftUseCase
+import com.wire.kalium.logic.feature.message.draft.GetMessageDraftUseCaseImpl
+import com.wire.kalium.logic.feature.message.draft.RemoveMessageDraftUseCase
+import com.wire.kalium.logic.feature.message.draft.RemoveMessageDraftUseCaseImpl
+import com.wire.kalium.logic.feature.message.draft.SaveMessageDraftUseCase
+import com.wire.kalium.logic.feature.message.draft.SaveMessageDraftUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessagesAfterEndDateUseCase
@@ -82,6 +89,7 @@ import kotlinx.coroutines.CoroutineScope
 @Suppress("LongParameterList")
 class MessageScope internal constructor(
     private val connectionRepository: ConnectionRepository,
+    private val messageDraftRepository: MessageDraftRepository,
     private val selfUserId: QualifiedID,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val selfConversationIdProvider: SelfConversationIdProvider,
@@ -403,4 +411,13 @@ class MessageScope internal constructor(
         )
 
     val observeAssetStatuses: ObserveAssetStatusesUseCase get() = ObserveAssetStatusesUseCaseImpl(messageRepository)
+
+    val saveMessageDraftUseCase: SaveMessageDraftUseCase
+        get() = SaveMessageDraftUseCaseImpl(messageDraftRepository)
+
+    val getMessageDraftUseCase: GetMessageDraftUseCase
+        get() = GetMessageDraftUseCaseImpl(messageDraftRepository)
+
+    val removeMessageDraftUseCase: RemoveMessageDraftUseCase
+        get() = RemoveMessageDraftUseCaseImpl(messageDraftRepository)
 }

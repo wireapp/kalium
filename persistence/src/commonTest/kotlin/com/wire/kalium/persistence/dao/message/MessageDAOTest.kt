@@ -34,6 +34,7 @@ import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newSystemMessageEntity
+import com.wire.kalium.persistence.utils.stubs.newUserDetailsEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -66,6 +67,8 @@ class MessageDAOTest : BaseDatabaseTest() {
     private val conversationEntity3 = newConversationEntity("Test3")
     private val userEntity1 = newUserEntity("userEntity1")
     private val userEntity2 = newUserEntity("userEntity2")
+    private val userDetailsEntity1 = newUserDetailsEntity("userEntity1")
+    private val userDetailsEntity2 = newUserDetailsEntity("userEntity2")
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
     @BeforeTest
@@ -83,8 +86,8 @@ class MessageDAOTest : BaseDatabaseTest() {
     fun givenMessagesAreInserted_whenGettingPendingMessagesByUser_thenOnlyRelevantMessagesAreReturned() = runTest {
         insertInitialData()
 
-        val userInQuestion = userEntity1
-        val otherUser = userEntity2
+        val userInQuestion = userDetailsEntity1
+        val otherUser = userDetailsEntity2
 
         val expectedMessages = listOf(
             newRegularMessageEntity(
@@ -308,7 +311,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 visibility = visibilityInQuestion,
                 senderName = userEntity1.name!!,
                 date = baseInstant + 10.seconds,
-                sender = userEntity1
+                sender = userDetailsEntity1
             ),
             newRegularMessageEntity(
                 "2",
@@ -318,7 +321,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 visibility = visibilityInQuestion,
                 senderName = userEntity1.name!!,
                 date = baseInstant + 5.seconds,
-                sender = userEntity1
+                sender = userDetailsEntity1
             )
         )
 
@@ -331,7 +334,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 status = MessageEntity.Status.READ,
                 visibility = visibilityInQuestion,
                 senderName = userEntity1.name!!,
-                sender = userEntity1
+                sender = userDetailsEntity1
             ),
             newRegularMessageEntity(
                 "4",
@@ -341,7 +344,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 status = MessageEntity.Status.PENDING,
                 visibility = visibilityInQuestion,
                 senderName = userEntity1.name!!,
-                sender = userEntity1
+                sender = userDetailsEntity1
             ),
             newRegularMessageEntity(
                 "5",
@@ -351,7 +354,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 status = MessageEntity.Status.PENDING,
                 visibility = otherVisibility,
                 senderName = userEntity1.name!!,
-                sender = userEntity1
+                sender = userDetailsEntity1
             )
         )
 
@@ -381,7 +384,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 // date after
                 date = "2022-03-30T15:37:00.000Z".toInstant(),
                 senderName = userEntity1.name!!,
-                sender = userEntity1
+                sender = userDetailsEntity1
             )
         )
 
@@ -394,7 +397,7 @@ class MessageDAOTest : BaseDatabaseTest() {
                 // date before
                 date = "2022-03-30T15:35:00.000Z".toInstant(),
                 senderName = userEntity1.name!!,
-                sender = userEntity1
+                sender = userDetailsEntity1
             )
         )
 
@@ -1256,7 +1259,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             conversationId = conversationId,
             senderUserId = userEntity1.id,
             senderName = userEntity1.name!!,
-            sender = userEntity1,
+            sender = userDetailsEntity1,
             senderClientId = "someClient",
             content = MessageEntityContent.Text("hello, world!", emptyList())
         )
@@ -1294,14 +1297,14 @@ class MessageDAOTest : BaseDatabaseTest() {
             senderName = userEntity1.name!!,
             senderClientId = "someClient",
             content = MessageEntityContent.Text("hello, world!", emptyList()),
-            sender = userEntity1
+            sender = userDetailsEntity1
         )
 
         val messageFromUser2 = messageFromUser1.copy(
             senderName = userEntity2.name!!,
             senderUserId = userEntity2.id,
             content = MessageEntityContent.Text("new message content", emptyList()),
-            sender = userEntity2
+            sender = userDetailsEntity1
         )
         messageDAO.insertOrIgnoreMessages(
             listOf(messageFromUser1, messageFromUser2)
@@ -1954,7 +1957,7 @@ class MessageDAOTest : BaseDatabaseTest() {
             date = date,
             senderUserId = userEntity1.id,
             senderName = userEntity1.name!!,
-            sender = userEntity1
+            sender = userDetailsEntity1
         )
 
         val baseInstant = Instant.parse("2022-01-01T00:00:00.000Z")

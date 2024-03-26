@@ -38,7 +38,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-class CertificateRevocationListCheckTest {
+class CertificateRevocationListCheckWorkerTest {
 
     @Test
     fun givenExpiredCRL_whenTimeElapses_thenCheckRevocationList() = runTest {
