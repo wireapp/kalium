@@ -20,7 +20,6 @@ package com.wire.kalium.logic.sync
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.call.CallManager
-import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.collectLatest
 import com.wire.kalium.logger.KaliumLogger
 
