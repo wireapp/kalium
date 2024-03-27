@@ -96,9 +96,9 @@ internal class ObserveE2EIRequiredUseCaseImpl(
         } ?: E2EIRequiredResult.NoGracePeriod.Create
 
     private fun onUserHasCertificate(certificate: E2eiCertificate) =
-        if (certificate.endAt <= DateTimeUtil.currentInstant() || certificate.status != CertificateStatus.VALID) {
+        if (certificate.status == CertificateStatus.EXPIRED) {
             E2EIRequiredResult.NoGracePeriod.Renew
-        } else if (certificate.shouldRenew()) {
+        } else if (certificate.status == CertificateStatus.VALID && certificate.shouldRenew()) {
             E2EIRequiredResult.WithGracePeriod.Renew(certificate.renewGracePeriodLeft())
         } else {
             E2EIRequiredResult.NotRequired
