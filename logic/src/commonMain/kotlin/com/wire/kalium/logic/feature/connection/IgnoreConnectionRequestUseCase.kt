@@ -43,7 +43,7 @@ internal class IgnoreConnectionRequestUseCaseImpl(
 ) : IgnoreConnectionRequestUseCase {
 
     override suspend fun invoke(userId: UserId): IgnoreConnectionRequestUseCaseResult {
-        return connectionRepository.updateConnectionStatus(userId, ConnectionState.IGNORED)
+        return connectionRepository.ignoreConnectionRequest(userId)
             .fold({
                 kaliumLogger.e("An error occurred when ignoring the connection request to $userId")
                 IgnoreConnectionRequestUseCaseResult.Failure(it)
