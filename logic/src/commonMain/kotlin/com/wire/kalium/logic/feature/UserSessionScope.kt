@@ -1197,6 +1197,7 @@ class UserSessionScope internal constructor(
             videoStateChecker = videoStateChecker,
             callMapper = callMapper,
             conversationClientsInCallUpdater = conversationClientsInCallUpdater,
+            networkStateObserver = networkStateObserver,
             kaliumConfigs = kaliumConfigs
         )
     }
@@ -2033,9 +2034,9 @@ class UserSessionScope internal constructor(
             proteusSyncWorker.execute()
         }
 
-        launch {
-            avsSyncStateReporter.execute()
-        }
+//        launch {
+//            avsSyncStateReporter.execute()
+//        }
 
         launch {
             mlsConversationsVerificationStatusesHandler.invoke()
