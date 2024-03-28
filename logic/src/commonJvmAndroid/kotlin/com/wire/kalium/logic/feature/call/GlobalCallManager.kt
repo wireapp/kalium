@@ -40,6 +40,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.util.CurrentPlatform
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.PlatformType
+import com.wire.kalium.network.NetworkStateObserver
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 
@@ -84,6 +85,7 @@ actual class GlobalCallManager(
         qualifiedIdMapper: QualifiedIdMapper,
         videoStateChecker: VideoStateChecker,
         conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
+        networkStateObserver: NetworkStateObserver,
         kaliumConfigs: KaliumConfigs
     ): CallManager {
         return callManagerHolder.computeIfAbsent(userId) {
@@ -100,6 +102,7 @@ actual class GlobalCallManager(
                 qualifiedIdMapper = qualifiedIdMapper,
                 videoStateChecker = videoStateChecker,
                 conversationClientsInCallUpdater = conversationClientsInCallUpdater,
+                networkStateObserver = networkStateObserver,
                 kaliumConfigs = kaliumConfigs
             )
         }

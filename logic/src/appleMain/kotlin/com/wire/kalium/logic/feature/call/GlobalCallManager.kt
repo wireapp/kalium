@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.network.NetworkStateObserver
 
 actual class GlobalCallManager {
     @Suppress("LongParameterList")
@@ -48,6 +49,7 @@ actual class GlobalCallManager {
         qualifiedIdMapper: QualifiedIdMapper,
         videoStateChecker: VideoStateChecker,
         conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
+        networkStateObserver: NetworkStateObserver,
         kaliumConfigs: KaliumConfigs
     ): CallManager {
         return CallManagerImpl()

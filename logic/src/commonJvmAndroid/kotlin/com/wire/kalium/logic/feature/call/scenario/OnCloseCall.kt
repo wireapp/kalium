@@ -29,6 +29,8 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.network.NetworkState
+import com.wire.kalium.network.NetworkStateObserver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -36,7 +38,8 @@ import kotlinx.coroutines.launch
 class OnCloseCall(
     private val callRepository: CallRepository,
     private val scope: CoroutineScope,
-    private val qualifiedIdMapper: QualifiedIdMapper
+    private val qualifiedIdMapper: QualifiedIdMapper,
+    private val networkStateObserver: NetworkStateObserver
 ) : CloseCallHandler {
     override fun onClosedCall(
         reason: Int,
@@ -58,7 +61,8 @@ class OnCloseCall(
 
         scope.launch {
 
-            if (shouldPersistMissedCall(conversationIdWithDomain, callStatus)) {
+            val isConnectedToInternet = networkStateObserver.observeNetworkState().value == NetworkState.ConnectedWithInternet
+            if (shouldPersistMissedCall(conversationIdWithDomain, callStatus) && isConnectedToInternet) {
                 callRepository.persistMissedCall(conversationIdWithDomain)
             }
 
