@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -52,6 +53,8 @@ internal interface ClientRepositoryArrangement {
         result: Either<StorageFailure, Unit>,
         clients: Matcher<List<InsertClientParam>> = any()
     )
+
+    fun withClientsByConversationId(result: Either<StorageFailure, Map<UserId, List<Client>>>): ClientRepositoryArrangementImpl
 }
 
 internal open class ClientRepositoryArrangementImpl : ClientRepositoryArrangement {
@@ -68,6 +71,13 @@ internal open class ClientRepositoryArrangementImpl : ClientRepositoryArrangemen
     override fun withClientsByUserId(result: Either<StorageFailure, List<OtherUserClient>>) = apply {
         given(clientRepository)
             .suspendFunction(clientRepository::getClientsByUserId)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withClientsByConversationId(result: Either<StorageFailure, Map<UserId, List<Client>>>) = apply {
+        given(clientRepository)
+            .suspendFunction(clientRepository::getClientsByConversationId)
             .whenInvokedWith(any())
             .thenReturn(result)
     }

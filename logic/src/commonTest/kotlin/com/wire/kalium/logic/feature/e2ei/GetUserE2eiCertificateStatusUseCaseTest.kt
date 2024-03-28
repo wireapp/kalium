@@ -21,6 +21,9 @@ import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.MLSFailure
+import com.wire.kalium.logic.data.client.ClientRepository
+import com.wire.kalium.logic.data.client.DeviceType
+import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificateStatusResult
@@ -32,6 +35,8 @@ import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangemen
 import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangementImpl
 import io.mockative.any
 import io.mockative.eq
 import io.mockative.verify
@@ -41,6 +46,100 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class GetUserE2eiCertificateStatusUseCaseTest {
+
+    @Test
+    fun givenAllWireIdentitiesValidAndAllClientsHasIdentity_whenGetUserE2eiCertificateStatus_thenResultIsValid() =
+        runTest {
+            val (_, getUserE2eiCertificateStatus) = arrange {
+                withE2EIEnabledAndMLSEnabled(true)
+                withClientsByUserId(
+                    Either.Right(
+                        listOf(
+                            OTHER_CLIENT,
+                            OTHER_CLIENT.copy(id = "clientId_1")
+                        )
+                    )
+                )
+                withUserIdentity(
+                    Either.Right(
+                        listOf(
+                            WIRE_IDENTITY,
+                            WIRE_IDENTITY.copy(clientId = CRYPTO_QUALIFIED_CLIENT_ID.copy(value = "clientId_1"))
+                        )
+                    )
+                )
+            }
+
+            val result = getUserE2eiCertificateStatus(USER_ID)
+
+            assertTrue { result is GetUserE2eiCertificateStatusResult.Success }
+            assertEquals(
+                CertificateStatus.VALID,
+                (result as GetUserE2eiCertificateStatusResult.Success).status
+            )
+        }
+
+    @Test
+    fun givenAllWireIdentitiesValidButSomeClientHasNoIdentity_whenGetUserE2eiCertificateStatus_thenResultIsNotActivated() =
+        runTest {
+            val (_, getUserE2eiCertificateStatus) = arrange {
+                withE2EIEnabledAndMLSEnabled(true)
+                withClientsByUserId(
+                    Either.Right(
+                        listOf(
+                            OTHER_CLIENT,
+                            OTHER_CLIENT.copy(id = "clientId_1"),
+                            OTHER_CLIENT.copy(id = "clientId_2")
+                        )
+                    )
+                )
+                withUserIdentity(
+                    Either.Right(
+                        listOf(
+                            WIRE_IDENTITY,
+                            WIRE_IDENTITY.copy(clientId = CRYPTO_QUALIFIED_CLIENT_ID.copy(value = "clientId_1"))
+                        )
+                    )
+                )
+            }
+
+            val result = getUserE2eiCertificateStatus(USER_ID)
+
+            assertTrue { result is GetUserE2eiCertificateStatusResult.Failure.NotActivated }
+        }
+
+    @Test
+    fun givenAllWireIdentitiesValidAndInvalidClientHasNoIdentity_whenGetUserE2eiCertificateStatus_thenResultIsValid() =
+        runTest {
+            val (_, getUserE2eiCertificateStatus) = arrange {
+                withE2EIEnabledAndMLSEnabled(true)
+                withClientsByUserId(
+                    Either.Right(
+                        listOf(
+                            OTHER_CLIENT,
+                            OTHER_CLIENT.copy(id = "clientId_1"),
+                            OTHER_CLIENT.copy(id = "clientId_2", isValid = false)
+                        )
+                    )
+                )
+                withUserIdentity(
+                    Either.Right(
+                        listOf(
+                            WIRE_IDENTITY,
+                            WIRE_IDENTITY.copy(clientId = CRYPTO_QUALIFIED_CLIENT_ID.copy(value = "clientId_1"))
+                        )
+                    )
+                )
+            }
+
+            val result = getUserE2eiCertificateStatus(USER_ID)
+
+            assertTrue { result is GetUserE2eiCertificateStatusResult.Success }
+            assertEquals(
+                CertificateStatus.VALID,
+                (result as GetUserE2eiCertificateStatusResult.Success).status
+            )
+        }
 
     @Test
     fun givenErrorOnGettingUserIdentity_whenGetUserE2eiCertificateStatus_thenNotActivatedResult() =
@@ -60,6 +159,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
         runTest {
             val (_, getUserE2eiCertificateStatus) = arrange {
                 withE2EIEnabledAndMLSEnabled(true)
+                withClientsByUserId(Either.Right(listOf()))
                 withUserIdentity(Either.Right(listOf()))
             }
 
@@ -73,6 +173,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
         runTest {
             val (_, getUserE2eiCertificateStatus) = arrange {
                 withE2EIEnabledAndMLSEnabled(true)
+                withClientsByUserId(Either.Right(listOf()))
                 withUserIdentity(
                     Either.Right(
                         listOf(
@@ -97,6 +198,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
         runTest {
             val (_, getUserE2eiCertificateStatus) = arrange {
                 withE2EIEnabledAndMLSEnabled(true)
+                withClientsByUserId(Either.Right(listOf()))
                 withUserIdentity(
                     Either.Right(
                         listOf(
@@ -121,6 +223,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
         runTest {
             val (_, getUserE2eiCertificateStatus) = arrange {
                 withE2EIEnabledAndMLSEnabled(true)
+                withClientsByUserId(Either.Right(listOf()))
                 withUserIdentity(
                     Either.Right(
                         listOf(
@@ -165,7 +268,8 @@ class GetUserE2eiCertificateStatusUseCaseTest {
     private class Arrangement(private val block: Arrangement.() -> Unit) :
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
         CertificateStatusMapperArrangement by CertificateStatusMapperArrangementImpl(),
-        IsE2EIEnabledUseCaseArrangement by IsE2EIEnabledUseCaseArrangementImpl() {
+        IsE2EIEnabledUseCaseArrangement by IsE2EIEnabledUseCaseArrangementImpl(),
+        ClientRepositoryArrangement by ClientRepositoryArrangementImpl() {
 
         fun arrange() = run {
             withCertificateStatusMapperReturning(
@@ -185,7 +289,8 @@ class GetUserE2eiCertificateStatusUseCaseTest {
             this@Arrangement to GetUserE2eiCertificateStatusUseCaseImpl(
                 mlsConversationRepository = mlsConversationRepository,
                 certificateStatusMapper = certificateStatusMapper,
-                isE2EIEnabledUseCase = isE2EIEnabledUseCase
+                isE2EIEnabledUseCase = isE2EIEnabledUseCase,
+                clientRepository = clientRepository
             )
         }
     }
@@ -208,5 +313,11 @@ class GetUserE2eiCertificateStatusUseCaseTest {
                 "serialNumber",
                 1899105093
             )
+        private val OTHER_CLIENT = OtherUserClient(
+            deviceType = DeviceType.Phone,
+            id = CRYPTO_QUALIFIED_CLIENT_ID.value,
+            isValid = true,
+            isProteusVerified = false
+        )
     }
 }

@@ -21,15 +21,20 @@ import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.MLSFailure
+import com.wire.kalium.logic.data.client.Client
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMembersE2EICertificateStatusesUseCaseImpl
+import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.arrangement.mls.CertificateStatusMapperArrangement
 import com.wire.kalium.logic.util.arrangement.mls.CertificateStatusMapperArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangementImpl
 import io.mockative.eq
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -53,6 +58,7 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
     fun givenEmptyWireIdentityMap_whenRequestMembersStatuses_thenNotActivatedResult() = runTest {
         val (_, getMembersE2EICertificateStatuses) = arrange {
             withMembersIdentities(Either.Right(mapOf()))
+            withClientsByConversationId(Either.Right(mapOf()))
         }
 
         val result = getMembersE2EICertificateStatuses(CONVERSATION_ID, listOf())
@@ -64,6 +70,7 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
     fun givenOneWireIdentityExpiredForSomeUser_whenRequestMembersStatuses_thenResultUsersStatusIsExpired() =
         runTest {
             val (_, getMembersE2EICertificateStatuses) = arrange {
+                withClientsByConversationId(Either.Right(mapOf()))
                 withMembersIdentities(
                     Either.Right(
                         mapOf(
@@ -86,6 +93,7 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
         runTest {
             val userId2 = USER_ID.copy(value = "value_2")
             val (_, getMembersE2EICertificateStatuses) = arrange {
+                withClientsByConversationId(Either.Right(mapOf()))
                 withMembersIdentities(
                     Either.Right(
                         mapOf(
@@ -106,9 +114,81 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
             assertEquals(CertificateStatus.VALID, result[userId2])
         }
 
+    @Test
+    fun givenOneWireIdentityAndAllClientsHaveIdentity_whenRequestMembersStatuses_thenResultUsersStatusIsValid() =
+        runTest {
+            val (_, getMembersE2EICertificateStatuses) = arrange {
+                withClientsByConversationId(
+                    Either.Right(
+                        mapOf(
+                            USER_ID to listOf(
+                                TestClient.CLIENT,
+                                TestClient.CLIENT.copy(id = ClientId("test_1"))
+                            )
+                        )
+                    )
+                )
+                withMembersIdentities(
+                    Either.Right(
+                        mapOf(
+                            USER_ID to listOf(
+                                WIRE_IDENTITY,
+                                WIRE_IDENTITY.copy(
+                                    status = CryptoCertificateStatus.REVOKED,
+                                    clientId = CRYPTO_QUALIFIED_CLIENT_ID.copy(value = "test_1")
+                                )
+                            )
+                        )
+                    )
+                )
+            }
+
+            val result =
+                getMembersE2EICertificateStatuses(CONVERSATION_ID, listOf(USER_ID))
+
+            assertEquals(CertificateStatus.REVOKED, result[USER_ID])
+        }
+
+    @Test
+    fun givenOneWireIdentityValidForSomeUserButNoIdentityForSomeClient_whenRequestMembersStatuses_thenResultUsersStatusIsNull() =
+        runTest {
+            val (_, getMembersE2EICertificateStatuses) = arrange {
+                withClientsByConversationId(
+                    Either.Right(
+                        mapOf(
+                            USER_ID to listOf(
+                                TestClient.CLIENT,
+                                TestClient.CLIENT.copy(id = ClientId("test_1")),
+                                TestClient.CLIENT.copy(id = ClientId("test_2"))
+                            )
+                        )
+                    )
+                )
+                withMembersIdentities(
+                    Either.Right(
+                        mapOf(
+                            USER_ID to listOf(
+                                WIRE_IDENTITY,
+                                WIRE_IDENTITY.copy(
+                                    status = CryptoCertificateStatus.REVOKED,
+                                    clientId = CRYPTO_QUALIFIED_CLIENT_ID.copy(value = "test_1")
+                                )
+                            )
+                        )
+                    )
+                )
+            }
+
+            val result =
+                getMembersE2EICertificateStatuses(CONVERSATION_ID, listOf(USER_ID))
+
+            assertEquals(null, result[USER_ID])
+        }
+
     private class Arrangement(private val block: Arrangement.() -> Unit) :
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
-        CertificateStatusMapperArrangement by CertificateStatusMapperArrangementImpl() {
+        CertificateStatusMapperArrangement by CertificateStatusMapperArrangementImpl(),
+        ClientRepositoryArrangement by ClientRepositoryArrangementImpl() {
 
         fun arrange() = run {
             withCertificateStatusMapperReturning(
@@ -127,7 +207,8 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
             block()
             this@Arrangement to GetMembersE2EICertificateStatusesUseCaseImpl(
                 mlsConversationRepository = mlsConversationRepository,
-                certificateStatusMapper = certificateStatusMapper
+                certificateStatusMapper = certificateStatusMapper,
+                clientRepository = clientRepository
             )
         }
     }
@@ -137,7 +218,7 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
 
         private val USER_ID = UserId("value", "domain")
         private val CRYPTO_QUALIFIED_CLIENT_ID =
-            CryptoQualifiedClientId("clientId", USER_ID.toCrypto())
+            CryptoQualifiedClientId(TestClient.CLIENT_ID.value, USER_ID.toCrypto())
 
         private val CONVERSATION_ID = ConversationId("conversation_value", "domain")
         private val WIRE_IDENTITY =
