@@ -52,9 +52,9 @@ class IgnoreConnectionRequestUseCaseTest {
     fun givenAConnectionRequest_whenInvokingIgnoreConnectionRequestAndOk_thenShouldReturnsASuccessResult() = runTest {
         // given
         given(connectionRepository)
-            .suspendFunction(connectionRepository::updateConnectionStatus)
-            .whenInvokedWith(eq(userId), eq(ConnectionState.IGNORED))
-            .thenReturn(Either.Right(connection))
+            .suspendFunction(connectionRepository::ignoreConnectionRequest)
+            .whenInvokedWith(eq(userId))
+            .thenReturn(Either.Right(Unit))
 
         // when
         val resultOk = ignoreConnectionRequestUseCase(userId)
@@ -62,8 +62,8 @@ class IgnoreConnectionRequestUseCaseTest {
         // then
         assertEquals(IgnoreConnectionRequestUseCaseResult.Success, resultOk)
         verify(connectionRepository)
-            .suspendFunction(connectionRepository::updateConnectionStatus)
-            .with(eq(userId), eq(ConnectionState.IGNORED))
+            .suspendFunction(connectionRepository::ignoreConnectionRequest)
+            .with(eq(userId))
             .wasInvoked(once)
     }
 
@@ -71,8 +71,8 @@ class IgnoreConnectionRequestUseCaseTest {
     fun givenAConnectionRequest_whenInvokingIgnoreConnectionRequestAndFails_thenShouldReturnsAFailureResult() = runTest {
         // given
         given(connectionRepository)
-            .suspendFunction(connectionRepository::updateConnectionStatus)
-            .whenInvokedWith(eq(userId), eq(ConnectionState.IGNORED))
+            .suspendFunction(connectionRepository::ignoreConnectionRequest)
+            .whenInvokedWith(eq(userId))
             .thenReturn(Either.Left(CoreFailure.Unknown(RuntimeException("Some error"))))
 
         // when
@@ -81,8 +81,8 @@ class IgnoreConnectionRequestUseCaseTest {
         // then
         assertEquals(IgnoreConnectionRequestUseCaseResult.Failure::class, resultFailure::class)
         verify(connectionRepository)
-            .suspendFunction(connectionRepository::updateConnectionStatus)
-            .with(eq(userId), eq(ConnectionState.IGNORED))
+            .suspendFunction(connectionRepository::ignoreConnectionRequest)
+            .with(eq(userId))
             .wasInvoked(once)
     }
 
