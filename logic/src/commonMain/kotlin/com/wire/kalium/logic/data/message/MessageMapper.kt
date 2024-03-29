@@ -92,9 +92,9 @@ class MessageMapperImpl(
             is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp.toInstant())
         },
         expireAfterMs = message.expirationData?.expireAfter?.inWholeMilliseconds,
-        selfDeletionStartDate = message.expirationData?.let {
+        selfDeletionEndDate = message.expirationData?.let {
             when (it.selfDeletionStatus) {
-                is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionStatus.selfDeletionStartDate
+                is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionStatus.selfDeletionEndDate
                 is Message.ExpirationData.SelfDeletionStatus.NotStarted -> null
             }
         },
@@ -117,9 +117,9 @@ class MessageMapperImpl(
         senderName = message.senderUserName,
         expireAfterMs = message.expirationData?.expireAfter?.inWholeMilliseconds,
         readCount = if (message.status is Message.Status.Read) message.status.readCount else 0,
-        selfDeletionStartDate = message.expirationData?.let {
+        selfDeletionEndDate = message.expirationData?.let {
             when (it.selfDeletionStatus) {
-                is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionStatus.selfDeletionStartDate
+                is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionStatus.selfDeletionEndDate
                 is Message.ExpirationData.SelfDeletionStatus.NotStarted -> null
             }
         }
@@ -161,7 +161,7 @@ class MessageMapperImpl(
         expirationData = message.expireAfterMs?.let {
             Message.ExpirationData(
                 expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
-                selfDeletionStatus = message.selfDeletionStartDate
+                selfDeletionStatus = message.selfDeletionEndDate
                     ?.let { Message.ExpirationData.SelfDeletionStatus.Started(it) }
                     ?: Message.ExpirationData.SelfDeletionStatus.NotStarted)
         },
@@ -198,7 +198,7 @@ class MessageMapperImpl(
         expirationData = message.expireAfterMs?.let {
             Message.ExpirationData(
                 expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
-                selfDeletionStatus = message.selfDeletionStartDate
+                selfDeletionStatus = message.selfDeletionEndDate
                     ?.let { Message.ExpirationData.SelfDeletionStatus.Started(it) }
                     ?: Message.ExpirationData.SelfDeletionStatus.NotStarted)
         },

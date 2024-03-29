@@ -1,14 +1,14 @@
-import com.wire.kalium.persistence.dao.QualifiedIDEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntity.ContentType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.LegalHoldType;
-import com.wire.kalium.persistence.dao.message.MessageEntity.MemberChangeType;
-import com.wire.kalium.persistence.dao.message.MessageEntity;
-import com.wire.kalium.persistence.dao.message.MessageEntityContent;
-import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity;
-import kotlin.Boolean;
-import kotlin.Int;
-import kotlin.collections.List;
-import kotlinx.datetime.Instant;
+DROP INDEX IF EXISTS message_expire_after_millis_index;
+DROP INDEX IF EXISTS message_self_deletion_end_date;
+
+DROP VIEW IF EXISTS MessageDetailsView;
+
+ALTER TABLE Message RENAME COLUMN self_deletion_start_date TO unused_date;
+
+UPDATE Message SET unused_date = null;
+
+CREATE INDEX message_expire_after_millis_index ON Message(expire_after_millis);
+CREATE INDEX message_self_deletion_end_date_index ON Message(self_deletion_end_date);
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
@@ -171,4 +171,3 @@ LEFT JOIN MessageConversationProtocolChangedContent AS ConversationProtocolChang
 LEFT JOIN MessageConversationLocationContent AS ConversationLocationContent ON Message.id = ConversationLocationContent.message_id AND Message.conversation_id = ConversationLocationContent.conversation_id
 LEFT JOIN MessageLegalHoldContent AS LegalHoldContent ON Message.id = LegalHoldContent.message_id AND Message.conversation_id = LegalHoldContent.conversation_id
 LEFT JOIN SelfUser;
--- TODO: Remove IFNULL functions above if we can force SQLDelight to not unpack as notnull
