@@ -16,6 +16,8 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:Suppress("konsist.useCasesShouldNotAccessNetworkLayerDirectly")
+
 package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
