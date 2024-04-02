@@ -221,6 +221,9 @@ formatting:
     AnnotationOnSeparateLine:
         active: false
         autoCorrect: true
+    ArgumentListWrapping:
+        active: true
+        maxLineLength: 140
     ChainWrapping:
         active: false
         autoCorrect: true
@@ -293,6 +296,7 @@ formatting:
     ParameterListWrapping:
         active: true
         autoCorrect: true
+        maxLineLength: 140
     SpacingAroundColon:
         active: true
         autoCorrect: true
