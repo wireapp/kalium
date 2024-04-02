@@ -30,6 +30,7 @@ dependencies {
     val detektVersion = libs.findVersion("detekt").get()
     detekt("io.gitlab.arturbosch.detekt:detekt-cli:$detektVersion")
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:$detektVersion")
+    detektPlugins("io.gitlab.arturbosch.detekt:detekt-rules-libraries:$detektVersion")
     detektPlugins("com.wire:detekt-rules:1.0.0-SNAPSHOT") {
         isChanging = true
     }
