@@ -54,5 +54,10 @@ SELECT * FROM Connection LEFT JOIN User ON Connection.qualified_to == User.quali
 selectConnectionsForNotification:
 SELECT * FROM Connection LEFT JOIN User ON Connection.qualified_to == User.qualified_id WHERE status = 'PENDING' AND should_notify = 1;
 
+<<<<<<< HEAD
 selectConnection:
 SELECT * FROM Connection WHERE qualified_conversation = ?;
+=======
+selectConnectionRequestByUser:
+SELECT * FROM Connection LEFT JOIN User ON Connection.qualified_to == User.qualified_id WHERE Connection.qualified_to = :user_id;
+>>>>>>> f2fe483e14 (fix: Ignore ConnectionRequest on backend disabled RC [WPB-7087] (#2687))

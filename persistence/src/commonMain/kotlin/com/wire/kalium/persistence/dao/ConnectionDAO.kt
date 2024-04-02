@@ -70,5 +70,9 @@ interface ConnectionDAO {
     suspend fun getConnectionRequestsForNotification(): Flow<List<ConnectionEntity>>
     suspend fun updateNotificationFlag(flag: Boolean, userId: QualifiedIDEntity)
     suspend fun setAllConnectionsAsNotified()
+<<<<<<< HEAD
     suspend fun getConnection(id: ConversationIDEntity): ConnectionEntity?
+=======
+    suspend fun getConnectionByUser(userId: QualifiedIDEntity): ConnectionEntity?
+>>>>>>> f2fe483e14 (fix: Ignore ConnectionRequest on backend disabled RC [WPB-7087] (#2687))
 }
