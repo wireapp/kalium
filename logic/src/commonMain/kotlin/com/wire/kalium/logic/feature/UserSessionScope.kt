@@ -2034,10 +2034,6 @@ class UserSessionScope internal constructor(
             proteusSyncWorker.execute()
         }
 
-//        launch {
-//            avsSyncStateReporter.execute()
-//        }
-
         launch {
             mlsConversationsVerificationStatusesHandler.invoke()
         }
