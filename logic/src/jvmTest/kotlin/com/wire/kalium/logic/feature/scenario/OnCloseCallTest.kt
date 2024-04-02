@@ -29,6 +29,8 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.feature.call.scenario.OnCloseCall
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.network.NetworkState
+import com.wire.kalium.network.NetworkStateObserver
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.eq
@@ -36,6 +38,8 @@ import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
@@ -47,6 +51,9 @@ class OnCloseCallTest {
 
     @Mock
     val callRepository = mock(classOf<CallRepository>())
+
+    @Mock
+    val networkStateObserver = mock(classOf<NetworkStateObserver>())
 
     val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
 
@@ -61,7 +68,8 @@ class OnCloseCallTest {
         onCloseCall = OnCloseCall(
             callRepository,
             testScope,
-            qualifiedIdMapper
+            qualifiedIdMapper,
+            networkStateObserver
         )
 
         given(callRepository)
@@ -69,6 +77,13 @@ class OnCloseCallTest {
             .whenInvoked()
             .thenReturn(
                 CallMetadataProfile(mapOf(conversationId to callMetadata))
+            )
+
+        given(networkStateObserver)
+            .function(networkStateObserver::observeNetworkState)
+            .whenInvoked()
+            .thenReturn(
+                MutableStateFlow(NetworkState.ConnectedWithInternet)
             )
     }
 
@@ -279,6 +294,26 @@ class OnCloseCallTest {
             .suspendFunction(callRepository::leaveMlsConference)
             .with(eq(conversationId))
             .wasInvoked(once)
+    }
+
+    @Test
+    fun givenDeviceOffline_whenOnCloseCallBackHappens_thenDoNotPersistMissedCall() = testScope.runTest {
+        val reason = CallClosedReason.CANCELLED.avsValue
+
+        given(networkStateObserver)
+            .function(networkStateObserver::observeNetworkState)
+            .whenInvoked()
+            .thenReturn(
+                MutableStateFlow(NetworkState.NotConnected)
+            )
+
+        onCloseCall.onClosedCall(reason, conversationIdString, time, userIdString, clientId, null)
+        yield()
+
+        verify(callRepository)
+            .suspendFunction(callRepository::persistMissedCall)
+            .with(eq(conversationId))
+            .wasNotInvoked()
     }
 
     companion object {
