@@ -83,6 +83,12 @@ fun Project.configureDefaultMultiplatform(
         }
     }
 
+    configurations.all {
+        resolutionStrategy {
+            force("org.jetbrains.kotlin:kotlin-test:${libs.findVersion("kotlin").get().requiredVersion}")
+        }
+    }
+
     kotlinExtension.sourceSets.all {
         languageSettings {
             // Most of the native code requires this opt-in
