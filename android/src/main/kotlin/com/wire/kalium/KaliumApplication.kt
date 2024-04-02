@@ -50,9 +50,12 @@ class KaliumApplication : Application(), Configuration.Provider {
 
     override val workManagerConfiguration: Configuration
         get() {
-            val myWorkerFactory = WrapperWorkerFactory(coreLogic, object : ForegroundNotificationDetailsProvider {
-                override fun getSmallIconResId(): Int = R.drawable.ic_launcher_foreground
-            })
+            val myWorkerFactory = WrapperWorkerFactory(
+                coreLogic,
+                object : ForegroundNotificationDetailsProvider {
+                    override fun getSmallIconResId(): Int = R.drawable.ic_launcher_foreground
+                }
+            )
 
             return Configuration.Builder()
                 .setWorkerFactory(myWorkerFactory)

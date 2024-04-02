@@ -623,6 +623,8 @@ libraries:
         ignorePackages: [ '*.internal', '*.internal.*' ]
     LibraryCodeMustSpecifyReturnType:
         active: true
+    LibraryEntitiesShouldNotBePublic:
+        active: false
 
 WireRuleSet:
     EnforceSerializableFields:
