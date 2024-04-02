@@ -25,10 +25,6 @@ CREATE TABLE Message (
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
       expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0),
       expire_after_millis INTEGER DEFAULT(NULL),
-      -- Unused column, all values are cleared.
-      -- In case only SQLite 3.35 or newer is used then the column can just be dropped easily.
-      -- Feel free to reuse it if you actually happen to need a column with Instant type.
-      unused_date INTEGER AS Instant DEFAULT(NULL),
       self_deletion_end_date INTEGER AS Instant DEFAULT(NULL),
 
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE,
@@ -44,7 +40,7 @@ CREATE INDEX message_sender_user_index ON Message(sender_user_id);
 CREATE INDEX message_conversation_index ON Message(conversation_id);
 CREATE INDEX message_status_index ON Message(status);
 CREATE INDEX message_expire_after_millis_index ON Message(expire_after_millis);
-CREATE INDEX message_self_deletion_end_date_index ON Message(self_deletion_end_date);
+CREATE INDEX message_self_deletion_end_date ON Message(self_deletion_end_date);
 
 CREATE TABLE MessageMention (
       message_id TEXT NOT NULL,

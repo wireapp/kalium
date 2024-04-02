@@ -1,14 +1,10 @@
 DROP INDEX IF EXISTS message_expire_after_millis_index;
-DROP INDEX IF EXISTS message_self_deletion_end_date;
 
 DROP VIEW IF EXISTS MessageDetailsView;
 
-ALTER TABLE Message RENAME COLUMN self_deletion_start_date TO unused_date;
-
-UPDATE Message SET unused_date = null;
+ALTER TABLE Message DROP COLUMN self_deletion_start_date;
 
 CREATE INDEX message_expire_after_millis_index ON Message(expire_after_millis);
-CREATE INDEX message_self_deletion_end_date_index ON Message(self_deletion_end_date);
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT
