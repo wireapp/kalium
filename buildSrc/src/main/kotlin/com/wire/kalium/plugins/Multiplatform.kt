@@ -19,7 +19,7 @@
 package com.wire.kalium.plugins
 
 import org.gradle.api.Project
-import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.gradle.kotlin.dsl.dependencies
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 
 /**
@@ -30,7 +30,6 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
  *
  * @see commonDokkaConfig
  */
-@OptIn(ExperimentalKotlinGradlePluginApi::class)
 fun Project.configureDefaultMultiplatform(
     enableApple: Boolean,
     enableJs: Boolean,
@@ -44,10 +43,15 @@ fun Project.configureDefaultMultiplatform(
         "No multiplatform extension found. Is the Kotlin Multiplatform plugin applied to this module?"
     }
     kotlinExtension.apply {
-        targetHierarchy.default()
+        applyDefaultHierarchyTemplate()
         jvm { commonJvmConfig(includeNativeInterop, enableIntegrationTests) }
 
-        androidTarget { commmonKotlinAndroidTargetConfig() }
+        androidTarget {
+            commmonKotlinAndroidTargetConfig()
+            dependencies {
+                add("coreLibraryDesugaring", library("desugarJdkLibs"))
+            }
+        }
 
         if (enableJs) {
             js { commonJsConfig(enableJsTests) }
@@ -64,14 +68,24 @@ fun Project.configureDefaultMultiplatform(
         }
 
     kotlinExtension.sourceSets.getByName("androidInstrumentedTest") {
-        // Add dependency to commonTest, as it isn't added by default anymore since Kotlin 1.9
-        dependsOn(kotlinExtension.sourceSets.getByName("commonTest"))
 
         dependencies {
             // Add common runner and rules to Android Instrumented Tests
             implementation(library("androidtest.core"))
             implementation(library("androidtest.runner"))
             implementation(library("androidtest.rules"))
+        }
+    }
+
+    kotlinExtension.sourceSets.getByName("commonTest") {
+        dependencies {
+            implementation(library("kotlin.test"))
+        }
+    }
+
+    configurations.all {
+        resolutionStrategy {
+            force("org.jetbrains.kotlin:kotlin-test:${libs.findVersion("kotlin").get().requiredVersion}")
         }
     }
 
