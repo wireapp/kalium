@@ -59,7 +59,7 @@ fun List<WireIdentity>.getUserCertificateStatus(certificateStatusMapper: Certifi
     val certificates = this.map {
         E2eiCertificate.fromWireIdentity(it, certificateStatusMapper)
     }
-    return if (certificates.isEmpty()) {
+    return if (certificates.isEmpty() || certificates.any { it.certificateDetail.isEmpty() }) {
         null
     } else if (certificates.any { it.status == CertificateStatus.REVOKED }) {
         CertificateStatus.REVOKED

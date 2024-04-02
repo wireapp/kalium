@@ -326,14 +326,14 @@ class MLSClientImpl(
             return clientId?.let {
                 WireIdentity(
                     CryptoQualifiedClientId.fromEncodedString(value.clientId)!!,
-                    value.handle,
-                    value.displayName,
-                    value.domain,
-                    value.certificate,
+                    value.x509Identity?.handle ?: "",
+                    value.x509Identity?.displayName ?: "",
+                    value.x509Identity?.domain ?: "",
+                    value.x509Identity?.certificate ?: "",
                     toDeviceStatus(value.status),
                     value.thumbprint,
-                    value.serialNumber,
-                    value.notAfter.toLong()
+                    value.x509Identity?.serialNumber ?: "",
+                    value.x509Identity?.notAfter?.toLong() ?: 0L
                 )
             }
         }
