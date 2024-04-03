@@ -1544,7 +1544,11 @@ class MLSConversationRepositoryTest {
         val domain = "domain.com"
         val handleWithSchemeAndDomain = "$scheme://%40$handle@$domain"
         val groupId = Arrangement.GROUP_ID.value
-        val wireIdentity = WIRE_IDENTITY.copy(handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain))
+        val wireIdentity = WIRE_IDENTITY.copy(
+            certificate = WIRE_IDENTITY.certificate!!.copy(
+                handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain)
+            )
+        )
         val (_, mlsConversationRepository) = Arrangement()
             .withGetEstablishedSelfMLSGroupIdReturns(groupId)
             .withGetMLSClientSuccessful()
@@ -1555,9 +1559,9 @@ class MLSConversationRepositoryTest {
         // then
         result.shouldSucceed() {
             it.forEach {
-                assertEquals(scheme, it.handle.scheme)
-                assertEquals(handle, it.handle.handle)
-                assertEquals(domain, it.handle.domain)
+                assertEquals(scheme, it.certificate?.handle?.scheme)
+                assertEquals(handle, it.certificate?.handle?.handle)
+                assertEquals(domain, it.certificate?.handle?.domain)
             }
         }
     }
@@ -1570,7 +1574,11 @@ class MLSConversationRepositoryTest {
         val domain = "domain.com"
         val handleWithSchemeAndDomain = "$scheme://%40$handle@$domain"
         val groupId = Arrangement.GROUP_ID.value
-        val wireIdentity = WIRE_IDENTITY.copy(handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain))
+        val wireIdentity = WIRE_IDENTITY.copy(
+            certificate = WIRE_IDENTITY.certificate!!.copy(
+                handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain)
+            )
+        )
         val (_, mlsConversationRepository) = Arrangement()
             .withGetMLSGroupIdByConversationIdReturns(groupId)
             .withGetMLSClientSuccessful()
@@ -1582,9 +1590,9 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed() {
             it.values.forEach {
                 it.forEach {
-                    assertEquals(scheme, it.handle.scheme)
-                    assertEquals(handle, it.handle.handle)
-                    assertEquals(domain, it.handle.domain)
+                    assertEquals(scheme, it.certificate?.handle?.scheme)
+                    assertEquals(handle, it.certificate?.handle?.handle)
+                    assertEquals(domain, it.certificate?.handle?.domain)
                 }
             }
         }
