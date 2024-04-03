@@ -82,6 +82,7 @@ data class WireIdentity(
     val status: CryptoCertificateStatus,
 ) {
     companion object {
+        @Suppress("LongParameterList")
         operator fun invoke(
             clientId: CryptoQualifiedClientId,
             handle: String?,
@@ -93,6 +94,7 @@ data class WireIdentity(
             serialNumber: String?,
             endTimestampSeconds: Long?
         ): WireIdentity {
+            @Suppress("ComplexCondition")
             val certificateData = if (handle == null || displayName == null || domain == null || certificate == null
                 || thumbprint == null || serialNumber == null || endTimestampSeconds == null
             ) {
