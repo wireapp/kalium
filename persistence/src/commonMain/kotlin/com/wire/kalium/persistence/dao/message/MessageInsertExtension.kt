@@ -110,11 +110,14 @@ internal class MessageInsertExtensionImpl(
             sender_user_id = message.senderUserId,
             sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
             visibility = message.visibility,
+            last_edit_date =
+                if (message is MessageEntity.Regular && message.editStatus is MessageEntity.EditStatus.Edited) message.editStatus.lastDate
+                else null,
             status = message.status,
             content_type = contentTypeOf(message.content),
             expects_read_confirmation = if (message is MessageEntity.Regular) message.expectsReadConfirmation else false,
             expire_after_millis = if (message is MessageEntity.Regular) message.expireAfterMs else null,
-            self_deletion_start_date = if (message is MessageEntity.Regular) message.selfDeletionStartDate else null
+            self_deletion_end_date = if (message is MessageEntity.Regular) message.selfDeletionEndDate else null
         )
     }
 

@@ -29,6 +29,6 @@ internal class DeleteEphemeralMessagesAfterEndDateUseCaseImpl(
 ) : DeleteEphemeralMessagesAfterEndDateUseCase {
 
     override suspend fun invoke() {
-        ephemeralMessageDeletionHandler.deleteSelfDeletionMessagesFromEndDate()
+        ephemeralMessageDeletionHandler.deleteAlreadyEndedSelfDeletionMessages()
     }
 }

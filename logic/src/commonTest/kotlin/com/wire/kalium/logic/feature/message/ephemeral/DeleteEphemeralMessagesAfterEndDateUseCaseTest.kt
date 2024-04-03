@@ -38,7 +38,7 @@ class DeleteEphemeralMessagesAfterEndDateUseCaseTest {
 
         // then
         verify(arrangement.ephemeralMessageDeletionHandler)
-            .suspendFunction(arrangement.ephemeralMessageDeletionHandler::deleteSelfDeletionMessagesFromEndDate)
+            .suspendFunction(arrangement.ephemeralMessageDeletionHandler::deleteAlreadyEndedSelfDeletionMessages)
             .wasInvoked(exactly = once)
     }
 
@@ -49,7 +49,7 @@ class DeleteEphemeralMessagesAfterEndDateUseCaseTest {
 
         fun withDeleteSelfDeletionMessagesFromEndDateSuccess() = apply {
             given(ephemeralMessageDeletionHandler)
-                .suspendFunction(ephemeralMessageDeletionHandler::deleteSelfDeletionMessagesFromEndDate)
+                .suspendFunction(ephemeralMessageDeletionHandler::deleteAlreadyEndedSelfDeletionMessages)
                 .whenInvoked()
                 .thenReturn(Unit)
         }

@@ -223,7 +223,7 @@ class UserDatabaseDataGenerator(
                     visibility = sanitizedVisibility,
                     senderName = "$messagePrefix SenderName",
                     expireAfterMs = null,
-                    selfDeletionStartDate = null,
+                    selfDeletionEndDate = null,
                     readCount = 0
                 )
             )

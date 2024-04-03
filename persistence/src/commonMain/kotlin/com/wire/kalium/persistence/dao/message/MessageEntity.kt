@@ -48,7 +48,7 @@ sealed interface MessageEntity {
     val visibility: Visibility
     val isSelfMessage: Boolean
     val expireAfterMs: Long?
-    val selfDeletionStartDate: Instant?
+    val selfDeletionEndDate: Instant?
     val sender: UserDetailsEntity?
 
     data class Regular(
@@ -62,7 +62,7 @@ sealed interface MessageEntity {
         override val isSelfMessage: Boolean = false,
         override val readCount: Long,
         override val expireAfterMs: Long? = null,
-        override val selfDeletionStartDate: Instant? = null,
+        override val selfDeletionEndDate: Instant? = null,
         override val sender: UserDetailsEntity? = null,
         val senderName: String?,
         val senderClientId: String,
@@ -80,7 +80,7 @@ sealed interface MessageEntity {
         override val senderUserId: QualifiedIDEntity,
         override val status: Status,
         override val expireAfterMs: Long?,
-        override val selfDeletionStartDate: Instant?,
+        override val selfDeletionEndDate: Instant?,
         override val readCount: Long,
         override val visibility: Visibility = Visibility.VISIBLE,
         override val isSelfMessage: Boolean = false,

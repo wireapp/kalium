@@ -25,7 +25,6 @@ CREATE TABLE Message (
       visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
       expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0),
       expire_after_millis INTEGER DEFAULT(NULL),
-      self_deletion_start_date INTEGER AS Instant DEFAULT(NULL),
       self_deletion_end_date INTEGER AS Instant DEFAULT(NULL),
 
       FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE,
@@ -40,7 +39,7 @@ CREATE INDEX message_visibility_index ON Message(visibility);
 CREATE INDEX message_sender_user_index ON Message(sender_user_id);
 CREATE INDEX message_conversation_index ON Message(conversation_id);
 CREATE INDEX message_status_index ON Message(status);
-CREATE INDEX message_expire_after_millis_index ON Message(expire_after_millis, self_deletion_start_date);
+CREATE INDEX message_expire_time_index ON Message(expire_after_millis);
 CREATE INDEX message_self_deletion_end_date ON Message(self_deletion_end_date);
 
 CREATE TABLE MessageMention (
@@ -337,12 +336,12 @@ getMessageSenderId:
 SELECT sender_user_id FROM Message WHERE id = ? AND conversation_id = ?;
 
 insertOrIgnoreMessage:
-INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, last_edit_date, visibility, expects_read_confirmation, expire_after_millis, self_deletion_end_date)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertMessage:
-INSERT INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation, expire_after_millis, self_deletion_start_date)
-VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+INSERT INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, last_edit_date, visibility, expects_read_confirmation, expire_after_millis, self_deletion_end_date)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
 insertOrIgnoreBulkSystemMessage:
 INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility, expects_read_confirmation)
@@ -467,9 +466,6 @@ UPDATE Message
 SET id = :newId
 WHERE id = :oldId AND conversation_id = :conversationId;
 
-selectAllMessages:
-SELECT * FROM Message ORDER BY Message.creation_date DESC LIMIT ? OFFSET ?;
-
 selectById:
 SELECT * FROM MessageDetailsView WHERE id = ? AND conversationId = ?;
 
@@ -537,27 +533,26 @@ SET creation_date = creation_date + :delivery_duration
 WHERE conversation_id = :conversation_id AND status = 'PENDING';
 }
 
-selectAllEphemeralMessagesMarkedForDeletion:
+selectPendingEphemeralMessages:
 SELECT * FROM MessageDetailsView
 WHERE expireAfterMillis NOT NULL
-AND selfDeletionStartDate NOT NULL;
+AND visibility = "VISIBLE"
+AND (
+    selfDeletionEndDate IS NULL
+    OR selfDeletionEndDate > STRFTIME('%s', 'now') * 1000 -- Checks if message end date is higher than current time in millis
+);
 
-markSelfDeletionStartDate:
-UPDATE Message
-SET self_deletion_start_date = ?
-WHERE  conversation_id = ? AND id = ?;
-
-markSelfDeletionEndDate:
-UPDATE Message
-SET self_deletion_end_date = ?
-WHERE conversation_id = ? AND id = ?;
-
-selectAllEphemeralMessagesMarkedForEndDeletion:
+selectAlreadyEndedEphemeralMessages:
 SELECT * FROM MessageDetailsView
 WHERE expireAfterMillis NOT NULL
 AND selfDeletionEndDate NOT NULL
 AND visibility = "VISIBLE"
 AND selfDeletionEndDate <= STRFTIME('%s', 'now') * 1000; -- Checks if message end date is lower than current time in millis
+
+markSelfDeletionEndDate:
+UPDATE Message
+SET self_deletion_end_date = ?
+WHERE conversation_id = ? AND id = ?;
 
 insertMessageRecipientsFailure:
 INSERT OR IGNORE INTO MessageRecipientFailure(message_id, conversation_id, recipient_failure_list, recipient_failure_type)
