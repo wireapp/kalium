@@ -66,7 +66,7 @@ complexity:
         threshold: 10
         includeStaticDeclarations: false
         includePrivateDeclarations: false
-    ComplexMethod:
+    CyclomaticComplexMethod:
         active: true
         threshold: 15
         ignoreSingleWhenExpression: false
@@ -221,6 +221,9 @@ formatting:
     AnnotationOnSeparateLine:
         active: false
         autoCorrect: true
+    ArgumentListWrapping:
+        active: true
+        maxLineLength: 140
     ChainWrapping:
         active: false
         autoCorrect: true
@@ -293,6 +296,7 @@ formatting:
     ParameterListWrapping:
         active: true
         autoCorrect: true
+        maxLineLength: 140
     SpacingAroundColon:
         active: true
         autoCorrect: true
@@ -334,7 +338,6 @@ naming:
         parameterPattern: '[a-z][A-Za-z0-9]*'
         privateParameterPattern: '[a-z][A-Za-z0-9]*'
         excludeClassPattern: '$^'
-        ignoreOverridden: true
     EnumNaming:
         active: true
         excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**',  '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
@@ -357,13 +360,11 @@ naming:
         functionPattern: '([a-z][a-zA-Z0-9]*)|(`.*`)'
         excludeClassPattern: '$^'
         ignoreAnnotated: [ 'Composable' ]
-        ignoreOverridden: true
     FunctionParameterNaming:
         active: true
         excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**',  '**/androidAndroidTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
         parameterPattern: '[a-z][A-Za-z0-9]*'
         excludeClassPattern: '$^'
-        ignoreOverridden: true
     InvalidPackageDeclaration:
         active: false
         rootPackage: ''
@@ -403,7 +404,6 @@ naming:
         variablePattern: '[a-z][A-Za-z0-9]*'
         privateVariablePattern: '(_)?[a-z][A-Za-z0-9]*'
         excludeClassPattern: '$^'
-        ignoreOverridden: true
 
 performance:
     active: true
@@ -422,8 +422,6 @@ potential-bugs:
     active: true
     Deprecation:
         active: false
-    DuplicateCaseInWhenExpression:
-        active: true
     EqualsAlwaysReturnsTrueOrFalse:
         active: true
     EqualsWithHashCodeExist:
@@ -447,10 +445,6 @@ potential-bugs:
         ignoreOnClassesPattern: ''
     MapGetWithNotNullAssertionOperator:
         active: false
-    MissingWhenCase:
-        active: true
-    RedundantElseInWhen:
-        active: true
     UnconditionalJumpStatementInLoop:
         active: false
     UnnecessaryNotNullOperator:
@@ -471,11 +465,15 @@ potential-bugs:
 style:
     active: true
     excludes: [ '**/generated/pbandk/**', '**/build/generated/**' ]
+    BracesOnWhenStatements:
+        active: false
+    BracesOnIfStatements:
+        active: false
     CollapsibleIfStatements:
         active: false
     DataClassContainsFunctions:
         active: false
-        conversionFunctionPrefix: 'to'
+        conversionFunctionPrefix: ['to']
     DataClassShouldBeImmutable:
         active: false
     EqualsNullCall:
@@ -491,7 +489,7 @@ style:
         includeLineWrapping: false
     ForbiddenComment:
         active: false
-        values: [ 'TODO:', 'FIXME:', 'STOPSHIP:' ]
+        comments: [ 'TODO:', 'FIXME:', 'STOPSHIP:' ]
         allowedPatterns: ''
     ForbiddenImport:
         active: false
@@ -500,9 +498,6 @@ style:
     ForbiddenMethodCall:
         active: false
         methods: [ ]
-    ForbiddenPublicDataClass:
-        active: false
-        ignorePackages: [ '*.internal', '*.internal.*' ]
     ForbiddenVoid:
         active: false
         ignoreOverridden: false
@@ -510,10 +505,8 @@ style:
     FunctionOnlyReturningConstant:
         active: true
         ignoreOverridableFunction: true
-        excludedFunctions: 'describeContents, empty'
+        excludedFunctions: ['describeContents', 'empty']
         ignoreAnnotated: [ 'dagger.Provides' ]
-    LibraryCodeMustSpecifyReturnType:
-        active: true
     LoopWithTooManyJumpStatements:
         active: true
         maxJumpCount: 1
@@ -531,8 +524,6 @@ style:
         ignoreNamedArgument: true
         ignoreEnums: false
         ignoreRanges: false
-    MandatoryBracesIfStatements:
-        active: false
     MandatoryBracesLoops:
         active: false
     MaxLineLength:
@@ -556,8 +547,6 @@ style:
         active: true
     OptionalUnit:
         active: false
-    OptionalWhenBraces:
-        active: false
     PreferToOverPairSyntax:
         active: false
     ProtectedMemberInFinalClass:
@@ -569,7 +558,7 @@ style:
     ReturnCount:
         active: true
         max: 2
-        excludedFunctions: 'equals'
+        excludedFunctions: ['equals']
         excludeLabeled: false
         excludeReturnFromLambda: true
         excludeGuardClauses: false
@@ -631,6 +620,15 @@ style:
         active: true
         excludes: [ '**/build/**', '**/test/**', '**/androidTest/**', '**/androidUnitTest/**', '**/androidInstrumentedTest/**', '**/commonTest/**', '**/jvmTest/**', '**/jsTest/**', '**/iosTest/**' ]
         excludeImports: [ 'java.util.*', 'kotlinx.android.synthetic.*' ]
+
+libraries:
+    ForbiddenPublicDataClass:
+        active: false
+        ignorePackages: [ '*.internal', '*.internal.*' ]
+    LibraryCodeMustSpecifyReturnType:
+        active: true
+    LibraryEntitiesShouldNotBePublic:
+        active: false
 
 WireRuleSet:
     EnforceSerializableFields:
