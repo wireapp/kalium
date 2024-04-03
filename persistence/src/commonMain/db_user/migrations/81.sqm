@@ -1,10 +1,10 @@
+CREATE INDEX message_expire_time_index ON Message(expire_after_millis);
+
 DROP INDEX IF EXISTS message_expire_after_millis_index;
 
 DROP VIEW IF EXISTS MessageDetailsView;
 
 ALTER TABLE Message DROP COLUMN self_deletion_start_date;
-
-CREATE INDEX message_expire_after_millis_index ON Message(expire_after_millis);
 
 CREATE VIEW IF NOT EXISTS MessageDetailsView
 AS SELECT

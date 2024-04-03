@@ -39,7 +39,7 @@ CREATE INDEX message_visibility_index ON Message(visibility);
 CREATE INDEX message_sender_user_index ON Message(sender_user_id);
 CREATE INDEX message_conversation_index ON Message(conversation_id);
 CREATE INDEX message_status_index ON Message(status);
-CREATE INDEX message_expire_after_millis_index ON Message(expire_after_millis);
+CREATE INDEX message_expire_time_index ON Message(expire_after_millis);
 CREATE INDEX message_self_deletion_end_date ON Message(self_deletion_end_date);
 
 CREATE TABLE MessageMention (
