@@ -163,7 +163,8 @@ class MessageMapperImpl(
                 expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
                 selfDeletionStatus = message.selfDeletionEndDate
                     ?.let { Message.ExpirationData.SelfDeletionStatus.Started(it) }
-                    ?: Message.ExpirationData.SelfDeletionStatus.NotStarted)
+                    ?: Message.ExpirationData.SelfDeletionStatus.NotStarted
+            )
         },
         visibility = message.visibility.toModel(),
         reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
@@ -200,7 +201,8 @@ class MessageMapperImpl(
                 expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
                 selfDeletionStatus = message.selfDeletionEndDate
                     ?.let { Message.ExpirationData.SelfDeletionStatus.Started(it) }
-                    ?: Message.ExpirationData.SelfDeletionStatus.NotStarted)
+                    ?: Message.ExpirationData.SelfDeletionStatus.NotStarted
+            )
         },
         sender = message.sender?.let {
             if (message.isSelfMessage) {
