@@ -475,7 +475,7 @@ sealed interface Message {
         sealed class SelfDeletionStatus {
             data object NotStarted : SelfDeletionStatus()
 
-            data class Started(val selfDeletionStartDate: Instant) : SelfDeletionStatus()
+            data class Started(val selfDeletionEndDate: Instant) : SelfDeletionStatus()
 
             fun toLogMap(): Map<String, String> = when (this) {
                 is NotStarted -> mutableMapOf(
@@ -484,7 +484,7 @@ sealed interface Message {
 
                 is Started -> mutableMapOf(
                     "value" to "STARTED",
-                    "time" to this.selfDeletionStartDate.toString()
+                    "end-time" to this.selfDeletionEndDate.toString()
                 )
             }
 
@@ -495,12 +495,9 @@ sealed interface Message {
 
         fun timeLeftForDeletion(): Duration {
             return if (selfDeletionStatus is SelfDeletionStatus.Started) {
-                val timeElapsedSinceSelfDeletionStartDate = Clock.System.now() - selfDeletionStatus.selfDeletionStartDate
 
-                // time left for deletion it can be a negative value if the time difference between the self deletion start date and
-                // now is greater than expire after millis, we normalize it to 0 seconds
-                val timeLeft = expireAfter - timeElapsedSinceSelfDeletionStartDate
-
+                val timeLeft = selfDeletionStatus.selfDeletionEndDate - Clock.System.now()
+                // timeLeft can be a negative value if the self deletion end date already passed, if so then 0 seconds should be returned
                 if (timeLeft.isNegative()) {
                     Duration.ZERO
                 } else {
@@ -517,15 +514,15 @@ sealed interface Message {
 
         fun toLogMap(): Map<String, Any?> = mapOf(
             "expire-after" to expireAfter.inWholeSeconds.toString(),
-            "expire-start-time" to expireStartTimeElement().toString(),
+            "expire-end-time" to expireEndTimeElement().toString(),
             "deletion-status" to selfDeletionStatus.toLogMap()
         )
 
-        private fun expireStartTimeElement(): String? {
+        private fun expireEndTimeElement(): String? {
             return when (val selfDeletionStatus = selfDeletionStatus) {
                 SelfDeletionStatus.NotStarted -> null
                 is SelfDeletionStatus.Started ->
-                    selfDeletionStatus.selfDeletionStartDate.toIsoDateTimeString()
+                    selfDeletionStatus.selfDeletionEndDate.toIsoDateTimeString()
             }
         }
     }

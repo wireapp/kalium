@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -43,7 +42,7 @@ internal interface EphemeralMessageDeletionHandler {
     fun enqueueSelfDeletion(message: Message, expirationData: Message.ExpirationData)
     suspend fun enqueuePendingSelfDeletionMessages()
 
-    suspend fun deleteSelfDeletionMessagesFromEndDate()
+    suspend fun deleteAlreadyEndedSelfDeletionMessages()
 }
 
 @Suppress("LongParameterList")
@@ -196,12 +195,6 @@ internal class EphemeralMessageDeletionHandlerImpl(
 
                 val deletionStartMark = Clock.System.now()
 
-                messageRepository.markSelfDeletionStartDate(
-                    conversationId = message.conversationId,
-                    messageUuid = message.id,
-                    deletionStartDate = deletionStartMark
-                )
-
                 val deletionEndDate = deletionStartMark + expireAfter
                 messageRepository.markSelfDeletionEndDate(
                     conversationId = message.conversationId,
@@ -210,10 +203,10 @@ internal class EphemeralMessageDeletionHandlerImpl(
                 )
 
                 logger.log(
-                    LoggingSelfDeletionEvent.MarkingSelfSelfDeletionStartDate(
+                    LoggingSelfDeletionEvent.MarkingSelfSelfDeletionEndDate(
                         message,
                         expirationData,
-                        deletionStartMark
+                        deletionEndDate
                     )
                 )
             }
@@ -238,7 +231,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
 
     override suspend fun enqueuePendingSelfDeletionMessages() {
         kaliumLogger.d("Enqueueing pending message with self-deletion")
-        messageRepository.getEphemeralMessagesMarkedForDeletion()
+        messageRepository.getAllPendingEphemeralMessages()
             .onSuccess { ephemeralMessages ->
                 ephemeralMessages.forEach { ephemeralMessage ->
                     ephemeralMessage.expirationData?.let { expirationData ->
@@ -251,9 +244,9 @@ internal class EphemeralMessageDeletionHandlerImpl(
             }
     }
 
-    override suspend fun deleteSelfDeletionMessagesFromEndDate() {
-        kaliumLogger.d("Deleting self-deleting messages from end date")
-        messageRepository.getEphemeralMessagesMarkedForEndDeletion()
+    override suspend fun deleteAlreadyEndedSelfDeletionMessages() {
+        kaliumLogger.d("Deleting already ended self-deleting messages")
+        messageRepository.getAllAlreadyEndedEphemeralMessages()
             .onSuccess { ephemeralMessages ->
                 ephemeralMessages.forEach { ephemeralMessage ->
                     ephemeralMessage.expirationData?.let { expirationData ->

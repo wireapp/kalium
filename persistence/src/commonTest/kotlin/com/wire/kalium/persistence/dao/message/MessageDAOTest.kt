@@ -2010,37 +2010,35 @@ class MessageDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMessagesAreInserted_whenGettingEphemeraMessagesForEndDeletion_thenOnlyRelevantMessagesAreReturned() = runTest {
+    fun givenMessagesAreInserted_whenGettingAlreadyEndedEphemeraMessages_thenOnlyRelevantMessagesAreReturned() = runTest {
         insertInitialData()
-
-        val expectedMessages = listOf(
-            newRegularMessageEntity(
-                "1",
-                conversationId = conversationEntity1.id,
-                senderUserId = userEntity1.id,
-                status = MessageEntity.Status.SENT,
-                senderName = userEntity1.name!!,
-                selfDeletionStartDate = Instant.DISTANT_PAST,
-                expireAfterMs = 1.seconds.inWholeSeconds
-            )
+        val alreadyEndedEphemeralMessage = newRegularMessageEntity(
+            "1",
+            conversationId = conversationEntity1.id,
+            senderUserId = userEntity1.id,
+            status = MessageEntity.Status.SENT,
+            senderName = userEntity1.name!!,
+            selfDeletionEndDate = Instant.DISTANT_PAST,
+            expireAfterMs = 1.seconds.inWholeSeconds
         )
-
-        val allMessages = expectedMessages + listOf(
-            newRegularMessageEntity(
-                "2",
-                conversationId = conversationEntity1.id,
-                senderUserId = userEntity1.id,
-                status = MessageEntity.Status.SENT,
-                senderName = userEntity1.name!!
-            ),
-            newRegularMessageEntity(
-                "3",
-                conversationId = conversationEntity2.id,
-                senderUserId = userEntity2.id,
-                status = MessageEntity.Status.SENT,
-                senderName = userEntity2.name!!
-            )
+        val pendingEphemeralMessage = newRegularMessageEntity(
+            "2",
+            conversationId = conversationEntity1.id,
+            senderUserId = userEntity1.id,
+            status = MessageEntity.Status.SENT,
+            senderName = userEntity1.name!!,
+            selfDeletionEndDate = Instant.DISTANT_FUTURE,
+            expireAfterMs = 1.seconds.inWholeSeconds
         )
+        val nonEphemeralMessage = newRegularMessageEntity(
+            "3",
+            conversationId = conversationEntity1.id,
+            senderUserId = userEntity1.id,
+            status = MessageEntity.Status.SENT,
+            senderName = userEntity1.name!!,
+        )
+        val expectedMessages = listOf(alreadyEndedEphemeralMessage)
+        val allMessages = expectedMessages + listOf(pendingEphemeralMessage, nonEphemeralMessage)
 
         messageDAO.insertOrIgnoreMessages(allMessages)
 
@@ -2050,10 +2048,55 @@ class MessageDAOTest : BaseDatabaseTest() {
             selfDeletionEndDate = Instant.DISTANT_PAST.plus(1.seconds)
         )
 
-        val result = messageDAO.getEphemeralMessagedMarkedForEndDeletion()
+        val result = messageDAO.getAllAlreadyEndedEphemeralMessages()
 
         assertEquals(result.size, 1)
-        assertEquals(result.first().id, "1")
+        assertEquals(result.first().id, alreadyEndedEphemeralMessage.id)
+    }
+
+    @Test
+    fun givenMessagesAreInserted_whenGettingPendingEphemeraMessages_thenOnlyRelevantMessagesAreReturned() = runTest {
+        insertInitialData()
+        val alreadyEndedEphemeralMessage = newRegularMessageEntity(
+            "1",
+            conversationId = conversationEntity1.id,
+            senderUserId = userEntity1.id,
+            status = MessageEntity.Status.SENT,
+            senderName = userEntity1.name!!,
+            selfDeletionEndDate = Instant.DISTANT_PAST,
+            expireAfterMs = 1.seconds.inWholeSeconds
+        )
+        val pendingEphemeralMessage = newRegularMessageEntity(
+            "2",
+            conversationId = conversationEntity1.id,
+            senderUserId = userEntity1.id,
+            status = MessageEntity.Status.SENT,
+            senderName = userEntity1.name!!,
+            selfDeletionEndDate = Instant.DISTANT_FUTURE,
+            expireAfterMs = 1.seconds.inWholeSeconds
+        )
+        val nonEphemeralMessage = newRegularMessageEntity(
+            "3",
+            conversationId = conversationEntity1.id,
+            senderUserId = userEntity1.id,
+            status = MessageEntity.Status.SENT,
+            senderName = userEntity1.name!!,
+        )
+        val expectedMessages = listOf(pendingEphemeralMessage)
+        val allMessages = expectedMessages + listOf(alreadyEndedEphemeralMessage, nonEphemeralMessage)
+
+        messageDAO.insertOrIgnoreMessages(allMessages)
+
+        messageDAO.updateSelfDeletionEndDate(
+            conversationId = conversationEntity1.id,
+            messageId = "1",
+            selfDeletionEndDate = Instant.DISTANT_PAST.plus(1.seconds)
+        )
+
+        val result = messageDAO.getAllPendingEphemeralMessages()
+
+        assertEquals(result.size, 1)
+        assertEquals(result.first().id, pendingEphemeralMessage.id)
     }
 
     @Test

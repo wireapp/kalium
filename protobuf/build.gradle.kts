@@ -46,9 +46,7 @@ kotlin {
             }
         }
         val commonTest by getting {
-            dependencies {
-                implementation(kotlin("test"))
-            }
+            dependencies { }
         }
         val androidUnitTest by getting {
             dependencies {

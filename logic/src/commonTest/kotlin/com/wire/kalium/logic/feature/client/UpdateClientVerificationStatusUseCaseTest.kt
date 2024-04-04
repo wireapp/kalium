@@ -80,7 +80,7 @@ class UpdateClientVerificationStatusUseCaseTest {
         val userId = UserId("userId", "domain")
         val clientID = ClientId("clientId")
 
-        val expectedError = StorageFailure.Generic(FileNotFoundException())
+        val expectedError = StorageFailure.Generic(FileNotFoundException("Oopsie"))
 
         val (arrangement, useCase) = arrange {
             withUpdateClientProteusVerificationStatus(Either.Left(expectedError))

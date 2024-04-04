@@ -42,7 +42,8 @@ tasks.jar {
 }
 
 kotlin {
-    val jvmTarget = jvm() {
+    applyDefaultHierarchyTemplate()
+    val jvmTarget = jvm {
         commonJvmConfig(includeNativeInterop = false)
         tasks.named("run", JavaExec::class) {
             isIgnoreExitValue = true
@@ -50,12 +51,12 @@ kotlin {
             standardOutput = System.out
         }
     }
-    macosX64() {
+    macosX64 {
         binaries {
             executable()
         }
     }
-    macosArm64() {
+    macosArm64 {
         binaries {
             executable()
         }
@@ -77,25 +78,15 @@ kotlin {
             }
         }
         val jvmMain by getting {
-            dependsOn(commonMain)
-
              dependencies {
                  implementation(libs.ktor.okHttp)
                  implementation(libs.okhttp.loggingInterceptor)
              }
         }
-        val appleMain by creating {
-            dependsOn(commonMain)
-
+        val macosMain by getting {
             dependencies {
                 implementation(libs.ktor.iosHttp)
             }
-        }
-        val macosX64Main by getting {
-            dependsOn(appleMain)
-        }
-        val macosArm64Main by getting {
-            dependsOn(appleMain)
         }
 
         tasks.withType<JavaExec> {
@@ -113,8 +104,3 @@ kotlin {
 }
 
 commonDokkaConfig()
-
-tasks.withType<Wrapper> {
-    gradleVersion = "7.3.1"
-    distributionType = Wrapper.DistributionType.BIN
-}
