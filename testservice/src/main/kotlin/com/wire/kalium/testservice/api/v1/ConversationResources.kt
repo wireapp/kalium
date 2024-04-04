@@ -21,12 +21,14 @@ package com.wire.kalium.testservice.api.v1
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.mention.MessageMention
+import com.wire.kalium.logic.data.message.receipt.DetailedReceipt
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.testservice.managed.ConversationRepository
 import com.wire.kalium.testservice.managed.InstanceService
 import com.wire.kalium.testservice.models.ClearConversationRequest
 import com.wire.kalium.testservice.models.DeleteMessageRequest
+import com.wire.kalium.testservice.models.GetMessageReceiptsRequest
 import com.wire.kalium.testservice.models.GetMessagesRequest
 import com.wire.kalium.testservice.models.SendButtonActionConfirmationRequest
 import com.wire.kalium.testservice.models.SendButtonActionRequest
@@ -129,6 +131,42 @@ class ConversationResources(private val instanceService: InstanceService) {
                 ConversationRepository.getMessages(
                     instance,
                     ConversationId(conversationId, conversationDomain)
+                )
+            }
+        }
+    }
+
+    @POST
+    @Path("/instance/{id}/getMessageReadReceipts")
+    @Operation(summary = "Get all read receipts of a specific message")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun getMessageReadReceipts(@PathParam("id") id: String, @Valid request: GetMessageReceiptsRequest): List<DetailedReceipt> {
+        val instance = instanceService.getInstanceOrThrow(id)
+        with(request) {
+            return runBlocking {
+                ConversationRepository.getMessageReceipts(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    messageId,
+                    ReceiptType.READ
+                )
+            }
+        }
+    }
+
+    @POST
+    @Path("/instance/{id}/getMessageDeliveryReceipts")
+    @Operation(summary = "Get all delivery receipts of a specific message")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun getMessageDeliveryReceipts(@PathParam("id") id: String, @Valid request: GetMessageReceiptsRequest): List<DetailedReceipt> {
+        val instance = instanceService.getInstanceOrThrow(id)
+        with(request) {
+            return runBlocking {
+                ConversationRepository.getMessageReceipts(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    messageId,
+                    ReceiptType.DELIVERED
                 )
             }
         }
