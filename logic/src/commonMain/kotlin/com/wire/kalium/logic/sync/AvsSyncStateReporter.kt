@@ -17,11 +17,11 @@
  */
 package com.wire.kalium.logic.sync
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.call.CallManager
 import kotlinx.coroutines.flow.collectLatest
-import com.wire.kalium.logger.KaliumLogger
 
 /**
  * This class is responsible for reporting the current sync state to AVS.
@@ -44,23 +44,15 @@ internal class AvsSyncStateReporterImpl(
         logger.d("Starting to monitor")
         incrementalSyncRepository.incrementalSyncState.collectLatest {
             when (it) {
-                IncrementalSyncStatus.FetchingPendingEvents -> {
-                    logger.d("Incremental sync started - Reporting that the app has started IncrementalSync to AVS")
+                is IncrementalSyncStatus.FetchingPendingEvents -> {
+                    logger.d("Incremental sync started - Reporting to AVS that the app is processing notifications")
                     callManager.value.reportProcessNotifications(true)
                 }
 
-                IncrementalSyncStatus.Live -> {
-                    logger.d("Incremental sync done - Reporting that the app has finished IncrementalSync to AVS")
-                    callManager.value.reportProcessNotifications(false)
-                }
-
-                is IncrementalSyncStatus.Failed -> {
-                    logger.d("Incremental sync failed - Reporting that the app has finished IncrementalSync to AVS")
-                    callManager.value.reportProcessNotifications(false)
-                }
-
-                IncrementalSyncStatus.Pending -> {
-                    logger.d("Incremental sync Pending - Reporting that the app has finished IncrementalSync to AVS")
+                is IncrementalSyncStatus.Live,
+                is IncrementalSyncStatus.Failed,
+                is IncrementalSyncStatus.Pending -> {
+                    logger.d("Incremental sync started - Reporting to AVS that the app is not processing notifications")
                     callManager.value.reportProcessNotifications(false)
                 }
             }

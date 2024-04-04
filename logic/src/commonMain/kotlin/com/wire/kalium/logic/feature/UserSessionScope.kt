@@ -1609,7 +1609,7 @@ class UserSessionScope internal constructor(
         AvsSyncStateReporterImpl(
             callManager = callManager,
             incrementalSyncRepository = incrementalSyncRepository,
-            kaliumLogger = userScopedLogger,
+            kaliumLogger = userScopedLogger
         )
     }
 
@@ -2034,10 +2034,6 @@ class UserSessionScope internal constructor(
         }
 
         launch {
-            avsSyncStateReporter.execute()
-        }
-
-        launch {
             mlsConversationsVerificationStatusesHandler.invoke()
         }
 
@@ -2051,6 +2047,11 @@ class UserSessionScope internal constructor(
 
         launch {
             updateSelfClientCapabilityToLegalHoldConsent()
+        }
+        launch {
+            clientIdProvider().map {
+                avsSyncStateReporter.execute()
+            }
         }
     }
 
