@@ -67,11 +67,8 @@ import io.mockative.twice
 import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-<<<<<<< HEAD
 import kotlinx.datetime.toInstant
-=======
 import kotlinx.datetime.Instant
->>>>>>> f2fe483e14 (fix: Ignore ConnectionRequest on backend disabled RC [WPB-7087] (#2687))
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -321,7 +318,6 @@ class ConnectionRepositoryTest {
     }
 
     @Test
-<<<<<<< HEAD
     fun givenConnectionExists_whenGettingConnection_thenConnectionShouldBeReturned() = runTest {
         // given
         val (arrangement, connectionRepository) = Arrangement().arrange()
@@ -336,7 +332,9 @@ class ConnectionRepositoryTest {
         verify(arrangement.connectionDAO)
             .suspendFunction(arrangement.connectionDAO::getConnection)
             .with(eq(connection.qualifiedConversationId))
-=======
+    }
+
+    @Test
     fun givenAConnectionRequestIgnore_WhenSendingAConnectionStatusValid_thenTheConnectionShouldBePersisted() = runTest {
         // given
         val userId = NetworkUserId("user_id", "domain_id")
@@ -353,12 +351,10 @@ class ConnectionRepositoryTest {
         verify(arrangement.connectionApi)
             .suspendFunction(arrangement.connectionApi::updateConnection)
             .with(eq(userId), eq(ConnectionStateDTO.IGNORED))
->>>>>>> f2fe483e14 (fix: Ignore ConnectionRequest on backend disabled RC [WPB-7087] (#2687))
             .wasInvoked(once)
     }
 
     @Test
-<<<<<<< HEAD
     fun givenConnectionDoesNotExist_whenGettingConnection_thenErrorNotFoundShouldBeReturned() = runTest {
         // given
         val (arrangement, connectionRepository) = Arrangement().arrange()
@@ -373,7 +369,9 @@ class ConnectionRepositoryTest {
         verify(arrangement.connectionDAO)
             .suspendFunction(arrangement.connectionDAO::getConnection)
             .with(eq(connection.qualifiedConversationId))
-=======
+    }
+
+    @Test
     fun givenAConnectionRequestIgnore_WhenApiUpdateFailedWithFederatedFailedDomains_thenTheConnectionShouldBePersisted() = runTest {
         // given
         val userId = NetworkUserId("user_id", "domain_id")
@@ -398,25 +396,25 @@ class ConnectionRepositoryTest {
     }
 
     @Test
-    fun givenAConnectionRequestIgnore_WhenApiUpdateFailedWithNonFederatedFailedDomains_thenTheConnectionNotShouldBePersisted() = runTest {
-        // given
-        val userId = NetworkUserId("user_id", "domain_id")
-        val (arrangement, connectionRepository) = Arrangement().arrange()
-        arrangement
-            .withErrorUpdatingConnectionStatusResponse(userId)
-            .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
+    fun givenAConnectionRequestIgnore_WhenApiUpdateFailedWithNonFederatedFailedDomains_thenTheConnectionNotShouldBePersisted() =
+        runTest {
+            // given
+            val userId = NetworkUserId("user_id", "domain_id")
+            val (arrangement, connectionRepository) = Arrangement().arrange()
+            arrangement
+                .withErrorUpdatingConnectionStatusResponse(userId)
+                .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
 
-        // when
-        val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
-        result.shouldFail { arrangement.stubConnectionOne }
+            // when
+            val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
+            result.shouldFail { arrangement.stubConnectionOne }
 
-        // then
-        verify(arrangement.connectionApi)
-            .suspendFunction(arrangement.connectionApi::updateConnection)
-            .with(eq(userId), eq(ConnectionStateDTO.IGNORED))
->>>>>>> f2fe483e14 (fix: Ignore ConnectionRequest on backend disabled RC [WPB-7087] (#2687))
-            .wasInvoked(once)
-    }
+            // then
+            verify(arrangement.connectionApi)
+                .suspendFunction(arrangement.connectionApi::updateConnection)
+                .with(eq(userId), eq(ConnectionStateDTO.IGNORED))
+                .wasInvoked(once)
+        }
 
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {

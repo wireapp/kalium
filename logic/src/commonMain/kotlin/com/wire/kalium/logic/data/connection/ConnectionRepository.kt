@@ -78,11 +78,8 @@ interface ConnectionRepository {
     suspend fun setConnectionAsNotified(userId: UserId)
     suspend fun setAllConnectionsAsNotified()
     suspend fun deleteConnection(connection: Connection): Either<StorageFailure, Unit>
-<<<<<<< HEAD
     suspend fun getConnection(conversationId: ConversationId): Either<StorageFailure, ConversationDetails.Connection>
-=======
     suspend fun ignoreConnectionRequest(userId: UserId): Either<CoreFailure, Unit>
->>>>>>> f2fe483e14 (fix: Ignore ConnectionRequest on backend disabled RC [WPB-7087] (#2687))
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
