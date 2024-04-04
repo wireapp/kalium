@@ -39,7 +39,7 @@ fun newRegularMessageEntity(
     senderName: String = "senderName",
     expectsReadConfirmation: Boolean = false,
     expireAfterMs: Long? = null,
-    selfDeletionStartDate: Instant? = null,
+    selfDeletionEndDate: Instant? = null,
     sender: UserDetailsEntity? = null
 ) = MessageEntity.Regular(
     id = id,
@@ -55,7 +55,7 @@ fun newRegularMessageEntity(
     expectsReadConfirmation = expectsReadConfirmation,
     readCount = 0,
     expireAfterMs = expireAfterMs,
-    selfDeletionStartDate = selfDeletionStartDate,
+    selfDeletionEndDate = selfDeletionEndDate,
     sender = sender
 )
 
@@ -81,6 +81,6 @@ fun newSystemMessageEntity(
     visibility = visibility,
     senderName = "senderName",
     expireAfterMs = null,
-    selfDeletionStartDate = null,
+    selfDeletionEndDate = null,
     readCount = 0
 )

@@ -327,7 +327,7 @@ object MessageMapper {
         isSelfMessage: Boolean,
         expectsReadConfirmation: Boolean,
         expireAfterMillis: Long?,
-        selfDeletionStartDate: Instant?,
+        selfDeletionEndDate: Instant?,
         readCount: Long,
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
         recipientsFailedDeliveryList: List<QualifiedIDEntity>?,
@@ -344,7 +344,7 @@ object MessageMapper {
                 status = status,
                 editStatus = mapEditStatus(lastEdit),
                 expireAfterMs = expireAfterMillis,
-                selfDeletionStartDate = selfDeletionStartDate,
+                selfDeletionEndDate = selfDeletionEndDate,
                 visibility = visibility,
                 reactions = ReactionsEntity(
                     totalReactions = ReactionMapper.reactionsCountFromJsonString(allReactionsJson),
@@ -374,7 +374,7 @@ object MessageMapper {
             isSelfMessage = isSelfMessage,
             readCount = readCount,
             expireAfterMs = expireAfterMillis,
-            selfDeletionStartDate = selfDeletionStartDate,
+            selfDeletionEndDate = selfDeletionEndDate,
             sender = sender
         )
     }
@@ -426,7 +426,6 @@ object MessageMapper {
         visibility: MessageEntity.Visibility,
         expectsReadConfirmation: Boolean,
         expireAfterMillis: Long?,
-        selfDeletionStartDate: Instant?,
         selfDeletionEndDate: Instant?,
         readCount: Long,
         senderName: String?,
@@ -694,7 +693,7 @@ object MessageMapper {
             isSelfMessage,
             expectsReadConfirmation,
             expireAfterMillis,
-            selfDeletionStartDate,
+            selfDeletionEndDate,
             readCount,
             recipientsFailedWithNoClientsList,
             recipientsFailedDeliveryList,

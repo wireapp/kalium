@@ -197,15 +197,9 @@ internal interface MessageRepository {
         millis: Long
     ): Either<CoreFailure, Unit>
 
-    suspend fun getEphemeralMessagesMarkedForDeletion(): Either<CoreFailure, List<Message>>
+    suspend fun getAllPendingEphemeralMessages(): Either<CoreFailure, List<Message>>
 
-    suspend fun getEphemeralMessagesMarkedForEndDeletion(): Either<CoreFailure, List<Message>>
-
-    suspend fun markSelfDeletionStartDate(
-        conversationId: ConversationId,
-        messageUuid: String,
-        deletionStartDate: Instant
-    ): Either<CoreFailure, Unit>
+    suspend fun getAllAlreadyEndedEphemeralMessages(): Either<CoreFailure, List<Message>>
 
     suspend fun markSelfDeletionEndDate(
         conversationId: ConversationId,
@@ -610,27 +604,17 @@ internal class MessageDataSource internal constructor(
         )
     }
 
-    override suspend fun getEphemeralMessagesMarkedForDeletion(): Either<CoreFailure, List<Message>> =
+    override suspend fun getAllPendingEphemeralMessages(): Either<CoreFailure, List<Message>> =
         wrapStorageRequest {
-            messageDAO.getEphemeralMessagesMarkedForDeletion().map(messageMapper::fromEntityToMessage)
+            messageDAO.getAllPendingEphemeralMessages().map(messageMapper::fromEntityToMessage)
         }
 
-    override suspend fun getEphemeralMessagesMarkedForEndDeletion(): Either<CoreFailure, List<Message>> =
+    override suspend fun getAllAlreadyEndedEphemeralMessages(): Either<CoreFailure, List<Message>> =
         wrapStorageRequest {
             messageDAO
-                .getEphemeralMessagedMarkedForEndDeletion()
+                .getAllAlreadyEndedEphemeralMessages()
                 .map(messageMapper::fromEntityToMessage)
         }
-
-    override suspend fun markSelfDeletionStartDate(
-        conversationId: ConversationId,
-        messageUuid: String,
-        deletionStartDate: Instant
-    ): Either<CoreFailure, Unit> {
-        return wrapStorageRequest {
-            messageDAO.updateSelfDeletionStartDate(conversationId.toDao(), messageUuid, deletionStartDate)
-        }
-    }
 
     override suspend fun markSelfDeletionEndDate(
         conversationId: ConversationId,

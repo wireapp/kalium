@@ -1,37 +1,37 @@
 [versions]
-kotlin = "1.9.0"
+kotlin = "1.9.23"
 activity-compose = "1.3.1"
 app-compat = "1.1.0"
 android-paging3 = "3.2.1"
 cli-kt = "3.5.0"
-coroutines = "1.7.3"
-compose-compiler = "1.5.0"
+coroutines = "1.8.0"
+compose-compiler = "1.5.11"
 compose-ui = "1.3.2"
 compose-material = "1.3.1"
 cryptobox4j = "1.4.0"
 cryptobox-android = "1.1.5"
 android-security = "1.1.0-alpha06"
 ktor = "2.3.8"
-okio = "3.6.0"
+okio = "3.7.0"
 ok-http = "4.11.0"
 mockative = "1.4.1"
-android-work = "2.8.1"
+android-work = "2.9.0"
 android-test-runner = "1.5.0"
+android-test-core-ktx = "1.5.0"
 android-test-rules = "1.5.0"
 android-test-core = "1.4.0"
 androidx-arch = "2.2.0"
 androidx-test-orchestrator = "1.4.2"
 androidx-sqlite = "2.4.0"
 benasher-uuid = "0.8.0"
-ktx-datetime = { strictly = "0.4.1" }
+ktx-datetime = { strictly = "0.5.0" }
 ktx-serialization = "1.5.1"
-ktx-atomicfu = "0.20.0"
-ktx-reactive = "1.7.3"
-kover = "0.7.1"
+ktx-atomicfu = "0.23.2"
+kover = "0.7.5"
 multiplatform-settings = "1.1.1"
 moduleGraph = "0.5.0"
 # if you update sqlDelight check if https://github.com/cashapp/sqldelight/issues/4154 is fixed
-# and delete the work around in the dev.mk file
+# and delete the workaround in the dev.mk file
 sqldelight = "2.0.1"
 sqlcipher-android = "4.5.5"
 pbandk = "0.14.2"
@@ -43,8 +43,8 @@ core-crypto-multiplatform = "0.6.0-rc.3-multiplatform-pre1"
 completeKotlin = "1.1.0"
 desugar-jdk = "2.0.4"
 kermit = "2.0.1"
-detekt = "1.19.0"
-agp = "8.1.2"
+detekt = "1.23.6"
+agp = "8.2.0"
 dokka = "1.8.20"
 carthage = "0.0.1"
 libsodiumBindings = "0.8.6"
@@ -52,9 +52,9 @@ protobufCodegen = "0.9.4"
 annotation = "1.7.0"
 mordant = "2.0.0-beta13"
 apache-tika = "2.8.0"
-mockk = "1.13.9"
+mockk = "1.13.10"
 faker = "1.15.0"
-robolectric = "4.9"
+robolectric = "4.11.1"
 stately = "2.0.6"
 micrometer = "1.11.3"
 konsist = "0.13.0"
@@ -73,7 +73,7 @@ kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref 
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
-ksp = { id = "com.google.devtools.ksp", version = "1.9.0-1.0.12" }
+ksp = { id = "com.google.devtools.ksp", version = "1.9.23-1.0.19" }
 carthage = { id = "com.wire.carthage-gradle-plugin", version.ref = "carthage" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobufCodegen" }
@@ -86,12 +86,13 @@ detekt-core = ["detekt-api"]
 [libraries]
 # Kotlin Gradle Plugin
 kotlin-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlin" }
 
 kotlin-nativeUtils = { module = "org.jetbrains.kotlin:kotlin-native-utils", version.ref = "kotlin" }
 ktxSerialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "ktx-serialization" }
 ktxDateTime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "ktx-datetime" }
 ktx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "ktx-atomicfu" }
-ktxReactive = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactive", version.ref = "ktx-reactive" }
+ktxReactive = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactive", version.ref = "coroutines" }
 
 # android dependencies
 appCompat = { module = "androidx.appcompat:appcompat", version.ref = "app-compat" }
@@ -115,7 +116,7 @@ androidtest-rules = { module = "androidx.test:rules", version.ref = "android-tes
 androidtest-core = { module = "androidx.test:core", version.ref = "android-test-core" }
 androidtest-arch = { module = "androidx.arch.core:core-testing", version.ref = "androidx-arch" }
 androidtest-orchestrator = { module = "androidx.test:orchestrator", version.ref = "androidx-test-orchestrator" }
-core-ktx = { module = "androidx.test:core-ktx", version.ref = "android-test-runner" }
+core-ktx = { module = "androidx.test:core-ktx", version.ref = "android-test-core-ktx" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 
 # coroutines
@@ -172,7 +173,7 @@ sqldelight-nativeDriver = { module = "app.cash.sqldelight:native-driver", versio
 sqldelight-jvmDriver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight" }
 sqldelight-jsDriver = { module = "app.cash.sqldelight:web-worker-driver", version.ref = "sqldelight" }
 sqldelight-primitiveAdapters = { module = "app.cash.sqldelight:primitive-adapters", version.ref = "sqldelight" }
-sqldelight-dialect = { module = "app.cash.sqldelight:sqlite-3-33-dialect", version.ref = "sqldelight" }
+sqldelight-dialect = { module = "app.cash.sqldelight:sqlite-3-38-dialect", version.ref = "sqldelight" }
 sqldelight-postgres = { module = "app.cash.sqldelight:postgresql-dialect", version.ref = "sqldelight" }
 sqldelight-r2dbc = { module = "app.cash.sqldelight:r2dbc-driver", version.ref = "sqldelight" }
 sqldelight-async = { module = "app.cash.sqldelight:async-extensions", version.ref = "sqldelight" }
