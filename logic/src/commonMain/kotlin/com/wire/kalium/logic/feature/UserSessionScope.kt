@@ -1608,8 +1608,8 @@ class UserSessionScope internal constructor(
     private val avsSyncStateReporter: AvsSyncStateReporter by lazy {
         AvsSyncStateReporterImpl(
             callManager = callManager,
-            observeSyncStateUseCase = observeSyncState,
-            kaliumLogger = userScopedLogger,
+            incrementalSyncRepository = incrementalSyncRepository,
+            kaliumLogger = userScopedLogger
         )
     }
 
@@ -2034,10 +2034,6 @@ class UserSessionScope internal constructor(
         }
 
         launch {
-            avsSyncStateReporter.execute()
-        }
-
-        launch {
             mlsConversationsVerificationStatusesHandler.invoke()
         }
 
@@ -2051,6 +2047,11 @@ class UserSessionScope internal constructor(
 
         launch {
             updateSelfClientCapabilityToLegalHoldConsent()
+        }
+        launch {
+            clientIdProvider().map {
+                avsSyncStateReporter.execute()
+            }
         }
     }
 
