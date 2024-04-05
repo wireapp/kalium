@@ -20,8 +20,9 @@ package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAssetIdEntity
-import com.wire.kalium.persistence.dao.UserEntity
+import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
 import kotlinx.datetime.Instant
@@ -47,8 +48,8 @@ sealed interface MessageEntity {
     val visibility: Visibility
     val isSelfMessage: Boolean
     val expireAfterMs: Long?
-    val selfDeletionStartDate: Instant?
-    val sender: UserEntity?
+    val selfDeletionEndDate: Instant?
+    val sender: UserDetailsEntity?
 
     data class Regular(
         override val id: String,
@@ -61,8 +62,8 @@ sealed interface MessageEntity {
         override val isSelfMessage: Boolean = false,
         override val readCount: Long,
         override val expireAfterMs: Long? = null,
-        override val selfDeletionStartDate: Instant? = null,
-        override val sender: UserEntity? = null,
+        override val selfDeletionEndDate: Instant? = null,
+        override val sender: UserDetailsEntity? = null,
         val senderName: String?,
         val senderClientId: String,
         val editStatus: EditStatus,
@@ -79,11 +80,11 @@ sealed interface MessageEntity {
         override val senderUserId: QualifiedIDEntity,
         override val status: Status,
         override val expireAfterMs: Long?,
-        override val selfDeletionStartDate: Instant?,
+        override val selfDeletionEndDate: Instant?,
         override val readCount: Long,
         override val visibility: Visibility = Visibility.VISIBLE,
         override val isSelfMessage: Boolean = false,
-        override val sender: UserEntity? = null,
+        override val sender: UserDetailsEntity? = null,
         val senderName: String?,
     ) : MessageEntity
 
@@ -132,65 +133,6 @@ sealed interface MessageEntity {
         }
     }
 
-    enum class UploadStatus {
-        /**
-         * There was no attempt done to upload the asset's data to remote (server) storage.
-         */
-        NOT_UPLOADED,
-
-        /**
-         * The asset is currently being uploaded and will be saved internally after a successful upload
-         * @see UPLOADED
-         */
-        IN_PROGRESS,
-
-        /**
-         * The asset was uploaded and saved in the internal storage, that should be only readable by this Kalium client.
-         */
-        UPLOADED,
-
-        /**
-         * The last attempt at uploading and saving this asset's data failed.
-         */
-        FAILED
-    }
-
-    enum class DownloadStatus {
-        /**
-         * There was no attempt done to fetch the asset's data from remote (server) storage.
-         */
-        NOT_DOWNLOADED,
-
-        /**
-         * The asset is currently being downloaded and will be saved internally after a successful download
-         * @see SAVED_INTERNALLY
-         */
-        IN_PROGRESS,
-
-        /**
-         * The asset was downloaded and saved in the internal storage, that should be only readable by this Kalium client.
-         */
-        SAVED_INTERNALLY,
-
-        /**
-         * The asset was downloaded internally and saved in an external storage, readable by other software on the machine that this Kalium
-         * client is currently running on.
-         *
-         * _.e.g_: Asset was saved in Downloads, Desktop or other user-chosen directory.
-         */
-        SAVED_EXTERNALLY,
-
-        /**
-         * The last attempt at fetching and saving this asset's data failed.
-         */
-        FAILED,
-
-        /**
-         * Asset was not found on the server
-         */
-        NOT_FOUND
-    }
-
     enum class ConfirmationType {
         READ, DELIVERED, UNRECOGNIZED
     }
@@ -224,10 +166,22 @@ sealed interface MessageEntity {
         CREATION_ADDED,
 
         /**
-         * A member(s) was not added to the conversation.
+         * A member(s) was not added to the conversation due to the federation error.
          * Note: This is only valid for the creator of the conversation, local-only.
          */
-        FAILED_TO_ADD,
+        FAILED_TO_ADD_FEDERATION,
+
+        /**
+         * A member(s) was not added to the conversation due to the legal hold error.
+         * Note: This is only valid for the creator of the conversation, local-only.
+         */
+        FAILED_TO_ADD_LEGAL_HOLD,
+
+        /**
+         * A member(s) was not added to the conversation due to the other unknown error.
+         * Note: This is only valid for the creator of the conversation, local-only.
+         */
+        FAILED_TO_ADD_UNKNOWN,
 
         /**
          * Member(s) removed from the conversation, due to some backend stopped to federate between them, or us.
@@ -314,8 +268,6 @@ sealed class MessageEntityContent {
         // TODO: Make it not-nullable, fallback to message ID or something else if it comes without a name from the protobuf models
         val assetName: String? = null,
         val assetMimeType: String,
-        val assetUploadStatus: MessageEntity.UploadStatus? = null,
-        val assetDownloadStatus: MessageEntity.DownloadStatus? = null,
 
         // remote data fields
         val assetOtrKey: ByteArray,
@@ -531,6 +483,12 @@ sealed class DeliveryStatusEntity {
 
     data object CompleteDelivery : DeliveryStatusEntity()
 }
+
+data class MessageAssetStatusEntity(
+    val id: String,
+    val conversationId: QualifiedIDEntity,
+    val transferStatus: AssetTransferStatusEntity
+)
 
 @Serializable
 class ButtonEntity(

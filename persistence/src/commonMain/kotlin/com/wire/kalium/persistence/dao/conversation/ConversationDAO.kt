@@ -94,9 +94,11 @@ interface ConversationDAO {
     suspend fun updateConversationReceiptMode(conversationID: QualifiedIDEntity, receiptMode: ConversationEntity.ReceiptMode)
     suspend fun updateGuestRoomLink(
         conversationId: QualifiedIDEntity,
-        link: String?,
+        link: String,
         isPasswordProtected: Boolean
     )
+
+    suspend fun deleteGuestRoomLink(conversationId: QualifiedIDEntity)
 
     suspend fun observeGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): Flow<ConversationGuestLinkEntity?>
     suspend fun updateMessageTimer(conversationId: QualifiedIDEntity, messageTimer: Long?)
@@ -104,7 +106,7 @@ interface ConversationDAO {
     suspend fun getConversationsWithoutMetadata(): List<QualifiedIDEntity>
     suspend fun clearContent(conversationId: QualifiedIDEntity)
     suspend fun updateMlsVerificationStatus(verificationStatus: ConversationEntity.VerificationStatus, conversationId: QualifiedIDEntity)
-    suspend fun getConversationByGroupID(groupID: String): ConversationViewEntity
+    suspend fun getConversationByGroupID(groupID: String): ConversationViewEntity?
     suspend fun observeUnreadArchivedConversationsCount(): Flow<Long>
     suspend fun observeDegradedConversationNotified(conversationId: QualifiedIDEntity): Flow<Boolean>
     suspend fun updateDegradedConversationNotifiedFlag(conversationId: QualifiedIDEntity, updateFlag: Boolean)
@@ -114,4 +116,18 @@ interface ConversationDAO {
     suspend fun observeLegalHoldStatusChangeNotified(conversationId: QualifiedIDEntity): Flow<Boolean>
     suspend fun getMLSGroupIdByUserId(userId: UserIDEntity): String?
     suspend fun getMLSGroupIdByConversationId(conversationId: QualifiedIDEntity): String?
+    suspend fun getEstablishedSelfMLSGroupId(): String?
+
+    suspend fun selectGroupStatusMembersNamesAndHandles(groupID: String): EpochChangesDataEntity?
 }
+
+data class NameAndHandleEntity(
+    val name: String?,
+    val handle: String?
+)
+
+data class EpochChangesDataEntity(
+    val conversationId: QualifiedIDEntity,
+    val mlsVerificationStatus: ConversationEntity.VerificationStatus,
+    val members: Map<UserIDEntity, NameAndHandleEntity>
+)

@@ -23,7 +23,7 @@ import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIClient
-import com.wire.kalium.cryptography.E2EIConversationState
+import com.wire.kalium.cryptography.ExternalSenderKey
 import com.wire.kalium.cryptography.GroupInfoBundle
 import com.wire.kalium.cryptography.GroupInfoEncryptionType
 import com.wire.kalium.cryptography.MLSClient
@@ -32,32 +32,41 @@ import com.wire.kalium.cryptography.RotateBundle
 import com.wire.kalium.cryptography.WelcomeBundle
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.COMMIT_BUNDLE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.CRYPTO_CLIENT_ID
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.E2EI_CONVERSATION_CLIENT_INFO_ENTITY
+import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.KEY_PACKAGE
+import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.ROTATE_BUNDLE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.TEST_FAILURE
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.WIRE_IDENTITY
+import com.wire.kalium.logic.data.conversation.mls.KeyPackageClaimResult
+import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.id.toCrypto
-import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.mlspublickeys.Ed25519Key
 import com.wire.kalium.logic.data.mlspublickeys.KeyType
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKey
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
@@ -71,7 +80,6 @@ import com.wire.kalium.network.api.base.authenticated.notification.MemberLeaveRe
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -96,12 +104,13 @@ import io.mockative.verify
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlinx.datetime.Instant
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 
 class MLSConversationRepositoryTest {
 
@@ -120,6 +129,38 @@ class MLSConversationRepositoryTest {
         mlsConversationRepository.decryptMessage(Arrangement.COMMIT, Arrangement.GROUP_ID)
         assertEquals(Arrangement.GROUP_ID, epochChange.await())
     }
+
+    @Test
+    fun givenCommitMessageWithNewDistributionPoints_whenDecryptingMessage_thenCheckRevocationList() =
+        runTest(TestKaliumDispatcher.default) {
+            val messageWithNewDistributionPoints = Arrangement.DECRYPTED_MESSAGE_BUNDLE.copy(
+                crlNewDistributionPoints = listOf("url")
+            )
+            val (arrangement, mlsConversationRepository) = Arrangement()
+                .withGetMLSClientSuccessful()
+                .withDecryptMLSMessageSuccessful(messageWithNewDistributionPoints)
+                .withCheckRevocationListResult()
+                .arrange()
+
+            val epochChange = async(TestKaliumDispatcher.default) {
+                arrangement.epochsFlow.first()
+            }
+            yield()
+
+            mlsConversationRepository.decryptMessage(Arrangement.COMMIT, Arrangement.GROUP_ID)
+
+            verify(arrangement.checkRevocationList)
+                .suspendFunction(arrangement.checkRevocationList::invoke)
+                .with(any())
+                .wasInvoked(once)
+
+            verify(arrangement.certificateRevocationListRepository)
+                .suspendFunction(arrangement.certificateRevocationListRepository::addOrUpdateCRL)
+                .with(any(), any())
+                .wasInvoked(once)
+
+            assertEquals(Arrangement.GROUP_ID, epochChange.await())
+        }
 
     @Test
     fun givenSuccessfulResponses_whenCallingEstablishMLSGroup_thenGroupIsCreatedAndCommitBundleIsSentAndAccepted() = runTest {
@@ -154,6 +195,144 @@ class MLSConversationRepositoryTest {
             .function(arrangement.mlsClient::commitAccepted)
             .with(eq(Arrangement.RAW_GROUP_ID))
             .wasInvoked(once)
+    }
+
+    @Test
+    fun givenPartialKeyClaimingResponses_whenCallingEstablishMLSGroup_thenMissingKeyPackagesFailureIsReturned() = runTest {
+        val userMissingKeyPackage = TestUser.USER_ID.copy(value = "missingKP")
+        val usersMissingKeyPackages = setOf(userMissingKeyPackage)
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsReturningNothing()
+            .withClaimKeyPackagesSuccessful(usersWithoutKeyPackages = usersMissingKeyPackages)
+            .withGetMLSClientSuccessful()
+            .withGetPublicKeysSuccessful()
+            .withAddMLSMemberSuccessful()
+            .withSendCommitBundleSuccessful()
+            .arrange()
+
+        val result = mlsConversationRepository.establishMLSGroup(
+            Arrangement.GROUP_ID,
+            listOf(TestConversation.USER_1, userMissingKeyPackage)
+        )
+        result.shouldFail {
+            assertIs<CoreFailure.MissingKeyPackages>(it)
+            assertEquals(usersMissingKeyPackages, it.failedUserIds)
+        }
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::createConversation)
+            .with(eq(Arrangement.RAW_GROUP_ID), eq(listOf(Arrangement.CRYPTO_MLS_PUBLIC_KEY)))
+            .wasInvoked(once)
+
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::addMember)
+            .with(eq(Arrangement.RAW_GROUP_ID), anything())
+            .wasNotInvoked()
+
+        verify(arrangement.mlsMessageApi)
+            .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
+            .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
+            .wasNotInvoked()
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::commitAccepted)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasNotInvoked()
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::wipeConversation)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(once)
+    }
+
+    @Test
+    fun givenPartialKeyClaimingResponsesAndAllowPartial_whenCallingEstablishMLSGroup_thenPartialGroupCreatedAndSuccessReturned() = runTest {
+        val userMissingKeyPackage = TestUser.USER_ID.copy(value = "missingKP")
+        val userWithKeyPackage = TestConversation.USER_1
+        val usersMissingKeyPackages = setOf(userMissingKeyPackage)
+        val usersWithKeyPackages = setOf(userWithKeyPackage)
+        val keyPackageSuccess = KEY_PACKAGE.copy(userId = userWithKeyPackage.value, domain = userWithKeyPackage.domain)
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsReturningNothing()
+            .withClaimKeyPackagesSuccessful(keyPackages = listOf(keyPackageSuccess), usersWithoutKeyPackages = usersMissingKeyPackages)
+            .withGetMLSClientSuccessful()
+            .withGetPublicKeysSuccessful()
+            .withAddMLSMemberSuccessful()
+            .withSendCommitBundleSuccessful()
+            .arrange()
+
+        val result = mlsConversationRepository.establishMLSGroup(
+            Arrangement.GROUP_ID,
+            (usersWithKeyPackages + userMissingKeyPackage).toList(),
+            allowSkippingUsersWithoutKeyPackages = true
+        )
+        result.shouldSucceed {
+            assertEquals(usersMissingKeyPackages, it.notAddedUsers)
+            assertEquals(usersWithKeyPackages, it.successfullyAddedUsers)
+        }
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::createConversation)
+            .with(eq(Arrangement.RAW_GROUP_ID), eq(listOf(Arrangement.CRYPTO_MLS_PUBLIC_KEY)))
+            .wasInvoked(once)
+
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::addMember)
+            .with(eq(Arrangement.RAW_GROUP_ID), matching { it.size == usersWithKeyPackages.size })
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.mlsMessageApi)
+            .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
+            .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::commitAccepted)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::wipeConversation)
+            .with(eq(Arrangement.RAW_GROUP_ID))
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenNewCrlDistributionPoints_whenEstablishingMLSGroup_thenCheckRevocationList() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsReturningNothing()
+            .withClaimKeyPackagesSuccessful()
+            .withGetMLSClientSuccessful()
+            .withGetPublicKeysSuccessful()
+            .withAddMLSMemberSuccessful()
+            .withSendCommitBundleSuccessful()
+            .arrange()
+
+    }
+
+    @Test
+    fun givenNewCrlDistributionPoints_whenAddingMemberToMLSGroup_thenCheckRevocationList() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withCommitPendingProposalsReturningNothing()
+            .withClaimKeyPackagesSuccessful()
+            .withGetMLSClientSuccessful()
+            .withGetPublicKeysSuccessful()
+            .withAddMLSMemberSuccessful(COMMIT_BUNDLE.copy(crlNewDistributionPoints = listOf("url")))
+            .withCheckRevocationListResult()
+            .withSendCommitBundleSuccessful()
+            .arrange()
+
+        mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1))
+
+        verify(arrangement.checkRevocationList)
+            .suspendFunction(arrangement.checkRevocationList::invoke)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.certificateRevocationListRepository)
+            .suspendFunction(arrangement.certificateRevocationListRepository::addOrUpdateCRL)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -254,43 +433,6 @@ class MLSConversationRepositoryTest {
         verify(arrangement.mlsClient)
             .function(arrangement.mlsClient::updateKeyingMaterial)
             .with(eq(Arrangement.RAW_GROUP_ID))
-            .wasInvoked(once)
-    }
-
-    @Test
-    fun givenExistingConversation_whenCallingEstablishMLSGroupFromWelcome_thenGroupIsCreatedAndGroupStateIsUpdated() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
-            .withProcessWelcomeMessageSuccessful()
-            .withGetConversationByGroupIdSuccessful()
-            .arrange()
-
-        mlsConversationRepository.establishMLSGroupFromWelcome(Arrangement.WELCOME_EVENT).shouldSucceed()
-
-        verify(arrangement.mlsClient)
-            .function(arrangement.mlsClient::processWelcomeMessage)
-            .with(anyInstanceOf(ByteArray::class))
-            .wasInvoked(once)
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::updateConversationGroupState)
-            .with(eq(ConversationEntity.GroupState.ESTABLISHED), eq(Arrangement.RAW_GROUP_ID))
-            .wasInvoked(once)
-    }
-
-    @Test
-    fun givenNonExistingConversation_whenCallingEstablishMLSGroupFromWelcome_ThenGroupIsCreatedButConversationIsNotInserted() = runTest {
-        val (arrangement, mlsConversationRepository) = Arrangement()
-            .withGetMLSClientSuccessful()
-            .withProcessWelcomeMessageSuccessful()
-            .withGetConversationByGroupIdFailing()
-            .arrange()
-
-        mlsConversationRepository.establishMLSGroupFromWelcome(Arrangement.WELCOME_EVENT).shouldSucceed()
-
-        verify(arrangement.mlsClient)
-            .function(arrangement.mlsClient::processWelcomeMessage)
-            .with(anyInstanceOf(ByteArray::class))
             .wasInvoked(once)
     }
 
@@ -511,6 +653,37 @@ class MLSConversationRepositoryTest {
             .suspendFunction(arrangement.conversationDAO::updateConversationGroupState)
             .with(eq(ConversationEntity.GroupState.ESTABLISHED), eq(Arrangement.RAW_GROUP_ID))
             .wasInvoked(once)
+
+        verify(arrangement.checkRevocationList)
+            .suspendFunction(arrangement.checkRevocationList::invoke)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenMlsClientReturnsNewCrlDistributionPoints_whenJoiningGroupByExternalCommit_thenCheckRevocationList() = runTest {
+        val commitBundleWithDistributionPoints = COMMIT_BUNDLE.copy(crlNewDistributionPoints = listOf("url"))
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withJoinConversationSuccessful()
+            .withCheckRevocationListResult()
+            .withSendMLSMessageSuccessful()
+            .withSendCommitBundleSuccessful()
+            .withJoinByExternalCommitSuccessful(commitBundleWithDistributionPoints)
+            .withMergePendingGroupFromExternalCommitSuccessful()
+            .arrange()
+
+        mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
+
+        verify(arrangement.checkRevocationList)
+            .suspendFunction(arrangement.checkRevocationList::invoke)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.certificateRevocationListRepository)
+            .suspendFunction(arrangement.certificateRevocationListRepository::addOrUpdateCRL)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -1077,6 +1250,38 @@ class MLSConversationRepositoryTest {
             .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
             .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
             .wasInvoked(once)
+
+        verify(arrangement.checkRevocationList)
+            .suspendFunction(arrangement.checkRevocationList::invoke)
+            .with(any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenNewDistributionsCRL_whenRotatingKeys_thenCheckRevocationList() = runTest {
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetMLSClientSuccessful()
+            .withRotateAllSuccessful(ROTATE_BUNDLE.copy(crlNewDistributionPoints = listOf("url")))
+            .withSendCommitBundleSuccessful()
+            .withKeyPackageLimits(10)
+            .withReplaceKeyPackagesReturning(Either.Right(Unit))
+            .withCheckRevocationListResult()
+            .arrange()
+
+        assertEquals(
+            Either.Right(Unit),
+            mlsConversationRepository.rotateKeysAndMigrateConversations(TestClient.CLIENT_ID, arrangement.e2eiClient, "")
+        )
+
+        verify(arrangement.checkRevocationList)
+            .suspendFunction(arrangement.checkRevocationList::invoke)
+            .with(any())
+            .wasInvoked(exactly = once)
+
+        verify(arrangement.certificateRevocationListRepository)
+            .suspendFunction(arrangement.certificateRevocationListRepository::addOrUpdateCRL)
+            .with(any(), any())
+            .wasInvoked(exactly = once)
     }
 
     @Test
@@ -1090,7 +1295,7 @@ class MLSConversationRepositoryTest {
             .arrange()
 
         assertEquals(
-            TEST_FAILURE,
+            E2EIFailure.RotationAndMigration(TEST_FAILURE.value).left(),
             mlsConversationRepository.rotateKeysAndMigrateConversations(TestClient.CLIENT_ID, arrangement.e2eiClient, "")
         )
 
@@ -1183,14 +1388,14 @@ class MLSConversationRepositoryTest {
     }
 
     @Test
-    fun givenGetClientId_whenGetUserIdentitiesFails_thenReturnsError() = runTest {
+    fun givenGetClientId_whenGetUserIdentitiesEmpty_thenReturnsNull() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withGetDeviceIdentitiesReturn(emptyList())
             .withGetE2EIConversationClientInfoByClientIdReturns(E2EI_CONVERSATION_CLIENT_INFO_ENTITY)
             .arrange()
 
-        mlsConversationRepository.getClientIdentity(TestClient.CLIENT_ID).shouldFail()
+        assertEquals(Either.Right(null), mlsConversationRepository.getClientIdentity(TestClient.CLIENT_ID))
 
         verify(arrangement.mlsClient)
             .suspendFunction(arrangement.mlsClient::getDeviceIdentities)
@@ -1208,15 +1413,13 @@ class MLSConversationRepositoryTest {
         val groupId = TestConversation.MLS_PROTOCOL_INFO.groupId.value
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
-            .withGetSelfConversationIdReturns(TestConversation.MLS_CONVERSATION.id.toDao())
-            .withGetMLSGroupIdByConversationIdReturns(groupId)
+            .withGetEstablishedSelfMLSGroupIdReturns(groupId)
             .withGetUserIdentitiesReturn(
                 mapOf(
                     TestUser.USER_ID.value to listOf(WIRE_IDENTITY),
                     "some_other_user_id" to listOf(WIRE_IDENTITY.copy(clientId = CRYPTO_CLIENT_ID.copy("another_client_id"))),
                 )
             )
-            .withGetMLSGroupIdByUserIdReturns(groupId)
             .arrange()
 
         assertEquals(Either.Right(listOf(WIRE_IDENTITY)), mlsConversationRepository.getUserIdentity(TestUser.USER_ID))
@@ -1232,13 +1435,7 @@ class MLSConversationRepositoryTest {
             .wasNotInvoked()
 
         verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::getSelfConversationId)
-            .with(eq(ConversationEntity.Protocol.MLS))
-            .wasInvoked(once)
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::getMLSGroupIdByConversationId)
-            .with(eq(TestConversation.MLS_CONVERSATION.id.toDao()))
+            .suspendFunction(arrangement.conversationDAO::getEstablishedSelfMLSGroupId)
             .wasInvoked(once)
     }
 
@@ -1247,8 +1444,6 @@ class MLSConversationRepositoryTest {
         val groupId = TestConversation.MLS_PROTOCOL_INFO.groupId.value
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
-            .withGetSelfConversationIdReturns(TestConversation.MLS_CONVERSATION.id.toDao())
-            .withGetMLSGroupIdByConversationIdReturns(groupId)
             .withGetUserIdentitiesReturn(
                 mapOf(
                     TestUser.OTHER_USER_ID.value to listOf(WIRE_IDENTITY),
@@ -1268,16 +1463,6 @@ class MLSConversationRepositoryTest {
             .suspendFunction(arrangement.conversationDAO::getMLSGroupIdByUserId)
             .with(any())
             .wasInvoked(once)
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::getSelfConversationId)
-            .with(eq(ConversationEntity.Protocol.MLS))
-            .wasNotInvoked()
-
-        verify(arrangement.conversationDAO)
-            .suspendFunction(arrangement.conversationDAO::getMLSGroupIdByConversationId)
-            .with(eq(TestConversation.MLS_CONVERSATION.id.toDao()))
-            .wasNotInvoked()
     }
 
     @Test
@@ -1318,6 +1503,93 @@ class MLSConversationRepositoryTest {
             .wasInvoked(once)
     }
 
+    @Test
+    fun givenSuccessfulResponses_whenCallingEstablishMLSSubConversationGroup_thenGroupIsCreatedAndCommitBundleIsSentAndAccepted() =
+        runTest {
+            val (arrangement, mlsConversationRepository) = Arrangement()
+                .withCommitPendingProposalsReturningNothing()
+                .withClaimKeyPackagesSuccessful()
+                .withGetMLSClientSuccessful()
+                .withGetMLSGroupIdByConversationIdReturns(Arrangement.GROUP_ID.value)
+                .withGetExternalSenderKeySuccessful()
+                .withGetPublicKeysSuccessful()
+                .withUpdateKeyingMaterialSuccessful()
+                .withSendCommitBundleSuccessful()
+                .arrange()
+
+            val result = mlsConversationRepository.establishMLSSubConversationGroup(Arrangement.GROUP_ID, TestConversation.ID)
+            result.shouldSucceed()
+
+            verify(arrangement.mlsClient)
+                .function(arrangement.mlsClient::createConversation)
+                .with(eq(Arrangement.RAW_GROUP_ID), eq(listOf(Arrangement.CRYPTO_MLS_EXTERNAL_KEY)))
+                .wasInvoked(once)
+
+            verify(arrangement.mlsMessageApi)
+                .suspendFunction(arrangement.mlsMessageApi::sendCommitBundle)
+                .with(anyInstanceOf(MLSMessageApi.CommitBundle::class))
+                .wasInvoked(once)
+
+            verify(arrangement.mlsClient)
+                .function(arrangement.mlsClient::commitAccepted)
+                .with(eq(Arrangement.RAW_GROUP_ID))
+                .wasInvoked(once)
+        }
+
+    @Test
+    fun givenHandleWithSchemeAndDomain_whenGetUserIdentity_thenHandleShouldReturnProperValues() = runTest {
+        // given
+        val scheme = "wireapp"
+        val handle = "handle"
+        val domain = "domain.com"
+        val handleWithSchemeAndDomain = "$scheme://%40$handle@$domain"
+        val groupId = Arrangement.GROUP_ID.value
+        val wireIdentity = WIRE_IDENTITY.copy(handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain))
+        val (_, mlsConversationRepository) = Arrangement()
+            .withGetEstablishedSelfMLSGroupIdReturns(groupId)
+            .withGetMLSClientSuccessful()
+            .withGetUserIdentitiesReturn(mapOf(groupId to listOf(wireIdentity)))
+            .arrange()
+        // when
+        val result = mlsConversationRepository.getUserIdentity(TestUser.USER_ID)
+        // then
+        result.shouldSucceed() {
+            it.forEach {
+                assertEquals(scheme, it.handle.scheme)
+                assertEquals(handle, it.handle.handle)
+                assertEquals(domain, it.handle.domain)
+            }
+        }
+    }
+
+    @Test
+    fun givenHandleWithSchemeAndDomain_whenGetMemberIdentities_thenHandleShouldReturnProperValues() = runTest {
+        // given
+        val scheme = "wireapp"
+        val handle = "handle"
+        val domain = "domain.com"
+        val handleWithSchemeAndDomain = "$scheme://%40$handle@$domain"
+        val groupId = Arrangement.GROUP_ID.value
+        val wireIdentity = WIRE_IDENTITY.copy(handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain))
+        val (_, mlsConversationRepository) = Arrangement()
+            .withGetMLSGroupIdByConversationIdReturns(groupId)
+            .withGetMLSClientSuccessful()
+            .withGetUserIdentitiesReturn(mapOf(groupId to listOf(wireIdentity)))
+            .arrange()
+        // when
+        val result = mlsConversationRepository.getMembersIdentities(TestConversation.ID, listOf(TestUser.USER_ID))
+        // then
+        result.shouldSucceed() {
+            it.values.forEach {
+                it.forEach {
+                    assertEquals(scheme, it.handle.scheme)
+                    assertEquals(handle, it.handle.handle)
+                    assertEquals(domain, it.handle.domain)
+                }
+            }
+        }
+    }
+
     private class Arrangement {
 
         @Mock
@@ -1353,33 +1625,45 @@ class MLSConversationRepositoryTest {
         @Mock
         val keyPackageLimitsProvider = mock(classOf<KeyPackageLimitsProvider>())
 
+        @Mock
+        val checkRevocationList = mock(classOf<CheckRevocationListUseCase>())
+
+        @Mock
+        val certificateRevocationListRepository = mock(classOf<CertificateRevocationListRepository>())
+
         val epochsFlow = MutableSharedFlow<GroupID>()
 
         val proposalTimersFlow = MutableSharedFlow<ProposalTimer>()
 
+        val serverConfigLink = newServerConfig(1).links
+
         init {
             withCommitBundleEventReceiverSucceeding()
         }
+
+        fun arrange() = this to MLSConversationDataSource(
+            TestUser.SELF.id,
+            keyPackageRepository,
+            mlsClientProvider,
+            mlsMessageApi,
+            conversationDAO,
+            clientApi,
+            syncManager,
+            mlsPublicKeysRepository,
+            commitBundleEventReceiver,
+            epochsFlow,
+            proposalTimersFlow,
+            keyPackageLimitsProvider,
+            checkRevocationList,
+            certificateRevocationListRepository,
+            serverConfigLink
+        )
 
         fun withCommitBundleEventReceiverSucceeding() = apply {
             given(commitBundleEventReceiver)
                 .suspendFunction(commitBundleEventReceiver::onEvent)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
-        }
-
-        fun withGetConversationByGroupIdSuccessful() = apply {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::observeConversationByGroupID)
-                .whenInvokedWith(anything())
-                .then { flowOf(TestConversation.VIEW_ENTITY) }
-        }
-
-        fun withGetConversationByGroupIdFailing() = apply {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::observeConversationByGroupID)
-                .whenInvokedWith(anything())
-                .then { flowOf(null) }
         }
 
         fun withClearProposalTimerSuccessful() = apply {
@@ -1389,11 +1673,14 @@ class MLSConversationRepositoryTest {
                 .thenDoNothing()
         }
 
-        fun withClaimKeyPackagesSuccessful(keyPackages: List<KeyPackageDTO> = listOf(KEY_PACKAGE)) = apply {
+        fun withClaimKeyPackagesSuccessful(
+            keyPackages: List<KeyPackageDTO> = listOf(KEY_PACKAGE),
+            usersWithoutKeyPackages: Set<UserId> = setOf()
+        ) = apply {
             given(keyPackageRepository)
                 .suspendFunction(keyPackageRepository::claimKeyPackages)
                 .whenInvokedWith(anything())
-                .then { Either.Right(keyPackages) }
+                .then { Either.Right(KeyPackageClaimResult(keyPackages, usersWithoutKeyPackages)) }
         }
 
         fun withKeyPackageLimits(refillAmount: Int) = apply {
@@ -1423,18 +1710,18 @@ class MLSConversationRepositoryTest {
                 .then { Either.Right(mlsClient) }
         }
 
-        fun withGetMLSClientFailed(failure: CoreFailure.Unknown) = apply {
-            given(mlsClientProvider)
-                .suspendFunction(mlsClientProvider::getMLSClient)
+        fun withGetExternalSenderKeySuccessful() = apply {
+            given(mlsClient)
+                .suspendFunction(mlsClient::getExternalSenders)
                 .whenInvokedWith(anything())
-                .then { Either.Left(failure) }
+                .thenReturn(EXTERNAL_SENDER_KEY)
         }
 
-        fun withRotateAllSuccessful() = apply {
+        fun withRotateAllSuccessful(rotateBundle: RotateBundle = ROTATE_BUNDLE) = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::e2eiRotateAll)
                 .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(ROTATE_BUNDLE)
+                .thenReturn(rotateBundle)
         }
 
         fun withGetDeviceIdentitiesReturn(identities: List<WireIdentity>) = apply {
@@ -1451,11 +1738,18 @@ class MLSConversationRepositoryTest {
                 .thenReturn(e2eiInfo)
         }
 
-        fun withAddMLSMemberSuccessful() = apply {
+        fun withGetEstablishedSelfMLSGroupIdReturns(id: String?) = apply {
+            given(conversationDAO)
+                .suspendFunction(conversationDAO::getEstablishedSelfMLSGroupId)
+                .whenInvoked()
+                .thenReturn(id)
+        }
+
+        fun withAddMLSMemberSuccessful(commitBundle: CommitBundle = COMMIT_BUNDLE) = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::addMember)
                 .whenInvokedWith(anything(), anything())
-                .thenReturn(COMMIT_BUNDLE)
+                .thenReturn(commitBundle)
         }
 
         fun withGetGroupEpochReturn(epoch: ULong) = apply {
@@ -1472,11 +1766,11 @@ class MLSConversationRepositoryTest {
                 .thenReturn(COMMIT)
         }
 
-        fun withJoinByExternalCommitSuccessful() = apply {
+        fun withJoinByExternalCommitSuccessful(commitBundle: CommitBundle = COMMIT_BUNDLE) = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::joinByExternalCommit)
                 .whenInvokedWith(anything())
-                .thenReturn(COMMIT_BUNDLE)
+                .thenReturn(commitBundle)
         }
 
         fun withMergePendingGroupFromExternalCommitSuccessful() = apply {
@@ -1484,13 +1778,6 @@ class MLSConversationRepositoryTest {
                 .suspendFunction(mlsClient::mergePendingGroupFromExternalCommit)
                 .whenInvokedWith(anything())
                 .thenReturn(Unit)
-        }
-
-        fun withProcessWelcomeMessageSuccessful() = apply {
-            given(mlsClient)
-                .suspendFunction(mlsClient::processWelcomeMessage)
-                .whenInvokedWith(anything())
-                .thenReturn(WELCOME_BUNDLE)
         }
 
         fun withCommitPendingProposalsSuccessful() = apply {
@@ -1509,11 +1796,11 @@ class MLSConversationRepositoryTest {
                 .thenReturn(null)
         }
 
-        fun withUpdateKeyingMaterialSuccessful() = apply {
+        fun withUpdateKeyingMaterialSuccessful(commitBundle: CommitBundle = COMMIT_BUNDLE) = apply {
             given(mlsClient)
                 .suspendFunction(mlsClient::updateKeyingMaterial)
                 .whenInvokedWith(anything())
-                .thenReturn(COMMIT_BUNDLE)
+                .thenReturn(commitBundle)
         }
 
         fun withSendCommitBundleSuccessful(events: List<EventContentDTO> = emptyList()) = apply {
@@ -1530,6 +1817,13 @@ class MLSConversationRepositoryTest {
                 .suspendFunction(mlsMessageApi::sendCommitBundle)
                 .whenInvokedWith(matching { invocationCounter += 1; invocationCounter <= times })
                 .then { NetworkResponse.Error(failure) }
+        }
+
+        fun withCheckRevocationListResult() = apply {
+            given(checkRevocationList)
+                .suspendFunction(checkRevocationList::invoke)
+                .whenInvokedWith(anything())
+                .thenReturn(Either.Right(1uL))
         }
 
         fun withSendMLSMessageSuccessful(events: List<EventContentDTO> = emptyList()) = apply {
@@ -1567,13 +1861,6 @@ class MLSConversationRepositoryTest {
                 .thenReturn(Either.Right(Unit))
         }
 
-        fun withGetGroupVerifyReturn(verificationStatus: E2EIConversationState) = apply {
-            given(mlsClient)
-                .suspendFunction(mlsClient::isGroupVerified)
-                .whenInvokedWith(anything())
-                .thenReturn(verificationStatus)
-        }
-
         fun withGetMLSGroupIdByUserIdReturns(result: String?) = apply {
             given(conversationDAO)
                 .suspendFunction(conversationDAO::getMLSGroupIdByUserId)
@@ -1594,28 +1881,6 @@ class MLSConversationRepositoryTest {
                 .whenInvokedWith(anything(), anything())
                 .thenReturn(identitiesMap)
         }
-
-        fun withGetSelfConversationIdReturns(id: QualifiedIDEntity?) = apply {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::getSelfConversationId)
-                .whenInvokedWith(anything())
-                .thenReturn(id)
-        }
-
-        fun arrange() = this to MLSConversationDataSource(
-            TestUser.SELF.id,
-            keyPackageRepository,
-            mlsClientProvider,
-            mlsMessageApi,
-            conversationDAO,
-            clientApi,
-            syncManager,
-            mlsPublicKeysRepository,
-            commitBundleEventReceiver,
-            epochsFlow,
-            proposalTimersFlow,
-            keyPackageLimitsProvider
-        )
 
         companion object {
             val TEST_FAILURE = Either.Left(CoreFailure.Unknown(Throwable("an error")))
@@ -1640,6 +1905,8 @@ class MLSConversationRepositoryTest {
                 "user1"
             )
             val WELCOME = "welcome".encodeToByteArray()
+            val EXTERNAL_SENDER_KEY = ExternalSenderKey("externalSenderKey".encodeToByteArray())
+            val CRYPTO_MLS_EXTERNAL_KEY = MapperProvider.mlsPublicKeyMapper().toCrypto(EXTERNAL_SENDER_KEY)
             val COMMIT = "commit".encodeToByteArray()
             val PUBLIC_GROUP_STATE = "public_group_state".encodeToByteArray()
             val PUBLIC_GROUP_STATE_BUNDLE = GroupInfoBundle(
@@ -1650,15 +1917,18 @@ class MLSConversationRepositoryTest {
             val COMMIT_BUNDLE = CommitBundle(COMMIT, WELCOME, PUBLIC_GROUP_STATE_BUNDLE, null)
             val ROTATE_BUNDLE = RotateBundle(mapOf(RAW_GROUP_ID to COMMIT_BUNDLE), emptyList(), emptyList(), null)
             val CRYPTO_CLIENT_ID = CryptoQualifiedClientId("clientId", TestConversation.USER_1.toCrypto())
-            val WIRE_IDENTITY = WireIdentity(
-                CRYPTO_CLIENT_ID,
-                "user_handle",
-                "User Test",
-                "domain.com",
-                "certificate",
-                CryptoCertificateStatus.VALID,
-                thumbprint = "thumbprint"
-            )
+            val WIRE_IDENTITY =
+                WireIdentity(
+                    CRYPTO_CLIENT_ID,
+                    "user_handle",
+                    "User Test",
+                    "domain.com",
+                    "certificate",
+                    CryptoCertificateStatus.VALID,
+                    thumbprint = "thumbprint",
+                    serialNumber = "serialNumber",
+                    endTimestampSeconds = 1899105093
+                )
             val E2EI_CONVERSATION_CLIENT_INFO_ENTITY =
                 E2EIConversationClientInfoEntity(UserIDEntity(uuid4().toString(), "domain.com"), "clientId", "groupId")
             val DECRYPTED_MESSAGE_BUNDLE = com.wire.kalium.cryptography.DecryptedMessageBundle(

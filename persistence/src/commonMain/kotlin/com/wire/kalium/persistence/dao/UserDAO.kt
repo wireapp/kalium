@@ -104,7 +104,8 @@ data class UserDetailsEntity(
     val defederated: Boolean,
     val isProteusVerified: Boolean,
     val supportedProtocols: Set<SupportedProtocolEntity>?,
-    val activeOneOnOneConversationId: QualifiedIDEntity?
+    val activeOneOnOneConversationId: QualifiedIDEntity?,
+    val isUnderLegalHold: Boolean,
 ) {
     fun toSimpleEntity() = UserEntity(
         id = id,
@@ -275,7 +276,7 @@ interface UserDAO {
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
     suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
     fun observeUsersDetailsNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserDetailsEntity>>
-    suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State)
+    suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedIDEntity>)
     suspend fun getUsersDetailsNotInConversationByNameOrHandleOrEmail(
         conversationId: QualifiedIDEntity,
         searchQuery: String,

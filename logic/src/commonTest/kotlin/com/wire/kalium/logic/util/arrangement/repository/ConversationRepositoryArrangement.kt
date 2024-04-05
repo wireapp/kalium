@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.persistence.dao.conversation.EpochChangesDataEntity
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
@@ -98,6 +99,10 @@ internal interface ConversationRepositoryArrangement {
             .whenInvokedWith(any(), any())
             .thenReturn(result)
     }
+
+    fun withSetDegradedConversationNotifiedFlag(result: Either<CoreFailure, Unit>)
+
+    fun withSelectGroupStatusMembersNamesAndHandles(result: Either<StorageFailure, EpochChangesDataEntity>)
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -252,4 +257,17 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
             .thenReturn(result)
     }
 
+    override fun withSetDegradedConversationNotifiedFlag(result: Either<CoreFailure, Unit>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::setDegradedConversationNotifiedFlag)
+            .whenInvokedWith(any(), any())
+            .thenReturn(result)
+    }
+
+    override fun withSelectGroupStatusMembersNamesAndHandles(result: Either<StorageFailure, EpochChangesDataEntity>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::getGroupStatusMembersNamesAndHandles)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
 }

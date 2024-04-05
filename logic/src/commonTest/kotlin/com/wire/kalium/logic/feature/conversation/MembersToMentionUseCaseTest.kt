@@ -112,18 +112,19 @@ class MembersToMentionUseCaseTest {
         private const val DOMAIN = "some_domain"
         val CONVERSATION_ID = ConversationId("conversation-id", DOMAIN)
         val SELF_USER = SelfUser(
-            UserId("slef_id", DOMAIN),
-            "some_name",
-            "some_handle",
-            "some_email",
-            null,
-            1,
-            null,
-            ConnectionState.ACCEPTED,
-            UserAssetId("value1", DOMAIN),
-            UserAssetId("value2", DOMAIN),
-            UserAvailabilityStatus.NONE,
-            supportedProtocols = null
+            id = UserId("slef_id", DOMAIN),
+            name = "some_name",
+            handle = "some_handle",
+            email = "some_email",
+            phone = null,
+            accentId = 1,
+            teamId = null,
+            connectionStatus = ConnectionState.ACCEPTED,
+            previewPicture = UserAssetId("value1", DOMAIN),
+            completePicture = UserAssetId("value2", DOMAIN),
+            userType = UserType.INTERNAL,
+            availabilityStatus = UserAvailabilityStatus.NONE,
+            supportedProtocols = null,
         )
         private val OTHER_USER = OtherUser(
             UserId(value = "other-id", DOMAIN),

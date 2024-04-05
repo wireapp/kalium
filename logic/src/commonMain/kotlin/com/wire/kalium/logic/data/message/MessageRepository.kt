@@ -22,8 +22,10 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetMessage
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.asset.SUPPORTED_IMAGE_ASSET_MIME_TYPES
 import com.wire.kalium.logic.data.asset.toDao
+import com.wire.kalium.logic.data.asset.toModel
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
@@ -41,6 +43,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapFlowStorageRequest
@@ -96,14 +99,8 @@ internal interface MessageRepository {
         messageUuids: List<String>
     ): Either<CoreFailure, Unit>
 
-    suspend fun updateAssetMessageUploadStatus(
-        uploadStatus: Message.UploadStatus,
-        conversationId: ConversationId,
-        messageUuid: String
-    ): Either<CoreFailure, Unit>
-
-    suspend fun updateAssetMessageDownloadStatus(
-        downloadStatus: Message.DownloadStatus,
+    suspend fun updateAssetMessageTransferStatus(
+        transferStatus: AssetTransferStatus,
         conversationId: ConversationId,
         messageUuid: String
     ): Either<CoreFailure, Unit>
@@ -178,7 +175,7 @@ internal interface MessageRepository {
         newMembers: List<UserId>,
     ): Either<CoreFailure, Unit>
 
-    suspend fun resetAssetProgressStatus()
+    suspend fun resetAssetTransferStatus()
     suspend fun markMessagesAsDecryptionResolved(
         conversationId: ConversationId,
         userId: UserId,
@@ -200,15 +197,9 @@ internal interface MessageRepository {
         millis: Long
     ): Either<CoreFailure, Unit>
 
-    suspend fun getEphemeralMessagesMarkedForDeletion(): Either<CoreFailure, List<Message>>
+    suspend fun getAllPendingEphemeralMessages(): Either<CoreFailure, List<Message>>
 
-    suspend fun getEphemeralMessagesMarkedForEndDeletion(): Either<CoreFailure, List<Message>>
-
-    suspend fun markSelfDeletionStartDate(
-        conversationId: ConversationId,
-        messageUuid: String,
-        deletionStartDate: Instant
-    ): Either<CoreFailure, Unit>
+    suspend fun getAllAlreadyEndedEphemeralMessages(): Either<CoreFailure, List<Message>>
 
     suspend fun markSelfDeletionEndDate(
         conversationId: ConversationId,
@@ -249,11 +240,20 @@ internal interface MessageRepository {
         limit: Int,
         offset: Int
     ): List<AssetMessage>
+
+    suspend fun observeAssetStatuses(
+        conversationId: ConversationId
+    ): Flow<Either<StorageFailure, List<MessageAssetStatus>>>
+
+    suspend fun getMessageAssetTransferStatus(
+        messageId: String,
+        conversationId: ConversationId
+    ): Either<StorageFailure, AssetTransferStatus>
 }
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
 @Suppress("LongParameterList", "TooManyFunctions")
-internal class MessageDataSource internal constructor (
+internal class MessageDataSource internal constructor(
     private val selfUserId: UserId,
     private val messageApi: MessageApi,
     private val mlsMessageApi: MLSMessageApi,
@@ -402,27 +402,14 @@ internal class MessageDataSource internal constructor (
             )
         }
 
-    override suspend fun updateAssetMessageUploadStatus(
-        uploadStatus: Message.UploadStatus,
+    override suspend fun updateAssetMessageTransferStatus(
+        transferStatus: AssetTransferStatus,
         conversationId: ConversationId,
         messageUuid: String
     ): Either<CoreFailure, Unit> =
         wrapStorageRequest {
-            messageDAO.updateAssetUploadStatus(
-                uploadStatus.toDao(),
-                messageUuid,
-                conversationId.toDao()
-            )
-        }
-
-    override suspend fun updateAssetMessageDownloadStatus(
-        downloadStatus: Message.DownloadStatus,
-        conversationId: ConversationId,
-        messageUuid: String
-    ): Either<CoreFailure, Unit> =
-        wrapStorageRequest {
-            messageDAO.updateAssetDownloadStatus(
-                downloadStatus.toDao(),
+            messageDAO.updateAssetTransferStatus(
+                transferStatus.toDao(),
                 messageUuid,
                 conversationId.toDao()
             )
@@ -578,10 +565,9 @@ internal class MessageDataSource internal constructor (
         messageDAO.updateLegalHoldMessageMembers(conversationId.toDao(), messageId, newMembers.map { it.toDao() })
     }
 
-    override suspend fun resetAssetProgressStatus() {
+    override suspend fun resetAssetTransferStatus() {
         wrapStorageRequest {
-            messageDAO.resetAssetUploadStatus()
-            messageDAO.resetAssetDownloadStatus()
+            messageDAO.resetAssetTransferStatus()
         }
     }
 
@@ -618,27 +604,17 @@ internal class MessageDataSource internal constructor (
         )
     }
 
-    override suspend fun getEphemeralMessagesMarkedForDeletion(): Either<CoreFailure, List<Message>> =
+    override suspend fun getAllPendingEphemeralMessages(): Either<CoreFailure, List<Message>> =
         wrapStorageRequest {
-            messageDAO.getEphemeralMessagesMarkedForDeletion().map(messageMapper::fromEntityToMessage)
+            messageDAO.getAllPendingEphemeralMessages().map(messageMapper::fromEntityToMessage)
         }
 
-    override suspend fun getEphemeralMessagesMarkedForEndDeletion(): Either<CoreFailure, List<Message>> =
+    override suspend fun getAllAlreadyEndedEphemeralMessages(): Either<CoreFailure, List<Message>> =
         wrapStorageRequest {
             messageDAO
-                .getEphemeralMessagedMarkedForEndDeletion()
+                .getAllAlreadyEndedEphemeralMessages()
                 .map(messageMapper::fromEntityToMessage)
         }
-
-    override suspend fun markSelfDeletionStartDate(
-        conversationId: ConversationId,
-        messageUuid: String,
-        deletionStartDate: Instant
-    ): Either<CoreFailure, Unit> {
-        return wrapStorageRequest {
-            messageDAO.updateSelfDeletionStartDate(conversationId.toDao(), messageUuid, deletionStartDate)
-        }
-    }
 
     override suspend fun markSelfDeletionEndDate(
         conversationId: ConversationId,
@@ -716,5 +692,18 @@ internal class MessageDataSource internal constructor (
             conversationId = conversationId.toDao(),
             messageId = messageId
         )
+    }
+
+    override suspend fun observeAssetStatuses(
+        conversationId: ConversationId
+    ) = messageDAO.observeAssetStatuses(conversationId.toDao())
+        .wrapStorageRequest()
+        .mapRight { assetStatusEntities -> assetStatusEntities.map { it.toModel() } }
+
+    override suspend fun getMessageAssetTransferStatus(
+        messageId: String,
+        conversationId: ConversationId
+    ): Either<StorageFailure, AssetTransferStatus> = wrapStorageRequest {
+        messageDAO.getMessageAssetTransferStatus(messageId, conversationId.toDao()).toModel()
     }
 }

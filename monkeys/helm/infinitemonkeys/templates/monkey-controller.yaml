@@ -1,0 +1,68 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.service.controllerName }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.service.controllerName }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+spec:
+  ports:
+    - port: 9090
+      name: monkeymetrics
+  selector:
+    app: {{ .Values.service.controllerName }}
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.service.controllerName }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: {{ .Values.service.controllerName }}
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.service.controllerName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.service.controllerName }}
+    spec:
+      initContainers:
+        - name: monkeyinitcontroller
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command: ['bash', '-c']
+          args:
+            {{- include "service.waitMonkeyServerReady" . | indent 10 }}
+      containers:
+        - name: monkeycontroller
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          command:
+            - /opt/app/bin/monkeys
+          args:
+            - '-d1500'
+            - /config/config.json
+          env:
+            - name: MONKEYS_SOCKET_TIMEOUT
+              value: MAX_LONG
+            - name: MONKEYS_REQUEST_TIMEOUT
+              value: MAX_LONG
+            - name: MONKEYS_CONNECT_TIMEOUT
+              value: MAX_LONG
+          ports:
+            - containerPort: 9090
+              name: monkeymetrics
+          volumeMounts:
+            - name: monkeycontrollerconfigvolume
+              mountPath: /config/config.json
+              subPath: config.json
+      volumes:
+        - name: monkeycontrollerconfigvolume
+          configMap:
+            name: "{{ .Values.service.controllerName }}-config"

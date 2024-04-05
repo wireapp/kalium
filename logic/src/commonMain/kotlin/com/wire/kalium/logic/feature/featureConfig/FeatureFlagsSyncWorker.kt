@@ -17,8 +17,11 @@
  */
 package com.wire.kalium.logic.feature.featureConfig
 
+import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.logStructuredJson
 import kotlinx.coroutines.flow.filter
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
@@ -28,20 +31,23 @@ import kotlin.time.Duration.Companion.minutes
 /**
  * Worker that periodically syncs feature flags.
  */
-internal interface FeatureFlagsSyncWorker {
+interface FeatureFlagsSyncWorker {
     suspend fun execute()
 }
 
 internal class FeatureFlagSyncWorkerImpl(
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val syncFeatureConfigs: SyncFeatureConfigsUseCase,
+    kaliumLogger: KaliumLogger,
     private val minIntervalBetweenPulls: Duration = MIN_INTERVAL_BETWEEN_PULLS,
     private val clock: Clock = Clock.System
 ) : FeatureFlagsSyncWorker {
 
     private var lastPullInstant: Instant? = null
+    private val logger = kaliumLogger.withTextTag("FeatureFlagSyncWorker")
 
     override suspend fun execute() {
+        logger.d("Starting to monitor")
         incrementalSyncRepository.incrementalSyncState.filter {
             it is IncrementalSyncStatus.Live
         }.collect {
@@ -54,7 +60,16 @@ internal class FeatureFlagSyncWorkerImpl(
         val wasLastPullRecent = lastPullInstant?.let { lastPull ->
             lastPull + minIntervalBetweenPulls > now
         } ?: false
+        logger.logStructuredJson(
+            level = KaliumLogLevel.INFO,
+            leadingMessage = "syncFeatureFlagsIfNeeded",
+            jsonStringKeyValues = mapOf(
+                "lastPullInstant" to lastPullInstant,
+                "wasLastPullRecent" to wasLastPullRecent
+            )
+        )
         if (!wasLastPullRecent) {
+            logger.i("Synching feature configs and updating lastPullInstant")
             syncFeatureConfigs()
             lastPullInstant = now
         }

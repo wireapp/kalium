@@ -17,12 +17,12 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.filter
 import kotlinx.datetime.Clock
 
@@ -30,7 +30,7 @@ import kotlinx.datetime.Clock
  * This worker will wait until the sync is done and then check the CRLs if needed.
  *
  */
-internal interface CertificateRevocationListCheckWorker {
+interface CertificateRevocationListCheckWorker {
     suspend fun execute()
 }
 
@@ -44,14 +44,18 @@ internal interface CertificateRevocationListCheckWorker {
 internal class CertificateRevocationListCheckWorkerImpl(
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
-    private val checkRevocationList: CheckRevocationListUseCase
+    private val checkRevocationList: CheckRevocationListUseCase,
+    kaliumLogger: KaliumLogger
 ) : CertificateRevocationListCheckWorker {
 
+    private val logger = kaliumLogger.withTextTag("CertificateRevocationListCheckWorker")
+
     override suspend fun execute() {
+        logger.d("Starting to monitor")
         incrementalSyncRepository.incrementalSyncState
             .filter { it is IncrementalSyncStatus.Live }
             .collect {
-                kaliumLogger.i("Checking certificate revocation list (CRL)..")
+                logger.i("Checking certificate revocation list (CRL)..")
                 certificateRevocationListRepository.getCRLs()?.cRLWithExpirationList?.forEach { crl ->
                     if (crl.expiration < Clock.System.now().epochSeconds.toULong()) {
                         checkRevocationList(crl.url).map { newExpirationTime ->

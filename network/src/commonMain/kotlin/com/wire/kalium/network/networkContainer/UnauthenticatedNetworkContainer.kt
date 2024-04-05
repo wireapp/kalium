@@ -27,9 +27,10 @@ import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
 import com.wire.kalium.network.api.base.unauthenticated.VerificationCodeApi
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApi
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
+import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
 import com.wire.kalium.network.api.v0.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV0
 import com.wire.kalium.network.api.v2.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV2
-import com.wire.kalium.network.api.v3.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV3
 import com.wire.kalium.network.api.v4.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV4
 import com.wire.kalium.network.api.v5.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV5
 import com.wire.kalium.network.api.v6.unauthenticated.networkContainer.UnauthenticatedNetworkContainerV6
@@ -45,13 +46,17 @@ interface UnauthenticatedNetworkContainer {
     val appVersioningApi: AppVersioningApi
     val verificationCodeApi: VerificationCodeApi
     val domainLookupApi: DomainLookupApi
+    val remoteVersion: VersionApi
+    val serverConfigApi: ServerConfigApi
 
+    @Suppress("LongMethod")
     companion object {
         fun create(
             networkStateObserver: NetworkStateObserver,
             serverConfigDTO: ServerConfigDTO,
             proxyCredentials: ProxyCredentialsDTO?,
             userAgent: String,
+            developmentApiEnabled: Boolean,
             certificatePinning: CertificatePinning,
             mockEngine: HttpClientEngine?
         ): UnauthenticatedNetworkContainer {
@@ -60,6 +65,7 @@ interface UnauthenticatedNetworkContainer {
 
             return when (serverConfigDTO.metaData.commonApiVersion.version) {
                 0 -> UnauthenticatedNetworkContainerV0(
+                    developmentApiEnabled,
                     networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
@@ -68,6 +74,7 @@ interface UnauthenticatedNetworkContainer {
                 )
 
                 1 -> UnauthenticatedNetworkContainerV0(
+                    developmentApiEnabled,
                     networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
@@ -76,6 +83,7 @@ interface UnauthenticatedNetworkContainer {
                 )
 
                 2 -> UnauthenticatedNetworkContainerV2(
+                    developmentApiEnabled,
                     networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
@@ -83,28 +91,33 @@ interface UnauthenticatedNetworkContainer {
                     mockEngine
                 )
 
-                3 -> UnauthenticatedNetworkContainerV3(
+                // this is intentional since we should drop support for api v3
+                // and we default back to v2
+                3 -> UnauthenticatedNetworkContainerV2(
+                    developmentApiEnabled,
                     networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
-                    mockEngine
+                    mockEngine = mockEngine,
                 )
 
                 4 -> UnauthenticatedNetworkContainerV4(
+                    developmentApiEnabled,
                     networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
-                    mockEngine
+                    mockEngine = mockEngine,
                 )
 
                 5 -> UnauthenticatedNetworkContainerV5(
+                    developmentApiEnabled,
                     networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
-                    mockEngine
+                    mockEngine = mockEngine,
                 )
 
                 6 -> UnauthenticatedNetworkContainerV6(
@@ -112,7 +125,8 @@ interface UnauthenticatedNetworkContainer {
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
-                    mockEngine
+                    mockEngine = mockEngine,
+                    developmentApiEnabled = developmentApiEnabled
                 )
 
                 else -> error("Unsupported version: ${serverConfigDTO.metaData.commonApiVersion.version}")

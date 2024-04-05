@@ -57,7 +57,8 @@ class UserMapper {
             defederated = user.defederated,
             supportedProtocols = user.supported_protocols,
             isProteusVerified = user.is_proteus_verified == 1L,
-            activeOneOnOneConversationId = user.active_one_on_one_conversation_id
+            activeOneOnOneConversationId = user.active_one_on_one_conversation_id,
+            isUnderLegalHold = user.is_under_legal_hold == 1L,
         )
     }
 
@@ -107,6 +108,7 @@ class UserMapper {
         supportedProtocols: Set<SupportedProtocolEntity>?,
         oneOnOneConversationId: QualifiedIDEntity?,
         isVerifiedProteus: Long,
+        isUnderLegalHold: Long,
         id: String?,
         teamName: String?,
         teamIcon: String?,
@@ -131,7 +133,8 @@ class UserMapper {
             defederated = defederated,
             isProteusVerified = isVerifiedProteus == 1L,
             supportedProtocols = supportedProtocols,
-            activeOneOnOneConversationId = oneOnOneConversationId
+            activeOneOnOneConversationId = oneOnOneConversationId,
+            isUnderLegalHold = isUnderLegalHold == 1L,
         )
 
         val teamEntity = if (team != null && teamName != null && teamIcon != null) {
@@ -385,9 +388,13 @@ class UserDAOImpl internal constructor(
             .mapToList()
             .map { it.map(mapper::toDetailsModel) }
 
-    override suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State) =
+    override suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedIDEntity>) =
         withContext(queriesContext) {
-            userQueries.insertOrIgnoreUserIdWithConnectionStatus(qualifiedID, connectionStatus)
+            userQueries.transaction {
+                for (userId: QualifiedIDEntity in userIds) {
+                    userQueries.insertOrIgnoreUserId(userId)
+                }
+            }
         }
 
     override suspend fun observeAllUsersDetailsByConnectionStatus(connectionState: ConnectionEntity.State): Flow<List<UserDetailsEntity>> =

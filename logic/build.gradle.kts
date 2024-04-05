@@ -68,7 +68,6 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                implementation(kotlin("test"))
                 implementation(project(":persistence-test"))
                 // coroutines
                 implementation(libs.coroutines.test)
@@ -96,7 +95,6 @@ kotlin {
             dependencies {
                 implementation(libs.jna)
                 implementation(libs.coreCryptoJvm)
-                implementation(libs.bouncy.castle)
             }
         }
         val jvmTest by getting {

@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.conversation
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
@@ -62,6 +63,7 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.message.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessagesAfterEndDateUseCase
+import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCase
 import com.wire.kalium.logic.feature.team.DeleteTeamConversationUseCaseImpl
 import com.wire.kalium.logic.sync.SyncManager
@@ -94,7 +96,9 @@ class ConversationScope internal constructor(
     private val deleteEphemeralMessageEndDate: DeleteEphemeralMessagesAfterEndDateUseCase,
     private val oneOnOneResolver: OneOnOneResolver,
     private val scope: CoroutineScope,
-    private val kaliumLogger: KaliumLogger
+    private val kaliumLogger: KaliumLogger,
+    private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase,
+    private val serverConfigLinks: ServerConfig.Links
 ) {
 
     val getConversations: GetConversationsUseCase
@@ -144,7 +148,8 @@ class ConversationScope internal constructor(
             conversationGroupRepository,
             syncManager,
             currentClientIdProvider,
-            newGroupConversationSystemMessagesCreator
+            newGroupConversationSystemMessagesCreator,
+            refreshUsersWithoutMetadata
         )
 
     internal val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
@@ -156,7 +161,7 @@ class ConversationScope internal constructor(
         )
 
     val addMemberToConversationUseCase: AddMemberToConversationUseCase
-        get() = AddMemberToConversationUseCaseImpl(conversationGroupRepository, userRepository)
+        get() = AddMemberToConversationUseCaseImpl(conversationGroupRepository, userRepository, refreshUsersWithoutMetadata)
 
     val addServiceToConversationUseCase: AddServiceToConversationUseCase
         get() = AddServiceToConversationUseCase(groupRepository = conversationGroupRepository)
@@ -250,7 +255,7 @@ class ConversationScope internal constructor(
     val generateGuestRoomLink: GenerateGuestRoomLinkUseCase
         get() = GenerateGuestRoomLinkUseCaseImpl(
             conversationGroupRepository,
-            CodeUpdateHandlerImpl(userStorage.database.conversationDAO)
+            CodeUpdateHandlerImpl(userStorage.database.conversationDAO, serverConfigLinks)
         )
 
     val revokeGuestRoomLink: RevokeGuestRoomLinkUseCase
@@ -317,5 +322,6 @@ class ConversationScope internal constructor(
         get() = SetNotifiedAboutConversationUnderLegalHoldUseCaseImpl(conversationRepository)
     val observeConversationUnderLegalHoldNotified: ObserveConversationUnderLegalHoldNotifiedUseCase
         get() = ObserveConversationUnderLegalHoldNotifiedUseCaseImpl(conversationRepository)
-
+    val syncConversationCode: SyncConversationCodeUseCase
+        get() = SyncConversationCodeUseCase(conversationGroupRepository, serverConfigLinks)
 }

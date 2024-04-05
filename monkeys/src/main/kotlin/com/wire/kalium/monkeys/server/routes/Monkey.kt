@@ -1,7 +1,6 @@
 package com.wire.kalium.monkeys.server.routes
 
 import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.monkeys.conversation.Monkey
 import com.wire.kalium.monkeys.model.Backend
@@ -11,6 +10,7 @@ import com.wire.kalium.monkeys.model.Team
 import com.wire.kalium.monkeys.model.UserData
 import com.wire.kalium.monkeys.model.httpClient
 import com.wire.kalium.monkeys.server.model.AddMonkeysRequest
+import com.wire.kalium.monkeys.server.model.ConversationIdRequest
 import com.wire.kalium.monkeys.server.model.CreateConversationRequest
 import com.wire.kalium.monkeys.server.model.RemoveMonkeyRequest
 import com.wire.kalium.monkeys.server.model.SendDMRequest
@@ -29,7 +29,7 @@ import io.ktor.server.routing.routing
 
 private lateinit var monkey: Monkey
 
-fun initMonkey(backendConfig: BackendConfig) {
+fun initMonkey(backendConfig: BackendConfig, oldCode: String?) {
     val presetTeam = backendConfig.presetTeam ?: error("Preset team must contain exact one user")
     val httpClient = httpClient(backendConfig)
     val backend = Backend.fromConfig(backendConfig)
@@ -40,11 +40,12 @@ fun initMonkey(backendConfig: BackendConfig) {
         presetTeam.owner.email,
         backendConfig.passwordForUsers,
         UserId(presetTeam.owner.unqualifiedId, backendConfig.domain),
+        null,
         httpClient
     )
     val userData = presetTeam.users.map { user ->
         UserData(
-            user.email, backendConfig.passwordForUsers, UserId(user.unqualifiedId, backendConfig.domain), team
+            user.email, backendConfig.passwordForUsers, UserId(user.unqualifiedId, backendConfig.domain), team, oldCode
         )
     }.single()
     // currently the monkey id is not necessary in the server since the coordinator will be the one handling events for the replayer
@@ -52,14 +53,14 @@ fun initMonkey(backendConfig: BackendConfig) {
 }
 
 @Suppress("LongMethod")
-fun Application.configureRoutes(core: CoreLogic) {
+fun Application.configureRoutes(core: CoreLogic, oldCode: String?) {
     install(ContentNegotiation) {
         json()
     }
     routing {
         post("/$SET_MONKEY") {
             val backendConfig = call.receive<BackendConfig>()
-            initMonkey(backendConfig)
+            initMonkey(backendConfig, oldCode)
             call.respond(HttpStatusCode.OK)
         }
         get("/$IS_SESSION_ACTIVE") {
@@ -105,13 +106,13 @@ fun Application.configureRoutes(core: CoreLogic) {
             call.respond(HttpStatusCode.OK, result.conversationId)
         }
         post("/$LEAVE_CONVERSATION") {
-            val request = call.receive<ConversationId>()
-            monkey.leaveConversation(request)
+            val request = call.receive<ConversationIdRequest>()
+            monkey.leaveConversation(request.conversationId, request.creator)
             call.respond(HttpStatusCode.OK)
         }
         post("/$DESTROY_CONVERSATION") {
-            val request = call.receive<ConversationId>()
-            monkey.destroyConversation(request)
+            val request = call.receive<ConversationIdRequest>()
+            monkey.destroyConversation(request.conversationId, request.creator)
             call.respond(HttpStatusCode.OK)
         }
         post("/$ADD_MONKEY_TO_CONVERSATION") {

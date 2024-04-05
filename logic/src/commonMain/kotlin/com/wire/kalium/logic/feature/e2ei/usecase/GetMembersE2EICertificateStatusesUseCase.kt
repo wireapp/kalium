@@ -22,7 +22,8 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.CertificateStatus
-import com.wire.kalium.logic.feature.e2ei.PemCertificateDecoder
+import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapper
+import com.wire.kalium.logic.feature.e2ei.E2eiCertificate
 import com.wire.kalium.logic.functional.fold
 
 /**
@@ -35,14 +36,14 @@ interface GetMembersE2EICertificateStatusesUseCase {
 
 class GetMembersE2EICertificateStatusesUseCaseImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
-    private val pemCertificateDecoder: PemCertificateDecoder
+    private val certificateStatusMapper: CertificateStatusMapper
 ) : GetMembersE2EICertificateStatusesUseCase {
     override suspend operator fun invoke(conversationId: ConversationId, userIds: List<UserId>): Map<UserId, CertificateStatus?> =
         mlsConversationRepository.getMembersIdentities(conversationId, userIds).fold(
             { mapOf() },
             {
                 it.mapValues { (_, identities) ->
-                    identities.getUserCertificateStatus(pemCertificateDecoder)
+                    identities.getUserCertificateStatus(certificateStatusMapper)
                 }
             }
         )
@@ -54,8 +55,10 @@ class GetMembersE2EICertificateStatusesUseCaseImpl internal constructor(
  * [CertificateStatus.EXPIRED] if any certificate is expired;
  * [CertificateStatus.VALID] otherwise.
  */
-fun List<WireIdentity>.getUserCertificateStatus(pemCertificateDecoder: PemCertificateDecoder): CertificateStatus? {
-    val certificates = this.map { pemCertificateDecoder.decode(it.certificate, it.status) }
+fun List<WireIdentity>.getUserCertificateStatus(certificateStatusMapper: CertificateStatusMapper): CertificateStatus? {
+    val certificates = this.map {
+        E2eiCertificate.fromWireIdentity(it, certificateStatusMapper)
+    }
     return if (certificates.isEmpty()) {
         null
     } else if (certificates.any { it.status == CertificateStatus.REVOKED }) {

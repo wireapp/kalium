@@ -59,6 +59,10 @@ CREATE INDEX conversation_modified_date_index ON Conversation(last_modified_date
 CREATE INDEX conversation_notified_date_index ON Conversation(last_notified_date);
 CREATE INDEX conversation_read_date_index ON Conversation(last_read_date);
 CREATE INDEX conversation_creator_index ON Conversation(creator_id);
+CREATE INDEX conversation_verification_status ON Conversation(verification_status);
+
+conversationIDByGroupId:
+SELECT qualified_id, verification_status FROM Conversation WHERE mls_group_id = :groupId;
 
 deleteAllConversations:
 DELETE FROM Conversation;
@@ -266,10 +270,11 @@ selectAllConversationDetails:
 SELECT * FROM ConversationDetails
 WHERE
     type IS NOT 'SELF'
-    AND incomplete_metadata = 0
     AND (
-    type IS 'GROUP' OR (type IS NOT 'GROUP' AND (name IS NOT NULL AND otherUserId IS NOT NULL)) -- show 1:1 convos and connection requests if they have user metadata
-    OR (type IS 'ONE_ON_ONE' AND userDeleted = 1) -- show deleted 1:1 convos, to maintain prev, logic
+    type IS 'GROUP'
+    OR (type IS 'ONE_ON_ONE' AND (name IS NOT NULL AND otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
+    OR (type IS 'ONE_ON_ONE' AND userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
+    OR (type IS 'CONNECTION_PENDING' AND otherUserId IS NOT NULL) -- show connection requests even without metadata
     )
     AND (protocol IS 'PROTEUS' OR protocol IS 'MIXED' OR (protocol IS 'MLS' AND mls_group_state IS 'ESTABLISHED'))
     AND archived = :fromArchive
@@ -378,16 +383,24 @@ LEFT JOIN Member ON Client.user_id = Member.user
 LEFT JOIN Conversation
 ON Member.conversation = Conversation.qualified_id OR Client.user_id = Conversation.qualified_id
 WHERE Conversation.mls_group_id IS NOT NULL AND Client.id = :clientId
+AND Conversation.mls_group_state IS 'ESTABLISHED'
 ORDER BY Conversation.type DESC LIMIT 1;
 
 getMLSGroupIdByUserId:
 SELECT Conversation.mls_group_id FROM Member
 JOIN Conversation ON Conversation.qualified_id = Member.conversation
-WHERE Conversation.mls_group_id IS NOT NULL AND Member.user = :userId LIMIT 1;
+WHERE Conversation.mls_group_id IS NOT NULL AND mls_group_state IS 'ESTABLISHED' AND Member.user = :userId LIMIT 1;
 
 getMLSGroupIdByConversationId:
 SELECT Conversation.mls_group_id FROM Conversation
-WHERE Conversation.qualified_id = :conversationId;
+WHERE Conversation.qualified_id = :conversationId
+AND Conversation.mls_group_state IS 'ESTABLISHED';
+
+getEstablishedSelfMLSGroupId:
+SELECT Conversation.mls_group_id FROM Conversation
+WHERE type = 'SELF'
+AND protocol = 'MLS'
+AND Conversation.mls_group_state IS 'ESTABLISHED';
 
 updateConversationReceiptMode:
 UPDATE Conversation
@@ -429,7 +442,6 @@ updateLegalHoldStatus {
 UPDATE Conversation
 SET legal_hold_status = :legal_hold_status
 WHERE qualified_id = :qualified_id AND legal_hold_status != :legal_hold_status;
-SELECT changes();
 }
 
 upsertLegalHoldStatusChangeNotified {
@@ -438,7 +450,6 @@ VALUES (:conversationId, :notified)
 ON CONFLICT(conversation_id) DO UPDATE SET
     legal_hold_status_change_notified = excluded.legal_hold_status_change_notified
     WHERE legal_hold_status_change_notified != excluded.legal_hold_status_change_notified;
-SELECT changes();
 }
 
 selectLegalHoldStatus:
@@ -465,6 +476,7 @@ CREATE TRIGGER addMessageAfterProteusVerificationStatusChange
 AFTER UPDATE ON Conversation
 WHEN new.proteus_verification_status != old.proteus_verification_status
 AND (new.proteus_verification_status  = 'VERIFIED' OR old.proteus_verification_status = 'VERIFIED')
+AND new.protocol != 'MLS'
 BEGIN
     INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility)
     VALUES(

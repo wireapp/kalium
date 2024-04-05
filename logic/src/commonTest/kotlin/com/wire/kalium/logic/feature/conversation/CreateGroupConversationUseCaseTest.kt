@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -108,6 +109,10 @@ class CreateGroupConversationUseCaseTest {
             .arrange()
 
         createGroupConversation(name, members, conversationOptions)
+
+        verify(arrangement.refreshUsersWithoutMetadata)
+            .suspendFunction(arrangement.refreshUsersWithoutMetadata::invoke)
+            .wasInvoked(exactly = once)
 
         verify(arrangement.conversationGroupRepository)
             .suspendFunction(arrangement.conversationGroupRepository::createGroupConversation)
@@ -198,6 +203,9 @@ class CreateGroupConversationUseCaseTest {
         val conversationGroupRepository = mock(ConversationGroupRepository::class)
 
         @Mock
+        val refreshUsersWithoutMetadata = mock(RefreshUsersWithoutMetadataUseCase::class)
+
+        @Mock
         val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
         @Mock
@@ -213,7 +221,8 @@ class CreateGroupConversationUseCaseTest {
             conversationGroupRepository,
             syncManager,
             currentClientIdProvider,
-            newGroupConversationSystemMessagesCreator
+            newGroupConversationSystemMessagesCreator,
+            refreshUsersWithoutMetadata
         )
 
         fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))

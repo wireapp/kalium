@@ -17,7 +17,9 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
+import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import com.wire.kalium.logic.functional.intervalFlow
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.days
@@ -31,13 +33,21 @@ internal interface ACMECertificatesSyncWorker {
 
 internal class ACMECertificatesSyncWorkerImpl(
     private val e2eiRepository: E2EIRepository,
-    private val syncInterval: Duration = DEFAULT_SYNC_INTERVAL
+    private val syncInterval: Duration = DEFAULT_SYNC_INTERVAL,
+    private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase,
+    kaliumLogger: KaliumLogger
 ) : ACMECertificatesSyncWorker {
 
+    private val logger = kaliumLogger.withTextTag("ACMECertificatesSyncWorker")
+
     override suspend fun execute() {
+        logger.d("Starting to monitor")
         intervalFlow(syncInterval.inWholeMilliseconds)
             .collect {
-                e2eiRepository.fetchFederationCertificates()
+                if (isE2EIEnabledUseCase()) {
+                    logger.i("Fetching federation certificates")
+                    e2eiRepository.fetchFederationCertificates()
+                }
             }
     }
 

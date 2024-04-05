@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.User
@@ -107,8 +108,6 @@ sealed interface Message {
                     "sizeInBytes" to "${content.value.sizeInBytes}",
                     "mimeType" to content.value.mimeType,
                     "metaData" to "${content.value.metadata}",
-                    "downloadStatus" to "${content.value.downloadStatus}",
-                    "uploadStatus" to "${content.value.uploadStatus}",
                     "otrKeySize" to "${content.value.remoteData.otrKey.size}",
                 )
 
@@ -476,7 +475,7 @@ sealed interface Message {
         sealed class SelfDeletionStatus {
             data object NotStarted : SelfDeletionStatus()
 
-            data class Started(val selfDeletionStartDate: Instant) : SelfDeletionStatus()
+            data class Started(val selfDeletionEndDate: Instant) : SelfDeletionStatus()
 
             fun toLogMap(): Map<String, String> = when (this) {
                 is NotStarted -> mutableMapOf(
@@ -485,7 +484,7 @@ sealed interface Message {
 
                 is Started -> mutableMapOf(
                     "value" to "STARTED",
-                    "time" to this.selfDeletionStartDate.toString()
+                    "end-time" to this.selfDeletionEndDate.toString()
                 )
             }
 
@@ -496,12 +495,9 @@ sealed interface Message {
 
         fun timeLeftForDeletion(): Duration {
             return if (selfDeletionStatus is SelfDeletionStatus.Started) {
-                val timeElapsedSinceSelfDeletionStartDate = Clock.System.now() - selfDeletionStatus.selfDeletionStartDate
 
-                // time left for deletion it can be a negative value if the time difference between the self deletion start date and
-                // now is greater than expire after millis, we normalize it to 0 seconds
-                val timeLeft = expireAfter - timeElapsedSinceSelfDeletionStartDate
-
+                val timeLeft = selfDeletionStatus.selfDeletionEndDate - Clock.System.now()
+                // timeLeft can be a negative value if the self deletion end date already passed, if so then 0 seconds should be returned
                 if (timeLeft.isNegative()) {
                     Duration.ZERO
                 } else {
@@ -518,76 +514,17 @@ sealed interface Message {
 
         fun toLogMap(): Map<String, Any?> = mapOf(
             "expire-after" to expireAfter.inWholeSeconds.toString(),
-            "expire-start-time" to expireStartTimeElement().toString(),
+            "expire-end-time" to expireEndTimeElement().toString(),
             "deletion-status" to selfDeletionStatus.toLogMap()
         )
 
-        private fun expireStartTimeElement(): String? {
+        private fun expireEndTimeElement(): String? {
             return when (val selfDeletionStatus = selfDeletionStatus) {
                 SelfDeletionStatus.NotStarted -> null
                 is SelfDeletionStatus.Started ->
-                    selfDeletionStatus.selfDeletionStartDate.toIsoDateTimeString()
+                    selfDeletionStatus.selfDeletionEndDate.toIsoDateTimeString()
             }
         }
-    }
-
-    enum class UploadStatus {
-        /**
-         * There was no attempt done to upload the asset's data to remote (server) storage.
-         */
-        NOT_UPLOADED,
-
-        /**
-         * The asset is currently being uploaded and will be saved internally after a successful upload
-         * @see UPLOADED
-         */
-        UPLOAD_IN_PROGRESS,
-
-        /**
-         * The asset was uploaded and saved in the internal storage, that should be only readable by this Kalium client.
-         */
-        UPLOADED,
-
-        /**
-         * The last attempt at uploading and saving this asset's data failed.
-         */
-        FAILED_UPLOAD
-    }
-
-    enum class DownloadStatus {
-        /**
-         * There was no attempt done to fetch the asset's data from remote (server) storage.
-         */
-        NOT_DOWNLOADED,
-
-        /**
-         * The asset is currently being downloaded and will be saved internally after a successful download
-         * @see SAVED_INTERNALLY
-         */
-        DOWNLOAD_IN_PROGRESS,
-
-        /**
-         * The asset was downloaded and saved in the internal storage, that should be only readable by this Kalium client.
-         */
-        SAVED_INTERNALLY,
-
-        /**
-         * The asset was downloaded internally and saved in an external storage, readable by other software on the machine that this Kalium
-         * client is currently running on.
-         *
-         * _.e.g_: Asset was saved in Downloads, Desktop or other user-chosen directory.
-         */
-        SAVED_EXTERNALLY,
-
-        /**
-         * The last attempt at fetching and saving this asset's data failed.
-         */
-        FAILED_DOWNLOAD,
-
-        /**
-         * Asset was not found on the server
-         */
-        NOT_FOUND
     }
 
     enum class Visibility {
@@ -658,3 +595,9 @@ sealed class DeliveryStatus {
         return Json.encodeToString(toLogMap())
     }
 }
+
+data class MessageAssetStatus(
+    val id: String,
+    val conversationId: ConversationId,
+    val transferStatus: AssetTransferStatus
+)

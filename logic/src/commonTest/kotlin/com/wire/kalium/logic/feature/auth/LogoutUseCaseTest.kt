@@ -21,6 +21,7 @@ package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.client.ClientRepository
@@ -49,6 +50,7 @@ import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.thenDoNothing
 import io.mockative.time
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -91,6 +93,10 @@ class LogoutUseCaseTest {
             verify(arrangement.userSessionScopeProvider)
                 .function(arrangement.userSessionScopeProvider::delete)
                 .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.userConfigRepository)
+                .function(arrangement.userConfigRepository::clearE2EISettings)
+                .with()
                 .wasInvoked(exactly = once)
 
             if (reason == LogoutReason.SELF_HARD_LOGOUT) {
@@ -356,6 +362,9 @@ class LogoutUseCaseTest {
         val clientRepository = mock(classOf<ClientRepository>())
 
         @Mock
+        val userConfigRepository = mock(classOf<UserConfigRepository>())
+
+        @Mock
         val deregisterTokenUseCase = mock(classOf<DeregisterTokenUseCase>())
 
         @Mock
@@ -373,7 +382,8 @@ class LogoutUseCaseTest {
         @Mock
         val userSessionWorkScheduler = configure(mock(classOf<UserSessionWorkScheduler>())) { stubsUnitByDefault = true }
 
-        @Mock val observeEstablishedCallsUseCase =  mock(classOf<ObserveEstablishedCallsUseCase>())
+        @Mock
+        val observeEstablishedCallsUseCase = mock(classOf<ObserveEstablishedCallsUseCase>())
 
         @Mock
         val endCall = configure(mock(EndCallUseCase::class)) { stubsUnitByDefault = true }
@@ -390,6 +400,7 @@ class LogoutUseCaseTest {
                 logoutRepository,
                 sessionRepository,
                 clientRepository,
+                userConfigRepository,
                 USER_ID,
                 deregisterTokenUseCase,
                 clearClientDataUseCase,
@@ -409,6 +420,11 @@ class LogoutUseCaseTest {
                 .suspendFunction(endCall::invoke)
                 .whenInvokedWith(any())
                 .thenReturn(Unit)
+
+            given(userConfigRepository)
+                .suspendFunction(userConfigRepository::clearE2EISettings)
+                .whenInvoked()
+                .thenDoNothing()
         }
 
         fun withDeregisterTokenResult(result: DeregisterTokenUseCase.Result): Arrangement {

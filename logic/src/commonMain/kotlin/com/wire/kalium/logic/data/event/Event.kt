@@ -385,7 +385,7 @@ sealed class Event(open val id: String) {
             override val conversationId: ConversationId,
             val key: String,
             val code: String,
-            val uri: String,
+            val uri: String?,
             val isPasswordProtected: Boolean,
         ) : Conversation(id, conversationId) {
             override fun toLogMap(): Map<String, Any?> = mapOf(typeKey to "Conversation.CodeUpdated")
@@ -472,8 +472,7 @@ sealed class Event(open val id: String) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "FeatureConfig.MLSUpdated",
                 idKey to id.obfuscateId(),
-                featureStatusKey to model.status.name,
-                "allowedUsers" to model.allowedUsers.map { it.value.obfuscateId() }
+                featureStatusKey to model.status.name
             )
         }
 

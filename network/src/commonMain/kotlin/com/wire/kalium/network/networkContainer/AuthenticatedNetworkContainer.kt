@@ -45,7 +45,6 @@ import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v0.authenticated.networkContainer.AuthenticatedNetworkContainerV0
 import com.wire.kalium.network.api.v2.authenticated.networkContainer.AuthenticatedNetworkContainerV2
-import com.wire.kalium.network.api.v3.authenticated.networkContainer.AuthenticatedNetworkContainerV3
 import com.wire.kalium.network.api.v4.authenticated.networkContainer.AuthenticatedNetworkContainerV4
 import com.wire.kalium.network.api.v5.authenticated.networkContainer.AuthenticatedNetworkContainerV5
 import com.wire.kalium.network.api.v6.authenticated.networkContainer.AuthenticatedNetworkContainerV6
@@ -148,7 +147,9 @@ interface AuthenticatedNetworkContainer {
                     kaliumLogger,
                 )
 
-                3 -> AuthenticatedNetworkContainerV3(
+                // this is intentional since we should drop support for api v3
+                // and we default back to v2
+                3 -> AuthenticatedNetworkContainerV2(
                     networkStateObserver,
                     sessionManager,
                     selfUserId,

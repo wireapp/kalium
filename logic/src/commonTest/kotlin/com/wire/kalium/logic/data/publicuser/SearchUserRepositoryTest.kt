@@ -466,127 +466,158 @@ class SearchUserRepositoryTest {
             .wasInvoked(exactly = once)
     }
 
-    internal class Arrangement : SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl(),
-        SearchDAOArrangement by SearchDAOArrangementImpl() {
+    @Test
+    fun givenSearchQueryAndNullForConversation_thenSearchingByHandle_thenCorrectDaoFunctionIsCalled() = runTest {
+        val (arrangement, searchUserRepository) = Arrangement()
+            .arrange {
+                withSearchByHandle(emptyList())
+            }
 
-        @Mock
-        internal val userDetailsApi: UserDetailsApi = mock(classOf<UserDetailsApi>())
+        searchUserRepository.searchLocalByHandle("handle", null).shouldSucceed()
 
-        @Mock
-        internal val userSearchApiWrapper: UserSearchApiWrapper = mock(classOf<UserSearchApiWrapper>())
-
-        @Mock
-        internal val userDAO: UserDAO = mock(classOf<UserDAO>())
-
-        private val searchUserRepository: SearchUserRepository by lazy {
-            SearchUserRepositoryImpl(
-                userDAO,
-                searchDAO,
-                userDetailsApi,
-                userSearchApiWrapper,
-                selfUserId = TestUser.SELF.id,
-                selfTeamIdProvider
-            )
-        }
-
-        fun arrange(block: Arrangement.() -> Unit = { }) = apply(block).run {
-            this to searchUserRepository
-        }
-
-        fun withSearchResult(result: Either<NetworkFailure, UserSearchResponse>) = apply {
-            given(userSearchApiWrapper)
-                .suspendFunction(userSearchApiWrapper::search)
-                .whenInvokedWith(anything(), anything(), anything(), anything())
-                .thenReturn(result)
-        }
-
-        fun withGetMultipleUsersResult(result: NetworkResponse<ListUsersDTO>) = apply {
-            given(userDetailsApi)
-                .suspendFunction(userDetailsApi::getMultipleUsers)
-                .whenInvokedWith(any())
-                .thenReturn(result)
-        }
-
-        fun withObserveUserDetailsByQualifiedIdResult(result: Flow<UserDetailsEntity?>) = apply {
-            given(userDAO)
-                .suspendFunction(userDAO::observeUserDetailsByQualifiedID)
-                .whenInvokedWith(any())
-                .thenReturn(result)
-        }
-
-        fun withGetUsersDetailsNotInConversationByNameOrHandleOrEmailResult(result: Flow<List<UserDetailsEntity>>) = apply {
-            given(userDAO)
-                .suspendFunction(userDAO::getUsersDetailsNotInConversationByNameOrHandleOrEmail)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(result)
-        }
-
-        fun withGetUserDetailsByNameOrHandleOrEmailAndConnectionStatesResult(result: Flow<List<UserDetailsEntity>>) = apply {
-            given(userDAO)
-                .suspendFunction(userDAO::getUserDetailsByNameOrHandleOrEmailAndConnectionStates)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(result)
-        }
-
-        fun withGetUserDetailsByHandleAndConnectionStatesResult(result: Flow<List<UserDetailsEntity>>) = apply {
-            given(userDAO)
-                .suspendFunction(userDAO::getUserDetailsByHandleAndConnectionStates)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(result)
-        }
-
-        fun withGetUsersDetailsNotInConversationByHandleResult(result: Flow<List<UserDetailsEntity>>) = apply {
-            given(userDAO)
-                .suspendFunction(userDAO::getUsersDetailsNotInConversationByHandle)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(result)
-        }
-
-        fun withUpsertUsersSuccess() = apply {
-            given(userDAO)
-                .suspendFunction(userDAO::upsertUsers)
-                .whenInvokedWith(any())
-                .thenReturn(Unit)
-        }
+        verify(arrangement.searchDAO)
+            .suspendFunction(arrangement.searchDAO::handleSearch)
+            .with(eq("handle"))
+            .wasInvoked(exactly = once)
     }
 
-    private companion object {
-        const val TEST_QUERY = "testQuery"
-        const val TEST_DOMAIN = "testDomain"
-        val CONTACTS = buildList {
-            for (i in 1..5) {
-                add(
-                    ContactDTO(
-                        accentId = i,
-                        handle = "handle$i",
-                        name = "name$i",
-                        qualifiedID = UserIdDTO(
-                            value = "value$i",
-                            domain = "domain$i"
-                        ),
-                        team = "team$i"
-                    )
+    @Test
+    fun givenSearchQueryAndConversation_thenSearchingByHandle_thenCorrectDaoFunctionIsCalled() = runTest {
+        val conversationId = ConversationId("conversationId", "domain")
+        val (arrangement, searchUserRepository) = Arrangement()
+            .arrange {
+                withSearchByHandleExcludingConversation(emptyList())
+            }
+
+        searchUserRepository.searchLocalByHandle("handle", conversationId).shouldSucceed()
+
+        verify(arrangement.searchDAO)
+            .suspendFunction(arrangement.searchDAO::handleSearchExcludingAConversation)
+            .with(eq("handle"), eq(conversationId.toDao()))
+            .wasInvoked(exactly = once)
+    }
+
+        internal class Arrangement : SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl(),
+            SearchDAOArrangement by SearchDAOArrangementImpl() {
+
+            @Mock
+            internal val userDetailsApi: UserDetailsApi = mock(classOf<UserDetailsApi>())
+
+            @Mock
+            internal val userSearchApiWrapper: UserSearchApiWrapper = mock(classOf<UserSearchApiWrapper>())
+
+            @Mock
+            internal val userDAO: UserDAO = mock(classOf<UserDAO>())
+
+            private val searchUserRepository: SearchUserRepository by lazy {
+                SearchUserRepositoryImpl(
+                    userDAO,
+                    searchDAO,
+                    userDetailsApi,
+                    userSearchApiWrapper,
+                    selfUserId = TestUser.SELF.id,
+                    selfTeamIdProvider
                 )
+            }
+
+            fun arrange(block: Arrangement.() -> Unit = { }) = apply(block).run {
+                this to searchUserRepository
+            }
+
+            fun withSearchResult(result: Either<NetworkFailure, UserSearchResponse>) = apply {
+                given(userSearchApiWrapper)
+                    .suspendFunction(userSearchApiWrapper::search)
+                    .whenInvokedWith(anything(), anything(), anything(), anything())
+                    .thenReturn(result)
+            }
+
+            fun withGetMultipleUsersResult(result: NetworkResponse<ListUsersDTO>) = apply {
+                given(userDetailsApi)
+                    .suspendFunction(userDetailsApi::getMultipleUsers)
+                    .whenInvokedWith(any())
+                    .thenReturn(result)
+            }
+
+            fun withObserveUserDetailsByQualifiedIdResult(result: Flow<UserDetailsEntity?>) = apply {
+                given(userDAO)
+                    .suspendFunction(userDAO::observeUserDetailsByQualifiedID)
+                    .whenInvokedWith(any())
+                    .thenReturn(result)
+            }
+
+            fun withGetUsersDetailsNotInConversationByNameOrHandleOrEmailResult(result: Flow<List<UserDetailsEntity>>) = apply {
+                given(userDAO)
+                    .suspendFunction(userDAO::getUsersDetailsNotInConversationByNameOrHandleOrEmail)
+                    .whenInvokedWith(anything(), anything())
+                    .thenReturn(result)
+            }
+
+            fun withGetUserDetailsByNameOrHandleOrEmailAndConnectionStatesResult(result: Flow<List<UserDetailsEntity>>) = apply {
+                given(userDAO)
+                    .suspendFunction(userDAO::getUserDetailsByNameOrHandleOrEmailAndConnectionStates)
+                    .whenInvokedWith(anything(), anything())
+                    .thenReturn(result)
+            }
+
+            fun withGetUserDetailsByHandleAndConnectionStatesResult(result: Flow<List<UserDetailsEntity>>) = apply {
+                given(userDAO)
+                    .suspendFunction(userDAO::getUserDetailsByHandleAndConnectionStates)
+                    .whenInvokedWith(anything(), anything())
+                    .thenReturn(result)
+            }
+
+            fun withGetUsersDetailsNotInConversationByHandleResult(result: Flow<List<UserDetailsEntity>>) = apply {
+                given(userDAO)
+                    .suspendFunction(userDAO::getUsersDetailsNotInConversationByHandle)
+                    .whenInvokedWith(anything(), anything())
+                    .thenReturn(result)
+            }
+
+            fun withUpsertUsersSuccess() = apply {
+                given(userDAO)
+                    .suspendFunction(userDAO::upsertUsers)
+                    .whenInvokedWith(any())
+                    .thenReturn(Unit)
             }
         }
 
-        val CONTACT_SEARCH_RESPONSE = UserSearchResponse(
-            documents = CONTACTS,
-            found = CONTACTS.size,
-            returned = 5,
-            searchPolicy = SearchPolicyDTO.FULL_SEARCH,
-            took = 100,
-        )
+        private companion object {
+            const val TEST_QUERY = "testQuery"
+            const val TEST_DOMAIN = "testDomain"
+            val CONTACTS = buildList {
+                for (i in 1..5) {
+                    add(
+                        ContactDTO(
+                            accentId = i,
+                            handle = "handle$i",
+                            name = "name$i",
+                            qualifiedID = UserIdDTO(
+                                value = "value$i",
+                                domain = "domain$i"
+                            ),
+                            team = "team$i"
+                        )
+                    )
+                }
+            }
 
-        val CONTACT_SEARCH_RESPONSE_EMPTY = UserSearchResponse(
-            documents = emptyList(),
-            found = 0,
-            returned = 0,
-            searchPolicy = SearchPolicyDTO.FULL_SEARCH,
-            took = 0,
-        )
+            val CONTACT_SEARCH_RESPONSE = UserSearchResponse(
+                documents = CONTACTS,
+                found = CONTACTS.size,
+                returned = 5,
+                searchPolicy = SearchPolicyDTO.FULL_SEARCH,
+                took = 100,
+            )
 
-        val USER_RESPONSE = ListUsersDTO(usersFailed = emptyList(), usersFound = listOf(USER_PROFILE_DTO))
+            val CONTACT_SEARCH_RESPONSE_EMPTY = UserSearchResponse(
+                documents = emptyList(),
+                found = 0,
+                returned = 0,
+                searchPolicy = SearchPolicyDTO.FULL_SEARCH,
+                took = 0,
+            )
+
+            val USER_RESPONSE = ListUsersDTO(usersFailed = emptyList(), usersFound = listOf(USER_PROFILE_DTO))
+        }
+
     }
-
-}

@@ -41,6 +41,7 @@ import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.message.AssetTypeEntity
 import com.wire.kalium.persistence.dao.message.ButtonEntity
 import com.wire.kalium.persistence.dao.message.DeliveryStatusEntity
+import com.wire.kalium.persistence.dao.message.MessageAssetStatusEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
@@ -91,9 +92,9 @@ class MessageMapperImpl(
             is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp.toInstant())
         },
         expireAfterMs = message.expirationData?.expireAfter?.inWholeMilliseconds,
-        selfDeletionStartDate = message.expirationData?.let {
+        selfDeletionEndDate = message.expirationData?.let {
             when (it.selfDeletionStatus) {
-                is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionStatus.selfDeletionStartDate
+                is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionStatus.selfDeletionEndDate
                 is Message.ExpirationData.SelfDeletionStatus.NotStarted -> null
             }
         },
@@ -116,9 +117,9 @@ class MessageMapperImpl(
         senderName = message.senderUserName,
         expireAfterMs = message.expirationData?.expireAfter?.inWholeMilliseconds,
         readCount = if (message.status is Message.Status.Read) message.status.readCount else 0,
-        selfDeletionStartDate = message.expirationData?.let {
+        selfDeletionEndDate = message.expirationData?.let {
             when (it.selfDeletionStatus) {
-                is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionStatus.selfDeletionStartDate
+                is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionStatus.selfDeletionEndDate
                 is Message.ExpirationData.SelfDeletionStatus.NotStarted -> null
             }
         }
@@ -140,7 +141,6 @@ class MessageMapperImpl(
             message.assetId,
             message.width,
             message.height,
-            message.downloadStatus.toModel(),
             message.assetPath?.toPath(),
             message.isSelfAsset
         )
@@ -161,9 +161,10 @@ class MessageMapperImpl(
         expirationData = message.expireAfterMs?.let {
             Message.ExpirationData(
                 expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
-                selfDeletionStatus = message.selfDeletionStartDate
+                selfDeletionStatus = message.selfDeletionEndDate
                     ?.let { Message.ExpirationData.SelfDeletionStatus.Started(it) }
-                    ?: Message.ExpirationData.SelfDeletionStatus.NotStarted)
+                    ?: Message.ExpirationData.SelfDeletionStatus.NotStarted
+            )
         },
         visibility = message.visibility.toModel(),
         reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
@@ -179,9 +180,9 @@ class MessageMapperImpl(
         },
         sender = message.sender?.let {
             if (message.isSelfMessage) {
-                userMapper.fromUserEntityToSelfUser(it)
+                userMapper.fromUserDetailsEntityToSelfUser(it)
             } else {
-                userMapper.fromUserEntityToOtherUser(it)
+                userMapper.fromUserDetailsEntityToOtherUser(it)
             }
         }
     )
@@ -198,15 +199,16 @@ class MessageMapperImpl(
         expirationData = message.expireAfterMs?.let {
             Message.ExpirationData(
                 expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
-                selfDeletionStatus = message.selfDeletionStartDate
+                selfDeletionStatus = message.selfDeletionEndDate
                     ?.let { Message.ExpirationData.SelfDeletionStatus.Started(it) }
-                    ?: Message.ExpirationData.SelfDeletionStatus.NotStarted)
+                    ?: Message.ExpirationData.SelfDeletionStatus.NotStarted
+            )
         },
         sender = message.sender?.let {
             if (message.isSelfMessage) {
-                userMapper.fromUserEntityToSelfUser(it)
+                userMapper.fromUserDetailsEntityToSelfUser(it)
             } else {
-                userMapper.fromUserEntityToOtherUser(it)
+                userMapper.fromUserDetailsEntityToOtherUser(it)
             }
         }
     )
@@ -336,8 +338,6 @@ class MessageMapperImpl(
                 assetSizeInBytes = sizeInBytes,
                 assetName = name,
                 assetMimeType = mimeType,
-                assetUploadStatus = uploadStatus.toDao(),
-                assetDownloadStatus = downloadStatus.toDao(),
                 assetOtrKey = remoteData.otrKey,
                 assetSha256Key = remoteData.sha256,
                 assetId = remoteData.assetId,
@@ -406,7 +406,12 @@ fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when
             MessageEntity.MemberChangeType.ADDED -> MessageContent.MemberChange.Added(memberList)
             MessageEntity.MemberChangeType.REMOVED -> MessageContent.MemberChange.Removed(memberList)
             MessageEntity.MemberChangeType.CREATION_ADDED -> MessageContent.MemberChange.CreationAdded(memberList)
-            MessageEntity.MemberChangeType.FAILED_TO_ADD -> MessageContent.MemberChange.FailedToAdd(memberList)
+            MessageEntity.MemberChangeType.FAILED_TO_ADD_FEDERATION ->
+                MessageContent.MemberChange.FailedToAdd(memberList, MessageContent.MemberChange.FailedToAdd.Type.Federation)
+            MessageEntity.MemberChangeType.FAILED_TO_ADD_LEGAL_HOLD ->
+                MessageContent.MemberChange.FailedToAdd(memberList, MessageContent.MemberChange.FailedToAdd.Type.LegalHold)
+            MessageEntity.MemberChangeType.FAILED_TO_ADD_UNKNOWN ->
+                MessageContent.MemberChange.FailedToAdd(memberList, MessageContent.MemberChange.FailedToAdd.Type.Unknown)
             MessageEntity.MemberChangeType.FEDERATION_REMOVED -> MessageContent.MemberChange.FederationRemoved(memberList)
             MessageEntity.MemberChangeType.REMOVED_FROM_TEAM -> MessageContent.MemberChange.RemovedFromTeam(memberList)
         }
@@ -632,7 +637,7 @@ private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage)
     else -> MessageContent.QuotedMessageDetails.Invalid
 }
 
-@Suppress("ComplexMethod")
+@Suppress("ComplexMethod", "LongMethod")
 fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
     is MessageContent.MemberChange -> {
         val memberUserIdList = this.members.map { it.toDao() }
@@ -647,7 +652,14 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
                 MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.CREATION_ADDED)
 
             is MessageContent.MemberChange.FailedToAdd ->
-                MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD)
+                when (this.type) {
+                    MessageContent.MemberChange.FailedToAdd.Type.Federation ->
+                        MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD_FEDERATION)
+                    MessageContent.MemberChange.FailedToAdd.Type.LegalHold ->
+                        MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD_LEGAL_HOLD)
+                    MessageContent.MemberChange.FailedToAdd.Type.Unknown ->
+                        MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD_UNKNOWN)
+                }
 
             is MessageContent.MemberChange.FederationRemoved -> MessageEntityContent.MemberChange(
                 memberUserIdList,
@@ -702,4 +714,20 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
         is MessageContent.LegalHold.ForMembers.Enabled ->
             MessageEntityContent.LegalHold(this.members.map { it.toDao() }, MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS)
     }
+}
+
+fun MessageAssetStatus.toDao(): MessageAssetStatusEntity {
+    return MessageAssetStatusEntity(
+        id = id,
+        conversationId = conversationId.toDao(),
+        transferStatus = transferStatus.toDao()
+    )
+}
+
+fun MessageAssetStatusEntity.toModel(): MessageAssetStatus {
+    return MessageAssetStatus(
+        id = id,
+        conversationId = conversationId.toModel(),
+        transferStatus = transferStatus.toModel()
+    )
 }

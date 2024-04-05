@@ -54,6 +54,12 @@ internal interface SearchRepositoryArrangement {
         searchQuery: Matcher<String> = any(),
         excludeConversation: Matcher<ConversationId?> = anything()
     )
+
+    fun withSearchByHandle(
+        result: Either<StorageFailure, List<UserSearchDetails>>,
+        searchQuery: Matcher<String> = any(),
+        excludeConversation: Matcher<ConversationId?> = anything()
+    )
 }
 
 internal class SearchRepositoryArrangementImpl : SearchRepositoryArrangement {
@@ -94,4 +100,14 @@ internal class SearchRepositoryArrangementImpl : SearchRepositoryArrangement {
             .thenReturn(result)
     }
 
+    override fun withSearchByHandle(
+        result: Either<StorageFailure, List<UserSearchDetails>>,
+        searchQuery: Matcher<String>,
+        excludeConversation: Matcher<ConversationId?>
+    ) {
+        given(searchUserRepository)
+            .suspendFunction(searchUserRepository::searchLocalByHandle)
+            .whenInvokedWith(searchQuery, excludeConversation)
+            .thenReturn(result)
+    }
 }

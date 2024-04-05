@@ -63,6 +63,7 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAO
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAOImpl
+import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAOImpl
 import com.wire.kalium.persistence.dao.newclient.NewClientDAO
 import com.wire.kalium.persistence.dao.newclient.NewClientDAOImpl
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
@@ -159,8 +160,10 @@ class UserDatabaseBuilder internal constructor(
         MessageConversationLocationContentAdapter = TableMapper.messageConversationLocationContentAdapter,
         MessageLegalHoldContentAdapter = TableMapper.messageLegalHoldContentAdapter,
         MessageConversationProtocolChangedDuringACallContentAdapter =
-            TableMapper.messageConversationProtocolChangedDuringACAllContentAdapter,
+        TableMapper.messageConversationProtocolChangedDuringACAllContentAdapter,
         ConversationLegalHoldStatusChangeNotifiedAdapter = TableMapper.conversationLegalHoldStatusChangeNotifiedAdapter,
+        MessageAssetTransferStatusAdapter = TableMapper.messageAssetTransferStatusAdapter,
+        MessageDraftAdapter = TableMapper.messageDraftsAdapter
     )
 
     init {
@@ -242,8 +245,14 @@ class UserDatabaseBuilder internal constructor(
             userId,
             database.reactionsQueries,
             queriesContext,
+            database.messageAssetTransferStatusQueries,
             database.buttonContentQueries
         )
+
+    val messageDraftDAO = MessageDraftDAOImpl(
+        database.messageDraftsQueries,
+        queriesContext
+    )
 
     val assetDAO: AssetDAO
         get() = AssetDAOImpl(database.assetsQueries, queriesContext)

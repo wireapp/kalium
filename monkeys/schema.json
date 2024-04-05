@@ -146,8 +146,7 @@
                     "passwordForUsers",
                     "domain",
                     "authUser",
-                    "authPassword",
-                    "userCount"
+                    "authPassword"
                 ],
                 "properties": {
                     "api": {
@@ -196,7 +195,18 @@
                     },
                     "userCount": {
                         "description": "How many users should be created in this team",
-                        "type": "integer"
+                        "type": "integer",
+                        "default": 10
+                    },
+                    "disable2FA": {
+                        "description": "Force disable 2FA",
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "2FAEnabled": {
+                        "description": "Does this server require 2FA authentication?",
+                        "type": "boolean",
+                        "default": false
                     },
                     "dumpUsers": {
                         "description": "Should the application dump the users created into a file",

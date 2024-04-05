@@ -25,6 +25,7 @@ import com.wire.kalium.persistence.MessageAssetViewQueries
 import com.wire.kalium.persistence.MessagesQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
+import com.wire.kalium.persistence.kaliumLogger
 import kotlin.coroutines.CoroutineContext
 
 interface MessageExtensions {
@@ -128,6 +129,7 @@ internal class MessageExtensionsImpl internal constructor(
             context = coroutineContext,
             initialOffset = initialOffset,
             queryProvider = { limit, offset ->
+                kaliumLogger.d("[QueryPagingSource] Loading [MessageEntity] data: offset = $offset limit = $limit")
                 messagesQueries.selectByConversationIdAndVisibility(
                     conversationId,
                     visibilities,

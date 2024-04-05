@@ -20,13 +20,26 @@ package com.wire.kalium.logic.feature.search
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.featureFlags.KaliumConfigs
 
 class SearchScope internal constructor(
     private val searchUserRepository: SearchUserRepository,
     private val sessionRepository: SessionRepository,
-    private val selfUserId: UserId
+    private val selfUserId: UserId,
+    private val kaliumConfigs: KaliumConfigs
 ) {
-    val searchUsersUseCase: SearchUsersUseCase get() = SearchUsersUseCase(searchUserRepository, selfUserId)
+    val searchUsers: SearchUsersUseCase
+        get() = SearchUsersUseCase(
+            searchUserRepository,
+            selfUserId,
+            kaliumConfigs.maxRemoteSearchResultCount
+        )
 
+    val searchByHandle: SearchByHandleUseCase
+        get() = SearchByHandleUseCase(
+            searchUserRepository,
+            selfUserId,
+            kaliumConfigs.maxRemoteSearchResultCount
+        )
     val federatedSearchParser: FederatedSearchParser get() = FederatedSearchParser(sessionRepository, selfUserId)
 }

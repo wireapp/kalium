@@ -60,9 +60,14 @@ tasks.startScripts {
     dependsOn(serverScripts)
 }
 
+tasks.jar {
+    manifest {
+        attributes["CC-Version"] = libs.coreCrypto.get().version
+    }
+}
+
 sourceSets {
     val main by getting {
-
         dependencies {
             implementation(project(":network"))
             implementation(project(":cryptography"))
@@ -106,7 +111,7 @@ sourceSets {
 
     val test by getting {
         dependencies {
-            implementation(kotlin("test"))
+            implementation(libs.kotlin.test)
 
             // coroutines
             implementation(libs.coroutines.test)
@@ -137,8 +142,3 @@ sqldelight {
 }
 
 commonDokkaConfig()
-
-tasks.withType<Wrapper> {
-    gradleVersion = "7.3.1"
-    distributionType = Wrapper.DistributionType.BIN
-}

@@ -17,19 +17,19 @@
  */
 package com.wire.kalium.logic.feature.message.ephemeral
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
 
-internal object SelfDeletionEventLogger {
+internal class SelfDeletionEventLogger(private val logger: KaliumLogger) {
     fun log(
         loggingSelfDeletionEvent: LoggingSelfDeletionEvent
     ) {
-        kaliumLogger.i(loggingSelfDeletionEvent.toJson())
+        logger.i(loggingSelfDeletionEvent.toJson())
     }
 }
 
@@ -66,16 +66,16 @@ internal sealed class LoggingSelfDeletionEvent(
         }
     }
 
-    data class MarkingSelfSelfDeletionStartDate(
+    data class MarkingSelfSelfDeletionEndDate(
         override val message: Message,
         override val expirationData: Message.ExpirationData,
-        val startDate: Instant
+        val endDate: Instant
     ) : LoggingSelfDeletionEvent(message, expirationData) {
         override fun toLogMap(): Map<String, Any?> {
             return mapOf(
                 "deletion-info" to mapOf(
-                    "info" to "marking-self_deletion_start_date",
-                    "start-date-mark" to startDate.toIsoDateTimeString()
+                    "info" to "marking-self_deletion_end_date",
+                    "end-date-mark" to endDate.toIsoDateTimeString()
                 )
             )
         }

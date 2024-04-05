@@ -21,11 +21,11 @@ import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.e2ei.CertificateStatus
+import com.wire.kalium.logic.feature.e2ei.E2eiCertificate
 import com.wire.kalium.logic.feature.e2ei.usecase.GetE2EICertificateUseCaseResult
 import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCase
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.util.DateTimeUtil
@@ -34,14 +34,16 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
 import kotlinx.datetime.Instant
+import kotlin.random.Random
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.days
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * Observe [E2EISettings] to notify user when setting is changed to Enabled
@@ -58,7 +60,8 @@ internal class ObserveE2EIRequiredUseCaseImpl(
     private val featureSupport: FeatureSupport,
     private val e2eiCertificate: GetE2eiCertificateUseCase,
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val dispatcher: CoroutineDispatcher = KaliumDispatcherImpl.io
+    private val dispatcher: CoroutineDispatcher = KaliumDispatcherImpl.io,
+    private val renewCertificateRandomDelay: Duration = RENEW_RANDOM_DELAY
 ) : ObserveE2EIRequiredUseCase {
 
     @OptIn(ExperimentalCoroutinesApi::class)
@@ -67,39 +70,39 @@ internal class ObserveE2EIRequiredUseCaseImpl(
 
         return userConfigRepository
             .observeE2EINotificationTime()
-            .map { it.getOrNull() }
-            .filterNotNull()
+            .onlyRight()
             .delayUntilNotifyTime()
             .flatMapLatest {
                 observeE2EISettings().map { setting ->
-                    if (!setting.isRequired)
-                        E2EIRequiredResult.NotRequired
-                    else {
-                        currentClientIdProvider()
-                            .map { clientId ->
-                                val certificateResult = e2eiCertificate(clientId)
-                                when {
-                                    certificateResult.isValid() -> E2EIRequiredResult.NotRequired
+                    if (!setting.isRequired) return@map E2EIRequiredResult.NotRequired
 
-                                    setting.isGracePeriodLeft() -> {
-                                        val timeLeft = setting.gracePeriodEnd!!.minus(DateTimeUtil.currentInstant())
-                                        if (certificateResult !is GetE2EICertificateUseCaseResult.Failure)
-                                            E2EIRequiredResult.WithGracePeriod.Renew(timeLeft)
-                                        else E2EIRequiredResult.WithGracePeriod.Create(timeLeft)
-                                    }
+                    return@map currentClientIdProvider().map { clientId ->
+                        when (val certificateResult = e2eiCertificate(clientId)) {
+                            is GetE2EICertificateUseCaseResult.Failure -> E2EIRequiredResult.NotRequired
 
-                                    else -> {
-                                        if (certificateResult !is GetE2EICertificateUseCaseResult.Failure)
-                                            E2EIRequiredResult.NoGracePeriod.Renew
-                                        else E2EIRequiredResult.NoGracePeriod.Create
-                                    }
-                                }
-                            }.getOrElse { E2EIRequiredResult.NotRequired }
-                    }
+                            is GetE2EICertificateUseCaseResult.Success -> onUserHasCertificate(certificateResult.certificate)
+
+                            is GetE2EICertificateUseCaseResult.NotActivated -> onUserHasNoCertificate(setting)
+                        }
+                    }.getOrElse { E2EIRequiredResult.NotRequired }
                 }
             }
             .flowOn(dispatcher)
     }
+
+    private fun onUserHasNoCertificate(setting: E2EISettings) =
+        setting.gracePeriodLeft()?.let { timeLeft ->
+            E2EIRequiredResult.WithGracePeriod.Create(timeLeft)
+        } ?: E2EIRequiredResult.NoGracePeriod.Create
+
+    private fun onUserHasCertificate(certificate: E2eiCertificate) =
+        if (certificate.endAt <= DateTimeUtil.currentInstant() || certificate.status != CertificateStatus.VALID) {
+            E2EIRequiredResult.NoGracePeriod.Renew
+        } else if (certificate.shouldRenew()) {
+            E2EIRequiredResult.WithGracePeriod.Renew(certificate.renewGracePeriodLeft())
+        } else {
+            E2EIRequiredResult.NotRequired
+        }
 
     private fun observeE2EISettings() = userConfigRepository.observeE2EISettings().onlyRight().flowOn(dispatcher)
 
@@ -111,13 +114,23 @@ internal class ObserveE2EIRequiredUseCaseImpl(
         flowOf(instant).onStart { delay(delayMillis) }
     }
 
-    private fun GetE2EICertificateUseCaseResult.isValid(): Boolean =
-        this is GetE2EICertificateUseCaseResult.Success && certificate.status == CertificateStatus.VALID
+    private fun E2EISettings.gracePeriodLeft(): Duration? = gracePeriodEnd?.let {
+        if (gracePeriodEnd <= DateTimeUtil.currentInstant()) null
+        else gracePeriodEnd.minus(DateTimeUtil.currentInstant())
+    }
 
-    private fun E2EISettings.isGracePeriodLeft(): Boolean = gracePeriodEnd != null && gracePeriodEnd > DateTimeUtil.currentInstant()
+    private fun E2eiCertificate.shouldRenew(): Boolean =
+        endAt.minus(DateTimeUtil.currentInstant())
+            .minus(RENEW_CONSTANT_DELAY)
+            .minus(renewCertificateRandomDelay)
+            .inWholeMilliseconds <= 0
+
+    private fun E2eiCertificate.renewGracePeriodLeft(): Duration = endAt.minus(DateTimeUtil.currentInstant())
 
     companion object {
         private const val NO_DELAY_MS = 0L
+        private val RENEW_CONSTANT_DELAY = 28.days
+        private val RENEW_RANDOM_DELAY = Random.nextLong(0L, 1.days.inWholeSeconds).seconds
     }
 }
 

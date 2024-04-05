@@ -23,12 +23,14 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
+import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
 import com.wire.kalium.logic.functional.Either
@@ -49,20 +51,24 @@ internal class MLSWelcomeEventHandlerImpl(
     val mlsClientProvider: MLSClientProvider,
     val conversationRepository: ConversationRepository,
     val oneOnOneResolver: OneOnOneResolver,
-    val refillKeyPackages: RefillKeyPackagesUseCase
+    val refillKeyPackages: RefillKeyPackagesUseCase,
+    val checkRevocationList: CheckRevocationListUseCase,
+    private val certificateRevocationListRepository: CertificateRevocationListRepository
 ) : MLSWelcomeEventHandler {
     override suspend fun handle(event: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit> =
-        mlsClientProvider
-            .getMLSClient()
+        conversationRepository.fetchConversationIfUnknown(event.conversationId)
+            .flatMap {
+                mlsClientProvider.getMLSClient()
+            }
             .flatMap { client ->
                 wrapMLSRequest {
                     client.processWelcomeMessage(event.message.decodeBase64Bytes())
                 }
-            }.flatMap { groupID ->
-                conversationRepository.fetchConversationIfUnknown(event.conversationId).map { groupID }
             }.flatMap { welcomeBundle ->
+                welcomeBundle.crlNewDistributionPoints?.let {
+                    checkRevocationList(it)
+                }
                 markConversationAsEstablished(GroupID(welcomeBundle.groupId))
-                // TODO: process crlDps from welcomeBundle
             }.flatMap {
                 resolveConversationIfOneOnOne(event.conversationId)
             }
@@ -97,6 +103,15 @@ internal class MLSWelcomeEventHandlerImpl(
     private suspend fun markConversationAsEstablished(groupID: GroupID): Either<CoreFailure, Unit> =
         conversationRepository.updateConversationGroupState(groupID, Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED)
 
+    private suspend fun checkRevocationList(crlNewDistributionPoints: List<String>) {
+        crlNewDistributionPoints.forEach { url ->
+            checkRevocationList(url).map { newExpiration ->
+                newExpiration?.let {
+                    certificateRevocationListRepository.addOrUpdateCRL(url, it)
+                }
+            }
+        }
+    }
     private suspend fun resolveConversationIfOneOnOne(conversationId: ConversationId): Either<CoreFailure, Unit> =
         conversationRepository.observeConversationDetailsById(conversationId)
             .first()
