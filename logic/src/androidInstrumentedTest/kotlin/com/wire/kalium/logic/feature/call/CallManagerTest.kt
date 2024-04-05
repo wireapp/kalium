@@ -130,9 +130,8 @@ class CallManagerTest {
             message = CALL_MESSAGE,
         )
 
-        verify(calling)
-            .function(calling::wcall_recv_msg)
-            .with(
+        verify {
+            calling.wcall_recv_msg(
                 eq(baseHandle),
                 eq(CALL_CONTENT.value.toByteArray()),
                 eq(CALL_CONTENT.value.toByteArray().size),
@@ -143,7 +142,7 @@ class CallManagerTest {
                 eq(CLIENT_ID.value),
                 any()
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
     }
 
     private companion object {

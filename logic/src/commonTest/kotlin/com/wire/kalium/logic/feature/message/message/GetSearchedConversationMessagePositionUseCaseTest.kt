@@ -26,10 +26,10 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -52,14 +52,12 @@ class GetSearchedConversationMessagePositionUseCaseTest {
             messageId = MESSAGE_ID
         )
 
-        verify(arrangement.messageRepository)
-            .coroutine {
-                arrangement.messageRepository.getSearchedConversationMessagePosition(
-                    conversationId = CONVERSATION_ID,
-                    messageId = MESSAGE_ID
-                )
-            }
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.getSearchedConversationMessagePosition(
+                conversationId = CONVERSATION_ID,
+                messageId = MESSAGE_ID
+            )
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -116,14 +114,12 @@ class GetSearchedConversationMessagePositionUseCaseTest {
             messageId: String,
             response: Either<StorageFailure, Int>
         ) = apply {
-            given(messageRepository)
-                .coroutine {
-                    messageRepository.getSearchedConversationMessagePosition(
-                        conversationId = conversationId,
-                        messageId = messageId
-                    )
-                }
-                .thenReturn(response)
+            coEvery {
+                messageRepository.getSearchedConversationMessagePosition(
+                    conversationId = conversationId,
+                    messageId = messageId
+                )
+            }.returns(response)
         }
 
         fun arrange() = this to getSearchedConversationMessagePosition

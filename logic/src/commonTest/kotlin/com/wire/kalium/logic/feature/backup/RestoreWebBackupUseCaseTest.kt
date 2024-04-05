@@ -28,10 +28,10 @@ import com.wire.kalium.persistence.dao.MigrationDAO
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
@@ -62,14 +62,12 @@ class RestoreWebBackupUseCaseTest {
 
         // then
         assertTrue(result is RestoreBackupResult.Success)
-        verify(arrangement.migrationDAO)
-            .suspendFunction(arrangement.migrationDAO::insertConversation)
-            .with(any())
-            .wasInvoked(atLeast = once)
-        verify(arrangement.persistMigratedMessagesUseCase)
-            .suspendFunction(arrangement.persistMigratedMessagesUseCase::invoke)
-            .with(any(), any())
-            .wasInvoked(atLeast = once)
+        coVerify {
+            arrangement.migrationDAO.insertConversation(any())
+        }.wasInvoked(atLeast = once)
+        coVerify {
+            arrangement.persistMigratedMessagesUseCase.invoke(any(), any())
+        }.wasInvoked(atLeast = once)
     }
 
     @Test
@@ -125,14 +123,12 @@ class RestoreWebBackupUseCaseTest {
 
         // then
         assertTrue(result is RestoreBackupResult.Success)
-        verify(arrangement.migrationDAO)
-            .suspendFunction(arrangement.migrationDAO::insertConversation)
-            .with(any())
-            .wasNotInvoked()
-        verify(arrangement.persistMigratedMessagesUseCase)
-            .suspendFunction(arrangement.persistMigratedMessagesUseCase::invoke)
-            .with(any(), any())
-            .wasInvoked(atLeast = once)
+        coVerify {
+            arrangement.migrationDAO.insertConversation(any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.persistMigratedMessagesUseCase.invoke(any(), any())
+        }.wasInvoked(atLeast = once)
     }
 
     private inner class Arrangement {
@@ -183,11 +179,10 @@ class RestoreWebBackupUseCaseTest {
             }
         }
 
-        fun withMigrateMessagesSuccess() = apply {
-            given(persistMigratedMessagesUseCase)
-                .suspendFunction(persistMigratedMessagesUseCase::invoke)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withMigrateMessagesSuccess() = apply {
+            coEvery {
+                persistMigratedMessagesUseCase.invoke(any(), any())
+            }.returns(Either.Right(Unit))
         }
 
         fun arrange() = this to RestoreWebBackupUseCaseImpl(

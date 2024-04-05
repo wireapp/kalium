@@ -20,7 +20,6 @@ package com.wire.kalium.logic.data.client
 import com.wire.kalium.logic.configuration.ClientConfig
 import com.wire.kalium.logic.data.client.remote.ClientRemoteDataSource
 import com.wire.kalium.logic.data.client.remote.ClientRemoteRepository
-import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
@@ -35,10 +34,10 @@ import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -57,9 +56,9 @@ class ClientRemoteRepositoryTest {
             "client-id"
         )
 
-        verify(arrangement.clientApi)
-            .suspendFunction(arrangement.clientApi::updateClientCapabilities).with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clientApi.updateClientCapabilities(any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -74,10 +73,9 @@ class ClientRemoteRepositoryTest {
             assertEquals(Unit, it)
         }
 
-        verify(arrangement.clientApi)
-            .suspendFunction(arrangement.clientApi::registerToken)
-            .with(any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.clientApi.registerToken(any())
+        }.wasInvoked(once)
 
     }
 
@@ -104,9 +102,9 @@ class ClientRemoteRepositoryTest {
 
             // Then
             result.shouldSucceed { expectedSuccess.value }
-            verify(arrangement.clientApi)
-                .suspendFunction(arrangement.clientApi::listClientsOfUsers).with(any())
-                .wasInvoked(once)
+            coVerify {
+                arrangement.clientApi.listClientsOfUsers(any())
+            }.wasInvoked(once)
         }
 
     @Test
@@ -124,9 +122,9 @@ class ClientRemoteRepositoryTest {
             // Then
             result.shouldFail { Either.Left(notFound).value }
 
-            verify(arrangement.clientApi)
-                .suspendFunction(arrangement.clientApi::listClientsOfUsers).with(any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.clientApi.listClientsOfUsers(any())
+            }.wasInvoked(exactly = once)
         }
 
     private companion object {
@@ -147,37 +145,33 @@ class ClientRemoteRepositoryTest {
         var clientRepository: ClientRemoteRepository =
             ClientRemoteDataSource(clientApi, clientConfig)
 
-        fun withRegisterToken(result: NetworkResponse<Unit>) = apply {
-            given(clientApi)
-                .suspendFunction(clientApi::registerToken)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withRegisterToken(result: NetworkResponse<Unit>) = apply {
+            coEvery {
+                clientApi.registerToken(any())
+            }.returns(result)
         }
 
-        fun withClientUpdateClientCapabilities() = apply {
-            given(clientApi)
-                .suspendFunction(clientApi::updateClientCapabilities)
-                .whenInvokedWith(any())
-                .thenReturn(NetworkResponse.Success(Unit, mapOf(), 200))
+        suspend fun withClientUpdateClientCapabilities() = apply {
+            coEvery {
+                clientApi.updateClientCapabilities(any(), any())
+            }.returns(NetworkResponse.Success(Unit, mapOf(), 200))
         }
 
-        fun withSuccessfulResponse(expectedResponse: Map<UserIdDTO, List<SimpleClientResponse>>) =
+        suspend fun withSuccessfulResponse(expectedResponse: Map<UserIdDTO, List<SimpleClientResponse>>) =
             apply {
-                given(clientApi)
-                    .suspendFunction(clientApi::listClientsOfUsers).whenInvokedWith(any()).then {
-                        NetworkResponse.Success(expectedResponse, mapOf(), 200)
-                    }
+                coEvery {
+                    clientApi.listClientsOfUsers(any())
+                }.returns(NetworkResponse.Success(expectedResponse, mapOf(), 200))
             }
 
-        fun withErrorResponse(kaliumException: KaliumException) = apply {
-            given(clientApi)
-                .suspendFunction(clientApi::listClientsOfUsers)
-                .whenInvokedWith(any())
-                .then {
-                    NetworkResponse.Error(
-                        kaliumException
-                    )
-                }
+        suspend fun withErrorResponse(kaliumException: KaliumException) = apply {
+            coEvery {
+                clientApi.listClientsOfUsers(any())
+            }.returns(
+                NetworkResponse.Error(
+                    kaliumException
+                )
+            )
         }
 
         fun arrange() = this to clientRepository

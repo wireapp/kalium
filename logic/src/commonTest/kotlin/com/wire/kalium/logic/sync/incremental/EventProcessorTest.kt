@@ -36,7 +36,8 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.configure
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -51,18 +52,17 @@ class EventProcessorTest {
         // Given
         val event = TestEvent.memberJoin()
 
-        val (arrangement, eventProcessor) = Arrangement()
-            .withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
-            .arrange()
+        val (arrangement, eventProcessor) = Arrangement().arrange {
+            withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
+        }
 
         // When
         eventProcessor.processEvent(event.wrapInEnvelope())
 
         // Then
-        verify(arrangement.eventRepository)
-            .suspendFunction(arrangement.eventRepository::updateLastProcessedEventId)
-            .with(eq(event.id))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.eventRepository.updateLastProcessedEventId(eq(event.id))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -78,10 +78,9 @@ class EventProcessorTest {
         eventProcessor.processEvent(event.wrapInEnvelope())
 
         // Then
-        verify(arrangement.conversationEventReceiver)
-            .suspendFunction(arrangement.conversationEventReceiver::onEvent)
-            .with(eq(event))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationEventReceiver.onEvent(eq(event), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -90,20 +89,19 @@ class EventProcessorTest {
         val event = TestEvent.memberJoin()
         val failure = CoreFailure.MissingClientRegistration
 
-        val (arrangement, eventProcessor) = Arrangement()
-            .withConversationEventReceiverFailingWith(failure)
-            .withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
-            .arrange()
+        val (arrangement, eventProcessor) = Arrangement().arrange {
+            withConversationEventReceiverFailingWith(failure)
+            withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
+        }
 
         // When
         eventProcessor.processEvent(event.wrapInEnvelope())
             .shouldFail { assertEquals(failure, it) }
 
         // Then
-        verify(arrangement.eventRepository)
-            .suspendFunction(arrangement.eventRepository::updateLastProcessedEventId)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.eventRepository.updateLastProcessedEventId(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -111,18 +109,17 @@ class EventProcessorTest {
         // Given
         val event = TestEvent.newConnection()
 
-        val (arrangement, eventProcessor) = Arrangement()
-            .withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
-            .arrange()
+        val (arrangement, eventProcessor) = Arrangement().arrange {
+            withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
+        }
 
         // When
         eventProcessor.processEvent(event.wrapInEnvelope())
 
         // Then
-        verify(arrangement.userEventReceiver)
-            .suspendFunction(arrangement.userEventReceiver::onEvent)
-            .with(eq(event))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userEventReceiver.onEvent(eq(event), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -131,20 +128,19 @@ class EventProcessorTest {
         val event = TestEvent.newConnection()
         val failure = CoreFailure.MissingClientRegistration
 
-        val (arrangement, eventProcessor) = Arrangement()
-            .withUserEventReceiverFailingWith(failure)
-            .withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
-            .arrange()
+        val (arrangement, eventProcessor) = Arrangement().arrange {
+            withUserEventReceiverFailingWith(failure)
+            withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
+        }
 
         // When
         eventProcessor.processEvent(event.wrapInEnvelope())
             .shouldFail { assertEquals(failure, it) }
 
         // Then
-        verify(arrangement.eventRepository)
-            .suspendFunction(arrangement.eventRepository::updateLastProcessedEventId)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.eventRepository.updateLastProcessedEventId(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -152,18 +148,17 @@ class EventProcessorTest {
         // Given
         val envelope = TestEvent.newConnection().wrapInEnvelope(isTransient = false)
 
-        val (arrangement, eventProcessor) = Arrangement()
-            .withUpdateLastProcessedEventId(envelope.event.id, Either.Right(Unit))
-            .arrange()
+        val (arrangement, eventProcessor) = Arrangement().arrange {
+            withUpdateLastProcessedEventId(envelope.event.id, Either.Right(Unit))
+        }
 
         // When
         eventProcessor.processEvent(envelope.event.wrapInEnvelope())
 
         // Then
-        verify(arrangement.eventRepository)
-            .suspendFunction(arrangement.eventRepository::updateLastProcessedEventId)
-            .with(eq(envelope.event.id))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.eventRepository.updateLastProcessedEventId(eq(envelope.event.id))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -171,17 +166,15 @@ class EventProcessorTest {
         // Given
         val event = TestEvent.newConnection().wrapInEnvelope(isTransient = true)
 
-        val (arrangement, eventProcessor) = Arrangement()
-            .arrange()
+        val (arrangement, eventProcessor) = Arrangement().arrange()
 
         // When
         eventProcessor.processEvent(event)
 
         // Then
-        verify(arrangement.eventRepository)
-            .suspendFunction(arrangement.eventRepository::updateLastProcessedEventId)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.eventRepository.updateLastProcessedEventId(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -189,16 +182,15 @@ class EventProcessorTest {
         // Given
         val event = TestEvent.userPropertyReadReceiptMode()
 
-        val (arrangement, eventProcessor) = Arrangement()
-            .withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
-            .arrange()
+        val (arrangement, eventProcessor) = Arrangement().arrange {
+            withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
+        }
 
         eventProcessor.processEvent(event.wrapInEnvelope())
 
-        verify(arrangement.userPropertiesEventReceiver)
-            .suspendFunction(arrangement.userPropertiesEventReceiver::onEvent)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userPropertiesEventReceiver.onEvent(any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -207,26 +199,25 @@ class EventProcessorTest {
         val event = TestEvent.userPropertyReadReceiptMode()
         val failure = CoreFailure.MissingClientRegistration
 
-        val (arrangement, eventProcessor) = Arrangement()
-            .withUserPropertiesEventReceiverFailingWith(failure)
-            .withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
-            .arrange()
+        val (arrangement, eventProcessor) = Arrangement().arrange {
+            withUserPropertiesEventReceiverFailingWith(failure)
+            withUpdateLastProcessedEventId(event.id, Either.Right(Unit))
+        }
 
         // When
         eventProcessor.processEvent(event.wrapInEnvelope())
             .shouldFail { assertEquals(failure, it) }
 
         // Then
-        verify(arrangement.eventRepository)
-            .suspendFunction(arrangement.eventRepository::updateLastProcessedEventId)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.eventRepository.updateLastProcessedEventId(any())
+        }.wasNotInvoked()
     }
 
     private class Arrangement : FeatureConfigEventReceiverArrangement by FeatureConfigEventReceiverArrangementImpl() {
 
         @Mock
-        val eventRepository = configure(mock(EventRepository::class)) { stubsUnitByDefault = true }
+        val eventRepository = configure(mock(EventRepository::class)) { }
 
         @Mock
         val conversationEventReceiver = mock(ConversationEventReceiver::class)
@@ -243,69 +234,62 @@ class EventProcessorTest {
         @Mock
         val federationEventReceiver = mock(FederationEventReceiver::class)
 
-        init {
+        suspend fun withUpdateLastProcessedEventId(eventId: String, result: Either<StorageFailure, Unit>) = apply {
+            coEvery {
+                eventRepository.updateLastProcessedEventId(eq(eventId))
+            }.returns(result)
+        }
+
+        suspend fun withConversationEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                conversationEventReceiver.onEvent(any(), any())
+            }.returns(result)
+        }
+
+        suspend fun withConversationEventReceiverSucceeding() = withConversationEventReceiverReturning(Either.Right(Unit))
+
+        suspend fun withConversationEventReceiverFailingWith(failure: CoreFailure) = withConversationEventReceiverReturning(
+            Either.Left(failure)
+        )
+
+        suspend fun withUserEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                userEventReceiver.onEvent(any(), any())
+            }.returns(result)
+        }
+
+        suspend fun withUserEventReceiverSucceeding() = withUserEventReceiverReturning(Either.Right(Unit))
+
+        suspend fun withUserEventReceiverFailingWith(failure: CoreFailure) = withUserEventReceiverReturning(
+            Either.Left(failure)
+        )
+
+        suspend fun withTeamEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                teamEventReceiver.onEvent(any(), any())
+            }.returns(result)
+        }
+
+        suspend fun withTeamEventReceiverSucceeding() = withTeamEventReceiverReturning(Either.Right(Unit))
+
+        suspend fun withUserPropertiesEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                userPropertiesEventReceiver.onEvent(any(), any())
+            }.returns(result)
+        }
+
+        suspend fun withUserPropertiesEventReceiverSucceeding() = withUserPropertiesEventReceiverReturning(Either.Right(Unit))
+
+        suspend fun withUserPropertiesEventReceiverFailingWith(failure: CoreFailure) = withUserPropertiesEventReceiverReturning(
+            Either.Left(failure)
+        )
+
+        suspend fun arrange(block: suspend Arrangement.() -> Unit = {}) = let {
             withConversationEventReceiverSucceeding()
             withUserEventReceiverSucceeding()
             withTeamEventReceiverSucceeding()
             withUserPropertiesEventReceiverSucceeding()
-        }
-
-        fun withUpdateLastProcessedEventId(eventId: String, result: Either<StorageFailure, Unit>) = apply {
-            given(eventRepository)
-                .suspendFunction(eventRepository::updateLastProcessedEventId)
-                .whenInvokedWith(eq(eventId))
-                .then { result }
-        }
-
-        fun withConversationEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
-            given(conversationEventReceiver)
-                .suspendFunction(conversationEventReceiver::onEvent)
-                .whenInvokedWith(any())
-                .thenReturn(result)
-        }
-
-        fun withConversationEventReceiverSucceeding() = withConversationEventReceiverReturning(Either.Right(Unit))
-
-        fun withConversationEventReceiverFailingWith(failure: CoreFailure) = withConversationEventReceiverReturning(
-            Either.Left(failure)
-        )
-
-        fun withUserEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
-            given(userEventReceiver)
-                .suspendFunction(userEventReceiver::onEvent)
-                .whenInvokedWith(any())
-                .thenReturn(result)
-        }
-
-        fun withUserEventReceiverSucceeding() = withUserEventReceiverReturning(Either.Right(Unit))
-
-        fun withUserEventReceiverFailingWith(failure: CoreFailure) = withUserEventReceiverReturning(
-            Either.Left(failure)
-        )
-
-        fun withTeamEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
-            given(teamEventReceiver)
-                .suspendFunction(teamEventReceiver::onEvent)
-                .whenInvokedWith(any())
-                .thenReturn(result)
-        }
-
-        fun withTeamEventReceiverSucceeding() = withTeamEventReceiverReturning(Either.Right(Unit))
-
-        fun withUserPropertiesEventReceiverReturning(result: Either<CoreFailure, Unit>) = apply {
-            given(userPropertiesEventReceiver)
-                .suspendFunction(userPropertiesEventReceiver::onEvent)
-                .whenInvokedWith(any())
-                .thenReturn(result)
-        }
-
-        fun withUserPropertiesEventReceiverSucceeding() = withUserPropertiesEventReceiverReturning(Either.Right(Unit))
-
-        fun withUserPropertiesEventReceiverFailingWith(failure: CoreFailure) = withUserPropertiesEventReceiverReturning(
-            Either.Left(failure)
-        )
-
-        fun arrange(block: Arrangement.() -> Unit = {}) = apply(block).let {
+            block()
             this to EventProcessorImpl(
                 eventRepository,
                 conversationEventReceiver,

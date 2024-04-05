@@ -19,9 +19,9 @@ package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepository
 import io.mockative.Mock
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -33,9 +33,9 @@ class ClearUsersTypingEventsUseCaseTest {
 
         useCase()
 
-        verify(arrangement.typingIndicatorIncomingRepository)
-            .suspendFunction(arrangement.typingIndicatorIncomingRepository::clearExpiredTypingIndicators)
-            .wasInvoked(once)
+        coVerify {
+            arrangement.typingIndicatorIncomingRepository.clearExpiredTypingIndicators()
+        }.wasInvoked(once)
     }
 
     private class Arrangement {

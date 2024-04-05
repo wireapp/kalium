@@ -24,10 +24,10 @@ import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangeme
 import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangementImpl
 import io.mockative.Mock
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flowOf
@@ -53,9 +53,9 @@ class FeatureFlagSyncWorkerTest {
         }
 
         advanceUntilIdle()
-        verify(arrangement.syncFeatureConfigsUseCase)
-            .suspendFunction(arrangement.syncFeatureConfigsUseCase::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.syncFeatureConfigsUseCase.invoke()
+        }.wasInvoked(exactly = once)
         job.cancel()
     }
 
@@ -76,9 +76,9 @@ class FeatureFlagSyncWorkerTest {
         advanceUntilIdle()
         stateChannel.send(IncrementalSyncStatus.Live)
         advanceUntilIdle() // Not enough to run twice
-        verify(arrangement.syncFeatureConfigsUseCase)
-            .suspendFunction(arrangement.syncFeatureConfigsUseCase::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.syncFeatureConfigsUseCase.invoke()
+        }.wasInvoked(exactly = once)
 
         job.cancel()
     }
@@ -92,7 +92,7 @@ class FeatureFlagSyncWorkerTest {
             now + minInterval + 1.milliseconds to IncrementalSyncStatus.Pending,
             now + minInterval + 2.milliseconds to IncrementalSyncStatus.Live
         )
-        val fakeClock = object: Clock {
+        val fakeClock = object : Clock {
             var callCount = 0
             override fun now(): Instant {
                 return stateTimes.keys.toList()[callCount].also { callCount++ }
@@ -110,18 +110,18 @@ class FeatureFlagSyncWorkerTest {
         }
         advanceUntilIdle()
 
-        verify(arrangement.syncFeatureConfigsUseCase)
-            .suspendFunction(arrangement.syncFeatureConfigsUseCase::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.syncFeatureConfigsUseCase.invoke()
+        }.wasInvoked(exactly = once)
         stateChannel.send(stateTimes.values.toList()[1])
         advanceUntilIdle()
 
         stateChannel.send(stateTimes.values.toList()[2])
         advanceUntilIdle()
 
-        verify(arrangement.syncFeatureConfigsUseCase)
-            .suspendFunction(arrangement.syncFeatureConfigsUseCase::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.syncFeatureConfigsUseCase.invoke()
+        }.wasInvoked(exactly = once)
         job.cancel()
     }
 
@@ -136,14 +136,10 @@ class FeatureFlagSyncWorkerTest {
 
         var clock: Clock = Clock.System
 
-        init {
-            given(syncFeatureConfigsUseCase)
-                .suspendFunction(syncFeatureConfigsUseCase::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Right(Unit))
-        }
-
-        fun arrange(): Pair<Arrangement, FeatureFlagSyncWorkerImpl> = run {
+        suspend fun arrange(): Pair<Arrangement, FeatureFlagSyncWorkerImpl> = run {
+            coEvery {
+                syncFeatureConfigsUseCase.invoke()
+            }.returns(Either.Right(Unit))
             configure()
             this@Arrangement to FeatureFlagSyncWorkerImpl(
                 incrementalSyncRepository = incrementalSyncRepository,
@@ -156,6 +152,6 @@ class FeatureFlagSyncWorkerTest {
     }
 
     private companion object {
-        fun arrange(configure: Arrangement.() -> Unit) = Arrangement(configure).arrange()
+        suspend fun arrange(configure: Arrangement.() -> Unit) = Arrangement(configure).arrange()
     }
 }

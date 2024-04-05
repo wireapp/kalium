@@ -39,9 +39,9 @@ import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrang
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.any
-import io.mockative.matching
+import io.mockative.matches
+import io.mockative.coVerify
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -78,37 +78,37 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
 
         useCase(conversationId, messageId).shouldSucceed()
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::markMessageAsDeleted)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.markMessageAsDeleted(any(), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(
-                matching {
+        coVerify {
+            arrangement.messageSender.sendMessage(
+                matches {
                     it.conversationId == SELF_CONVERSION_ID.first() &&
                             it.content == MessageContent.DeleteForMe(messageId, conversationId)
-                }, matching {
+                },
+                matches {
                     it == MessageTarget.Conversation()
-                })
-            .wasInvoked(exactly = once)
+                }
+            )
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(
-                matching {
+        coVerify {
+            arrangement.messageSender.sendMessage(
+                matches {
                     it.conversationId == conversationId &&
                             it.content == MessageContent.DeleteMessage(messageId)
-                }, matching {
+                },
+                matches {
                     it == MessageTarget.Users(listOf(senderUserID))
-                })
-            .wasInvoked(exactly = once)
+                }
+            )
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::deleteMessage)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.deleteMessage(any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     private companion object {
@@ -117,8 +117,8 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
         val CURRENT_CLIENT_ID = ClientId("currentClientId")
     }
 
-    private class Arrangement
-        : CurrentClientIdProviderArrangement by CurrentClientIdProviderArrangementImpl(),
+    private class Arrangement :
+        CurrentClientIdProviderArrangement by CurrentClientIdProviderArrangementImpl(),
         MessageRepositoryArrangement by MessageRepositoryArrangementImpl(),
         MessageSenderArrangement by MessageSenderArrangementImpl(),
         SelfConversationIdProviderArrangement by SelfConversationIdProviderArrangementImpl(),
@@ -134,7 +134,7 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
                 currentClientIdProvider = currentClientIdProvider
             )
 
-        fun arrange(block: Arrangement.() -> Unit): Pair<Arrangement, DeleteEphemeralMessageForSelfUserAsReceiverUseCase> {
+        suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, DeleteEphemeralMessageForSelfUserAsReceiverUseCase> {
             block()
             return this to useCase
         }

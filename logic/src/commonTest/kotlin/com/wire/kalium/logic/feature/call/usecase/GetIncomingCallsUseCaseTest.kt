@@ -35,7 +35,7 @@ import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -64,7 +64,7 @@ class GetIncomingCallsUseCaseTest {
             .withSelfUserStatus(UserAvailabilityStatus.AVAILABLE)
             .withConversationDetails { id -> Either.Right(conversationWithMuteStatus(id, MutedConversationStatus.AllAllowed)) }
             .withIncomingCalls(
-                listOf<Call>(incomingCall(0), incomingCall(1))
+                listOf(incomingCall(0), incomingCall(1))
             )
             .arrange()
 
@@ -81,7 +81,7 @@ class GetIncomingCallsUseCaseTest {
             .withSelfUserStatus(UserAvailabilityStatus.AWAY)
             .withConversationDetails { id -> Either.Right(conversationWithMuteStatus(id, MutedConversationStatus.AllAllowed)) }
             .withIncomingCalls(
-                listOf<Call>(incomingCall(0), incomingCall(1))
+                listOf(incomingCall(0), incomingCall(1))
             )
             .arrange()
 
@@ -98,7 +98,7 @@ class GetIncomingCallsUseCaseTest {
             .withSelfUserStatus(UserAvailabilityStatus.BUSY)
             .withConversationDetails { id -> Either.Right(conversationWithMuteStatus(id, MutedConversationStatus.AllAllowed)) }
             .withIncomingCalls(
-                listOf<Call>(incomingCall(0), incomingCall(1))
+                listOf(incomingCall(0), incomingCall(1))
             )
             .arrange()
 
@@ -121,7 +121,7 @@ class GetIncomingCallsUseCaseTest {
                     Either.Right(conversationWithMuteStatus(id, MutedConversationStatus.AllAllowed))
             }
             .withIncomingCalls(
-                listOf<Call>(incomingCall(0), incomingCall(1))
+                listOf(incomingCall(0), incomingCall(1))
             )
             .arrange()
 
@@ -140,7 +140,7 @@ class GetIncomingCallsUseCaseTest {
                 Either.Right(conversationWithMuteStatus(id, MutedConversationStatus.OnlyMentionsAndRepliesAllowed))
             }
             .withIncomingCalls(
-                listOf<Call>(incomingCall(0), incomingCall(1))
+                listOf(incomingCall(0), incomingCall(1))
             )
             .arrange()
 
@@ -163,7 +163,7 @@ class GetIncomingCallsUseCaseTest {
                     Either.Right(conversationWithMuteStatus(id, MutedConversationStatus.AllAllowed))
             }
             .withIncomingCalls(
-                listOf<Call>(incomingCall(0), incomingCall(1))
+                listOf(incomingCall(0), incomingCall(1))
             )
             .arrange()
 
@@ -191,29 +191,27 @@ class GetIncomingCallsUseCaseTest {
             callRepository = callRepository
         )
 
-        fun withIncomingCalls(calls: List<Call>): Arrangement {
-            given(callRepository)
-                .suspendFunction(callRepository::incomingCallsFlow)
-                .whenInvoked()
-                .then { MutableStateFlow(calls) }
+        suspend fun withIncomingCalls(calls: List<Call>): Arrangement {
+            coEvery {
+                callRepository.incomingCallsFlow()
+            }.returns(MutableStateFlow(calls))
 
             return this
         }
 
-        fun withSelfUserStatus(status: UserAvailabilityStatus): Arrangement {
-            given(userRepository)
-                .suspendFunction(userRepository::observeSelfUser)
-                .whenInvoked()
-                .then { flowOf(selfUserWithStatus(status)) }
+        suspend fun withSelfUserStatus(status: UserAvailabilityStatus): Arrangement {
+            coEvery {
+                userRepository.observeSelfUser()
+            }.returns(flowOf(selfUserWithStatus(status)))
 
             return this
         }
 
-        fun withConversationDetails(detailsGetter: (ConversationId) -> Either<StorageFailure, Conversation>): Arrangement {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::baseInfoById)
-                .whenInvokedWith(any())
-                .then { id -> detailsGetter(id) }
+        suspend fun withConversationDetails(detailsGetter: (ConversationId) -> Either<StorageFailure, Conversation>): Arrangement {
+            coEvery { conversationRepository.baseInfoById(any()) }
+            coEvery {
+                conversationRepository.baseInfoById(any())
+            }.invokes { id -> detailsGetter(id.first() as ConversationId) }
             return this
         }
 

@@ -24,16 +24,14 @@ import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class UpdateDisplayNameUseCaseTest {
 
     @Test
@@ -45,10 +43,9 @@ class UpdateDisplayNameUseCaseTest {
         val result = updateDisplayName(NEW_DISPLAY_NAME)
 
         assertTrue(result is DisplayNameUpdateResult.Success)
-        verify(arrangement.accountRepository)
-            .suspendFunction(arrangement.accountRepository::updateSelfDisplayName)
-            .with(any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.accountRepository.updateSelfDisplayName(any())
+        }.wasInvoked(once)
     }
 
     @Test
@@ -60,10 +57,9 @@ class UpdateDisplayNameUseCaseTest {
         val result = updateDisplayName(NEW_DISPLAY_NAME)
 
         assertTrue(result is DisplayNameUpdateResult.Failure)
-        verify(arrangement.accountRepository)
-            .suspendFunction(arrangement.accountRepository::updateSelfDisplayName)
-            .with(any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.accountRepository.updateSelfDisplayName(any())
+        }.wasInvoked(once)
     }
 
     private class Arrangement {
@@ -71,18 +67,16 @@ class UpdateDisplayNameUseCaseTest {
         @Mock
         val accountRepository = mock(classOf<AccountRepository>())
 
-        fun withSuccessfulUploadResponse() = apply {
-            given(accountRepository)
-                .suspendFunction(accountRepository::updateSelfDisplayName)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withSuccessfulUploadResponse() = apply {
+            coEvery {
+                accountRepository.updateSelfDisplayName(any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withErrorResponse() = apply {
-            given(accountRepository)
-                .suspendFunction(accountRepository::updateSelfDisplayName)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Left(CoreFailure.Unknown(Throwable("an error"))))
+        suspend fun withErrorResponse() = apply {
+            coEvery {
+                accountRepository.updateSelfDisplayName(any())
+            }.returns(Either.Left(CoreFailure.Unknown(Throwable("an error"))))
         }
 
         fun arrange() = this to UpdateDisplayNameUseCaseImpl(accountRepository)

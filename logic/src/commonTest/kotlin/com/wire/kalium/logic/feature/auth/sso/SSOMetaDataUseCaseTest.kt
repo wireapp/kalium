@@ -24,7 +24,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import io.mockative.Mock
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -49,7 +49,9 @@ class SSOMetaDataUseCaseTest {
     fun givenApiReturnsGenericError_whenRequestingMetaData_thenReturnGenericFailure() =
         runTest {
             val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
-            given(ssoLoginRepository).coroutine { metaData() }.then { Either.Left(expected) }
+            coEvery {
+                ssoLoginRepository.metaData() 
+            }.returns(Either.Left(expected))
             val result = ssoMetaDataUseCase()
             assertIs<SSOMetaDataResult.Failure.Generic>(result)
             assertEquals(expected, result.genericFailure)
@@ -58,7 +60,9 @@ class SSOMetaDataUseCaseTest {
     @Test
     fun givenApiReturnsSuccess_whenRequestingMetaData_thenReturnSuccess() =
         runTest {
-            given(ssoLoginRepository).coroutine { metaData() }.then { Either.Right(TEST_RESPONSE) }
+            coEvery {
+                ssoLoginRepository.metaData() 
+            }.returns(Either.Right(TEST_RESPONSE))
             val result = ssoMetaDataUseCase()
             assertEquals(result, SSOMetaDataResult.Success(TEST_RESPONSE))
         }

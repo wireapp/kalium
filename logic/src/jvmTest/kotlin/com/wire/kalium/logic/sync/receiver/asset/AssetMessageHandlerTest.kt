@@ -36,12 +36,13 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.hasValidRemoteDa
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.every
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.test.runTest
@@ -66,18 +67,16 @@ class AssetMessageHandlerTest {
 
         // Then
         assertTrue(assetMessageContent.value.hasValidRemoteData())
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
+        coVerify {
+            arrangement.persistMessage.invoke(matches {
                 it.id == assetMessage.id
                         && it.conversationId.toString() == assetMessage.conversationId.toString()
                         && it.visibility == Message.Visibility.VISIBLE
             })
-            .wasInvoked(exactly = once)
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::getMessageById)
-            .with(eq(assetMessage.conversationId), eq(assetMessage.id))
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.getMessageById(eq(assetMessage.conversationId), eq(assetMessage.id))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -95,18 +94,16 @@ class AssetMessageHandlerTest {
         assetMessageHandler.handle(assetMessage)
 
         // Then
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
+        coVerify {
+            arrangement.persistMessage.invoke(matches {
                 it.id == assetMessage.id
                         && it.conversationId.toString() == assetMessage.conversationId.toString()
                         && it.visibility == Message.Visibility.HIDDEN
             })
-            .wasInvoked(exactly = once)
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::getMessageById)
-            .with(eq(assetMessage.conversationId), eq(assetMessage.id))
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.getMessageById(eq(assetMessage.conversationId), eq(assetMessage.id))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -132,18 +129,16 @@ class AssetMessageHandlerTest {
         assetMessageHandler.handle(assetMessage)
 
         // Then
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
+        coVerify {
+            arrangement.persistMessage.invoke(matches {
                 it.id == assetMessage.id
                         && it.conversationId.toString() == assetMessage.conversationId.toString()
                         && it.visibility == Message.Visibility.VISIBLE
             })
-            .wasInvoked(exactly = once)
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::getMessageById)
-            .with(eq(assetMessage.conversationId), eq(assetMessage.id))
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.getMessageById(eq(assetMessage.conversationId), eq(assetMessage.id))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -164,19 +159,17 @@ class AssetMessageHandlerTest {
         // Then
         assertFalse((previewAssetMessage.content as MessageContent.Asset).value.hasValidRemoteData())
         assertTrue((updateAssetMessage.content as MessageContent.Asset).value.remoteData.hasValidData())
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
+        coVerify {
+            arrangement.persistMessage.invoke(matches {
                 it.id == updateAssetMessage.id
                         && it.conversationId.toString() == updateAssetMessage.conversationId.toString()
                         && it.visibility == Message.Visibility.VISIBLE
             })
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::getMessageById)
-            .with(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.getMessageById(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -203,19 +196,17 @@ class AssetMessageHandlerTest {
         // Then
         assertFalse((previewAssetMessage.content as MessageContent.Asset).value.hasValidRemoteData())
         assertFalse((updateBrokenKeysAssetMessage.content as MessageContent.Asset).value.remoteData.hasValidData())
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
+        coVerify {
+            arrangement.persistMessage.invoke(matches {
                 it.id == updateBrokenKeysAssetMessage.id
                         && it.conversationId.toString() == updateBrokenKeysAssetMessage.conversationId.toString()
                         && it.visibility == Message.Visibility.HIDDEN
             })
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::getMessageById)
-            .with(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.getMessageById(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -238,19 +229,17 @@ class AssetMessageHandlerTest {
         // Then
         assertFalse((previewAssetMessage.content as MessageContent.Asset).value.hasValidRemoteData())
         assertTrue((updateInvalidSenderIdAssetMessage.content as MessageContent.Asset).value.remoteData.hasValidData())
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
+        coVerify {
+            arrangement.persistMessage.invoke(matches {
                 it.id == updateInvalidSenderIdAssetMessage.id
                         && it.conversationId.toString() == updateInvalidSenderIdAssetMessage.conversationId.toString()
                         && it.visibility == Message.Visibility.HIDDEN
             })
-            .wasNotInvoked()
+        }.wasNotInvoked()
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::getMessageById)
-            .with(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.getMessageById(eq(previewAssetMessage.conversationId), eq(previewAssetMessage.id))
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -271,38 +260,33 @@ class AssetMessageHandlerTest {
             AssetMessageHandlerImpl(messageRepository, persistMessage, userConfigRepository, validateAssetMimeType)
 
         fun withValidateAssetMime(result: Boolean) = apply {
-            given(validateAssetMimeType)
-                .function(validateAssetMimeType::invoke)
-                .whenInvokedWith(any(), any())
-                .thenReturn(result)
+            every {
+                validateAssetMimeType.invoke(any(), any())
+            }.returns(result)
         }
 
         fun withSuccessfulFileSharingFlag(value: FileSharingStatus.Value) = apply {
-            given(userConfigRepository)
-                .function(userConfigRepository::isFileSharingEnabled)
-                .whenInvoked()
-                .thenReturn(Either.Right(FileSharingStatus(state = value, isStatusChanged = false)))
+            every {
+                userConfigRepository.isFileSharingEnabled()
+            }.returns(Either.Right(FileSharingStatus(state = value, isStatusChanged = false)))
         }
 
-        fun withSuccessfulPersistMessageUseCase(message: Message) = apply {
-            given(persistMessage)
-                .suspendFunction(persistMessage::invoke)
-                .whenInvokedWith(matching {
+        suspend fun withSuccessfulPersistMessageUseCase(message: Message) = apply {
+            coEvery {
+                persistMessage(matches {
                     it.id == message.id && it.conversationId == message.conversationId
                 })
-                .thenReturn(Either.Right(Unit))
+            }.returns(Either.Right(Unit))
         }
 
-        fun withSuccessfulStoredMessage(persistedMessage: Message?) = apply {
+        suspend fun withSuccessfulStoredMessage(persistedMessage: Message?) = apply {
             persistedMessage?.let { message ->
-                given(messageRepository)
-                    .suspendFunction(messageRepository::getMessageById)
-                    .whenInvokedWith(any(), any())
-                    .thenReturn(Either.Right(message))
-            } ?: given(messageRepository)
-                .suspendFunction(messageRepository::getMessageById)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Left(StorageFailure.DataNotFound))
+                coEvery {
+                    messageRepository.getMessageById(any(), any())
+                }.returns(Either.Right(message))
+            } ?: coEvery {
+                messageRepository.getMessageById(any(), any())
+            }.returns(Either.Left(StorageFailure.DataNotFound))
         }
 
         fun arrange() = this to assetMessageHandlerImpl

@@ -28,19 +28,16 @@ import com.wire.kalium.persistence.dao.UserDAO
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.configure
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import okio.IOException
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class AccountRepositoryTest {
 
     @Test
@@ -51,14 +48,12 @@ class AccountRepositoryTest {
 
         userRepository.updateSelfDisplayName("newDisplayName").shouldFail()
 
-        verify(arrangement.selfApi)
-            .suspendFunction(arrangement.selfApi::updateSelf)
-            .with(any())
-            .wasInvoked(exactly = once)
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::updateUserDisplayName)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.selfApi.updateSelf(any())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userDAO.updateUserDisplayName(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -69,14 +64,12 @@ class AccountRepositoryTest {
 
         userRepository.updateSelfDisplayName("newDisplayName").shouldSucceed()
 
-        verify(arrangement.selfApi)
-            .suspendFunction(arrangement.selfApi::updateSelf)
-            .with(any())
-            .wasInvoked(exactly = once)
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::updateUserDisplayName)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.selfApi.updateSelf(any())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userDAO.updateUserDisplayName(any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -87,10 +80,9 @@ class AccountRepositoryTest {
 
         userRepository.updateSelfEmail("newEmail").shouldSucceed()
 
-        verify(arrangement.selfApi)
-            .suspendFunction(arrangement.selfApi::updateEmailAddress)
-            .with(eq("newEmail"))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.selfApi.updateEmailAddress(eq("newEmail"))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -103,10 +95,9 @@ class AccountRepositoryTest {
 
         with(result) {
             shouldFail()
-            verify(arrangement.selfApi)
-                .suspendFunction(arrangement.selfApi::updateEmailAddress)
-                .with(eq("newEmail"))
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.selfApi.updateEmailAddress(eq("newEmail"))
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -119,10 +110,9 @@ class AccountRepositoryTest {
 
         userRepository.deleteAccount(null).shouldSucceed()
 
-        verify(arrangement.selfApi)
-            .suspendFunction(arrangement.selfApi::deleteAccount)
-            .with(anything())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.selfApi.deleteAccount(any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -134,16 +124,14 @@ class AccountRepositoryTest {
 
         userRepository.deleteAccount(null).shouldFail()
 
-        verify(arrangement.selfApi)
-            .suspendFunction(arrangement.selfApi::deleteAccount)
-            .with(anything())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.selfApi.deleteAccount(any())
+        }.wasInvoked(exactly = once)
     }
-
 
     private class Arrangement {
         @Mock
-        val userDAO = configure(mock(UserDAO::class)) { stubsUnitByDefault = true }
+        val userDAO = configure(mock(UserDAO::class)) { }
 
         @Mock
         val selfApi = mock(SelfApi::class)
@@ -158,25 +146,22 @@ class AccountRepositoryTest {
             )
         }
 
-        fun withUpdateDisplayNameApiRequestResponse(response: NetworkResponse<Unit>) = apply {
-            given(selfApi)
-                .suspendFunction(selfApi::updateSelf)
-                .whenInvokedWith(any())
-                .thenReturn(response)
+        suspend fun withUpdateDisplayNameApiRequestResponse(response: NetworkResponse<Unit>) = apply {
+            coEvery {
+                selfApi.updateSelf(any())
+            }.returns(response)
         }
 
-        fun withRemoteUpdateEmail(result: NetworkResponse<Boolean>) = apply {
-            given(selfApi)
-                .suspendFunction(selfApi::updateEmailAddress)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withRemoteUpdateEmail(result: NetworkResponse<Boolean>) = apply {
+            coEvery {
+                selfApi.updateEmailAddress(any())
+            }.returns(result)
         }
 
-        fun withDeleteAccountRequest(result: NetworkResponse<Unit> = NetworkResponse.Success(Unit, mapOf(), 200)) = apply {
-            given(selfApi)
-                .suspendFunction(selfApi::deleteAccount)
-                .whenInvokedWith(anything())
-                .thenReturn(result)
+        suspend fun withDeleteAccountRequest(result: NetworkResponse<Unit> = NetworkResponse.Success(Unit, mapOf(), 200)) = apply {
+            coEvery {
+                selfApi.deleteAccount(any())
+            }.returns(result)
         }
 
         fun arrange() = this to accountRepo

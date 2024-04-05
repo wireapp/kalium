@@ -47,11 +47,12 @@ import com.wire.kalium.logic.util.MessageContentEncoder
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.every
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -91,14 +92,13 @@ class ApplicationMessageHandlerTest {
             protoContent
         )
 
-        verify(arrangement.assetMessageHandler)
-            .suspendFunction(arrangement.assetMessageHandler::handle)
-            .with(
-                matching {
+        coVerify {
+            arrangement.assetMessageHandler.handle(
+                matches {
                     it.content is MessageContent.Asset
                 }
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -129,10 +129,9 @@ class ApplicationMessageHandlerTest {
             protoContent
         )
 
-        verify(arrangement.buttonActionConfirmationHandler)
-            .suspendFunction(arrangement.buttonActionConfirmationHandler::handle)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.buttonActionConfirmationHandler.handle(any(), any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -196,39 +195,35 @@ class ApplicationMessageHandlerTest {
             TestUser.SELF.id
         )
 
-        fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
-            given(persistMessage)
-                .suspendFunction(persistMessage::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                persistMessage.invoke(any())
+            }.returns(result)
         }
 
         fun withFileSharingEnabled() = apply {
-            given(userConfigRepository)
-                .function(userConfigRepository::isFileSharingEnabled)
-                .whenInvoked()
-                .thenReturn(
-                    Either.Right(
-                        FileSharingStatus(
-                            state = FileSharingStatus.Value.EnabledAll,
-                            isStatusChanged = false
-                        )
+            every {
+                userConfigRepository.isFileSharingEnabled()
+            }.returns(
+                Either.Right(
+                    FileSharingStatus(
+                        state = FileSharingStatus.Value.EnabledAll,
+                        isStatusChanged = false
                     )
                 )
+            )
         }
 
-        fun withErrorGetMessageById(storageFailure: StorageFailure) = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::getMessageById)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Left(storageFailure))
+        suspend fun withErrorGetMessageById(storageFailure: StorageFailure) = apply {
+            coEvery {
+                messageRepository.getMessageById(any(), any())
+            }.returns(Either.Left(storageFailure))
         }
 
-        fun withButtonActionConfirmation(result: Either<StorageFailure, Unit>) = apply {
-            given(buttonActionConfirmationHandler)
-                .suspendFunction(buttonActionConfirmationHandler::handle)
-                .whenInvokedWith(any(), any())
-                .thenReturn(result)
+        suspend fun withButtonActionConfirmation(result: Either<StorageFailure, Unit>) = apply {
+            coEvery {
+                buttonActionConfirmationHandler.handle(any(), any(), any())
+            }.returns(result)
         }
 
         fun arrange() = this to applicationMessageHandler

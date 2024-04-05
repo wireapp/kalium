@@ -26,9 +26,10 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -74,10 +75,9 @@ class OneOnOneProtocolSelectorTest {
         val otherUserId = TestUser.USER_ID
         oneOnOneProtocolSelector.getProtocolForUser(TestUser.USER_ID)
 
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::userById)
-            .with(eq(otherUserId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userRepository.userById(eq(otherUserId))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -135,16 +135,16 @@ class OneOnOneProtocolSelectorTest {
             }
     }
 
-    private class Arrangement(private val configure: Arrangement.() -> Unit) :
+    private class Arrangement(private val configure: suspend Arrangement.() -> Unit) :
         UserRepositoryArrangement by UserRepositoryArrangementImpl() {
         fun arrange(): Pair<Arrangement, OneOnOneProtocolSelector> = run {
-            configure()
+            runBlocking { configure() }
             this@Arrangement to OneOnOneProtocolSelectorImpl(userRepository)
         }
     }
 
     private companion object {
-        fun arrange(configure: Arrangement.() -> Unit) = Arrangement(configure).arrange()
+        fun arrange(configure: suspend Arrangement.() -> Unit) = Arrangement(configure).arrange()
     }
 
 }

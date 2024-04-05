@@ -26,7 +26,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -54,15 +55,13 @@ class IsEligibleToStartCallUseCaseTest {
     @Test
     fun givenAnStorageErrorOccurred_whenVerifyingIfUserIsEligibleToStartGroupCallWithNoEstablishedCall_thenReturnUnavailable() = runTest {
         // given
-        given(callRepository)
-            .suspendFunction(callRepository::establishedCallConversationId)
-            .whenInvoked()
-            .thenReturn(null)
+        coEvery {
+            callRepository.establishedCallConversationId()
+        }.returns(null)
 
-        given(userConfigRepository)
-            .function(userConfigRepository::isConferenceCallingEnabled)
-            .whenInvoked()
-            .thenReturn(Either.Left(StorageFailure.Generic(Throwable("error"))))
+        every {
+            userConfigRepository.isConferenceCallingEnabled()
+        }.returns(Either.Left(StorageFailure.Generic(Throwable("error"))))
 
         // when
         val result = isEligibleToStartCall(
@@ -77,15 +76,13 @@ class IsEligibleToStartCallUseCaseTest {
     @Test
     fun givenAnStorageErrorOccurred_whenVerifyingIfUserIsEligibleToStartOneOnOneCallWithNoEstablishedCall_thenReturnEnabled() = runTest {
         // given
-        given(callRepository)
-            .suspendFunction(callRepository::establishedCallConversationId)
-            .whenInvoked()
-            .thenReturn(null)
+        coEvery {
+            callRepository.establishedCallConversationId()
+        }.returns(null)
 
-        given(userConfigRepository)
-            .function(userConfigRepository::isConferenceCallingEnabled)
-            .whenInvoked()
-            .thenReturn(Either.Left(StorageFailure.Generic(Throwable("error"))))
+        every {
+            userConfigRepository.isConferenceCallingEnabled()
+        }.returns(Either.Left(StorageFailure.Generic(Throwable("error"))))
 
         // when
         val result = isEligibleToStartCall(
@@ -101,15 +98,13 @@ class IsEligibleToStartCallUseCaseTest {
     fun givenAnStorageErrorOccurred_whenVerifyingIfUserIsEligibleToStartGroupCallWithOtherEstablishedCall_thenReturnUnavailable() =
         runTest {
             // given
-            given(callRepository)
-                .suspendFunction(callRepository::establishedCallConversationId)
-                .whenInvoked()
-                .thenReturn(establishedCallConversationId)
+            coEvery {
+                callRepository.establishedCallConversationId()
+            }.returns(establishedCallConversationId)
 
-            given(userConfigRepository)
-                .function(userConfigRepository::isConferenceCallingEnabled)
-                .whenInvoked()
-                .thenReturn(Either.Left(StorageFailure.Generic(Throwable("error"))))
+            every {
+                userConfigRepository.isConferenceCallingEnabled()
+            }.returns(Either.Left(StorageFailure.Generic(Throwable("error"))))
 
             // when
             val result = isEligibleToStartCall(
@@ -125,15 +120,13 @@ class IsEligibleToStartCallUseCaseTest {
     fun givenUserIsEligibleToStartCall_whenVerifyingIfUserIsEligibleToStartGroupCallWithOtherEstablishedCall_thenReturnOngoingCall() =
         runTest {
             // given
-            given(callRepository)
-                .suspendFunction(callRepository::establishedCallConversationId)
-                .whenInvoked()
-                .thenReturn(establishedCallConversationId)
+            coEvery {
+                callRepository.establishedCallConversationId()
+            }.returns(establishedCallConversationId)
 
-            given(userConfigRepository)
-                .function(userConfigRepository::isConferenceCallingEnabled)
-                .whenInvoked()
-                .thenReturn(Either.Right(true))
+            every {
+                userConfigRepository.isConferenceCallingEnabled()
+            }.returns(Either.Right(true))
 
             // when
             val result = isEligibleToStartCall(
@@ -149,15 +142,13 @@ class IsEligibleToStartCallUseCaseTest {
     fun givenUserIsEligibleToStartCall_whenVerifyingIfUserIsEligibleToStartGroupCallWithSameEstablishedCall_thenReturnEstablished() =
         runTest {
             // given
-            given(callRepository)
-                .suspendFunction(callRepository::establishedCallConversationId)
-                .whenInvoked()
-                .thenReturn(conversationId)
+            coEvery {
+                callRepository.establishedCallConversationId()
+            }.returns(conversationId)
 
-            given(userConfigRepository)
-                .function(userConfigRepository::isConferenceCallingEnabled)
-                .whenInvoked()
-                .thenReturn(Either.Right(true))
+            every {
+                userConfigRepository.isConferenceCallingEnabled()
+            }.returns(Either.Right(true))
 
             // when
             val result = isEligibleToStartCall(

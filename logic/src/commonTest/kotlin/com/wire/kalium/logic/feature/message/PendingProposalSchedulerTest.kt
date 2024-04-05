@@ -33,11 +33,11 @@ import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -62,10 +62,9 @@ class PendingProposalSchedulerTest {
 
         pendingProposalsScheduler.scheduleCommit(Arrangement.PROPOSAL_TIMER.groupID, Arrangement.PROPOSAL_TIMER.timestamp)
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::setProposalTimer)
-            .with(eq(Arrangement.PROPOSAL_TIMER), eq(false))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.mlsConversationRepository.setProposalTimer(eq(Arrangement.PROPOSAL_TIMER), eq(false))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -77,10 +76,9 @@ class PendingProposalSchedulerTest {
 
         pendingProposalsScheduler.scheduleCommit(Arrangement.PROPOSAL_TIMER.groupID, Arrangement.PROPOSAL_TIMER.timestamp)
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::setProposalTimer)
-            .with(eq(Arrangement.PROPOSAL_TIMER), eq(true))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.mlsConversationRepository.setProposalTimer(eq(Arrangement.PROPOSAL_TIMER), eq(true))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -93,10 +91,9 @@ class PendingProposalSchedulerTest {
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
         yield()
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::commitPendingProposals)
-            .with(eq(TestConversation.GROUP_ID))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.mlsConversationRepository.commitPendingProposals(eq(TestConversation.GROUP_ID))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -110,10 +107,9 @@ class PendingProposalSchedulerTest {
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
         yield()
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::commitPendingProposals)
-            .with(eq(TestConversation.GROUP_ID))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.mlsConversationRepository.commitPendingProposals(eq(TestConversation.GROUP_ID))
+        }.wasNotInvoked()
     }
 
     @Test
@@ -126,10 +122,9 @@ class PendingProposalSchedulerTest {
         arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
         yield()
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::commitPendingProposals)
-            .with(eq(TestConversation.GROUP_ID))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.mlsConversationRepository.commitPendingProposals(eq(TestConversation.GROUP_ID))
+        }.wasNotInvoked()
     }
 
     @Test
@@ -143,10 +138,9 @@ class PendingProposalSchedulerTest {
         yield()
         advanceUntilIdle()
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::commitPendingProposals)
-            .with(eq(TestConversation.GROUP_ID))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.mlsConversationRepository.commitPendingProposals(eq(TestConversation.GROUP_ID))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -162,10 +156,9 @@ class PendingProposalSchedulerTest {
         proposalChannel.trySend(listOf(ProposalTimer(TestConversation.GROUP_ID, Arrangement.INSTANT_NEAR_FUTURE)))
         advanceUntilIdle()
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::commitPendingProposals)
-            .with(eq(TestConversation.GROUP_ID))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.mlsConversationRepository.commitPendingProposals(eq(TestConversation.GROUP_ID))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -183,10 +176,9 @@ class PendingProposalSchedulerTest {
         proposalChannel.trySend(listOf(ProposalTimer(TestConversation.GROUP_ID, Arrangement.INSTANT_PAST)))
         advanceUntilIdle()
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::commitPendingProposals)
-            .with(eq(TestConversation.GROUP_ID))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.mlsConversationRepository.commitPendingProposals(eq(TestConversation.GROUP_ID))
+        }.wasNotInvoked()
     }
 
     private class Arrangement {
@@ -212,46 +204,40 @@ class PendingProposalSchedulerTest {
 
         fun arrange() = this to pendingProposalScheduler
 
-        fun withSubconversationRepositoryDoesNotContainGroup() = apply {
-            given(subconversationRepository)
-                .suspendFunction(subconversationRepository::containsSubconversation)
-                .whenInvokedWith(any())
-                .thenReturn(false)
+        suspend fun withSubconversationRepositoryDoesNotContainGroup() = apply {
+            coEvery {
+                subconversationRepository.containsSubconversation(any())
+            }.returns(false)
         }
 
-        fun withSubconversationRepositoryContainsGroup(groupID: GroupID) = apply {
-            given(subconversationRepository)
-                .suspendFunction(subconversationRepository::containsSubconversation)
-                .whenInvokedWith(eq(groupID))
-                .thenReturn(true)
+        suspend fun withSubconversationRepositoryContainsGroup(groupID: GroupID) = apply {
+            coEvery {
+                subconversationRepository.containsSubconversation(eq(groupID))
+            }.returns(true)
         }
 
-        fun withScheduleProposalTimerSuccessful() = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::setProposalTimer)
-                .whenInvokedWith(any())
-                .thenReturn(Unit)
+        suspend fun withScheduleProposalTimerSuccessful() = apply {
+            coEvery {
+                mlsConversationRepository.setProposalTimer(any(), any())
+            }.returns(Unit)
         }
 
-        fun withCommitPendingProposalsSuccessful() = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::commitPendingProposals)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withCommitPendingProposalsSuccessful() = apply {
+            coEvery {
+                mlsConversationRepository.commitPendingProposals(any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withScheduledProposalTimers(timers: List<ProposalTimer>) = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::observeProposalTimers)
-                .whenInvoked()
-                .thenReturn(flowOf(timers).flatten())
+        suspend fun withScheduledProposalTimers(timers: List<ProposalTimer>) = apply {
+            coEvery {
+                mlsConversationRepository.observeProposalTimers()
+            }.returns(flowOf(timers).flatten())
         }
 
-        fun withScheduledProposalTimersFlow(timersFlow: Flow<List<ProposalTimer>>) = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::observeProposalTimers)
-                .whenInvoked()
-                .thenReturn(timersFlow.flatten())
+        suspend fun withScheduledProposalTimersFlow(timersFlow: Flow<List<ProposalTimer>>) = apply {
+            coEvery {
+                mlsConversationRepository.observeProposalTimers()
+            }.returns(timersFlow.flatten())
         }
 
         companion object {

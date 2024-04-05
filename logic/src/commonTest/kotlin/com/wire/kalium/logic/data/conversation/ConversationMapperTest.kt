@@ -39,7 +39,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -91,20 +91,23 @@ class ConversationMapperTest {
         val response = CONVERSATION_RESPONSE
         val transformedConversationId = QualifiedIDEntity("transformed", "tDomain")
 
-        given(idMapper)
-            .function(idMapper::fromApiToDao)
-            .whenInvokedWith(any())
-            .then { transformedConversationId }
+        every {
+            idMapper.fromApiToDao(any())
+        }.returns(
+            transformedConversationId
+        )
 
-        given(conversationStatusMapper)
-            .function(conversationStatusMapper::fromMutedStatusDaoModel)
-            .whenInvokedWith(any())
-            .then { MutedConversationStatus.AllAllowed }
+        every {
+            conversationStatusMapper.fromMutedStatusDaoModel(any())
+        }.returns(
+            MutedConversationStatus.AllAllowed
+        )
 
-        given(conversationStatusMapper)
-            .function(conversationStatusMapper::fromMutedStatusApiToDaoModel)
-            .whenInvokedWith(any())
-            .then { ConversationEntity.MutedStatus.ALL_ALLOWED }
+        every {
+            conversationStatusMapper.fromMutedStatusApiToDaoModel(any())
+        }.returns(
+            ConversationEntity.MutedStatus.ALL_ALLOWED
+        )
 
         val mappedResponse = conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
 
@@ -117,26 +120,29 @@ class ConversationMapperTest {
         val originalConversationId = ORIGINAL_CONVERSATION_ID
         val transformedConversationId = QualifiedIDEntity("transformed", "tDomain")
 
-        given(idMapper)
-            .function(idMapper::fromApiToDao)
-            .whenInvokedWith(any())
-            .then { transformedConversationId }
+        every {
+            idMapper.fromApiToDao(any())
+        }.returns(
+            transformedConversationId
+        )
 
-        given(conversationStatusMapper)
-            .function(conversationStatusMapper::fromMutedStatusDaoModel)
-            .whenInvokedWith(any())
-            .then { MutedConversationStatus.AllAllowed }
+        every {
+            conversationStatusMapper.fromMutedStatusDaoModel(any())
+        }.returns(
+            MutedConversationStatus.AllAllowed
+        )
 
-        given(conversationStatusMapper)
-            .function(conversationStatusMapper::fromMutedStatusApiToDaoModel)
-            .whenInvokedWith(any())
-            .then { ConversationEntity.MutedStatus.ALL_ALLOWED }
+        every {
+            conversationStatusMapper.fromMutedStatusApiToDaoModel(any())
+        }.returns(
+            ConversationEntity.MutedStatus.ALL_ALLOWED
+        )
 
         conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
 
-        verify(idMapper)
-            .invocation { idMapper.fromApiToDao(originalConversationId) }
-            .wasInvoked(exactly = once)
+        verify {
+            idMapper.fromApiToDao(originalConversationId)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -152,20 +158,23 @@ class ConversationMapperTest {
             teamId = SELF_USER_TEAM_ID.value
         )
 
-        given(idMapper)
-            .function(idMapper::fromApiToDao)
-            .whenInvokedWith(any())
-            .then { QualifiedIDEntity("transformed", "tDomain") }
+        every {
+            idMapper.fromApiToDao(any())
+        }.returns(
+            QualifiedIDEntity("transformed", "tDomain")
+        )
 
-        given(conversationStatusMapper)
-            .function(conversationStatusMapper::fromMutedStatusDaoModel)
-            .whenInvokedWith(any())
-            .then { MutedConversationStatus.AllAllowed }
+        every {
+            conversationStatusMapper.fromMutedStatusDaoModel(any())
+        }.returns(
+            MutedConversationStatus.AllAllowed
+        )
 
-        given(conversationStatusMapper)
-            .function(conversationStatusMapper::fromMutedStatusApiToDaoModel)
-            .whenInvokedWith(any())
-            .then { ConversationEntity.MutedStatus.ALL_ALLOWED }
+        every {
+            conversationStatusMapper.fromMutedStatusApiToDaoModel(any())
+        }.returns(
+            ConversationEntity.MutedStatus.ALL_ALLOWED
+        )
 
         val result = conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
 
@@ -176,20 +185,23 @@ class ConversationMapperTest {
     fun givenAGroupConversationResponseWithoutName_whenMappingFromConversationResponseToDaoModel_thenShouldMapToGroupType() {
         val response = CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.GROUP, name = null)
 
-        given(idMapper)
-            .function(idMapper::fromApiToDao)
-            .whenInvokedWith(any())
-            .then { QualifiedIDEntity("transformed", "tDomain") }
+        every {
+            idMapper.fromApiToDao(any())
+        }.returns(
+            QualifiedIDEntity("transformed", "tDomain")
+        )
 
-        given(conversationStatusMapper)
-            .function(conversationStatusMapper::fromMutedStatusDaoModel)
-            .whenInvokedWith(any())
-            .then { MutedConversationStatus.AllAllowed }
+        every {
+            conversationStatusMapper.fromMutedStatusDaoModel(any())
+        }.returns(
+            MutedConversationStatus.AllAllowed
+        )
 
-        given(conversationStatusMapper)
-            .function(conversationStatusMapper::fromMutedStatusApiToDaoModel)
-            .whenInvokedWith(any())
-            .then { ConversationEntity.MutedStatus.ALL_ALLOWED }
+        every {
+            conversationStatusMapper.fromMutedStatusApiToDaoModel(any())
+        }.returns(
+            ConversationEntity.MutedStatus.ALL_ALLOWED
+        )
 
         val result = conversationMapper.fromApiModelToDaoModel(response, mlsGroupState = null, SELF_USER_TEAM_ID)
 

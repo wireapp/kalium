@@ -42,15 +42,13 @@ import com.wire.kalium.persistence.dao.asset.AssetEntity
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
 import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.thenDoNothing
-import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import okio.Buffer
@@ -89,9 +87,9 @@ class AssetRepositoryTest {
             assertEquals("some_key", it.key)
         }
 
-        verify(arrangement.assetApi).suspendFunction(arrangement.assetApi::uploadAsset)
-            .with(any(), any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.assetApi.uploadAsset(any(), any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -123,12 +121,12 @@ class AssetRepositoryTest {
             assertEquals(expectedAssetResponse.token, it.first.assetToken)
         }
 
-        verify(arrangement.assetApi).suspendFunction(arrangement.assetApi::uploadAsset)
-            .with(any(), any(), any())
-            .wasInvoked(exactly = once)
-        verify(arrangement.assetDAO).suspendFunction(arrangement.assetDAO::insertAsset)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.assetApi.uploadAsset(any(), any(), any())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.assetDAO.insertAsset(any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -154,9 +152,9 @@ class AssetRepositoryTest {
             assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)
         }
 
-        verify(arrangement.assetApi).suspendFunction(arrangement.assetApi::uploadAsset)
-            .with(any(), any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.assetApi.uploadAsset(any(), any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -184,9 +182,9 @@ class AssetRepositoryTest {
             assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)
         }
 
-        verify(arrangement.assetApi).suspendFunction(arrangement.assetApi::uploadAsset)
-            .with(any(), any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.assetApi.uploadAsset(any(), any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -205,69 +203,72 @@ class AssetRepositoryTest {
 
         // Then
         with(arrangement) {
-            verify(assetDAO).suspendFunction(assetDAO::getAssetByKey)
-                .with(eq(assetKey.value))
-                .wasInvoked(exactly = once)
-            verify(assetApi).suspendFunction(assetApi::downloadAsset)
-                .with(matching { it == assetKey.value }, matching { it == assetKey.domain }, eq(null), any())
-                .wasInvoked(exactly = once)
-            verify(assetDAO)
-                .suspendFunction(assetDAO::insertAsset)
-                .with(any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                assetDAO.getAssetByKey(eq(assetKey.value))
+            }.wasInvoked(exactly = once)
+            coVerify {
+                assetApi.downloadAsset(
+                    matches { it == assetKey.value },
+                    matches { it == assetKey.domain },
+                    eq<String?>(null),
+                    any()
+                )
+            }.wasInvoked(exactly = once)
+            coVerify {
+                assetDAO.insertAsset(any())
+            }.wasInvoked(exactly = once)
         }
     }
 
     @Test
     fun givenAnAssetIdAndDownloadIfNeededSetToTrue_whenDownloadingPrivateAssetsAndNotPresentInDB_thenReturnItsPathFromRemoteAndPersistIt() =
         runTest {
-        // Given
-        val assetKey = UserAssetId("value1", "domain1")
-        val assetName = "Eiffel Tower.jpg"
-        val assetToken = "some-token"
-        val assetEncryptionKey = generateRandomAES256Key()
-        val assetRawData = assetName.encodeToByteArray()
-        val encryptedDataPath = encryptDataWithPath(assetRawData, assetEncryptionKey)
-        val assetSha256 = calcFileSHA256(fakeKaliumFileSystem.source(encryptedDataPath))
-        val assetEncryptedData = fakeKaliumFileSystem.source(encryptedDataPath).buffer().use {
-            it.readByteArray()
+            // Given
+            val assetKey = UserAssetId("value1", "domain1")
+            val assetName = "Eiffel Tower.jpg"
+            val assetToken = "some-token"
+            val assetEncryptionKey = generateRandomAES256Key()
+            val assetRawData = assetName.encodeToByteArray()
+            val encryptedDataPath = encryptDataWithPath(assetRawData, assetEncryptionKey)
+            val assetSha256 = calcFileSHA256(fakeKaliumFileSystem.source(encryptedDataPath))
+            val assetEncryptedData = fakeKaliumFileSystem.source(encryptedDataPath).buffer().use {
+                it.readByteArray()
+            }
+
+            val (arrangement, assetRepository) = Arrangement()
+                .withSuccessfulDownloadAndPersistedData(listOf(assetKey to assetEncryptedData))
+                .withMockedAssetDaoGetByKeyCall(assetKey, null)
+                .arrange()
+
+            // When
+            val result = assetRepository.fetchPrivateDecodedAsset(
+                assetId = assetKey.value,
+                assetDomain = assetKey.domain,
+                assetName = assetName,
+                assetToken = assetToken,
+                encryptionKey = assetEncryptionKey,
+                assetSHA256Key = SHA256Key(assetSha256!!),
+                downloadIfNeeded = true,
+                mimeType = null
+            )
+
+            // Then
+            with(arrangement) {
+                result.shouldSucceed()
+                val expectedPath = fakeKaliumFileSystem.providePersistentAssetPath("${assetKey.value}.${assetName.fileExtension()}")
+                val realPath = (result as Either.Right<Path>).value
+                assertEquals(expectedPath, realPath)
+                coVerify {
+                    assetDAO.getAssetByKey(eq(assetKey.value))
+                }.wasInvoked(exactly = once)
+                coVerify {
+                    assetApi.downloadAsset(matches { it == assetKey.value }, matches { it == assetKey.domain }, eq(assetToken), any())
+                }.wasInvoked(exactly = once)
+                coVerify {
+                    assetDAO.insertAsset(any())
+                }.wasInvoked(exactly = once)
+            }
         }
-
-        val (arrangement, assetRepository) = Arrangement()
-            .withSuccessfulDownloadAndPersistedData(listOf(assetKey to assetEncryptedData))
-            .withMockedAssetDaoGetByKeyCall(assetKey, null)
-            .arrange()
-
-        // When
-        val result = assetRepository.fetchPrivateDecodedAsset(
-            assetId = assetKey.value,
-            assetDomain = assetKey.domain,
-            assetName = assetName,
-            assetToken = assetToken,
-            encryptionKey = assetEncryptionKey,
-            assetSHA256Key = SHA256Key(assetSha256!!),
-            downloadIfNeeded = true,
-            mimeType = null
-        )
-
-        // Then
-        with(arrangement) {
-            result.shouldSucceed()
-            val expectedPath = fakeKaliumFileSystem.providePersistentAssetPath("${assetKey.value}.${assetName.fileExtension()}")
-            val realPath = (result as Either.Right<Path>).value
-            assertEquals(expectedPath, realPath)
-            verify(assetDAO).suspendFunction(assetDAO::getAssetByKey)
-                .with(eq(assetKey.value))
-                .wasInvoked(exactly = once)
-            verify(assetApi).suspendFunction(assetApi::downloadAsset)
-                .with(matching { it == assetKey.value }, matching { it == assetKey.domain }, eq(assetToken), any())
-                .wasInvoked(exactly = once)
-            verify(assetDAO)
-                .suspendFunction(assetDAO::insertAsset)
-                .with(any())
-                .wasInvoked(exactly = once)
-        }
-    }
 
     @Test
     fun givenAnAssetIdAndDownloadIfNeededSetToFalse_whenDownloadingPrivateAssetsAndNotPresentInDB_thenReturnFailure() =
@@ -301,16 +302,15 @@ class AssetRepositoryTest {
             with(arrangement) {
                 result.shouldFail()
                 assertIs<StorageFailure.DataNotFound>(result.value)
-                verify(assetDAO).suspendFunction(assetDAO::getAssetByKey)
-                    .with(eq(assetKey.value))
-                    .wasInvoked(exactly = once)
-                verify(assetApi).suspendFunction(assetApi::downloadAsset)
-                    .with(matching { it == assetKey.value }, matching { it == assetKey.domain }, eq(assetToken), any())
-                    .wasNotInvoked()
-                verify(assetDAO)
-                    .suspendFunction(assetDAO::insertAsset)
-                    .with(any())
-                    .wasNotInvoked()
+                coVerify {
+                    assetDAO.getAssetByKey(eq(assetKey.value))
+                }.wasInvoked(exactly = once)
+                coVerify {
+                    assetApi.downloadAsset(matches { it == assetKey.value }, matches { it == assetKey.domain }, eq(assetToken), any())
+                }.wasNotInvoked()
+                coVerify {
+                    assetDAO.insertAsset(any())
+                }.wasNotInvoked()
             }
         }
 
@@ -348,16 +348,15 @@ class AssetRepositoryTest {
                 result.shouldSucceed()
                 val realPath = (result as Either.Right<Path>).value
                 assertEquals(assetPath, realPath)
-                verify(assetDAO).suspendFunction(assetDAO::getAssetByKey)
-                    .with(eq(assetKey.value))
-                    .wasInvoked(exactly = once)
-                verify(assetApi).suspendFunction(assetApi::downloadAsset)
-                    .with(matching { it == assetKey.value }, matching { it == assetKey.domain }, eq(assetToken), any())
-                    .wasNotInvoked()
-                verify(assetDAO)
-                    .suspendFunction(assetDAO::insertAsset)
-                    .with(any())
-                    .wasNotInvoked()
+                coVerify {
+                    assetDAO.getAssetByKey(eq(assetKey.value))
+                }.wasInvoked(exactly = once)
+                coVerify {
+                    assetApi.downloadAsset(matches { it == assetKey.value }, matches { it == assetKey.domain }, eq(assetToken), any())
+                }.wasNotInvoked()
+                coVerify {
+                    assetDAO.insertAsset(any())
+                }.wasNotInvoked()
             }
         }
 
@@ -420,18 +419,21 @@ class AssetRepositoryTest {
             assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)
         }
 
-        assertTrue(actual is Either.Left)
-
         with(arrangement) {
-            verify(assetDAO).suspendFunction(assetDAO::getAssetByKey)
-                .with(matching { it == assetKey.value })
-                .wasInvoked(exactly = once)
-            verify(assetApi).suspendFunction(assetApi::downloadAsset)
-                .with(matching { it == assetKey.value }, matching { it == assetKey.domain }, eq(null), any())
-                .wasInvoked(exactly = once)
-            verify(assetDAO).suspendFunction(assetDAO::insertAsset)
-                .with(any())
-                .wasNotInvoked()
+            coVerify {
+                assetDAO.getAssetByKey(matches { it == assetKey.value })
+            }.wasInvoked(exactly = once)
+            coVerify {
+                assetApi.downloadAsset(
+                    eq(assetKey.value),
+                    eq(assetKey.domain),
+                    eq<String?>(null),
+                    any()
+                )
+            }.wasInvoked(exactly = once)
+            coVerify {
+                assetDAO.insertAsset(any())
+            }.wasNotInvoked()
         }
     }
 
@@ -464,18 +466,21 @@ class AssetRepositoryTest {
             assertEquals(it::class, NetworkFailure.ServerMiscommunication::class)
         }
 
-        assertTrue(actual is Either.Left)
-
         with(arrangement) {
-            verify(assetDAO).suspendFunction(assetDAO::getAssetByKey)
-                .with(matching { it == assetKey.value })
-                .wasInvoked(exactly = once)
-            verify(assetApi).suspendFunction(assetApi::downloadAsset)
-                .with(matching { it == assetKey.value }, matching { it == assetKey.domain }, eq(null), any())
-                .wasInvoked(exactly = once)
-            verify(assetDAO).suspendFunction(assetDAO::insertAsset)
-                .with(any())
-                .wasNotInvoked()
+            coVerify {
+                assetDAO.getAssetByKey(matches { it == assetKey.value })
+            }.wasInvoked(exactly = once)
+            coVerify {
+                assetApi.downloadAsset(
+                    matches { it == assetKey.value },
+                    matches { it == assetKey.domain },
+                    eq<String?>(null),
+                    any()
+                )
+            }.wasInvoked(exactly = once)
+            coVerify {
+                assetDAO.insertAsset(any())
+            }.wasNotInvoked()
         }
     }
 
@@ -495,13 +500,18 @@ class AssetRepositoryTest {
 
         // Then
         with(arrangement) {
-            verify(assetDAO).suspendFunction(assetDAO::getAssetByKey)
-                .with(eq(assetKey.value))
-                .wasInvoked(exactly = once)
+            coVerify {
+                assetDAO.getAssetByKey(eq(assetKey.value))
+            }.wasInvoked(exactly = once)
 
-            verify(assetApi).suspendFunction(assetApi::downloadAsset)
-                .with(matching { it == assetKey.value }, matching { it == assetKey.value }, eq(null), any())
-                .wasNotInvoked()
+            coVerify {
+                assetApi.downloadAsset(
+                    matches { it == assetKey.value },
+                    matches { it == assetKey.value },
+                    matches { it == null },
+                    any()
+                )
+            }.wasNotInvoked()
         }
     }
 
@@ -518,13 +528,13 @@ class AssetRepositoryTest {
         assetRepository.deleteAsset(assetKey.value, assetKey.domain, "asset-token")
 
         // Then
-        verify(arrangement.assetApi).suspendFunction(arrangement.assetApi::deleteAsset)
-            .with(any(), any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.assetApi.deleteAsset(any(), any(), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.assetDAO).suspendFunction(arrangement.assetDAO::deleteAsset)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.assetDAO.deleteAsset(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -541,13 +551,13 @@ class AssetRepositoryTest {
         assetRepository.deleteAsset(assetKey.value, assetKey.domain, "asset-token")
 
         // Then
-        verify(arrangement.assetApi).suspendFunction(arrangement.assetApi::deleteAsset)
-            .with(any(), any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.assetApi.deleteAsset(any(), any(), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.assetDAO).suspendFunction(arrangement.assetDAO::deleteAsset)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.assetDAO.deleteAsset(any())
+        }.wasInvoked(exactly = once)
 
     }
 
@@ -581,11 +591,13 @@ class AssetRepositoryTest {
             assertIs<Path>(it)
             assertEquals(expectedAssetPath, it)
         }
-        verify(arrangement.assetDAO).suspendFunction(arrangement.assetDAO::insertAsset)
-            .with(matching {
-                it.dataPath == expectedAssetPath.toString() && it.key == assetId && it.domain == assetDomain && it.dataSize == dataSize
-            })
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.assetDAO.insertAsset(
+                matches {
+                    it.dataPath == expectedAssetPath.toString() && it.key == assetId && it.domain == assetDomain && it.dataSize == dataSize
+                }
+            )
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -615,11 +627,13 @@ class AssetRepositoryTest {
 
         // Then
         actual.shouldFail()
-        verify(arrangement.assetDAO).suspendFunction(arrangement.assetDAO::insertAsset)
-            .with(matching {
-                it.dataPath == expectedAssetPath.toString() && it.key == assetId && it.domain == assetDomain && it.dataSize == dataSize
-            })
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.assetDAO.insertAsset(
+                matches {
+                    it.dataPath == expectedAssetPath.toString() && it.key == assetId && it.domain == assetDomain && it.dataSize == dataSize
+                }
+            )
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -645,9 +659,9 @@ class AssetRepositoryTest {
 
         // Then
         actual.shouldFail()
-        verify(arrangement.assetDAO).suspendFunction(arrangement.assetDAO::insertAsset)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.assetDAO.insertAsset(any())
+        }.wasNotInvoked()
     }
 
     class Arrangement {
@@ -666,128 +680,121 @@ class AssetRepositoryTest {
             fakeKaliumFileSystem.sink(dataPath).buffer().use { it.write(data) }
         }
 
-        fun withSuccessfulInsert(): Arrangement = apply {
-            given(assetDAO)
-                .suspendFunction(assetDAO::insertAsset)
-                .whenInvokedWith(any())
-                .thenDoNothing()
+        suspend fun withSuccessfulInsert(): Arrangement = apply {
+            coEvery {
+                assetDAO.insertAsset(any())
+            }.returns(Unit)
         }
 
-        fun withErrorInsertResponse(): Arrangement = apply {
-            given(assetDAO)
-                .suspendFunction(assetDAO::insertAsset)
-                .whenInvokedWith(any())
-                .thenThrow(RuntimeException("An error occurred persisting the data"))
+        suspend fun withErrorInsertResponse(): Arrangement = apply {
+            coEvery {
+                assetDAO.insertAsset(any())
+            }.throws(RuntimeException("An error occurred persisting the data"))
         }
 
-        fun withSuccessfulUpload(expectedAssetResponse: AssetResponse): Arrangement = apply {
-            given(assetApi)
-                .suspendFunction(assetApi::uploadAsset)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(NetworkResponse.Success(expectedAssetResponse, mapOf(), 200))
+        suspend fun withSuccessfulUpload(expectedAssetResponse: AssetResponse): Arrangement = apply {
+            coEvery {
+                assetApi.uploadAsset(any(), any(), any())
+            }.returns(NetworkResponse.Success(expectedAssetResponse, mapOf(), 200))
             withSuccessfulInsert()
         }
 
-        fun withSuccessfulDownload(assetsIdToPersist: List<AssetId>): Arrangement = apply {
+        suspend fun withSuccessfulDownload(assetsIdToPersist: List<AssetId>): Arrangement = apply {
             assetsIdToPersist.forEach { assetKey ->
                 withMockedAssetDaoGetByKeyCall(assetKey, null)
-                given(assetApi)
-                    .suspendFunction(assetApi::downloadAsset)
-                    .whenInvokedWith(any(), any(), any(), any())
-                    .thenReturn(NetworkResponse.Success(Unit, mapOf(), 200))
-                given(assetApi)
-                    .suspendFunction(assetApi::downloadAsset)
-                    .whenInvokedWith(any(), eq(null), any(), any())
-                    .thenReturn(NetworkResponse.Success(Unit, mapOf(), 200))
+                coEvery {
+                    assetApi.downloadAsset(any(), any(), any(), any())
+                }.returns(NetworkResponse.Success(Unit, mapOf(), 200))
+//                 coEvery {
+//                     assetApi.downloadAsset(any(), eq<String?>(null), any(), any())
+//                 }.returns(NetworkResponse.Success(Unit, mapOf(), 200))
 
                 withSuccessfulInsert()
             }
         }
 
-        fun withSuccessfulDownloadAndPersistedData(assetsIdToPersist: List<Pair<AssetId, ByteArray>>): Arrangement = apply {
+        suspend fun withSuccessfulDownloadAndPersistedData(assetsIdToPersist: List<Pair<AssetId, ByteArray>>): Arrangement = apply {
             assetsIdToPersist.forEach { (assetKey, assetData) ->
                 withMockedAssetDaoGetByKeyCall(assetKey, null)
-                given(assetApi)
-                    .suspendFunction(assetApi::downloadAsset)
-                    .whenInvokedWith(any(), any(), any(), matching {
-                        val buffer = Buffer()
-                        buffer.write(assetData)
-                        it.write(buffer, assetData.size.toLong())
-                        true
-                    })
-                    .thenReturn(NetworkResponse.Success(Unit, mapOf(), 200))
-                given(assetApi)
-                    .suspendFunction(assetApi::downloadAsset)
-                    .whenInvokedWith(any(), anything(), eq(null), matching {
-                        val buffer = Buffer()
-                        buffer.write(assetData)
-                        it.write(buffer, assetData.size.toLong())
-                        true
-                    })
-                    .thenReturn(NetworkResponse.Success(Unit, mapOf(), 200))
+                coEvery {
+                    assetApi.downloadAsset(
+                        any(), any(), any(),
+                        matches {
+                            val buffer = Buffer()
+                            buffer.write(assetData)
+                            it.write(buffer, assetData.size.toLong())
+                            true
+                        }
+                    )
+                }.returns(NetworkResponse.Success(Unit, mapOf(), 200))
+                coEvery {
+                    assetApi.downloadAsset(
+                        any(), any(), matches { it == null },
+                        matches {
+                            val buffer = Buffer()
+                            buffer.write(assetData)
+                            it.write(buffer, assetData.size.toLong())
+                            true
+                        }
+                    )
+                }.returns(NetworkResponse.Success(Unit, mapOf(), 200))
 
                 withSuccessfulInsert()
             }
         }
 
-        fun withErrorUploadResponse(): Arrangement = apply {
-            given(assetApi)
-                .suspendFunction(assetApi::uploadAsset)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(
-                    NetworkResponse.Error(
-                        KaliumException.ServerError(
-                            ErrorResponse(500, "error_message", "error_label")
-                        )
+        suspend fun withErrorUploadResponse(): Arrangement = apply {
+            coEvery {
+                assetApi.uploadAsset(any(), any(), any())
+            }.returns(
+                NetworkResponse.Error(
+                    KaliumException.ServerError(
+                        ErrorResponse(500, "error_message", "error_label")
                     )
                 )
+            )
         }
 
-        fun withErrorDownloadResponse(): Arrangement = apply {
-            given(assetApi)
-                .suspendFunction(assetApi::downloadAsset)
-                .whenInvokedWith(anything(), anything(), anything(), anything())
-                .thenReturn(
-                    NetworkResponse.Error(
-                        KaliumException.ServerError(
-                            ErrorResponse(400, "error_message", "error_label")
-                        )
+        suspend fun withErrorDownloadResponse(): Arrangement = apply {
+            coEvery {
+                assetApi.downloadAsset(any(), any(), any(), any())
+            }.returns(
+                NetworkResponse.Error(
+                    KaliumException.ServerError(
+                        ErrorResponse(400, "error_message", "error_label")
                     )
                 )
+            )
         }
 
-        fun withMockedAssetDaoGetByKeyCall(assetKey: UserAssetId, expectedAssetEntity: AssetEntity?): Arrangement = apply {
-            given(assetDAO)
-                .suspendFunction(assetDAO::getAssetByKey)
-                .whenInvokedWith(eq(assetKey.value))
-                .thenReturn(flowOf(expectedAssetEntity))
+        suspend fun withMockedAssetDaoGetByKeyCall(assetKey: UserAssetId, expectedAssetEntity: AssetEntity?): Arrangement = apply {
+            coEvery {
+                assetDAO.getAssetByKey(eq(assetKey.value))
+            }.returns(flowOf(expectedAssetEntity))
         }
 
-        fun withErrorDeleteResponse(): Arrangement = apply {
-            given(assetApi)
-                .suspendFunction(assetApi::deleteAsset)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(
-                    NetworkResponse.Error(
-                        KaliumException.ServerError(
-                            ErrorResponse(500, "error_message", "error_label")
-                        )
+        suspend fun withErrorDeleteResponse(): Arrangement = apply {
+            coEvery {
+                assetApi.deleteAsset(any(), any(), any())
+            }.returns(
+                NetworkResponse.Error(
+                    KaliumException.ServerError(
+                        ErrorResponse(500, "error_message", "error_label")
                     )
                 )
+            )
         }
 
-        fun withSuccessDeleteRemotelyResponse(): Arrangement = apply {
-            given(assetApi)
-                .suspendFunction(assetApi::deleteAsset)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(NetworkResponse.Success(Unit, mapOf(), 200))
+        suspend fun withSuccessDeleteRemotelyResponse(): Arrangement = apply {
+            coEvery {
+                assetApi.deleteAsset(any(), any(), any())
+            }.returns(NetworkResponse.Success(Unit, mapOf(), 200))
         }
 
-        fun withSuccessDeleteLocallyResponse(): Arrangement = apply {
-            given(assetDAO)
-                .suspendFunction(assetDAO::deleteAsset)
-                .whenInvokedWith(anything())
-                .thenReturn(Unit)
+        suspend fun withSuccessDeleteLocallyResponse(): Arrangement = apply {
+            coEvery {
+                assetDAO.deleteAsset(any())
+            }.returns(Unit)
         }
 
         fun arrange(): Pair<Arrangement, AssetRepository> = this to assetRepository

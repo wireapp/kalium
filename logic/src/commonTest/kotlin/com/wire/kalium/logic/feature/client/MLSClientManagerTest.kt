@@ -21,22 +21,21 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.sync.InMemoryIncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlin.test.Test
@@ -53,10 +52,9 @@ class MLSClientManagerTest {
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
-            verify(arrangement.registerMLSClient)
-                .suspendFunction(arrangement.registerMLSClient::invoke)
-                .with(any())
-                .wasNotInvoked()
+            coVerify {
+                arrangement.registerMLSClient.invoke(any())
+            }.wasNotInvoked()
         }
 
     @Test
@@ -72,14 +70,13 @@ class MLSClientManagerTest {
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
-            verify(arrangement.registerMLSClient)
-                .suspendFunction(arrangement.registerMLSClient::invoke)
-                .with(any())
-                .wasInvoked(once)
+            coVerify {
+                arrangement.registerMLSClient.invoke(any())
+            }.wasInvoked(once)
 
-            verify(arrangement.slowSyncRepository)
-                .suspendFunction(arrangement.slowSyncRepository::clearLastSlowSyncCompletionInstant)
-                .wasInvoked(once)
+            coVerify {
+                arrangement.slowSyncRepository.clearLastSlowSyncCompletionInstant()
+            }.wasInvoked(once)
         }
 
     @Test
@@ -93,10 +90,9 @@ class MLSClientManagerTest {
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
-            verify(arrangement.registerMLSClient)
-                .suspendFunction(arrangement.registerMLSClient::invoke)
-                .with(any())
-                .wasNotInvoked()
+            coVerify {
+                arrangement.registerMLSClient.invoke(any())
+            }.wasNotInvoked()
         }
 
     private class Arrangement {
@@ -118,33 +114,29 @@ class MLSClientManagerTest {
         @Mock
         val registerMLSClient = mock(classOf<RegisterMLSClientUseCase>())
 
-        fun withCurrentClientId(result: Either<CoreFailure, ClientId>) = apply {
-            given(clientIdProvider)
-                .suspendFunction(clientIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withCurrentClientId(result: Either<CoreFailure, ClientId>) = apply {
+            coEvery {
+                clientIdProvider.invoke()
+            }.returns(result)
         }
 
-        fun withHasRegisteredMLSClient(result: Either<CoreFailure, Boolean>) = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::hasRegisteredMLSClient)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withHasRegisteredMLSClient(result: Either<CoreFailure, Boolean>) = apply {
+            coEvery {
+                clientRepository.hasRegisteredMLSClient()
+            }.returns(result)
         }
 
-        fun withRegisterMLSClientSuccessful() = apply {
-            given(registerMLSClient)
-                .suspendFunction(registerMLSClient::invoke)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(RegisterMLSClientResult.Success))
-            //todo: cover all cases
+        suspend fun withRegisterMLSClientSuccessful() = apply {
+            coEvery {
+                registerMLSClient.invoke(any())
+            }.returns(Either.Right(RegisterMLSClientResult.Success))
+            // todo: cover all cases
         }
 
-        fun withIsAllowedToRegisterMLSClient(enabled: Boolean) = apply {
-            given(isAllowedToRegisterMLSClient)
-                .suspendFunction(isAllowedToRegisterMLSClient::invoke)
-                .whenInvoked()
-                .thenReturn(enabled)
+        suspend fun withIsAllowedToRegisterMLSClient(enabled: Boolean) = apply {
+            coEvery {
+                isAllowedToRegisterMLSClient()
+            }.returns(enabled)
         }
 
         fun arrange() = this to MLSClientManagerImpl(

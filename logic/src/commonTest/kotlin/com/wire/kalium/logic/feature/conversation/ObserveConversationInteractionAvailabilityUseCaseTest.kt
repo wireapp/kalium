@@ -31,9 +31,9 @@ import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryA
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -54,10 +54,9 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
             val interactionResult = awaitItem()
             assertEquals(IsInteractionAvailableResult.Success(InteractionAvailability.ENABLED), interactionResult)
 
-            verify(arrangement.conversationRepository)
-                .suspendFunction(arrangement.conversationRepository::observeConversationDetailsById)
-                .with(eq(conversationId))
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.conversationRepository.observeConversationDetailsById(eq(conversationId))
+            }.wasInvoked(exactly = once)
 
             awaitComplete()
         }
@@ -76,10 +75,9 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
             val interactionResult = awaitItem()
             assertEquals(IsInteractionAvailableResult.Success(InteractionAvailability.NOT_MEMBER), interactionResult)
 
-            verify(arrangement.conversationRepository)
-                .suspendFunction(arrangement.conversationRepository::observeConversationDetailsById)
-                .with(eq(conversationId))
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.conversationRepository.observeConversationDetailsById(eq(conversationId))
+            }.wasInvoked(exactly = once)
 
             awaitComplete()
         }
@@ -98,10 +96,9 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
             val interactionResult = awaitItem()
             assertIs<IsInteractionAvailableResult.Failure>(interactionResult)
 
-            verify(arrangement.conversationRepository)
-                .suspendFunction(arrangement.conversationRepository::observeConversationDetailsById)
-                .with(eq(conversationId))
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.conversationRepository.observeConversationDetailsById(eq(conversationId))
+            }.wasInvoked(exactly = once)
 
             awaitComplete()
         }
@@ -120,10 +117,9 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
             val interactionResult = awaitItem()
             assertEquals(IsInteractionAvailableResult.Success(InteractionAvailability.BLOCKED_USER), interactionResult)
 
-            verify(arrangement.conversationRepository)
-                .suspendFunction(arrangement.conversationRepository::observeConversationDetailsById)
-                .with(eq(conversationId))
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.conversationRepository.observeConversationDetailsById(eq(conversationId))
+            }.wasInvoked(exactly = once)
 
             awaitComplete()
         }
@@ -142,10 +138,9 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
             val interactionResult = awaitItem()
             assertEquals(IsInteractionAvailableResult.Success(InteractionAvailability.DELETED_USER), interactionResult)
 
-            verify(arrangement.conversationRepository)
-                .suspendFunction(arrangement.conversationRepository::observeConversationDetailsById)
-                .with(eq(conversationId))
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.conversationRepository.observeConversationDetailsById(eq(conversationId))
+            }.wasInvoked(exactly = once)
 
             awaitComplete()
         }
@@ -241,6 +236,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
             awaitComplete()
         }
     }
+
     @Test
     fun givenConversationLegalHoldIsDegraded_whenInvokingInteractionForConversation_thenInteractionShouldBeLegalHold() = runTest {
         val conversationId = TestConversation.ID
@@ -255,29 +251,21 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
     }
 
     private class Arrangement(
-        private val configure: Arrangement.() -> Unit
+        private val configure: suspend Arrangement.() -> Unit
     ) : UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
 
-        init {
-            withObservingSelfUserReturning(
-                flowOf(
-                    TestUser.SELF.copy(supportedProtocols = setOf(SupportedProtocol.MLS, SupportedProtocol.PROTEUS))
-                )
-            )
-        }
-
-        fun withSelfUserBeingMemberOfConversation(isMember: Boolean) = apply {
+        suspend fun withSelfUserBeingMemberOfConversation(isMember: Boolean) = apply {
             withObserveConversationDetailsByIdReturning(
                 Either.Right(TestConversationDetails.CONVERSATION_GROUP.copy(isSelfUserMember = isMember))
             )
         }
 
-        fun withGroupConversationError() {
+        suspend fun withGroupConversationError() {
             withObserveConversationDetailsByIdReturning(Either.Left(StorageFailure.DataNotFound))
         }
 
-        fun withBlockedUserConversation() = apply {
+        suspend fun withBlockedUserConversation() = apply {
             withObserveConversationDetailsByIdReturning(
                 Either.Right(
                     TestConversationDetails.CONVERSATION_ONE_ONE.copy(
@@ -289,7 +277,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
             )
         }
 
-        fun withDeletedUserConversation() = apply {
+        suspend fun withDeletedUserConversation() = apply {
             withObserveConversationDetailsByIdReturning(
                 Either.Right(
                     TestConversationDetails.CONVERSATION_ONE_ONE.copy(
@@ -301,7 +289,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
             )
         }
 
-        fun withLegalHoldOneOnOneConversation(legalHoldStatus: Conversation.LegalHoldStatus) = apply {
+        suspend fun withLegalHoldOneOnOneConversation(legalHoldStatus: Conversation.LegalHoldStatus) = apply {
             withObserveConversationDetailsByIdReturning(
                 Either.Right(
                     TestConversationDetails.CONVERSATION_ONE_ONE.copy(
@@ -311,7 +299,12 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
             )
         }
 
-        fun arrange(): Pair<Arrangement, ObserveConversationInteractionAvailabilityUseCase> = run {
+        suspend fun arrange(): Pair<Arrangement, ObserveConversationInteractionAvailabilityUseCase> = run {
+            withObservingSelfUserReturning(
+                flowOf(
+                    TestUser.SELF.copy(supportedProtocols = setOf(SupportedProtocol.MLS, SupportedProtocol.PROTEUS))
+                )
+            )
             configure()
             this@Arrangement to ObserveConversationInteractionAvailabilityUseCase(
                 conversationRepository = conversationRepository,
@@ -321,6 +314,6 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
     }
 
     private companion object {
-        fun arrange(configure: Arrangement.() -> Unit) = Arrangement(configure).arrange()
+        suspend fun arrange(configure: suspend Arrangement.() -> Unit) = Arrangement(configure).arrange()
     }
 }

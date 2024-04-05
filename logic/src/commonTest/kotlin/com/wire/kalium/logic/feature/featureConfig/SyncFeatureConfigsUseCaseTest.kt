@@ -57,11 +57,13 @@ import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.doesNothing
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -141,7 +143,6 @@ class SyncFeatureConfigsUseCaseTest {
             .withGetSupportedProtocolsReturning(null)
             .arrange()
 
-
         syncFeatureConfigsUseCase()
 
         arrangement.userConfigRepository.isConferenceCallingEnabled().shouldSucceed {
@@ -196,7 +197,6 @@ class SyncFeatureConfigsUseCaseTest {
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .withGetSupportedProtocolsReturning(null)
             .arrange()
-
 
         syncFeatureConfigsUseCase()
 
@@ -379,9 +379,9 @@ class SyncFeatureConfigsUseCaseTest {
         getFileSharingStatusUseCase.invoke()
 
         // Then
-        verify(arrangement.featureConfigRepository)
-            .suspendFunction(arrangement.featureConfigRepository::getFeatureConfigs)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.featureConfigRepository.getFeatureConfigs()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -396,9 +396,9 @@ class SyncFeatureConfigsUseCaseTest {
         getFileSharingStatusUseCase.invoke()
 
         // Then
-        verify(arrangement.featureConfigRepository)
-            .suspendFunction(arrangement.featureConfigRepository::getFeatureConfigs)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.featureConfigRepository.getFeatureConfigs()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -494,11 +494,13 @@ class SyncFeatureConfigsUseCaseTest {
         getTeamSettingsSelfDeletionStatusUseCase.invoke()
 
         // Then
-        verify(arrangement.userConfigDAO)
-            .suspendFunction(arrangement.userConfigDAO::setTeamSettingsSelfDeletionStatus)
-            .with(matching {
-                it.isStatusChanged == null && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Disabled
-            })
+        coVerify {
+            arrangement.userConfigDAO.setTeamSettingsSelfDeletionStatus(
+                matches {
+                    it.isStatusChanged == null && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Disabled
+                }
+            )
+        }
     }
 
     @Test
@@ -521,11 +523,13 @@ class SyncFeatureConfigsUseCaseTest {
         getTeamSettingsSelfDeletionStatusUseCase.invoke()
 
         // Then
-        verify(arrangement.userConfigDAO)
-            .suspendFunction(arrangement.userConfigDAO::setTeamSettingsSelfDeletionStatus)
-            .with(matching {
-                it.isStatusChanged == false && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Enabled
-            })
+        coVerify {
+            arrangement.userConfigDAO.setTeamSettingsSelfDeletionStatus(
+                matches {
+                    it.isStatusChanged == false && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Enabled
+                }
+            )
+        }
     }
 
     @Test
@@ -548,11 +552,13 @@ class SyncFeatureConfigsUseCaseTest {
         getTeamSettingsSelfDeletionStatusUseCase.invoke()
 
         // Then
-        verify(arrangement.userConfigDAO)
-            .suspendFunction(arrangement.userConfigDAO::setTeamSettingsSelfDeletionStatus)
-            .with(matching {
-                it.isStatusChanged == false && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Enabled
-            })
+        coVerify {
+            arrangement.userConfigDAO.setTeamSettingsSelfDeletionStatus(
+                matches {
+                    it.isStatusChanged == false && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Enabled
+                }
+            )
+        }
     }
 
     @Test
@@ -576,15 +582,17 @@ class SyncFeatureConfigsUseCaseTest {
         getTeamSettingsSelfDeletionStatusUseCase.invoke()
 
         // Then
-        verify(arrangement.userConfigDAO)
-            .suspendFunction(arrangement.userConfigDAO::setTeamSettingsSelfDeletionStatus)
-            .with(matching {
-                it.isStatusChanged == null && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Enforced(
-                    enforcedTimeoutInMs.toDuration(
-                        DurationUnit.MILLISECONDS
+        coVerify {
+            arrangement.userConfigDAO.setTeamSettingsSelfDeletionStatus(
+                matches {
+                    it.isStatusChanged == null && it.selfDeletionTimerEntity.toTeamSelfDeleteTimer() == TeamSelfDeleteTimer.Enforced(
+                        enforcedTimeoutInMs.toDuration(
+                            DurationUnit.MILLISECONDS
+                        )
                     )
-                )
-            })
+                }
+            )
+        }
     }
 
     @Test
@@ -652,17 +660,16 @@ class SyncFeatureConfigsUseCaseTest {
         private lateinit var syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
 
         init {
-            withRemoteFeatureConfigsReturning(Either.Right(FeatureConfigTest.newModel()))
-//            withLocalSharingEnabledReturning(
-//                status = true,
-//                isStatusChanged = false
-//            )
-            withGuestRoomLinkEnabledReturning(
-                GuestRoomLinkStatus(
-                    isGuestRoomLinkEnabled = true,
-                    isStatusChanged = false
+            runBlocking {
+                withRemoteFeatureConfigsReturning(Either.Right(FeatureConfigTest.newModel()))
+
+                withGuestRoomLinkEnabledReturning(
+                    GuestRoomLinkStatus(
+                        isGuestRoomLinkEnabled = true,
+                        isStatusChanged = false
+                    )
                 )
-            )
+            }
         }
 
         fun withBuildConfigFileSharing(
@@ -676,14 +683,13 @@ class SyncFeatureConfigsUseCaseTest {
             )
         }
 
-        fun withRemoteFeatureConfigsSucceeding(featureConfigModel: FeatureConfigModel) =
+        suspend fun withRemoteFeatureConfigsSucceeding(featureConfigModel: FeatureConfigModel) =
             withRemoteFeatureConfigsReturning(Either.Right(featureConfigModel))
 
-        fun withRemoteFeatureConfigsReturning(result: Either<NetworkFailure, FeatureConfigModel>) = apply {
-            given(featureConfigRepository)
-                .suspendFunction(featureConfigRepository::getFeatureConfigs)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withRemoteFeatureConfigsReturning(result: Either<NetworkFailure, FeatureConfigModel>) = apply {
+            coEvery {
+                featureConfigRepository.getFeatureConfigs()
+            }.returns(result)
         }
 
         fun withLocalSharingEnabledReturning(
@@ -691,7 +697,8 @@ class SyncFeatureConfigsUseCaseTest {
             isStatusChanged: Boolean?
         ) = apply {
             userConfigRepository.setFileSharingStatus(
-                status, isStatusChanged
+                status,
+                isStatusChanged
             )
         }
 
@@ -702,25 +709,22 @@ class SyncFeatureConfigsUseCaseTest {
             )
         }
 
-        fun withGetTeamSettingsSelfDeletionStatusSuccessful() = apply {
-            given(userConfigDAO)
-                .suspendFunction(userConfigDAO::getTeamSettingsSelfDeletionStatus)
-                .whenInvoked()
-                .thenReturn(null)
+        suspend fun withGetTeamSettingsSelfDeletionStatusSuccessful() = apply {
+            coEvery {
+                userConfigDAO.getTeamSettingsSelfDeletionStatus()
+            }.returns(null)
         }
 
-        fun withSetTeamSettingsSelfDeletionStatusSuccessful() = apply {
-            given(userConfigDAO)
-                .suspendFunction(userConfigDAO::setTeamSettingsSelfDeletionStatus)
-                .whenInvokedWith(any())
-                .then { }
+        suspend fun withSetTeamSettingsSelfDeletionStatusSuccessful() = apply {
+            coEvery {
+                userConfigDAO.setTeamSettingsSelfDeletionStatus(any())
+            }.doesNothing()
         }
 
-        fun withGetSupportedProtocolsReturning(result: Set<SupportedProtocolEntity>?) = apply {
-            given(userConfigDAO)
-                .suspendFunction(userConfigDAO::getSupportedProtocols)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withGetSupportedProtocolsReturning(result: Set<SupportedProtocolEntity>?) = apply {
+            coEvery {
+                userConfigDAO.getSupportedProtocols()
+            }.returns(result)
         }
 
         fun withKaliumConfigs(changeConfigs: (KaliumConfigs) -> KaliumConfigs) = apply {

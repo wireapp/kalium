@@ -29,11 +29,11 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -51,19 +51,17 @@ class AddMemberToConversationUseCaseTest {
 
         assertIs<AddMemberToConversationUseCase.Result.Success>(result)
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::addMembers)
-            .with(eq(listOf(TestConversation.USER_1)), eq(TestConversation.ID))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationGroupRepository.addMembers(eq(listOf(TestConversation.USER_1)), eq(TestConversation.ID))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::insertOrIgnoreIncompleteUsers)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userRepository.insertOrIgnoreIncompleteUsers(any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.refreshUsersWithoutMetadata)
-            .suspendFunction(arrangement.refreshUsersWithoutMetadata::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.refreshUsersWithoutMetadata.invoke()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -76,19 +74,17 @@ class AddMemberToConversationUseCaseTest {
         val result = addMemberUseCase(TestConversation.ID, listOf(TestConversation.USER_1))
         assertIs<AddMemberToConversationUseCase.Result.Failure>(result)
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::addMembers)
-            .with(eq(listOf(TestConversation.USER_1)), eq(TestConversation.ID))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationGroupRepository.addMembers(eq(listOf(TestConversation.USER_1)), eq(TestConversation.ID))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::insertOrIgnoreIncompleteUsers)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userRepository.insertOrIgnoreIncompleteUsers(any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.refreshUsersWithoutMetadata)
-            .suspendFunction(arrangement.refreshUsersWithoutMetadata::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.refreshUsersWithoutMetadata.invoke()
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement : UserRepositoryArrangement by UserRepositoryArrangementImpl() {
@@ -104,18 +100,16 @@ class AddMemberToConversationUseCaseTest {
             refreshUsersWithoutMetadata
         )
 
-        fun withAddMembers(either: Either<CoreFailure, Unit>) = apply {
-            given(conversationGroupRepository)
-                .suspendFunction(conversationGroupRepository::addMembers)
-                .whenInvokedWith(any(), any())
-                .thenReturn(either)
+        suspend fun withAddMembers(either: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                conversationGroupRepository.addMembers(any(), any())
+            }.returns(either)
         }
 
-        fun withInsertOrIgnoreIncompleteUsers() = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::insertOrIgnoreIncompleteUsers)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withInsertOrIgnoreIncompleteUsers() = apply {
+            coEvery {
+                userRepository.insertOrIgnoreIncompleteUsers(any())
+            }.returns(Either.Right(Unit))
         }
 
         fun arrange(block: Arrangement.() -> Unit = { }) = apply(block).let { this to addMemberUseCase }

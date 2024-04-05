@@ -21,29 +21,27 @@ package com.wire.kalium.logic.feature.client
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.auth.AccountInfo
+import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.client.ProteusClientProvider
-import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.configure
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class NeedsToRegisterClientUseCaseTest {
 
     @Test
@@ -56,14 +54,13 @@ class NeedsToRegisterClientUseCaseTest {
             assertEquals(false, it)
         }
 
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::userAccountInfo)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.sessionRepository.userAccountInfo(any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.currentClientIdProvider)
-            .suspendFunction(arrangement.currentClientIdProvider::invoke)
-            .wasNotInvoked()
+        coVerify {
+            arrangement.currentClientIdProvider.invoke()
+        }.wasNotInvoked()
     }
 
     @Test
@@ -78,18 +75,17 @@ class NeedsToRegisterClientUseCaseTest {
             assertEquals(true, it)
         }
 
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::userAccountInfo)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.sessionRepository.userAccountInfo(any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.currentClientIdProvider)
-            .suspendFunction(arrangement.currentClientIdProvider::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.currentClientIdProvider.invoke()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.proteusClientProvider)
-            .suspendFunction(arrangement.proteusClientProvider::getOrError)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.proteusClientProvider.getOrError()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -103,20 +99,18 @@ class NeedsToRegisterClientUseCaseTest {
             assertEquals(false, it)
         }
 
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::userAccountInfo)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.sessionRepository.userAccountInfo(any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.currentClientIdProvider)
-            .suspendFunction(arrangement.currentClientIdProvider::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.currentClientIdProvider.invoke()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.proteusClientProvider)
-            .suspendFunction(arrangement.proteusClientProvider::getOrError)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.proteusClientProvider.getOrError()
+        }.wasInvoked(exactly = once)
     }
-
 
     @Test
     fun givenAccountIsValidAndClientIsRegisteredAndLocalCryptoFilesAreMissing_thenReturnTrue() = runTest {
@@ -128,18 +122,17 @@ class NeedsToRegisterClientUseCaseTest {
             assertTrue(it)
         }
 
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::userAccountInfo)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.sessionRepository.userAccountInfo(any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.currentClientIdProvider)
-            .suspendFunction(arrangement.currentClientIdProvider::invoke)
-            .wasNotInvoked()
+        coVerify {
+            arrangement.currentClientIdProvider.invoke()
+        }.wasNotInvoked()
 
-        verify(arrangement.proteusClientProvider)
-            .suspendFunction(arrangement.proteusClientProvider::getOrError)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.proteusClientProvider.getOrError()
+        }.wasInvoked(exactly = once)
     }
 
     private companion object {
@@ -164,29 +157,28 @@ class NeedsToRegisterClientUseCaseTest {
         private var needsToRegisterClientUseCase: NeedsToRegisterClientUseCase =
             NeedsToRegisterClientUseCaseImpl(currentClientIdProvider, sessionRepository, proteusClientProvider, selfUserId)
 
-        fun withCurrentClientId(result: Either<StorageFailure, ClientId>) = apply {
-            given(currentClientIdProvider)
-                .suspendFunction(currentClientIdProvider::invoke)
-                .whenInvoked()
-                .then { result }
+        suspend fun withCurrentClientId(result: Either<StorageFailure, ClientId>) = apply {
+            coEvery {
+                currentClientIdProvider.invoke()
+            }.returns(result)
         }
 
         suspend fun withUserAccountInfo(result: Either<StorageFailure, AccountInfo>) = apply {
-            given(sessionRepository)
-                .coroutine { userAccountInfo(selfUserId) }
-                .then { result }
+            coEvery {
+                sessionRepository.userAccountInfo(selfUserId)
+            }.returns(result)
         }
 
         suspend fun withProteusClientSuccess() = apply {
-            given(proteusClientProvider)
-                .coroutine { getOrError() }
-                .then { Either.Right(proteusClient) }
+            coEvery {
+                proteusClientProvider.getOrError()
+            }.returns(Either.Right(proteusClient))
         }
 
         suspend fun withProteusClientFailure(result: Either.Left<CoreFailure>) = apply {
-            given(proteusClientProvider)
-                .coroutine { getOrError() }
-                .then { result }
+            coEvery {
+                proteusClientProvider.getOrError()
+            }.returns(result)
         }
 
         fun arrange() = this to needsToRegisterClientUseCase

@@ -22,6 +22,7 @@ import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.Message
@@ -33,21 +34,20 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.user.AssetId
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
-import io.mockative.anything
+import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.every
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
@@ -55,7 +55,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.time.Duration.Companion.seconds
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class DeleteMessageUseCaseTest {
     @Test
     fun givenASentMessage_WhenDeleteForEveryIsTrue_TheGeneratedMessageShouldBeCorrect() = runTest {
@@ -76,19 +75,17 @@ class DeleteMessageUseCaseTest {
         deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).shouldSucceed()
 
         // then
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(
-                matching { message ->
+        coVerify {
+            arrangement.messageSender.sendMessage(
+                matches { message ->
                     message.conversationId == TEST_CONVERSATION_ID && message.content == deletedMessageContent
                 },
-                anything()
+                any()
             )
-            .wasInvoked(exactly = once)
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::markMessageAsDeleted)
-            .with(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.markMessageAsDeleted(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -110,18 +107,15 @@ class DeleteMessageUseCaseTest {
         deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).shouldSucceed()
 
         // then
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(anything(), anything())
-            .wasNotInvoked()
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::markMessageAsDeleted)
-            .with(anything(), anything())
-            .wasNotInvoked()
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::deleteMessage)
-            .with(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageSender.sendMessage(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.messageRepository.markMessageAsDeleted(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.messageRepository.deleteMessage(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -147,20 +141,18 @@ class DeleteMessageUseCaseTest {
         )
 
         // then
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(
-                matching { message ->
+        coVerify {
+            arrangement.messageSender.sendMessage(
+                matches { message ->
                     message.conversationId == SELF_CONVERSATION_ID && message.content == deletedForMeContent
                 },
-                anything()
+                any()
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::markMessageAsDeleted)
-            .with(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.markMessageAsDeleted(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
+        }.wasInvoked(exactly = once)
 
     }
 
@@ -187,25 +179,22 @@ class DeleteMessageUseCaseTest {
         )
 
         // then
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(
-                matching { message ->
+        coVerify {
+            arrangement.messageSender.sendMessage(
+                matches { message ->
                     message.conversationId == SELF_CONVERSATION_ID && message.content == deletedForMeContent
                 },
-                anything()
+                any()
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.assetRepository)
-            .suspendFunction(arrangement.assetRepository::deleteAsset)
-            .with(eq(ASSET_ID.value), eq(ASSET_ID.domain), eq(ASSET_TOKEN))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.assetRepository.deleteAsset(eq(ASSET_ID.value), eq(ASSET_ID.domain), eq(ASSET_TOKEN))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::markMessageAsDeleted)
-            .with(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.markMessageAsDeleted(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -233,19 +222,17 @@ class DeleteMessageUseCaseTest {
         deleteMessageUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_UUID, deleteForEveryone).shouldSucceed()
 
         // then
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(
-                matching { message ->
+        coVerify {
+            arrangement.messageSender.sendMessage(
+                matches { message ->
                     message.conversationId == TEST_CONVERSATION_ID && message.content == deletedMessageContent
                 },
-                anything()
+                any()
             )
-            .wasInvoked(exactly = once)
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::deleteMessage)
-            .with(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.deleteMessage(eq(TEST_MESSAGE_UUID), eq(TEST_CONVERSATION_ID))
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -283,78 +270,70 @@ class DeleteMessageUseCaseTest {
             selfConversationIdProvider
         )
 
-        fun withSendMessageSucceed() = apply {
-            given(messageSender)
-                .suspendFunction(messageSender::sendMessage)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withSendMessageSucceed() = apply {
+            coEvery {
+                messageSender.sendMessage(any(), any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withSelfUser(selfUser: SelfUser) = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::observeSelfUser)
-                .whenInvoked()
-                .thenReturn(flowOf(selfUser))
+        suspend fun withSelfUser(selfUser: SelfUser) = apply {
+            coEvery {
+                userRepository.observeSelfUser()
+            }.returns(flowOf(selfUser))
         }
 
-        fun withCurrentClientId(clientId: ClientId) = apply {
-            given(currentClientIdProvider)
-                .suspendFunction(currentClientIdProvider::invoke)
-                .whenInvoked()
-                .then { Either.Right(clientId) }
+        suspend fun withCurrentClientId(clientId: ClientId) = apply {
+            coEvery {
+                currentClientIdProvider.invoke()
+            }.returns(Either.Right(clientId))
         }
 
         fun withCompletedSlowSync() = apply {
-            given(slowSyncRepository)
-                .getter(slowSyncRepository::slowSyncStatus)
-                .whenInvoked()
-                .thenReturn(completeStateFlow)
+            every {
+                slowSyncRepository.slowSyncStatus
+            }.returns(completeStateFlow)
         }
 
-        fun withMessageRepositoryMarkMessageAsDeletedSucceed() = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::markMessageAsDeleted)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withMessageRepositoryMarkMessageAsDeletedSucceed() = apply {
+            coEvery {
+                messageRepository.markMessageAsDeleted(any(), any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withMessageRepositoryDeletionSucceed() = apply{
-            given(messageRepository)
-                .suspendFunction(messageRepository::deleteMessage)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withMessageRepositoryDeletionSucceed() = apply {
+            coEvery {
+                messageRepository.deleteMessage(any(), any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withMessageRepositoryDeleteMessageSucceed() = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::deleteMessage)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withMessageRepositoryDeleteMessageSucceed() = apply {
+            coEvery {
+                messageRepository.deleteMessage(any(), any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withTextMessage(status: Message.Status, expirationData: Message.ExpirationData? = null) = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::getMessageById)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(TestMessage.TEXT_MESSAGE.copy(status = status, expirationData = expirationData)))
+        suspend fun withTextMessage(status: Message.Status, expirationData: Message.ExpirationData? = null) = apply {
+            coEvery {
+                messageRepository.getMessageById(any(), any())
+            }.returns(Either.Right(TestMessage.TEXT_MESSAGE.copy(status = status, expirationData = expirationData)))
         }
 
-        fun withAssetMessage() = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::getMessageById)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(TestMessage.TEXT_MESSAGE.copy(content = MESSAGE_ASSET_CONTENT)))
+        suspend fun withAssetMessage() = apply {
+            coEvery {
+                messageRepository.getMessageById(any(), any())
+            }.returns(Either.Right(TestMessage.TEXT_MESSAGE.copy(content = MESSAGE_ASSET_CONTENT)))
         }
 
-        fun withAssetRepositoryDeleteAssetSucceed() = apply {
-            given(assetRepository)
-                .suspendFunction(assetRepository::deleteAsset)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withAssetRepositoryDeleteAssetSucceed() = apply {
+            coEvery {
+                assetRepository.deleteAsset(any(), any(), any())
+            }.returns(Either.Right(Unit))
         }
 
         suspend fun withSelfConversationIds(conversationIds: List<ConversationId>) = apply {
-            given(selfConversationIdProvider).coroutine { invoke() }.then { Either.Right(conversationIds) }
+            coEvery {
+                selfConversationIdProvider.invoke()
+            }.returns(Either.Right(conversationIds))
         }
 
     }

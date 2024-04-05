@@ -25,10 +25,10 @@ import com.wire.kalium.logic.feature.user.readReceipts.ObserveReadReceiptsEnable
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -48,10 +48,9 @@ class ObserveReadReceiptsEnabledUseCaseTest {
             val item = awaitItem()
             assertTrue(item)
 
-            verify(arrangement.userPropertyRepository)
-                .function(arrangement.userPropertyRepository::observeReadReceiptsStatus)
-                .with()
-                .wasInvoked(once)
+            coVerify {
+                arrangement.userPropertyRepository.observeReadReceiptsStatus()
+            }.wasInvoked(once)
 
             awaitComplete()
         }
@@ -69,10 +68,9 @@ class ObserveReadReceiptsEnabledUseCaseTest {
             val item = awaitItem()
             assertTrue(item)
 
-            verify(arrangement.userPropertyRepository)
-                .function(arrangement.userPropertyRepository::observeReadReceiptsStatus)
-                .with()
-                .wasInvoked(once)
+            coVerify {
+                arrangement.userPropertyRepository.observeReadReceiptsStatus()
+            }.wasInvoked(once)
 
             awaitComplete()
         }
@@ -84,20 +82,18 @@ class ObserveReadReceiptsEnabledUseCaseTest {
 
         val observeReadReceiptsEnabled = ObserveReadReceiptsEnabledUseCaseImpl(userPropertyRepository)
 
-        fun withSuccessfulState() = apply {
-            given(userPropertyRepository)
-                .suspendFunction(userPropertyRepository::observeReadReceiptsStatus)
-                .whenInvoked()
-                .thenReturn(flowOf(Either.Right(true)))
+        suspend fun withSuccessfulState() = apply {
+            coEvery {
+                userPropertyRepository.observeReadReceiptsStatus()
+            }.returns(flowOf(Either.Right(true)))
 
             return this
         }
 
-        fun withFailureState() = apply {
-            given(userPropertyRepository)
-                .suspendFunction(userPropertyRepository::observeReadReceiptsStatus)
-                .whenInvoked()
-                .thenReturn(flowOf(Either.Left(StorageFailure.DataNotFound)))
+        suspend fun withFailureState() = apply {
+            coEvery {
+                userPropertyRepository.observeReadReceiptsStatus()
+            }.returns(flowOf(Either.Left(StorageFailure.DataNotFound)))
 
             return this
         }

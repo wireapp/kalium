@@ -40,7 +40,8 @@ import io.mockative.any
 import io.mockative.classOf
 import io.mockative.configure
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -61,10 +62,9 @@ class NewMessageEventHandlerTest {
 
         newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
-        verify(arrangement.proteusMessageUnpacker)
-            .suspendFunction(arrangement.proteusMessageUnpacker::unpackProteusMessage)
-            .with(eq(newMessageEvent))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.proteusMessageUnpacker.unpackProteusMessage(eq(newMessageEvent))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -86,15 +86,13 @@ class NewMessageEventHandlerTest {
 
         newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
-        verify(arrangement.proteusMessageUnpacker)
-            .suspendFunction(arrangement.proteusMessageUnpacker::unpackProteusMessage)
-            .with(eq(newMessageEvent))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.proteusMessageUnpacker.unpackProteusMessage(eq(newMessageEvent))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.applicationMessageHandler)
-            .suspendFunction(arrangement.applicationMessageHandler::handleDecryptionError)
-            .with(any(), any(), any(), any(), any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -116,15 +114,13 @@ class NewMessageEventHandlerTest {
 
         newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
-        verify(arrangement.proteusMessageUnpacker)
-            .suspendFunction(arrangement.proteusMessageUnpacker::unpackProteusMessage)
-            .with(eq(newMessageEvent))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.proteusMessageUnpacker.unpackProteusMessage(eq(newMessageEvent))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.applicationMessageHandler)
-            .suspendFunction(arrangement.applicationMessageHandler::handleDecryptionError)
-            .with(any(), any(), any(), any(), any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -137,10 +133,9 @@ class NewMessageEventHandlerTest {
 
         newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
-        verify(arrangement.mlsMessageUnpacker)
-            .suspendFunction(arrangement.mlsMessageUnpacker::unpackMlsMessage)
-            .with(eq(newMessageEvent))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.mlsMessageUnpacker.unpackMlsMessage(eq(newMessageEvent))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -164,15 +159,13 @@ class NewMessageEventHandlerTest {
 
         newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
-        verify(arrangement.legalHoldHandler)
-            .suspendFunction(arrangement.legalHoldHandler::handleNewMessage)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.legalHoldHandler.handleNewMessage(any(), any())
+        }.wasNotInvoked()
 
-        verify(arrangement.applicationMessageHandler)
-            .suspendFunction(arrangement.applicationMessageHandler::handleContent)
-            .with(any(), any(), any(), any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.applicationMessageHandler.handleContent(any(), any(), any(), any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -186,20 +179,17 @@ class NewMessageEventHandlerTest {
 
         newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
-        verify(arrangement.mlsMessageUnpacker)
-            .suspendFunction(arrangement.mlsMessageUnpacker::unpackMlsMessage)
-            .with(eq(newMessageEvent))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.mlsMessageUnpacker.unpackMlsMessage(eq(newMessageEvent))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.legalHoldHandler)
-            .suspendFunction(arrangement.legalHoldHandler::handleNewMessage)
-            .with(eq(applicationMessage))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.legalHoldHandler.handleNewMessage(eq(applicationMessage), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.applicationMessageHandler)
-            .suspendFunction(arrangement.applicationMessageHandler::handleContent)
-            .with(any(), any(), any(), any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.applicationMessageHandler.handleContent(any(), any(), any(), any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -211,27 +201,24 @@ class NewMessageEventHandlerTest {
                     applicationMessage.copy(
                         content = applicationMessage.content.copy(expiresAfterMillis = 123L)
                     )
-                ))
-            .arrange()
+                )
+            ).arrange()
 
         val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
 
         newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
-        verify(arrangement.proteusMessageUnpacker)
-            .suspendFunction(arrangement.proteusMessageUnpacker::unpackProteusMessage)
-            .with(eq(newMessageEvent))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.proteusMessageUnpacker.unpackProteusMessage(eq(newMessageEvent))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.applicationMessageHandler)
-            .suspendFunction(arrangement.applicationMessageHandler::handleDecryptionError)
-            .with(any(), any(), any(), any(), any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
+        }.wasNotInvoked()
 
-        verify(arrangement.ephemeralMessageDeletionHandler)
-            .function(arrangement.ephemeralMessageDeletionHandler::startSelfDeletion)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+        verify {
+            arrangement.ephemeralMessageDeletionHandler.startSelfDeletion(any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -245,20 +232,17 @@ class NewMessageEventHandlerTest {
 
         newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
-        verify(arrangement.proteusMessageUnpacker)
-            .suspendFunction(arrangement.proteusMessageUnpacker::unpackProteusMessage)
-            .with(eq(newMessageEvent))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.proteusMessageUnpacker.unpackProteusMessage(eq(newMessageEvent))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.applicationMessageHandler)
-            .suspendFunction(arrangement.applicationMessageHandler::handleDecryptionError)
-            .with(any(), any(), any(), any(), any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
+        }.wasNotInvoked()
 
-        verify(arrangement.ephemeralMessageDeletionHandler)
-            .function(arrangement.ephemeralMessageDeletionHandler::startSelfDeletion)
-            .with(any(), any())
-            .wasNotInvoked()
+        verify {
+            arrangement.ephemeralMessageDeletionHandler.startSelfDeletion(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -280,15 +264,13 @@ class NewMessageEventHandlerTest {
 
         newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
-        verify(arrangement.proteusMessageUnpacker)
-            .suspendFunction(arrangement.proteusMessageUnpacker::unpackProteusMessage)
-            .with(eq(newMessageEvent))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.proteusMessageUnpacker.unpackProteusMessage(eq(newMessageEvent))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.legalHoldHandler)
-            .suspendFunction(arrangement.legalHoldHandler::handleNewMessage)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.legalHoldHandler.handleNewMessage(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -302,25 +284,21 @@ class NewMessageEventHandlerTest {
 
         newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
-        verify(arrangement.proteusMessageUnpacker)
-            .suspendFunction(arrangement.proteusMessageUnpacker::unpackProteusMessage)
-            .with(eq(newMessageEvent))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.proteusMessageUnpacker.unpackProteusMessage(eq(newMessageEvent))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.legalHoldHandler)
-            .suspendFunction(arrangement.legalHoldHandler::handleNewMessage)
-            .with(eq(applicationMessage))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.legalHoldHandler.handleNewMessage(eq(applicationMessage), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.applicationMessageHandler)
-            .suspendFunction(arrangement.applicationMessageHandler::handleDecryptionError)
-            .with(any(), any(), any(), any(), any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
+        }.wasNotInvoked()
 
-        verify(arrangement.ephemeralMessageDeletionHandler)
-            .function(arrangement.ephemeralMessageDeletionHandler::startSelfDeletion)
-            .with(any(), any())
-            .wasNotInvoked()
+        verify {
+            arrangement.ephemeralMessageDeletionHandler.startSelfDeletion(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -334,10 +312,9 @@ class NewMessageEventHandlerTest {
 
         newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
-        verify(arrangement.staleEpochVerifier)
-            .suspendFunction(arrangement.staleEpochVerifier::verifyEpoch)
-            .with(eq(newMessageEvent.conversationId), eq(newMessageEvent.timestampIso.toInstant()))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.staleEpochVerifier.verifyEpoch(eq(newMessageEvent.conversationId), eq(newMessageEvent.timestampIso.toInstant()))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -352,10 +329,9 @@ class NewMessageEventHandlerTest {
 
             newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
-            verify(arrangement.applicationMessageHandler)
-                .suspendFunction(arrangement.applicationMessageHandler::handleDecryptionError)
-                .with(any())
-                .wasNotInvoked()
+            coVerify {
+                arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any())
+            }.wasNotInvoked()
         }
 
     private class Arrangement {
@@ -395,33 +371,29 @@ class NewMessageEventHandlerTest {
             staleEpochVerifier
         )
 
-        fun withProteusUnpackerReturning(result: Either<CoreFailure, MessageUnpackResult>) = apply {
-            given(proteusMessageUnpacker)
-                .suspendFunction(proteusMessageUnpacker::unpackProteusMessage)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withProteusUnpackerReturning(result: Either<CoreFailure, MessageUnpackResult>) = apply {
+            coEvery {
+                proteusMessageUnpacker.unpackProteusMessage(any())
+            }.returns(result)
         }
 
-        fun withHandleLegalHoldSuccess() = apply {
-            given(legalHoldHandler)
-                .suspendFunction(legalHoldHandler::handleNewMessage)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withHandleLegalHoldSuccess() = apply {
+            coEvery {
+                legalHoldHandler.handleNewMessage(any(), any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withMLSUnpackerReturning(result: Either<CoreFailure, List<MessageUnpackResult>>) =
+        suspend fun withMLSUnpackerReturning(result: Either<CoreFailure, List<MessageUnpackResult>>) =
             apply {
-                given(mlsMessageUnpacker)
-                    .suspendFunction(mlsMessageUnpacker::unpackMlsMessage)
-                    .whenInvokedWith(any())
-                    .thenReturn(result)
+                coEvery {
+                    mlsMessageUnpacker.unpackMlsMessage(any())
+                }.returns(result)
             }
 
-        fun withVerifyEpoch(result: Either<CoreFailure, Unit>) = apply {
-            given(staleEpochVerifier)
-                .suspendFunction(staleEpochVerifier::verifyEpoch)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withVerifyEpoch(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                staleEpochVerifier.verifyEpoch(any(), any())
+            }.returns(result)
         }
 
         fun arrange() = this to newMessageEventHandler

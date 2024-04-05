@@ -20,8 +20,6 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.ClientType
-import com.wire.kalium.logic.data.client.DeviceType
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestClient
@@ -29,15 +27,14 @@ import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -66,10 +63,9 @@ class ObserveClientsByUserIdUseCaseTest {
         assertIs<ObserveClientsByUserIdUseCase.Result.Success>(result)
         assertEquals(clients, result.clients)
 
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::observeClientsByUserId)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clientRepository.observeClientsByUserId(any())
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -79,12 +75,12 @@ class ObserveClientsByUserIdUseCaseTest {
 
         val getOtherUserClientsUseCaseImpl = ObserveClientsByUserIdUseCase(clientRepository)
 
-        fun withSuccessfulResponse(expectedResponse: List<Client>) = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::observeClientsByUserId)
-                .whenInvokedWith(any())
-                .thenReturn(flowOf(Either.Right(expectedResponse)))
+        suspend fun withSuccessfulResponse(expectedResponse: List<Client>) = apply {
+            coEvery {
+                clientRepository.observeClientsByUserId(any())
+            }.returns(flowOf(Either.Right(expectedResponse)))
         }
+
         fun arrange() = this to getOtherUserClientsUseCaseImpl
     }
 }

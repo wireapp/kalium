@@ -31,18 +31,17 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
 import io.mockative.Mock
-import io.mockative.anything
+import io.mockative.any
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MembersToMentionUseCaseTest {
 
     @Mock
@@ -54,16 +53,14 @@ class MembersToMentionUseCaseTest {
     private lateinit var membersToMention: MembersToMentionUseCase
 
     @BeforeTest
-    fun setup() {
+    fun setup() = runBlocking {
         membersToMention = MembersToMentionUseCase(observeConversationMembers, userRepository)
-        given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
-            .whenInvoked()
-            .thenReturn(SELF_USER)
-        given(observeConversationMembers)
-            .suspendFunction(observeConversationMembers::invoke)
-            .whenInvokedWith(anything())
-            .thenReturn(flowOf(members))
+        coEvery {
+            userRepository.getSelfUser()
+        }.returns(SELF_USER)
+        coEvery {
+            observeConversationMembers.invoke(any())
+        }.returns(flowOf(members))
     }
 
     @Test

@@ -23,25 +23,21 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProvider
 import com.wire.kalium.logic.data.id.GroupID
-
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.Times
 import io.mockative.any
-import io.mockative.anything
 import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.every
+import io.mockative.matches
 import io.mockative.mock
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 import kotlin.time.Duration.Companion.days
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class UpdateKeyingMaterialsUseCaseTests {
 
     @Test
@@ -54,10 +50,9 @@ class UpdateKeyingMaterialsUseCaseTests {
 
         val actual = updateKeyingMaterialsUseCase()
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::updateKeyingMaterial)
-            .with(any())
-            .wasInvoked(Times(Arrangement.OUTDATED_KEYING_MATERIALS_GROUPS.size))
+        coVerify {
+            arrangement.mlsConversationRepository.updateKeyingMaterial(any())
+        }.wasInvoked(Arrangement.OUTDATED_KEYING_MATERIALS_GROUPS.size)
 
         assertIs<UpdateKeyingMaterialsResult.Success>(actual)
     }
@@ -72,10 +67,9 @@ class UpdateKeyingMaterialsUseCaseTests {
 
         val actual = updateKeyingMaterialsUseCase()
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::updateKeyingMaterial)
-            .with(any())
-            .wasInvoked(Times(Arrangement.OUTDATED_KEYING_MATERIALS_GROUPS.size))
+        coVerify {
+            arrangement.mlsConversationRepository.updateKeyingMaterial(any())
+        }.wasInvoked(Arrangement.OUTDATED_KEYING_MATERIALS_GROUPS.size)
 
         assertIs<UpdateKeyingMaterialsResult.Failure>(actual)
     }
@@ -90,10 +84,9 @@ class UpdateKeyingMaterialsUseCaseTests {
 
         val actual = updateKeyingMaterialsUseCase()
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::updateKeyingMaterial)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.mlsConversationRepository.updateKeyingMaterial(any())
+        }.wasNotInvoked()
 
         assertIs<UpdateKeyingMaterialsResult.Success>(actual)
     }
@@ -108,10 +101,9 @@ class UpdateKeyingMaterialsUseCaseTests {
 
         val actual = updateKeyingMaterialsUseCase()
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::updateKeyingMaterial)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.mlsConversationRepository.updateKeyingMaterial(any())
+        }.wasNotInvoked()
 
         assertIs<UpdateKeyingMaterialsResult.Failure>(actual)
     }
@@ -128,36 +120,30 @@ class UpdateKeyingMaterialsUseCaseTests {
             updateKeyingMaterialThresholdProvider
         )
 
-        fun withOutdatedGroupsReturns(either: Either<CoreFailure, List<GroupID>>) = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::getMLSGroupsRequiringKeyingMaterialUpdate)
-                .whenInvokedWith(anything())
-                .thenReturn(either)
+        suspend fun withOutdatedGroupsReturns(either: Either<CoreFailure, List<GroupID>>) = apply {
+            coEvery {
+                mlsConversationRepository.getMLSGroupsRequiringKeyingMaterialUpdate(any())
+            }.returns(either)
         }
 
         fun withKeyingMaterialThreshold() = apply {
-            given(updateKeyingMaterialThresholdProvider)
-                .getter(updateKeyingMaterialThresholdProvider::keyingMaterialUpdateThreshold)
-                .whenInvoked()
-                .thenReturn(1.days)
+            every { updateKeyingMaterialThresholdProvider.keyingMaterialUpdateThreshold }
+                .returns(1.days)
         }
 
-        fun withUpdateKeyingMaterialsSuccessful() = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::updateKeyingMaterial)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withUpdateKeyingMaterialsSuccessful() = apply {
+            coEvery {
+                mlsConversationRepository.updateKeyingMaterial(any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withUpdateKeyingMaterialsFailsFor(failedGroupId: GroupID) = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::updateKeyingMaterial)
-                .whenInvokedWith(eq(failedGroupId))
-                .thenReturn(Either.Left(StorageFailure.DataNotFound))
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::updateKeyingMaterial)
-                .whenInvokedWith(matching { it != failedGroupId })
-                .thenReturn(Either.Right(Unit))
+        suspend fun withUpdateKeyingMaterialsFailsFor(failedGroupId: GroupID) = apply {
+            coEvery {
+                mlsConversationRepository.updateKeyingMaterial(eq(failedGroupId))
+            }.returns(Either.Left(StorageFailure.DataNotFound))
+            coEvery {
+                mlsConversationRepository.updateKeyingMaterial(matches { it != failedGroupId })
+            }.returns(Either.Right(Unit))
         }
 
         fun arrange() = this to updateKeyingMaterialsUseCase

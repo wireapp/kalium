@@ -23,10 +23,10 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -46,10 +46,9 @@ class ObserveTypingIndicatorEnabledUseCaseTest {
             val item = awaitItem()
             assertTrue(item)
 
-            verify(arrangement.userPropertyRepository)
-                .function(arrangement.userPropertyRepository::observeTypingIndicatorStatus)
-                .with()
-                .wasInvoked(once)
+            coVerify {
+                arrangement.userPropertyRepository.observeTypingIndicatorStatus()
+            }.wasInvoked(once)
 
             awaitComplete()
         }
@@ -68,10 +67,9 @@ class ObserveTypingIndicatorEnabledUseCaseTest {
                 val item = awaitItem()
                 assertTrue(item)
 
-                verify(arrangement.userPropertyRepository)
-                    .function(arrangement.userPropertyRepository::observeTypingIndicatorStatus)
-                    .with()
-                    .wasInvoked(once)
+                coVerify {
+                    arrangement.userPropertyRepository.observeTypingIndicatorStatus()
+                }.wasInvoked(once)
 
                 awaitComplete()
             }
@@ -83,20 +81,18 @@ class ObserveTypingIndicatorEnabledUseCaseTest {
 
         val observeTypingIndicatorEnabled = ObserveTypingIndicatorEnabledUseCaseImpl(userPropertyRepository)
 
-        fun withSuccessfulState() = apply {
-            given(userPropertyRepository)
-                .suspendFunction(userPropertyRepository::observeTypingIndicatorStatus)
-                .whenInvoked()
-                .thenReturn(flowOf(Either.Right(true)))
+        suspend fun withSuccessfulState() = apply {
+            coEvery {
+                userPropertyRepository.observeTypingIndicatorStatus()
+            }.returns(flowOf(Either.Right(true)))
 
             return this
         }
 
-        fun withFailureState() = apply {
-            given(userPropertyRepository)
-                .suspendFunction(userPropertyRepository::observeTypingIndicatorStatus)
-                .whenInvoked()
-                .thenReturn(flowOf(Either.Left(StorageFailure.DataNotFound)))
+        suspend fun withFailureState() = apply {
+            coEvery {
+                userPropertyRepository.observeTypingIndicatorStatus()
+            }.returns(flowOf(Either.Left(StorageFailure.DataNotFound)))
 
             return this
         }

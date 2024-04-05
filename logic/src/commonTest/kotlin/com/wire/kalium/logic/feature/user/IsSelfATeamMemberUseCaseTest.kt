@@ -23,10 +23,10 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -44,9 +44,9 @@ class IsSelfATeamMemberUseCaseTest {
             assertTrue(actual)
         }
 
-        verify(arrangement.selfTeamIdProvider)
-            .suspendFunction(arrangement.selfTeamIdProvider::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.selfTeamIdProvider.invoke()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -59,9 +59,9 @@ class IsSelfATeamMemberUseCaseTest {
             assertFalse(actual)
         }
 
-        verify(arrangement.selfTeamIdProvider)
-            .suspendFunction(arrangement.selfTeamIdProvider::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.selfTeamIdProvider.invoke()
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -70,7 +70,9 @@ class IsSelfATeamMemberUseCaseTest {
 
         private val isSelfATeamMember: IsSelfATeamMemberUseCaseImpl = IsSelfATeamMemberUseCaseImpl(selfTeamIdProvider)
         suspend fun withSelfTeamId(result: Either<CoreFailure, TeamId?>) = apply {
-            given(selfTeamIdProvider).coroutine { invoke() }.then { result }
+            coEvery {
+                selfTeamIdProvider.invoke()
+            }.returns(result)
         }
 
         fun arrange() = this to isSelfATeamMember

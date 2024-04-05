@@ -38,7 +38,9 @@ import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -62,19 +64,16 @@ class AddAuthenticatedUserUseCaseTest {
 
         assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
 
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::storeSession)
-            .with(any(), any(), any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.sessionRepository.storeSession(any(), any(), any(), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::updateCurrentSession)
-            .with(any())
-            .wasInvoked(exactly = once)
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::doesValidSessionExist)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.sessionRepository.updateCurrentSession(any())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.sessionRepository.doesValidSessionExist(any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -90,19 +89,16 @@ class AddAuthenticatedUserUseCaseTest {
 
         assertIs<AddAuthenticatedUserUseCase.Result.Failure.UserAlreadyExists>(actual)
 
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::storeSession)
-            .with(any(), any(), any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.sessionRepository.storeSession(any(), any(), any(), any())
+        }.wasNotInvoked()
 
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::updateCurrentSession)
-            .with(any())
-            .wasNotInvoked()
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::doesValidSessionExist)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.sessionRepository.updateCurrentSession(any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.sessionRepository.doesValidSessionExist(any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -120,7 +116,6 @@ class AddAuthenticatedUserUseCaseTest {
 
         val proxyCredentials = PROXY_CREDENTIALS
 
-
         val (arrangement, addAuthenticatedUserUseCase) = Arrangement()
             .withDoesValidSessionExistResult(newSession.userId, Either.Right(true))
             .withStoreSessionResult(TEST_SERVER_CONFIG.id, TEST_SSO_ID, newSession, proxyCredentials, Either.Right(Unit))
@@ -133,29 +128,24 @@ class AddAuthenticatedUserUseCaseTest {
 
         assertIs<AddAuthenticatedUserUseCase.Result.Success>(actual)
 
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::storeSession)
-            .with(any(), any(), any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.sessionRepository.storeSession(any(), any(), any(), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::updateCurrentSession)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.sessionRepository.updateCurrentSession(any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.serverConfigurationDAO)
-            .function(arrangement.serverConfigurationDAO::configById)
-            .with(any())
-            .wasInvoked(exactly = once)
+        verify {
+            arrangement.serverConfigurationDAO.configById(any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.sessionRepository)
-            .function(arrangement.sessionRepository::fullAccountInfo)
-            .with(any())
-            .wasInvoked(exactly = once)
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::doesValidSessionExist)
-            .with(any())
-            .wasInvoked(exactly = once)
+        verify {
+            arrangement.sessionRepository.fullAccountInfo(any())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.sessionRepository.doesValidSessionExist(any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -196,24 +186,21 @@ class AddAuthenticatedUserUseCaseTest {
 
         assertIs<AddAuthenticatedUserUseCase.Result.Failure.UserAlreadyExists>(actual)
 
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::doesValidSessionExist)
-            .with(any())
-            .wasInvoked(exactly = once)
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::storeSession)
-            .with(any(), any(), any(), any())
-            .wasNotInvoked()
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::updateCurrentSession)
-            .with(any())
-            .wasNotInvoked()
-        verify(arrangement.sessionRepository)
-            .function(arrangement.sessionRepository::fullAccountInfo).with(any())
-            .wasInvoked(exactly = once)
-        verify(arrangement.serverConfigurationDAO)
-            .function(arrangement.serverConfigurationDAO::configById).with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.sessionRepository.doesValidSessionExist(any())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.sessionRepository.storeSession(any(), any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.sessionRepository.updateCurrentSession(any())
+        }.wasNotInvoked()
+        verify {
+            arrangement.sessionRepository.fullAccountInfo(any())
+        }.wasInvoked(exactly = once)
+        verify {
+            arrangement.serverConfigurationDAO.configById(any())
+        }.wasInvoked(exactly = once)
     }
 
     private companion object {
@@ -250,28 +237,28 @@ class AddAuthenticatedUserUseCaseTest {
             userId: UserId,
             result: Either<StorageFailure, Boolean>
         ) = apply {
-            given(sessionRepository).coroutine { doesValidSessionExist(userId) }.then { result }
+            coEvery { sessionRepository.doesValidSessionExist(userId) }.returns(result)
         }
 
         suspend fun withConfigForUserIdSuccess(
             userId: UserIDEntity,
             result: ServerConfigEntity
         ) = apply {
-            given(serverConfigurationDAO).coroutine { configForUser(userId) }.then { result }
+            coEvery { serverConfigurationDAO.configForUser(userId) }.returns(result)
         }
 
         fun withFullAccountInfoResult(
             userId: UserId,
             result: Either<StorageFailure, Account>
         ) = apply {
-            given(sessionRepository).invocation { fullAccountInfo(userId) }.then { result }
+            every { sessionRepository.fullAccountInfo(userId) }.returns(result)
         }
 
         fun withConfigByIdSuccess(
             serverConfigId: String,
             result: ServerConfigEntity
         ) = apply {
-            given(serverConfigurationDAO).invocation { configById(serverConfigId) }.then { result }
+            every { serverConfigurationDAO.configById(serverConfigId) }.returns(result)
         }
 
         suspend fun withStoreSessionResult(
@@ -281,14 +268,14 @@ class AddAuthenticatedUserUseCaseTest {
             proxyCredentials: ProxyCredentials?,
             result: Either<StorageFailure, Unit>
         ) = apply {
-            given(sessionRepository).coroutine { storeSession(serverConfigId, ssoId, accountTokens, proxyCredentials) }.then { result }
+            coEvery { sessionRepository.storeSession(serverConfigId, ssoId, accountTokens, proxyCredentials) }.returns(result)
         }
 
         suspend fun withUpdateCurrentSessionResult(
             userId: UserId,
             result: Either<StorageFailure, Unit>
         ) = apply {
-            given(sessionRepository).coroutine { updateCurrentSession(userId) }.then { result }
+            coEvery { sessionRepository.updateCurrentSession(userId) }.returns(result)
         }
 
         fun arrange() = this to addAuthenticatedUserUseCase

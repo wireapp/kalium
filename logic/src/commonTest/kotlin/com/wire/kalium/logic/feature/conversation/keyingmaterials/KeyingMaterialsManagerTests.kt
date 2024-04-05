@@ -30,13 +30,14 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
-import io.mockative.anything
+import io.mockative.any
 import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
@@ -58,13 +59,12 @@ class KeyingMaterialsManagerTests {
 
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
-            verify(arrangement.updateKeyingMaterialsUseCase)
-                .suspendFunction(arrangement.updateKeyingMaterialsUseCase::invoke)
-                .wasInvoked(once)
-            verify(arrangement.timestampKeyRepository)
-                .suspendFunction(arrangement.timestampKeyRepository::reset)
-                .with(eq(TimestampKeys.LAST_KEYING_MATERIAL_UPDATE_CHECK))
-                .wasInvoked(once)
+            coVerify {
+                arrangement.updateKeyingMaterialsUseCase.invoke()
+            }.wasInvoked(once)
+            coVerify {
+                arrangement.timestampKeyRepository.reset(eq(TimestampKeys.LAST_KEYING_MATERIAL_UPDATE_CHECK))
+            }.wasInvoked(once)
         }
 
     @Test
@@ -80,13 +80,12 @@ class KeyingMaterialsManagerTests {
 
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
-            verify(arrangement.updateKeyingMaterialsUseCase)
-                .suspendFunction(arrangement.updateKeyingMaterialsUseCase::invoke)
-                .wasNotInvoked()
-            verify(arrangement.timestampKeyRepository)
-                .suspendFunction(arrangement.timestampKeyRepository::reset)
-                .with(anything())
-                .wasNotInvoked()
+            coVerify {
+                arrangement.updateKeyingMaterialsUseCase.invoke()
+            }.wasNotInvoked()
+            coVerify {
+                arrangement.timestampKeyRepository.reset(any())
+            }.wasNotInvoked()
         }
 
     @Test
@@ -99,9 +98,9 @@ class KeyingMaterialsManagerTests {
 
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
-            verify(arrangement.updateKeyingMaterialsUseCase)
-                .suspendFunction(arrangement.updateKeyingMaterialsUseCase::invoke)
-                .wasNotInvoked()
+            coVerify {
+                arrangement.updateKeyingMaterialsUseCase.invoke()
+            }.wasNotInvoked()
         }
 
     @Test
@@ -115,9 +114,9 @@ class KeyingMaterialsManagerTests {
 
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
-            verify(arrangement.updateKeyingMaterialsUseCase)
-                .suspendFunction(arrangement.updateKeyingMaterialsUseCase::invoke)
-                .wasNotInvoked()
+            coVerify {
+                arrangement.updateKeyingMaterialsUseCase.invoke()
+            }.wasNotInvoked()
         }
 
     @Test
@@ -134,13 +133,12 @@ class KeyingMaterialsManagerTests {
 
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
-            verify(arrangement.updateKeyingMaterialsUseCase)
-                .suspendFunction(arrangement.updateKeyingMaterialsUseCase::invoke)
-                .wasInvoked(once)
-            verify(arrangement.timestampKeyRepository)
-                .suspendFunction(arrangement.timestampKeyRepository::reset)
-                .with(anything())
-                .wasNotInvoked()
+            coVerify {
+                arrangement.updateKeyingMaterialsUseCase.invoke()
+            }.wasInvoked(once)
+            coVerify {
+                arrangement.timestampKeyRepository.reset(any())
+            }.wasNotInvoked()
         }
 
     private class Arrangement {
@@ -161,38 +159,34 @@ class KeyingMaterialsManagerTests {
         @Mock
         val timestampKeyRepository = mock(classOf<TimestampKeyRepository>())
 
-        fun withTimestampKeyCheck(hasPassed: Boolean) = apply {
-            given(timestampKeyRepository)
-                .suspendFunction(timestampKeyRepository::hasPassed)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(hasPassed))
+        suspend fun withTimestampKeyCheck(hasPassed: Boolean) = apply {
+            coEvery {
+                timestampKeyRepository.hasPassed(any(), any())
+            }.returns(Either.Right(hasPassed))
         }
 
-        fun withTimestampKeyResetSuccessful() = apply {
-            given(timestampKeyRepository)
-                .suspendFunction(timestampKeyRepository::reset)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withTimestampKeyResetSuccessful() = apply {
+            coEvery {
+                timestampKeyRepository.reset(any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withUpdateKeyingMaterialIs(result: UpdateKeyingMaterialsResult) = apply {
-            given(updateKeyingMaterialsUseCase)
-                .suspendFunction(updateKeyingMaterialsUseCase::invoke)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withUpdateKeyingMaterialIs(result: UpdateKeyingMaterialsResult) = apply {
+            coEvery {
+                updateKeyingMaterialsUseCase.invoke()
+            }.returns(result)
         }
 
         fun withIsMLSSupported(supported: Boolean) = apply {
-            given(featureSupport)
-                .invocation { featureSupport.isMLSSupported }
-                .thenReturn(supported)
+            every {
+                featureSupport.isMLSSupported
+            }.returns(supported)
         }
 
-        fun withHasRegisteredMLSClient(result: Boolean) = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::hasRegisteredMLSClient)
-                .whenInvoked()
-                .thenReturn(Either.Right(result))
+        suspend fun withHasRegisteredMLSClient(result: Boolean) = apply {
+            coEvery {
+                clientRepository.hasRegisteredMLSClient()
+            }.returns(Either.Right(result))
         }
 
         fun arrange() = this to KeyingMaterialsManagerImpl(

@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.Recipient
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.message.BroadcastMessage
 import com.wire.kalium.logic.data.message.BroadcastMessageOption
@@ -65,16 +66,18 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.DateTimeUtil
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
-import io.mockative.Times
-import io.mockative.anything
+import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.configure
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.every
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
 import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -114,10 +117,15 @@ class MessageSenderTest {
 
             // then
             result.shouldFail()
-            verify(arrangement.messageSendFailureHandler)
-                .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-                .with(eq(TEST_PROTOCOL_INFO_FAILURE), anything(), anything(), anything(), anything())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                    eq(TEST_PROTOCOL_INFO_FAILURE),
+                    any(),
+                    any(),
+                    any(),
+                    any()
+                )
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -134,10 +142,15 @@ class MessageSenderTest {
 
             // then
             result.shouldFail()
-            verify(arrangement.messageSendFailureHandler)
-                .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-                .with(eq(Arrangement.TEST_CORE_FAILURE), anything(), anything(), anything(), anything())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                    eq(Arrangement.TEST_CORE_FAILURE),
+                    any(),
+                    any(),
+                    any(),
+                    any()
+                )
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -154,10 +167,15 @@ class MessageSenderTest {
 
             // then
             result.shouldFail()
-            verify(arrangement.messageSendFailureHandler)
-                .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-                .with(eq(Arrangement.TEST_CORE_FAILURE), anything(), anything(), anything(), anything())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                    eq(Arrangement.TEST_CORE_FAILURE),
+                    any(),
+                    any(),
+                    any(),
+                    any()
+                )
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -174,10 +192,15 @@ class MessageSenderTest {
 
             // then
             result.shouldFail()
-            verify(arrangement.messageSendFailureHandler)
-                .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-                .with(eq(Arrangement.TEST_CORE_FAILURE), anything(), anything(), anything(), anything())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                    eq(Arrangement.TEST_CORE_FAILURE),
+                    any(),
+                    any(),
+                    any(),
+                    any()
+                )
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -195,10 +218,9 @@ class MessageSenderTest {
 
             // then
             result.shouldFail()
-            verify(arrangement.messageSendFailureHandler)
-                .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-                .with(eq(failure), anything(), anything(), anything(), anything())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(eq(failure), any(), any(), any(), any())
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -218,10 +240,9 @@ class MessageSenderTest {
 
             // then
             result.shouldFail()
-            verify(arrangement.messageSendFailureHandler)
-                .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-                .with(eq(failure), anything(), anything(), anything(), anything())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(eq(failure), any(), any(), any(), any())
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -240,10 +261,9 @@ class MessageSenderTest {
 
             // then
             result.shouldSucceed()
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::promoteMessageToSentUpdatingServerTime)
-                .with(anything(), anything(), anything(), anything())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), any(), any(), any())
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -260,10 +280,9 @@ class MessageSenderTest {
             messageSender.sendPendingMessage(Arrangement.TEST_CONVERSATION_ID, Arrangement.TEST_MESSAGE_UUID)
 
             // then
-            verify(arrangement.messageSendFailureHandler)
-                .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-                .with(eq(failure), anything(), anything(), anything(), anything())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(eq(failure), any(), any(), any(), any())
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -302,10 +321,9 @@ class MessageSenderTest {
 
             // then
             result.shouldSucceed()
-            verify(arrangement.staleEpochVerifier)
-                .suspendFunction(arrangement.staleEpochVerifier::verifyEpoch)
-                .with(eq(Arrangement.TEST_CONVERSATION_ID))
-                .wasInvoked(once)
+            coVerify {
+                arrangement.staleEpochVerifier.verifyEpoch(eq(Arrangement.TEST_CONVERSATION_ID), any())
+            }.wasInvoked(once)
         }
     }
 
@@ -327,10 +345,9 @@ class MessageSenderTest {
 
             // then
             result.shouldSucceed()
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::sendMLSMessage)
-                .with(eq(Arrangement.TEST_CONVERSATION_ID), eq(Arrangement.TEST_MLS_MESSAGE))
-                .wasInvoked(twice)
+            coVerify {
+                arrangement.messageRepository.sendMLSMessage(eq(Arrangement.TEST_CONVERSATION_ID), eq(Arrangement.TEST_MLS_MESSAGE))
+            }.wasInvoked(twice)
         }
     }
 
@@ -350,10 +367,9 @@ class MessageSenderTest {
 
             // then
             result.shouldSucceed()
-            verify(arrangement.mlsConversationRepository)
-                .suspendFunction(arrangement.mlsConversationRepository::commitPendingProposals)
-                .with(eq(Arrangement.GROUP_ID))
-                .wasInvoked(once)
+            coVerify {
+                arrangement.mlsConversationRepository.commitPendingProposals(eq(Arrangement.GROUP_ID))
+            }.wasInvoked(once)
         }
     }
 
@@ -373,10 +389,15 @@ class MessageSenderTest {
 
             // then
             result.shouldFail()
-            verify(arrangement.messageSendFailureHandler)
-                .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-                .with(eq(Arrangement.TEST_CORE_FAILURE), anything(), anything(), anything(), anything())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(
+                    eq(Arrangement.TEST_CORE_FAILURE),
+                    any(),
+                    any(),
+                    any(),
+                    any()
+                )
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -416,20 +437,24 @@ class MessageSenderTest {
 
             // then
             result.shouldSucceed()
-            verify(arrangement.conversationRepository)
-                .suspendFunction(arrangement.conversationRepository::getConversationRecipients)
-                .with(anything())
-                .wasInvoked(exactly = Times(0))
+            coVerify {
+                arrangement.conversationRepository.getConversationRecipients(any())
+            }.wasNotInvoked()
 
-            verify(arrangement.sessionEstablisher)
-                .suspendFunction(arrangement.sessionEstablisher::prepareRecipientsForNewOutgoingMessage)
-                .with(eq(listOf(Arrangement.TEST_RECIPIENT_1, Arrangement.TEST_RECIPIENT_2)))
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.sessionEstablisher.prepareRecipientsForNewOutgoingMessage(
+                    eq(
+                        listOf(
+                            Arrangement.TEST_RECIPIENT_1,
+                            Arrangement.TEST_RECIPIENT_2
+                        )
+                    )
+                )
+            }.wasInvoked(exactly = once)
 
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::sendEnvelope)
-                .with(eq(message.conversationId), anything(), eq(messageTarget))
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageRepository.sendEnvelope(eq(message.conversationId), any(), eq(messageTarget))
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -464,20 +489,17 @@ class MessageSenderTest {
 
             // then
             result.shouldSucceed()
-            verify(arrangement.conversationRepository)
-                .suspendFunction(arrangement.conversationRepository::getConversationRecipients)
-                .with(anything())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.conversationRepository.getConversationRecipients(any())
+            }.wasInvoked(exactly = once)
 
-            verify(arrangement.sessionEstablisher)
-                .suspendFunction(arrangement.sessionEstablisher::prepareRecipientsForNewOutgoingMessage)
-                .with(eq(listOf(Arrangement.TEST_RECIPIENT_1)))
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.sessionEstablisher.prepareRecipientsForNewOutgoingMessage(eq(listOf(Arrangement.TEST_RECIPIENT_1)))
+            }.wasInvoked(exactly = once)
 
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::sendEnvelope)
-                .with(eq(message.conversationId), anything(), eq(messageTarget))
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageRepository.sendEnvelope(eq(message.conversationId), any(), eq(messageTarget))
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -495,10 +517,9 @@ class MessageSenderTest {
 
             // then
             result.shouldFail()
-            verify(arrangement.messageSendFailureHandler)
-                .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-                .with(eq(failure), anything(), anything(), anything(), anything())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(eq(failure), any(), any(), any(), any())
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -518,10 +539,9 @@ class MessageSenderTest {
 
             // then
             result.shouldFail()
-            verify(arrangement.messageSendFailureHandler)
-                .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-                .with(eq(failure), anything(), anything(), anything(), anything())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(eq(failure), any(), any(), any(), any())
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -548,10 +568,9 @@ class MessageSenderTest {
 
             // then
             result.shouldSucceed()
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::persistRecipientsDeliveryFailure)
-                .with(anything(), anything(), eq(listOf(Arrangement.TEST_MEMBER_1)))
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageRepository.persistRecipientsDeliveryFailure(any(), any(), eq(listOf(Arrangement.TEST_MEMBER_1)))
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -580,14 +599,12 @@ class MessageSenderTest {
 
             // then
             result.shouldSucceed()
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::persistNoClientsToDeliverFailure)
-                .with(anything(), anything(), eq(listOf(TEST_MEMBER_2)))
-                .wasInvoked(exactly = twice)
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::persistRecipientsDeliveryFailure)
-                .with(anything(), anything(), eq(listOf(TEST_MEMBER_2)))
-                .wasNotInvoked()
+            coVerify {
+                arrangement.messageRepository.persistNoClientsToDeliverFailure(any(), any(), eq(listOf(TEST_MEMBER_2)))
+            }.wasInvoked(exactly = twice)
+            coVerify {
+                arrangement.messageRepository.persistRecipientsDeliveryFailure(any(), any(), eq(listOf(TEST_MEMBER_2)))
+            }.wasNotInvoked()
         }
     }
 
@@ -628,15 +645,20 @@ class MessageSenderTest {
             // then
             result.shouldSucceed()
 
-            verify(arrangement.sessionEstablisher)
-                .suspendFunction(arrangement.sessionEstablisher::prepareRecipientsForNewOutgoingMessage)
-                .with(eq(listOf(Arrangement.TEST_RECIPIENT_1, Arrangement.TEST_RECIPIENT_2)))
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.sessionEstablisher.prepareRecipientsForNewOutgoingMessage(
+                    eq(
+                        listOf(
+                            Arrangement.TEST_RECIPIENT_1,
+                            Arrangement.TEST_RECIPIENT_2
+                        )
+                    )
+                )
+            }.wasInvoked(exactly = once)
 
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::broadcastEnvelope)
-                .with(anything(), eq(option))
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageRepository.broadcastEnvelope(any(), eq(option))
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -679,15 +701,13 @@ class MessageSenderTest {
             )
 
             // then
-            verify(arrangement.sessionEstablisher)
-                .suspendFunction(arrangement.sessionEstablisher::prepareRecipientsForNewOutgoingMessage)
-                .with(matching { it.size == 2 })
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.sessionEstablisher.prepareRecipientsForNewOutgoingMessage(matches { it.size == 2 })
+            }.wasInvoked(exactly = once)
 
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::broadcastEnvelope)
-                .with(anything(), eq(option))
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageRepository.broadcastEnvelope(any(), eq(option))
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -732,15 +752,13 @@ class MessageSenderTest {
             )
 
             // then
-            verify(arrangement.sessionEstablisher)
-                .suspendFunction(arrangement.sessionEstablisher::prepareRecipientsForNewOutgoingMessage)
-                .with(matching { it.size == 2 })
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.sessionEstablisher.prepareRecipientsForNewOutgoingMessage(matches { it.size == 2 })
+            }.wasInvoked(exactly = once)
 
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::broadcastEnvelope)
-                .with(anything(), eq(option))
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageRepository.broadcastEnvelope(any(), eq(option))
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -774,14 +792,12 @@ class MessageSenderTest {
 
             // then
             result.shouldSucceed()
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::updateTextMessage)
-                .with(anything(), eq(content), eq(editedMessageId), anything())
-                .wasInvoked(exactly = once)
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::promoteMessageToSentUpdatingServerTime)
-                .with(anything(), eq(editedMessageId), eq(null), anything())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageRepository.updateTextMessage(any(), eq(content), eq(editedMessageId), any())
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(any(), eq(editedMessageId), eq<Instant?>(null), any())
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -800,14 +816,17 @@ class MessageSenderTest {
 
             // then
             result.shouldSucceed()
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::updateTextMessage)
-                .with(anything(), anything(), anything(), anything())
-                .wasNotInvoked()
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::promoteMessageToSentUpdatingServerTime)
-                .with(anything(), eq(TestMessage.TEXT_MESSAGE.id), matching { it != null }, anything())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageRepository.updateTextMessage(any(), any(), any(), any())
+            }.wasNotInvoked()
+            coVerify {
+                arrangement.messageRepository.promoteMessageToSentUpdatingServerTime(
+                    any(),
+                    eq(TestMessage.TEXT_MESSAGE.id),
+                    matches { it != null },
+                    any()
+                )
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -830,10 +849,9 @@ class MessageSenderTest {
 
             // then
             result.shouldSucceed()
-            verify(arrangement.selfDeleteMessageSenderHandler)
-                .function(arrangement.selfDeleteMessageSenderHandler::enqueueSelfDeletion)
-                .with(eq(message))
-                .wasInvoked(exactly = once)
+            verify {
+                arrangement.selfDeleteMessageSenderHandler.enqueueSelfDeletion(eq(message), any())
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -856,10 +874,9 @@ class MessageSenderTest {
 
             // then
             result.shouldFail()
-            verify(arrangement.selfDeleteMessageSenderHandler)
-                .function(arrangement.selfDeleteMessageSenderHandler::enqueueSelfDeletion)
-                .with(eq(message))
-                .wasNotInvoked()
+            verify {
+                arrangement.selfDeleteMessageSenderHandler.enqueueSelfDeletion(eq(message), any())
+            }.wasNotInvoked()
         }
     }
 
@@ -882,10 +899,9 @@ class MessageSenderTest {
 
             // then
             result.shouldSucceed()
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::persistRecipientsDeliveryFailure)
-                .with(anything(), anything(), eq(listOf(TEST_MEMBER_2)))
-                .wasInvoked(once)
+            coVerify {
+                arrangement.messageRepository.persistRecipientsDeliveryFailure(any(), any(), eq(listOf(TEST_MEMBER_2)))
+            }.wasInvoked(once)
         }
     }
 
@@ -905,14 +921,12 @@ class MessageSenderTest {
             // when
             messageSender.sendMessage(message)
             // then
-            verify(arrangement.messageSendFailureHandler)
-                .suspendFunction(arrangement.messageSendFailureHandler::handleClientsHaveChangedFailure)
-                .with(eq(failure), eq(message.conversationId))
-                .wasInvoked()
-            verify(arrangement.legalHoldHandler)
-                .suspendFunction(arrangement.legalHoldHandler::handleMessageSendFailure)
-                .with(eq(message.conversationId), eq(message.date), anything())
-                .wasInvoked()
+            coVerify {
+                arrangement.messageSendFailureHandler.handleClientsHaveChangedFailure(eq(failure), eq(message.conversationId))
+            }.wasInvoked()
+            coVerify {
+                arrangement.legalHoldHandler.handleMessageSendFailure(eq(message.conversationId), eq(message.date), any())
+            }.wasInvoked()
         }
     }
 
@@ -933,14 +947,12 @@ class MessageSenderTest {
             // when
             messageSender.broadcastMessage(message, BroadcastMessageTarget.AllUsers(100))
             // then
-            verify(arrangement.messageSendFailureHandler)
-                .suspendFunction(arrangement.messageSendFailureHandler::handleClientsHaveChangedFailure)
-                .with(eq(failure), eq(null))
-                .wasInvoked()
-            verify(arrangement.legalHoldHandler)
-                .suspendFunction(arrangement.legalHoldHandler::handleMessageSendFailure)
-                .with(anything(), anything(), anything())
-                .wasNotInvoked()
+            coVerify {
+                arrangement.messageSendFailureHandler.handleClientsHaveChangedFailure(eq(failure), eq<ConversationId?>(null))
+            }.wasInvoked()
+            coVerify {
+                arrangement.legalHoldHandler.handleMessageSendFailure(any(), any(), any())
+            }.wasNotInvoked()
         }
     }
 
@@ -963,10 +975,9 @@ class MessageSenderTest {
                 assertIs<LegalHoldEnabledForConversationFailure>(it)
                 assertEquals(message.id, it.messageId)
             }
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::sendEnvelope)
-                .with(eq(message.conversationId), anything(), anything())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageRepository.sendEnvelope(eq(message.conversationId), any(), any())
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -987,16 +998,14 @@ class MessageSenderTest {
             val result = messageSender.sendMessage(message)
             // then
             result.shouldSucceed()
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::sendEnvelope)
-                .with(eq(message.conversationId), anything(), anything())
-                .wasInvoked(exactly = twice)
+            coVerify {
+                arrangement.messageRepository.sendEnvelope(eq(message.conversationId), any(), any())
+            }.wasInvoked(exactly = twice)
         }
     }
 
-    private class Arrangement(private val block: Arrangement.() -> Unit):
-        StaleEpochVerifierArrangement by StaleEpochVerifierArrangementImpl()
-    {
+    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
+        StaleEpochVerifierArrangement by StaleEpochVerifierArrangementImpl() {
         @Mock
         val messageRepository: MessageRepository = mock(MessageRepository::class)
 
@@ -1019,10 +1028,10 @@ class MessageSenderTest {
         val mlsMessageCreator: MLSMessageCreator = mock(MLSMessageCreator::class)
 
         @Mock
-        val syncManager = configure(mock(SyncManager::class)) { stubsUnitByDefault = true }
+        val syncManager = configure(mock(SyncManager::class)) { }
 
         @Mock
-        val userRepository = configure(mock(UserRepository::class)) { stubsUnitByDefault = true }
+        val userRepository = configure(mock(UserRepository::class)) { }
 
         @Mock
         val selfDeleteMessageSenderHandler = mock(EphemeralMessageDeletionHandler::class)
@@ -1039,7 +1048,7 @@ class MessageSenderTest {
         }
 
         fun arrange() = run {
-            block()
+            runBlocking { block() }
             this@Arrangement to MessageSenderImpl(
                 messageRepository = messageRepository,
                 conversationRepository = conversationRepository,
@@ -1063,148 +1072,129 @@ class MessageSenderTest {
             )
         }
 
-        fun withGetMessageById(failing: Boolean = false) = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::getMessageById)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(if (failing) Either.Left(StorageFailure.DataNotFound) else Either.Right(TestMessage.TEXT_MESSAGE))
+        suspend fun withGetMessageById(failing: Boolean = false) = apply {
+            coEvery {
+                messageRepository.getMessageById(any(), any())
+            }.returns(if (failing) Either.Left(StorageFailure.DataNotFound) else Either.Right(TestMessage.TEXT_MESSAGE))
         }
 
-        fun withGetProtocolInfo(protocolInfo: Conversation.ProtocolInfo = Conversation.ProtocolInfo.Proteus) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationProtocolInfo)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(protocolInfo))
+        suspend fun withGetProtocolInfo(protocolInfo: Conversation.ProtocolInfo = Conversation.ProtocolInfo.Proteus) = apply {
+            coEvery {
+                conversationRepository.getConversationProtocolInfo(any())
+            }.returns(Either.Right(protocolInfo))
         }
 
-        fun withGetProtocolInfoFailing() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationProtocolInfo)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Left(TEST_PROTOCOL_INFO_FAILURE))
+        suspend fun withGetProtocolInfoFailing() = apply {
+            coEvery {
+                conversationRepository.getConversationProtocolInfo(any())
+            }.returns(Either.Left(TEST_PROTOCOL_INFO_FAILURE))
         }
 
-        fun withGetConversationRecipients(failing: Boolean = false) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationRecipients)
-                .whenInvokedWith(anything())
-                .thenReturn(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(listOf(TEST_RECIPIENT_1)))
+        suspend fun withGetConversationRecipients(failing: Boolean = false) = apply {
+            coEvery {
+                conversationRepository.getConversationRecipients(any())
+            }.returns(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(listOf(TEST_RECIPIENT_1)))
         }
 
-        fun withPrepareRecipientsForNewOutgoingMessage(
+        suspend fun withPrepareRecipientsForNewOutgoingMessage(
             failing: Boolean = false,
             usersFailing: UsersWithoutSessions = UsersWithoutSessions.EMPTY // only relevant if failing true
         ) = apply {
-            given(sessionEstablisher)
-                .suspendFunction(sessionEstablisher::prepareRecipientsForNewOutgoingMessage)
-                .whenInvokedWith(anything())
-                .thenReturn(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(usersFailing))
+            coEvery {
+                sessionEstablisher.prepareRecipientsForNewOutgoingMessage(any())
+            }.returns(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(usersFailing))
         }
 
-        fun withCommitPendingProposals(failing: Boolean = false) = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::commitPendingProposals)
-                .whenInvokedWith(anything())
-                .thenReturn(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(Unit))
+        suspend fun withCommitPendingProposals(failing: Boolean = false) = apply {
+            coEvery {
+                mlsConversationRepository.commitPendingProposals(any())
+            }.returns(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(Unit))
         }
 
-        fun withCreateOutgoingEnvelope(failing: Boolean = false) = apply {
-            given(messageEnvelopeCreator)
-                .suspendFunction(messageEnvelopeCreator::createOutgoingEnvelope)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(TEST_MESSAGE_ENVELOPE))
+        suspend fun withCreateOutgoingEnvelope(failing: Boolean = false) = apply {
+            coEvery {
+                messageEnvelopeCreator.createOutgoingEnvelope(any(), any())
+            }.returns(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(TEST_MESSAGE_ENVELOPE))
         }
 
-        fun withCreateOutgoingBroadcastEnvelope(failing: Boolean = false) = apply {
-            given(messageEnvelopeCreator)
-                .suspendFunction(messageEnvelopeCreator::createOutgoingBroadcastEnvelope)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(TEST_MESSAGE_ENVELOPE))
+        suspend fun withCreateOutgoingBroadcastEnvelope(failing: Boolean = false) = apply {
+            coEvery {
+                messageEnvelopeCreator.createOutgoingBroadcastEnvelope(any(), any())
+            }.returns(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(TEST_MESSAGE_ENVELOPE))
         }
 
-        fun withBroadcastEnvelope(result: Either<CoreFailure, String> = Either.Right(TestMessage.TEST_DATE_STRING)) = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::broadcastEnvelope)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(result)
+        suspend fun withBroadcastEnvelope(result: Either<CoreFailure, String> = Either.Right(TestMessage.TEST_DATE_STRING)) = apply {
+            coEvery {
+                messageRepository.broadcastEnvelope(any(), any())
+            }.returns(result)
         }
 
-        fun withBroadcastEnvelope(vararg result: Either<CoreFailure, String>) = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::broadcastEnvelope)
-                .whenInvokedWith(anything(), anything())
-                .thenReturnSequentially(*result)
+        suspend fun withBroadcastEnvelope(vararg result: Either<CoreFailure, String>) = apply {
+            coEvery {
+                messageRepository.broadcastEnvelope(any(), any())
+            }.thenReturnSequentially(*result)
         }
 
-        fun withCreateOutgoingMlsMessage(failing: Boolean = false) = apply {
-            given(mlsMessageCreator)
-                .suspendFunction(mlsMessageCreator::createOutgoingMLSMessage)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(TEST_MLS_MESSAGE))
+        suspend fun withCreateOutgoingMlsMessage(failing: Boolean = false) = apply {
+            coEvery {
+                mlsMessageCreator.createOutgoingMLSMessage(any(), any())
+            }.returns(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(TEST_MLS_MESSAGE))
         }
 
-        fun withSendEnvelope(result: Either<CoreFailure, MessageSent> = Either.Right(TestMessage.TEST_MESSAGE_SENT)) = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::sendEnvelope)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(result)
+        suspend fun withSendEnvelope(result: Either<CoreFailure, MessageSent> = Either.Right(TestMessage.TEST_MESSAGE_SENT)) = apply {
+            coEvery {
+                messageRepository.sendEnvelope(any(), any(), any())
+            }.returns(result)
         }
 
-        fun withSendEnvelope(vararg result: Either<CoreFailure, MessageSent>) = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::sendEnvelope)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturnSequentially(*result)
+        suspend fun withSendEnvelope(vararg result: Either<CoreFailure, MessageSent>) = apply {
+            coEvery {
+                messageRepository.sendEnvelope(any(), any(), any())
+            }.thenReturnSequentially(*result)
         }
 
-        fun withSendOutgoingMlsMessage(
+        suspend fun withSendOutgoingMlsMessage(
             result: Either<CoreFailure, MessageSent> = Either.Right(MessageSent(MESSAGE_SENT_TIME)),
             times: Int = Int.MAX_VALUE
         ) = apply {
             var invocationCounter = 0
-            given(messageRepository)
-                .suspendFunction(messageRepository::sendMLSMessage)
-                .whenInvokedWith(matching { invocationCounter += 1; invocationCounter <= times }, anything())
-                .thenReturn(result)
+            coEvery {
+                messageRepository.sendMLSMessage(matches { invocationCounter += 1; invocationCounter <= times }, any())
+            }.returns(result)
         }
 
-        fun withUpdateMessageStatus(failing: Boolean = false) = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::updateMessageStatus)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(Unit))
+        suspend fun withUpdateMessageStatus(failing: Boolean = false) = apply {
+            coEvery {
+                messageRepository.updateMessageStatus(any(), any(), any())
+            }.returns(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(Unit))
         }
 
-        fun withWaitUntilLiveOrFailure(failing: Boolean = false) = apply {
-            given(syncManager)
-                .suspendFunction(syncManager::waitUntilLiveOrFailure)
-                .whenInvoked()
-                .thenReturn(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(Unit))
+        suspend fun withWaitUntilLiveOrFailure(failing: Boolean = false) = apply {
+            coEvery {
+                syncManager.waitUntilLiveOrFailure()
+            }.returns(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(Unit))
         }
 
-        fun withPromoteMessageToSentUpdatingServerTime() = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::promoteMessageToSentUpdatingServerTime)
-                .whenInvokedWith(anything(), anything(), anything(), anything())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withPromoteMessageToSentUpdatingServerTime() = apply {
+            coEvery {
+                messageRepository.promoteMessageToSentUpdatingServerTime(any(), any(), any(), any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withUpdateTextMessage() = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::updateTextMessage)
-                .whenInvokedWith(anything(), anything(), anything(), anything())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withUpdateTextMessage() = apply {
+            coEvery {
+                messageRepository.updateTextMessage(any(), any(), any(), any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withAllRecipients(recipients: Pair<List<Recipient>, List<Recipient>>) = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::getAllRecipients)
-                .whenInvoked()
-                .thenReturn(Either.Right(recipients))
+        suspend fun withAllRecipients(recipients: Pair<List<Recipient>, List<Recipient>>) = apply {
+            coEvery {
+                userRepository.getAllRecipients()
+            }.returns(Either.Right(recipients))
         }
 
         @Suppress("LongParameterList")
-        fun withSendProteusMessage(
+        suspend fun withSendProteusMessage(
             getConversationProtocolFailing: Boolean = false,
             getConversationsRecipientFailing: Boolean = false,
             prepareRecipientsForNewOutGoingMessageFailing: Boolean = false,
@@ -1222,13 +1212,12 @@ class MessageSenderTest {
         }
 
         fun withEnqueueSelfDeleteMessage() = apply {
-            given(selfDeleteMessageSenderHandler)
-                .function(selfDeleteMessageSenderHandler::enqueueSelfDeletion)
-                .whenInvokedWith(anything())
-                .thenReturn(Unit)
+            every {
+                selfDeleteMessageSenderHandler.enqueueSelfDeletion(any(), any())
+            }.returns(Unit)
         }
 
-        fun withSendMlsMessage(
+        suspend fun withSendMlsMessage(
             sendMlsMessageWithResult: Either<CoreFailure, MessageSent>? = null,
         ) = apply {
             withGetMessageById()
@@ -1238,41 +1227,38 @@ class MessageSenderTest {
             withUpdateMessageStatus()
         }
 
-        fun withSendMessagePartialSuccess(
+        suspend fun withSendMessagePartialSuccess(
             result: Either<CoreFailure, Unit> = Either.Right(Unit),
         ) = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::persistRecipientsDeliveryFailure)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(result)
+            coEvery {
+                messageRepository.persistRecipientsDeliveryFailure(any(), any(), any())
+            }.returns(result)
         }
 
-        fun withFailedClientsPartialSuccess() = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::persistNoClientsToDeliverFailure)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withFailedClientsPartialSuccess() = apply {
+            coEvery {
+                messageRepository.persistNoClientsToDeliverFailure(any(), any(), any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withHandleLegalHoldMessageSendFailure(result: Either<CoreFailure, Boolean> = Either.Right(false)) = apply {
-            given(legalHoldHandler)
-                .suspendFunction(legalHoldHandler::handleMessageSendFailure)
-                .whenInvokedWith(anything(), anything(), anything())
-                .then { _, _, handleFailure ->
+        suspend fun withHandleLegalHoldMessageSendFailure(result: Either<CoreFailure, Boolean> = Either.Right(false)) = apply {
+            coEvery { legalHoldHandler.handleMessageSendFailure(any(), any(), any()) }
+                .invokes { args ->
+                    @Suppress("UNCHECKED_CAST")
+                    val handleFailure = args[2] as (suspend () -> Either<CoreFailure, Unit>)
                     handleFailure() // simulate the handler calling the handleFailure function
                     result
                 }
         }
 
-        fun withHandleClientsHaveChangedFailure(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
-            given(messageSendFailureHandler)
-                .suspendFunction(messageSendFailureHandler::handleClientsHaveChangedFailure)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(result)
+        suspend fun withHandleClientsHaveChangedFailure(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
+            coEvery {
+                messageSendFailureHandler.handleClientsHaveChangedFailure(any(), any())
+            }.returns(result)
         }
 
         companion object {
-            fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+            fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
             val TEST_CONVERSATION_ID = TestConversation.ID
             const val TEST_MESSAGE_UUID = "messageUuid"

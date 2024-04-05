@@ -22,12 +22,10 @@ import com.wire.kalium.logic.feature.call.FlowManagerService
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.thenDoNothing
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -44,20 +42,17 @@ class FlipToBackCameraUseCaseTest {
         flipToBackCamera = FlipToBackCameraUseCase(flowManagerService)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenFlowManagerService_whenUseCaseCaseIsInvoked_thenInvokeFlipToBackCameraOnce() = runTest {
-        given(flowManagerService)
-            .suspendFunction(flowManagerService::flipToBackCamera)
-            .whenInvokedWith(eq(conversationId))
-            .thenDoNothing()
+        coEvery {
+            flowManagerService.flipToBackCamera(eq(conversationId))
+        }.returns(Unit)
 
         flipToBackCamera(conversationId)
 
-        verify(flowManagerService)
-            .function(flowManagerService::flipToBackCamera)
-            .with(eq(conversationId))
-            .wasInvoked(once)
+        coVerify {
+            flowManagerService.flipToBackCamera(eq(conversationId))
+        }.wasInvoked(once)
     }
 
     companion object {

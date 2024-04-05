@@ -26,12 +26,12 @@ import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCa
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
-import io.mockative.anything
+import io.mockative.any
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlin.test.Test
@@ -50,18 +50,17 @@ class MissingMetadataUpdateManagerTest {
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
-            verify(arrangement.refreshConversationsWithoutMetadataUseCase)
-                .suspendFunction(arrangement.refreshConversationsWithoutMetadataUseCase::invoke)
-                .wasInvoked(once)
+            coVerify {
+                arrangement.refreshConversationsWithoutMetadataUseCase.invoke()
+            }.wasInvoked(once)
 
-            verify(arrangement.refreshUsersWithoutMetadataUseCase)
-                .suspendFunction(arrangement.refreshUsersWithoutMetadataUseCase::invoke)
-                .wasInvoked(once)
+            coVerify {
+                arrangement.refreshUsersWithoutMetadataUseCase.invoke()
+            }.wasInvoked(once)
 
-            verify(arrangement.timestampKeyRepository)
-                .suspendFunction(arrangement.timestampKeyRepository::reset)
-                .with(anything())
-                .wasInvoked(once)
+            coVerify {
+                arrangement.timestampKeyRepository.reset(any())
+            }.wasInvoked(once)
         }
 
     @Test
@@ -76,18 +75,17 @@ class MissingMetadataUpdateManagerTest {
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
-            verify(arrangement.refreshConversationsWithoutMetadataUseCase)
-                .suspendFunction(arrangement.refreshConversationsWithoutMetadataUseCase::invoke)
-                .wasNotInvoked()
+            coVerify {
+                arrangement.refreshConversationsWithoutMetadataUseCase.invoke()
+            }.wasNotInvoked()
 
-            verify(arrangement.refreshUsersWithoutMetadataUseCase)
-                .suspendFunction(arrangement.refreshUsersWithoutMetadataUseCase::invoke)
-                .wasNotInvoked()
+            coVerify {
+                arrangement.refreshUsersWithoutMetadataUseCase.invoke()
+            }.wasNotInvoked()
 
-            verify(arrangement.timestampKeyRepository)
-                .suspendFunction(arrangement.timestampKeyRepository::reset)
-                .with(anything())
-                .wasNotInvoked()
+            coVerify {
+                arrangement.timestampKeyRepository.reset(any())
+            }.wasNotInvoked()
         }
 
     private class Arrangement {
@@ -103,25 +101,22 @@ class MissingMetadataUpdateManagerTest {
         @Mock
         val refreshUsersWithoutMetadataUseCase = mock(classOf<RefreshUsersWithoutMetadataUseCase>())
 
-        fun withLastMetadataSyncKeyCheck(hasPassed: Boolean) = apply {
-            given(timestampKeyRepository)
-                .suspendFunction(timestampKeyRepository::hasPassed)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(hasPassed))
+        suspend fun withLastMetadataSyncKeyCheck(hasPassed: Boolean) = apply {
+            coEvery {
+                timestampKeyRepository.hasPassed(any(), any())
+            }.returns(Either.Right(hasPassed))
         }
 
-        fun withLastMetadataSyncKeyResetCheckSuccessful() = apply {
-            given(timestampKeyRepository)
-                .suspendFunction(timestampKeyRepository::reset)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withLastMetadataSyncKeyResetCheckSuccessful() = apply {
+            coEvery {
+                timestampKeyRepository.reset(any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withRefreshUsersSuccess() = apply {
-            given(refreshUsersWithoutMetadataUseCase)
-                .suspendFunction(refreshUsersWithoutMetadataUseCase::invoke)
-                .whenInvoked()
-                .thenReturn(Unit)
+        suspend fun withRefreshUsersSuccess() = apply {
+            coEvery {
+                refreshUsersWithoutMetadataUseCase.invoke()
+            }.returns(Unit)
         }
 
         fun arrange() = this to MissingMetadataUpdateManagerImpl(

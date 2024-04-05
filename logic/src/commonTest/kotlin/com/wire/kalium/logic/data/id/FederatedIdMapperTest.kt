@@ -25,7 +25,8 @@ import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import okio.IOException
@@ -50,16 +51,16 @@ class FederatedIdMapperTest {
         federatedIdMapper =
             FederatedIdMapperImpl(selfUserId, qualifiedIdMapper, sessionRepository)
 
-        given(qualifiedIdMapper).invocation { qualifiedIdMapper.fromStringToQualifiedID(qualifiedId) }
-            .then { QualifiedID("aaa-bbb-ccc", "wire.com") }
+        every {
+            qualifiedIdMapper.fromStringToQualifiedID(qualifiedId)
+        }.returns(QualifiedID("aaa-bbb-ccc", "wire.com"))
     }
 
     @Test
     fun givenAUserId_whenCurrentEnvironmentIsFederated_thenShouldMapTheValueWithDomain() = runTest {
-        given(sessionRepository)
-            .suspendFunction(sessionRepository::isFederated)
-            .whenInvokedWith(any())
-            .then { Either.Right(true) }
+        coEvery {
+            sessionRepository.isFederated(any())
+        }.returns(Either.Right(true))
 
         val federatedId = federatedIdMapper.parseToFederatedId(qualifiedId)
 
@@ -68,10 +69,9 @@ class FederatedIdMapperTest {
 
     @Test
     fun givenAUserId_whenCurrentEnvironmentIsNotFederated_thenShouldMapTheValueWithoutDomain() = runTest {
-        given(sessionRepository)
-            .suspendFunction(sessionRepository::isFederated)
-            .whenInvokedWith(any())
-            .then { Either.Right(false) }
+        coEvery {
+            sessionRepository.isFederated(any())
+        }.returns(Either.Right(false))
 
         val federatedId = federatedIdMapper.parseToFederatedId(qualifiedId)
 
@@ -80,10 +80,9 @@ class FederatedIdMapperTest {
 
     @Test
     fun givenError_whenGettingUserFederationStatus_thenShouldMapTheValueWithoutDomain() = runTest {
-        given(sessionRepository)
-            .suspendFunction(sessionRepository::isFederated)
-            .whenInvokedWith(any())
-            .then { Either.Left(StorageFailure.Generic(IOException("why are we still here just to suffer!"))) }
+        coEvery {
+            sessionRepository.isFederated(any())
+        }.returns(Either.Left(StorageFailure.Generic(IOException("why are we still here just to suffer!"))))
 
         val federatedId = federatedIdMapper.parseToFederatedId(qualifiedId)
 

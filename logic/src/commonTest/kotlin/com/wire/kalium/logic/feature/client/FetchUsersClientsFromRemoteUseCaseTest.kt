@@ -31,10 +31,10 @@ import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -59,14 +59,13 @@ class FetchUsersClientsFromRemoteUseCaseTest {
         // When
         useCase(listOf(userId))
 
-        verify(arrangement.clientRemoteRepository)
-            .suspendFunction(arrangement.clientRemoteRepository::fetchOtherUserClients).with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clientRemoteRepository.fetchOtherUserClients(any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::storeUserClientListAndRemoveRedundantClients)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clientRepository.storeUserClientListAndRemoveRedundantClients(any())
+        }.wasInvoked(exactly = once)
 
     }
 
@@ -83,9 +82,9 @@ class FetchUsersClientsFromRemoteUseCaseTest {
         useCase.invoke(listOf(userId))
 
         // Then
-        verify(arrangement.clientRemoteRepository)
-            .suspendFunction(arrangement.clientRemoteRepository::fetchOtherUserClients).with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clientRemoteRepository.fetchOtherUserClients(any())
+        }.wasInvoked(exactly = once)
 
     }
 
@@ -103,27 +102,26 @@ class FetchUsersClientsFromRemoteUseCaseTest {
             FetchUsersClientsFromRemoteUseCaseImpl(clientRemoteRepository, clientRepository)
 
         suspend fun withSuccessfulResponse(userIdDTO: UserIdDTO, expectedResponse: List<SimpleClientResponse>): Arrangement {
-            given(clientRemoteRepository)
-                .suspendFunction(clientRemoteRepository::fetchOtherUserClients).whenInvokedWith(any())
-                .thenReturn(Either.Right(mapOf(userIdDTO to expectedResponse)))
+            coEvery {
+                clientRemoteRepository.fetchOtherUserClients(any())
+            }.returns(Either.Right(mapOf(userIdDTO to expectedResponse)))
 
-            given(clientRepository)
-                .coroutine {
-                    clientRepository.storeUserClientListAndRemoveRedundantClients(
-                        clientMapper.toInsertClientParam(
-                            userIdDTO = userIdDTO,
-                            simpleClientResponse = expectedResponse
-                        )
+            coEvery {
+                clientRepository.storeUserClientListAndRemoveRedundantClients(
+                    clientMapper.toInsertClientParam(
+                        userIdDTO = userIdDTO,
+                        simpleClientResponse = expectedResponse
                     )
-                }.thenReturn(Either.Right(Unit))
+                )
+            }.returns(Either.Right(Unit))
 
             return this
         }
 
-        fun withGetOtherUserClientsErrorResponse(exception: KaliumException): Arrangement {
-            given(clientRemoteRepository)
-                .suspendFunction(clientRemoteRepository::fetchOtherUserClients).whenInvokedWith(any())
-                .thenReturn(Either.Left(NetworkFailure.ServerMiscommunication(exception)))
+        suspend fun withGetOtherUserClientsErrorResponse(exception: KaliumException): Arrangement {
+            coEvery {
+                clientRemoteRepository.fetchOtherUserClients(any())
+            }.returns(Either.Left(NetworkFailure.ServerMiscommunication(exception)))
             return this
         }
 

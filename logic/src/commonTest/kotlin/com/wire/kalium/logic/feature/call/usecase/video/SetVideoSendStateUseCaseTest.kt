@@ -23,10 +23,10 @@ import com.wire.kalium.logic.framework.TestConversation
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -39,10 +39,9 @@ class SetVideoSendStateUseCaseTest {
 
         setVideoSendState.invoke(TestConversation.ID, VideoState.STARTED)
 
-        verify(arrangement.callManager)
-            .suspendFunction(arrangement.callManager::setVideoSendState)
-            .with(any(), eq(VideoState.STARTED))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.callManager.setVideoSendState(any(), eq(VideoState.STARTED))
+        }.wasInvoked(once)
     }
 
     private class Arrangement {

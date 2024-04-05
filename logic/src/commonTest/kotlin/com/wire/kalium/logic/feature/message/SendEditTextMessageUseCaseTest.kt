@@ -20,10 +20,10 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -33,14 +33,14 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
 import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.configure
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.test.runTest
@@ -67,22 +67,18 @@ class SendEditTextMessageUseCaseTest {
 
         // Then
         result.shouldSucceed()
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::updateTextMessage)
-            .with(any(), any(), eq(originalMessageId), any())
-            .wasInvoked(once)
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::updateMessageStatus)
-            .with(eq(MessageEntity.Status.PENDING), any(), any())
-            .wasInvoked(once)
-        verify(arrangement.messageSendFailureHandler)
-            .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-            .with(any(), any(), any(), any(), any())
-            .wasNotInvoked()
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(any(), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.messageRepository.updateTextMessage(any(), any(), eq(originalMessageId), any())
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.messageRepository.updateMessageStatus(eq(MessageEntity.Status.PENDING), any(), any())
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.messageSender.sendMessage(any(), any())
+        }.wasInvoked(once)
     }
 
     @Test
@@ -104,77 +100,70 @@ class SendEditTextMessageUseCaseTest {
 
         // Then
         result.shouldFail()
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::updateTextMessage)
-            .with(any(), any(), eq(originalMessageId), any())
-            .wasInvoked(once)
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::updateTextMessage)
-            .with(any(), any(), eq(editedMessageId), any())
-            .wasNotInvoked()
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::updateMessageStatus)
-            .with(eq(MessageEntity.Status.PENDING), any(), any())
-            .wasInvoked(once)
-        verify(arrangement.messageSendFailureHandler)
-            .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-            .with(any(), any(), any(), any(), any())
-            .wasInvoked(once)
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(any(), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.messageRepository.updateTextMessage(any(), any(), eq(originalMessageId), any())
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.messageRepository.updateTextMessage(any(), any(), eq(editedMessageId), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.messageRepository.updateMessageStatus(eq(MessageEntity.Status.PENDING), any(), any())
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.messageSender.sendMessage(any(), any())
+        }.wasInvoked(once)
     }
 
     private class Arrangement {
 
         @Mock
         val messageRepository = mock(classOf<MessageRepository>())
+
         @Mock
         val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+
         @Mock
         val slowSyncRepository = mock(classOf<SlowSyncRepository>())
+
         @Mock
         val messageSender = mock(classOf<MessageSender>())
-        @Mock
-        val messageSendFailureHandler = configure(mock(classOf<MessageSendFailureHandler>())) { stubsUnitByDefault = true }
 
-        fun withSendMessageSuccess() = apply {
-            given(messageSender)
-                .suspendFunction(messageSender::sendMessage)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
+        @Mock
+        val messageSendFailureHandler = configure(mock(classOf<MessageSendFailureHandler>())) { }
+
+        suspend fun withSendMessageSuccess() = apply {
+            coEvery {
+                messageSender.sendMessage(any(), any())
+            }.returns(Either.Right(Unit))
         }
-        fun withSendMessageFailure() = apply {
-            given(messageSender)
-                .suspendFunction(messageSender::sendMessage)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Left(NetworkFailure.NoNetworkConnection(null)))
+        suspend fun withSendMessageFailure() = apply {
+            coEvery {
+                messageSender.sendMessage(any(), any())
+            }.returns(Either.Left(NetworkFailure.NoNetworkConnection(null)))
         }
         fun withSlowSyncStatusComplete() = apply {
             val stateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
-            given(slowSyncRepository)
-                .getter(slowSyncRepository::slowSyncStatus)
-                .whenInvoked()
-                .thenReturn(stateFlow)
+            every {
+                slowSyncRepository.slowSyncStatus
+            }.returns(stateFlow)
         }
-        fun withCurrentClientProviderSuccess(clientId: ClientId = TestClient.CLIENT_ID) = apply {
-            given(currentClientIdProvider)
-                .suspendFunction(currentClientIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Right(clientId))
+        suspend fun withCurrentClientProviderSuccess(clientId: ClientId = TestClient.CLIENT_ID) = apply {
+            coEvery {
+                currentClientIdProvider.invoke()
+            }.returns(Either.Right(clientId))
         }
-        fun withUpdateTextMessageSuccess() = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::updateTextMessage)
-                .whenInvokedWith(anything(), anything(), anything(), anything())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withUpdateTextMessageSuccess() = apply {
+            coEvery {
+                messageRepository.updateTextMessage(any(), any(), any(), any())
+            }.returns(Either.Right(Unit))
         }
-        fun withUpdateMessageStatusSuccess() = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::updateMessageStatus)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withUpdateMessageStatusSuccess() = apply {
+            coEvery {
+                messageRepository.updateMessageStatus(any(), any(), any())
+            }.returns(Either.Right(Unit))
         }
 
         fun arrange() = this to SendEditTextMessageUseCase(

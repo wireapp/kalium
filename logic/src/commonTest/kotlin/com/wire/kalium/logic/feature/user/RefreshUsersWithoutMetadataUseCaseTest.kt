@@ -25,10 +25,10 @@ import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCa
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -44,20 +44,19 @@ class RefreshUsersWithoutMetadataUseCaseTest {
 
         refreshUsersWithoutMetadata()
 
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::syncUsersWithoutMetadata)
-            .wasInvoked(once)
+        coVerify {
+            arrangement.userRepository.syncUsersWithoutMetadata()
+        }.wasInvoked(once)
     }
 
     private class Arrangement {
         @Mock
         val userRepository = mock(classOf<UserRepository>())
 
-        fun withResponse(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::syncUsersWithoutMetadata)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withResponse(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
+            coEvery {
+                userRepository.syncUsersWithoutMetadata()
+            }.returns(result)
         }
 
         fun arrange(): Pair<Arrangement, RefreshUsersWithoutMetadataUseCase> =

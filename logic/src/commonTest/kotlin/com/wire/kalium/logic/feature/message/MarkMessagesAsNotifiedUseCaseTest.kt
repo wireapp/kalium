@@ -21,26 +21,20 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.feature.message.MarkMessagesAsNotifiedUseCase.UpdateTarget
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
 import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MarkMessagesAsNotifiedUseCaseTest {
 
     @Test
@@ -51,14 +45,13 @@ class MarkMessagesAsNotifiedUseCaseTest {
 
         val result = markMessagesAsNotified(UpdateTarget.AllConversations)
 
-        verify(arrangement.conversationRepository)
-            .coroutine { updateAllConversationsNotificationDate() }
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.updateAllConversationsNotificationDate()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateConversationNotificationDate)
-            .with(anything())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.conversationRepository.updateConversationNotificationDate(any())
+        }.wasNotInvoked()
 
         assertEquals(result, Result.Success)
     }
@@ -71,14 +64,13 @@ class MarkMessagesAsNotifiedUseCaseTest {
 
         val result = markMessagesAsNotified(UpdateTarget.SingleConversation(CONVERSATION_ID))
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateConversationNotificationDate)
-            .with(eq(CONVERSATION_ID))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.updateConversationNotificationDate(eq(CONVERSATION_ID))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateAllConversationsNotificationDate)
-            .wasNotInvoked()
+        coVerify {
+            arrangement.conversationRepository.updateAllConversationsNotificationDate()
+        }.wasNotInvoked()
 
         assertEquals(result, Result.Success)
     }
@@ -114,18 +106,16 @@ class MarkMessagesAsNotifiedUseCaseTest {
         @Mock
         val conversationRepository: ConversationRepository = mock(classOf<ConversationRepository>())
 
-        fun withUpdatingAllConversationsReturning(result: Either<StorageFailure, Unit>) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateAllConversationsNotificationDate)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withUpdatingAllConversationsReturning(result: Either<StorageFailure, Unit>) = apply {
+            coEvery {
+                conversationRepository.updateAllConversationsNotificationDate()
+            }.returns(result)
         }
 
-        fun withUpdatingOneConversationReturning(result: Either<StorageFailure, Unit>) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateConversationNotificationDate)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withUpdatingOneConversationReturning(result: Either<StorageFailure, Unit>) = apply {
+            coEvery {
+                conversationRepository.updateConversationNotificationDate(any())
+            }.returns(result)
         }
 
         fun arrange() = this to MarkMessagesAsNotifiedUseCase(

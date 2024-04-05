@@ -27,7 +27,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
 import io.mockative.Mock
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -57,9 +57,9 @@ class ConnectionPolicyIntegrationTest {
     @Test
     fun givenSetConnectionPolicyIsCalled_whenObservingConnectionPolicy_thenTheValueIsUpdated() = runTest {
         // Given
-        given(sessionRepository)
-            .suspendFunction(sessionRepository::getAllValidAccountPersistentWebSocketStatus).whenInvoked()
-            .thenReturn(Either.Right(flowOf(listOf())))
+        coEvery {
+            sessionRepository.getAllValidAccountPersistentWebSocketStatus()
+        }.returns(Either.Right(flowOf(listOf())))
 
         setConnectionPolicyUseCase(ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS)
 

@@ -28,14 +28,12 @@ import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class BlockUserUseCaseTest {
 
     @Test
@@ -66,11 +64,10 @@ class BlockUserUseCaseTest {
 
         val blockUser = BlockUserUseCaseImpl(connectionRepository)
 
-        fun withBlockResult(result: Either<CoreFailure, Connection>) = apply {
-            given(connectionRepository)
-                .suspendFunction(connectionRepository::updateConnectionStatus)
-                .whenInvokedWith(any(), any())
-                .thenReturn(result)
+        suspend fun withBlockResult(result: Either<CoreFailure, Connection>) = apply {
+            coEvery {
+                connectionRepository.updateConnectionStatus(any(), any())
+            }.returns(result)
         }
 
         fun arrange() = this to blockUser

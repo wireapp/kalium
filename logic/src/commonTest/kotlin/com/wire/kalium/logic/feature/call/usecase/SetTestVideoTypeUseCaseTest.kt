@@ -23,11 +23,11 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.thenDoNothing
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -39,23 +39,20 @@ class SetTestVideoTypeUseCaseTest {
     private lateinit var setTestVideoType: SetTestVideoTypeUseCase
 
     @BeforeTest
-    fun setup() {
+    fun setup() = runBlocking {
         setTestVideoType = SetTestVideoTypeUseCase(lazy { callManager })
 
-        given(callManager)
-            .suspendFunction(callManager::setTestVideoType)
-            .whenInvokedWith(any())
-            .thenDoNothing()
+        coEvery {
+            callManager.setTestVideoType(any())
+        }.returns(Unit)
     }
 
     @Test
     fun givenWhenSetTestVideoType_thenUpdateTestVideoType() = runTest {
         setTestVideoType(TestVideoType.FAKE)
 
-        verify(callManager)
-            .suspendFunction(callManager::setTestVideoType)
-            .with(eq(TestVideoType.FAKE))
-            .wasInvoked(once)
+        coVerify {
+            callManager.setTestVideoType(eq(TestVideoType.FAKE))
+        }.wasInvoked(once)
     }
 }
-

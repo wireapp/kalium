@@ -20,10 +20,10 @@ package com.wire.kalium.logic.sync.slow
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import io.mockative.Mock
 import io.mockative.classOf
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -37,19 +37,17 @@ class RestartSlowSyncProcessForRecoveryUseCaseTest {
         useCase.invoke()
 
 
-        verify(arrangement.slowSyncRepository)
-            .suspendFunction(arrangement.slowSyncRepository::clearLastSlowSyncCompletionInstant)
-            .wasInvoked(once)
+        coVerify {
+            arrangement.slowSyncRepository.clearLastSlowSyncCompletionInstant()
+        }.wasInvoked(once)
 
-        verify(arrangement.slowSyncRepository)
-            .suspendFunction(arrangement.slowSyncRepository::setNeedsToRecoverMLSGroups)
-            .with(eq(true))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.slowSyncRepository.setNeedsToRecoverMLSGroups(eq(true))
+        }.wasInvoked(once)
 
-        verify(arrangement.slowSyncRepository)
-            .suspendFunction(arrangement.slowSyncRepository::setNeedsToPersistHistoryLostMessage)
-            .with(eq(true))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.slowSyncRepository.setNeedsToPersistHistoryLostMessage(eq(true))
+        }.wasInvoked(once)
     }
 
     private class Arrangement {

@@ -25,11 +25,11 @@ import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.coVerify
 import io.mockative.configure
-import io.mockative.matching
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -44,15 +44,13 @@ class SlowSyncRecoveryHandlerTest {
         arrangement.recoverWithFailure(SelfUserDeleted)
 
         with(arrangement) {
-            verify(logoutUseCase)
-                .suspendFunction(logoutUseCase::invoke)
-                .with(matching { LogoutReason.DELETED_ACCOUNT == it })
-                .wasInvoked(once)
+            coVerify {
+                logoutUseCase.invoke(matches { LogoutReason.DELETED_ACCOUNT == it }, any())
+            }.wasInvoked(once)
 
-            verify(onSlowSyncRetryCallback)
-                .function(onSlowSyncRetryCallback::retry)
-                .with()
-                .wasNotInvoked()
+            coVerify {
+                onSlowSyncRetryCallback.retry()
+            }.wasNotInvoked()
         }
     }
 
@@ -67,15 +65,13 @@ class SlowSyncRecoveryHandlerTest {
         )
 
         with(arrangement) {
-            verify(logoutUseCase)
-                .suspendFunction(logoutUseCase::invoke)
-                .with(any())
-                .wasNotInvoked()
+            coVerify {
+                logoutUseCase.invoke(any(), any())
+            }.wasNotInvoked()
 
-            verify(onSlowSyncRetryCallback)
-                .function(onSlowSyncRetryCallback::retry)
-                .with()
-                .wasInvoked(exactly = once)
+            coVerify {
+                onSlowSyncRetryCallback.retry()
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -85,7 +81,7 @@ class SlowSyncRecoveryHandlerTest {
         val onSlowSyncRetryCallback: OnSlowSyncRetryCallback = mock(classOf<OnSlowSyncRetryCallback>())
 
         @Mock
-        val logoutUseCase = configure(mock(classOf<LogoutUseCase>())) { stubsUnitByDefault = true }
+        val logoutUseCase = configure(mock(classOf<LogoutUseCase>())) { }
 
         private val slowSyncRecoveryHandler by lazy {
             SlowSyncRecoveryHandlerImpl(logoutUseCase)

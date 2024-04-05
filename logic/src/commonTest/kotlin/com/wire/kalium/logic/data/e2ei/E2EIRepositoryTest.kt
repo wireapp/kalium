@@ -57,18 +57,18 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anyInstanceOf
-import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.thenDoNothing
 import io.mockative.time
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
+import pbandk.ByteArr
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -92,20 +92,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::getE2EISettings)
-            .with()
-            .wasInvoked(once)
+        coVerify {
+            arrangement.userConfigRepository.getE2EISettings()
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::getACMEDirectories)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.acmeApi.getACMEDirectories(any())
+        }.wasNotInvoked()
 
-        verify(arrangement.e2eiClient)
-            .suspendFunction(arrangement.e2eiClient::directoryResponse)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.e2eiClient.directoryResponse(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -126,20 +123,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::getE2EISettings)
-            .with()
-            .wasInvoked(once)
+        coVerify {
+            arrangement.userConfigRepository.getE2EISettings()
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::getACMEDirectories)
-            .with(any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.acmeApi.getACMEDirectories(any())
+        }.wasInvoked(once)
 
-        verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::directoryResponse)
-            .with(anyInstanceOf(ByteArray::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.directoryResponse(any<ByteArray>())
+        }.wasInvoked(once)
     }
 
     @Test
@@ -160,20 +154,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::getE2EISettings)
-            .with()
-            .wasInvoked(once)
+        coVerify {
+            arrangement.userConfigRepository.getE2EISettings()
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::getACMEDirectories)
-            .with(any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.acmeApi.getACMEDirectories(any())
+        }.wasInvoked(once)
 
-        verify(arrangement.e2eiClient)
-            .suspendFunction(arrangement.e2eiClient::directoryResponse)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.e2eiClient.directoryResponse(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -192,20 +183,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::getNewAccountRequest)
-            .with(anyInstanceOf(String::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.getNewAccountRequest(any<String>())
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::sendACMERequest)
-            .with(anyInstanceOf(String::class), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.acmeApi.sendACMERequest(any<String>(), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::setAccountResponse)
-            .with(anyInstanceOf(ByteArray::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.setAccountResponse(any<ByteArray>())
+        }.wasInvoked(once)
     }
 
     @Test
@@ -224,20 +212,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::getNewAccountRequest)
-            .with(anyInstanceOf(String::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.getNewAccountRequest(any<String>())
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::sendACMERequest)
-            .with(anyInstanceOf(String::class), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.acmeApi.sendACMERequest(any<String>(), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::setAccountResponse)
-            .with(anyInstanceOf(ByteArray::class))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.e2eiClient.setAccountResponse(any<ByteArray>())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -257,20 +242,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::getNewOrderRequest)
-            .with(anyInstanceOf(String::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.getNewOrderRequest(any<String>())
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::sendACMERequest)
-            .with(anyInstanceOf(String::class), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.acmeApi.sendACMERequest(any<String>(), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::setOrderResponse)
-            .with(anyInstanceOf(ByteArray::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.setOrderResponse(any<ByteArray>())
+        }.wasInvoked(once)
     }
 
     @Test
@@ -289,20 +271,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::getNewOrderRequest)
-            .with(anyInstanceOf(String::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.getNewOrderRequest(any<String>())
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::sendACMERequest)
-            .with(anyInstanceOf(String::class), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.acmeApi.sendACMERequest(any<String>(), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::setOrderResponse)
-            .with(anyInstanceOf(ByteArray::class))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.e2eiClient.setOrderResponse(any<ByteArray>())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -324,20 +303,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        verify(arrangement.e2eiClient)
-            .suspendFunction(arrangement.e2eiClient::getNewAuthzRequest)
-            .with(anyInstanceOf(String::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.getNewAuthzRequest(any<String>(), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::sendAuthorizationRequest)
-            .with(anyInstanceOf(String::class), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.acmeApi.sendAuthorizationRequest(any<String>(), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.e2eiClient)
-            .suspendFunction(arrangement.e2eiClient::setAuthzResponse)
-            .with(anyInstanceOf(ByteArray::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.setAuthzResponse(any<ByteArray>())
+        }.wasInvoked(once)
     }
 
     @Test
@@ -359,20 +335,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        verify(arrangement.e2eiClient)
-            .suspendFunction(arrangement.e2eiClient::getNewAuthzRequest)
-            .with(anyInstanceOf(String::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.getNewAuthzRequest(any<String>(), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::sendAuthorizationRequest)
-            .with(anyInstanceOf(String::class), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.acmeApi.sendAuthorizationRequest(any<String>(), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.e2eiClient)
-            .suspendFunction(arrangement.e2eiClient::setAuthzResponse)
-            .with(anyInstanceOf(ByteArray::class))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.e2eiClient.setAuthzResponse(any<ByteArray>())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -393,20 +366,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        verify(arrangement.e2eiClient)
-            .suspendFunction(arrangement.e2eiClient::getNewAuthzRequest)
-            .with(anyInstanceOf(String::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.getNewAuthzRequest(any<String>(), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::sendAuthorizationRequest)
-            .with(anyInstanceOf(String::class), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.acmeApi.sendAuthorizationRequest(any<String>(), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.e2eiClient)
-            .suspendFunction(arrangement.e2eiClient::setAuthzResponse)
-            .with(anyInstanceOf(ByteArray::class))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.e2eiClient.setAuthzResponse(any<ByteArray>())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -433,20 +403,17 @@ class E2EIRepositoryTest {
 
         assertEquals(expected, result.value as AuthorizationResult)
 
-        verify(arrangement.e2eiClient)
-            .suspendFunction(arrangement.e2eiClient::getNewAuthzRequest)
-            .with(anyInstanceOf(String::class))
-            .wasInvoked(authorizationsUrls.size.time)
+        coVerify {
+            arrangement.e2eiClient.getNewAuthzRequest(any<String>(), any())
+        }.wasInvoked(authorizationsUrls.size.time)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::sendAuthorizationRequest)
-            .with(anyInstanceOf(String::class), any())
-            .wasInvoked(authorizationsUrls.size.time)
+        coVerify {
+            arrangement.acmeApi.sendAuthorizationRequest(any<String>(), any())
+        }.wasInvoked(authorizationsUrls.size.time)
 
-        verify(arrangement.e2eiClient)
-            .suspendFunction(arrangement.e2eiClient::setAuthzResponse)
-            .with(anyInstanceOf(ByteArray::class))
-            .wasInvoked(authorizationsUrls.size.time)
+        coVerify {
+            arrangement.e2eiClient.setAuthzResponse(any<ByteArray>())
+        }.wasInvoked(authorizationsUrls.size.time)
     }
 
     @Test
@@ -466,20 +433,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::getNewDpopChallengeRequest)
-            .with(anyInstanceOf(String::class), anyInstanceOf(String::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.getNewDpopChallengeRequest(any<String>(), any<String>())
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::sendChallengeRequest)
-            .with(anyInstanceOf(String::class), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.acmeApi.sendChallengeRequest(any<String>(), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::setDPoPChallengeResponse)
-            .with(anyInstanceOf(ByteArray::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.setDPoPChallengeResponse(any<ByteArray>())
+        }.wasInvoked(once)
     }
 
     @Test
@@ -498,20 +462,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::getNewDpopChallengeRequest)
-            .with(anyInstanceOf(String::class), anyInstanceOf(String::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.getNewDpopChallengeRequest(any<String>(), any<String>())
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::sendChallengeRequest)
-            .with(anyInstanceOf(String::class), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.acmeApi.sendChallengeRequest(any<String>(), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::setOIDCChallengeResponse)
-            .with(anyInstanceOf(CoreCryptoCentral::class), anyInstanceOf(ByteArray::class))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.e2eiClient.setOIDCChallengeResponse(any<CoreCryptoCentral>(), any<ByteArray>())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -531,20 +492,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::getNewOidcChallengeRequest)
-            .with(anyInstanceOf(String::class), anyInstanceOf(String::class), anyInstanceOf(String::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.getNewOidcChallengeRequest(any<String>(), any<String>(), any<String>())
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::sendChallengeRequest)
-            .with(anyInstanceOf(String::class), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.acmeApi.sendChallengeRequest(any<String>(), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::setOIDCChallengeResponse)
-            .with(anyInstanceOf(CoreCryptoCentral::class), anyInstanceOf(ByteArray::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.setOIDCChallengeResponse(any<CoreCryptoCentral>(), any<ByteArray>())
+        }.wasInvoked(once)
     }
 
     @Test
@@ -564,20 +522,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::getNewOidcChallengeRequest)
-            .with(anyInstanceOf(String::class), anyInstanceOf(String::class), anyInstanceOf(String::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.getNewOidcChallengeRequest(any<String>(), any<String>(), any<String>())
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::sendChallengeRequest)
-            .with(anyInstanceOf(String::class), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.acmeApi.sendChallengeRequest(any<String>(), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::setOIDCChallengeResponse)
-            .with(anyInstanceOf(CoreCryptoCentral::class), anyInstanceOf(ByteArray::class))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.e2eiClient.setOIDCChallengeResponse(any<CoreCryptoCentral>(), any<ByteArray>())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -597,20 +552,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::getNewOidcChallengeRequest)
-            .with(anyInstanceOf(String::class), anyInstanceOf(String::class), anyInstanceOf(String::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.getNewOidcChallengeRequest(any<String>(), any<String>(), any<String>())
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::sendChallengeRequest)
-            .with(anyInstanceOf(String::class), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.acmeApi.sendChallengeRequest(any<String>(), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::setOIDCChallengeResponse)
-            .with(anyInstanceOf(CoreCryptoCentral::class), anyInstanceOf(ByteArray::class))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.e2eiClient.setOIDCChallengeResponse(any<CoreCryptoCentral>(), any<ByteArray>())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -630,20 +582,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        verify(arrangement.e2eiClient)
-            .suspendFunction(arrangement.e2eiClient::checkOrderRequest)
-            .with(anyInstanceOf(String::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.checkOrderRequest(any<String>(), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::sendACMERequest)
-            .with(anyInstanceOf(String::class), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.acmeApi.sendACMERequest(any<String>(), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::checkOrderResponse)
-            .with(anyInstanceOf(ByteArray::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.checkOrderResponse(any<ByteArray>())
+        }.wasInvoked(once)
     }
 
     @Test
@@ -662,20 +611,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        verify(arrangement.e2eiClient)
-            .suspendFunction(arrangement.e2eiClient::checkOrderRequest)
-            .with(anyInstanceOf(String::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.checkOrderRequest(any<String>(), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::sendACMERequest)
-            .with(anyInstanceOf(String::class), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.acmeApi.sendACMERequest(any<String>(), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.e2eiClient)
-            .suspendFunction(arrangement.e2eiClient::checkOrderResponse)
-            .with(anyInstanceOf(ByteArray::class))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.e2eiClient.checkOrderResponse(any<ByteArray>())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -695,20 +641,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        verify(arrangement.e2eiClient)
-            .function(arrangement.e2eiClient::finalizeRequest)
-            .with(anyInstanceOf(String::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.finalizeRequest(any<String>())
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::sendACMERequest)
-            .with(anyInstanceOf(String::class), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.acmeApi.sendACMERequest(any<String>(), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.e2eiClient)
-            .suspendFunction(arrangement.e2eiClient::finalizeResponse)
-            .with(anyInstanceOf(ByteArray::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.finalizeResponse(any<ByteArray>())
+        }.wasInvoked(once)
     }
 
     @Test
@@ -727,20 +670,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        verify(arrangement.e2eiClient)
-            .suspendFunction(arrangement.e2eiClient::finalizeRequest)
-            .with(anyInstanceOf(String::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.finalizeRequest(any<String>())
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::sendACMERequest)
-            .with(anyInstanceOf(String::class), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.acmeApi.sendACMERequest(any<String>(), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.e2eiClient)
-            .suspendFunction(arrangement.e2eiClient::finalizeResponse)
-            .with(anyInstanceOf(ByteArray::class))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.e2eiClient.finalizeResponse(any<ByteArray>())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -759,15 +699,13 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        verify(arrangement.e2eiClient)
-            .suspendFunction(arrangement.e2eiClient::certificateRequest)
-            .with(anyInstanceOf(String::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.certificateRequest(any<String>())
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::sendACMERequest)
-            .with(anyInstanceOf(String::class), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.acmeApi.sendACMERequest(any<String>(), any())
+        }.wasInvoked(once)
     }
 
     @Test
@@ -786,15 +724,13 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        verify(arrangement.e2eiClient)
-            .suspendFunction(arrangement.e2eiClient::certificateRequest)
-            .with(anyInstanceOf(String::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClient.certificateRequest(any<String>())
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::sendACMERequest)
-            .with(anyInstanceOf(String::class), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.acmeApi.sendACMERequest(any<String>(), any())
+        }.wasInvoked(once)
     }
 
     @Test
@@ -812,19 +748,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        verify(arrangement.e2eiClientProvider)
-            .suspendFunction(arrangement.e2eiClientProvider::getE2EIClient)
-            .with(anything())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClientProvider.getE2EIClient(any(), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.currentClientIdProvider)
-            .suspendFunction(arrangement.currentClientIdProvider::invoke)
-            .wasInvoked(once)
+        coVerify {
+            arrangement.currentClientIdProvider.invoke()
+        }.wasInvoked(once)
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::rotateKeysAndMigrateConversations)
-            .with(anything(), anything(), anything())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.mlsConversationRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any())
+        }.wasInvoked(once)
     }
 
     @Test
@@ -842,19 +776,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        verify(arrangement.e2eiClientProvider)
-            .suspendFunction(arrangement.e2eiClientProvider::getE2EIClient)
-            .with(anything())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.e2eiClientProvider.getE2EIClient(any(), any())
+        }.wasInvoked(once)
 
-        verify(arrangement.currentClientIdProvider)
-            .suspendFunction(arrangement.currentClientIdProvider::invoke)
-            .wasInvoked(once)
+        coVerify {
+            arrangement.currentClientIdProvider.invoke()
+        }.wasInvoked(once)
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::rotateKeysAndMigrateConversations)
-            .with(anything(), anything(), anything())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.mlsConversationRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any())
+        }.wasInvoked(once)
     }
 
     @Test
@@ -874,20 +806,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::getE2EISettings)
-            .with()
-            .wasInvoked(once)
+        coVerify {
+            arrangement.userConfigRepository.getE2EISettings()
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::getACMEFederationCertificateChain)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.acmeApi.getACMEFederationCertificateChain(any())
+        }.wasNotInvoked()
 
-        verify(arrangement.coreCryptoCentral)
-            .suspendFunction(arrangement.coreCryptoCentral::registerIntermediateCa)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.coreCryptoCentral.registerIntermediateCa(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -908,21 +837,18 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::getE2EISettings)
-            .with()
-            .wasInvoked(once)
+        coVerify {
+            arrangement.userConfigRepository.getE2EISettings()
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::getACMEFederationCertificateChain)
-            .with(any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.acmeApi.getACMEFederationCertificateChain(any())
+        }.wasInvoked(once)
 
         certificateList.forEach { certificateValue ->
-            verify(arrangement.coreCryptoCentral)
-                .suspendFunction(arrangement.coreCryptoCentral::registerIntermediateCa)
-                .with(eq(certificateValue))
-                .wasInvoked(once)
+            coVerify {
+                arrangement.coreCryptoCentral.registerIntermediateCa(eq(certificateValue))
+            }.wasInvoked(once)
         }
     }
 
@@ -944,20 +870,17 @@ class E2EIRepositoryTest {
         // Then
         result.shouldFail()
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::getE2EISettings)
-            .with()
-            .wasInvoked(once)
+        coVerify {
+            arrangement.userConfigRepository.getE2EISettings()
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::getACMEFederationCertificateChain)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.acmeApi.getACMEFederationCertificateChain(any())
+        }.wasNotInvoked()
 
-        verify(arrangement.coreCryptoCentral)
-            .suspendFunction(arrangement.coreCryptoCentral::registerIntermediateCa)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.coreCryptoCentral.registerIntermediateCa(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -981,25 +904,21 @@ class E2EIRepositoryTest {
         // Then
         result.shouldSucceed()
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::getE2EISettings)
-            .with()
-            .wasInvoked(once)
+        coVerify {
+            arrangement.userConfigRepository.getE2EISettings()
+        }.wasInvoked(once)
 
-        verify(arrangement.acmeApi)
-            .suspendFunction(arrangement.acmeApi::getTrustAnchors)
-            .with(eq(RANDOM_URL))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.acmeApi.getTrustAnchors(eq(RANDOM_URL))
+        }.wasInvoked(once)
 
-        verify(arrangement.coreCryptoCentral)
-            .suspendFunction(arrangement.coreCryptoCentral::registerTrustAnchors)
-            .with(eq(Arrangement.RANDOM_BYTE_ARRAY.decodeToString()))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.coreCryptoCentral.registerTrustAnchors(eq(Arrangement.RANDOM_BYTE_ARRAY.decodeToString()))
+        }.wasInvoked(once)
 
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setShouldFetchE2EITrustAnchors)
-            .with(eq(false))
-            .wasInvoked(once)
+        verify {
+            arrangement.userConfigRepository.setShouldFetchE2EITrustAnchors(eq(false))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -1016,9 +935,9 @@ class E2EIRepositoryTest {
         // then
         result.shouldSucceed()
 
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::getShouldFetchE2EITrustAnchor)
-            .wasInvoked(once)
+        verify {
+            arrangement.userConfigRepository.getShouldFetchE2EITrustAnchor()
+        }.wasInvoked(once)
     }
 
     @Test
@@ -1031,9 +950,9 @@ class E2EIRepositoryTest {
             assertIs<E2EIFailure.Disabled>(it)
         }
 
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::getE2EISettings)
-            .wasInvoked(once)
+        verify {
+            arrangement.userConfigRepository.getE2EISettings()
+        }.wasInvoked(once)
     }
 
     @Test
@@ -1046,9 +965,9 @@ class E2EIRepositoryTest {
             assertIs<E2EIFailure.MissingDiscoveryUrl>(it)
         }
 
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::getE2EISettings)
-            .wasInvoked(once)
+        verify {
+            arrangement.userConfigRepository.getE2EISettings()
+        }.wasInvoked(once)
     }
 
     @Test
@@ -1061,190 +980,167 @@ class E2EIRepositoryTest {
             assertEquals(RANDOM_URL, it)
         }
 
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::getE2EISettings)
-            .wasInvoked(once)
+        verify {
+            arrangement.userConfigRepository.getE2EISettings()
+        }.wasInvoked(once)
     }
 
     private class Arrangement {
 
-        fun withGetE2EIClientSuccessful() = apply {
-            given(e2eiClientProvider)
-                .suspendFunction(e2eiClientProvider::getE2EIClient)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(e2eiClient))
+        suspend fun withGetE2EIClientSuccessful() = apply {
+            coEvery {
+                e2eiClientProvider.getE2EIClient(any(), any())
+            }.returns(Either.Right(e2eiClient))
         }
 
-        fun withGetCoreCryptoSuccessful() = apply {
-            given(mlsClientProvider)
-                .suspendFunction(mlsClientProvider::getCoreCrypto)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(coreCryptoCentral))
+        suspend fun withGetCoreCryptoSuccessful() = apply {
+            coEvery {
+                mlsClientProvider.getCoreCrypto(any())
+            }.returns(Either.Right(coreCryptoCentral))
         }
 
-        fun withE2EIClientLoadDirectoriesSuccessful() = apply {
-            given(e2eiClient)
-                .suspendFunction(e2eiClient::directoryResponse)
-                .whenInvokedWith(anything())
-                .thenReturn(ACME_DIRECTORIES)
+        suspend fun withE2EIClientLoadDirectoriesSuccessful() = apply {
+            coEvery {
+                e2eiClient.directoryResponse(any())
+            }.returns(ACME_DIRECTORIES)
         }
 
-        fun withGetNewAccountSuccessful() = apply {
-            given(e2eiClient)
-                .suspendFunction(e2eiClient::getNewAccountRequest)
-                .whenInvokedWith(anything())
-                .thenReturn(RANDOM_BYTE_ARRAY)
+        suspend fun withGetNewAccountSuccessful() = apply {
+            coEvery {
+                e2eiClient.getNewAccountRequest(any())
+            }.returns(RANDOM_BYTE_ARRAY)
         }
 
-        fun withGetNewOrderSuccessful() = apply {
-            given(e2eiClient)
-                .suspendFunction(e2eiClient::getNewOrderRequest)
-                .whenInvokedWith(anything())
-                .thenReturn(RANDOM_BYTE_ARRAY)
+        suspend fun withGetNewOrderSuccessful() = apply {
+            coEvery {
+                e2eiClient.getNewOrderRequest(any())
+            }.returns(RANDOM_BYTE_ARRAY)
         }
 
-        fun withGetNewAuthzRequestSuccessful() = apply {
-            given(e2eiClient)
-                .suspendFunction(e2eiClient::getNewAuthzRequest)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(RANDOM_BYTE_ARRAY)
+        suspend fun withGetNewAuthzRequestSuccessful() = apply {
+            coEvery {
+                e2eiClient.getNewAuthzRequest(any(), any())
+            }.returns(RANDOM_BYTE_ARRAY)
         }
 
-        fun withCheckOrderRequestSuccessful() = apply {
-            given(e2eiClient)
-                .suspendFunction(e2eiClient::checkOrderRequest)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(RANDOM_BYTE_ARRAY)
+        suspend fun withCheckOrderRequestSuccessful() = apply {
+            coEvery {
+                e2eiClient.checkOrderRequest(any(), any())
+            }.returns(RANDOM_BYTE_ARRAY)
         }
 
-        fun withFinalizeRequestSuccessful() = apply {
-            given(e2eiClient)
-                .suspendFunction(e2eiClient::finalizeRequest)
-                .whenInvokedWith(anything())
-                .thenReturn(RANDOM_BYTE_ARRAY)
+        suspend fun withFinalizeRequestSuccessful() = apply {
+            coEvery {
+                e2eiClient.finalizeRequest(any())
+            }.returns(RANDOM_BYTE_ARRAY)
         }
 
-        fun withCertificateRequestSuccessful() = apply {
-            given(e2eiClient)
-                .suspendFunction(e2eiClient::certificateRequest)
-                .whenInvokedWith(anything())
-                .thenReturn(RANDOM_BYTE_ARRAY)
+        suspend fun withCertificateRequestSuccessful() = apply {
+            coEvery {
+                e2eiClient.certificateRequest(any())
+            }.returns(RANDOM_BYTE_ARRAY)
         }
 
-        fun withRotateKeysAndMigrateConversationsReturns(result: Either<E2EIFailure, Unit>) = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::rotateKeysAndMigrateConversations)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(result)
+        suspend fun withRotateKeysAndMigrateConversationsReturns(result: Either<E2EIFailure, Unit>) = apply {
+            coEvery {
+                mlsConversationRepository.rotateKeysAndMigrateConversations(any(), any(), any(), any())
+            }.returns(result)
         }
 
-        fun withCurrentClientIdProviderSuccessful() = apply {
-            given(currentClientIdProvider)
-                .suspendFunction(currentClientIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Right(TestClient.CLIENT_ID))
+        suspend fun withCurrentClientIdProviderSuccessful() = apply {
+            coEvery {
+                currentClientIdProvider.invoke()
+            }.returns(Either.Right(TestClient.CLIENT_ID))
         }
 
-        fun withFinalizeResponseSuccessful() = apply {
-            given(e2eiClient)
-                .suspendFunction(e2eiClient::finalizeResponse)
-                .whenInvokedWith(anything())
-                .thenReturn("")
+        suspend fun withFinalizeResponseSuccessful() = apply {
+            coEvery {
+                e2eiClient.finalizeResponse(any())
+            }.returns("")
         }
 
-        fun withCheckOrderResponseSuccessful() = apply {
-            given(e2eiClient)
-                .suspendFunction(e2eiClient::checkOrderResponse)
-                .whenInvokedWith(anything())
-                .thenReturn("")
+        suspend fun withCheckOrderResponseSuccessful() = apply {
+            coEvery {
+                e2eiClient.checkOrderResponse(any())
+            }.returns("")
         }
 
-        fun withGetNewDpopChallengeRequest() = apply {
-            given(e2eiClient)
-                .suspendFunction(e2eiClient::getNewDpopChallengeRequest)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(RANDOM_BYTE_ARRAY)
+        suspend fun withGetNewDpopChallengeRequest() = apply {
+            coEvery {
+                e2eiClient.getNewDpopChallengeRequest(any(), any())
+            }.returns(RANDOM_BYTE_ARRAY)
         }
 
-        fun withGetNewOidcChallengeRequest() = apply {
-            given(e2eiClient)
-                .suspendFunction(e2eiClient::getNewOidcChallengeRequest)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(RANDOM_BYTE_ARRAY)
+        suspend fun withGetNewOidcChallengeRequest() = apply {
+            coEvery {
+                e2eiClient.getNewOidcChallengeRequest(any(), any(), any())
+            }.returns(RANDOM_BYTE_ARRAY)
         }
 
-        fun withSetOrderResponseSuccessful() = apply {
-            given(e2eiClient)
-                .suspendFunction(e2eiClient::setOrderResponse)
-                .whenInvokedWith(anything())
-                .thenReturn(ACME_ORDER)
+        suspend fun withSetOrderResponseSuccessful() = apply {
+            coEvery {
+                e2eiClient.setOrderResponse(any())
+            }.returns(ACME_ORDER)
         }
 
-        fun withSetAuthzResponseSuccessful() = apply {
-            given(e2eiClient)
-                .suspendFunction(e2eiClient::setAuthzResponse)
-                .whenInvokedWith(anything())
-                .thenReturn(OIDC_AUTHZ)
+        suspend fun withSetAuthzResponseSuccessful() = apply {
+            coEvery {
+                e2eiClient.setAuthzResponse(any())
+            }.returns(OIDC_AUTHZ)
         }
 
-        fun withGetMLSClientSuccessful() = apply {
-            given(mlsClientProvider)
-                .suspendFunction(mlsClientProvider::getMLSClient)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(mlsClient))
+        suspend fun withGetMLSClientSuccessful() = apply {
+            coEvery {
+                mlsClientProvider.getMLSClient(any())
+            }.returns(Either.Right(mlsClient))
         }
 
         fun withGettingE2EISettingsReturns(result: Either<StorageFailure, E2EISettings>) = apply {
-            given(userConfigRepository)
-                .function(userConfigRepository::getE2EISettings)
-                .whenInvoked()
-                .thenReturn(result)
+            every {
+                userConfigRepository.getE2EISettings()
+            }.returns(result)
         }
 
         fun withGetShouldFetchE2EITrustAnchors(result: Boolean) = apply {
-            given(userConfigRepository)
-                .function(userConfigRepository::getShouldFetchE2EITrustAnchor)
-                .whenInvoked()
-                .thenReturn(result)
+            every {
+                userConfigRepository.getShouldFetchE2EITrustAnchor()
+            }.returns(result)
         }
 
         fun withSetShouldFetchE2EIGetTrustAnchors() = apply {
-            given(userConfigRepository)
-                .function(userConfigRepository::setShouldFetchE2EITrustAnchors)
-                .whenInvokedWith(any())
-                .thenReturn(Unit)
+            every {
+                userConfigRepository.setShouldFetchE2EITrustAnchors(any())
+            }.returns(Unit)
         }
 
-        fun withAcmeDirectoriesApiSucceed() = apply {
-            given(acmeApi)
-                .suspendFunction(acmeApi::getACMEDirectories)
-                .whenInvokedWith(any())
-                .thenReturn(NetworkResponse.Success(ACME_DIRECTORIES_RESPONSE, mapOf(), 200))
+        suspend fun withAcmeDirectoriesApiSucceed() = apply {
+            coEvery {
+                acmeApi.getACMEDirectories(any())
+            }.returns(NetworkResponse.Success(ACME_DIRECTORIES_RESPONSE, mapOf(), 200))
         }
 
-        fun withAcmeDirectoriesApiFails() = apply {
-            given(acmeApi)
-                .suspendFunction(acmeApi::getACMEDirectories).whenInvokedWith(any())
-                .thenReturn(NetworkResponse.Error(INVALID_REQUEST_ERROR))
+        suspend fun withAcmeDirectoriesApiFails() = apply {
+            coEvery {
+                acmeApi.getACMEDirectories(any())
+            }.returns(NetworkResponse.Error(INVALID_REQUEST_ERROR))
         }
 
-        fun withSendAcmeRequestApiSucceed() = apply {
-            given(acmeApi)
-                .suspendFunction(acmeApi::sendACMERequest)
-                .whenInvokedWith(any(), any())
-                .thenReturn(NetworkResponse.Success(ACME_REQUEST_RESPONSE, mapOf(), 200))
+        suspend fun withSendAcmeRequestApiSucceed() = apply {
+            coEvery {
+                acmeApi.sendACMERequest(any(), any())
+            }.returns(NetworkResponse.Success(ACME_REQUEST_RESPONSE, mapOf(), 200))
         }
 
-        fun withSendAcmeRequestApiFails() = apply {
-            given(acmeApi)
-                .suspendFunction(acmeApi::sendACMERequest)
-                .whenInvokedWith(any(), any())
-                .thenReturn(NetworkResponse.Error(INVALID_REQUEST_ERROR))
+        suspend fun withSendAcmeRequestApiFails() = apply {
+            coEvery {
+                acmeApi.sendACMERequest(any(), any())
+            }.returns(NetworkResponse.Error(INVALID_REQUEST_ERROR))
         }
 
-        fun withSendAuthorizationRequestSucceed(url: String, challengeType: DtoAuthorizationChallengeType) = apply {
-            given(acmeApi).suspendFunction(acmeApi::sendAuthorizationRequest).whenInvokedWith(eq(url), any())
-                .thenReturn(
+        suspend fun withSendAuthorizationRequestSucceed(url: String, challengeType: DtoAuthorizationChallengeType) = apply {
+            coEvery {
+                acmeApi.sendAuthorizationRequest(eq(url), any())
+            }.returns(
                     NetworkResponse.Success(
                         ACME_AUTHORIZATION_RESPONSE.copy(challengeType = challengeType),
                         headers = HEADERS,
@@ -1253,74 +1149,64 @@ class E2EIRepositoryTest {
                 )
         }
 
-        fun withSendAuthorizationRequestFails() = apply {
-            given(acmeApi)
-                .suspendFunction(acmeApi::sendAuthorizationRequest)
-                .whenInvokedWith(any(), any())
-                .thenReturn(NetworkResponse.Error(INVALID_REQUEST_ERROR))
+        suspend fun withSendAuthorizationRequestFails() = apply {
+            coEvery {
+                acmeApi.sendAuthorizationRequest(any(), any())
+            }.returns(NetworkResponse.Error(INVALID_REQUEST_ERROR))
         }
 
-        fun withSendChallengeRequestApiSucceed() = apply {
-            given(acmeApi)
-                .suspendFunction(acmeApi::sendChallengeRequest)
-                .whenInvokedWith(any(), any())
-                .thenReturn(NetworkResponse.Success(ACME_CHALLENGE_RESPONSE, mapOf(), 200))
+        suspend fun withSendChallengeRequestApiSucceed() = apply {
+            coEvery {
+                acmeApi.sendChallengeRequest(any(), any())
+            }.returns(NetworkResponse.Success(ACME_CHALLENGE_RESPONSE, mapOf(), 200))
         }
 
-        fun withSendChallengeRequestApiSucceedWithInvalidStatus() = apply {
-            given(acmeApi)
-                .suspendFunction(acmeApi::sendChallengeRequest)
-                .whenInvokedWith(any(), any())
-                .thenReturn(NetworkResponse.Success(ACME_CHALLENGE_RESPONSE.copy(status = "invalid"), mapOf(), 200))
+        suspend fun withSendChallengeRequestApiSucceedWithInvalidStatus() = apply {
+            coEvery {
+                acmeApi.sendChallengeRequest(any(), any())
+            }.returns(NetworkResponse.Success(ACME_CHALLENGE_RESPONSE.copy(status = "invalid"), mapOf(), 200))
         }
 
-        fun withSendChallengeRequestApiFails() = apply {
-            given(acmeApi)
-                .suspendFunction(acmeApi::sendChallengeRequest)
-                .whenInvokedWith(any(), any())
-                .thenReturn(NetworkResponse.Error(INVALID_REQUEST_ERROR))
+        suspend fun withSendChallengeRequestApiFails() = apply {
+            coEvery {
+                acmeApi.sendChallengeRequest(any(), any())
+            }.returns(NetworkResponse.Error(INVALID_REQUEST_ERROR))
         }
 
-        fun withAcmeFederationApiSucceed(certificateList: List<String>) = apply {
-            given(acmeApi)
-                .suspendFunction(acmeApi::getACMEFederationCertificateChain)
-                .whenInvokedWith(any())
-                .thenReturn(NetworkResponse.Success(certificateList, mapOf(), 200))
+        suspend fun withAcmeFederationApiSucceed(certificateList: List<String>) = apply {
+            coEvery {
+                acmeApi.getACMEFederationCertificateChain(any())
+            }.returns(NetworkResponse.Success(certificateList, mapOf(), 200))
         }
 
-        fun withAcmeFederationApiFails() = apply {
-            given(acmeApi)
-                .suspendFunction(acmeApi::getACMEFederationCertificateChain)
-                .whenInvokedWith(any())
-                .thenReturn(NetworkResponse.Error(INVALID_REQUEST_ERROR))
+        suspend fun withAcmeFederationApiFails() = apply {
+            coEvery {
+                acmeApi.getACMEFederationCertificateChain(any())
+            }.returns(NetworkResponse.Error(INVALID_REQUEST_ERROR))
         }
 
-        fun withFetchAcmeTrustAnchorsApiFails() = apply {
-            given(acmeApi)
-                .suspendFunction(acmeApi::getTrustAnchors)
-                .whenInvokedWith(any())
-                .thenReturn(NetworkResponse.Error(INVALID_REQUEST_ERROR))
+        suspend fun withFetchAcmeTrustAnchorsApiFails() = apply {
+            coEvery {
+                acmeApi.getTrustAnchors(any())
+            }.returns(NetworkResponse.Error(INVALID_REQUEST_ERROR))
         }
 
-        fun withFetchAcmeTrustAnchorsApiSucceed() = apply {
-            given(acmeApi)
-                .suspendFunction(acmeApi::getTrustAnchors)
-                .whenInvokedWith(any())
-                .thenReturn(NetworkResponse.Success(RANDOM_BYTE_ARRAY, mapOf(), 200))
+        suspend fun withFetchAcmeTrustAnchorsApiSucceed() = apply {
+            coEvery {
+                acmeApi.getTrustAnchors(any())
+            }.returns(NetworkResponse.Success(RANDOM_BYTE_ARRAY, mapOf(), 200))
         }
 
-        fun withRegisterIntermediateCABag() = apply {
-            given(coreCryptoCentral)
-                .suspendFunction(coreCryptoCentral::registerIntermediateCa)
-                .whenInvokedWith(any())
-                .thenDoNothing()
+        suspend fun withRegisterIntermediateCABag() = apply {
+            coEvery {
+                coreCryptoCentral.registerIntermediateCa(any())
+            }.returns(Unit)
         }
 
-        fun withRegisterTrustAnchors() = apply {
-            given(coreCryptoCentral)
-                .suspendFunction(coreCryptoCentral::registerTrustAnchors)
-                .whenInvokedWith(any())
-                .thenReturn(Unit)
+        suspend fun withRegisterTrustAnchors() = apply {
+            coEvery {
+                coreCryptoCentral.registerTrustAnchors(any())
+            }.returns(Unit)
         }
 
         @Mock

@@ -25,16 +25,14 @@ import com.wire.kalium.logic.feature.user.IsFileSharingEnabledUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class IsFileSharingEnabledUseCaseTest {
 
     @Test
@@ -48,8 +46,9 @@ class IsFileSharingEnabledUseCaseTest {
         val actual = isFileSharingEnabledUseCase.invoke()
         assertEquals(expectedValue, actual)
 
-        verify(arrangement.userConfigRepository).invocation { isFileSharingEnabled() }
-            .wasInvoked(exactly = once)
+        verify {
+            arrangement.userConfigRepository.isFileSharingEnabled()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -63,9 +62,9 @@ class IsFileSharingEnabledUseCaseTest {
         // When
         isFileSharingEnabledUseCase.invoke()
 
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::isFileSharingEnabled)
-            .wasInvoked(exactly = once)
+        verify {
+            arrangement.userConfigRepository.isFileSharingEnabled()
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -75,19 +74,17 @@ class IsFileSharingEnabledUseCaseTest {
         val isFileSharingEnabledUseCase = IsFileSharingEnabledUseCaseImpl(userConfigRepository)
 
         fun withSuccessfulResponse(expectedValue: FileSharingStatus): Arrangement {
-            given(userConfigRepository)
-                .function(userConfigRepository::isFileSharingEnabled)
-                .whenInvoked()
-                .thenReturn(Either.Right(expectedValue))
+            every {
+                userConfigRepository.isFileSharingEnabled()
+            }.returns(Either.Right(expectedValue))
 
             return this
         }
 
         fun withIsFileSharingEnabledErrorResponse(storageFailure: StorageFailure): Arrangement {
-            given(userConfigRepository)
-                .function(userConfigRepository::isFileSharingEnabled)
-                .whenInvoked()
-                .thenReturn(Either.Left(storageFailure))
+            every {
+                userConfigRepository.isFileSharingEnabled()
+            }.returns(Either.Left(storageFailure))
             return this
         }
 

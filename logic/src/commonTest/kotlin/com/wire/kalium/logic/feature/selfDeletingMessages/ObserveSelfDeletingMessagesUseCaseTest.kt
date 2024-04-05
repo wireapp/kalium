@@ -30,11 +30,10 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -46,12 +45,11 @@ import kotlin.time.toDuration
 
 class ObserveSelfDeletingMessagesUseCaseTest {
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenErrorWhenFetchingTeamSettings_whenObservingSelfDeletingStatus_thenFinalTimerMatchesTheStoredConversationOne() = runTest {
         val conversationId = ConversationId("conversationId", "domain")
         val conversationDuration = 3600.toDuration(DurationUnit.SECONDS)
-        val storedConversationStatus = Companion.TEST_CONVERSION.copy(
+        val storedConversationStatus = TEST_CONVERSION.copy(
             messageTimer = conversationDuration
         )
         val storedTeamSettingsFlow = flowOf(Either.Left(StorageFailure.Generic(RuntimeException("DB failed"))))
@@ -63,13 +61,12 @@ class ObserveSelfDeletingMessagesUseCaseTest {
 
         val result = observeSelfDeletionMessagesFlag(conversationId, true)
 
-        verify(arrangement.userConfigRepository)
-            .coroutine { observeTeamSettingsSelfDeletingStatus() }
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userConfigRepository.observeTeamSettingsSelfDeletingStatus()
+        }.wasInvoked(exactly = once)
         assertEquals(storedConversationStatus.messageTimer, result.first().duration)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenTeamSettingsEnabledButNotEnforcedValue_whenObserving_thenFinalTimerMatchesTheStoredGroupConversationOne() = runTest {
         val conversationId = ConversationId("conversationId", "domain")
@@ -97,15 +94,14 @@ class ObserveSelfDeletingMessagesUseCaseTest {
         val result = observeSelfDeletionMessagesFlag(conversationId, true)
 
         with(arrangement) {
-            verify(userConfigRepository)
-                .coroutine { observeTeamSettingsSelfDeletingStatus() }
-                .wasInvoked(exactly = once)
+            coVerify {
+                userConfigRepository.observeTeamSettingsSelfDeletingStatus()
+            }.wasInvoked(exactly = once)
 
             assertEquals(expectedSelfDeletionStatus.selfDeletionTimer, result.first())
         }
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenEnforcedStoredValueForTeamSettingsAndConversation_whenObserving_thenFinalTimerMatchesTheStoredTeamSettingsOne() = runTest {
         val conversationId = ConversationId("conversationId", "domain")
@@ -127,15 +123,13 @@ class ObserveSelfDeletingMessagesUseCaseTest {
 
         val result = observeSelfDeletionTimer(conversationId, true)
 
-        verify(arrangement.userConfigRepository)
-            .coroutine { observeTeamSettingsSelfDeletingStatus() }
-            .wasInvoked(exactly = once)
-
+        coVerify {
+            arrangement.userConfigRepository.observeTeamSettingsSelfDeletingStatus()
+        }.wasInvoked(exactly = once)
 
         assertEquals(storedTeamSettingsDuration, result.first().duration)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenNoEnforcedTeamAndConversationSelfDeletionSetting_whenObserving_thenFinalTimerMatchesTheUserStoredOne() = runTest {
         val conversationId = ConversationId("conversationId", "domain")
@@ -156,15 +150,15 @@ class ObserveSelfDeletingMessagesUseCaseTest {
 
         val result = observeSelfDeletionTimer(conversationId, true)
 
-        verify(arrangement.userConfigRepository).coroutine { observeTeamSettingsSelfDeletingStatus() }
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userConfigRepository.observeTeamSettingsSelfDeletingStatus()
+        }.wasInvoked(exactly = once)
 
 //         verify(arrangement.userConfigRepository).invocation { observeConversationSelfDeletionTimer(conversationId) }
 //             .wasNotInvoked()
         assertEquals(conversationDuration, result.first().duration)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenNoEnforcedTeamConversationAndUserStoredSelfDeletionSetting_whenObserving_thenFinalTimerMatchesTheUserStoredOne() = runTest {
         val conversationId = ConversationId("conversationId", "domain")
@@ -188,13 +182,12 @@ class ObserveSelfDeletingMessagesUseCaseTest {
 
         val result = observeSelfDeletionTimer(conversationId, true)
 
-        verify(arrangement.userConfigRepository)
-            .coroutine { observeTeamSettingsSelfDeletingStatus() }
-            .wasInvoked(exactly = once)
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::observeById)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userConfigRepository.observeTeamSettingsSelfDeletingStatus()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.observeById(any())
+        }.wasInvoked(exactly = once)
 
         assertEquals(storedConversationStatus.messageTimer, result.first().duration)
     }
@@ -214,19 +207,18 @@ class ObserveSelfDeletingMessagesUseCaseTest {
             ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl(userConfigRepository, conversationRepository)
         }
 
-        fun withStoredConversation(conversation: Conversation) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::observeById)
-                .whenInvokedWith(any())
-                .thenReturn(flowOf(Either.Right(conversation)))
+        suspend fun withStoredConversation(conversation: Conversation) = apply {
+            coEvery {
+                conversationRepository.observeById(any())
+            }.returns(flowOf(Either.Right(conversation)))
         }
 
-        fun withObserveTeamSettingsSelfDeletionStatus(eitherFlow: Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>>) = apply {
-            given(userConfigRepository)
-                .suspendFunction(userConfigRepository::observeTeamSettingsSelfDeletingStatus)
-                .whenInvoked()
-                .thenReturn(eitherFlow)
-        }
+        suspend fun withObserveTeamSettingsSelfDeletionStatus(eitherFlow: Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>>) =
+            apply {
+                coEvery {
+                    userConfigRepository.observeTeamSettingsSelfDeletingStatus()
+                }.returns(eitherFlow)
+            }
 
         fun arrange() = this to observeSelfDeletionStatus
     }

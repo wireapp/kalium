@@ -29,17 +29,15 @@ import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class UnblockUserUseCaseTest {
 
     @Test
@@ -51,10 +49,9 @@ class UnblockUserUseCaseTest {
         val result = unblockUser(TestUser.USER_ID)
 
         assertTrue(result is UnblockUserResult.Failure)
-        verify(arrangement.connectionRepository)
-            .suspendFunction(arrangement.connectionRepository::updateConnectionStatus)
-            .with(eq(TestUser.USER_ID), eq(ConnectionState.ACCEPTED))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.connectionRepository.updateConnectionStatus(eq(TestUser.USER_ID), eq(ConnectionState.ACCEPTED))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -66,10 +63,9 @@ class UnblockUserUseCaseTest {
         val result = unblockUser(TestUser.USER_ID)
 
         assertTrue(result is UnblockUserResult.Success)
-        verify(arrangement.connectionRepository)
-            .suspendFunction(arrangement.connectionRepository::updateConnectionStatus)
-            .with(eq(TestUser.USER_ID), eq(ConnectionState.ACCEPTED))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.connectionRepository.updateConnectionStatus(eq(TestUser.USER_ID), eq(ConnectionState.ACCEPTED))
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -78,11 +74,10 @@ class UnblockUserUseCaseTest {
 
         val unblockUser = UnblockUserUseCaseImpl(connectionRepository)
 
-        fun withBlockResult(result: Either<CoreFailure, Connection>) = apply {
-            given(connectionRepository)
-                .suspendFunction(connectionRepository::updateConnectionStatus)
-                .whenInvokedWith(any(), any())
-                .thenReturn(result)
+        suspend fun withBlockResult(result: Either<CoreFailure, Connection>) = apply {
+            coEvery {
+                connectionRepository.updateConnectionStatus(any(), any())
+            }.returns(result)
         }
 
         fun arrange() = this to unblockUser

@@ -33,10 +33,10 @@ import io.mockative.any
 import io.mockative.classOf
 import io.mockative.configure
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -56,15 +56,13 @@ class StartCallUseCaseTest {
 
             startCall.invoke(conversationId)
 
-            verify(arrangement.answerCall)
-                .suspendFunction(arrangement.answerCall::invoke)
-                .with(eq(conversationId))
-                .wasInvoked(once)
+            coVerify {
+                arrangement.answerCall.invoke(eq(conversationId))
+            }.wasInvoked(once)
 
-            verify(arrangement.callManager)
-                .suspendFunction(arrangement.callManager::startCall)
-                .with(any(), any(), any())
-                .wasNotInvoked()
+            coVerify {
+                arrangement.callManager.startCall(any(), any(), any())
+            }.wasNotInvoked()
         }
 
     @Test
@@ -78,15 +76,13 @@ class StartCallUseCaseTest {
 
         startCall.invoke(conversationId, CallType.AUDIO)
 
-        verify(arrangement.callManager)
-            .suspendFunction(arrangement.callManager::startCall)
-            .with(eq(conversationId), eq(CallType.AUDIO), eq(false))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.callManager.startCall(eq(conversationId), eq(CallType.AUDIO), eq(false))
+        }.wasInvoked(once)
 
-        verify(arrangement.answerCall)
-            .suspendFunction(arrangement.answerCall::invoke)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.answerCall.invoke(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -101,10 +97,9 @@ class StartCallUseCaseTest {
         val result = startCall.invoke(conversationId, CallType.AUDIO)
 
         assertIs<StartCallUseCase.Result.Success>(result)
-        verify(arrangement.answerCall)
-            .suspendFunction(arrangement.answerCall::invoke)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.answerCall.invoke(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -117,10 +112,9 @@ class StartCallUseCaseTest {
 
         startCall.invoke(conversationId, CallType.AUDIO)
 
-        verify(arrangement.callManager)
-            .suspendFunction(arrangement.callManager::startCall)
-            .with(any(), any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.callManager.startCall(any(), any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -147,20 +141,18 @@ class StartCallUseCaseTest {
 
         startCall.invoke(conversationId, CallType.AUDIO)
 
-        verify(arrangement.callManager)
-            .suspendFunction(arrangement.callManager::startCall)
-            .with(eq(conversationId), eq(CallType.AUDIO), eq(true))
-            .wasInvoked(once)
-        verify(arrangement.answerCall)
-            .suspendFunction(arrangement.answerCall::invoke)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.callManager.startCall(eq(conversationId), eq(CallType.AUDIO), eq(true))
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.answerCall.invoke(any())
+        }.wasNotInvoked()
     }
 
     private class Arrangement {
 
         @Mock
-        val callManager = configure(mock(classOf<CallManager>())) { stubsUnitByDefault = true }
+        val callManager = configure(mock(classOf<CallManager>())) { }
 
         @Mock
         val syncManager = mock(classOf<SyncManager>())
@@ -185,31 +177,26 @@ class StartCallUseCaseTest {
             answerCall
         )
 
-        fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))
-        fun withAnIncomingCall() = apply {
-            given(callRepository)
-                .suspendFunction(callRepository::incomingCallsFlow)
-                .whenInvoked()
-                .then {
-                    flowOf(listOf(TestCall.groupIncomingCall(TestConversation.ID)))
-                }
+        suspend fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))
+        suspend fun withAnIncomingCall() = apply {
+            coEvery {
+                callRepository.incomingCallsFlow()
+            }.returns(flowOf(listOf(TestCall.groupIncomingCall(TestConversation.ID))))
         }
 
-        fun withNoIncomingCall() = apply {
-            given(callRepository)
-                .suspendFunction(callRepository::incomingCallsFlow)
-                .whenInvoked()
-                .then { flowOf(listOf()) }
+        suspend fun withNoIncomingCall() = apply {
+            coEvery {
+                callRepository.incomingCallsFlow()
+            }.returns(flowOf(listOf()))
         }
 
-        fun withWaitingForSyncFailing() =
+        suspend fun withWaitingForSyncFailing() =
             withSyncReturning(Either.Left(NetworkFailure.NoNetworkConnection(null)))
 
-        private fun withSyncReturning(result: Either<CoreFailure, Unit>) = apply {
-            given(syncManager)
-                .suspendFunction(syncManager::waitUntilLiveOrFailure)
-                .whenInvoked()
-                .then { result }
+        private suspend fun withSyncReturning(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                syncManager.waitUntilLiveOrFailure()
+            }.returns(result)
         }
 
         fun arrange() = this to startCallUseCase

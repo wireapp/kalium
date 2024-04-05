@@ -22,16 +22,15 @@ import com.wire.kalium.logic.feature.message.EphemeralEventsNotificationManager
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
-import io.mockative.thenDoNothing
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
 internal interface EphemeralEventsNotificationManagerArrangement {
 
     val ephemeralNotifications: EphemeralEventsNotificationManager
-    fun withEphemeralNotification(ephemeralsFlow: Flow<LocalNotification> = flowOf())
+    suspend fun withEphemeralNotification(ephemeralsFlow: Flow<LocalNotification> = flowOf())
 }
 
 internal open class EphemeralEventsNotificationManagerArrangementImpl : EphemeralEventsNotificationManagerArrangement {
@@ -39,25 +38,9 @@ internal open class EphemeralEventsNotificationManagerArrangementImpl : Ephemera
     @Mock
     override val ephemeralNotifications = mock(classOf<EphemeralEventsNotificationManager>())
 
-    init {
-        given(ephemeralNotifications)
-            .suspendFunction(ephemeralNotifications::scheduleDeleteConversationNotification)
-            .whenInvokedWith(any())
-            .thenDoNothing()
-        given(ephemeralNotifications)
-            .suspendFunction(ephemeralNotifications::scheduleDeleteMessageNotification)
-            .whenInvokedWith(any())
-            .thenDoNothing()
-        given(ephemeralNotifications)
-            .suspendFunction(ephemeralNotifications::scheduleEditMessageNotification)
-            .whenInvokedWith(any())
-            .thenDoNothing()
-    }
-
-    override fun withEphemeralNotification(ephemeralsFlow: Flow<LocalNotification>) {
-        given(ephemeralNotifications)
-            .suspendFunction(ephemeralNotifications::observeEphemeralNotifications)
-            .whenInvoked()
-            .thenReturn(ephemeralsFlow)
+    override suspend fun withEphemeralNotification(ephemeralsFlow: Flow<LocalNotification>) {
+        coEvery {
+            ephemeralNotifications.observeEphemeralNotifications()
+        }.returns(ephemeralsFlow)
     }
 }

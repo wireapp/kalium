@@ -33,7 +33,9 @@ import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -67,31 +69,35 @@ class RegisterAccountRepositoryTest {
     fun givenApiRequestSuccess_whenRequestingActivationCodeForAnEmail_thenSuccessIsPropagated() = runTest {
         val expected = Unit
         val email = "user@domain.de"
-        given(registerApi).coroutine { requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email)) }
-            .then { NetworkResponse.Success(expected, mapOf(), 200) }
+        coEvery {
+            registerApi.requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email))
+        }.returns(NetworkResponse.Success(expected, mapOf(), 200))
 
         val actual = registerAccountRepository.requestEmailActivationCode(email)
 
         assertIs<Either.Right<Unit>>(actual)
         assertEquals(expected, actual.value)
 
-        verify(registerApi).coroutine { requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email)) }
-            .wasInvoked(exactly = once)
+        coVerify {
+            registerApi.requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenApiRequestFail_whenRequestingActivationCodeForAnEmail_thenNetworkFailureIsPropagated() = runTest {
         val expected = TestNetworkException.generic
         val email = "user@domain.de"
-        given(registerApi).coroutine { requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email)) }
-            .then { NetworkResponse.Error(expected) }
+        coEvery {
+            registerApi.requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email))
+        }.returns(NetworkResponse.Error(expected))
 
         val actual = registerAccountRepository.requestEmailActivationCode(email)
 
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
         assertEquals(expected, actual.value.kaliumException)
-        verify(registerApi).coroutine { requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email)) }
-            .wasInvoked(exactly = once)
+        coVerify {
+            registerApi.requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -99,15 +105,18 @@ class RegisterAccountRepositoryTest {
         val expected = Unit
         val email = "user@domain.de"
         val code = "123456"
-        given(registerApi).coroutine { activate(RegisterApi.ActivationParam.Email(email, code)) }
-            .then { NetworkResponse.Success(expected, mapOf(), 200) }
+        coEvery {
+            registerApi.activate(RegisterApi.ActivationParam.Email(email, code))
+        }.returns(NetworkResponse.Success(expected, mapOf(), 200))
 
         val actual = registerAccountRepository.verifyActivationCode(email, code)
 
         assertIs<Either.Right<Unit>>(actual)
         assertEquals(expected, actual.value)
 
-        verify(registerApi).coroutine { activate(RegisterApi.ActivationParam.Email(email, code)) }.wasInvoked(exactly = once)
+        coVerify {
+            registerApi.activate(RegisterApi.ActivationParam.Email(email, code))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -115,16 +124,18 @@ class RegisterAccountRepositoryTest {
         val expected = TestNetworkException.generic
         val email = "user@domain.de"
         val code = "123456"
-        given(registerApi)
-            .coroutine { activate(RegisterApi.ActivationParam.Email(email, code)) }
-            .then { NetworkResponse.Error(expected) }
+        coEvery {
+            registerApi.activate(RegisterApi.ActivationParam.Email(email, code))
+        }.returns(NetworkResponse.Error(expected))
 
         val actual = registerAccountRepository.verifyActivationCode(email, code)
 
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
         assertEquals(expected, actual.value.kaliumException)
 
-        verify(registerApi).coroutine { activate(RegisterApi.ActivationParam.Email(email, code)) }.wasInvoked(exactly = once)
+        coVerify {
+            registerApi.activate(RegisterApi.ActivationParam.Email(email, code))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -148,8 +159,8 @@ class RegisterAccountRepositoryTest {
         }
         val expected = Pair(ssoId, accountTokens)
 
-        given(registerApi).coroutine {
-            register(
+        coEvery {
+            registerApi.register(
                 RegisterApi.RegisterParam.PersonalAccount(
                     email = email,
                     emailCode = code,
@@ -158,9 +169,13 @@ class RegisterAccountRepositoryTest {
                     cookieLabel = cookieLabel
                 )
             )
-        }.then { NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200) }
-        given(idMapper).invocation { toSsoId(TEST_USER.ssoID) }.then { ssoId }
-        given(sessionMapper).invocation { fromSessionDTO(SESSION) }.then { accountTokens }
+        }.returns(NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200))
+        every {
+            idMapper.toSsoId(TEST_USER.ssoID)
+        }.returns(ssoId)
+        every {
+            sessionMapper.fromSessionDTO(SESSION)
+        }.returns(accountTokens)
 
         val actual = registerAccountRepository.registerPersonalAccountWithEmail(
             email = email,
@@ -173,8 +188,8 @@ class RegisterAccountRepositoryTest {
         assertIs<Either.Right<Pair<SsoId?, AccountTokens>>>(actual)
         assertEquals(expected, actual.value)
 
-        verify(registerApi).coroutine {
-            register(
+        coVerify {
+            registerApi.register(
                 RegisterApi.RegisterParam.PersonalAccount(
                     email = email,
                     emailCode = code,
@@ -183,10 +198,13 @@ class RegisterAccountRepositoryTest {
                     cookieLabel = cookieLabel
                 )
             )
-        }
-            .wasInvoked(exactly = once)
-        verify(sessionMapper).function(sessionMapper::fromSessionDTO).with(any()).wasInvoked(exactly = once)
-        verify(idMapper).invocation { toSsoId(TEST_USER.ssoID) }.wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
+        verify {
+            sessionMapper.fromSessionDTO(any())
+        }.wasInvoked(exactly = once)
+        verify {
+            idMapper.toSsoId(TEST_USER.ssoID)
+        }.wasInvoked(exactly = once)
     }
 
     @Suppress("LongMethod")
@@ -214,8 +232,8 @@ class RegisterAccountRepositoryTest {
             }
         val expected = Pair(ssoId, accountTokens)
 
-        given(registerApi).coroutine {
-            register(
+        coEvery {
+            registerApi.register(
                 RegisterApi.RegisterParam.TeamAccount(
                     email = email,
                     emailCode = code,
@@ -226,11 +244,15 @@ class RegisterAccountRepositoryTest {
                     cookieLabel = cookieLabel
                 )
             )
-        }.then { NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200) }
-        given(idMapper).invocation { toSsoId(TEST_USER.ssoID) }.then { ssoId }
-        given(sessionMapper)
-            .invocation { fromSessionDTO(SESSION) }
-            .then { accountTokens }
+        }.returns(
+            NetworkResponse.Success(Pair(TEST_USER, SESSION), mapOf(), 200)
+        )
+        every {
+            idMapper.toSsoId(TEST_USER.ssoID)
+        }.returns(ssoId)
+        every {
+            sessionMapper.fromSessionDTO(SESSION)
+        }.returns(accountTokens)
 
         val actual = registerAccountRepository.registerTeamWithEmail(
             email = email,
@@ -245,8 +267,8 @@ class RegisterAccountRepositoryTest {
         assertIs<Either.Right<Pair<SsoId?, AccountTokens>>>(actual)
         assertEquals(expected, actual.value)
 
-        verify(registerApi).coroutine {
-            register(
+        coVerify {
+            registerApi.register(
                 RegisterApi.RegisterParam.TeamAccount(
                     email = email,
                     emailCode = code,
@@ -258,10 +280,8 @@ class RegisterAccountRepositoryTest {
                 )
             )
         }.wasInvoked(exactly = once)
-        verify(sessionMapper).invocation {
-            fromSessionDTO(SESSION)
-        }.wasInvoked(exactly = once)
-        verify(idMapper).invocation { toSsoId(TEST_USER.ssoID) }.wasInvoked(exactly = once)
+        verify { sessionMapper.fromSessionDTO(SESSION) }.wasInvoked(exactly = once)
+        verify { idMapper.toSsoId(TEST_USER.ssoID) }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -272,8 +292,8 @@ class RegisterAccountRepositoryTest {
         val name = NAME
         val expected = TestNetworkException.generic
         val cookieLabel = "COOKIE_LABEL"
-        given(registerApi).coroutine {
-            register(
+        coEvery {
+            registerApi.register(
                 RegisterApi.RegisterParam.PersonalAccount(
                     email = email,
                     emailCode = code,
@@ -282,7 +302,7 @@ class RegisterAccountRepositoryTest {
                     cookieLabel = cookieLabel
                 )
             )
-        }.then { NetworkResponse.Error(expected) }
+        }.returns(NetworkResponse.Error(expected))
 
         val actual = registerAccountRepository.registerPersonalAccountWithEmail(
             email = email,
@@ -295,8 +315,8 @@ class RegisterAccountRepositoryTest {
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
         assertEquals(expected, actual.value.kaliumException)
 
-        verify(registerApi).coroutine {
-            register(
+        coVerify {
+            registerApi.register(
                 RegisterApi.RegisterParam.PersonalAccount(
                     email = email,
                     emailCode = code,
@@ -306,11 +326,12 @@ class RegisterAccountRepositoryTest {
                 )
             )
         }.wasInvoked(exactly = once)
-        verify(sessionMapper)
-            .function(sessionMapper::fromSessionDTO)
-            .with(any())
-            .wasNotInvoked()
-        verify(idMapper).invocation { toSsoId(TEST_USER.ssoID) }.wasNotInvoked()
+        verify {
+            sessionMapper.fromSessionDTO(any())
+        }.wasNotInvoked()
+        verify {
+            idMapper.toSsoId(TEST_USER.ssoID)
+        }.wasNotInvoked()
 
     }
 

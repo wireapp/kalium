@@ -25,10 +25,9 @@ import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.coEvery
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import okio.IOException
 import kotlin.test.Test
@@ -36,7 +35,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class DoesValidSessionExistUseCaseTest {
 
     @Test
@@ -90,18 +88,16 @@ class DoesValidSessionExistUseCaseTest {
             DoesValidSessionExistUseCase(sessionRepository)
         }
 
-        fun withDoesValidSessionExist(userId: UserId, exists: Boolean) = apply {
-            given(sessionRepository)
-                .suspendFunction(sessionRepository::doesValidSessionExist)
-                .whenInvokedWith(eq(userId))
-                .thenReturn(Either.Right(exists))
+        suspend fun withDoesValidSessionExist(userId: UserId, exists: Boolean) = apply {
+            coEvery {
+                sessionRepository.doesValidSessionExist(eq(userId))
+            }.returns(Either.Right(exists))
         }
 
-        fun withDoesValidSessionExistFailure(failure: StorageFailure) = apply {
-            given(sessionRepository)
-                .suspendFunction(sessionRepository::doesValidSessionExist)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Left(failure))
+        suspend fun withDoesValidSessionExistFailure(failure: StorageFailure) = apply {
+            coEvery {
+                sessionRepository.doesValidSessionExist(any())
+            }.returns(Either.Left(failure))
         }
 
         fun arrange() = this to doesValidSessionExistUseCase

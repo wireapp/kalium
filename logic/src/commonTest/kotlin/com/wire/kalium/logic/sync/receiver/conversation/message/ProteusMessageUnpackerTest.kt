@@ -25,13 +25,13 @@ import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.utils.PlainData
 import com.wire.kalium.cryptography.utils.encryptDataWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
+import com.wire.kalium.logic.data.client.ProteusClientProvider
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PlainMessageBlob
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.ProtoContentMapper
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.client.ProteusClientProvider
-import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.Base64
@@ -43,13 +43,17 @@ import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.every
+import io.mockative.fake.valueOf
+import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
-import io.mockative.matching
+import io.mockative.matchers.PredicateMatcher
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -61,12 +65,15 @@ class ProteusMessageUnpackerTest {
     fun givenNewMessageEvent_whenUnpacking_shouldAskProteusClientForDecryption() = runTest {
         val (arrangement, proteusUnpacker) = Arrangement()
             .withProteusClientDecryptingByteArray(decryptedData = byteArrayOf())
-            .withProtoContentMapperReturning(any(), ProtoContent.Readable(
-                "uuid",
-                MessageContent.Unknown(),
-                false,
-                Conversation.LegalHoldStatus.DISABLED
-            )).arrange()
+            .withProtoContentMapperReturning(
+                AnyMatcher(valueOf()),
+                ProtoContent.Readable(
+                    "uuid",
+                    MessageContent.Unknown(),
+                    false,
+                    Conversation.LegalHoldStatus.DISABLED
+                )
+            ).arrange()
 
         val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
         val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent.decodeToString())
@@ -78,10 +85,9 @@ class ProteusMessageUnpackerTest {
         )
 
         val decodedByteArray = Base64.decodeFromBase64(messageEvent.content.toByteArray())
-        verify(arrangement.proteusClient)
-            .suspendFunction(arrangement.proteusClient::decrypt)
-            .with(matching { it.contentEquals(decodedByteArray) }, eq(cryptoSessionId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.proteusClient.decrypt(matches { it.contentEquals(decodedByteArray) }, eq(cryptoSessionId))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -106,9 +112,12 @@ class ProteusMessageUnpackerTest {
 
         val (_, proteusUnpacker) = Arrangement()
             .withProteusClientDecryptingByteArray(decryptedData = emptyArray)
-            .withProtoContentMapperReturning(matching { it.data.contentEquals(emptyArray) }, externalInstructions)
             .withProtoContentMapperReturning(
-                matching { it.data.contentEquals(protobufExternalContent.encodeToByteArray()) },
+                PredicateMatcher(PlainMessageBlob::class, valueOf()) { it.data.contentEquals(emptyArray) },
+                externalInstructions
+            )
+            .withProtoContentMapperReturning(
+                PredicateMatcher(PlainMessageBlob::class, valueOf()) { it.data.contentEquals(protobufExternalContent.encodeToByteArray()) },
                 ProtoContent.Readable(
                     messageUid,
                     decryptedExternalContent,
@@ -142,30 +151,26 @@ class ProteusMessageUnpackerTest {
         @Mock
         val protoContentMapper = mock(classOf<ProtoContentMapper>())
 
-        init {
-            given(proteusClientProvider)
-                .suspendFunction(proteusClientProvider::getOrError)
-                .whenInvoked()
-                .thenReturn(Either.Right(proteusClient))
-        }
-
-        fun withProteusClientDecryptingByteArray(decryptedData: ByteArray) = apply {
-            given(proteusClient)
-                .suspendFunction(proteusClient::decrypt)
-                .whenInvokedWith(any(), any())
-                .thenReturn(decryptedData)
+        suspend fun withProteusClientDecryptingByteArray(decryptedData: ByteArray) = apply {
+            coEvery {
+                proteusClient.decrypt(any(), any())
+            }.returns(decryptedData)
         }
 
         fun withProtoContentMapperReturning(plainBlobMatcher: Matcher<PlainMessageBlob>, protoContent: ProtoContent) = apply {
-            given(protoContentMapper)
-                .function(protoContentMapper::decodeFromProtobuf)
-                .whenInvokedWith(plainBlobMatcher)
-                .thenReturn(protoContent)
+            every {
+                protoContentMapper.decodeFromProtobuf(matches { plainBlobMatcher.matches(it) })
+            }.returns(protoContent)
         }
 
-        fun arrange() = this to ProteusMessageUnpackerImpl(
-            proteusClientProvider, SELF_USER_ID, protoContentMapper
-        )
+        suspend fun arrange() = run {
+            coEvery {
+                proteusClientProvider.getOrError()
+            }.returns(Either.Right(proteusClient))
+            this to ProteusMessageUnpackerImpl(
+                proteusClientProvider, SELF_USER_ID, protoContentMapper
+            )
+        }
 
         companion object {
             val SELF_USER_ID = UserId("user-id", "domain")

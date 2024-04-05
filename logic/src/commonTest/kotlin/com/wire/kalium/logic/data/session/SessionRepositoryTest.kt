@@ -26,12 +26,10 @@ import com.wire.kalium.persistence.daokaliumdb.AccountInfoEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class SessionRepositoryTest {
 
     /*
@@ -99,7 +97,9 @@ class SessionRepositoryTest {
         val accountInfoValid = sessionMapper.fromAccountInfoEntity(validAccountIndoEntity)
 
         suspend fun withObserveAllAccountList(allSessionsFlow: Flow<List<AccountInfoEntity>>) = apply {
-            given(accountsDAO).coroutine { accountsDAO.observeAllAccountList() }.then { allSessionsFlow }
+            coEvery {
+                accountsDAO.observeAllAccountList()
+            }.returns(allSessionsFlow)
         }
 
         internal fun arrange() = this to sessionRepository

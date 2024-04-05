@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallStatus
 import io.mockative.Mock
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -50,10 +50,9 @@ class ObserveOngoingCallsUseCaseTest {
 
     @Test
     fun givenAnEmptyCallList_whenInvokingObserveOngoingCallsUseCase_thenEmitsAnEmptyListOfCalls() = runTest {
-        given(callRepository)
-            .suspendFunction(callRepository::ongoingCallsFlow)
-            .whenInvoked()
-            .thenReturn(flowOf(listOf()))
+        coEvery {
+            callRepository.ongoingCallsFlow()
+        }.returns(flowOf(listOf()))
 
         val result = observeOngoingCalls()
 
@@ -65,10 +64,9 @@ class ObserveOngoingCallsUseCaseTest {
 
     @Test
     fun givenAnOngoingCallList_whenInvokingObserveOngoingCallsUseCase_thenEmitsAnOngoingListOfCalls() = runTest {
-        given(callRepository)
-            .suspendFunction(callRepository::ongoingCallsFlow)
-            .whenInvoked()
-            .thenReturn(flowOf(listOf(DUMMY_CALL)))
+        coEvery {
+            callRepository.ongoingCallsFlow()
+        }.returns(flowOf(listOf(DUMMY_CALL)))
 
         val result = observeOngoingCalls()
 

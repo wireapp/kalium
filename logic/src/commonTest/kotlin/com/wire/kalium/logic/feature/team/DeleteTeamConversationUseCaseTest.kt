@@ -20,20 +20,20 @@ package com.wire.kalium.logic.feature.team
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.team.TeamRepository
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -51,17 +51,15 @@ class DeleteTeamConversationUseCaseTest {
         val result = deleteTeamConversation(TestConversation.ID)
 
         assertEquals(Result.Success::class, result::class)
-        verify(arrangement.selfTeamIdProvider)
-            .suspendFunction(arrangement.selfTeamIdProvider::invoke)
-            .wasInvoked(once)
-        verify(arrangement.teamRepository)
-            .suspendFunction(arrangement.teamRepository::deleteConversation)
-            .with(eq(TestConversation.ID), eq(TeamId(TestTeam.TEAM.id)))
-            .wasInvoked(once)
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::deleteConversation)
-            .with(eq(TestConversation.ID))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.selfTeamIdProvider.invoke()
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.teamRepository.deleteConversation(eq(TestConversation.ID), eq(TeamId(TestTeam.TEAM.id)))
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.conversationRepository.deleteConversation(eq(TestConversation.ID))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -74,17 +72,15 @@ class DeleteTeamConversationUseCaseTest {
         val result = deleteTeamConversation(TestConversation.ID)
 
         assertEquals(Result.Failure.GenericFailure::class, result::class)
-        verify(arrangement.selfTeamIdProvider)
-            .suspendFunction(arrangement.selfTeamIdProvider::invoke)
-            .wasInvoked(once)
-        verify(arrangement.teamRepository)
-            .suspendFunction(arrangement.teamRepository::deleteConversation)
-            .with(eq(TestConversation.ID), eq(TeamId(TestTeam.TEAM.id)))
-            .wasInvoked(once)
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::deleteConversation)
-            .with(eq(TestConversation.ID))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.selfTeamIdProvider.invoke()
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.teamRepository.deleteConversation(eq(TestConversation.ID), eq(TeamId(TestTeam.TEAM.id)))
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.conversationRepository.deleteConversation(eq(TestConversation.ID))
+        }.wasNotInvoked()
     }
 
     @Test
@@ -97,17 +93,15 @@ class DeleteTeamConversationUseCaseTest {
         val result = deleteTeamConversation(TestConversation.ID)
 
         assertEquals(Result.Failure.NoTeamFailure::class, result::class)
-        verify(arrangement.selfTeamIdProvider)
-            .suspendFunction(arrangement.selfTeamIdProvider::invoke)
-            .wasInvoked(once)
-        verify(arrangement.teamRepository)
-            .suspendFunction(arrangement.teamRepository::deleteConversation)
-            .with(eq(TestConversation.ID), eq(TestTeam.TEAM.id))
-            .wasNotInvoked()
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::deleteConversation)
-            .with(eq(TestConversation.ID))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.selfTeamIdProvider.invoke()
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.teamRepository.deleteConversation(eq(TestConversation.ID), eq(TestTeam.TEAM_ID))
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.conversationRepository.deleteConversation(eq(TestConversation.ID))
+        }.wasNotInvoked()
     }
 
     private class Arrangement {
@@ -127,35 +121,31 @@ class DeleteTeamConversationUseCaseTest {
             deleteTeamConversation = DeleteTeamConversationUseCaseImpl(selfTeamIdProvider, teamRepository, conversationRepository)
         }
 
-        fun withGetSelfTeam(team: Team? = TestTeam.TEAM) = apply {
+        suspend fun withGetSelfTeam(team: Team? = TestTeam.TEAM) = apply {
             val result = team?.id?.let {
                 TeamId(it)
             }
-            given(selfTeamIdProvider)
-                .suspendFunction(selfTeamIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Right(result))
+            coEvery {
+                selfTeamIdProvider.invoke()
+            }.returns(Either.Right(result))
         }
 
-        fun withApiErrorDeletingConversation() = apply {
-            given(teamRepository)
-                .suspendFunction(teamRepository::deleteConversation)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
+        suspend fun withApiErrorDeletingConversation() = apply {
+            coEvery {
+                teamRepository.deleteConversation(any(), any())
+            }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
         }
 
-        fun withSuccessApiDeletingConversation() = apply {
-            given(teamRepository)
-                .suspendFunction(teamRepository::deleteConversation)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withSuccessApiDeletingConversation() = apply {
+            coEvery {
+                teamRepository.deleteConversation(any(), any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withSuccessDeletingConversationLocally() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::deleteConversation)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withSuccessDeletingConversationLocally() = apply {
+            coEvery {
+                conversationRepository.deleteConversation(any())
+            }.returns(Either.Right(Unit))
         }
 
         fun arrange() = this to deleteTeamConversation

@@ -17,18 +17,18 @@
  */
 package com.wire.kalium.logic.feature.scenario
 
+import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.call.Call
-import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.feature.call.scenario.OnMuteStateForSelfUserChanged
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.coEvery
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -48,10 +48,9 @@ class OnMuteStateForSelfUserChangedTest {
 
         onMuteStateForSelfUserChanged.onMuteStateChanged(1, null)
 
-        verify(arrangement.callRepository)
-            .function(arrangement.callRepository::updateIsMutedById)
-            .with(any(), any())
-            .wasNotInvoked()
+        verify {
+            arrangement.callRepository.updateIsMutedById(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -64,10 +63,9 @@ class OnMuteStateForSelfUserChangedTest {
 
         yield()
 
-        verify(arrangement.callRepository)
-            .function(arrangement.callRepository::updateIsMutedById)
-            .with(eq(conversationId), eq(true))
-            .wasInvoked(once)
+        verify {
+            arrangement.callRepository.updateIsMutedById(eq(conversationId), eq(true))
+        }.wasInvoked(once)
     }
 
     companion object {
@@ -85,18 +83,16 @@ class OnMuteStateForSelfUserChangedTest {
             callRepository,
         )
 
-        fun givenNoOngoingCall() = apply {
-            given(callRepository)
-                .suspendFunction(callRepository::establishedCallsFlow)
-                .whenInvoked()
-                .thenReturn(flowOf(listOf()))
+        suspend fun givenNoOngoingCall() = apply {
+            coEvery {
+                callRepository.establishedCallsFlow()
+            }.returns(flowOf(listOf()))
         }
 
-        fun givenAnOngoingCall() = apply {
-            given(callRepository)
-                .suspendFunction(callRepository::establishedCallsFlow)
-                .whenInvoked()
-                .thenReturn(flowOf(listOf(call)))
+        suspend fun givenAnOngoingCall() = apply {
+            coEvery {
+                callRepository.establishedCallsFlow()
+            }.returns(flowOf(listOf(call)))
         }
 
         companion object {

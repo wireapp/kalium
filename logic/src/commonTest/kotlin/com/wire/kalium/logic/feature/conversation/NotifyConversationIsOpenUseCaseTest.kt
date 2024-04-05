@@ -28,11 +28,11 @@ import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryA
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -50,10 +50,9 @@ class NotifyConversationIsOpenUseCaseTest {
         }
         notifyConversationIsOpenUseCase.invoke(details.conversation.id)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::observeConversationDetailsById)
-            .with(eq(details.conversation.id))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.observeConversationDetailsById(eq(details.conversation.id))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -68,10 +67,9 @@ class NotifyConversationIsOpenUseCaseTest {
         }
         notifyConversationIsOpenUseCase.invoke(details.conversation.id)
 
-        verify(arrangement.oneOnOneResolver)
-            .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUser)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -89,28 +87,29 @@ class NotifyConversationIsOpenUseCaseTest {
         }
         notifyConversationIsOpenUseCase.invoke(details.conversation.id)
 
-        verify(arrangement.oneOnOneResolver)
-            .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUser)
-            .with(eq(details.otherUser))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(
+                user = eq(details.otherUser),
+                invalidateCurrentKnownProtocols = any()
+            )
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement(
-        private val configure: Arrangement.() -> Unit
+        private val configure: suspend Arrangement.() -> Unit
     ) : OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
 
         @Mock
         private val deleteEphemeralMessageEndDate = mock(classOf<DeleteEphemeralMessagesAfterEndDateUseCase>())
 
-        fun withDeleteEphemeralMessageEndDateSuccess() {
-            given(deleteEphemeralMessageEndDate)
-                .suspendFunction(deleteEphemeralMessageEndDate::invoke)
-                .whenInvoked()
-                .thenReturn(Unit)
+        suspend fun withDeleteEphemeralMessageEndDateSuccess() {
+            coEvery {
+                deleteEphemeralMessageEndDate.invoke()
+            }.returns(Unit)
         }
 
-        fun arrange(): Pair<Arrangement, NotifyConversationIsOpenUseCase> = run {
+        suspend fun arrange(): Pair<Arrangement, NotifyConversationIsOpenUseCase> = run {
             configure()
             this@Arrangement to NotifyConversationIsOpenUseCaseImpl(
                 oneOnOneResolver = oneOnOneResolver,
@@ -122,6 +121,6 @@ class NotifyConversationIsOpenUseCaseTest {
     }
 
     private companion object {
-        fun arrange(configure: Arrangement.() -> Unit) = Arrangement(configure).arrange()
+        suspend fun arrange(configure: suspend Arrangement.() -> Unit) = Arrangement(configure).arrange()
     }
 }

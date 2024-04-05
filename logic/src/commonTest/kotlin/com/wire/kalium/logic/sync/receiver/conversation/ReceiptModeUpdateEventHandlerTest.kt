@@ -28,16 +28,14 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class ReceiptModeUpdateEventHandlerTest {
 
     @Test
@@ -54,10 +52,9 @@ class ReceiptModeUpdateEventHandlerTest {
 
         // then
         with(arrangement) {
-            verify(conversationDAO)
-                .suspendFunction(conversationDAO::updateConversationReceiptMode)
-                .with(any(), any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                conversationDAO.updateConversationReceiptMode(any(), any())
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -74,13 +71,14 @@ class ReceiptModeUpdateEventHandlerTest {
         eventHandler.handle(event)
 
         // then
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
-                val content = it.content as MessageContent.ConversationReceiptModeChanged
-                content.receiptMode
-            })
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.persistMessage.invoke(
+                matches {
+                    val content = it.content as MessageContent.ConversationReceiptModeChanged
+                    content.receiptMode
+                }
+            )
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -98,13 +96,14 @@ class ReceiptModeUpdateEventHandlerTest {
         eventHandler.handle(event)
 
         // then
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
-                val content = it.content as MessageContent.ConversationReceiptModeChanged
-                content.receiptMode.not()
-            })
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.persistMessage.invoke(
+                matches {
+                    val content = it.content as MessageContent.ConversationReceiptModeChanged
+                    content.receiptMode.not()
+                }
+            )
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -121,18 +120,16 @@ class ReceiptModeUpdateEventHandlerTest {
             persistMessage = persistMessage
         )
 
-        fun withUpdateReceiptModeSuccess() = apply {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::updateConversationReceiptMode)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Unit)
+        suspend fun withUpdateReceiptModeSuccess() = apply {
+            coEvery {
+                conversationDAO.updateConversationReceiptMode(any(), any())
+            }.returns(Unit)
         }
 
-        fun withPersistingSystemMessage() = apply {
-            given(persistMessage)
-                .suspendFunction(persistMessage::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withPersistingSystemMessage() = apply {
+            coEvery {
+                persistMessage.invoke(any())
+            }.returns(Either.Right(Unit))
         }
 
         fun arrange() = this to receiptModeUpdateEventHandler

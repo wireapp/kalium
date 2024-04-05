@@ -23,10 +23,10 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -42,20 +42,19 @@ class RefreshConversationsWithoutMetadataUseCaseTest {
 
         refreshConversationsWithoutMetadata()
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::syncConversationsWithoutMetadata)
-            .wasInvoked(once)
+        coVerify {
+            arrangement.conversationRepository.syncConversationsWithoutMetadata()
+        }.wasInvoked(once)
     }
 
     private class Arrangement {
         @Mock
         val conversationRepository = mock(classOf<ConversationRepository>())
 
-        fun withResponse(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::syncConversationsWithoutMetadata)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withResponse(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
+            coEvery {
+                conversationRepository.syncConversationsWithoutMetadata()
+            }.returns(result)
         }
 
         fun arrange() = this to RefreshConversationsWithoutMetadataUseCaseImpl(conversationRepository)

@@ -28,12 +28,15 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.doesNothing
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.thenDoNothing
 import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -49,44 +52,37 @@ class EndCallUseCaseTest {
     private lateinit var endCall: EndCallUseCase
 
     @BeforeTest
-    fun setup() {
+    fun setup() = runBlocking {
         endCall = EndCallUseCaseImpl(lazy { callManager }, callRepository)
 
-        given(callManager)
-            .suspendFunction(callManager::endCall)
-            .whenInvokedWith(eq(conversationId))
-            .thenDoNothing()
+        coEvery {
+            callManager.endCall(eq(conversationId))
+        }.returns(Unit)
 
-        given(callRepository)
-            .function(callRepository::updateIsCameraOnById)
-            .whenInvokedWith(eq(conversationId), eq(false))
-            .thenDoNothing()
+        every { callRepository.updateIsCameraOnById(eq(conversationId), eq(false)) }
+            .doesNothing()
     }
 
     @Test
     fun givenAnEstablishedCall_whenEndCallIsInvoked_thenUpdateStatusAndInvokeEndCallOnce() = runTest {
 
-        given(callRepository)
-            .suspendFunction(callRepository::callsFlow)
-            .whenInvoked().then { flowOf(listOf(call)) }
-
+        coEvery {
+            callRepository.callsFlow()
+        }.returns(flowOf(listOf(call)))
 
         endCall.invoke(conversationId)
 
-        verify(callManager)
-            .suspendFunction(callManager::endCall)
-            .with(eq(conversationId))
-            .wasInvoked(once)
+        coVerify {
+            callManager.endCall(eq(conversationId))
+        }.wasInvoked(once)
 
-        verify(callRepository)
-            .function(callRepository::updateIsCameraOnById)
-            .with(eq(conversationId), eq(false))
-            .wasInvoked(once)
+        verify {
+            callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
+        }.wasInvoked(once)
 
-        verify(callRepository)
-            .suspendFunction(callRepository::updateCallStatusById)
-            .with(eq(conversationId), eq(CallStatus.CLOSED))
-            .wasInvoked(once)
+        coVerify {
+            callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -96,26 +92,23 @@ class EndCallUseCaseTest {
             conversationType = Conversation.Type.GROUP
         )
 
-        given(callRepository)
-            .suspendFunction(callRepository::callsFlow)
-            .whenInvoked().then { flowOf(listOf(stillOngoingCall)) }
+        coEvery {
+            callRepository.callsFlow()
+        }.returns(flowOf(listOf(stillOngoingCall)))
 
         endCall.invoke(conversationId)
 
-        verify(callManager)
-            .suspendFunction(callManager::endCall)
-            .with(eq(conversationId))
-            .wasInvoked(once)
+        coVerify {
+            callManager.endCall(eq(conversationId))
+        }.wasInvoked(once)
 
-        verify(callRepository)
-            .function(callRepository::updateIsCameraOnById)
-            .with(eq(conversationId), eq(false))
-            .wasInvoked(once)
+        verify {
+            callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
+        }.wasInvoked(once)
 
-        verify(callRepository)
-            .suspendFunction(callRepository::updateCallStatusById)
-            .with(eq(conversationId), eq(CallStatus.CLOSED_INTERNALLY))
-            .wasInvoked(once)
+        coVerify {
+            callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED_INTERNALLY))
+        }.wasInvoked(once)
 
     }
 
@@ -125,26 +118,23 @@ class EndCallUseCaseTest {
             status = CallStatus.CLOSED
         )
 
-        given(callRepository)
-            .suspendFunction(callRepository::callsFlow)
-            .whenInvoked().then { flowOf(listOf(closedCall)) }
+        coEvery {
+            callRepository.callsFlow()
+        }.returns(flowOf(listOf(closedCall)))
 
         endCall.invoke(conversationId)
 
-        verify(callManager)
-            .suspendFunction(callManager::endCall)
-            .with(eq(conversationId))
-            .wasInvoked(once)
+        coVerify {
+            callManager.endCall(eq(conversationId))
+        }.wasInvoked(once)
 
-        verify(callRepository)
-            .function(callRepository::updateIsCameraOnById)
-            .with(eq(conversationId), eq(false))
-            .wasInvoked(once)
+        verify {
+            callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
+        }.wasInvoked(once)
 
-        verify(callRepository)
-            .suspendFunction(callRepository::updateCallStatusById)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            callRepository.updateCallStatusById(any(), any())
+        }.wasNotInvoked()
     }
 
     companion object {

@@ -41,12 +41,13 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.matchers.EqualsMatcher
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -60,27 +61,27 @@ class MemberLeaveEventHandlerTest {
 
         val (arrangement, memberLeaveEventHandler) = Arrangement()
             .arrange {
-                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = eq(event.removedList.toSet()))
-                withPersistingMessage(Either.Right(Unit), messageMatcher = eq(message))
+                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = EqualsMatcher(event.removedList.toSet()))
+                withPersistingMessage(Either.Right(Unit), messageMatcher = EqualsMatcher(message))
                 withDeleteMembersByQualifiedID(
                     result = list.size.toLong(),
-                    conversationId = eq(event.conversationId.toDao()),
-                    memberIdList = eq(list)
+                    conversationId = EqualsMatcher(event.conversationId.toDao()),
+                    memberIdList = EqualsMatcher(list)
                 )
             }
 
         memberLeaveEventHandler.handle(memberLeaveEvent(reason = MemberLeaveReason.Left))
 
-        verify(arrangement.memberDAO).coroutine {
-            deleteMembersByQualifiedID(list, qualifiedConversationIdEntity)
+        coVerify {
+            arrangement.memberDAO.deleteMembersByQualifiedID(list, qualifiedConversationIdEntity)
         }.wasInvoked(once)
 
-        verify(arrangement.updateConversationClientsForCurrentCall).coroutine {
-            invoke(message.conversationId)
+        coVerify {
+            arrangement.updateConversationClientsForCurrentCall.invoke(message.conversationId)
         }.wasInvoked(once)
 
-        verify(arrangement.persistMessageUseCase).coroutine {
-            invoke(message)
+        coVerify {
+            arrangement.persistMessageUseCase.invoke(message)
         }.wasInvoked(once)
 
     }
@@ -93,7 +94,7 @@ class MemberLeaveEventHandlerTest {
             .arrange {
                 withFetchUsersIfUnknownByIdsReturning(
                     Either.Left(failure),
-                    userIdList = eq(event.removedList.toSet())
+                    userIdList = EqualsMatcher(event.removedList.toSet())
                 )
                 withPersistingMessage(Either.Left(failure))
                 withDeleteMembersByQualifiedIDThrows(throws = IllegalArgumentException())
@@ -101,12 +102,12 @@ class MemberLeaveEventHandlerTest {
 
         memberLeaveEventHandler.handle(memberLeaveEvent(reason = MemberLeaveReason.Left))
 
-        verify(arrangement.memberDAO).coroutine {
-            deleteMembersByQualifiedID(list, qualifiedConversationIdEntity)
+        coVerify {
+            arrangement.memberDAO.deleteMembersByQualifiedID(list, qualifiedConversationIdEntity)
         }.wasInvoked(once)
 
-        verify(arrangement.persistMessageUseCase).coroutine {
-            invoke(memberRemovedMessage(event))
+        coVerify {
+            arrangement.persistMessageUseCase.invoke(memberRemovedMessage(event))
         }.wasNotInvoked()
     }
 
@@ -117,30 +118,30 @@ class MemberLeaveEventHandlerTest {
 
         val (arrangement, memberLeaveEventHandler) = Arrangement()
             .arrange {
-                withMarkAsDeleted(Either.Right(Unit), userId = eq(event.removedList))
+                withMarkAsDeleted(Either.Right(Unit), userId = EqualsMatcher(event.removedList))
                 withDeleteMembersByQualifiedID(
                     result = list.size.toLong(),
-                    conversationId = eq(event.conversationId.toDao()),
-                    memberIdList = eq(list)
+                    conversationId = EqualsMatcher(event.conversationId.toDao()),
+                    memberIdList = EqualsMatcher(list)
                 )
-                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = eq(event.removedList.toSet()))
-                withPersistingMessage(Either.Right(Unit), messageMatcher = eq(message))
+                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = EqualsMatcher(event.removedList.toSet()))
+                withPersistingMessage(Either.Right(Unit), messageMatcher = EqualsMatcher(message))
                 withTeamId(Either.Right(TeamId("teamId")))
                 withIsAtLeastOneUserATeamMember(Either.Right(true))
             }
 
         memberLeaveEventHandler.handle(memberLeaveEvent(reason = MemberLeaveReason.UserDeleted))
 
-        verify(arrangement.userRepository).coroutine {
-            fetchUsersIfUnknownByIds(event.removedList.toSet())
+        coVerify {
+            arrangement.userRepository.fetchUsersIfUnknownByIds(event.removedList.toSet())
         }.wasInvoked(once)
 
-        verify(arrangement.updateConversationClientsForCurrentCall).coroutine {
-            invoke(message.conversationId)
+        coVerify {
+            arrangement.updateConversationClientsForCurrentCall.invoke(message.conversationId)
         }.wasInvoked(once)
 
-        verify(arrangement.persistMessageUseCase).coroutine {
-            invoke(message)
+        coVerify {
+            arrangement.persistMessageUseCase.invoke(message)
         }.wasInvoked(once)
     }
 
@@ -149,44 +150,42 @@ class MemberLeaveEventHandlerTest {
         val event = memberLeaveEvent(reason = MemberLeaveReason.UserDeleted)
         val (arrangement, memberLeaveEventHandler) = Arrangement()
             .arrange {
-                withMarkAsDeleted(Either.Right(Unit), userId = eq(event.removedList))
+                withMarkAsDeleted(Either.Right(Unit), userId = EqualsMatcher(event.removedList))
                 withDeleteMembersByQualifiedID(
                     result = list.size.toLong(),
-                    conversationId = eq(event.conversationId.toDao()),
-                    memberIdList = eq(list)
+                    conversationId = EqualsMatcher(event.conversationId.toDao()),
+                    memberIdList = EqualsMatcher(list)
                 )
-                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = eq(event.removedList.toSet()))
+                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = EqualsMatcher(event.removedList.toSet()))
                 withTeamId(Either.Right(null))
                 withPersistingMessage(Either.Right(Unit))
             }
 
         memberLeaveEventHandler.handle(memberLeaveEvent(reason = MemberLeaveReason.UserDeleted))
 
-        verify(arrangement.userRepository).coroutine {
-            fetchUsersIfUnknownByIds(event.removedList.toSet())
+        coVerify {
+            arrangement.userRepository.fetchUsersIfUnknownByIds(event.removedList.toSet())
         }.wasInvoked(once)
 
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::markAsDeleted)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userRepository.markAsDeleted(any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.memberDAO)
-            .suspendFunction(arrangement.memberDAO::deleteMembersByQualifiedID)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.memberDAO.deleteMembersByQualifiedID(any(), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.updateConversationClientsForCurrentCall)
-            .suspendFunction(arrangement.updateConversationClientsForCurrentCall::invoke)
-            .with(eq(event.conversationId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.updateConversationClientsForCurrentCall.invoke(eq(event.conversationId))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.persistMessageUseCase)
-            .suspendFunction(arrangement.persistMessageUseCase::invoke)
-            .with(matching {
-                it.content is MessageContent.MemberChange.Removed
-            })
-            .wasInvoked(once)
+        coVerify {
+            arrangement.persistMessageUseCase.invoke(
+                matches {
+                    it.content is MessageContent.MemberChange.Removed
+                }
+            )
+        }.wasInvoked(once)
     }
 
     @Test
@@ -197,40 +196,36 @@ class MemberLeaveEventHandlerTest {
             .arrange {
                 withTeamId(Either.Right(TeamId("teamId")))
                 withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
-                withMarkAsDeleted(Either.Right(Unit), userId = eq(event.removedList))
+                withMarkAsDeleted(Either.Right(Unit), userId = EqualsMatcher(event.removedList))
                 withDeleteMembersByQualifiedID(
                     result = 0,
-                    conversationId = eq(event.conversationId.toDao()),
-                    memberIdList = eq(list)
+                    conversationId = EqualsMatcher(event.conversationId.toDao()),
+                    memberIdList = EqualsMatcher(list)
                 )
                 withIsAtLeastOneUserATeamMember(Either.Right(false))
             }
 
         memberLeaveEventHandler.handle(event)
 
-        verify(arrangement.userRepository).coroutine {
-            fetchUsersIfUnknownByIds(event.removedList.toSet())
+        coVerify {
+            arrangement.userRepository.fetchUsersIfUnknownByIds(event.removedList.toSet())
         }.wasInvoked(once)
 
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::markAsDeleted)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userRepository.markAsDeleted(any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.memberDAO)
-            .suspendFunction(arrangement.memberDAO::deleteMembersByQualifiedID)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.memberDAO.deleteMembersByQualifiedID(any(), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.updateConversationClientsForCurrentCall)
-            .suspendFunction(arrangement.updateConversationClientsForCurrentCall::invoke)
-            .with(eq(event.conversationId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.updateConversationClientsForCurrentCall.invoke(eq(event.conversationId))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.persistMessageUseCase)
-            .suspendFunction(arrangement.persistMessageUseCase::invoke)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.persistMessageUseCase.invoke(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -239,24 +234,24 @@ class MemberLeaveEventHandlerTest {
         val event = memberLeaveEvent(reason = MemberLeaveReason.Left)
         val (arrangement, memberLeaveEventHandler) = Arrangement()
             .arrange {
-                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = eq(event.removedList.toSet()))
+                withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit), userIdList = EqualsMatcher(event.removedList.toSet()))
                 withPersistingMessage(Either.Right(Unit))
                 withDeleteMembersByQualifiedID(
                     result = list.size.toLong(),
-                    conversationId = eq(event.conversationId.toDao()),
-                    memberIdList = eq(list)
+                    conversationId = EqualsMatcher(event.conversationId.toDao()),
+                    memberIdList = EqualsMatcher(list)
                 )
             }
         // when
         memberLeaveEventHandler.handle(event)
         // then
-        verify(arrangement.legalHoldHandler)
-            .suspendFunction(arrangement.legalHoldHandler::handleConversationMembersChanged)
-            .with(eq(event.conversationId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.legalHoldHandler.handleConversationMembersChanged(eq(event.conversationId))
+        }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement : UserRepositoryArrangement by UserRepositoryArrangementImpl(),
+    private class Arrangement :
+        UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
         MemberDAOArrangement by MemberDAOArrangementImpl(),
         SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl() {
@@ -269,25 +264,21 @@ class MemberLeaveEventHandlerTest {
 
         private lateinit var memberLeaveEventHandler: MemberLeaveEventHandler
 
-        init {
-            given(legalHoldHandler)
-                .suspendFunction(legalHoldHandler::handleConversationMembersChanged)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, MemberLeaveEventHandler> = run {
+            coEvery {
+                legalHoldHandler.handleConversationMembersChanged(any())
+            }.returns(Either.Right(Unit))
+            block()
+            memberLeaveEventHandler = MemberLeaveEventHandlerImpl(
+                memberDAO = memberDAO,
+                userRepository = userRepository,
+                persistMessage = persistMessageUseCase,
+                updateConversationClientsForCurrentCall = lazy { updateConversationClientsForCurrentCall },
+                legalHoldHandler = legalHoldHandler,
+                selfTeamIdProvider = selfTeamIdProvider
+            )
+            this to memberLeaveEventHandler
         }
-
-        fun arrange(block: Arrangement.() -> Unit): Pair<Arrangement, MemberLeaveEventHandler> = apply(block)
-            .let {
-                memberLeaveEventHandler = MemberLeaveEventHandlerImpl(
-                    memberDAO = memberDAO,
-                    userRepository = userRepository,
-                    persistMessage = persistMessageUseCase,
-                    updateConversationClientsForCurrentCall = lazy { updateConversationClientsForCurrentCall },
-                    legalHoldHandler = legalHoldHandler,
-                    selfTeamIdProvider = selfTeamIdProvider
-                )
-                this to memberLeaveEventHandler
-            }
     }
 
     companion object {

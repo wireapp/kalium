@@ -34,19 +34,18 @@ import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import okio.IOException
 import kotlin.test.Test
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class UpdateConversationAccessUseCaseTest {
 
     @Test
@@ -78,7 +77,7 @@ class UpdateConversationAccessUseCaseTest {
             assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
         }
 
-        verify(arrangement.conversationRepository).coroutine {
+        coVerify {
             arrangement
                 .conversationRepository
                 .updateAccessInfo(
@@ -126,7 +125,7 @@ class UpdateConversationAccessUseCaseTest {
             assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
         }
 
-        verify(arrangement.conversationRepository).coroutine {
+        coVerify {
             arrangement
                 .conversationRepository
                 .updateAccessInfo(
@@ -170,7 +169,7 @@ class UpdateConversationAccessUseCaseTest {
             assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
         }
 
-        verify(arrangement.conversationRepository).coroutine {
+        coVerify {
             arrangement.conversationRepository.updateAccessInfo(
                 conversationID = conversation.id,
                 accessRole = setOf(
@@ -187,7 +186,9 @@ class UpdateConversationAccessUseCaseTest {
     fun givenConversation_whenEnablingNonTeamMembers_thenUpdateAccessInfoIsCalledWithTheCorrectRoles() = runTest {
         val conversation = conversationStub.copy(
             accessRole = listOf(
-                Conversation.AccessRole.TEAM_MEMBER, Conversation.AccessRole.SERVICE, Conversation.AccessRole.GUEST
+                Conversation.AccessRole.TEAM_MEMBER,
+                Conversation.AccessRole.SERVICE,
+                Conversation.AccessRole.GUEST
             )
         )
 
@@ -207,7 +208,7 @@ class UpdateConversationAccessUseCaseTest {
             assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
         }
 
-        verify(arrangement.conversationRepository).coroutine {
+        coVerify {
             arrangement.conversationRepository.updateAccessInfo(
                 conversationID = conversation.id,
                 accessRole = setOf(
@@ -253,12 +254,11 @@ class UpdateConversationAccessUseCaseTest {
             assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
         }
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::revokeGuestRoomLink)
-            .with(any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.conversationGroupRepository.revokeGuestRoomLink(any())
+        }.wasInvoked(once)
 
-        verify(arrangement.conversationRepository).coroutine {
+        coVerify {
             arrangement.conversationRepository.updateAccessInfo(
                 conversationID = conversation.id,
                 accessRole = setOf(
@@ -303,7 +303,7 @@ class UpdateConversationAccessUseCaseTest {
         }
 
         // Then
-        verify(arrangement.conversationRepository).coroutine {
+        coVerify {
             arrangement.conversationRepository.updateAccessInfo(
                 conversationID = conversation.id,
                 accessRole = Conversation.defaultGroupAccessRoles.toMutableSet().apply {
@@ -335,8 +335,9 @@ class UpdateConversationAccessUseCaseTest {
             assertIs<NetworkFailure.NoNetworkConnection>(result.cause)
         }
 
-        verify(arrangement.conversationRepository).suspendFunction(arrangement.conversationRepository::updateAccessInfo)
-            .with(any(), any(), any()).wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.updateAccessInfo(any(), any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -354,10 +355,9 @@ class UpdateConversationAccessUseCaseTest {
         val result = updateConversationAccessRole(TestConversation.ID, accessRoles, setOf())
         assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::revokeGuestRoomLink)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.conversationGroupRepository.revokeGuestRoomLink(any())
+        }.wasNotInvoked()
 
     }
 
@@ -376,10 +376,9 @@ class UpdateConversationAccessUseCaseTest {
         val result = updateConversationAccessRole(TestConversation.ID, accessRoles, setOf())
         assertIs<UpdateConversationAccessRoleUseCase.Result.Success>(result)
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::revokeGuestRoomLink)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.conversationGroupRepository.revokeGuestRoomLink(any())
+        }.wasNotInvoked()
     }
 
     companion object {
@@ -432,36 +431,33 @@ class UpdateConversationAccessUseCaseTest {
         )
 
         init {
-            given(syncManager)
-                .suspendFunction(syncManager::waitUntilLiveOrFailure)
-                .whenInvoked()
-                .thenReturn(Either.Right(Unit))
+            runBlocking {
+                coEvery {
+                    syncManager.waitUntilLiveOrFailure()
+                }.returns(Either.Right(Unit))
 
-            given(conversationGroupRepository)
-                .suspendFunction(conversationGroupRepository::revokeGuestRoomLink)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+                coEvery {
+                    conversationGroupRepository.revokeGuestRoomLink(any())
+                }.returns(Either.Right(Unit))
+            }
         }
 
-        fun withUpdateAccessInfoRetuning(either: Either<CoreFailure, Unit>) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateAccessInfo)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(either)
+        suspend fun withUpdateAccessInfoRetuning(either: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                conversationRepository.updateAccessInfo(any(), any(), any())
+            }.returns(either)
         }
 
-        fun withWaitUntilLiveOrFailure(either: Either<CoreFailure, Unit>) = apply {
-            given(syncManager)
-                .suspendFunction(syncManager::waitUntilLiveOrFailure)
-                .whenInvoked()
-                .thenReturn(either)
+        suspend fun withWaitUntilLiveOrFailure(either: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                syncManager.waitUntilLiveOrFailure()
+            }.returns(either)
         }
 
-        fun withGuestRoomLink(result: Flow<Either<CoreFailure, ConversationGuestLink?>>) = apply {
-            given(conversationGroupRepository)
-                .suspendFunction(conversationGroupRepository::observeGuestRoomLink)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withGuestRoomLink(result: Flow<Either<CoreFailure, ConversationGuestLink?>>) = apply {
+            coEvery {
+                conversationGroupRepository.observeGuestRoomLink(any())
+            }.returns(result)
         }
 
         fun arrange() = this to updateConversationAccess

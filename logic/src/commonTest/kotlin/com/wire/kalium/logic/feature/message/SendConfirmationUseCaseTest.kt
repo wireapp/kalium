@@ -30,9 +30,14 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
-import io.mockative.anything
+import io.mockative.any
+
+import io.mockative.coEvery
+import io.mockative.every
+import io.mockative.coVerify
+import io.mockative.coEvery
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -56,10 +61,9 @@ class SendConfirmationUseCaseTest {
         val result = sendConfirmation(TestConversation.ID)
 
         result.shouldSucceed()
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(anything(), anything())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageSender.sendMessage(any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -75,15 +79,13 @@ class SendConfirmationUseCaseTest {
         val result = sendConfirmation(TestConversation.ID)
 
         result.shouldSucceed()
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(anything(), anything())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.messageSender.sendMessage(any(), any())
+        }.wasNotInvoked()
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::getPendingConfirmationMessagesByConversationAfterDate)
-            .with(anything(), anything())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.messageRepository.getPendingConfirmationMessagesByConversationAfterDate(any(), any())
+        }.wasNotInvoked()
     }
 
     private class Arrangement {
@@ -106,39 +108,34 @@ class SendConfirmationUseCaseTest {
         @Mock
         private val userPropertyRepository = mock(classOf<UserPropertyRepository>())
 
-        fun withCurrentClientIdProvider() = apply {
-            given(currentClientIdProvider)
-                .suspendFunction(currentClientIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Right(TestClient.CLIENT_ID))
+        suspend fun withCurrentClientIdProvider() = apply {
+            coEvery {
+                currentClientIdProvider.invoke()
+            }.returns(Either.Right(TestClient.CLIENT_ID))
         }
 
-        fun withSendMessageSuccess() = apply {
-            given(messageSender)
-                .suspendFunction(messageSender::sendMessage)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withSendMessageSuccess() = apply {
+            coEvery {
+                messageSender.sendMessage(any(), any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withGetConversationByIdSuccessful() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::baseInfoById)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(TestConversation.CONVERSATION))
+        suspend fun withGetConversationByIdSuccessful() = apply {
+            coEvery {
+                conversationRepository.baseInfoById(any())
+            }.returns(Either.Right(TestConversation.CONVERSATION))
         }
 
-        fun withToggleReadReceiptsStatus(enabled: Boolean = false) = apply {
-            given(userPropertyRepository)
-                .suspendFunction(userPropertyRepository::getReadReceiptsStatus)
-                .whenInvoked()
-                .thenReturn(enabled)
+        suspend fun withToggleReadReceiptsStatus(enabled: Boolean = false) = apply {
+            coEvery {
+                userPropertyRepository.getReadReceiptsStatus()
+            }.returns(enabled)
         }
 
-        fun withPendingMessagesResponse() = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::getPendingConfirmationMessagesByConversationAfterDate)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(listOf(TestMessage.TEXT_MESSAGE.id)))
+        suspend fun withPendingMessagesResponse() = apply {
+            coEvery {
+                messageRepository.getPendingConfirmationMessagesByConversationAfterDate(any(), any())
+            }.returns(Either.Right(listOf(TestMessage.TEXT_MESSAGE.id)))
         }
 
         fun arrange() = this to SendConfirmationUseCase(

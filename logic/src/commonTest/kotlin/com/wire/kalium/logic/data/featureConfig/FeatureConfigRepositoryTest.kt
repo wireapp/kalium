@@ -38,10 +38,10 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -81,7 +81,7 @@ class FeatureConfigRepositoryTest {
             ),
             E2EIModel(
                 E2EIConfigModel("url", 1000000L),
-                com.wire.kalium.logic.data.featureConfig.Status.ENABLED
+                Status.ENABLED
             ),
             MLSMigrationModel(
                 Instant.DISTANT_FUTURE,
@@ -98,9 +98,9 @@ class FeatureConfigRepositoryTest {
 
         // Then
         result.shouldSucceed { expectedSuccess.value }
-        verify(arrangement.featureConfigApi)
-            .suspendFunction(arrangement.featureConfigApi::featureConfigs)
-            .wasInvoked(once)
+        coVerify {
+            arrangement.featureConfigApi.featureConfigs()
+        }.wasInvoked(once)
     }
 
     @Test
@@ -116,9 +116,9 @@ class FeatureConfigRepositoryTest {
         // Then
         result.shouldFail { Either.Left(operationDeniedException).value }
 
-        verify(arrangement.featureConfigApi)
-            .suspendFunction(arrangement.featureConfigApi::featureConfigs)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.featureConfigApi.featureConfigs()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -134,9 +134,9 @@ class FeatureConfigRepositoryTest {
         // Then
         result.shouldFail { Either.Left(noTeamException).value }
 
-        verify(arrangement.featureConfigApi)
-            .suspendFunction(arrangement.featureConfigApi::featureConfigs)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.featureConfigApi.featureConfigs()
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -178,23 +178,17 @@ class FeatureConfigRepositoryTest {
 
         var featureConfigRepository = FeatureConfigDataSource(featureConfigApi)
 
-        fun withSuccessfulResponse(): Arrangement {
-            given(featureConfigApi)
-                .suspendFunction(featureConfigApi::featureConfigs).whenInvoked().then {
-                    NetworkResponse.Success(featureConfigResponse, mapOf(), 200)
-                }
+        suspend fun withSuccessfulResponse(): Arrangement {
+            coEvery {
+                featureConfigApi.featureConfigs()
+            }.returns(NetworkResponse.Success(featureConfigResponse, mapOf(), 200))
             return this
         }
 
-        fun withErrorResponse(kaliumException: KaliumException): Arrangement {
-            given(featureConfigApi)
-                .suspendFunction(featureConfigApi::featureConfigs)
-                .whenInvoked()
-                .then {
-                    NetworkResponse.Error(
-                        kaliumException
-                    )
-                }
+        suspend fun withErrorResponse(kaliumException: KaliumException): Arrangement {
+            coEvery {
+                featureConfigApi.featureConfigs()
+            }.returns(NetworkResponse.Error(kaliumException))
             return this
         }
 

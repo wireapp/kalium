@@ -27,12 +27,12 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import io.mockative.Mock
 import io.mockative.classOf
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.thenDoNothing
-import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -60,11 +60,10 @@ class AnswerCallUseCaseTest {
     )
 
     @BeforeTest
-    fun setUp() {
-        given(callManager)
-            .suspendFunction(callManager::answerCall)
-            .whenInvokedWith(eq(conversationId), eq(false))
-            .thenDoNothing()
+    fun setUp() = runBlocking {
+        coEvery {
+            callManager.answerCall(eq(conversationId), eq(false))
+        }.returns(Unit)
     }
 
     @Test
@@ -72,8 +71,9 @@ class AnswerCallUseCaseTest {
         val isCbrEnabled = true
         val configs = KaliumConfigs(forceConstantBitrateCalls = isCbrEnabled)
 
-        given(getAllCallsWithSortedParticipants).coroutine { invoke() }
-            .then { flowOf(listOf()) }
+        coEvery {
+            getAllCallsWithSortedParticipants.invoke()
+        }.returns(flowOf(listOf()))
 
         val answerCallWithCBR = AnswerCallUseCaseImpl(
             allCalls = getAllCallsWithSortedParticipants,
@@ -83,55 +83,51 @@ class AnswerCallUseCaseTest {
             kaliumConfigs = configs
         )
 
-        given(callManager)
-            .suspendFunction(callManager::answerCall)
-            .whenInvokedWith(eq(conversationId), eq(configs.forceConstantBitrateCalls))
-            .thenDoNothing()
+        coEvery {
+            callManager.answerCall(eq(conversationId), eq(configs.forceConstantBitrateCalls))
+        }.returns(Unit)
 
         answerCallWithCBR(
             conversationId = conversationId
         )
 
-        verify(callManager)
-            .suspendFunction(callManager::answerCall)
-            .with(eq(conversationId), eq(isCbrEnabled))
-            .wasInvoked(exactly = once)
+        coVerify {
+            callManager.answerCall(eq(conversationId), eq(isCbrEnabled))
+        }.wasInvoked(exactly = once)
     }
-
 
     @Test
     fun givenACall_whenAnsweringIt_thenInvokeAnswerCallOnce() = runTest {
-        given(getAllCallsWithSortedParticipants).coroutine { invoke() }
-            .then { flowOf(listOf()) }
+        coEvery {
+            getAllCallsWithSortedParticipants.invoke()
+        }.returns(flowOf(listOf()))
 
         answerCall(
             conversationId = conversationId
         )
 
-        verify(callManager)
-            .suspendFunction(callManager::answerCall)
-            .with(eq(conversationId), eq(false))
-            .wasInvoked(exactly = once)
+        coVerify {
+            callManager.answerCall(eq(conversationId), eq(false))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenOnGoingGroupCall_whenJoiningIt_thenMuteThatCall() = runTest {
-        given(getAllCallsWithSortedParticipants).coroutine { invoke() }
-            .then { flowOf(listOf(call)) }
+        coEvery {
+            getAllCallsWithSortedParticipants.invoke()
+        }.returns(flowOf(listOf(call)))
 
         answerCall(
             conversationId = conversationId
         )
 
-        verify(muteCall)
-            .suspendFunction(muteCall::invoke)
-            .with(eq(conversationId), eq(true))
-            .wasInvoked(exactly = once)
+        coVerify {
+            muteCall.invoke(eq(conversationId), eq(true))
+        }.wasInvoked(exactly = once)
 
-        verify(callManager)
-            .suspendFunction(callManager::answerCall)
-            .with(eq(conversationId), eq(false))
-            .wasInvoked(exactly = once)
+        coVerify {
+            callManager.answerCall(eq(conversationId), eq(false))
+        }.wasInvoked(exactly = once)
 
     }
 
@@ -143,22 +139,21 @@ class AnswerCallUseCaseTest {
             isMuted = false
         )
 
-        given(getAllCallsWithSortedParticipants).coroutine { invoke() }
-            .then { flowOf(listOf(newCall)) }
+        coEvery {
+            getAllCallsWithSortedParticipants.invoke()
+        }.returns(flowOf(listOf(newCall)))
 
         answerCall(
             conversationId = conversationId
         )
 
-        verify(unMuteCall)
-            .suspendFunction(unMuteCall::invoke)
-            .with(eq(conversationId), eq(true))
-            .wasInvoked(exactly = once)
+        coVerify {
+            unMuteCall.invoke(eq(conversationId), eq(true))
+        }.wasInvoked(exactly = once)
 
-        verify(callManager)
-            .suspendFunction(callManager::answerCall)
-            .with(eq(conversationId), eq(false))
-            .wasInvoked(exactly = once)
+        coVerify {
+            callManager.answerCall(eq(conversationId), eq(false))
+        }.wasInvoked(exactly = once)
     }
 
     companion object {

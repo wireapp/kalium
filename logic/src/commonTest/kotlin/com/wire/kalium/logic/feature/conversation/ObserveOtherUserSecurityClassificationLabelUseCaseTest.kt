@@ -27,7 +27,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -92,17 +92,15 @@ class ObserveOtherUserSecurityClassificationLabelUseCaseTest {
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
         fun withGettingClassifiedDomainsDisabled() = apply {
-            given(userConfigRepository)
-                .function(userConfigRepository::getClassifiedDomainsStatus)
-                .whenInvoked()
-                .thenReturn(flowOf(Either.Left(StorageFailure.DataNotFound)))
+            every {
+                userConfigRepository.getClassifiedDomainsStatus()
+            }.returns(flowOf(Either.Left(StorageFailure.DataNotFound)))
         }
 
         fun withGettingClassifiedDomains() = apply {
-            given(userConfigRepository)
-                .function(userConfigRepository::getClassifiedDomainsStatus)
-                .whenInvoked()
-                .thenReturn(flowOf(Either.Right(ClassifiedDomainsStatus(true, listOf("wire.com", "bella.com")))))
+            every {
+                userConfigRepository.getClassifiedDomainsStatus()
+            }.returns(flowOf(Either.Right(ClassifiedDomainsStatus(true, listOf("wire.com", "bella.com")))))
         }
 
         fun arrange() = this to ObserveOtherUserSecurityClassificationLabelUseCaseImpl(

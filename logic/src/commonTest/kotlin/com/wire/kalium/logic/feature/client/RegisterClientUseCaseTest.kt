@@ -30,10 +30,8 @@ import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepo
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientCapability
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.client.RegisterClientParam
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
-import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.SelfUser
@@ -47,24 +45,22 @@ import com.wire.kalium.util.DelicateKaliumApi
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
 import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.every
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class RegisterClientUseCaseTest {
 
     @Test
@@ -84,19 +80,17 @@ class RegisterClientUseCaseTest {
             )
         )
 
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::registerClient)
-            .with(eq(params))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.clientRepository.registerClient(eq(params))
+        }.wasInvoked(once)
 
-        verify(arrangement.preKeyRepository)
-            .suspendFunction(arrangement.preKeyRepository::generateNewPreKeys)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.preKeyRepository.generateNewPreKeys(any(), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.preKeyRepository)
-            .suspendFunction(arrangement.preKeyRepository::generateNewLastResortKey)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.preKeyRepository.generateNewLastResortKey()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -118,14 +112,13 @@ class RegisterClientUseCaseTest {
             )
         )
 
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::registerClient)
-            .with(
-                matching {
+        coVerify {
+            arrangement.clientRepository.registerClient(
+                matches {
                     it.secondFactorVerificationCode == stored2FACode
                 }
             )
-            .wasInvoked(once)
+        }.wasInvoked(once)
     }
 
     @Test
@@ -148,14 +141,13 @@ class RegisterClientUseCaseTest {
             )
         )
 
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::registerClient)
-            .with(
-                matching {
+        coVerify {
+            arrangement.clientRepository.registerClient(
+                matches {
                     it.secondFactorVerificationCode == passed2FACode
                 }
             )
-            .wasInvoked(once)
+        }.wasInvoked(once)
     }
 
     @Test
@@ -195,14 +187,13 @@ class RegisterClientUseCaseTest {
 
         assertIs<RegisterClientResult.Failure.PasswordAuthRequired>(result)
 
-        verify(arrangement.preKeyRepository)
-            .suspendFunction(arrangement.preKeyRepository::generateNewPreKeys)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.preKeyRepository.generateNewPreKeys(any(), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.preKeyRepository)
-            .suspendFunction(arrangement.preKeyRepository::generateNewLastResortKey)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.preKeyRepository.generateNewLastResortKey()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -218,14 +209,13 @@ class RegisterClientUseCaseTest {
 
         assertIs<RegisterClientResult.Failure.InvalidCredentials.InvalidPassword>(result)
 
-        verify(arrangement.preKeyRepository)
-            .suspendFunction(arrangement.preKeyRepository::generateNewPreKeys)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.preKeyRepository.generateNewPreKeys(any(), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.preKeyRepository)
-            .suspendFunction(arrangement.preKeyRepository::generateNewLastResortKey)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.preKeyRepository.generateNewLastResortKey()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -295,10 +285,9 @@ class RegisterClientUseCaseTest {
 
         registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::persistClientId)
-            .with(anything())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.clientRepository.persistClientId(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -313,10 +302,9 @@ class RegisterClientUseCaseTest {
 
         registerClient(RegisterClientUseCase.RegisterClientParam(TEST_PASSWORD, TEST_CAPABILITIES))
 
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::persistClientId)
-            .with(anything())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.clientRepository.persistClientId(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -379,19 +367,18 @@ class RegisterClientUseCaseTest {
 
         assertIs<RegisterClientResult.Failure.InvalidCredentials.InvalidPassword>(result)
 
-        verify(arrangement.preKeyRepository)
-            .suspendFunction(arrangement.preKeyRepository::generateNewPreKeys)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.preKeyRepository.generateNewPreKeys(any(), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.preKeyRepository)
-            .suspendFunction(arrangement.preKeyRepository::generateNewLastResortKey)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.preKeyRepository.generateNewLastResortKey()
+        }.wasInvoked(exactly = once)
     }
 
-    //mls returns e2ei is required
-    //make sure we invoked the team settings fetched
-    //finalizing the client registration
+    // mls returns e2ei is required
+    // make sure we invoked the team settings fetched
+    // finalizing the client registration
 
     private companion object {
         const val KEY_PACKAGE_LIMIT = 100
@@ -465,82 +452,72 @@ class RegisterClientUseCaseTest {
         )
 
         init {
-            withSelfUser(SELF_USER)
-            given(keyPackageLimitsProvider)
-                .function(keyPackageLimitsProvider::refillAmount)
-                .whenInvoked()
-                .thenReturn(KEY_PACKAGE_LIMIT)
+            runBlocking {
+                withSelfUser(SELF_USER)
+                every {
+                    keyPackageLimitsProvider.refillAmount()
+                }.returns(KEY_PACKAGE_LIMIT)
 
-            given(preKeyRepository)
-                .suspendFunction(preKeyRepository::generateNewPreKeys)
-                .whenInvokedWith(any(), any())
-                .then { _, _ -> Either.Right(PRE_KEYS) }
+                coEvery {
+                    preKeyRepository.generateNewPreKeys(any(), any())
+                }.returns(Either.Right(PRE_KEYS))
 
-            given(preKeyRepository)
-                .suspendFunction(preKeyRepository::generateNewLastResortKey)
-                .whenInvoked()
-                .then { Either.Right(LAST_KEY) }
+                coEvery {
+                    preKeyRepository.generateNewLastResortKey()
+                }.returns(Either.Right(LAST_KEY))
 
-            given(isAllowedToRegisterMLSClient)
-                .suspendFunction(isAllowedToRegisterMLSClient::invoke)
-                .whenInvoked()
-                .thenReturn(true)
+                coEvery {
+                    isAllowedToRegisterMLSClient.invoke()
+                }.returns(true)
+            }
         }
 
-        fun withSelfUser(selfUser: SelfUser) = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::getSelfUser)
-                .whenInvoked()
-                .thenReturn(selfUser)
+        suspend fun withSelfUser(selfUser: SelfUser) = apply {
+            coEvery {
+                userRepository.getSelfUser()
+            }.returns(selfUser)
         }
 
-        fun withRegisterClient(result: Either<NetworkFailure, Client>) = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::registerClient)
-                .whenInvokedWith(anything())
-                .then { result }
+        suspend fun withRegisterClient(result: Either<NetworkFailure, Client>) = apply {
+            coEvery {
+                clientRepository.registerClient(any())
+            }.returns(result)
         }
 
-        fun withRegisterMLSClient(result: Either<CoreFailure, RegisterMLSClientResult>) = apply {
-            given(registerMLSClient)
-                .suspendFunction(registerMLSClient::invoke)
-                .whenInvokedWith(eq(CLIENT.id))
-                .then { result }
+        suspend fun withRegisterMLSClient(result: Either<CoreFailure, RegisterMLSClientResult>) = apply {
+            coEvery {
+                registerMLSClient.invoke(eq(CLIENT.id))
+            }.returns(result)
         }
 
-        fun withGenerateNewPreKeys(result: Either<CoreFailure, List<PreKeyCrypto>>) = apply {
-            given(preKeyRepository)
-                .suspendFunction(preKeyRepository::generateNewPreKeys)
-                .whenInvokedWith(any(), any())
-                .then { _, _ -> result }
+        suspend fun withGenerateNewPreKeys(result: Either<CoreFailure, List<PreKeyCrypto>>) = apply {
+            coEvery {
+                preKeyRepository.generateNewPreKeys(any(), any())
+            }.returns(result)
         }
 
-        fun withGenerateNewLastKey(result: Either<ProteusFailure, PreKeyCrypto>) = apply {
-            given(preKeyRepository)
-                .suspendFunction(preKeyRepository::generateNewLastResortKey)
-                .whenInvoked()
-                .then { result }
+        suspend fun withGenerateNewLastKey(result: Either<ProteusFailure, PreKeyCrypto>) = apply {
+            coEvery {
+                preKeyRepository.generateNewLastResortKey()
+            }.returns(result)
         }
 
-        fun withIsAllowedToRegisterMLSClient(result: Boolean) = apply {
-            given(isAllowedToRegisterMLSClient)
-                .suspendFunction(isAllowedToRegisterMLSClient::invoke)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withIsAllowedToRegisterMLSClient(result: Boolean) = apply {
+            coEvery {
+                isAllowedToRegisterMLSClient.invoke()
+            }.returns(result)
         }
 
-        fun withUpdateOTRLastPreKeyId(result: Either<StorageFailure, Unit>) = apply {
-            given(preKeyRepository)
-                .suspendFunction(preKeyRepository::updateMostRecentPreKeyId)
-                .whenInvokedWith(any())
-                .then { result }
+        suspend fun withUpdateOTRLastPreKeyId(result: Either<StorageFailure, Unit>) = apply {
+            coEvery {
+                preKeyRepository.updateMostRecentPreKeyId(any())
+            }.returns(result)
         }
 
-        fun withSelfCookieLabel(result: Either<StorageFailure, String?>) = apply {
-            given(sessionRepository)
-                .suspendFunction(sessionRepository::cookieLabel)
-                .whenInvokedWith(eq(SELF_USER_ID))
-                .then { result }
+        suspend fun withSelfCookieLabel(result: Either<StorageFailure, String?>) = apply {
+            coEvery {
+                sessionRepository.cookieLabel(eq(SELF_USER_ID))
+            }.returns(result)
         }
 
         fun arrange() = this to registerClient

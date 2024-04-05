@@ -21,7 +21,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -37,9 +37,9 @@ class MarkTeamAppLockStatusAsNotifiedUseCaseTest {
 
         useCase.invoke()
 
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setTeamAppLockAsNotified)
-            .wasInvoked(once)
+        verify {
+            arrangement.userConfigRepository.setTeamAppLockAsNotified()
+        }.wasInvoked(once)
     }
 
     class Arrangement {
@@ -52,10 +52,9 @@ class MarkTeamAppLockStatusAsNotifiedUseCaseTest {
         )
 
         fun withSuccess() = apply {
-            given(userConfigRepository)
-                .function(userConfigRepository::setTeamAppLockAsNotified)
-                .whenInvoked()
-                .thenReturn(Either.Right(Unit))
+            every {
+                userConfigRepository.setTeamAppLockAsNotified()
+            }.returns(Either.Right(Unit))
         }
     }
 }

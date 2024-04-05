@@ -24,15 +24,15 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 
 interface CurrentClientIdProviderArrangement {
 
     @Mock
     val currentClientIdProvider: CurrentClientIdProvider
-    fun withCurrentClientIdSuccess(currentClientId: ClientId)
-    fun withCurrentClientIdFailure(error: CoreFailure = StorageFailure.DataNotFound)
+    suspend fun withCurrentClientIdSuccess(currentClientId: ClientId)
+    suspend fun withCurrentClientIdFailure(error: CoreFailure = StorageFailure.DataNotFound)
 }
 
 class CurrentClientIdProviderArrangementImpl : CurrentClientIdProviderArrangement {
@@ -40,18 +40,16 @@ class CurrentClientIdProviderArrangementImpl : CurrentClientIdProviderArrangemen
     @Mock
     override val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
 
-    override fun withCurrentClientIdSuccess(currentClientId: ClientId) {
-        given(currentClientIdProvider)
-            .suspendFunction(currentClientIdProvider::invoke)
-            .whenInvoked()
-            .then { Either.Right(currentClientId) }
+    override suspend fun withCurrentClientIdSuccess(currentClientId: ClientId) {
+        coEvery {
+            currentClientIdProvider.invoke()
+        }.returns(Either.Right(currentClientId))
     }
 
-    override fun withCurrentClientIdFailure(error: CoreFailure) {
-        given(currentClientIdProvider)
-            .suspendFunction(currentClientIdProvider::invoke)
-            .whenInvoked()
-            .then { Either.Left(error) }
+    override suspend fun withCurrentClientIdFailure(error: CoreFailure) {
+        coEvery {
+            currentClientIdProvider.invoke()
+        }.returns(Either.Left(error))
     }
 }
 

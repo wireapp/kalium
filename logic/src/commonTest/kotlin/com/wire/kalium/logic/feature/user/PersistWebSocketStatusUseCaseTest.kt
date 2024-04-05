@@ -26,10 +26,10 @@ import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -58,9 +58,9 @@ class PersistWebSocketStatusUseCaseTest {
         // When
         persistPersistentWebSocketConnectionStatusUseCase(true)
 
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::updatePersistentWebSocketStatus).with(any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.sessionRepository.updatePersistentWebSocketStatus(any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -70,19 +70,18 @@ class PersistWebSocketStatusUseCaseTest {
         val persistPersistentWebSocketConnectionStatusUseCaseImpl =
             PersistPersistentWebSocketConnectionStatusUseCaseImpl(UserId("test", "domain"), sessionRepository)
 
-        fun withSuccessfulResponse(): Arrangement {
-            given(sessionRepository)
-                .suspendFunction(sessionRepository::updatePersistentWebSocketStatus)
-                .whenInvokedWith(any(), any()).thenReturn(Either.Right(Unit))
+        suspend fun withSuccessfulResponse(): Arrangement {
+            coEvery {
+                sessionRepository.updatePersistentWebSocketStatus(any(), any())
+            }.returns(Either.Right(Unit))
 
             return this
         }
 
-        fun withPersistWebSocketErrorResponse(storageFailure: StorageFailure): Arrangement {
-            given(sessionRepository)
-                .suspendFunction(sessionRepository::updatePersistentWebSocketStatus)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Left(storageFailure))
+        suspend fun withPersistWebSocketErrorResponse(storageFailure: StorageFailure): Arrangement {
+            coEvery {
+                sessionRepository.updatePersistentWebSocketStatus(any(), any())
+            }.returns(Either.Left(storageFailure))
             return this
         }
 

@@ -22,9 +22,9 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.anything
+import io.mockative.any
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -45,10 +45,9 @@ class GetConversationUnreadEventsCountUseCaseTest {
     @Test
     fun givenGettingUnreadEventsCountSucceed_whenItIsRequested_thenSuccessResultReturned() = runTest {
         // given
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationUnreadEventsCount)
-            .whenInvokedWith(anything())
-            .thenReturn(Either.Right(1))
+        coEvery {
+            conversationRepository.getConversationUnreadEventsCount(any())
+        }.returns(Either.Right(1))
 
         // when
         val result = getConversationUnreadEventsCountUseCase(ConversationId(value = "convId", domain = "domainId"))
@@ -60,10 +59,9 @@ class GetConversationUnreadEventsCountUseCaseTest {
     @Test
     fun givenGettingUnreadEventsCountFailed_whenItIsRequested_thenFailureResultReturned() = runTest {
         // given
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationUnreadEventsCount)
-            .whenInvokedWith(anything())
-            .thenReturn(Either.Left(StorageFailure.DataNotFound))
+        coEvery {
+            conversationRepository.getConversationUnreadEventsCount(any())
+        }.returns(Either.Left(StorageFailure.DataNotFound))
 
         // when
         val result = getConversationUnreadEventsCountUseCase(ConversationId(value = "convId", domain = "domainId"))

@@ -34,13 +34,12 @@ import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
 import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -58,10 +57,9 @@ class DeleteClientUseCaseTest {
 
         deleteClient(params)
 
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::deleteClient)
-            .with(eq(params))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.clientRepository.deleteClient(eq(params))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -123,37 +121,33 @@ class DeleteClientUseCaseTest {
         val result = deleteClient(DELETE_CLIENT_PARAMETERS)
 
         assertIs<DeleteClientResult.Success>(result)
-        verify(arrangement.updateSupportedProtocolsAndResolveOneOnOnes)
-            .suspendFunction(arrangement.updateSupportedProtocolsAndResolveOneOnOnes::invoke)
-            .with(eq(true))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(eq(true))
+        }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement(private val block: Arrangement.() -> Unit) :
+    private class Arrangement(private inline val block: suspend Arrangement.() -> Unit) :
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
-        OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl()
-    {
+        OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl() {
         @Mock
         val clientRepository = mock(classOf<ClientRepository>())
 
         @Mock
         val updateSupportedProtocolsAndResolveOneOnOnes = mock(classOf<UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>())
 
-        fun withDeleteClient(result: Either<NetworkFailure, Unit>) {
-            given(clientRepository)
-                .suspendFunction(clientRepository::deleteClient)
-                .whenInvokedWith(anything())
-                .then { result }
+        suspend fun withDeleteClient(result: Either<NetworkFailure, Unit>) {
+            coEvery {
+                clientRepository.deleteClient(any())
+            }.returns(result)
         }
 
-        fun withUpdateSupportedProtocolsAndResolveOneOnOnes(result: Either<CoreFailure, Unit>) {
-            given(updateSupportedProtocolsAndResolveOneOnOnes)
-                .suspendFunction(updateSupportedProtocolsAndResolveOneOnOnes::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withUpdateSupportedProtocolsAndResolveOneOnOnes(result: Either<CoreFailure, Unit>) {
+            coEvery {
+                updateSupportedProtocolsAndResolveOneOnOnes.invoke(any())
+            }.returns(result)
         }
 
-        fun arrange() = run {
+        suspend fun arrange() = run {
             block()
             this@Arrangement to DeleteClientUseCaseImpl(
                 clientRepository = clientRepository,
@@ -163,7 +157,7 @@ class DeleteClientUseCaseTest {
     }
 
     private companion object {
-        fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+        suspend fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
         val CLIENT = TestClient.CLIENT
         val DELETE_CLIENT_PARAMETERS = DeleteClientParam("pass", CLIENT.id)

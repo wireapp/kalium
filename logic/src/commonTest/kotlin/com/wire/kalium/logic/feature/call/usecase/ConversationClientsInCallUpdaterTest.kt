@@ -30,10 +30,10 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -62,35 +62,32 @@ class ConversationClientsInCallUpdaterTest {
 
     @Test
     fun givenConversationRepositoryReturnsFailure_whenGettingConversationRecipients_thenDoNothing() = runTest {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationRecipientsForCalling)
-            .whenInvokedWith(eq(conversationId))
-            .thenReturn(Either.Left(CoreFailure.MissingClientRegistration))
+        coEvery {
+            conversationRepository.getConversationRecipientsForCalling(eq(conversationId))
+        }.returns(Either.Left(CoreFailure.MissingClientRegistration))
 
         conversationClientsInCallUpdater(conversationId)
 
-        verify(callManager)
-            .suspendFunction(callManager::updateConversationClients)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            callManager.updateConversationClients(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
     fun givenConversationRepositoryReturnsValidValues_whenGettingConversationRecipients_thenUpdateConversationClients() = runTest {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationRecipientsForCalling)
-            .whenInvokedWith(eq(conversationId))
-            .thenReturn(Either.Right(recipients))
+        coEvery {
+            conversationRepository.getConversationRecipientsForCalling(eq(conversationId))
+        }.returns(Either.Right(recipients))
 
-        given(federatedIdMapper).coroutine { parseToFederatedId(userId) }
-            .thenReturn(userIdString)
+        coEvery {
+            federatedIdMapper.parseToFederatedId(userId)
+        }.returns(userIdString)
 
         conversationClientsInCallUpdater(conversationId)
 
-        verify(callManager)
-            .suspendFunction(callManager::updateConversationClients)
-            .with(any(), any())
-            .wasInvoked(once)
+        coVerify {
+            callManager.updateConversationClients(any(), any())
+        }.wasInvoked(once)
     }
 
     companion object {

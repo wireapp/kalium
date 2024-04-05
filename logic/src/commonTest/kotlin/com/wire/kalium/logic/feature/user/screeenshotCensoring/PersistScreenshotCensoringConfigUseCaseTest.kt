@@ -26,11 +26,11 @@ import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -45,10 +45,9 @@ class PersistScreenshotCensoringConfigUseCaseTest {
         val value = true
         val actual = persistScreenshotCensoringConfig(value)
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::setScreenshotCensoringConfig)
-            .with(eq(value))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(value))
+        }.wasInvoked(once)
         assertTrue(actual is PersistScreenshotCensoringConfigResult.Success)
     }
 
@@ -60,10 +59,9 @@ class PersistScreenshotCensoringConfigUseCaseTest {
         val value = false
         val actual = persistScreenshotCensoringConfig(value)
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::setScreenshotCensoringConfig)
-            .with(eq(value))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.userConfigRepository.setScreenshotCensoringConfig(eq(value))
+        }.wasInvoked(once)
 
         assertTrue(actual is PersistScreenshotCensoringConfigResult.Success)
     }
@@ -76,10 +74,9 @@ class PersistScreenshotCensoringConfigUseCaseTest {
         val value = true
         val actual = persistScreenshotCensoringConfig(value)
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::setScreenshotCensoringConfig)
-            .with(any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.userConfigRepository.setScreenshotCensoringConfig(any())
+        }.wasInvoked(once)
 
         assertTrue(actual is PersistScreenshotCensoringConfigResult.Failure)
     }
@@ -90,20 +87,18 @@ class PersistScreenshotCensoringConfigUseCaseTest {
 
         val persistScreenshotCensoringConfig = PersistScreenshotCensoringConfigUseCaseImpl(userConfigRepository)
 
-        fun withSuccessfulCall() = apply {
-            given(userConfigRepository)
-                .suspendFunction(userConfigRepository::setScreenshotCensoringConfig)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withSuccessfulCall() = apply {
+            coEvery {
+                userConfigRepository.setScreenshotCensoringConfig(any())
+            }.returns(Either.Right(Unit))
 
             return this
         }
 
-        fun withFailureToCallRepo() = apply {
-            given(userConfigRepository)
-                .suspendFunction(userConfigRepository::setScreenshotCensoringConfig)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Left(StorageFailure.Generic(RuntimeException("Some error"))))
+        suspend fun withFailureToCallRepo() = apply {
+            coEvery {
+                userConfigRepository.setScreenshotCensoringConfig(any())
+            }.returns(Either.Left(StorageFailure.Generic(RuntimeException("Some error"))))
 
             return this
         }

@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Recipient
@@ -50,11 +49,12 @@ import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.configure
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.every
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -65,6 +65,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import okio.Path.Companion.toPath
 import kotlin.test.Test
+import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertSame
@@ -86,10 +87,9 @@ class MessageRepositoryTest {
 
         // Then
         with(arrangement) {
-            verify(messageDAO)
-                .suspendFunction(messageDAO::getMessagesByConversationAndVisibility)
-                .with(eq(mappedId), anything(), anything(), anything())
-                .wasInvoked(exactly = once)
+            coVerify {
+                messageDAO.getMessagesByConversationAndVisibility(eq(mappedId), any(), any(), any())
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -107,10 +107,9 @@ class MessageRepositoryTest {
 
         // Then
         with(arrangement) {
-            verify(messageDAO)
-                .suspendFunction(messageDAO::getImageMessageAssets)
-                .with(eq(mappedId), anything(), anything())
-                .wasInvoked(exactly = once)
+            coVerify {
+                messageDAO.getImageMessageAssets(eq(mappedId), any(), any(), any())
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -131,10 +130,9 @@ class MessageRepositoryTest {
 
         // Then
         with(arrangement) {
-            verify(messageMapper)
-                .function(messageMapper::fromEntityToMessage)
-                .with(eq(entity))
-                .wasInvoked(exactly = once)
+            verify {
+                messageMapper.fromEntityToMessage(eq(entity))
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -151,15 +149,13 @@ class MessageRepositoryTest {
         messageRepository.persistMessage(message)
 
         with(arrangement) {
-            verify(messageMapper)
-                .function(messageMapper::fromMessageToEntity)
-                .with(eq(message))
-                .wasInvoked(exactly = once)
+            verify {
+                messageMapper.fromMessageToEntity(eq(message))
+            }.wasInvoked(exactly = once)
 
-            verify(messageDAO)
-                .suspendFunction(messageDAO::insertOrIgnoreMessage)
-                .with(eq(mappedEntity), anything(), anything())
-                .wasInvoked(exactly = once)
+            coVerify {
+                messageDAO.insertOrIgnoreMessage(eq(mappedEntity), any(), any())
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -198,10 +194,9 @@ class MessageRepositoryTest {
             }
 
         with(arrangement) {
-            verify(messageApi)
-                .suspendFunction(messageApi::qualifiedSendMessage)
-                .with(matching { it.externalBlob!!.contentEquals(dataBlob.data) }, anything())
-                .wasInvoked(exactly = once)
+            coVerify {
+                messageApi.qualifiedSendMessage(matches { it.externalBlob!!.contentEquals(dataBlob.data) }, any())
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -229,13 +224,13 @@ class MessageRepositoryTest {
             )
         ).shouldSucceed()
 
-        verify(arrangement.messageApi)
-            .suspendFunction(arrangement.messageApi::qualifiedSendMessage)
-            .with(
-                matching {
+        coVerify {
+            arrangement.messageApi.qualifiedSendMessage(
+                matches {
                     it.recipients.isEmpty() && it.messageOption == MessageApi.QualifiedMessageOption.IgnoreAll
-                }, anything()
+                }, any()
             )
+        }.wasInvoked()
     }
 
     @Test
@@ -253,13 +248,13 @@ class MessageRepositoryTest {
             .sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation())
             .shouldSucceed()
 
-        verify(arrangement.messageApi)
-            .suspendFunction(arrangement.messageApi::qualifiedSendMessage)
-            .with(
-                matching {
+        coVerify {
+            arrangement.messageApi.qualifiedSendMessage(
+                matches {
                     it.recipients.isEmpty() && it.messageOption == MessageApi.QualifiedMessageOption.ReportAll
-                }, anything()
+                }, any()
             )
+        }.wasInvoked()
     }
 
     @Test
@@ -293,10 +288,9 @@ class MessageRepositoryTest {
             }
 
         with(arrangement) {
-            verify(messageApi)
-                .suspendFunction(messageApi::qualifiedBroadcastMessage)
-                .with(matching { it.externalBlob!!.contentEquals(dataBlob.data) })
-                .wasInvoked(exactly = once)
+            coVerify {
+                messageApi.qualifiedBroadcastMessage(matches { it.externalBlob!!.contentEquals(dataBlob.data) })
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -314,13 +308,11 @@ class MessageRepositoryTest {
             BroadcastMessageOption.IgnoreSome(listOf())
         ).shouldSucceed()
 
-        verify(arrangement.messageApi)
-            .suspendFunction(arrangement.messageApi::qualifiedBroadcastMessage)
-            .with(
-                matching {
-                    it.recipients.isEmpty() && it.messageOption == MessageApi.QualifiedMessageOption.IgnoreSome(listOf())
-                }
+        coVerify {
+            arrangement.messageApi.qualifiedBroadcastMessage(
+                matches { it.recipients.isEmpty() && it.messageOption == MessageApi.QualifiedMessageOption.IgnoreSome(listOf()) }
             )
+        }.wasInvoked()
     }
 
     @Test
@@ -336,10 +328,14 @@ class MessageRepositoryTest {
 
         messageRepository.promoteMessageToSentUpdatingServerTime(conversationID, messageID, newServerData, millis).shouldSucceed()
 
-        verify(arrangement.messageDAO)
-            .suspendFunction(arrangement.messageDAO::promoteMessageToSentUpdatingServerTime)
-            .with(eq(conversationID.toDao()), eq(messageID), eq(newServerData), eq(millis))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageDAO.promoteMessageToSentUpdatingServerTime(
+                eq(conversationID.toDao()),
+                eq(messageID),
+                eq(newServerData),
+                eq(millis)
+            )
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -361,15 +357,18 @@ class MessageRepositoryTest {
             .sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Users(listOf(TEST_USER_ID)))
             .shouldSucceed()
 
-        verify(arrangement.messageApi)
-            .suspendFunction(arrangement.messageApi::qualifiedSendMessage)
-            .with(
-                matching {
-                    (it.messageOption is MessageApi.QualifiedMessageOption.ReportSome) &&
-                            ((it.messageOption as MessageApi.QualifiedMessageOption.ReportSome)
-                                .userIDs == recipient.map { it.id })
-                }, anything()
+        coVerify {
+            arrangement.messageApi.qualifiedSendMessage(
+                matches {
+                    val messageOption = it.messageOption
+                    assertIs<MessageApi.QualifiedMessageOption.ReportSome>(messageOption)
+                    val expected = recipient.map { recipient -> recipient.id.toApi() }
+                    assertContentEquals(expected, messageOption.userIDs)
+                    true
+                },
+                any()
             )
+        }.wasInvoked()
     }
 
     @Test
@@ -385,15 +384,14 @@ class MessageRepositoryTest {
 
         messageRepository.persistRecipientsDeliveryFailure(conversationID, messageID, listOfUserIds).shouldSucceed()
 
-        verify(arrangement.messageDAO)
-            .suspendFunction(arrangement.messageDAO::insertFailedRecipientDelivery)
-            .with(
+        coVerify {
+            arrangement.messageDAO.insertFailedRecipientDelivery(
                 eq(messageID),
                 eq(conversationID.toDao()),
                 eq(expectedFailedUsers),
                 eq(RecipientFailureTypeEntity.MESSAGE_DELIVERY_FAILED)
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -409,14 +407,16 @@ class MessageRepositoryTest {
 
         messageRepository.persistNoClientsToDeliverFailure(conversationID, messageID, listOfUserIds).shouldSucceed()
 
-        verify(arrangement.messageDAO)
-            .suspendFunction(arrangement.messageDAO::insertFailedRecipientDelivery)
-            .with(
+        coVerify {
+
+            arrangement.messageDAO.insertFailedRecipientDelivery(
                 eq(messageID),
                 eq(conversationID.toDao()),
                 eq(expectedFailedUsers),
                 eq(RecipientFailureTypeEntity.NO_CLIENTS_TO_DELIVER)
             )
+
+        }
             .wasInvoked(exactly = once)
     }
 
@@ -438,19 +438,17 @@ class MessageRepositoryTest {
             (result as Either.Right).value.failedToConfirmClients.isNotEmpty()
         }
 
-        verify(arrangement.mlsMessageApi)
-            .suspendFunction(arrangement.mlsMessageApi::sendMessage)
-            .with(
-                matching {
+        coVerify {
+            arrangement.mlsMessageApi.sendMessage(
+                matches {
                     it.value.contentToString() == ByteArray(0).contentToString()
                 },
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.sendMessagePartialFailureMapper)
-            .function(arrangement.sendMessagePartialFailureMapper::fromMlsDTO)
-            .with(any())
-            .wasInvoked(exactly = once)
+        verify {
+            arrangement.sendMessagePartialFailureMapper.fromMlsDTO(any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -467,13 +465,12 @@ class MessageRepositoryTest {
             targetConversationId
         ).shouldSucceed()
 
-        verify(arrangement.messageDAO)
-            .suspendFunction(arrangement.messageDAO::moveMessages)
-            .with(
+        coVerify {
+            arrangement.messageDAO.moveMessages(
                 eq(sourceConversationId.toDao()),
                 eq(targetConversationId.toDao())
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -525,6 +522,7 @@ class MessageRepositoryTest {
             (result as Either.Right).value
         )
     }
+
     @Test
     fun givenLegalHoldForMembersMessage_whenUpdatingMembers_thenTheDAOShouldBeCalledWithProperValues() = runTest {
         // given
@@ -533,11 +531,15 @@ class MessageRepositoryTest {
         // when
         messageRepository.updateLegalHoldMessageMembers(TEST_MESSAGE_ID, TEST_CONVERSATION_ID, newUsersList)
         // then
-        verify(arrangement.messageDAO)
-            .suspendFunction(arrangement.messageDAO::updateLegalHoldMessageMembers)
-            .with(eq(TEST_CONVERSATION_ID.toDao()), eq(TEST_MESSAGE_ID), eq(newUsersList.map { it.toDao() }))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageDAO.updateLegalHoldMessageMembers(
+                eq(TEST_CONVERSATION_ID.toDao()),
+                eq(TEST_MESSAGE_ID),
+                eq(newUsersList.map { it.toDao() })
+            )
+        }.wasInvoked(exactly = once)
     }
+
     @Test
     fun givenConversationIds_whenGettingLastMessagesForConversationIds_thenTheDAOShouldBeCalledWithProperValues() = runTest {
         // given
@@ -548,10 +550,9 @@ class MessageRepositoryTest {
         // when
         messageRepository.getLastMessagesForConversationIds(conversationIds)
         // then
-        verify(arrangement.messageDAO)
-            .suspendFunction(arrangement.messageDAO::getLastMessagesByConversations)
-            .with(eq(conversationIds.map { it.toDao() }))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageDAO.getLastMessagesByConversations(eq(conversationIds.map { it.toDao() }))
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -563,7 +564,7 @@ class MessageRepositoryTest {
         val mlsMessageApi = mock(MLSMessageApi::class)
 
         @Mock
-        val messageDAO = configure(mock(MessageDAO::class)) { stubsUnitByDefault = true }
+        val messageDAO = configure(mock(MessageDAO::class)) { }
 
         @Mock
         val sendMessageFailureMapper = mock(SendMessageFailureMapper::class)
@@ -573,159 +574,141 @@ class MessageRepositoryTest {
 
         @Mock
         val messageMapper = mock(MessageMapper::class)
-        fun withMockedMessages(messages: List<MessageEntity>): Arrangement {
-            given(messageDAO)
-                .suspendFunction(messageDAO::getMessagesByConversationAndVisibility)
-                .whenInvokedWith(anything(), anything(), anything(), anything())
-                .then { _, _, _, _ -> flowOf(messages) }
-            given(messageDAO)
-                .suspendFunction(messageDAO::getPendingToConfirmMessagesByConversationAndVisibilityAfterDate)
-                .whenInvokedWith(anything(), anything())
-                .then { _, _ -> messages.map { it.id } }
+        suspend fun withMockedMessages(messages: List<MessageEntity>): Arrangement {
+            coEvery {
+                messageDAO.getMessagesByConversationAndVisibility(any(), any(), any(), any())
+            }.returns(flowOf(messages))
+            coEvery {
+                messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(any(), any())
+            }.returns(messages.map { it.id })
             return this
         }
 
         fun withMappedMessageModel(message: Message.Regular): Arrangement {
-            given(messageMapper)
-                .function(messageMapper::fromEntityToMessage)
-                .whenInvokedWith(anything())
-                .then { message }
+            every {
+                messageMapper.fromEntityToMessage(any())
+            }.returns(message)
             return this
         }
 
         fun withMappedAssetMessageModel(message: AssetMessage): Arrangement {
-            given(messageMapper)
-                .function(messageMapper::fromAssetEntityToAssetMessage)
-                .whenInvokedWith(anything())
-                .then { message }
+            every {
+                messageMapper.fromAssetEntityToAssetMessage(any())
+            }.returns(message)
             return this
         }
 
         fun withMappedMessageModel(result: Message.Regular, param: MessageEntity.Regular): Arrangement {
-            given(messageMapper)
-                .function(messageMapper::fromEntityToMessage)
-                .whenInvokedWith(eq(param))
-                .then { result }
+            every {
+                messageMapper.fromEntityToMessage(eq(param))
+            }.returns(result)
             return this
         }
 
         fun withMappedMessageEntity(message: MessageEntity.Regular): Arrangement {
-            given(messageMapper)
-                .function(messageMapper::fromMessageToEntity)
-                .whenInvokedWith(anything())
-                .then { message }
+            every {
+                messageMapper.fromMessageToEntity(any())
+            }.returns(message)
             return this
         }
 
-        fun withSuccessfulMessageDelivery(timestamp: String): Arrangement {
-            given(messageApi)
-                .suspendFunction(messageApi::qualifiedSendMessage)
-                .whenInvokedWith(anything(), anything())
-                .then { _, _ ->
+        suspend fun withSuccessfulMessageDelivery(timestamp: String): Arrangement {
+            coEvery { messageApi.qualifiedSendMessage(any(), any()) }
+                .returns(
                     NetworkResponse.Success(
                         QualifiedSendMessageResponse.MessageSent(timestamp, mapOf(), mapOf(), mapOf()),
                         emptyMap(),
                         201
                     )
-                }
+                )
             return this
         }
 
         fun withFailedToSendMlsMapping(failedToSend: List<UserId>) = apply {
-            given(sendMessagePartialFailureMapper)
-                .function(sendMessagePartialFailureMapper::fromMlsDTO)
-                .whenInvokedWith(anything())
-                .then { MessageSent(TEST_DATETIME, failedToSend) }
+            every {
+                sendMessagePartialFailureMapper.fromMlsDTO(any())
+            }.returns(MessageSent(TEST_DATETIME, failedToSend))
         }
 
         fun withFailedToSendMapping(failedToSend: List<UserId>) = apply {
-            given(sendMessagePartialFailureMapper)
-                .function(sendMessagePartialFailureMapper::fromDTO)
-                .whenInvokedWith(anything())
-                .then { MessageSent(TEST_DATETIME, failedToSend) }
+            every {
+                sendMessagePartialFailureMapper.fromDTO(any())
+            }.returns(
+                MessageSent(TEST_DATETIME, failedToSend)
+            )
         }
 
-        fun withMlsSendMessageResponse(
+        suspend fun withMlsSendMessageResponse(
             timestamp: SendMLSMessageResponse = SendMLSMessageResponse(
                 TEST_DATETIME,
                 listOf(),
                 listOf()
             )
         ): Arrangement {
-            given(mlsMessageApi)
-                .suspendFunction(mlsMessageApi::sendMessage)
-                .whenInvokedWith(anything())
-                .then {
+            coEvery { mlsMessageApi.sendMessage(any()) }
+                .returns(
                     NetworkResponse.Success(
                         timestamp,
                         emptyMap(),
                         201
                     )
-                }
+                )
             return this
         }
 
-        fun withSuccessfulMessageBroadcasting(timestamp: String): Arrangement {
-            given(messageApi)
-                .suspendFunction(messageApi::qualifiedBroadcastMessage)
-                .whenInvokedWith(anything())
-                .then { _ ->
+        suspend fun withSuccessfulMessageBroadcasting(timestamp: String): Arrangement {
+            coEvery { messageApi.qualifiedBroadcastMessage(any()) }
+                .returns(
                     NetworkResponse.Success(
                         QualifiedSendMessageResponse.MessageSent(timestamp, mapOf(), mapOf(), mapOf()),
                         emptyMap(),
                         201
                     )
-                }
+                )
             return this
         }
 
-        fun withUpdateMessageAfterSend() = apply {
-            given(messageDAO)
-                .suspendFunction(messageDAO::promoteMessageToSentUpdatingServerTime)
-                .whenInvokedWith(anything(), anything(), anything(), anything())
-                .then { _, _, _, _ -> Unit }
+        suspend fun withUpdateMessageAfterSend() = apply {
+            coEvery {
+                messageDAO.promoteMessageToSentUpdatingServerTime(any(), any(), any(), any())
+            }.returns(Unit)
         }
 
-        fun withMovingToAnotherConversationSucceeding() = apply {
-            given(messageDAO)
-                .suspendFunction(messageDAO::moveMessages)
-                .whenInvokedWith(any())
-                .thenReturn(Unit)
+        suspend fun withMovingToAnotherConversationSucceeding() = apply {
+            coEvery {
+                messageDAO.moveMessages(any(), any())
+            }.returns(Unit)
         }
 
-        fun withMovingToAnotherConversationFailingWith(throwable: Throwable) = apply {
-            given(messageDAO)
-                .suspendFunction(messageDAO::moveMessages)
-                .whenInvokedWith(any())
-                .thenThrow(throwable)
+        suspend fun withMovingToAnotherConversationFailingWith(throwable: Throwable) = apply {
+            coEvery {
+                messageDAO.moveMessages(any(), any())
+            }.throws(throwable)
         }
 
-        fun withSelectedMessagePosition(
+        suspend fun withSelectedMessagePosition(
             conversationId: QualifiedIDEntity,
             messageId: String,
             result: Int
         ) = apply {
-            given(messageDAO)
-                .suspendFunction(messageDAO::getSearchedConversationMessagePosition)
-                .whenInvokedWith(eq(conversationId), eq(messageId))
-                .thenReturn(result)
+            coEvery {
+                messageDAO.getSearchedConversationMessagePosition(eq(conversationId), eq(messageId))
+            }.returns(result)
         }
 
-        fun withAssetMessages(
+        suspend fun withAssetMessages(
             conversationId: QualifiedIDEntity,
             result: List<AssetMessageEntity>
         ) = apply {
-            given(messageDAO)
-                .suspendFunction(messageDAO::getImageMessageAssets)
-                .whenInvokedWith(eq(conversationId))
-                .thenReturn(result)
+            coEvery {
+                messageDAO.getImageMessageAssets(eq(conversationId), any(), any(), any())
+            }.returns(result)
         }
 
-        fun withGetLastMessagesByConversations(result: Map<QualifiedIDEntity, MessageEntity>) = apply {
-            given(messageDAO)
-                .suspendFunction(messageDAO::getLastMessagesByConversations)
-                .whenInvokedWith(anything())
-                .thenReturn(result)
+        suspend fun withGetLastMessagesByConversations(result: Map<QualifiedIDEntity, MessageEntity>) = apply {
+            coEvery {
+                messageDAO.getLastMessagesByConversations(any())
+            }.returns(result)
         }
 
         fun arrange() = this to MessageDataSource(
@@ -738,11 +721,10 @@ class MessageRepositoryTest {
             sendMessagePartialFailureMapper = sendMessagePartialFailureMapper
         )
 
-        fun withInsertFailedRecipients() = apply {
-            given(messageDAO)
-                .suspendFunction(messageDAO::insertFailedRecipientDelivery)
-                .whenInvokedWith(anything(), anything(), anything(), anything())
-                .then { _, _, _, _ -> Unit }
+        suspend fun withInsertFailedRecipients() = apply {
+            coEvery {
+                messageDAO.insertFailedRecipientDelivery(any(), any(), any(), any())
+            }.returns(Unit)
         }
     }
 

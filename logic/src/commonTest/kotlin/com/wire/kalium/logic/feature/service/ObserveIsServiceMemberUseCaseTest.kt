@@ -19,26 +19,22 @@ package com.wire.kalium.logic.feature.service
 
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.service.ServiceDetails
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.classOf
+import io.mockative.coEvery
 import io.mockative.configure
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class ObserveIsServiceMemberUseCaseTest {
 
     @Test
@@ -73,14 +69,13 @@ class ObserveIsServiceMemberUseCaseTest {
 
         fun arrange() = this to observeIsServiceMember
 
-        fun withObserveIsServiceMemberSuccess(
+        suspend fun withObserveIsServiceMemberSuccess(
             serviceId: ServiceId,
             conversationId: ConversationId
         ) = apply {
-            given(serviceRepository)
-                .suspendFunction(serviceRepository::observeIsServiceMember)
-                .whenInvokedWith(eq(serviceId), eq(conversationId))
-                .thenReturn(flowOf(Either.Right(userId)))
+            coEvery {
+                serviceRepository.observeIsServiceMember(eq(serviceId), eq(conversationId))
+            }.returns(flowOf(Either.Right(userId)))
         }
 
         companion object {

@@ -22,7 +22,7 @@ import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
 import com.wire.kalium.logic.sync.Result
 import io.mockative.Mock
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -45,10 +45,9 @@ class UpdateApiVersionsWorkerTest {
 
     @Test
     fun givenUpdateCompletes_whenExecutingAWorker_thenReturnSuccess() = runTest {
-        given(updateApiVersionsUseCase)
-            .suspendFunction(updateApiVersionsUseCase::invoke)
-            .whenInvoked()
-            .thenReturn(Unit)
+        coEvery {
+            updateApiVersionsUseCase.invoke()
+        }.returns(Unit)
 
         val result = updateApiVersionsWorker.doWork()
 

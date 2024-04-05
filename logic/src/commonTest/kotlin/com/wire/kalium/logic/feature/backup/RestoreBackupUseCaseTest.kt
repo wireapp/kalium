@@ -45,7 +45,8 @@ import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -84,10 +85,9 @@ class RestoreBackupUseCaseTest {
 
         // then
         assertIs<RestoreBackupResult.Success>(result)
-        verify(arrangement.databaseImporter)
-            .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.databaseImporter.importFromFile(any(), any())
+        }.wasInvoked(once)
     }
 
     @Test
@@ -109,10 +109,9 @@ class RestoreBackupUseCaseTest {
         assertIs<RestoreBackupResult.Failure>(result)
         assertIs<RestoreBackupResult.BackupRestoreFailure.InvalidUserId>(result.failure)
 
-        verify(arrangement.databaseImporter)
-            .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.databaseImporter.importFromFile(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -132,10 +131,9 @@ class RestoreBackupUseCaseTest {
         assertIs<RestoreBackupResult.Failure>(result)
         assertIs<RestoreBackupResult.BackupRestoreFailure.IncompatibleBackup>(result.failure)
 
-        verify(arrangement.databaseImporter)
-            .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.databaseImporter.importFromFile(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -157,10 +155,9 @@ class RestoreBackupUseCaseTest {
         // then
         assertIs<RestoreBackupResult.Success>(result)
 
-        verify(arrangement.databaseImporter)
-            .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.databaseImporter.importFromFile(any(), any())
+        }.wasInvoked(once)
     }
 
     @Ignore
@@ -183,10 +180,9 @@ class RestoreBackupUseCaseTest {
         // then
         assertTrue(result is RestoreBackupResult.Failure)
         assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.InvalidUserId)
-        verify(arrangement.databaseImporter)
-            .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.databaseImporter.importFromFile(any(), any())
+        }.wasNotInvoked()
     }
 
     @Ignore
@@ -209,10 +205,9 @@ class RestoreBackupUseCaseTest {
         // then
         assertTrue(result is RestoreBackupResult.Failure)
         assertTrue(result.failure is RestoreBackupResult.BackupRestoreFailure.InvalidPassword)
-        verify(arrangement.databaseImporter)
-            .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.databaseImporter.importFromFile(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -234,10 +229,9 @@ class RestoreBackupUseCaseTest {
         // then
         assertIs<RestoreBackupResult.Failure>(result)
         assertIs<RestoreBackupResult.BackupRestoreFailure.BackupIOFailure>(result.failure)
-        verify(arrangement.databaseImporter)
-            .suspendFunction(arrangement.databaseImporter::importFromFile)
-            .with(any(), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.databaseImporter.importFromFile(any(), any())
+        }.wasInvoked(once)
     }
 
     private inner class Arrangement {
@@ -331,32 +325,28 @@ class RestoreBackupUseCaseTest {
             }
         }
 
-        fun withCorrectDbImportAction(userDBSecret: UserDBSecret? = null) = apply {
-            given(databaseImporter)
-                .suspendFunction(databaseImporter::importFromFile)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Unit)
+        suspend fun withCorrectDbImportAction(userDBSecret: UserDBSecret? = null) = apply {
+            coEvery {
+                databaseImporter.importFromFile(any(), any())
+            }.returns(Unit)
         }
 
-        fun withIncorrectDbImportAction(userDBSecret: UserDBSecret? = null) = apply {
-            given(databaseImporter)
-                .suspendFunction(databaseImporter::importFromFile)
-                .whenInvokedWith(any(), any())
-                .thenThrow(RuntimeException("DB import failed"))
+        suspend fun withIncorrectDbImportAction(userDBSecret: UserDBSecret? = null) = apply {
+            coEvery {
+                databaseImporter.importFromFile(any(), any())
+            }.throws(RuntimeException("DB import failed"))
         }
 
-        fun withCurrentClientId(clientId: ClientId = currentTestClientId) = apply {
-            given(currentClientIdProvider)
-                .suspendFunction(currentClientIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Right(clientId))
+        suspend fun withCurrentClientId(clientId: ClientId = currentTestClientId) = apply {
+            coEvery {
+                currentClientIdProvider.invoke()
+            }.returns(Either.Right(clientId))
         }
 
-        fun withSelfUser(selfUser: SelfUser) = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::getSelfUser)
-                .whenInvoked()
-                .thenReturn(selfUser)
+        suspend fun withSelfUser(selfUser: SelfUser) = apply {
+            coEvery {
+                userRepository.getSelfUser()
+            }.returns(selfUser)
         }
 
         lateinit var extractZipFile: (

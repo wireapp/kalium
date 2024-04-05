@@ -60,9 +60,8 @@ class OnIncomingCallTest {
         )
         advanceUntilIdle()
 
-        verify(arrangement.callRepository)
-            .suspendFunction(arrangement.callRepository::createCall)
-            .with(
+        coVerify {
+            arrangement.callRepository.createCall(
                 eq(TestConversation.CONVERSATION.id),
                 eq(ConversationType.Conference),
                 eq(CallStatus.INCOMING),
@@ -71,7 +70,7 @@ class OnIncomingCallTest {
                 eq(false),
                 eq(false)
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -91,9 +90,8 @@ class OnIncomingCallTest {
         )
         advanceUntilIdle()
 
-        verify(arrangement.callRepository)
-            .suspendFunction(arrangement.callRepository::createCall)
-            .with(
+        coVerify {
+            arrangement.callRepository.createCall(
                 eq(TestConversation.CONVERSATION.id),
                 eq(ConversationType.Conference),
                 eq(CallStatus.STILL_ONGOING),
@@ -102,7 +100,7 @@ class OnIncomingCallTest {
                 eq(false),
                 eq(false)
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement(val testScope: TestScope) {

@@ -18,8 +18,6 @@
 package com.wire.kalium.logic.feature.e2ei
 
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
-import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
@@ -28,13 +26,11 @@ import com.wire.kalium.persistence.config.CRLWithExpiration
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -49,19 +45,17 @@ class CheckCrlRevocationListUseCaseTest {
 
         checkCrlWorker(false)
 
-        verify(arrangement.certificateRevocationListRepository)
-            .suspendFunction(arrangement.certificateRevocationListRepository::getCRLs)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.certificateRevocationListRepository.getCRLs()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.checkRevocationList)
-            .suspendFunction(arrangement.checkRevocationList::invoke)
-            .with(eq(DUMMY_URL))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.checkRevocationList.invoke(eq(DUMMY_URL))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.certificateRevocationListRepository)
-            .suspendFunction(arrangement.certificateRevocationListRepository::addOrUpdateCRL)
-            .with(eq(DUMMY_URL), eq(FUTURE_TIMESTAMP))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.certificateRevocationListRepository.addOrUpdateCRL(eq(DUMMY_URL), eq(FUTURE_TIMESTAMP))
+        }.wasInvoked(exactly = once)
 
     }
 
@@ -74,19 +68,17 @@ class CheckCrlRevocationListUseCaseTest {
 
         checkCrlWorker(true)
 
-        verify(arrangement.certificateRevocationListRepository)
-            .suspendFunction(arrangement.certificateRevocationListRepository::getCRLs)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.certificateRevocationListRepository.getCRLs()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.checkRevocationList)
-            .suspendFunction(arrangement.checkRevocationList::invoke)
-            .with(eq(DUMMY_URL))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.checkRevocationList.invoke(eq(DUMMY_URL))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.certificateRevocationListRepository)
-            .suspendFunction(arrangement.certificateRevocationListRepository::addOrUpdateCRL)
-            .with(eq(DUMMY_URL), eq(FUTURE_TIMESTAMP))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.certificateRevocationListRepository.addOrUpdateCRL(eq(DUMMY_URL), eq(FUTURE_TIMESTAMP))
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -101,31 +93,27 @@ class CheckCrlRevocationListUseCaseTest {
             certificateRevocationListRepository, checkRevocationList, kaliumLogger
         )
 
-        fun withNoCRL() = apply {
-            given(certificateRevocationListRepository)
-                .suspendFunction(certificateRevocationListRepository::getCRLs)
-                .whenInvoked()
-                .thenReturn(null)
+        suspend fun withNoCRL() = apply {
+            coEvery {
+                certificateRevocationListRepository.getCRLs()
+            }.returns(null)
         }
 
-        fun withNonExpiredCRL() = apply {
-            given(certificateRevocationListRepository)
-                .suspendFunction(certificateRevocationListRepository::getCRLs)
-                .whenInvoked()
-                .thenReturn(CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, FUTURE_TIMESTAMP))))
+        suspend fun withNonExpiredCRL() = apply {
+            coEvery {
+                certificateRevocationListRepository.getCRLs()
+            }.returns(CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, FUTURE_TIMESTAMP))))
         }
 
-        fun withExpiredCRL() = apply {
-            given(certificateRevocationListRepository)
-                .suspendFunction(certificateRevocationListRepository::getCRLs)
-                .whenInvoked()
-                .thenReturn(CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP))))
+        suspend fun withExpiredCRL() = apply {
+            coEvery {
+                certificateRevocationListRepository.getCRLs()
+            }.returns(CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP))))
         }
-        fun withCheckRevocationListResult() = apply {
-            given(checkRevocationList)
-                .suspendFunction(checkRevocationList::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(FUTURE_TIMESTAMP))
+        suspend fun withCheckRevocationListResult() = apply {
+            coEvery {
+                checkRevocationList.invoke(any())
+            }.returns(Either.Right(FUTURE_TIMESTAMP))
         }
     }
 
