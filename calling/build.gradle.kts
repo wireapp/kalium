@@ -28,6 +28,7 @@ kaliumLibrary {
         enableJs.set(false)
     }
 }
+val cameraxVersion = "1.3.2"
 
 kotlin {
 
@@ -45,14 +46,14 @@ kotlin {
         val androidMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
-                api(files("libs/avs-zoom.aar"))
+                api(files("libs/avs.aar"))
 
-                api ("androidx.camera:camera-core:1.2.3")
-                api ("androidx.camera:camera-view:1.2.3")
-                implementation ("androidx.camera:camera-camera2:1.2.3")
-                implementation ("androidx.camera:camera-lifecycle:1.2.3")
-                implementation ("androidx.camera:camera-video:1.2.3")
-                implementation ("androidx.camera:camera-extensions:1.2.3")
+                api ("androidx.camera:camera-core:$cameraxVersion")
+                api ("androidx.camera:camera-view:$cameraxVersion")
+                implementation ("androidx.camera:camera-camera2:$cameraxVersion")
+                implementation ("androidx.camera:camera-lifecycle:$cameraxVersion")
+                implementation ("androidx.camera:camera-video:$cameraxVersion")
+                implementation ("androidx.camera:camera-extensions:$cameraxVersion")
 
                 api(libs.jna.map {
                     project.dependencies.create(it, closureOf<ExternalModuleDependency> {
