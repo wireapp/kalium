@@ -17,98 +17,121 @@
  */
 package com.wire.kalium.logic.sync
 
-import com.wire.kalium.logic.data.sync.SyncState
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.kaliumLogger
 import io.mockative.Mock
-import io.mockative.any
 import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 class AvsSyncStateReporterTest {
 
     @Test
-    fun givenGatheringEventsSyncState_whenStartingReporting_thenInvokeReportProcessNotificationsWithTrue() = runTest {
-        val (_, avsSyncStateReporter) = Arrangement()
-            .withGatheringEventsSyncState()
-            .arrange()
+    fun givenGatheringEventsSyncState_whenStartingReporting_thenInvokeReportProcessNotificationsWithTrue() =
+        runTest {
+            val (_, avsSyncStateReporter) = Arrangement()
+                .withGatheringEventsIncrementalSyncState()
+                .arrange()
 
-        avsSyncStateReporter.execute()
+            avsSyncStateReporter.execute()
 
-        verify(avsSyncStateReporter.callManager.value)
-            .suspendFunction(avsSyncStateReporter.callManager.value::reportProcessNotifications)
-            .with(eq(true))
-            .wasInvoked(once)
-    }
-
-    @Test
-    fun givenLiveSyncState_whenStartingReporting_thenInvokeReportProcessNotificationsWithFalse() = runTest {
-        val (_, avsSyncStateReporter) = Arrangement()
-            .withLiveSyncState()
-            .arrange()
-
-        avsSyncStateReporter.execute()
-
-        verify(avsSyncStateReporter.callManager.value)
-            .suspendFunction(avsSyncStateReporter.callManager.value::reportProcessNotifications)
-            .with(eq(false))
-            .wasInvoked(once)
-    }
+            verify(avsSyncStateReporter.callManager.value)
+                .suspendFunction(avsSyncStateReporter.callManager.value::reportProcessNotifications)
+                .with(eq(true))
+                .wasInvoked(once)
+        }
 
     @Test
-    fun givenOtherSyncState_whenStartingReporting_thenDoNotInvokeReportProcessNotifications() = runTest {
-        val (_, avsSyncStateReporter) = Arrangement()
-            .withOtherSyncState()
-            .arrange()
+    fun givenLiveSyncState_whenStartingReporting_thenInvokeReportProcessNotificationsWithFalse() =
+        runTest {
+            val (_, avsSyncStateReporter) = Arrangement()
+                .withLiveIncrementalSyncState()
+                .arrange()
 
-        avsSyncStateReporter.execute()
+            avsSyncStateReporter.execute()
 
-        verify(avsSyncStateReporter.callManager.value)
-            .suspendFunction(avsSyncStateReporter.callManager.value::reportProcessNotifications)
-            .with(any())
-            .wasNotInvoked()
-    }
+            verify(avsSyncStateReporter.callManager.value)
+                .suspendFunction(avsSyncStateReporter.callManager.value::reportProcessNotifications)
+                .with(eq(false))
+                .wasInvoked(once)
+        }
+
+    @Test
+    fun givenPendingIncrementalSyncState_whenStartingReporting_thenInvokeReportProcessNotificationsWithFalse() =
+        runTest {
+            val (_, avsSyncStateReporter) = Arrangement()
+                .withPendingIncrementalSyncState()
+                .arrange()
+
+            avsSyncStateReporter.execute()
+
+            verify(avsSyncStateReporter.callManager.value)
+                .suspendFunction(avsSyncStateReporter.callManager.value::reportProcessNotifications)
+                .with(eq(false))
+                .wasInvoked()
+        }
+
+    @Test
+    fun givenFailedIncrementalSyncState_whenStartingReporting_thenInvokeReportProcessNotificationsWithFalse() =
+        runTest {
+            val (_, avsSyncStateReporter) = Arrangement()
+                .withFailedIncrementalSyncState()
+                .arrange()
+
+            avsSyncStateReporter.execute()
+
+            verify(avsSyncStateReporter.callManager.value)
+                .suspendFunction(avsSyncStateReporter.callManager.value::reportProcessNotifications)
+                .with(eq(false))
+                .wasInvoked()
+        }
 
     private class Arrangement {
 
         @Mock
-        val observeSyncStateUseCase: ObserveSyncStateUseCase = mock(classOf<ObserveSyncStateUseCase>())
+        val callManager: CallManager = mock(classOf<CallManager>())
 
         @Mock
-        val callManager: CallManager = mock(classOf<CallManager>())
+        val incrementalSyncRepository: IncrementalSyncRepository =
+            mock(classOf<IncrementalSyncRepository>())
 
         fun arrange() = this to AvsSyncStateReporterImpl(
             callManager = lazy { callManager },
-            observeSyncStateUseCase = observeSyncStateUseCase,
+            incrementalSyncRepository = incrementalSyncRepository,
             kaliumLogger = kaliumLogger
         )
 
-        fun withGatheringEventsSyncState() = apply {
-            given(observeSyncStateUseCase)
-                .function(observeSyncStateUseCase::invoke)
-                .whenInvoked()
-                .thenReturn(flow { emit(SyncState.GatheringPendingEvents) })
+        fun withGatheringEventsIncrementalSyncState() = apply {
+            given(incrementalSyncRepository)
+                .invocation { incrementalSyncRepository.incrementalSyncState }
+                .thenReturn(flowOf(IncrementalSyncStatus.FetchingPendingEvents))
         }
 
-        fun withLiveSyncState() = apply {
-            given(observeSyncStateUseCase)
-                .function(observeSyncStateUseCase::invoke)
-                .whenInvoked()
-                .thenReturn(flow { emit(SyncState.Live) })
+        fun withLiveIncrementalSyncState() = apply {
+            given(incrementalSyncRepository)
+                .invocation { incrementalSyncRepository.incrementalSyncState }
+                .thenReturn(flowOf(IncrementalSyncStatus.Live))
         }
 
-        fun withOtherSyncState() = apply {
-            given(observeSyncStateUseCase)
-                .function(observeSyncStateUseCase::invoke)
-                .whenInvoked()
-                .thenReturn(flow { emit(SyncState.SlowSync) })
+        fun withPendingIncrementalSyncState() = apply {
+            given(incrementalSyncRepository)
+                .invocation { incrementalSyncRepository.incrementalSyncState }
+                .thenReturn(flowOf(IncrementalSyncStatus.Pending))
+        }
+
+        fun withFailedIncrementalSyncState() = apply {
+            given(incrementalSyncRepository)
+                .invocation { incrementalSyncRepository.incrementalSyncState }
+                .thenReturn(flowOf(IncrementalSyncStatus.Failed(CoreFailure.SyncEventOrClientNotFound)))
         }
     }
 }

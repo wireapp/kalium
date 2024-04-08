@@ -15,20 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.message.ephemeral
+package com.wire.kalium.testservice.models
 
-/**
- * This use case deletes ephemeral [Message] that have an end date set and it has passed current time
- */
-interface DeleteEphemeralMessagesAfterEndDateUseCase {
-    suspend operator fun invoke()
-}
-
-internal class DeleteEphemeralMessagesAfterEndDateUseCaseImpl(
-    private val ephemeralMessageDeletionHandler: EphemeralMessageDeletionHandler
-) : DeleteEphemeralMessagesAfterEndDateUseCase {
-
-    override suspend fun invoke() {
-        ephemeralMessageDeletionHandler.deleteAlreadyEndedSelfDeletionMessages()
-    }
-}
+data class GetMessageReceiptsRequest(
+    val conversationDomain: String = "staging.zinfra.io",
+    val conversationId: String = "",
+    val messageId: String = "",
+)

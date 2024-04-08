@@ -37,6 +37,7 @@ internal interface ConnectionRepositoryArrangement {
     fun withDeleteConnection(result: Either<StorageFailure, Unit>, connection: Matcher<Connection> = any())
     fun withConnectionList(connectionsFlow: Flow<List<ConversationDetails>>)
     fun withUpdateConnectionStatus(result: Either<CoreFailure, Connection>)
+    fun withIgnoreConnectionRequest(result: Either<CoreFailure, Unit>)
 }
 
 internal open class ConnectionRepositoryArrangementImpl : ConnectionRepositoryArrangement {
@@ -73,6 +74,13 @@ internal open class ConnectionRepositoryArrangementImpl : ConnectionRepositoryAr
         given(connectionRepository)
             .suspendFunction(connectionRepository::updateConnectionStatus)
             .whenInvokedWith(any(), any())
+            .thenReturn(result)
+    }
+
+    override fun withIgnoreConnectionRequest(result: Either<CoreFailure, Unit>) {
+        given(connectionRepository)
+            .suspendFunction(connectionRepository::ignoreConnectionRequest)
+            .whenInvokedWith(any())
             .thenReturn(result)
     }
 }

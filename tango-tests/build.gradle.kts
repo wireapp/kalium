@@ -29,7 +29,7 @@ kotlin {
                 implementation(project(":network"))
                 implementation(project(":logic"))
                 implementation(project(":persistence"))
-                implementation(kotlin("test"))
+                implementation(libs.kotlin.test)
                 implementation(libs.settings.kmpTest)
 
                 implementation(libs.ktor.utils)

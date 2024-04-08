@@ -90,7 +90,7 @@ data class ServerConfig(
     data class MetaData(
         @SerialName("federation") val federation: Boolean,
         @SerialName("commonApiVersion")
-        @Serializable(with = CommonApiVersionTypeSerializer::class)
+        @Serializable(CommonApiVersionTypeSerializer::class)
         val commonApiVersion: CommonApiVersionType,
         @SerialName("domain") val domain: String?
     )
@@ -166,7 +166,8 @@ class ServerConfigMapperImpl(
 ) : ServerConfigMapper {
     override fun toDTO(serverConfig: ServerConfig): ServerConfigDTO = with(serverConfig) {
         ServerConfigDTO(
-            id = id, links = ServerConfigDTO.Links(
+            id = id,
+            links = ServerConfigDTO.Links(
                 links.api,
                 links.accounts,
                 links.webSocket,
@@ -176,8 +177,11 @@ class ServerConfigMapperImpl(
                 links.title,
                 isOnPremises = links.isOnPremises,
                 apiProxy = links.apiProxy?.let { toDTO(it) }
-            ), ServerConfigDTO.MetaData(
-                federation = metaData.federation, apiVersionMapper.toDTO(metaData.commonApiVersion), metaData.domain
+            ),
+            metaData = ServerConfigDTO.MetaData(
+                federation = metaData.federation,
+                commonApiVersion = apiVersionMapper.toDTO(metaData.commonApiVersion),
+                domain = metaData.domain
             )
         )
     }
@@ -198,7 +202,8 @@ class ServerConfigMapperImpl(
 
     override fun toDTO(serverConfigEntity: ServerConfigEntity): ServerConfigDTO = with(serverConfigEntity) {
         ServerConfigDTO(
-            id = id, links = ServerConfigDTO.Links(
+            id = id,
+            links = ServerConfigDTO.Links(
                 api = links.api,
                 accounts = links.accounts,
                 webSocket = links.webSocket,
@@ -208,7 +213,8 @@ class ServerConfigMapperImpl(
                 title = links.title,
                 isOnPremises = links.isOnPremises,
                 apiProxy = links.apiProxy?.let { toDTO(it) }
-            ), ServerConfigDTO.MetaData(
+            ),
+            metaData = ServerConfigDTO.MetaData(
                 federation = metaData.federation, commonApiVersion = apiVersionMapper.toDTO(metaData.apiVersion), domain = metaData.domain
             )
         )

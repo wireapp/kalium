@@ -122,11 +122,9 @@ interface MessageDAO {
         millis: Long
     )
 
-    suspend fun getEphemeralMessagesMarkedForDeletion(): List<MessageEntity>
+    suspend fun getAllPendingEphemeralMessages(): List<MessageEntity>
 
-    suspend fun getEphemeralMessagedMarkedForEndDeletion(): List<MessageEntity>
-
-    suspend fun updateSelfDeletionStartDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionStartDate: Instant)
+    suspend fun getAllAlreadyEndedEphemeralMessages(): List<MessageEntity>
 
     suspend fun updateSelfDeletionEndDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionEndDate: Instant)
 
