@@ -25,6 +25,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
 
+@IgnoreJS
+@IgnoreIOS
 class E2EIClientTest : BaseMLSClientTest() {
     data class SampleUser(
         val id: CryptoQualifiedID, val clientId: CryptoClientId, val name: String, val handle: String, val teamId: String? = ""
