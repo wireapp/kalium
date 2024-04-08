@@ -23,9 +23,9 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.session.SessionManager
 
 internal fun SessionManager.getProxyCredentials(): ProxyCredentials? {
-    val cred = proxyCredentials()
-    kaliumLogger.d("getProxyCredentials: Proxy has username: ${cred?.username?.isNotBlank()}; has password ${cerd?.password?.isNotBlank()}")
-    return MapperProvider.sessionMapper().fromDTOToProxyCredentialsModel(cred)
+    val cert = proxyCredentials()
+    kaliumLogger.d("getProxyCredentials: Proxy has username: ${cert?.username?.isNotBlank()}; has password ${cert?.password?.isNotBlank()}")
+    return MapperProvider.sessionMapper().fromDTOToProxyCredentialsModel(cert)
 }
 
 internal fun SessionManager.getServerConfig() =
