@@ -25,7 +25,8 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
 
-@Ignore
+@IgnoreJS
+@IgnoreIOS
 class E2EIClientTest : BaseMLSClientTest() {
     data class SampleUser(
         val id: CryptoQualifiedID, val clientId: CryptoClientId, val name: String, val handle: String, val teamId: String? = ""
@@ -43,9 +44,9 @@ class E2EIClientTest : BaseMLSClientTest() {
     fun givenClient_whenPassingAcmeDirectoryResponse_ReturnNonEmptyResult() = runTest {
         val e2eiClient = createE2EIClient(ALICE1)
         val expectedDirectory = AcmeDirectory(
-            "https://balderdash.hogwash.work:9000/acme/wire/new-nonce",
-            "https://balderdash.hogwash.work:9000/acme/wire/new-account",
-            "https://balderdash.hogwash.work:9000/acme/wire/new-order"
+            "https://acme.elna.wire.link/acme/keycloakteams/new-nonce",
+            "https://acme.elna.wire.link/acme/keycloakteams/new-account",
+            "https://acme.elna.wire.link/acme/keycloakteams/new-order"
         )
         val directory = e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         assertEquals(expectedDirectory, directory)
@@ -72,7 +73,8 @@ class E2EIClientTest : BaseMLSClientTest() {
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
-        assertTrue(e2eiClient.getNewAuthzRequest(AUTHZ_URL, NONCE).isNotEmpty())
+        assertTrue(e2eiClient.getNewAuthzRequest(AUTHZ_URL1, NONCE).isNotEmpty())
+        assertTrue(e2eiClient.getNewAuthzRequest(AUTHZ_URL2, NONCE).isNotEmpty())
     }
 
     @Test
@@ -81,19 +83,17 @@ class E2EIClientTest : BaseMLSClientTest() {
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
-        e2eiClient.setAuthzResponse(AUTHZ_API_RESPONSE)
+        e2eiClient.setAuthzResponse(DPOP_AUTHZ_API_RESPONSE)
         assertTrue(e2eiClient.createDpopToken(NONCE).isNotEmpty())
     }
 
-    //todo: fix later
-    @Ignore
     @Test
     fun givenClient_whenCallingGetNewDpopChallengeRequest_ReturnNonEmptyResult() = runTest {
         val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
-        e2eiClient.setAuthzResponse(AUTHZ_API_RESPONSE)
+        e2eiClient.setAuthzResponse(DPOP_AUTHZ_API_RESPONSE)
         e2eiClient.createDpopToken(NONCE)
         assertTrue(e2eiClient.getNewDpopChallengeRequest(ACCESS_TOKEN_RESPONSE, NONCE).isNotEmpty())
     }
@@ -104,7 +104,8 @@ class E2EIClientTest : BaseMLSClientTest() {
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
-        e2eiClient.setAuthzResponse(AUTHZ_API_RESPONSE)
+        e2eiClient.setAuthzResponse(DPOP_AUTHZ_API_RESPONSE)
+        e2eiClient.setAuthzResponse(OIDC_AUTHZ_API_RESPONSE)
         e2eiClient.createDpopToken(NONCE)
         assertTrue(e2eiClient.getNewOidcChallengeRequest(OAUTH_ID_TOKEN, REFRESH_TOKEN, NONCE).isNotEmpty())
     }
@@ -116,7 +117,10 @@ class E2EIClientTest : BaseMLSClientTest() {
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
-        e2eiClient.setAuthzResponse(AUTHZ_API_RESPONSE)
+        e2eiClient.getNewAuthzRequest(AUTHZ_URL1, NONCE)
+        e2eiClient.getNewAuthzRequest(AUTHZ_URL2, NONCE)
+        e2eiClient.setAuthzResponse(OIDC_AUTHZ_API_RESPONSE)
+        e2eiClient.setAuthzResponse(DPOP_AUTHZ_API_RESPONSE)
         e2eiClient.createDpopToken(NONCE)
         e2eiClient.setDPoPChallengeResponse(DPOP_CHALLENGE_RESPONSE)
         e2eiClient.getNewOidcChallengeRequest(OAUTH_ID_TOKEN, REFRESH_TOKEN, NONCE)
@@ -131,7 +135,10 @@ class E2EIClientTest : BaseMLSClientTest() {
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
-        e2eiClient.setAuthzResponse(AUTHZ_API_RESPONSE)
+        e2eiClient.getNewAuthzRequest(AUTHZ_URL1, NONCE)
+        e2eiClient.getNewAuthzRequest(AUTHZ_URL2, NONCE)
+        e2eiClient.setAuthzResponse(OIDC_AUTHZ_API_RESPONSE)
+        e2eiClient.setAuthzResponse(DPOP_AUTHZ_API_RESPONSE)
         e2eiClient.createDpopToken(NONCE)
         e2eiClient.setDPoPChallengeResponse(DPOP_CHALLENGE_RESPONSE)
         e2eiClient.getNewOidcChallengeRequest(OAUTH_ID_TOKEN, REFRESH_TOKEN, NONCE)
@@ -147,7 +154,10 @@ class E2EIClientTest : BaseMLSClientTest() {
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
         e2eiClient.setOrderResponse(NEW_ORDER_API_RESPONSE)
-        e2eiClient.setAuthzResponse(AUTHZ_API_RESPONSE)
+        e2eiClient.getNewAuthzRequest(AUTHZ_URL1, NONCE)
+        e2eiClient.getNewAuthzRequest(AUTHZ_URL2, NONCE)
+        e2eiClient.setAuthzResponse(OIDC_AUTHZ_API_RESPONSE)
+        e2eiClient.setAuthzResponse(DPOP_AUTHZ_API_RESPONSE)
         e2eiClient.createDpopToken(NONCE)
         e2eiClient.setDPoPChallengeResponse(DPOP_CHALLENGE_RESPONSE)
         e2eiClient.getNewOidcChallengeRequest(OAUTH_ID_TOKEN, REFRESH_TOKEN, NONCE)
@@ -169,11 +179,11 @@ class E2EIClientTest : BaseMLSClientTest() {
 
         val ACME_DIRECTORY_API_RESPONSE = """
             {
-                "newNonce": "https://balderdash.hogwash.work:9000/acme/wire/new-nonce",
-                "newAccount": "https://balderdash.hogwash.work:9000/acme/wire/new-account",
-                "newOrder": "https://balderdash.hogwash.work:9000/acme/wire/new-order",
-                "revokeCert": "https://balderdash.hogwash.work:9000/acme/wire/revoke-cert",
-                "keyChange": "https://balderdash.hogwash.work:9000/acme/wire/key-change"
+              "newNonce": "https://acme.elna.wire.link/acme/keycloakteams/new-nonce",
+              "newAccount": "https://acme.elna.wire.link/acme/keycloakteams/new-account",
+              "newOrder": "https://acme.elna.wire.link/acme/keycloakteams/new-order",
+              "revokeCert": "https://acme.elna.wire.link/acme/keycloakteams/revoke-cert",
+              "keyChange": "https://acme.elna.wire.link/acme/keycloakteams/key-change"
             }
             """.toByteArray()
 
@@ -182,60 +192,80 @@ class E2EIClientTest : BaseMLSClientTest() {
 
         val NEW_ACCOUNT_API_RESPONSE = """
             {
-               "contact":["unknown@example.com"],
-               "status":"valid",
-               "orders":"https://balderdash.hogwash.work:9000/acme/wire/account/9wXZb701i4JTE4ODOP5aMfsLJn7tpJ3B/orders"
+               "contact": ["anonymous@anonymous.invalid"],
+                "status": "valid",
+                "orders": "https://acme.elna.wire.link/acme/keycloakteams/account/9ftonrYafcLPjIGsFyABdgnen9TLrBpv/orders"
             }""".toByteArray()
 
-        val AUTHZ_URL = "https://balderdash.hogwash.work:9000/acme/wire/authz/CSGJUN9BQ0mhELCBbvBJI7AlxcAH9ypD"
+        val AUTHZ_URL1 = "https://acme.elna.wire.link/acme/keycloakteams/authz/1gpp07FUGPh6bFhnAZTuhhPIoGAx2xpw"
+        val AUTHZ_URL2 = "https://acme.elna.wire.link/acme/keycloakteams/authz/mGCAn2FaKAVlO7n2MXdCaRjRsSwEHrel"
 
-        val FINALIZE_ORDER_URL = "https://balderdash.hogwash.work:9000/acme/wire/order/Q4LJjBnX7rA8dwxVreikzmVJBfCvrVs0/finalize"
+        val FINALIZE_ORDER_URL = "https://acme.elna.wire.link/acme/keycloakteams/order/c9mGRDNE7YRVRbk6jokwXNXPgU1n37iS/finalize"
 
         val NEW_ORDER_API_RESPONSE = """
             {
-               "id":"Q4LJjBnX7rA8dwxVreikzmVJBfCvrVs0",
-               "status":"pending",
-               "expires":"3000-05-08T12:00:50Z",
-               "identifiers":[
-                  {
-                     "type":"wireapp-id",
-                     "value":"{\"name\":\"Mojtaba Chenani\",\"domain\":\"elna.wire.link\",\"client-id\":\"im:wireapp=IG9YvzuWQIKUaRk12F5CIQ/953218e68a63641f@elna.wire.link\",\"handle\":\"im:wireapp=mojtaba_wire\"}"
-                  }
-               ],
-               "notBefore":"2023-05-07T12:00:50.1666Z",
-               "notAfter":"3000-08-05T12:00:50.1666Z",
-               "authorizations":[
-                  "$AUTHZ_URL"
-               ],
-               "finalize":"$FINALIZE_ORDER_URL"
-            }""".toByteArray()
-
-        val AUTHZ_API_RESPONSE = """
-            {
-                "challenges": [
-                    {
-                        "status": "pending",
-                        "target": "https://accounts.google.com",
-                        "token": "b0xOVyQP7BXih0LkIEQRBCFjaHtmFpXR",
-                        "type": "wire-oidc-01",
-                        "url": "https://balderdash.hogwash.work:9000/acme/google-android/challenge/hHt8EBiiek0yxnVdjnA3WiF0ieDNQZmk/9IcPupsVVSR7vqalj1LqqZnGlAXFmmUI"
-                    },
-                    {
-                        "status": "pending",
-                        "target": "https://nginz-https.anta.wire.link/v4/clients/89f1c4056c99edcb/access-token",
-                        "token": "b0xOVyQP7BXih0LkIEQRBCFjaHtmFpXR",
-                        "type": "wire-dpop-01",
-                        "url": "https://balderdash.hogwash.work:9000/acme/google-android/challenge/hHt8EBiiek0yxnVdjnA3WiF0ieDNQZmk/Z7WTwaKyyJf6icWRxLauZS9y5JuCtxUR"
-                    }
-                ],
-                "expires": "3000-06-07T10:22:49Z",
-                "identifier": {
-                    "type": "wireapp-id",
-                     "value":"{\"name\":\"Mojtaba Chenani\",\"domain\":\"elna.wire.link\",\"client-id\":\"im:wireapp=IG9YvzuWQIKUaRk12F5CIQ/953218e68a63641f@elna.wire.link\",\"handle\":\"im:wireapp=mojtaba_wire\"}"
+              "id": "c9mGRDNE7YRVRbk6jokwXNXPgU1n37iS",
+              "status": "pending",
+              "expires": "3000-04-04T09:42:17Z",
+              "identifiers": [
+                {
+                  "type": "wireapp-device",
+                  "value": "{\"client-id\":\"wireapp://F13jFZSpR0eZwUwOVfy89A!a07b91b6fc50a19a@elna.wire.link\",\"handle\":\"wireapp://%40miller80894@elna.wire.link\",\"name\":\"Brigette Miller\",\"domain\":\"elna.wire.link\"}"
                 },
-                "status": "pending",
-                "wildcard": false
+                {
+                  "type": "wireapp-user",
+                  "value": "{\"handle\":\"wireapp://%40miller80894@elna.wire.link\",\"name\":\"Brigette Miller\",\"domain\":\"elna.wire.link\"}"
+                }
+              ],
+              "notBefore":"2023-05-07T12:00:50.1666Z",
+              "notAfter":"3000-08-05T12:00:50.1666Z",
+              "authorizations": [
+                "$AUTHZ_URL1",
+                "$AUTHZ_URL2"
+              ],
+              "finalize": "$FINALIZE_ORDER_URL"
+            }
+        """.toByteArray()
+
+        val DPOP_AUTHZ_API_RESPONSE = """
+            {
+              "identifier": {
+                "type": "wireapp-device",
+                "value": "{\"client-id\":\"wireapp://F13jFZSpR0eZwUwOVfy89A!a07b91b6fc50a19a@elna.wire.link\",\"handle\":\"wireapp://%40miller80894@elna.wire.link\",\"name\":\"Brigette Miller\",\"domain\":\"elna.wire.link\"}"
+              },
+              "status": "pending",
+              "challenges": [
+                {
+                  "type": "wire-dpop-01",
+                  "status": "pending",
+                  "token": "jA1p6uxBXOd7jguZMRDl5f26IO5s4JCA",
+                  "url": "https://acme.elna.wire.link/acme/keycloakteams/challenge/1gpp07FUGPh6bFhnAZTuhhPIoGAx2xpw/33vBSFmrKO9SEjLM5p8y2Wzc7tXvsbd6",
+                  "target": "https://elna.wire.link/clients/a07b91b6fc50a19a/access-token"
+                }
+              ],
+              "wildcard": false,
+              "expires": "3000-04-04T09:42:17Z"
             }""".toByteArray()
+        val OIDC_AUTHZ_API_RESPONSE = """
+            {
+              "identifier": {
+                "type": "wireapp-user",
+                "value": "{\"handle\":\"wireapp://%40miller80894@elna.wire.link\",\"name\":\"Brigette Miller\",\"domain\":\"elna.wire.link\"}"
+              },
+              "status": "pending",
+              "challenges": [
+                {
+                  "type": "wire-oidc-01",
+                  "status": "pending",
+                  "token": "m9kZjmdnBBbqeUAEIdLsPMYhczn7k5HY",
+                  "url": "https://acme.elna.wire.link/acme/keycloakteams/challenge/mGCAn2FaKAVlO7n2MXdCaRjRsSwEHrel/I7RRkAbZ3ZiqLbpPd0dgLqHFMy0IY1t2",
+                  "target": "https://keycloak.bund-next.wire.link/auth/realms/master?client_id=wireapp"
+                }
+              ],
+              "wildcard": false,
+              "expires": "3000-04-04T09:42:17Z"
+            }
+            """.toByteArray()
 
         val ACCESS_TOKEN_RESPONSE = """
             {
@@ -249,55 +279,70 @@ class E2EIClientTest : BaseMLSClientTest() {
 
         val DPOP_CHALLENGE_RESPONSE = """
             {
-              "type":"wire-dpop-01", 
-              "url":"https://balderdash.hogwash.work:9000/acme/wire/challenge/iO6dShnf4v4ibIkpUMDYJWFh6ndSMjGx/fJLaKSLTGiztUJXz6YDJnxoJI0na26Fr", 
-              "status":"valid", 
-              "token":"LxjI5PTyVvQNzeorQcORn89DmGPZdG7K", 
-              "nonce":"WWFsUjlkMm9rVWZJZE9FWHoxcmRqMUxPR3JtTFFVeG8"
+              "type": "wire-dpop-01",
+              "status": "valid",
+              "token": "nJMkyBgGovLoMFCK3AvxEZg3IDPnHaaB",
+              "validated": "2024-04-03T11:09:49Z",
+              "url": "https://acme.elna.wire.link/acme/keycloakteams/challenge/lHJZD35qsabL3O6zmnhphK0G3NBhmJir/jIfnktV1nSrDdJ5zuBoUnH90V65hfuCA",
+              "target": "https://elna.wire.link/clients/a07b91b6fc50a19a/access-token"
             }""".toByteArray()
 
         val OIDC_CHALLENGE_RESPONSE = """
             {
-                "type":"wire-oidc-01", 
-                "url":"https://balderdash.hogwash.work:9000/acme/wire/challenge/iO6dShnf4v4ibIkpUMDYJWFh6ndSMjGx/mIgff1EJsncnHZfK98A6ARbsH69z8Dpp", 
-                "status":"valid", "token":"LxjI5PTyVvQNzeorQcORn89DmGPZdG7K", 
-                "nonce":"UW9YY2RraDNQOGZ0QUpYVUt5cDhwVVVSRUV1RDd3akw"
+              "type": "wire-oidc-01",
+              "status": "valid",
+              "token": "p7GkU6IOPQWtWwKIk56CenepIR3y4bMj",
+              "validated": "2024-04-03T11:09:49Z",
+              "url": "https://acme.elna.wire.link/acme/keycloakteams/challenge/YsZCZdrVlh56Icla8k8PJuPhD3MZsogs/JghpemWlBCI6TKRcQNfWQKpsoDlZDWDz",
+              "target": "https://keycloak.bund-next.wire.link/auth/realms/master?client_id=wireapp"
             }""".toByteArray()
 
         val ORDER_RESPONSE = """
             {
-                "status": "ready",
-                "finalize": "https://localhost:55170/acme/acme/order/FaKNEM5iL79ROLGJdO1DXVzIq5rxPEob/finalize",
-                "identifiers": [
-                    {
-                        "type": "wireapp-id",
-                     "value":"{\"name\":\"Mojtaba Chenani\",\"domain\":\"elna.wire.link\",\"client-id\":\"im:wireapp=IG9YvzuWQIKUaRk12F5CIQ/953218e68a63641f@elna.wire.link\",\"handle\":\"im:wireapp=mojtaba_wire\"}"
-                    }
-                ],
-                "authorizations": [
-                    "https://localhost:55170/acme/acme/authz/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw"
-                ],
-                "expires": "3000-02-10T14:59:20Z",
-                "notBefore": "2013-02-09T14:59:20.442908Z",
-                "notAfter": "3000-02-09T15:59:20.442908Z"
+              "id": "goywLpfyiGbt0ZrQ4bQyklwG70RrWIYi",
+              "status": "ready",
+              "expires": "3000-04-04T11:09:26Z",
+              "identifiers": [
+                {
+                  "type": "wireapp-device",
+                  "value": "{\"client-id\":\"wireapp://F13jFZSpR0eZwUwOVfy89A!a07b91b6fc50a19a@elna.wire.link\",\"handle\":\"wireapp://%40miller80894@elna.wire.link\",\"name\":\"Brigette Miller\",\"domain\":\"elna.wire.link\"}"
+                },
+                {
+                  "type": "wireapp-user",
+                  "value": "{\"handle\":\"wireapp://%40miller80894@elna.wire.link\",\"name\":\"Brigette Miller\",\"domain\":\"elna.wire.link\"}"
+                }
+              ],
+              "notBefore": "2024-04-03T11:09:28.536894572Z",
+              "notAfter": "3000-07-02T11:09:28.536894572Z",
+              "authorizations": [
+                "https://acme.elna.wire.link/acme/keycloakteams/authz/lHJZD35qsabL3O6zmnhphK0G3NBhmJir",
+                "https://acme.elna.wire.link/acme/keycloakteams/authz/YsZCZdrVlh56Icla8k8PJuPhD3MZsogs"
+              ],
+              "finalize": "https://acme.elna.wire.link/acme/keycloakteams/order/goywLpfyiGbt0ZrQ4bQyklwG70RrWIYi/finalize"
             }""".toByteArray()
         val FINALIZE_RESPONSE = """
             {
-                "certificate": "https://localhost:55170/acme/acme/certificate/rLhCIYygqzWhUmP1i5tmtZxFUvJPFxSL",
-                "status": "valid",
-                "finalize": "https://localhost:55170/acme/acme/order/FaKNEM5iL79ROLGJdO1DXVzIq5rxPEob/finalize",
-                "identifiers": [
-                    {
-                        "type": "wireapp-id",
-                     "value":"{\"name\":\"Mojtaba Chenani\",\"domain\":\"elna.wire.link\",\"client-id\":\"im:wireapp=IG9YvzuWQIKUaRk12F5CIQ/953218e68a63641f@elna.wire.link\",\"handle\":\"im:wireapp=mojtaba_wire\"}"
-                    }
-                ],
-                "authorizations": [
-                    "https://localhost:55170/acme/acme/authz/ZelRfonEK02jDGlPCJYHrY8tJKNsH0mw"
-                ],
-                "expires": "3000-02-10T14:59:20Z",
-                "notBefore": "2013-02-09T14:59:20.442908Z",
-                "notAfter": "3000-02-09T15:59:20.442908Z"
+              "id": "goywLpfyiGbt0ZrQ4bQyklwG70RrWIYi",
+              "status": "valid",
+              "expires": "3000-04-04T11:09:26Z",
+              "identifiers": [
+                {
+                  "type": "wireapp-device",
+                  "value": "{\"client-id\":\"wireapp://F13jFZSpR0eZwUwOVfy89A!a07b91b6fc50a19a@elna.wire.link\",\"handle\":\"wireapp://%40miller80894@elna.wire.link\",\"name\":\"Brigette Miller\",\"domain\":\"elna.wire.link\"}"
+                },
+                {
+                  "type": "wireapp-user",
+                  "value": "{\"handle\":\"wireapp://%40miller80894@elna.wire.link\",\"name\":\"Brigette Miller\",\"domain\":\"elna.wire.link\"}"
+                }
+              ],
+              "notBefore": "2024-04-03T11:09:28.536894572Z",
+              "notAfter": "3000-07-02T11:09:28.536894572Z",
+              "authorizations": [
+                "https://acme.elna.wire.link/acme/keycloakteams/authz/lHJZD35qsabL3O6zmnhphK0G3NBhmJir",
+                "https://acme.elna.wire.link/acme/keycloakteams/authz/YsZCZdrVlh56Icla8k8PJuPhD3MZsogs"
+              ],
+              "finalize": "https://acme.elna.wire.link/acme/keycloakteams/order/goywLpfyiGbt0ZrQ4bQyklwG70RrWIYi/finalize",
+              "certificate": "https://acme.elna.wire.link/acme/keycloakteams/certificate/cMFLY1InYUGVfOdrlgx9zoAIvipW6ocf"
             }""".toByteArray()
     }
 }
