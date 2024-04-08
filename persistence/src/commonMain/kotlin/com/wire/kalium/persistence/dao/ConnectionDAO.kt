@@ -71,4 +71,5 @@ interface ConnectionDAO {
     suspend fun updateNotificationFlag(flag: Boolean, userId: QualifiedIDEntity)
     suspend fun setAllConnectionsAsNotified()
     suspend fun getConnection(id: ConversationIDEntity): ConnectionEntity?
+    suspend fun getConnectionByUser(userId: QualifiedIDEntity): ConnectionEntity?
 }

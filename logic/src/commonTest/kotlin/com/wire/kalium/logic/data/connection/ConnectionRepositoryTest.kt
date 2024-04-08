@@ -41,6 +41,7 @@ import com.wire.kalium.network.api.base.authenticated.connection.ConnectionRespo
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionStateDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.FederationUnreachableResponse
 import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.UserProfileDTO
@@ -67,6 +68,7 @@ import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.toInstant
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -330,6 +332,25 @@ class ConnectionRepositoryTest {
         verify(arrangement.connectionDAO)
             .suspendFunction(arrangement.connectionDAO::getConnection)
             .with(eq(connection.qualifiedConversationId))
+    }
+
+    @Test
+    fun givenAConnectionRequestIgnore_WhenSendingAConnectionStatusValid_thenTheConnectionShouldBePersisted() = runTest {
+        // given
+        val userId = NetworkUserId("user_id", "domain_id")
+        val (arrangement, connectionRepository) = Arrangement().arrange()
+        arrangement
+            .withSuccessfulUpdateConnectionStatusResponse(userId)
+            .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
+
+        // when
+        val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
+        result.shouldSucceed { arrangement.stubConnectionOne }
+
+        // then
+        verify(arrangement.connectionApi)
+            .suspendFunction(arrangement.connectionApi::updateConnection)
+            .with(eq(userId), eq(ConnectionStateDTO.IGNORED))
             .wasInvoked(once)
     }
 
@@ -348,8 +369,52 @@ class ConnectionRepositoryTest {
         verify(arrangement.connectionDAO)
             .suspendFunction(arrangement.connectionDAO::getConnection)
             .with(eq(connection.qualifiedConversationId))
+    }
+
+    @Test
+    fun givenAConnectionRequestIgnore_WhenApiUpdateFailedWithFederatedFailedDomains_thenTheConnectionShouldBePersisted() = runTest {
+        // given
+        val userId = NetworkUserId("user_id", "domain_id")
+        val (arrangement, connectionRepository) = Arrangement().arrange()
+        arrangement
+            .withErrorUpdatingConnectionStatusResponse(
+                userId,
+                KaliumException.FederationUnreachableException(FederationUnreachableResponse())
+            )
+            .withConnectionEntityByUser()
+            .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
+
+        // when
+        val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
+        result.shouldSucceed { arrangement.stubConnectionOne }
+
+        // then
+        verify(arrangement.connectionApi)
+            .suspendFunction(arrangement.connectionApi::updateConnection)
+            .with(eq(userId), eq(ConnectionStateDTO.IGNORED))
             .wasInvoked(once)
     }
+
+    @Test
+    fun givenAConnectionRequestIgnore_WhenApiUpdateFailedWithNonFederatedFailedDomains_thenTheConnectionNotShouldBePersisted() =
+        runTest {
+            // given
+            val userId = NetworkUserId("user_id", "domain_id")
+            val (arrangement, connectionRepository) = Arrangement().arrange()
+            arrangement
+                .withErrorUpdatingConnectionStatusResponse(userId)
+                .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
+
+            // when
+            val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
+            result.shouldFail { arrangement.stubConnectionOne }
+
+            // then
+            verify(arrangement.connectionApi)
+                .suspendFunction(arrangement.connectionApi::updateConnection)
+                .with(eq(userId), eq(ConnectionStateDTO.IGNORED))
+                .wasInvoked(once)
+        }
 
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
@@ -435,6 +500,16 @@ class ConnectionRepositoryTest {
         val stubConversationID1 = QualifiedIDEntity("conversationId1", "domain")
         val stubConversationID2 = QualifiedIDEntity("conversationId2", "domain")
 
+        val connectionEntity = ConnectionEntity(
+            conversationId = "conversationId1",
+            from = "fromId",
+            lastUpdateDate = Instant.DISTANT_PAST,
+            qualifiedConversationId = ConversationIDEntity("conversationId1", "domain"),
+            qualifiedToId = QualifiedIDEntity("connectionId1", "domain"),
+            status = ConnectionEntity.State.ACCEPTED,
+            toId = "connectionId1"
+        )
+
         fun withSelfUserTeamId(either: Either<CoreFailure, TeamId?>): Arrangement {
             given(selfTeamIdProvider)
                 .suspendFunction(selfTeamIdProvider::invoke)
@@ -499,7 +574,7 @@ class ConnectionRepositoryTest {
         fun withSuccessfulUpdateConnectionStatusResponse(userId: NetworkUserId): Arrangement = apply {
             given(connectionApi)
                 .suspendFunction(connectionApi::updateConnection)
-                .whenInvokedWith(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
+                .whenInvokedWith(eq(userId), any())
                 .then { _, _ -> NetworkResponse.Success(stubConnectionOne, mapOf(), 200) }
 
             withUpdateOrInsertOneOnOneMemberSuccess(
@@ -508,11 +583,14 @@ class ConnectionRepositoryTest {
             )
         }
 
-        fun withErrorUpdatingConnectionStatusResponse(userId: NetworkUserId): Arrangement = apply {
+        fun withErrorUpdatingConnectionStatusResponse(
+            userId: NetworkUserId,
+            exception: KaliumException = KaliumException.GenericError(RuntimeException("An error the server threw!"))
+        ): Arrangement = apply {
             given(connectionApi)
                 .suspendFunction(connectionApi::updateConnection)
                 .whenInvokedWith(eq(userId), any())
-                .then { _, _ -> NetworkResponse.Error(KaliumException.GenericError(RuntimeException("An error the server threw!"))) }
+                .then { _, _ -> NetworkResponse.Error(exception) }
         }
 
         fun withDeleteConnectionDataAndConversation(conversationId: QualifiedIDEntity): Arrangement = apply {
@@ -520,6 +598,13 @@ class ConnectionRepositoryTest {
                 .suspendFunction(connectionDAO::deleteConnectionDataAndConversation)
                 .whenInvokedWith(eq(conversationId))
                 .thenReturn(Unit)
+        }
+
+        fun withConnectionEntityByUser(): Arrangement = apply {
+            given(connectionDAO)
+                .suspendFunction(connectionDAO::getConnectionByUser)
+                .whenInvokedWith(any())
+                .thenReturn(connectionEntity)
         }
 
         fun withSuccessfulFetchSelfUserConnectionsResponse(stubUserProfileDTO: UserProfileDTO): Arrangement {
