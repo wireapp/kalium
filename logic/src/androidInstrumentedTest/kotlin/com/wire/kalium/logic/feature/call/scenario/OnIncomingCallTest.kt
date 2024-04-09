@@ -29,6 +29,7 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import io.mockative.Mock
+import io.mockative.coVerify
 import io.mockative.configure
 import io.mockative.eq
 import io.mockative.mock
