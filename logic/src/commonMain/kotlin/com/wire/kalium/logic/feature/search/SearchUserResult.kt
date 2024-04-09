@@ -34,8 +34,8 @@ data class SearchUserResult(
             remoteSearch.forEach { (userId, remoteUser) ->
                 if (remoteUser.connectionStatus == ConnectionState.ACCEPTED) {
                     localResult[userId] = remoteUser
-                }
-                if (localResult.contains(userId)) {
+                    updatedUser.add(userId)
+                } else if (localResult.contains(userId)) {
                     updatedUser.add(userId)
                 }
             }

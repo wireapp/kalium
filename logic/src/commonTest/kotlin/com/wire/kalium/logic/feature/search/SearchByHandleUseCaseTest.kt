@@ -144,10 +144,14 @@ class SearchByHandleUseCaseTest {
     fun givenLocalAndRemoteResult_whenInvokingSearch_thenThereAreNoDuplicatedResult() = runTest {
 
         val remoteSearchResult = listOf(
-            newOtherUser("remoteAndLocalUser1").copy(name = "updatedNewName"),
+            newOtherUser("remoteAndLocalUser1").copy(name = "updatedNewName", connectionStatus = ConnectionState.NOT_CONNECTED),
             newOtherUser("remoteUser2").copy(
                 teamId = TeamId("otherTeamId"),
                 connectionStatus = ConnectionState.PENDING
+            ),
+            newOtherUser("remoteUser3").copy(
+                teamId = TeamId("otherTeamId"),
+                connectionStatus = ConnectionState.ACCEPTED
             ),
         )
 
@@ -158,8 +162,9 @@ class SearchByHandleUseCaseTest {
 
         val expected = SearchUserResult(
             connected = listOf(
-                newUserSearchDetails("remoteAndLocalUser1").copy(name = "updatedNewName"),
-                newUserSearchDetails("localUser2")
+                newUserSearchDetails("remoteAndLocalUser1").copy(name = "oldName"),
+                newUserSearchDetails("localUser2"),
+                newUserSearchDetails("remoteUser3")
             ),
             notConnected = listOf(
                 newUserSearchDetails("remoteUser2").copy(connectionStatus = ConnectionState.PENDING),
