@@ -108,7 +108,7 @@ class CallManagerImpl internal constructor(
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : CallManager {
 
-    private val job = SupervisorJob() // TODO(calling): clear job method
+    private val job = SupervisorJob()
     private val scope = CoroutineScope(job + kaliumDispatchers.io)
     private val deferredHandle: Deferred<Handle> = startHandleAsync()
 
