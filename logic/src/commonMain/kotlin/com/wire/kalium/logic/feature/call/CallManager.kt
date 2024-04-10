@@ -46,4 +46,5 @@ interface CallManager {
     suspend fun updateEpochInfo(conversationId: ConversationId, epochInfo: EpochInfo)
     suspend fun updateConversationClients(conversationId: ConversationId, clients: String)
     suspend fun reportProcessNotifications(isStarted: Boolean)
+    suspend fun cancelJobs()
 }
