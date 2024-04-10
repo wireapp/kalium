@@ -32,8 +32,10 @@ data class SearchUserResult(
         ): SearchUserResult {
             val updatedUser = mutableListOf<UserId>()
             remoteSearch.forEach { (userId, remoteUser) ->
-                if (localResult.contains(userId) || (remoteUser.connectionStatus == ConnectionState.ACCEPTED)) {
+                if (remoteUser.connectionStatus == ConnectionState.ACCEPTED) {
                     localResult[userId] = remoteUser
+                    updatedUser.add(userId)
+                } else if (localResult.contains(userId)) {
                     updatedUser.add(userId)
                 }
             }
