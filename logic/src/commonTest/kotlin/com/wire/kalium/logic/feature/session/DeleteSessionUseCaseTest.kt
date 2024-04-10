@@ -87,7 +87,7 @@ class DeleteSessionUseCaseTest {
             .wasInvoked(exactly = once)
 
         verify(arrange.userSessionScopeProvider)
-            .function(arrange.userSessionScopeProvider::delete)
+            .suspendFunction(arrange.userSessionScopeProvider::delete)
             .with(any())
             .wasNotInvoked()
     }
