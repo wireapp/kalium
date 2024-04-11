@@ -53,7 +53,7 @@ actual class GlobalCallManager {
         return CallManagerImpl()
     }
 
-    actual fun removeInMemoryCallingManagerForUser(userId: UserId) {
+    actual suspend fun removeInMemoryCallingManagerForUser(userId: UserId) {
         TODO("Not yet implemented")
     }
 

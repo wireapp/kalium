@@ -82,6 +82,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -107,7 +108,7 @@ class CallManagerImpl internal constructor(
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : CallManager {
 
-    private val job = SupervisorJob() // TODO(calling): clear job method
+    private val job = SupervisorJob()
     private val scope = CoroutineScope(job + kaliumDispatchers.io)
     private val deferredHandle: Deferred<Handle> = startHandleAsync()
 
@@ -561,6 +562,12 @@ class CallManagerImpl internal constructor(
         withCalling {
             wcall_process_notifications(it, isStarted)
         }
+    }
+
+    override suspend fun cancelJobs() {
+        deferredHandle.cancel()
+        scope.cancel()
+        job.cancel()
     }
 
     companion object {

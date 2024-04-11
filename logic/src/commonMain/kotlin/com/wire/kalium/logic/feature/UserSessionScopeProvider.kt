@@ -27,7 +27,7 @@ interface UserSessionScopeProvider {
     fun get(userId: UserId): UserSessionScope?
     fun getOrCreate(userId: UserId): UserSessionScope
     fun <T> getOrCreate(userId: UserId, action: UserSessionScope.() -> T): T
-    fun delete(userId: UserId)
+    suspend fun delete(userId: UserId)
 }
 
 abstract class UserSessionScopeProviderCommon(
@@ -49,7 +49,7 @@ abstract class UserSessionScopeProviderCommon(
 
     override fun get(userId: UserId): UserSessionScope? = userScopeStorage.get(userId)
 
-    override fun delete(userId: UserId) {
+    override suspend fun delete(userId: UserId) {
         globalCallManager.removeInMemoryCallingManagerForUser(userId)
         userScopeStorage.remove(userId)
         userStorageProvider.clearInMemoryUserStorage(userId)
