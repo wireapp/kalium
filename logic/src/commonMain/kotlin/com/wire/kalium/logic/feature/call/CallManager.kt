@@ -49,8 +49,12 @@ interface CallManager {
     suspend fun updateEpochInfo(conversationId: ConversationId, epochInfo: EpochInfo)
     suspend fun updateConversationClients(conversationId: ConversationId, clients: String)
     suspend fun reportProcessNotifications(isStarted: Boolean)
+<<<<<<< HEAD
 
     suspend fun setTestVideoType(testVideoType: TestVideoType)
     suspend fun setTestPreviewActive(shouldEnable: Boolean)
     suspend fun setTestRemoteVideoStates(conversationId: ConversationId, participants: List<Participant>)
+=======
+    suspend fun cancelJobs()
+>>>>>>> b1520bec82 (fix: app crashing when accepting call (WPB-6973) (#2700))
 }

@@ -79,6 +79,7 @@ class CallManagerImpl : CallManager {
         TODO("Not yet implemented")
     }
 
+<<<<<<< HEAD
     override suspend fun setTestVideoType(testVideoType: TestVideoType) {
         TODO("Not yet implemented")
     }
@@ -88,6 +89,9 @@ class CallManagerImpl : CallManager {
     }
 
     override suspend fun setTestRemoteVideoStates(conversationId: ConversationId, participants: List<Participant>) {
+=======
+    override suspend fun cancelJobs() {
+>>>>>>> b1520bec82 (fix: app crashing when accepting call (WPB-6973) (#2700))
         TODO("Not yet implemented")
     }
 }
