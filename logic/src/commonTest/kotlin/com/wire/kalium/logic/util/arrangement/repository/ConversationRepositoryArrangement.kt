@@ -103,6 +103,7 @@ internal interface ConversationRepositoryArrangement {
     fun withSetDegradedConversationNotifiedFlag(result: Either<CoreFailure, Unit>)
 
     fun withSelectGroupStatusMembersNamesAndHandles(result: Either<StorageFailure, EpochChangesDataEntity>)
+    fun withConversationDetailsByIdReturning(result: Either<StorageFailure, Conversation>)
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -267,6 +268,13 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
     override fun withSelectGroupStatusMembersNamesAndHandles(result: Either<StorageFailure, EpochChangesDataEntity>) {
         given(conversationRepository)
             .suspendFunction(conversationRepository::getGroupStatusMembersNamesAndHandles)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withConversationDetailsByIdReturning(result: Either<StorageFailure, Conversation>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::detailsById)
             .whenInvokedWith(any())
             .thenReturn(result)
     }
