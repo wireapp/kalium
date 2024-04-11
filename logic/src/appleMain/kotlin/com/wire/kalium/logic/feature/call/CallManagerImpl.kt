@@ -79,7 +79,6 @@ class CallManagerImpl : CallManager {
         TODO("Not yet implemented")
     }
 
-<<<<<<< HEAD
     override suspend fun setTestVideoType(testVideoType: TestVideoType) {
         TODO("Not yet implemented")
     }
