@@ -49,6 +49,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.minutes
@@ -252,14 +253,17 @@ class ObserveE2EIRequiredUseCaseTest {
             .withCurrentClientProviderSuccess()
             .withGetE2EICertificateUseCaseResult(
                 GetE2EICertificateUseCaseResult.Success(
-                    VALID_CERTIFICATE.copy(endAt = DateTimeUtil.currentInstant().minus(1.days))
+                    VALID_CERTIFICATE.copy(
+                        status = CertificateStatus.EXPIRED,
+                        endAt = DateTimeUtil.currentInstant().minus(1.days)
+                    )
                 )
             )
             .arrange()
 
         useCase().test {
             advanceTimeBy(1000L)
-            assertTrue(awaitItem() is E2EIRequiredResult.NoGracePeriod.Renew)
+            assertIs<E2EIRequiredResult.NoGracePeriod.Renew>(awaitItem())
             awaitComplete()
         }
     }
@@ -284,6 +288,30 @@ class ObserveE2EIRequiredUseCaseTest {
         useCase().test {
             advanceTimeBy(1000L)
             assertEquals(E2EIRequiredResult.NotRequired, awaitItem())
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun givenCertRevoked_thenReturnNotRequired() = runTest {
+        val setting = MLS_E2EI_SETTING.copy(
+            gracePeriodEnd = DateTimeUtil.currentInstant()
+        )
+        val (_, useCase) = Arrangement()
+            .withMLSE2EISetting(setting)
+            .withE2EINotificationTime(DateTimeUtil.currentInstant())
+            .withIsMLSSupported(true)
+            .withCurrentClientProviderSuccess()
+            .withGetE2EICertificateUseCaseResult(
+                GetE2EICertificateUseCaseResult.Success(
+                    VALID_CERTIFICATE.copy(status = CertificateStatus.REVOKED)
+                )
+            )
+            .arrange()
+
+        useCase().test {
+            advanceTimeBy(1000L)
+            assertIs<E2EIRequiredResult.NotRequired>(awaitItem())
             awaitComplete()
         }
     }
