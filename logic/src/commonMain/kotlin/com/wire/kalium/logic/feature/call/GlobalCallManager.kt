@@ -52,7 +52,7 @@ expect class GlobalCallManager {
         kaliumConfigs: KaliumConfigs
     ): CallManager
 
-    fun removeInMemoryCallingManagerForUser(userId: UserId)
+    suspend fun removeInMemoryCallingManagerForUser(userId: UserId)
     fun getFlowManager(): FlowManagerService
     fun getMediaManager(): MediaManagerService
 }
