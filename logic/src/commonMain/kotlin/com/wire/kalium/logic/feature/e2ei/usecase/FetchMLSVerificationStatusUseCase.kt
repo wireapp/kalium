@@ -26,11 +26,10 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation.VerificationStatus
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
 import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -44,7 +43,6 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.wrapMLSRequest
-import com.wire.kalium.persistence.dao.conversation.EpochChangesDataEntity
 import com.wire.kalium.util.DateTimeUtil
 
 typealias UserToWireIdentity = Map<UserId, List<WireIdentity>>
@@ -104,8 +102,9 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
         conversationRepository.getGroupStatusMembersNamesAndHandles(groupId)
             .flatMap { epochChangesData ->
                 mlsConversationRepository.getMembersIdentities(
-                    epochChangesData.conversationId.toModel(),
-                    epochChangesData.members.keys.map { it.toModel() })
+                    epochChangesData.conversationId,
+                    epochChangesData.members.keys.toList()
+                )
                     .flatMap { ccIdentities ->
                         updateKnownUsersIfNeeded(epochChangesData, ccIdentities, groupId)
                     }
@@ -113,7 +112,7 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
                 var newStatus: VerificationStatus = VerificationStatus.VERIFIED
                 // check that all identities are valid and name and handle are matching
                 for ((userId, wireIdentity) in ccIdentity) {
-                    val persistedMemberInfo = dbData.members[userId.toDao()]
+                    val persistedMemberInfo = dbData.members[userId]
                     val isUserVerified = wireIdentity.firstOrNull {
                         it.status != CryptoCertificateStatus.VALID ||
                                 it.certificate == null ||
@@ -126,21 +125,21 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
                     }
                 }
                 VerificationStatusData(
-                    conversationId = dbData.conversationId.toModel(),
-                    currentPersistedStatus = dbData.mlsVerificationStatus.toModel(),
+                    conversationId = dbData.conversationId,
+                    currentPersistedStatus = dbData.mlsVerificationStatus,
                     newStatus = newStatus
                 )
             }
 
     private suspend fun updateKnownUsersIfNeeded(
-        epochChangesData: EpochChangesDataEntity,
+        epochChangesData: EpochChangesData,
         ccIdentities: UserToWireIdentity,
         groupId: GroupID
-    ): Either<CoreFailure, Pair<EpochChangesDataEntity, UserToWireIdentity>> {
+    ): Either<CoreFailure, Pair<EpochChangesData, UserToWireIdentity>> {
         var dbData = epochChangesData
 
         val missingUsers = missingUsers(
-            usersFromDB = epochChangesData.members.keys.map { it.toModel() }.toSet(),
+            usersFromDB = epochChangesData.members.keys.map { it }.toSet(),
             usersFromCC = ccIdentities.keys
         )
 

@@ -15,9 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.conversation
+package com.wire.kalium.logic.feature.e2ei.usecase
 
-import com.wire.kalium.logic.data.e2ei.MLSConversationsVerificationStatusesHandlerImpl
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.arrangement.repository.MLSConversationRepositoryArrangement
@@ -33,7 +32,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class MLSConversationsVerificationStatusesHandlerTest {
+class ObserveE2EIConversationsVerificationStatusesUseCaseTest {
 
     @Test
     fun givenEpochChanged_thenFetchingMLSVerificationIsCalled() = runTest {
@@ -58,7 +57,7 @@ class MLSConversationsVerificationStatusesHandlerTest {
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl() {
 
         fun arrange() = apply(block).let {
-            this to MLSConversationsVerificationStatusesHandlerImpl(
+            this to ObserveE2EIConversationsVerificationStatusesUseCaseImpl(
                 epochChangesObserver = epochChangesObserver,
                 fetchMLSVerificationStatus = fetchMLSVerificationStatusUseCase,
                 kaliumLogger = kaliumLogger,

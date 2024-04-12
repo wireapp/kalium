@@ -15,25 +15,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.data.e2ei
+package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.EpochChangesObserver
-import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseCase
 
 /**
  * Observes all the MLS Conversations epoch changes and call to re-check Verification status.
  */
-internal interface MLSConversationsVerificationStatusesHandler {
+internal interface ObserveE2EIConversationsVerificationStatusesUseCase {
     suspend operator fun invoke()
 }
 
 @Suppress("LongParameterList")
-internal class MLSConversationsVerificationStatusesHandlerImpl(
+internal class ObserveE2EIConversationsVerificationStatusesUseCaseImpl(
     private val fetchMLSVerificationStatus: FetchMLSVerificationStatusUseCase,
     private val epochChangesObserver: EpochChangesObserver,
     kaliumLogger: KaliumLogger
-) : MLSConversationsVerificationStatusesHandler {
+) : ObserveE2EIConversationsVerificationStatusesUseCase {
 
     private val logger = kaliumLogger.withTextTag("MLSConversationsVerificationStatusesHandler")
 

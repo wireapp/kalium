@@ -26,9 +26,10 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
+import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toCrypto
-import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
@@ -42,10 +43,6 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
-import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import com.wire.kalium.persistence.dao.conversation.EpochChangesDataEntity
-import com.wire.kalium.persistence.dao.conversation.NameAndHandleEntity
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.anyInstanceOf
@@ -152,21 +149,21 @@ class FetchMLSVerificationStatusUseCaseTest {
     @Test
     fun givenDegradedConversation_whenVerifiedStatusComes_thenStatusUpdated() = runTest {
 
-        val user1 = UserIDEntity("user1", "domain1") to NameAndHandleEntity("name1", "device1")
-        val user2 = UserIDEntity("user2", "domain2") to NameAndHandleEntity("name2", "device2")
+        val user1 = QualifiedID("user1", "domain1") to NameAndHandle("name1", "device1")
+        val user2 = QualifiedID("user2", "domain2") to NameAndHandle("name2", "device2")
 
-        val epochChangedData = EpochChangesDataEntity(
-            conversationId = TestConversation.CONVERSATION.id.toDao(),
+        val epochChangedData = EpochChangesData(
+            conversationId = TestConversation.CONVERSATION.id,
             members = mapOf(user1, user2),
-            mlsVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED
+            mlsVerificationStatus = Conversation.VerificationStatus.DEGRADED
         )
 
         val ccMembersIdentity: Map<UserId, List<WireIdentity>> = mapOf(
-            user1.first.toModel() to listOf(
+            user1.first to listOf(
                 WireIdentity(
                     CryptoQualifiedClientId(
                         value = "client_user_1",
-                        userId = user1.first.toModel().toCrypto()
+                        userId = user1.first.toCrypto()
                     ),
                     handle = user1.second.handle!!,
                     displayName = user1.second.name!!,
@@ -178,11 +175,11 @@ class FetchMLSVerificationStatusUseCaseTest {
                     endTimestampSeconds = 0L
                 )
             ),
-            user2.first.toModel() to listOf(
+            user2.first to listOf(
                 WireIdentity(
                     CryptoQualifiedClientId(
                         value = "client_user_2",
-                        userId = user2.first.toModel().toCrypto()
+                        userId = user2.first.toCrypto()
                     ),
                     handle = user2.second.handle!!,
                     displayName = user2.second.name!!,
@@ -206,7 +203,7 @@ class FetchMLSVerificationStatusUseCaseTest {
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::updateMlsVerificationStatus)
-            .with(eq(Conversation.VerificationStatus.VERIFIED), eq(epochChangedData.conversationId.toModel()))
+            .with(eq(Conversation.VerificationStatus.VERIFIED), eq(epochChangedData.conversationId))
             .wasInvoked(once)
 
         verify(arrangement.persistMessageUseCase)
@@ -223,21 +220,21 @@ class FetchMLSVerificationStatusUseCaseTest {
     @Test
     fun givenVerifiedConversation_whenVerifiedStatusComesAndUserNamesDivergeFromCC_thenStatusUpdatedToDegraded() = runTest {
 
-        val user1 = UserIDEntity("user1", "domain1") to NameAndHandleEntity("name1", "device1")
-        val user2 = UserIDEntity("user2", "domain2") to NameAndHandleEntity("name2", "device2")
+        val user1 = QualifiedID("user1", "domain1") to NameAndHandle("name1", "device1")
+        val user2 = QualifiedID("user2", "domain2") to NameAndHandle("name2", "device2")
 
-        val epochChangedData = EpochChangesDataEntity(
-            conversationId = TestConversation.CONVERSATION.id.toDao(),
+        val epochChangedData = EpochChangesData(
+            conversationId = TestConversation.CONVERSATION.id,
             members = mapOf(user1, user2),
-            mlsVerificationStatus = ConversationEntity.VerificationStatus.VERIFIED
+            mlsVerificationStatus = Conversation.VerificationStatus.VERIFIED
         )
 
         val ccMembersIdentity: Map<UserId, List<WireIdentity>> = mapOf(
-            user1.first.toModel() to listOf(
+            user1.first to listOf(
                 WireIdentity(
                     CryptoQualifiedClientId(
                         value = "client_user_1",
-                        userId = user1.first.toModel().toCrypto()
+                        userId = user1.first.toCrypto()
                     ),
                     handle = user1.second.handle!! + "1", // this user name changed
                     displayName = user1.second.name!! + "1",
@@ -249,11 +246,11 @@ class FetchMLSVerificationStatusUseCaseTest {
                     endTimestampSeconds = 0L
                 )
             ),
-            user2.first.toModel() to listOf(
+            user2.first to listOf(
                 WireIdentity(
                     CryptoQualifiedClientId(
                         value = "client_user_2",
-                        userId = user2.first.toModel().toCrypto()
+                        userId = user2.first.toCrypto()
                     ),
                     handle = user2.second.handle!!,
                     displayName = user2.second.name!!,
@@ -277,7 +274,7 @@ class FetchMLSVerificationStatusUseCaseTest {
 
         verify(arrangement.conversationRepository)
             .suspendFunction(arrangement.conversationRepository::updateMlsVerificationStatus)
-            .with(eq(Conversation.VerificationStatus.DEGRADED), eq(epochChangedData.conversationId.toModel()))
+            .with(eq(Conversation.VerificationStatus.DEGRADED), eq(epochChangedData.conversationId))
             .wasInvoked(once)
 
         verify(arrangement.persistMessageUseCase)

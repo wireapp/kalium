@@ -82,8 +82,8 @@ import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepositoryDataSource
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryImpl
-import com.wire.kalium.logic.data.e2ei.MLSConversationsVerificationStatusesHandler
-import com.wire.kalium.logic.data.e2ei.MLSConversationsVerificationStatusesHandlerImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.ObserveE2EIConversationsVerificationStatusesUseCase
+import com.wire.kalium.logic.feature.e2ei.usecase.ObserveE2EIConversationsVerificationStatusesUseCaseImpl
 import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
@@ -1975,8 +1975,8 @@ class UserSessionScope internal constructor(
         )
     }
 
-    private val mlsConversationsVerificationStatusesHandler: MLSConversationsVerificationStatusesHandler by lazy {
-        MLSConversationsVerificationStatusesHandlerImpl(
+    private val observeE2EIConversationsVerificationStatuses: ObserveE2EIConversationsVerificationStatusesUseCase by lazy {
+        ObserveE2EIConversationsVerificationStatusesUseCaseImpl(
             fetchMLSVerificationStatusUseCase,
             epochChangesObserver,
             userScopedLogger,
@@ -2027,7 +2027,7 @@ class UserSessionScope internal constructor(
         }
 
         launch {
-            mlsConversationsVerificationStatusesHandler.invoke()
+            observeE2EIConversationsVerificationStatuses.invoke()
         }
 
         launch {
