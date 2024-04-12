@@ -91,7 +91,7 @@ class LogoutUseCaseTest {
                 .with(any())
                 .wasNotInvoked()
             verify(arrangement.userSessionScopeProvider)
-                .function(arrangement.userSessionScopeProvider::delete)
+                .suspendFunction(arrangement.userSessionScopeProvider::delete)
                 .with(any())
                 .wasInvoked(exactly = once)
             verify(arrangement.userConfigRepository)

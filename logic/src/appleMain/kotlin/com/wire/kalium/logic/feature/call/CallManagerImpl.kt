@@ -75,4 +75,8 @@ class CallManagerImpl : CallManager {
     override suspend fun reportProcessNotifications(isStarted: Boolean) {
         TODO("Not yet implemented")
     }
+
+    override suspend fun cancelJobs() {
+        TODO("Not yet implemented")
+    }
 }

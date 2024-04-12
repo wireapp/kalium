@@ -105,7 +105,8 @@ actual class GlobalCallManager(
         }
     }
 
-    actual fun removeInMemoryCallingManagerForUser(userId: UserId) {
+    actual suspend fun removeInMemoryCallingManagerForUser(userId: UserId) {
+        callManagerHolder[userId]?.cancelJobs()
         callManagerHolder.remove(userId)
     }
 
