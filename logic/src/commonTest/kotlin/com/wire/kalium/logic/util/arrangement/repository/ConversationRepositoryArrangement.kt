@@ -22,12 +22,12 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.persistence.dao.conversation.EpochChangesDataEntity
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.given
@@ -102,7 +102,8 @@ internal interface ConversationRepositoryArrangement {
 
     fun withSetDegradedConversationNotifiedFlag(result: Either<CoreFailure, Unit>)
 
-    fun withSelectGroupStatusMembersNamesAndHandles(result: Either<StorageFailure, EpochChangesDataEntity>)
+    fun withSelectGroupStatusMembersNamesAndHandles(result: Either<StorageFailure, EpochChangesData>)
+    fun withConversationDetailsByIdReturning(result: Either<StorageFailure, Conversation>)
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -264,9 +265,16 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
             .thenReturn(result)
     }
 
-    override fun withSelectGroupStatusMembersNamesAndHandles(result: Either<StorageFailure, EpochChangesDataEntity>) {
+    override fun withSelectGroupStatusMembersNamesAndHandles(result: Either<StorageFailure, EpochChangesData>) {
         given(conversationRepository)
             .suspendFunction(conversationRepository::getGroupStatusMembersNamesAndHandles)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withConversationDetailsByIdReturning(result: Either<StorageFailure, Conversation>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::detailsById)
             .whenInvokedWith(any())
             .thenReturn(result)
     }
