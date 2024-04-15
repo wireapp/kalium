@@ -1197,6 +1197,7 @@ class UserSessionScope internal constructor(
             videoStateChecker = videoStateChecker,
             callMapper = callMapper,
             conversationClientsInCallUpdater = conversationClientsInCallUpdater,
+            networkStateObserver = networkStateObserver,
             kaliumConfigs = kaliumConfigs
         )
     }

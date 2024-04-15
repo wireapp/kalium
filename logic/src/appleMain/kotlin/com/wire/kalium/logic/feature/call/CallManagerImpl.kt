@@ -90,4 +90,8 @@ class CallManagerImpl : CallManager {
     override suspend fun setTestRemoteVideoStates(conversationId: ConversationId, participants: List<Participant>) {
         TODO("Not yet implemented")
     }
+
+    override suspend fun cancelJobs() {
+        TODO("Not yet implemented")
+    }
 }
