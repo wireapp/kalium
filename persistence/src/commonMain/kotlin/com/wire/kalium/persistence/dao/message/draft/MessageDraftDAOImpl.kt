@@ -17,8 +17,14 @@
  */
 package com.wire.kalium.persistence.dao.message.draft
 
+import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.MessageDraftsQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.util.mapToList
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
@@ -40,17 +46,30 @@ class MessageDraftDAOImpl internal constructor(
 
     override suspend fun getMessageDraft(conversationIDEntity: ConversationIDEntity): MessageDraftEntity? =
         withContext(coroutineContext) {
-            queries.getDraft(conversationIDEntity) { qualifiedIDEntity, text, editMessageID, quotedMessageId, mentionList ->
-                MessageDraftEntity(
-                    text = text.orEmpty(),
-                    editMessageId = editMessageID,
-                    quotedMessageId = quotedMessageId,
-                    selectedMentionList = mentionList
-                )
-            }.executeAsOneOrNull()
+            queries.getDraft(conversationIDEntity, ::toDao).executeAsOneOrNull()
         }
 
     override suspend fun removeMessageDraft(conversationIDEntity: ConversationIDEntity) {
         queries.deleteDraft(conversationIDEntity)
     }
+
+    override suspend fun observeMessageDrafts(): Flow<List<MessageDraftEntity>> = queries.getDrafts(::toDao)
+        .asFlow()
+        .flowOn(coroutineContext)
+        .mapToList()
+
+    private fun toDao(
+        conversation_id: QualifiedIDEntity,
+        text: String?,
+        edit_message_id: String?,
+        quoted_message_id: String?,
+        mention_list: List<MessageEntity.Mention>
+    ): MessageDraftEntity =
+        MessageDraftEntity(
+            conversationId = conversation_id,
+            text = text.orEmpty(),
+            editMessageId = edit_message_id,
+            quotedMessageId = quoted_message_id,
+            selectedMentionList = mention_list
+        )
 }

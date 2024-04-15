@@ -17,11 +17,14 @@
  */
 package com.wire.kalium.logic.data.message.draft
 
+import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.mention.toDao
 import com.wire.kalium.logic.data.message.mention.toModel
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
 
 fun MessageDraftEntity.toModel(): MessageDraft = MessageDraft(
+    conversationId = conversationId.toModel(),
     text = text,
     editMessageId = editMessageId,
     quotedMessageId = quotedMessageId,
@@ -29,6 +32,7 @@ fun MessageDraftEntity.toModel(): MessageDraft = MessageDraft(
     selectedMentionList = selectedMentionList.map { it.toModel(selfUserId = null) })
 
 fun MessageDraft.toDao(): MessageDraftEntity = MessageDraftEntity(
+    conversationId = conversationId.toDao(),
     text = text,
     editMessageId = editMessageId,
     quotedMessageId = quotedMessageId,

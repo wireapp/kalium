@@ -17,9 +17,11 @@
  */
 package com.wire.kalium.persistence.dao.message.draft
 
+import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 
 data class MessageDraftEntity(
+    val conversationId: ConversationIDEntity,
     val text: String,
     val editMessageId: String?,
     val quotedMessageId: String?,
