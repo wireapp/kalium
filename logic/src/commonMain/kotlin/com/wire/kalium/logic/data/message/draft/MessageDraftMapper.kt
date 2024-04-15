@@ -29,12 +29,16 @@ fun MessageDraftEntity.toModel(): MessageDraft = MessageDraft(
     editMessageId = editMessageId,
     quotedMessageId = quotedMessageId,
     // self mentions are not supported in drafts
-    selectedMentionList = selectedMentionList.map { it.toModel(selfUserId = null) })
+    selectedMentionList = selectedMentionList.map {
+        it.toModel(selfUserId = null)
+    })
 
 fun MessageDraft.toDao(): MessageDraftEntity = MessageDraftEntity(
     conversationId = conversationId.toDao(),
     text = text,
     editMessageId = editMessageId,
     quotedMessageId = quotedMessageId,
-    selectedMentionList = selectedMentionList.map { it.toDao() }
+    selectedMentionList = selectedMentionList.map {
+        it.toDao()
+    }
 )

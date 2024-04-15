@@ -59,17 +59,17 @@ class MessageDraftDAOImpl internal constructor(
         .mapToList()
 
     private fun toDao(
-        conversation_id: QualifiedIDEntity,
+        conversationId: QualifiedIDEntity,
         text: String?,
-        edit_message_id: String?,
-        quoted_message_id: String?,
-        mention_list: List<MessageEntity.Mention>
+        editMessageId: String?,
+        quotedMessageId: String?,
+        mentionList: List<MessageEntity.Mention>
     ): MessageDraftEntity =
         MessageDraftEntity(
-            conversationId = conversation_id,
+            conversationId = conversationId,
             text = text.orEmpty(),
-            editMessageId = edit_message_id,
-            quotedMessageId = quoted_message_id,
-            selectedMentionList = mention_list
+            editMessageId = editMessageId,
+            quotedMessageId = quotedMessageId,
+            selectedMentionList = mentionList
         )
 }
