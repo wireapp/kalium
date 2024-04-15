@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.connection
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
-import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
@@ -43,7 +42,7 @@ internal class IgnoreConnectionRequestUseCaseImpl(
 ) : IgnoreConnectionRequestUseCase {
 
     override suspend fun invoke(userId: UserId): IgnoreConnectionRequestUseCaseResult {
-        return connectionRepository.updateConnectionStatus(userId, ConnectionState.IGNORED)
+        return connectionRepository.ignoreConnectionRequest(userId)
             .fold({
                 kaliumLogger.e("An error occurred when ignoring the connection request to $userId")
                 IgnoreConnectionRequestUseCaseResult.Failure(it)

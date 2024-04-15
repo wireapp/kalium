@@ -56,3 +56,6 @@ SELECT * FROM Connection LEFT JOIN User ON Connection.qualified_to == User.quali
 
 selectConnection:
 SELECT * FROM Connection WHERE qualified_conversation = ?;
+
+selectConnectionRequestByUser:
+SELECT * FROM Connection LEFT JOIN User ON Connection.qualified_to == User.qualified_id WHERE Connection.qualified_to = :user_id;
