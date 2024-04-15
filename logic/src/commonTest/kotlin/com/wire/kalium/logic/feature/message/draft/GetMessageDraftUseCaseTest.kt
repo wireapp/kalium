@@ -108,12 +108,13 @@ class GetMessageDraftUseCaseTest {
     }
 
     private companion object {
+        val CONVERSATION_ID = TestConversation.ID
         val MESSAGE_DRAFT = MessageDraft(
+            conversationId = CONVERSATION_ID,
             text = "hello",
             editMessageId = null,
             quotedMessageId = null,
             selectedMentionList = listOf()
         )
-        val CONVERSATION_ID = TestConversation.ID
     }
 }

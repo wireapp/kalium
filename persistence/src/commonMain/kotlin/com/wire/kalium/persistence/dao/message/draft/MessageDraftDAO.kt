@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.Flow
 
 interface MessageDraftDAO {
 
-    suspend fun upsertMessageDraft(conversationIDEntity: ConversationIDEntity, messageDraft: MessageDraftEntity)
+    suspend fun upsertMessageDraft(messageDraft: MessageDraftEntity)
     suspend fun getMessageDraft(conversationIDEntity: ConversationIDEntity): MessageDraftEntity?
     suspend fun removeMessageDraft(conversationIDEntity: ConversationIDEntity)
     suspend fun observeMessageDrafts(): Flow<List<MessageDraftEntity>>

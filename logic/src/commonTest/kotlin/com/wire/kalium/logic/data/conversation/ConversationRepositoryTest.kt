@@ -87,6 +87,8 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
+import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
+import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.util.DateTimeUtil
@@ -723,6 +725,7 @@ class ConversationRepositoryTest {
             .withConversations(listOf(conversationEntity))
             .withLastMessages(listOf(messagePreviewEntity))
             .withConversationUnreadEvents(listOf(conversationUnreadEventEntity))
+            .withMessageDrafts(listOf())
             .arrange()
 
         // when
@@ -765,6 +768,7 @@ class ConversationRepositoryTest {
             val (_, conversationRepository) = Arrangement()
                 .withConversations(listOf(conversationEntity))
                 .withLastMessages(listOf(MESSAGE_PREVIEW_ENTITY.copy(conversationId = conversationIdEntity)))
+                .withMessageDrafts(listOf())
                 .withConversationUnreadEvents(listOf(conversationUnreadEventEntity))
                 .arrange()
 
@@ -851,6 +855,7 @@ class ConversationRepositoryTest {
             val (_, conversationRepository) = Arrangement()
                 .withConversations(listOf(conversationEntity))
                 .withLastMessages(listOf())
+                .withMessageDrafts(listOf())
                 .withConversationUnreadEvents(listOf(conversationUnreadEventEntity))
                 .arrange()
         
@@ -1419,6 +1424,9 @@ class ConversationRepositoryTest {
         private val messageDAO = configure(mock(MessageDAO::class)) { stubsUnitByDefault = true }
 
         @Mock
+        private val messageDraftDAO = configure(mock(MessageDraftDAO::class)) { stubsUnitByDefault = true }
+
+        @Mock
         val conversationMetaDataDAO: ConversationMetaDataDAO = mock(ConversationMetaDataDAO::class)
 
         @Mock
@@ -1436,7 +1444,8 @@ class ConversationRepositoryTest {
                 messageDAO,
                 clientDao,
                 clientApi,
-                conversationMetaDataDAO
+                conversationMetaDataDAO,
+                messageDraftDAO
             )
 
         init {
@@ -1562,6 +1571,13 @@ class ConversationRepositoryTest {
                 .suspendFunction(messageDAO::observeLastMessages)
                 .whenInvoked()
                 .thenReturn(flowOf(messages))
+        }
+
+        fun withMessageDrafts(messageDrafts: List<MessageDraftEntity>) = apply {
+            given(messageDraftDAO)
+                .suspendFunction(messageDraftDAO::observeMessageDrafts)
+                .whenInvoked()
+                .thenReturn(flowOf(messageDrafts))
         }
 
         fun withUpdateConversationReadDateException(exception: Throwable) = apply {

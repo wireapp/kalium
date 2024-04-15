@@ -33,10 +33,10 @@ class MessageDraftDAOImpl internal constructor(
     private val coroutineContext: CoroutineContext,
 ) : MessageDraftDAO {
 
-    override suspend fun upsertMessageDraft(conversationIDEntity: ConversationIDEntity, messageDraft: MessageDraftEntity) =
+    override suspend fun upsertMessageDraft(messageDraft: MessageDraftEntity) =
         withContext(coroutineContext) {
             queries.upsertDraft(
-                conversation_id = conversationIDEntity,
+                conversation_id = messageDraft.conversationId,
                 text = messageDraft.text,
                 edit_message_id = messageDraft.editMessageId,
                 quoted_message_id = messageDraft.quotedMessageId,
