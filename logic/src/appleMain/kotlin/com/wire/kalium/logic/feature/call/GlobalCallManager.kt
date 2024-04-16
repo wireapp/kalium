@@ -16,6 +16,8 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:Suppress("konsist.useCasesShouldNotAccessNetworkLayerDirectly")
+
 package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
@@ -32,6 +34,7 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
+import com.wire.kalium.network.NetworkStateObserver
 
 actual class GlobalCallManager {
     @Suppress("LongParameterList")
@@ -48,12 +51,13 @@ actual class GlobalCallManager {
         qualifiedIdMapper: QualifiedIdMapper,
         videoStateChecker: VideoStateChecker,
         conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
+        networkStateObserver: NetworkStateObserver,
         kaliumConfigs: KaliumConfigs
     ): CallManager {
         return CallManagerImpl()
     }
 
-    actual fun removeInMemoryCallingManagerForUser(userId: UserId) {
+    actual suspend fun removeInMemoryCallingManagerForUser(userId: UserId) {
         TODO("Not yet implemented")
     }
 

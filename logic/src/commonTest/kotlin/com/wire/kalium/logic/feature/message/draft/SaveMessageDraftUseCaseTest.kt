@@ -41,13 +41,13 @@ class SaveMessageDraftUseCaseTest {
     @Test
     fun givenConversationId_whenInvokingUseCase_thenShouldCallMessageDraftRepository() = runTest(testDispatchers.io) {
         val (arrangement, saveMessageDraft) = Arrangement()
-            .withSaveMessageDraft(CONVERSATION_ID, MESSAGE_DRAFT, Either.Right(Unit))
+            .withSaveMessageDraft(MESSAGE_DRAFT, Either.Right(Unit))
             .arrange()
 
-        saveMessageDraft(CONVERSATION_ID, MESSAGE_DRAFT)
+        saveMessageDraft(MESSAGE_DRAFT)
 
         verify(arrangement.messageDraftRepository)
-            .coroutine { arrangement.messageDraftRepository.saveMessageDraft(CONVERSATION_ID, MESSAGE_DRAFT) }
+            .coroutine { arrangement.messageDraftRepository.saveMessageDraft(MESSAGE_DRAFT) }
             .wasInvoked(exactly = once)
     }
 
@@ -61,12 +61,11 @@ class SaveMessageDraftUseCaseTest {
         }
 
         suspend fun withSaveMessageDraft(
-            conversationId: ConversationId,
             messageDraft: MessageDraft,
             response: Either<StorageFailure, Unit>
         ) = apply {
             given(messageDraftRepository)
-                .coroutine { messageDraftRepository.saveMessageDraft(conversationId, messageDraft) }
+                .coroutine { messageDraftRepository.saveMessageDraft(messageDraft) }
                 .thenReturn(response)
         }
 
@@ -74,12 +73,13 @@ class SaveMessageDraftUseCaseTest {
     }
 
     private companion object {
+        val CONVERSATION_ID = TestConversation.ID
         val MESSAGE_DRAFT = MessageDraft(
+            conversationId = CONVERSATION_ID,
             text = "hello",
             editMessageId = null,
             quotedMessageId = null,
             selectedMentionList = listOf()
         )
-        val CONVERSATION_ID = TestConversation.ID
     }
 }
