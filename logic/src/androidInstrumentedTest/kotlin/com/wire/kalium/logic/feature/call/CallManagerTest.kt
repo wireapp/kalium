@@ -86,7 +86,7 @@ class CallManagerTest {
     private val videoStateChecker = mock(VideoStateChecker::class)
 
     @Mock
-    private val networkStateObserver = mock(classOf<NetworkStateObserver>())
+    private val networkStateObserver = mock(NetworkStateObserver::class)
 
     private val dispatcher = TestKaliumDispatcher
 
