@@ -59,20 +59,20 @@ class MessageDraftRepositoryTest {
     }
 
     @Test
-    fun givenAConversationId_whenSavingDraftMessage_thenShouldMapItProperly() = runTest {
+    fun givenADraft_whenSavingDraftMessage_thenShouldMapItProperly() = runTest {
         // Given
         val (arrangement, messageDraftRepository) = Arrangement()
             .withUpsertMessageDraft()
             .arrange()
 
         // When
-        messageDraftRepository.saveMessageDraft(TEST_CONVERSATION_ID, TEST_MESSAGE_DRAFT)
+        messageDraftRepository.saveMessageDraft(TEST_MESSAGE_DRAFT)
 
         // Then
         with(arrangement) {
             verify(messageDraftDAO)
                 .suspendFunction(messageDraftDAO::upsertMessageDraft)
-                .with(eq(TEST_CONVERSATION_ID.toDao()), eq(TEST_MESSAGE_DRAFT.toDao()))
+                .with(eq(TEST_MESSAGE_DRAFT.toDao()))
                 .wasInvoked(exactly = once)
         }
     }
@@ -128,8 +128,10 @@ class MessageDraftRepositoryTest {
     }
 
     private companion object {
+        val TEST_CONVERSATION_ID = ConversationId("value", "domain")
         val TEST_MESSAGE_DRAFT =
             MessageDraft(
+                conversationId = TEST_CONVERSATION_ID,
                 text = "hello",
                 editMessageId = null,
                 quotedMessageId = null,
@@ -137,11 +139,11 @@ class MessageDraftRepositoryTest {
             )
         val TEST_MESSAGE_DRAFT_ENTITY =
             MessageDraftEntity(
+                conversationId = TEST_CONVERSATION_ID.toDao(),
                 text = "hello",
                 editMessageId = null,
                 quotedMessageId = null,
                 selectedMentionList = listOf()
             )
-        val TEST_CONVERSATION_ID = ConversationId("value", "domain")
     }
 }
