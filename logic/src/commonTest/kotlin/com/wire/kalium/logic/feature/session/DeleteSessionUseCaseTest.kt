@@ -29,10 +29,8 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Ignore
 import kotlin.test.Test
@@ -59,7 +57,7 @@ class DeleteSessionUseCaseTest {
             arrange.sessionRepository.deleteSession(eq(userId))
         }.wasInvoked(exactly = once)
 
-        verify {
+        coVerify {
             arrange.userSessionScopeProvider.delete(eq(userId))
         }.wasInvoked(exactly = once)
     }
@@ -101,10 +99,8 @@ class DeleteSessionUseCaseTest {
                 sessionRepository.deleteSession(eq(userId))
             }.returns(Either.Right(Unit))
 
-            every {
-
+            coEvery {
                 userSessionScopeProvider.delete(eq(userId))
-
             }.returns(Unit)
         }
 

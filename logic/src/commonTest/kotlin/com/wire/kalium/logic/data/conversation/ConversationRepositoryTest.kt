@@ -1494,7 +1494,7 @@ class ConversationRepositoryTest {
             }.returns(flowOf(messages))
         }
 
-        fun withMessageDrafts(messageDrafts: List<MessageDraftEntity>) = apply {
+        suspend fun withMessageDrafts(messageDrafts: List<MessageDraftEntity>) = apply {
             coEvery {
                 messageDraftDAO.observeMessageDrafts()
             }.returns(flowOf(messageDrafts))

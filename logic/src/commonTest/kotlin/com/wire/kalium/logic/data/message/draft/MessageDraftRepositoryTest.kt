@@ -110,7 +110,7 @@ class MessageDraftRepositoryTest {
 
         suspend fun withUpsertMessageDraft() = apply {
             coEvery {
-                messageDraftDAO.upsertMessageDraft(any(), any())
+                messageDraftDAO.upsertMessageDraft(any())
             }.returns(Unit)
         }
 
