@@ -32,7 +32,6 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
@@ -48,7 +47,7 @@ class MembersToMentionUseCaseTest {
     private val userRepository: UserRepository = mock(UserRepository::class)
 
     @Mock
-    private val observeConversationMembers = mock(classOf<ObserveConversationMembersUseCase>())
+    private val observeConversationMembers = mock(ObserveConversationMembersUseCase::class)
 
     private lateinit var membersToMention: MembersToMentionUseCase
 

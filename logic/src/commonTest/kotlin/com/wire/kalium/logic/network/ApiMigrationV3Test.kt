@@ -30,7 +30,6 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -77,10 +76,10 @@ class ApiMigrationV3Test {
     class Arrangement {
 
         @Mock
-        val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
         @Mock
-        val upgradeCurrentSessionUseCase = mock(classOf<UpgradeCurrentSessionUseCase>())
+        val upgradeCurrentSessionUseCase = mock(UpgradeCurrentSessionUseCase::class)
 
         suspend fun withClientId(clientId: ClientId?) = apply {
             coEvery {

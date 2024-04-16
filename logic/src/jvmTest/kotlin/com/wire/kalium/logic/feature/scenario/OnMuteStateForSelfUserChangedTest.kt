@@ -26,7 +26,6 @@ import com.wire.kalium.logic.feature.call.scenario.OnMuteStateForSelfUserChanged
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.eq
 import io.mockative.mock
@@ -76,7 +75,7 @@ class OnMuteStateForSelfUserChangedTest {
     internal class Arrangement {
 
         @Mock
-        val callRepository = mock(classOf<CallRepository>())
+        val callRepository = mock(CallRepository::class)
 
         fun arrange() = this to OnMuteStateForSelfUserChanged(
             CoroutineScope(testScope),

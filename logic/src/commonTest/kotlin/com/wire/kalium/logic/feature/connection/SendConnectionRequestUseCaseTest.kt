@@ -28,7 +28,6 @@ import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -144,10 +143,10 @@ class SendConnectionRequestUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val connectionRepository = mock(classOf<ConnectionRepository>())
+        val connectionRepository = mock(ConnectionRepository::class)
 
         @Mock
-        val userRepository = mock(classOf<UserRepository>())
+        val userRepository = mock(UserRepository::class)
 
         suspend fun withCreateConnectionResult(result: Either<CoreFailure, Unit>) = apply {
             coEvery {

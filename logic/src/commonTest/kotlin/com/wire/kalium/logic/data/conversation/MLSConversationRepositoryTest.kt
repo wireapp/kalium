@@ -90,7 +90,6 @@ import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -1497,43 +1496,43 @@ class MLSConversationRepositoryTest {
     private class Arrangement {
 
         @Mock
-        val commitBundleEventReceiver = mock(classOf<CommitBundleEventReceiver>())
+        val commitBundleEventReceiver = mock(CommitBundleEventReceiver::class)
 
         @Mock
-        val keyPackageRepository = mock(classOf<KeyPackageRepository>())
+        val keyPackageRepository = mock(KeyPackageRepository::class)
 
         @Mock
-        val mlsPublicKeysRepository = mock(classOf<MLSPublicKeysRepository>())
+        val mlsPublicKeysRepository = mock(MLSPublicKeysRepository::class)
 
         @Mock
-        val mlsClientProvider = mock(classOf<MLSClientProvider>())
+        val mlsClientProvider = mock(MLSClientProvider::class)
 
         @Mock
-        val conversationDAO = mock(classOf<ConversationDAO>())
+        val conversationDAO = mock(ConversationDAO::class)
 
         @Mock
         val clientApi = mock(ClientApi::class)
 
         @Mock
-        val mlsMessageApi = mock(classOf<MLSMessageApi>())
+        val mlsMessageApi = mock(MLSMessageApi::class)
 
         @Mock
-        val mlsClient = mock(classOf<MLSClient>())
+        val mlsClient = mock(MLSClient::class)
 
         @Mock
-        val e2eiClient = mock(classOf<E2EIClient>())
+        val e2eiClient = mock(E2EIClient::class)
 
         @Mock
         val syncManager = mock(SyncManager::class)
 
         @Mock
-        val keyPackageLimitsProvider = mock(classOf<KeyPackageLimitsProvider>())
+        val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
 
         @Mock
-        val checkRevocationList = mock(classOf<CheckRevocationListUseCase>())
+        val checkRevocationList = mock(CheckRevocationListUseCase::class)
 
         @Mock
-        val certificateRevocationListRepository = mock(classOf<CertificateRevocationListRepository>())
+        val certificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
 
         val epochsFlow = MutableSharedFlow<GroupID>()
 

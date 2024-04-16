@@ -27,7 +27,6 @@ import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.persistence.dao.MigrationDAO
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -134,13 +133,13 @@ class RestoreWebBackupUseCaseTest {
     private inner class Arrangement {
 
         @Mock
-        val persistMigratedMessagesUseCase = mock(classOf<PersistMigratedMessagesUseCase>())
+        val persistMigratedMessagesUseCase = mock(PersistMigratedMessagesUseCase::class)
 
         @Mock
-        val migrationDAO = mock(classOf<MigrationDAO>())
+        val migrationDAO = mock(MigrationDAO::class)
 
         @Mock
-        val restartSlowSyncProcessForRecoveryUseCase = mock(classOf<RestartSlowSyncProcessForRecoveryUseCase>())
+        val restartSlowSyncProcessForRecoveryUseCase = mock(RestartSlowSyncProcessForRecoveryUseCase::class)
 
         private val selfUserId = currentTestUserId
 

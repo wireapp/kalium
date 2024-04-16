@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
@@ -79,7 +78,7 @@ class AppLockTeamFeatureConfigObserverTest {
     private class Arrangement {
 
         @Mock
-        val userConfigRepository = mock(classOf<UserConfigRepository>())
+        val userConfigRepository = mock(UserConfigRepository::class)
 
         fun withFailure(): Arrangement = apply {
             every {

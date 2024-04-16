@@ -22,10 +22,8 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.configure
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
@@ -35,7 +33,7 @@ import kotlin.test.Test
 class UpdateCurrentSessionUseCaseTest {
 
     @Mock
-    val sessionRepository: SessionRepository = configure(mock(classOf<SessionRepository>())) { }
+    val sessionRepository: SessionRepository = mock(SessionRepository::class)
 
     lateinit var updateCurrentSessionUseCase: UpdateCurrentSessionUseCase
 

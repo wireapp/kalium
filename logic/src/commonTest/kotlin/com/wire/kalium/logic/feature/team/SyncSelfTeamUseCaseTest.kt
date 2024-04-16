@@ -28,7 +28,6 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -191,10 +190,10 @@ class SyncSelfTeamUseCaseTest {
         var fetchTeamMemberLimit: Int? = null
 
         @Mock
-        val userRepository = mock(classOf<UserRepository>())
+        val userRepository = mock(UserRepository::class)
 
         @Mock
-        val teamRepository = mock(classOf<TeamRepository>())
+        val teamRepository = mock(TeamRepository::class)
 
         private lateinit var syncSelfTeamUseCase: SyncSelfTeamUseCase
         fun witFetchAllTeamMembersEagerly(result: Int?) = apply {

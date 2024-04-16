@@ -31,10 +31,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.configure
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
@@ -141,9 +139,7 @@ class NeedsToRegisterClientUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val currentClientIdProvider = configure(mock(classOf<CurrentClientIdProvider>())) {
-            stubsUnitByDefault = true
-        }
+        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
         @Mock
         val sessionRepository = mock(SessionRepository::class)

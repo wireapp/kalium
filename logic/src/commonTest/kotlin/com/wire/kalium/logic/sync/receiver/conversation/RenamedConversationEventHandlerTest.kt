@@ -25,7 +25,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -80,10 +79,10 @@ class RenamedConversationEventHandlerTest {
     private class Arrangement {
 
         @Mock
-        val persistMessage = mock(classOf<PersistMessageUseCase>())
+        val persistMessage = mock(PersistMessageUseCase::class)
 
         @Mock
-        val conversationDao = mock(classOf<ConversationDAO>())
+        val conversationDao = mock(ConversationDAO::class)
 
         private val renamedConversationEventHandler: RenamedConversationEventHandler = RenamedConversationEventHandlerImpl(
             conversationDao,

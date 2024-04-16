@@ -33,10 +33,8 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.every
 import io.mockative.mock
@@ -120,19 +118,19 @@ class SendEditTextMessageUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val messageRepository = mock(classOf<MessageRepository>())
+        val messageRepository = mock(MessageRepository::class)
 
         @Mock
-        val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
         @Mock
-        val slowSyncRepository = mock(classOf<SlowSyncRepository>())
+        val slowSyncRepository = mock(SlowSyncRepository::class)
 
         @Mock
-        val messageSender = mock(classOf<MessageSender>())
+        val messageSender = mock(MessageSender::class)
 
         @Mock
-        val messageSendFailureHandler = configure(mock(classOf<MessageSendFailureHandler>())) { }
+        val messageSendFailureHandler = mock(MessageSendFailureHandler::class)
 
         suspend fun withSendMessageSuccess() = apply {
             coEvery {

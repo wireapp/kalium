@@ -62,8 +62,6 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.ktor.util.reflect.instanceOf
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -1466,51 +1464,49 @@ class CallRepositoryTest {
     private class Arrangement {
 
         @Mock
-        val callApi = mock(classOf<CallApi>())
+        val callApi = mock(CallApi::class)
 
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
+        val conversationRepository = mock(ConversationRepository::class)
 
         @Mock
-        val userRepository = mock(classOf<UserRepository>())
+        val userRepository = mock(UserRepository::class)
 
         @Mock
-        val teamRepository = mock(classOf<TeamRepository>())
+        val teamRepository = mock(TeamRepository::class)
 
         @Mock
-        val sessionRepository = mock(classOf<SessionRepository>())
+        val sessionRepository = mock(SessionRepository::class)
 
         @Mock
-        val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
+        val qualifiedIdMapper = mock(QualifiedIdMapper::class)
 
         @Mock
-        val persistMessage = mock(classOf<PersistMessageUseCase>())
+        val persistMessage = mock(PersistMessageUseCase::class)
 
         @Mock
-        val mlsClientProvider = mock(classOf<MLSClientProvider>())
+        val mlsClientProvider = mock(MLSClientProvider::class)
 
         @Mock
-        val mlsClient = mock(classOf<MLSClient>())
+        val mlsClient = mock(MLSClient::class)
 
         @Mock
-        val joinSubconversationUseCase = mock(classOf<JoinSubconversationUseCase>())
+        val joinSubconversationUseCase = mock(JoinSubconversationUseCase::class)
 
         @Mock
-        val leaveSubconversationUseCase = mock(classOf<LeaveSubconversationUseCase>())
+        val leaveSubconversationUseCase = mock(LeaveSubconversationUseCase::class)
 
         @Mock
-        val subconversationRepository = mock(classOf<SubconversationRepository>())
+        val subconversationRepository = mock(SubconversationRepository::class)
 
         @Mock
-        val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
+        val mlsConversationRepository = mock(MLSConversationRepository::class)
 
         @Mock
-        val epochChangesObserver = mock(classOf<EpochChangesObserver>())
+        val epochChangesObserver = mock(EpochChangesObserver::class)
 
         @Mock
-        val callDAO = configure(mock(classOf<CallDAO>())) {
-            stubsUnitByDefault = true
-        }
+        val callDAO = mock(CallDAO::class)
 
         private val callMapper = CallMapperImpl(qualifiedIdMapper)
         private val federatedIdMapper = FederatedIdMapperImpl(TestUser.SELF.id, qualifiedIdMapper, sessionRepository)

@@ -41,7 +41,6 @@ import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -59,7 +58,7 @@ class ReceiptMessageHandlerTest {
     private val receiptRepository: ReceiptRepository = ReceiptRepositoryImpl(userDatabase.builder.receiptDAO)
 
     @Mock
-    private val messageRepository: MessageRepository = mock(classOf<MessageRepository>())
+    private val messageRepository: MessageRepository = mock(MessageRepository::class)
 
     private val receiptMessageHandler = ReceiptMessageHandlerImpl(SELF_USER_ID, receiptRepository, messageRepository)
 

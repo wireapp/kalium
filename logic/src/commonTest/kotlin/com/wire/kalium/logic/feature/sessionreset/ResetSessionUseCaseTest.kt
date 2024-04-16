@@ -31,7 +31,6 @@ import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -47,19 +46,19 @@ import kotlin.test.assertEquals
 class ResetSessionUseCaseTest {
 
     @Mock
-    val proteusClientProvider = mock(classOf<ProteusClientProvider>())
+    val proteusClientProvider = mock(ProteusClientProvider::class)
 
     @Mock
-    val sessionResetSender = mock(classOf<SessionResetSender>())
+    val sessionResetSender = mock(SessionResetSender::class)
 
     @Mock
-    private val messageRepository = mock(classOf<MessageRepository>())
+    private val messageRepository = mock(MessageRepository::class)
 
     @Mock
-    val proteusClient = mock(classOf<ProteusClient>())
+    val proteusClient = mock(ProteusClient::class)
 
     @Mock
-    val idMapper = mock(classOf<IdMapper>())
+    val idMapper = mock(IdMapper::class)
 
     private val testDispatchers: KaliumDispatcher = TestKaliumDispatcher
 

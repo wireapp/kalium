@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -36,7 +35,7 @@ import kotlin.test.assertIs
 
 class VerifyActivationCodeUseCaseTest {
     @Mock
-    private val registerAccountRepository = mock(classOf<RegisterAccountRepository>())
+    private val registerAccountRepository = mock(RegisterAccountRepository::class)
 
     private lateinit var verifyActivationCodeUseCase: VerifyActivationCodeUseCase
 

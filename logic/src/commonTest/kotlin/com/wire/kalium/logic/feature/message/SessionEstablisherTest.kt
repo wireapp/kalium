@@ -43,7 +43,6 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.every
 import io.mockative.coVerify
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.mock
@@ -131,13 +130,13 @@ class SessionEstablisherTest {
 
     private class Arrangement {
         @Mock
-        val proteusClient = configure(mock(ProteusClient::class)) { }
+        val proteusClient = mock(ProteusClient::class)
 
         @Mock
         val proteusClientProvider = mock(ProteusClientProvider::class)
 
         @Mock
-        val preKeyRepository = configure(mock(PreKeyRepository::class)) { }
+        val preKeyRepository = mock(PreKeyRepository::class)
 
         private val sessionEstablisher: SessionEstablisher =
             SessionEstablisherImpl(proteusClientProvider, preKeyRepository)

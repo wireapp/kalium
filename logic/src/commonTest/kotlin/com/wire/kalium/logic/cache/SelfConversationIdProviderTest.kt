@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -96,13 +95,13 @@ class SelfConversationIdProviderTest {
     private class Arrangement {
 
         @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
+        val clientRepository = mock(ClientRepository::class)
 
         @Mock
-        val proteusSelfConversationIdProvider = mock(classOf<ProteusSelfConversationIdProvider>())
+        val proteusSelfConversationIdProvider = mock(ProteusSelfConversationIdProvider::class)
 
         @Mock
-        val mlsSelfConversationIdProvider = mock(classOf<MLSSelfConversationIdProvider>())
+        val mlsSelfConversationIdProvider = mock(MLSSelfConversationIdProvider::class)
 
         val selfConversationIdProvider: SelfConversationIdProvider = SelfConversationIdProviderImpl(
             clientRepository,

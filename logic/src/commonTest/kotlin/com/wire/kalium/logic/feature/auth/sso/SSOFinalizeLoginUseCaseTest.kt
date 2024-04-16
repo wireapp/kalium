@@ -23,7 +23,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.serverMiscommunicationFailure
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -37,7 +36,7 @@ import kotlin.test.assertIs
 class SSOFinalizeLoginUseCaseTest {
 
     @Mock
-    val ssoLoginRepository = mock(classOf<SSOLoginRepository>())
+    val ssoLoginRepository = mock(SSOLoginRepository::class)
     lateinit var ssoFinalizeLoginUseCase: SSOFinalizeLoginUseCase
 
     @BeforeTest

@@ -44,10 +44,8 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.every
 import io.mockative.mock
@@ -346,43 +344,43 @@ class LogoutUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val logoutRepository = mock(classOf<LogoutRepository>())
+        val logoutRepository = mock(LogoutRepository::class)
 
         @Mock
-        val sessionRepository = mock(classOf<SessionRepository>())
+        val sessionRepository = mock(SessionRepository::class)
 
         @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
+        val clientRepository = mock(ClientRepository::class)
 
         @Mock
-        val userConfigRepository = mock(classOf<UserConfigRepository>())
+        val userConfigRepository = mock(UserConfigRepository::class)
 
         @Mock
-        val deregisterTokenUseCase = mock(classOf<DeregisterTokenUseCase>())
+        val deregisterTokenUseCase = mock(DeregisterTokenUseCase::class)
 
         @Mock
-        val clearClientDataUseCase = configure(mock(ClearClientDataUseCase::class)) { }
+        val clearClientDataUseCase = mock(ClearClientDataUseCase::class)
 
         @Mock
-        val clearUserDataUseCase = configure(mock(ClearUserDataUseCase::class)) { }
+        val clearUserDataUseCase = mock(ClearUserDataUseCase::class)
 
         @Mock
-        val userSessionScopeProvider = configure(mock(classOf<UserSessionScopeProvider>())) { }
+        val userSessionScopeProvider = mock(UserSessionScopeProvider::class)
 
         @Mock
-        val pushTokenRepository = mock(classOf<PushTokenRepository>())
+        val pushTokenRepository = mock(PushTokenRepository::class)
 
         @Mock
-        val userSessionWorkScheduler = configure(mock(classOf<UserSessionWorkScheduler>())) { }
+        val userSessionWorkScheduler = mock(UserSessionWorkScheduler::class)
 
         @Mock
-        val observeEstablishedCallsUseCase = mock(classOf<ObserveEstablishedCallsUseCase>())
+        val observeEstablishedCallsUseCase = mock(ObserveEstablishedCallsUseCase::class)
 
         @Mock
-        val endCall = configure(mock(EndCallUseCase::class)) { }
+        val endCall = mock(EndCallUseCase::class)
 
         @Mock
-        val logoutCallback = configure(mock(classOf<LogoutCallback>())) { }
+        val logoutCallback = mock(LogoutCallback::class)
 
         var kaliumConfigs = KaliumConfigs()
 

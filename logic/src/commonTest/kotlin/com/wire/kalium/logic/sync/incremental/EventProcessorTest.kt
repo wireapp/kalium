@@ -34,13 +34,11 @@ import com.wire.kalium.logic.util.arrangement.eventHandler.FeatureConfigEventRec
 import com.wire.kalium.logic.util.shouldFail
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -217,7 +215,7 @@ class EventProcessorTest {
     private class Arrangement : FeatureConfigEventReceiverArrangement by FeatureConfigEventReceiverArrangementImpl() {
 
         @Mock
-        val eventRepository = configure(mock(EventRepository::class)) { }
+        val eventRepository = mock(EventRepository::class)
 
         @Mock
         val conversationEventReceiver = mock(ConversationEventReceiver::class)

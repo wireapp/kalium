@@ -41,7 +41,6 @@ import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -281,16 +280,16 @@ class GetMessageAssetUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val messageRepository = mock(classOf<MessageRepository>())
+        val messageRepository = mock(MessageRepository::class)
 
         @Mock
-        val userRepository = mock(classOf<UserRepository>())
+        val userRepository = mock(UserRepository::class)
 
         @Mock
-        val assetDataSource = mock(classOf<AssetRepository>())
+        val assetDataSource = mock(AssetRepository::class)
 
         @Mock
-        val updateAssetMessageTransferStatus = mock(classOf<UpdateAssetMessageTransferStatusUseCase>())
+        val updateAssetMessageTransferStatus = mock(UpdateAssetMessageTransferStatusUseCase::class)
 
         private val testScope = TestScope(testDispatcher.default)
 

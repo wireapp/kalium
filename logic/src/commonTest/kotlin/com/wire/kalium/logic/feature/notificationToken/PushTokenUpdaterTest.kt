@@ -29,7 +29,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.base.model.PushTokenBody
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -127,13 +126,13 @@ class PushTokenUpdaterTest {
     private class Arrangement {
 
         @Mock
-        val clientRepository: ClientRepository = mock(classOf<ClientRepository>())
+        val clientRepository: ClientRepository = mock(ClientRepository::class)
 
         @Mock
-        val notificationTokenRepository: NotificationTokenRepository = mock(classOf<NotificationTokenRepository>())
+        val notificationTokenRepository: NotificationTokenRepository = mock(NotificationTokenRepository::class)
 
         @Mock
-        val pushTokenRepository: PushTokenRepository = mock(classOf<PushTokenRepository>())
+        val pushTokenRepository: PushTokenRepository = mock(PushTokenRepository::class)
 
         private val pushTokenUpdater: PushTokenUpdater = PushTokenUpdater(
             clientRepository,

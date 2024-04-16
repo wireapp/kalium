@@ -21,7 +21,6 @@ package com.wire.kalium.logic.data.call
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserId
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.every
 import io.mockative.mock
 import kotlin.test.BeforeTest
@@ -31,7 +30,7 @@ import kotlin.test.assertEquals
 class ParticipantsFilterTest {
 
     @Mock
-    private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
+    private val qualifiedIdMapper = mock(QualifiedIdMapper::class)
 
     lateinit var participantsFilter: ParticipantsFilter
 

@@ -382,7 +382,7 @@
         <ID>ArgumentListWrapping:DeleteClientCommand.kt$DeleteClientCommand$("password", promptSuffix = ": ", hideInput = true)</ID>
         <ID>ArgumentListWrapping:DeleteClientCommand.kt$DeleteClientCommand$(help = "Account password")</ID>
         <ID>ArgumentListWrapping:DeleteClientUseCase.kt$DeleteClientUseCaseImpl$( { handleError(it) }, { DeleteClientResult.Success })</ID>
-        <ID>ArgumentListWrapping:DeleteClientUseCaseTest.kt$DeleteClientUseCaseTest.Arrangement$(classOf&lt;UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>())</ID>
+        <ID>ArgumentListWrapping:DeleteClientUseCaseTest.kt$DeleteClientUseCaseTest.Arrangement$(&lt;UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>())</ID>
         <ID>ArgumentListWrapping:DeleteClientUseCaseTest.kt$DeleteClientUseCaseTest.Companion$("no internet")</ID>
         <ID>ArgumentListWrapping:DeleteClientUseCaseTest.kt$DeleteClientUseCaseTest.Companion$(IOException("no internet"))</ID>
         <ID>ArgumentListWrapping:DeleteClientUseCaseTest.kt$DeleteClientUseCaseTest.Companion$(KaliumException.GenericError(IOException("no internet")))</ID>
@@ -445,7 +445,6 @@
         <ID>ArgumentListWrapping:EnrollE2EIUseCase.kt$EnrollE2EIUseCaseImpl$( wireAccessToken.token, prevNonce, dPopAuthorizations.challenge )</ID>
         <ID>ArgumentListWrapping:EnvelopeProtoMapper.kt$EnvelopeProtoMapperImpl$( envelopeParameters.messageOption.userIDs.map { QualifiedUserId(it.value, it.domain) })</ID>
         <ID>ArgumentListWrapping:EnvelopeProtoMapperTest.kt$EnvelopeProtoMapperTest$( user, mapOf( Pair("241b5be49179d81b", ByteArray(0)), Pair("8bdacec7398a982e", ByteArray(0)), Pair("e47d908549239b72", ByteArray(0)), Pair("4c8346ce67fa0d7", ByteArray(0)) ) )</ID>
-        <ID>ArgumentListWrapping:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest.Arrangement$(classOf&lt;DeleteEphemeralMessageForSelfUserAsSenderUseCase>())</ID>
         <ID>ArgumentListWrapping:EventContentDTO.kt$EventContentDTO.Conversation.MemberJoinDTO$("from")</ID>
         <ID>ArgumentListWrapping:EventContentDTO.kt$EventContentDTO.Conversation.MemberJoinDTO$("this.qualifiedFrom")</ID>
         <ID>ArgumentListWrapping:EventContentDTO.kt$EventContentDTO.Conversation.MemberJoinDTO$("use qualifiedFrom", replaceWith = ReplaceWith("this.qualifiedFrom"))</ID>
@@ -471,7 +470,6 @@
         <ID>ArgumentListWrapping:FeatureConfigEventReceiverTest.kt$FeatureConfigEventReceiverTest$(enforcedTimeoutSeconds = newEnforcedDuration.inWholeSeconds)</ID>
         <ID>ArgumentListWrapping:FeatureConfigEventReceiverTest.kt$FeatureConfigEventReceiverTest$(state = FileSharingStatus.Value.Disabled, isStatusChanged = false)</ID>
         <ID>ArgumentListWrapping:FeatureConfigEventReceiverTest.kt$FeatureConfigEventReceiverTest$(state = FileSharingStatus.Value.EnabledAll, isStatusChanged = false)</ID>
-        <ID>ArgumentListWrapping:FeatureConfigEventReceiverTest.kt$FeatureConfigEventReceiverTest.Arrangement$(classOf&lt;UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>())</ID>
         <ID>ArgumentListWrapping:FeatureConfigJson.kt$FeatureConfigJson$( AppLockConfigDTO(true, 0), FeatureFlagStatusDTO.ENABLED )</ID>
         <ID>ArgumentListWrapping:FeatureConfigMapperTest.kt$FeatureConfigMapperTest.Arrangement$( MLSConfigDTO( SupportedProtocolDTO.MLS, listOf(SupportedProtocolDTO.MLS), emptyList(), 1 ), FeatureFlagStatusDTO.ENABLED )</ID>
         <ID>ArgumentListWrapping:FeatureConfigRepositoryTest.kt$FeatureConfigRepositoryTest.Arrangement$( AppLockConfigDTO(true, 0), FeatureFlagStatusDTO.ENABLED )</ID>
@@ -526,8 +524,6 @@
         <ID>ArgumentListWrapping:HandleExternalRequestAction.kt$( """ Hey there, I hope you're doing well. I've got a bit of a craving for bananas, and I was wondering if you might be able to share a few with me? It would mean a lot. 😊 Thanks a bunch, A friendly monkey 🍌🐵 """.trimIndent(), """ Yo, I'm in need of some bananas, my friend. Can you hook me up? I'd appreciate it big time. Respect, A neutral monkey 🍌 """.trimIndent(), """ Listen up, I ain't messin' around. I want them bananas, and I want 'em now. You better deliver or there'll be consequences. No games, An evil monkey 🍌👿💀 """.trimIndent() )</ID>
         <ID>ArgumentListWrapping:IncrementalSyncManager.kt$IncrementalSyncManager$("$TAG IncrementalSync finished normally. Starting to observe ConnectionPolicy upgrade")</ID>
         <ID>ArgumentListWrapping:IncrementalSyncManagerTest.kt$IncrementalSyncManagerTest$(TestKaliumDispatcher.default)</ID>
-        <ID>ArgumentListWrapping:IncrementalSyncManagerTest.kt$IncrementalSyncManagerTest.Arrangement$(classOf&lt;IncrementalSyncRepository>())</ID>
-        <ID>ArgumentListWrapping:IncrementalSyncManagerTest.kt$IncrementalSyncManagerTest.Arrangement$(mock(classOf&lt;IncrementalSyncRepository>()))</ID>
         <ID>ArgumentListWrapping:IncrementalSyncWorkerTest.kt$IncrementalSyncWorkerTest$(TestKaliumDispatcher.default)</ID>
         <ID>ArgumentListWrapping:InstanceService.kt$InstanceService$( instanceRequest.email, instanceRequest.password, true, secondFactorVerificationCode = instanceRequest.verificationCode )</ID>
         <ID>ArgumentListWrapping:InstanceService.kt$InstanceService$( loginResult.serverConfigId, loginResult.ssoID, loginResult.authData, null, true )</ID>
@@ -615,10 +611,6 @@
         <ID>ArgumentListWrapping:LoginWithEmailRequestJson.kt$LoginWithEmailRequestJson$( LoginApi.LoginParam.LoginWithEmail( email = "user@email.de", label = "label", password = "password", verificationCode = "verificationCode" ), jsonProvider )</ID>
         <ID>ArgumentListWrapping:LoginWithEmailRequestJson.kt$LoginWithEmailRequestJson$( LoginApi.LoginParam.LoginWithHandle( handle = "cool_user_name", label = "label", password = "password", ), jsonProvider )</ID>
         <ID>ArgumentListWrapping:LogoutApiV0Test.kt$LogoutApiV0Test$((errorResponse.kException as KaliumException.InvalidRequestError).errorResponse, ERROR_RESPONSE.serializableData)</ID>
-        <ID>ArgumentListWrapping:LogoutUseCaseTest.kt$LogoutUseCaseTest.Arrangement$(classOf&lt;UserSessionScopeProvider>())</ID>
-        <ID>ArgumentListWrapping:LogoutUseCaseTest.kt$LogoutUseCaseTest.Arrangement$(classOf&lt;UserSessionWorkScheduler>())</ID>
-        <ID>ArgumentListWrapping:LogoutUseCaseTest.kt$LogoutUseCaseTest.Arrangement$(mock(classOf&lt;UserSessionScopeProvider>()))</ID>
-        <ID>ArgumentListWrapping:LogoutUseCaseTest.kt$LogoutUseCaseTest.Arrangement$(mock(classOf&lt;UserSessionWorkScheduler>()))</ID>
         <ID>ArgumentListWrapping:MLSClientImpl.kt$MLSClientImpl$(coreCrypto.decryptMessage(toUByteList(groupId.decodeBase64Bytes()), toUByteList(message)))</ID>
         <ID>ArgumentListWrapping:MLSClientImpl.kt$MLSClientImpl$(coreCrypto.removeClientsFromConversation(toUByteList(groupId.decodeBase64Bytes()), clientIds))</ID>
         <ID>ArgumentListWrapping:MLSClientImpl.kt$MLSClientImpl$(groupId.decodeBase64Bytes())</ID>
@@ -675,7 +667,6 @@
         <ID>ArgumentListWrapping:MLSMigrator.kt$MLSMigratorImpl$( conversationId, selfUserId, Protocol.MIXED )</ID>
         <ID>ArgumentListWrapping:MLSMigrator.kt$MLSMigratorImpl$( conversationId, selfUserId, Protocol.MLS )</ID>
         <ID>ArgumentListWrapping:MLSWelcomeEventHandler.kt$MLSWelcomeEventHandlerImpl$(groupID, Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED)</ID>
-        <ID>ArgumentListWrapping:MLSWelcomeEventHandlerTest.kt$MLSWelcomeEventHandlerTest.Arrangement$(classOf&lt;CertificateRevocationListRepository>())</ID>
         <ID>ArgumentListWrapping:MainActivity.kt$( modifier = Modifier.fillMaxWidth(), thickness = 0.5.dp )</ID>
         <ID>ArgumentListWrapping:MapperProvider.kt$MapperProvider$(idMapper(), selfUserId)</ID>
         <ID>ArgumentListWrapping:MarkGuestLinkFeatureFlagAsNotChangedUseCaseTest.kt$MarkGuestLinkFeatureFlagAsNotChangedUseCaseTest$(any(), eq(false))</ID>
@@ -870,8 +861,6 @@
         <ID>ArgumentListWrapping:ObserveMemberDetailsByIdsUseCaseTest.kt$ObserveMemberDetailsByIdsUseCaseTest$(list.size, 1)</ID>
         <ID>ArgumentListWrapping:ObserveMessageReceiptsUseCase.kt$ObserveMessageReceiptsUseCaseImpl$("[ObserveMessageReceiptsUseCase] - Observing read receipts for " + "Conversation: ${conversationId.toLogString()}")</ID>
         <ID>ArgumentListWrapping:ObserveNewClientsUseCaseTest.kt$ObserveNewClientsUseCaseTest$( NewClientResult.InOtherAccount( listOf(TestClient.CLIENT), TestUser.OTHER_USER_ID, TestUser.SELF.name, TestUser.SELF.handle ), awaitItem() )</ID>
-        <ID>ArgumentListWrapping:ObserveNewClientsUseCaseTest.kt$ObserveNewClientsUseCaseTest.Arrangement$(classOf&lt;UserClientRepositoryProvider>())</ID>
-        <ID>ArgumentListWrapping:ObserveNewClientsUseCaseTest.kt$ObserveNewClientsUseCaseTest.Arrangement$(mock(classOf&lt;UserClientRepositoryProvider>()))</ID>
         <ID>ArgumentListWrapping:ObserveScreenshotCensoringConfigUseCaseTest.kt$ObserveScreenshotCensoringConfigUseCaseTest$(5L.toDuration(DurationUnit.MINUTES))</ID>
         <ID>ArgumentListWrapping:ObserveScreenshotCensoringConfigUseCaseTest.kt$ObserveScreenshotCensoringConfigUseCaseTest$(DurationUnit.MINUTES)</ID>
         <ID>ArgumentListWrapping:ObserveScreenshotCensoringConfigUseCaseTest.kt$ObserveScreenshotCensoringConfigUseCaseTest$(TeamSelfDeleteTimer.Enforced(5L.toDuration(DurationUnit.MINUTES)))</ID>
@@ -1050,7 +1039,6 @@
         <ID>ArgumentListWrapping:ScheduleNewAssetMessageUseCaseTest.kt$ScheduleNewAssetMessageUseCaseTest$( matching { it == AssetTransferStatus.FAILED_UPLOAD }, any(), any() )</ID>
         <ID>ArgumentListWrapping:ScheduleNewAssetMessageUseCaseTest.kt$ScheduleNewAssetMessageUseCaseTest$( matching { it == AssetTransferStatus.UPLOADED }, any(), any() )</ID>
         <ID>ArgumentListWrapping:ScheduleNewAssetMessageUseCaseTest.kt$ScheduleNewAssetMessageUseCaseTest$(testDispatcher.default)</ID>
-        <ID>ArgumentListWrapping:ScheduleNewAssetMessageUseCaseTest.kt$ScheduleNewAssetMessageUseCaseTest.Arrangement$(classOf&lt;ObserveSelfDeletionTimerSettingsForConversationUseCase>())</ID>
         <ID>ArgumentListWrapping:SearchDAOTest.kt$SearchDAOTest$( MemberEntity( connectedPartOfConversation1.id, MemberEntity.Role.Member ), conversationToExclude.id )</ID>
         <ID>ArgumentListWrapping:SearchDAOTest.kt$SearchDAOTest$( MemberEntity( connectedPartOfConversation2.id, MemberEntity.Role.Member ), conversationToExclude.id )</ID>
         <ID>ArgumentListWrapping:SearchDAOTest.kt$SearchDAOTest$( MemberEntity( connectedUser1.id, MemberEntity.Role.Member ), conversation.id )</ID>
@@ -1082,21 +1070,13 @@
         <ID>ArgumentListWrapping:SelfConversationIdProviderTest.kt$SelfConversationIdProviderTest$(listOf(Arrangement.PROTEUS_SELF_CONVERSATION_ID, Arrangement.MLS_SELF_CONVERSATION_ID), it.value)</ID>
         <ID>ArgumentListWrapping:SendBrokenAssetMessageUseCaseImpl.kt$SendBrokenAssetMessageUseCaseImpl$(AssetTransferStatus.UPLOADED, message.conversationId, message.id)</ID>
         <ID>ArgumentListWrapping:SendBrokenAssetMessageUseCaseImpl.kt$SendBrokenAssetMessageUseCaseImpl$(AssetTransferStatus.UPLOAD_IN_PROGRESS, conversationId, generatedMessageUuid)</ID>
-        <ID>ArgumentListWrapping:SendButtonMessageCaseTest.kt$SendButtonMessageCaseTest.Arrangement$(classOf&lt;MessageSendFailureHandler>())</ID>
-        <ID>ArgumentListWrapping:SendButtonMessageCaseTest.kt$SendButtonMessageCaseTest.Arrangement$(mock(classOf&lt;MessageSendFailureHandler>()))</ID>
         <ID>ArgumentListWrapping:SendButtonMessageUseCase.kt$SendButtonMessageUseCase$(it, it, false)</ID>
         <ID>ArgumentListWrapping:SendDirectMessageEventAction.kt$SendDirectMessageEventAction$( UserCount.single(), 1u, 1u )</ID>
         <ID>ArgumentListWrapping:SendEditTextMessageUseCase.kt$SendEditTextMessageUseCase$(it, conversationId, originalMessageId, TYPE)</ID>
         <ID>ArgumentListWrapping:SendEditTextMessageUseCaseTest.kt$SendEditTextMessageUseCaseTest$(TestConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)</ID>
-        <ID>ArgumentListWrapping:SendEditTextMessageUseCaseTest.kt$SendEditTextMessageUseCaseTest.Arrangement$(classOf&lt;MessageSendFailureHandler>())</ID>
-        <ID>ArgumentListWrapping:SendEditTextMessageUseCaseTest.kt$SendEditTextMessageUseCaseTest.Arrangement$(mock(classOf&lt;MessageSendFailureHandler>()))</ID>
         <ID>ArgumentListWrapping:SendKnockUseCase.kt$SendKnockUseCase$(dispatcher.io)</ID>
         <ID>ArgumentListWrapping:SendKnockUseCase.kt$SendKnockUseCase$(it, conversationId, generatedMessageUuid, TYPE)</ID>
-        <ID>ArgumentListWrapping:SendKnockUserCaseTest.kt$SendKnockUserCaseTest.Arrangement$(classOf&lt;MessageSendFailureHandler>())</ID>
-        <ID>ArgumentListWrapping:SendKnockUserCaseTest.kt$SendKnockUserCaseTest.Arrangement$(mock(classOf&lt;MessageSendFailureHandler>()))</ID>
         <ID>ArgumentListWrapping:SendLocationUseCase.kt$SendLocationUseCase$(it, conversationId, generatedMessageUuid, TYPE)</ID>
-        <ID>ArgumentListWrapping:SendLocationUseCaseTest.kt$SendLocationUseCaseTest.Arrangement$(classOf&lt;MessageSendFailureHandler>())</ID>
-        <ID>ArgumentListWrapping:SendLocationUseCaseTest.kt$SendLocationUseCaseTest.Arrangement$(mock(classOf&lt;MessageSendFailureHandler>()))</ID>
         <ID>ArgumentListWrapping:SendMessageAction.kt$SendMessageAction$(Event(monkeySender.internalId, EventType.SendDirectMessage(monkeyReceiver.internalId)))</ID>
         <ID>ArgumentListWrapping:SendMessageAction.kt$SendMessageAction$(conversationPool.getFromPrefixed(target).map { it to it.randomMonkeys(this.config.userCount) })</ID>
         <ID>ArgumentListWrapping:SendMessageAction.kt$SendMessageAction$(conversationPool.randomConversations(this.config.countGroups) .map { it to it.randomMonkeys(this.config.userCount) })</ID>
@@ -1113,8 +1093,6 @@
         <ID>ArgumentListWrapping:SendRequestAction.kt$SendRequestAction$(it.internalId, EventType.RequestResponse(origin.internalId, this.config.shouldAccept))</ID>
         <ID>ArgumentListWrapping:SendRequestAction.kt$SendRequestAction$(origin.internalId, this.config.shouldAccept)</ID>
         <ID>ArgumentListWrapping:SendTextMessageCaseTest.kt$SendTextMessageCaseTest.Arrangement$(ObserveSelfDeletionTimerSettingsForConversationUseCase::class)</ID>
-        <ID>ArgumentListWrapping:SendTextMessageCaseTest.kt$SendTextMessageCaseTest.Arrangement$(classOf&lt;MessageSendFailureHandler>())</ID>
-        <ID>ArgumentListWrapping:SendTextMessageCaseTest.kt$SendTextMessageCaseTest.Arrangement$(mock(classOf&lt;MessageSendFailureHandler>()))</ID>
         <ID>ArgumentListWrapping:SendTypingEventUseCaseTest.kt$SendTypingEventUseCaseTest.Arrangement$(TypingIndicatorOutgoingRepository::class)</ID>
         <ID>ArgumentListWrapping:ServerConfig.kt$ServerConfigMapperImpl$( federation = metaData.federation, apiVersion = metaData.commonApiVersion.version, domain = metaData.domain )</ID>
         <ID>ArgumentListWrapping:ServerConfig.kt$ServerConfigMapperImpl$( federation = metaData.federation, commonApiVersion = apiVersionMapper.toDTO(metaData.apiVersion), domain = metaData.domain )</ID>
@@ -1147,8 +1125,6 @@
         <ID>ArgumentListWrapping:ShouldRemoteMuteCheckerTest.kt$ShouldRemoteMuteCheckerTest.Companion$( OTHER_USER_ID, Conversation.Member.Role.Admin )</ID>
         <ID>ArgumentListWrapping:SlowSyncManager.kt$SlowSyncManager$(MIN_RETRY_DELAY, MAX_RETRY_DELAY)</ID>
         <ID>ArgumentListWrapping:SlowSyncManagerTest.kt$SlowSyncManagerTest$(TestKaliumDispatcher.default)</ID>
-        <ID>ArgumentListWrapping:SlowSyncManagerTest.kt$SlowSyncManagerTest.Arrangement$(classOf&lt;SlowSyncRepository>())</ID>
-        <ID>ArgumentListWrapping:SlowSyncManagerTest.kt$SlowSyncManagerTest.Arrangement$(mock(classOf&lt;SlowSyncRepository>()))</ID>
         <ID>ArgumentListWrapping:SlowSyncRepositoryTest.kt$SlowSyncRepositoryTest$(testDispatcher)</ID>
         <ID>ArgumentListWrapping:SlowSyncWorker.kt$SlowSyncWorkerImpl$(SlowSyncStep.RESOLVE_ONE_ON_ONE_PROTOCOLS, oneOnOneResolver::resolveAllOneOnOneConversations)</ID>
         <ID>ArgumentListWrapping:SlowSyncWorkerTest.kt$SlowSyncWorkerTest$(TestKaliumDispatcher.default)</ID>
@@ -1159,7 +1135,6 @@
         <ID>ArgumentListWrapping:SyncFeatureConfigsUseCaseTest.kt$SyncFeatureConfigsUseCaseTest$(NetworkFailure.ServerMiscommunication(operationDeniedException))</ID>
         <ID>ArgumentListWrapping:SyncFeatureConfigsUseCaseTest.kt$SyncFeatureConfigsUseCaseTest$(operationDeniedException)</ID>
         <ID>ArgumentListWrapping:SyncFeatureConfigsUseCaseTest.kt$SyncFeatureConfigsUseCaseTest.Arrangement$( status, isStatusChanged )</ID>
-        <ID>ArgumentListWrapping:SyncFeatureConfigsUseCaseTest.kt$SyncFeatureConfigsUseCaseTest.Arrangement$(classOf&lt;UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>())</ID>
         <ID>ArgumentListWrapping:SyncManager.kt$SyncManagerImpl$("Waiting until or failure. Current status: slowSync: $slowSyncState; incrementalSync: $incrementalSyncState")</ID>
         <ID>ArgumentListWrapping:SyncManagerTest.kt$SyncManagerTest$(CoreFailure.MissingClientRegistration)</ID>
         <ID>ArgumentListWrapping:SyncManagerTest.kt$SyncManagerTest$(IncrementalSyncStatus.FetchingPendingEvents)</ID>
@@ -1209,8 +1184,6 @@
         <ID>ArgumentListWrapping:UpdateConversationMutedStatusUseCase.kt$UpdateConversationMutedStatusUseCaseImpl$("Something went wrong when updating the convId: " + "(${conversationId.toLogString()}) to (${mutedConversationStatus.status}")</ID>
         <ID>ArgumentListWrapping:UpdateConversationMutedStatusUseCase.kt$UpdateConversationMutedStatusUseCaseImpl$(conversationId, mutedConversationStatus, mutedStatusTimestamp)</ID>
         <ID>ArgumentListWrapping:UpdateConversationReceiptModeUseCaseTest.kt$UpdateConversationReceiptModeUseCaseTest.Arrangement$( conversationRepository, persistMessage, selfUserId )</ID>
-        <ID>ArgumentListWrapping:UpdateCurrentSessionUseCaseTest.kt$UpdateCurrentSessionUseCaseTest$(classOf&lt;SessionRepository>())</ID>
-        <ID>ArgumentListWrapping:UpdateCurrentSessionUseCaseTest.kt$UpdateCurrentSessionUseCaseTest$(mock(classOf&lt;SessionRepository>()))</ID>
         <ID>ArgumentListWrapping:UpdateEmailUseCaseTest.kt$UpdateEmailUseCaseTest$(IOException())</ID>
         <ID>ArgumentListWrapping:UpdateEmailUseCaseTest.kt$UpdateEmailUseCaseTest$(KaliumException.GenericError(IOException()))</ID>
         <ID>ArgumentListWrapping:UpdateEmailUseCaseTest.kt$UpdateEmailUseCaseTest$(NetworkFailure.ServerMiscommunication(KaliumException.GenericError(IOException())))</ID>
@@ -1848,25 +1821,18 @@
         <ID>PropertyWrapping:ConversationGroupRepositoryTest.kt$ConversationGroupRepositoryTest.Arrangement$@Mock val joinExistingMLSConversation: JoinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)</ID>
         <ID>PropertyWrapping:ConversationMessageTimerEventHandlerTest.kt$ConversationMessageTimerEventHandlerTest.Arrangement$private val conversationMessageTimerEventHandler: ConversationMessageTimerEventHandler = ConversationMessageTimerEventHandlerImpl( conversationDAO, persistMessageUseCase )</ID>
         <ID>PropertyWrapping:CreateGroupConversationUseCaseTest.kt$CreateGroupConversationUseCaseTest$val conversationOptions = ConversationOptions(protocol = ConversationOptions.Protocol.MLS, creatorClientId = creatorClientId)</ID>
-        <ID>PropertyWrapping:DeleteClientUseCaseTest.kt$DeleteClientUseCaseTest.Arrangement$@Mock val updateSupportedProtocolsAndResolveOneOnOnes = mock(classOf&lt;UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>())</ID>
-        <ID>PropertyWrapping:EphemeralMessageDeletionHandlerTest.kt$EphemeralMessageDeletionHandlerTest.Arrangement$@Mock val deleteEphemeralMessageForSelfUserAsSender = mock(classOf&lt;DeleteEphemeralMessageForSelfUserAsSenderUseCase>())</ID>
         <ID>PropertyWrapping:EventRepositoryTest.kt$EventRepositoryTest.Arrangement$private val eventRepository: EventRepository = EventDataSource(notificationApi, metaDAO, clientIdProvider, TestUser.SELF.id)</ID>
-        <ID>PropertyWrapping:FeatureConfigEventReceiverTest.kt$FeatureConfigEventReceiverTest.Arrangement$@Mock val updateSupportedProtocolsAndResolveOneOnOnes = mock(classOf&lt;UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>())</ID>
         <ID>PropertyWrapping:FederationEventReceiverTest.kt$FederationEventReceiverTest$val defederatedUserIdList = List(defederatedUsersCount) { UserId(value = "defId$it", domain = defederatedDomain) }</ID>
         <ID>PropertyWrapping:FederationEventReceiverTest.kt$FederationEventReceiverTest$val defederatedUserIdListTwo = List(defederatedUsersCountTwo) { UserId(value = "defIdTwo$it", domain = defederatedDomainTwo) }</ID>
-        <ID>PropertyWrapping:IncrementalSyncManagerTest.kt$IncrementalSyncManagerTest.Arrangement$@Mock val incrementalSyncRepository = configure(mock(classOf&lt;IncrementalSyncRepository>())) { }</ID>
         <ID>PropertyWrapping:LegalHoldHandler.kt$LegalHoldHandlerImpl$val isStatusChangedForConversation = handleForConversation(conversationId, newStatus, systemMessageTimestampIso)</ID>
-        <ID>PropertyWrapping:LegalHoldHandlerTest.kt$LegalHoldHandlerTest.Arrangement$@Mock val legalHoldSystemMessagesHandler = configure(mock(LegalHoldSystemMessagesHandler::class)) { }</ID>
+        <ID>PropertyWrapping:LegalHoldHandlerTest.kt$LegalHoldHandlerTest.Arrangement$@Mock val legalHoldSystemMessagesHandler = mock(LegalHoldSystemMessagesHandler::class)</ID>
         <ID>PropertyWrapping:LegalHoldSystemMessageHandlerTest.kt$LegalHoldSystemMessagesHandlerTest$val legalHoldMessage = testLegalHoldSystemMessage(MessageContent.LegalHold.ForMembers.Disabled(listOf(TestUser.OTHER_USER_ID_2)))</ID>
         <ID>PropertyWrapping:LegalHoldSystemMessageHandlerTest.kt$LegalHoldSystemMessagesHandlerTest$val legalHoldMessage = testLegalHoldSystemMessage(MessageContent.LegalHold.ForMembers.Enabled(listOf(TestUser.OTHER_USER_ID_2)))</ID>
         <ID>PropertyWrapping:LoginUseCaseTest.kt$LoginUseCaseTest$val loginUserCaseResult = loginUseCase(TEST_EMAIL, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL, TEST_2FA_CODE)</ID>
         <ID>PropertyWrapping:LoginUseCaseTest.kt$LoginUseCaseTest$val loginUserCaseResult = loginUseCase(dirtyEmail, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL, TEST_2FA_CODE)</ID>
         <ID>PropertyWrapping:LoginUseCaseTest.kt$LoginUseCaseTest$val loginUserCaseResult = loginUseCase(dirtyHandle, TEST_PASSWORD, TEST_PERSIST_CLIENT, TEST_LABEL, TEST_2FA_CODE)</ID>
         <ID>PropertyWrapping:LoginUseCaseTest.kt$LoginUseCaseTest.Arrangement$val secondFactorVerificationRepository: SecondFactorVerificationRepository = FakeSecondFactorVerificationRepository()</ID>
-        <ID>PropertyWrapping:LogoutUseCaseTest.kt$LogoutUseCaseTest.Arrangement$@Mock val userSessionScopeProvider = configure(mock(classOf&lt;UserSessionScopeProvider>())) { }</ID>
-        <ID>PropertyWrapping:LogoutUseCaseTest.kt$LogoutUseCaseTest.Arrangement$@Mock val userSessionWorkScheduler = configure(mock(classOf&lt;UserSessionWorkScheduler>())) { }</ID>
         <ID>PropertyWrapping:MLSClientImpl.kt$MLSClientImpl$private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration.toJavaDuration(), MlsWirePolicy.PLAINTEXT)</ID>
-        <ID>PropertyWrapping:MLSWelcomeEventHandlerTest.kt$MLSWelcomeEventHandlerTest.Arrangement$@Mock val certificateRevocationListRepository: CertificateRevocationListRepository = mock(classOf&lt;CertificateRevocationListRepository>())</ID>
         <ID>PropertyWrapping:MarkLegalHoldChangeAsNotifiedForSelfUseCaseTest.kt$MarkLegalHoldChangeAsNotifiedForSelfUseCaseTest.Arrangement$val useCase: MarkLegalHoldChangeAsNotifiedForSelfUseCase = MarkLegalHoldChangeAsNotifiedForSelfUseCaseImpl(userConfigRepository)</ID>
         <ID>PropertyWrapping:MemberChangeEventHandlerTest.kt$MemberChangeEventHandlerTest.Arrangement$private val memberChangeEventHandler: MemberChangeEventHandler = MemberChangeEventHandlerImpl(conversationRepository)</ID>
         <ID>PropertyWrapping:MessageDAOImpl.kt$MessageDAOImpl$override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, assetViewQueries, mapper, coroutineContext)</ID>
@@ -1875,7 +1841,6 @@
         <ID>PropertyWrapping:MessageSendFailureHandlerTest.kt$MessageSendFailureHandlerTest$val failureData = ProteusSendMessageFailure(mapOf(arrangement.userOne, arrangement.userTwo), mapOf(), mapOf(), null)</ID>
         <ID>PropertyWrapping:MimeTypeUtil.kt$private val mimeTypeToExtensionMap: Map&lt;String, String> = // TODO: remove after all platforms have their own proper implementations mapOf( "image/jpg" to "jpg", "image/jpeg" to "jpeg", "image/png" to "png", "image/heic" to "heic", "image/gif" to "gif", "image/webp" to "webp", "audio/mpeg" to "mp3", "audio/ogg" to "ogg", "audio/wav" to "wav", "audio/x-wav" to "wav", "audio/x-pn-wav" to "wav", "video/mp4" to "mp4", "video/webm" to "webm", "video/3gpp" to "3gpp", "video/mkv" to "mkv" )</ID>
         <ID>PropertyWrapping:MimeTypeUtil.kt$private val mimeTypeToExtensionMap: Map&lt;String, String> = // TODO: remove after all platforms have their own proper implementations mapOf( "image/jpg" to "jpg", "image/jpeg" to "jpeg", "image/png" to "png", "image/heic" to "heic", "image/gif" to "gif", "image/webp" to "webp", "audio/mpeg" to "mp3", "audio/ogg" to "ogg", "audio/wav" to "wav", "audio/x-wav" to "wav", "audio/x-pn-wav" to "wav", "video/mp4" to "mp4", "video/webm" to "webm", "video/3gpp" to "3gpp", "video/mkv" to "mkv", "application/zip" to "zip", "application/pdf" to "pdf" )</ID>
-        <ID>PropertyWrapping:ObserveNewClientsUseCaseTest.kt$ObserveNewClientsUseCaseTest.Arrangement$@Mock val userClientRepositoryProvider = configure(mock(classOf&lt;UserClientRepositoryProvider>())) { }</ID>
         <ID>PropertyWrapping:ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement.kt$ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangementImpl$@Mock override val observeSelfDeletionTimerSettingsForConversation: ObserveSelfDeletionTimerSettingsForConversationUseCase = mock(ObserveSelfDeletionTimerSettingsForConversationUseCase::class)</ID>
         <ID>PropertyWrapping:OneOnOneResolverTest.kt$OneOnOneResolverTest$val oneOnOneUsers = listOf(TestUser.OTHER.copy(id = TestUser.OTHER_USER_ID), TestUser.OTHER.copy(id = TestUser.OTHER_USER_ID_2))</ID>
         <ID>PropertyWrapping:ProteusClientCoreCryptoImpl.kt$ProteusClientCoreCryptoImpl$val decryptedMessage = toByteArray(coreCrypto.proteusSessionFromMessage(sessionId.value, toUByteList(message)))</ID>
@@ -1885,25 +1850,16 @@
         <ID>PropertyWrapping:ProtoContentMapperTest.kt$ProtoContentMapperTest$val genericMessage = GenericMessage(TEST_MESSAGE_UUID, GenericMessage.Content.Edited(MessageEdit(replacedMessageId, textContent)))</ID>
         <ID>PropertyWrapping:RegisterClientUseCaseTest.kt$RegisterClientUseCaseTest.Arrangement$val secondFactorVerificationRepository: SecondFactorVerificationRepository = FakeSecondFactorVerificationRepository()</ID>
         <ID>PropertyWrapping:RenamedConversationEventHandlerTest.kt$RenamedConversationEventHandlerTest.Arrangement$private val renamedConversationEventHandler: RenamedConversationEventHandler = RenamedConversationEventHandlerImpl( conversationDao, persistMessage )</ID>
-        <ID>PropertyWrapping:ScheduleNewAssetMessageUseCaseTest.kt$ScheduleNewAssetMessageUseCaseTest.Arrangement$@Mock val observeSelfDeletionTimerSettingsForConversation = mock(classOf&lt;ObserveSelfDeletionTimerSettingsForConversationUseCase>())</ID>
-        <ID>PropertyWrapping:SendButtonMessageCaseTest.kt$SendButtonMessageCaseTest.Arrangement$@Mock val messageSendFailureHandler = configure(mock(classOf&lt;MessageSendFailureHandler>())) { }</ID>
         <ID>PropertyWrapping:SendEditTextMessageUseCaseTest.kt$SendEditTextMessageUseCaseTest$val result = sendEditTextMessage(TestConversation.ID, originalMessageId, editedMessageText, listOf(), editedMessageId)</ID>
-        <ID>PropertyWrapping:SendEditTextMessageUseCaseTest.kt$SendEditTextMessageUseCaseTest.Arrangement$@Mock val messageSendFailureHandler = configure(mock(classOf&lt;MessageSendFailureHandler>())) { }</ID>
-        <ID>PropertyWrapping:SendKnockUserCaseTest.kt$SendKnockUserCaseTest.Arrangement$@Mock val messageSendFailureHandler = configure(mock(classOf&lt;MessageSendFailureHandler>())) { }</ID>
-        <ID>PropertyWrapping:SendLocationUseCaseTest.kt$SendLocationUseCaseTest.Arrangement$@Mock val messageSendFailureHandler = configure(mock(classOf&lt;MessageSendFailureHandler>())) { }</ID>
-        <ID>PropertyWrapping:SendTextMessageCaseTest.kt$SendTextMessageCaseTest.Arrangement$@Mock val messageSendFailureHandler = configure(mock(classOf&lt;MessageSendFailureHandler>())) { }</ID>
         <ID>PropertyWrapping:SendTextMessageCaseTest.kt$SendTextMessageCaseTest.Arrangement$@Mock val observeSelfDeletionTimerSettingsForConversation = mock(ObserveSelfDeletionTimerSettingsForConversationUseCase::class)</ID>
         <ID>PropertyWrapping:SendTypingEventUseCaseTest.kt$SendTypingEventUseCaseTest.Arrangement$@Mock val typingIndicatorRepository: TypingIndicatorOutgoingRepository = mock(TypingIndicatorOutgoingRepository::class)</ID>
         <ID>PropertyWrapping:SessionEstablisher.kt$SessionEstablisherImpl$val cryptoSessionID = CryptoSessionId(idMapper.toCryptoQualifiedIDId(recipientUserId), CryptoClientId(client.value))</ID>
         <ID>PropertyWrapping:SessionEstablisherTest.kt$SessionEstablisherTest$val userPreKeysResult = mapOf(TEST_USER_ID_1.domain to mapOf(TEST_USER_ID_1.value to mapOf(TEST_CLIENT_ID_1.value to preKey)))</ID>
-        <ID>PropertyWrapping:SlowSyncManagerTest.kt$SlowSyncManagerTest.Arrangement$@Mock val slowSyncRepository: SlowSyncRepository = configure(mock(classOf&lt;SlowSyncRepository>())) { }</ID>
         <ID>PropertyWrapping:SlowSyncWorkerTest.kt$SlowSyncWorkerTest.Arrangement$@Mock val updateSupportedProtocols: UpdateSelfUserSupportedProtocolsUseCase = mock(UpdateSelfUserSupportedProtocolsUseCase::class)</ID>
-        <ID>PropertyWrapping:SyncFeatureConfigsUseCaseTest.kt$SyncFeatureConfigsUseCaseTest.Arrangement$@Mock val updateSupportedProtocolsAndResolveOneOnOnes = mock(classOf&lt;UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>())</ID>
         <ID>PropertyWrapping:ToggleReactionUseCaseTest.kt$ToggleReactionUseCaseTest.Arrangement$val currentClientIdProvider: CurrentClientIdProvider = CurrentClientIdProvider { Either.Right(TEST_CURRENT_CLIENT) }</ID>
         <ID>PropertyWrapping:TriggerBuffer.kt$TriggerBuffer$private val newItemFlow = MutableSharedFlow&lt;Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)</ID>
         <ID>PropertyWrapping:TypingIndicatorHandlerTest.kt$TypingIndicatorHandlerTest.Arrangement$@Mock val typingIndicatorIncomingRepository: TypingIndicatorIncomingRepository = mock(TypingIndicatorIncomingRepository::class)</ID>
         <ID>PropertyWrapping:UpdateConversationArchivedStatusUseCaseTest.kt$UpdateConversationArchivedStatusUseCaseTest$val result = updateConversationArchivedStatus(conversationId, isConversationArchived, onlyLocally, archivedStatusTimestamp)</ID>
-        <ID>PropertyWrapping:UpdateCurrentSessionUseCaseTest.kt$UpdateCurrentSessionUseCaseTest$@Mock val sessionRepository: SessionRepository = configure(mock(classOf&lt;SessionRepository>())) { }</ID>
         <ID>PropertyWrapping:UploadUserAvatarUseCaseTest.kt$UploadUserAvatarUseCaseTest.Arrangement$private val uploadUserAvatarUseCase: UploadUserAvatarUseCase = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)</ID>
         <ID>PropertyWrapping:UserDAOTest.kt$UserDAOTest$val usersToInsert = listOf(user1.copy(name = "other name to make sure this one wasn't inserted nor edited"), user2)</ID>
         <ID>PropertyWrapping:UserRepositoryTest.kt$UserRepositoryTest$val knownUserEntities = listOf(TestUser.DETAILS_ENTITY.copy(id = UserIDEntity(value = "id1", domain = "domain1")))</ID>
@@ -1947,7 +1903,6 @@
         <ID>SpacingAroundParens:MessageTextEditHandlerTest.kt$MessageTextEditHandlerTest$)</ID>
         <ID>SpacingBetweenDeclarationsWithAnnotations:ApiMigrationManagerTest.kt$ApiMigrationManagerTest.Arrangement$@Mock val metadataDAO = mock(MetadataDAO::class)</ID>
         <ID>SpacingBetweenDeclarationsWithAnnotations:ApproveLegalHoldRequestUseCaseTest.kt$ApproveLegalHoldRequestUseCaseTest.Arrangement$@Mock val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)</ID>
-        <ID>SpacingBetweenDeclarationsWithAnnotations:ClearConversationContentUseCaseTest.kt$ClearConversationContentUseCaseTest.Arrangement$@Mock val currentClientIdProvider = mock(classOf&lt;CurrentClientIdProvider>())</ID>
         <ID>SpacingBetweenDeclarationsWithAnnotations:ClientApiV0Test.kt$ClientApiV0Test$@Test fun givenAValidUpdateClientCapabilitiesRequest_whenCallingTheUpdateClientEndpoint_theRequestShouldBeConfiguredCorrectly()</ID>
         <ID>SpacingBetweenDeclarationsWithAnnotations:CommonUtilsTest.kt$CommonUtilsTest$@Test fun givenAFileNameWithMultipleDotsAndStartingWithADot_whenGettingItsFileExtension_itReturnsItCorrectly()</ID>
         <ID>SpacingBetweenDeclarationsWithAnnotations:ConversationAccessDTO.kt$ConversationAccessDTO$CODE</ID>
@@ -2003,7 +1958,6 @@
         <ID>SpacingBetweenDeclarationsWithAnnotations:ObserveConversationUnderLegalHoldNotifiedUseCaseTest.kt$ObserveConversationUnderLegalHoldNotifiedUseCaseTest$@Test fun givenLegalHoldDisabledAndNotified_whenObserving_thenReturnTrue()</ID>
         <ID>SpacingBetweenDeclarationsWithAnnotations:ObserveConversationUnderLegalHoldNotifiedUseCaseTest.kt$ObserveConversationUnderLegalHoldNotifiedUseCaseTest$@Test fun givenLegalHoldEnabledAndNotNotified_whenObserving_thenReturnFalse()</ID>
         <ID>SpacingBetweenDeclarationsWithAnnotations:ObserveConversationUnderLegalHoldNotifiedUseCaseTest.kt$ObserveConversationUnderLegalHoldNotifiedUseCaseTest$@Test fun givenLegalHoldEnabledAndNotified_whenObserving_thenReturnTrue()</ID>
-        <ID>SpacingBetweenDeclarationsWithAnnotations:ObserveIsAppLockEditableUseCaseTest.kt$ObserveIsAppLockEditableUseCaseTest.Arrangement$@Mock val sessionRepository = mock(classOf&lt;SessionRepository>())</ID>
         <ID>SpacingBetweenDeclarationsWithAnnotations:ObserveLegalHoldChangeNotifiedForSelfUseCaseTest.kt$ObserveLegalHoldChangeNotifiedForSelfUseCaseTest$@Test fun givenLegalHoldForSelfDisabledAndAlreadyNotified_whenObserving_thenEmitAlreadyNotified()</ID>
         <ID>SpacingBetweenDeclarationsWithAnnotations:ObserveLegalHoldChangeNotifiedForSelfUseCaseTest.kt$ObserveLegalHoldChangeNotifiedForSelfUseCaseTest$@Test fun givenLegalHoldForSelfDisabledAndNotYetNotified_whenObserving_thenEmitShouldNotifyWithLegalHoldDisabledState()</ID>
         <ID>SpacingBetweenDeclarationsWithAnnotations:ObserveLegalHoldChangeNotifiedForSelfUseCaseTest.kt$ObserveLegalHoldChangeNotifiedForSelfUseCaseTest$@Test fun givenLegalHoldForSelfEnabledAndAlreadyNotified_whenObserving_thenEmitAlreadyNotified()</ID>
@@ -2013,11 +1967,6 @@
         <ID>SpacingBetweenDeclarationsWithAnnotations:ObserveLegalHoldChangeNotifiedForSelfUseCaseTest.kt$ObserveLegalHoldChangeNotifiedForSelfUseCaseTest.Arrangement$@Mock val userConfigRepository = mock(UserConfigRepository::class)</ID>
         <ID>SpacingBetweenDeclarationsWithAnnotations:ObserveNewClientsUseCaseTest.kt$ObserveNewClientsUseCaseTest$@Test fun givenNewClientForCurrentUser_whenUserIsBeingLoggedOut_thenChangeToEmptyResult()</ID>
         <ID>SpacingBetweenDeclarationsWithAnnotations:ReplayApplication.kt$ReplayApplication$@Suppress("MagicNumber") private val delayPool by option( "-d", "--delay-pool", help = "Time in milliseconds it will wait for a conversation to be added to the pool." ).long().default(1000L)</ID>
-        <ID>SpacingBetweenDeclarationsWithAnnotations:SelfClientsUseCaseTest.kt$SelfClientsUseCaseTest$@Mock private val currentClientIdProvider = mock(classOf&lt;CurrentClientIdProvider>())</ID>
-        <ID>SpacingBetweenDeclarationsWithAnnotations:SendEditTextMessageUseCaseTest.kt$SendEditTextMessageUseCaseTest.Arrangement$@Mock val currentClientIdProvider = mock(classOf&lt;CurrentClientIdProvider>())</ID>
-        <ID>SpacingBetweenDeclarationsWithAnnotations:SendEditTextMessageUseCaseTest.kt$SendEditTextMessageUseCaseTest.Arrangement$@Mock val messageSendFailureHandler = configure(mock(classOf&lt;MessageSendFailureHandler>())) { }</ID>
-        <ID>SpacingBetweenDeclarationsWithAnnotations:SendEditTextMessageUseCaseTest.kt$SendEditTextMessageUseCaseTest.Arrangement$@Mock val messageSender = mock(classOf&lt;MessageSender>())</ID>
-        <ID>SpacingBetweenDeclarationsWithAnnotations:SendEditTextMessageUseCaseTest.kt$SendEditTextMessageUseCaseTest.Arrangement$@Mock val slowSyncRepository = mock(classOf&lt;SlowSyncRepository>())</ID>
         <ID>SpacingBetweenDeclarationsWithAnnotations:ServerModel.kt$ConversationIdRequest</ID>
         <ID>SpacingBetweenDeclarationsWithAnnotations:ServerModel.kt$CreateConversationRequest</ID>
         <ID>SpacingBetweenDeclarationsWithAnnotations:ServerModel.kt$RemoveMonkeyRequest</ID>
@@ -2495,7 +2444,7 @@
         <ID>Wrapping:KaliumKtorCustomLogging.kt$KaliumKtorCustomLogging$"""</ID>
         <ID>Wrapping:KeyingMaterialsManager.kt$KeyingMaterialsManagerImpl$(</ID>
         <ID>Wrapping:LeaveSubconversationUseCase.kt$LeaveSubconversationUseCaseImpl$conversationApi.fetchSubconversationDetails(conversationId.toApi(), subconversationId.toApi())</ID>
-        <ID>Wrapping:LegalHoldHandlerTest.kt$LegalHoldHandlerTest.Arrangement$stubsUnitByDefault = true</ID>
+        <ID>Wrapping:LegalHoldHandlerTest.kt$LegalHoldHandlerTest.Arrangement$</ID>
         <ID>Wrapping:LegalHoldSystemMessageHandlerTest.kt$LegalHoldSystemMessagesHandlerTest$(</ID>
         <ID>Wrapping:ListUsersRequestJson.kt$ListUsersRequestJson$( QualifiedUserIdListRequest( listOf( QualifiedID("id1", "domain1"), QualifiedID("id11", "domain1"), QualifiedID("id2", "domain2") ) ), qualifiedIdsProvider )</ID>
         <ID>Wrapping:LoginWithEmailRequestJson.kt$LoginWithEmailRequestJson$( LoginApi.LoginParam.LoginWithEmail( email = "user@email.de", label = "label", password = "password", verificationCode = "verificationCode" ), jsonProvider )</ID>
@@ -2546,7 +2495,7 @@
         <ID>Wrapping:ObserveConversationMembersUseCaseTest.kt$ObserveConversationMembersUseCaseTest$(</ID>
         <ID>Wrapping:ObserveMessageReceiptsUseCase.kt$ObserveMessageReceiptsUseCaseImpl$(</ID>
         <ID>Wrapping:ObserveNewClientsUseCaseTest.kt$ObserveNewClientsUseCaseTest$( NewClientResult.InOtherAccount( listOf(TestClient.CLIENT), TestUser.OTHER_USER_ID, TestUser.SELF.name, TestUser.SELF.handle ), awaitItem() )</ID>
-        <ID>Wrapping:ObserveNewClientsUseCaseTest.kt$ObserveNewClientsUseCaseTest.Arrangement$stubsUnitByDefault = true</ID>
+        <ID>Wrapping:ObserveNewClientsUseCaseTest.kt$ObserveNewClientsUseCaseTest.Arrangement$</ID>
         <ID>Wrapping:ObserveSecurityClassificationLabelUseCaseTest.kt$ObserveSecurityClassificationLabelUseCaseTest.Arrangement$( TestUser.OTHER.copy( UserId(uuid4().toString(), domain), expiresAt = expiresAt ), Conversation.Member.Role.Member )</ID>
         <ID>Wrapping:OnCloseCall.kt$OnCloseCall$(</ID>
         <ID>Wrapping:OnlyAffectedTestTask.kt$OnlyAffectedTestTask$(</ID>
@@ -2596,7 +2545,7 @@
         <ID>Wrapping:SendMessageEventAction.kt$SendMessageEventAction$(ActionType.SendMessage( UserCount.single(), 1u, 1u ), {})</ID>
         <ID>Wrapping:SendMessagePartialFailureMapperTest.kt$SendMessagePartialFailureMapperTest$(</ID>
         <ID>Wrapping:SendMessageRequestJson.kt$SendMessageRequestJson$( MessageApi.Parameters.DefaultParameters( sender = "sender-client-it", data = null, nativePush = true, recipients = recipients, transient = false, priority = MessagePriority.LOW ), defaultParametersProvider )</ID>
-        <ID>Wrapping:SlowSyncManagerTest.kt$SlowSyncManagerTest.Arrangement$stubsUnitByDefault = true</ID>
+        <ID>Wrapping:SlowSyncManagerTest.kt$SlowSyncManagerTest.Arrangement$</ID>
         <ID>Wrapping:StoreServerConfigUseCaseTest.kt$StoreServerConfigUseCaseTest.Arrangement$(</ID>
         <ID>Wrapping:SyncFeatureConfigsUseCaseTest.kt$SyncFeatureConfigsUseCaseTest$(</ID>
         <ID>Wrapping:SyncMigrationStep_6_7_Test.kt$SyncMigrationStep_6_7_Test.Arrangement$AccountRepositoryArrangement by AccountRepositoryArrangementImpl(), SelfTeamIdProviderArrangement by SelfTeamIdProviderArrangementImpl()</ID>

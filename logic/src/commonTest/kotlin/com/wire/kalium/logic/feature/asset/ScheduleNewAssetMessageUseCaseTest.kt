@@ -51,7 +51,6 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -516,31 +515,31 @@ class ScheduleNewAssetMessageUseCaseTest {
     private class Arrangement(val coroutineScope: CoroutineScope) {
 
         @Mock
-        val persistMessage = mock(classOf<PersistMessageUseCase>())
+        val persistMessage = mock(PersistMessageUseCase::class)
 
         @Mock
-        val messageSender = mock(classOf<MessageSender>())
+        val messageSender = mock(MessageSender::class)
 
         @Mock
-        private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+        private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
         @Mock
-        val assetDataSource = mock(classOf<AssetRepository>())
+        val assetDataSource = mock(AssetRepository::class)
 
         @Mock
-        private val slowSyncRepository = mock(classOf<SlowSyncRepository>())
+        private val slowSyncRepository = mock(SlowSyncRepository::class)
 
         @Mock
-        val updateTransferStatus = mock(classOf<UpdateAssetMessageTransferStatusUseCase>())
+        val updateTransferStatus = mock(UpdateAssetMessageTransferStatusUseCase::class)
 
         @Mock
-        private val userPropertyRepository = mock(classOf<UserPropertyRepository>())
+        private val userPropertyRepository = mock(UserPropertyRepository::class)
 
         @Mock
         val messageSendFailureHandler: MessageSendFailureHandler = mock(MessageSendFailureHandler::class)
 
         @Mock
-        val observeSelfDeletionTimerSettingsForConversation = mock(classOf<ObserveSelfDeletionTimerSettingsForConversationUseCase>())
+        val observeSelfDeletionTimerSettingsForConversation = mock(ObserveSelfDeletionTimerSettingsForConversationUseCase::class)
 
         @Mock
         private val messageRepository: MessageRepository = mock(MessageRepository::class)

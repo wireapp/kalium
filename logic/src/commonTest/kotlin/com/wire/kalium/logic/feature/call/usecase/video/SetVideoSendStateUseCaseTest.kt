@@ -22,7 +22,6 @@ import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.framework.TestConversation
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.mock
@@ -47,7 +46,7 @@ class SetVideoSendStateUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val callManager = mock(classOf<CallManager>())
+        val callManager = mock(CallManager::class)
 
         val setVideoSendState = SetVideoSendStateUseCase(lazy { callManager })
 

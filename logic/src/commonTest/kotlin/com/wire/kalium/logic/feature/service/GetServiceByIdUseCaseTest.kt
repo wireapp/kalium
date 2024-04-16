@@ -22,9 +22,7 @@ import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
@@ -52,9 +50,7 @@ class GetServiceByIdUseCaseTest {
     private class Arrangement {
 
         @Mock
-        private val serviceRepository = configure(mock(classOf<ServiceRepository>())) {
-            stubsUnitByDefault = true
-        }
+        private val serviceRepository = mock(ServiceRepository::class)
 
         private val getServiceById = GetServiceByIdUseCaseImpl(
             serviceRepository = serviceRepository

@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -75,7 +74,7 @@ class UpdateAssetMessageTransferStatusUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val messageRepository = mock(classOf<MessageRepository>())
+        val messageRepository = mock(MessageRepository::class)
 
         suspend fun withSuccessfulResponse(): Arrangement {
             coEvery {

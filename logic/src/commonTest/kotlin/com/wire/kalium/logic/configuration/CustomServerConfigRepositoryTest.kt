@@ -33,7 +33,6 @@ import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.every
@@ -162,19 +161,19 @@ class CustomServerConfigRepositoryTest {
         val SERVER_CONFIG = newServerConfig(1)
 
         @Mock
-        val serverConfigApi = mock(classOf<ServerConfigApi>())
+        val serverConfigApi = mock(ServerConfigApi::class)
 
         var developmentApiEnabled by Delegates.notNull<Boolean>()
 
         @Mock
-        val serverConfigurationDAO = mock(classOf<ServerConfigurationDAO>())
+        val serverConfigurationDAO = mock(ServerConfigurationDAO::class)
 
         init {
             developmentApiEnabled = false
         }
 
         @Mock
-        val backendMetaDataUtil = mock(classOf<BackendMetaDataUtil>())
+        val backendMetaDataUtil = mock(BackendMetaDataUtil::class)
 
         private var customServerConfigRepository: CustomServerConfigRepository =
             CustomServerConfigDataSource(serverConfigApi, developmentApiEnabled, serverConfigurationDAO, backendMetaDataUtil)

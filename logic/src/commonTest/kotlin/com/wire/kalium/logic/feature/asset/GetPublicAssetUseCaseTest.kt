@@ -28,7 +28,6 @@ import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -43,10 +42,10 @@ import kotlin.test.assertEquals
 class GetPublicAssetUseCaseTest {
 
     @Mock
-    private val assetRepository = mock(classOf<AssetRepository>())
+    private val assetRepository = mock(AssetRepository::class)
 
     @Mock
-    private val userRepository = mock(classOf<UserRepository>())
+    private val userRepository = mock(UserRepository::class)
 
     private lateinit var getPublicAsset: GetAvatarAssetUseCase
 

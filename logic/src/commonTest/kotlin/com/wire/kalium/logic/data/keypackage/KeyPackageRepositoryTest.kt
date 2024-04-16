@@ -39,7 +39,6 @@ import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -173,13 +172,13 @@ class KeyPackageRepositoryTest {
     class Arrangement {
 
         @Mock
-        val keyPackageApi = mock(classOf<KeyPackageApi>())
+        val keyPackageApi = mock(KeyPackageApi::class)
 
         @Mock
-        val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
         @Mock
-        val mlsClientProvider = mock(classOf<MLSClientProvider>())
+        val mlsClientProvider = mock(MLSClientProvider::class)
 
         suspend fun withMLSClient() = apply {
             coEvery {
@@ -244,7 +243,7 @@ class KeyPackageRepositoryTest {
             )
 
             @Mock
-            val MLS_CLIENT = mock(classOf<MLSClient>())
+            val MLS_CLIENT = mock(MLSClient::class)
         }
     }
 }

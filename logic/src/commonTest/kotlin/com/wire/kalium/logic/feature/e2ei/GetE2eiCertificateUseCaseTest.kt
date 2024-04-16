@@ -32,7 +32,6 @@ import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.every
@@ -120,10 +119,10 @@ class GetE2eiCertificateUseCaseTest {
     class Arrangement {
 
         @Mock
-        val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
+        val mlsConversationRepository = mock(MLSConversationRepository::class)
 
         @Mock
-        val certificateStatusMapper = mock(classOf<CertificateStatusMapper>())
+        val certificateStatusMapper = mock(CertificateStatusMapper::class)
 
         fun arrange() = this to GetE2eiCertificateUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,

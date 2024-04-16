@@ -27,7 +27,6 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
@@ -60,7 +59,7 @@ class BlockUserUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val connectionRepository: ConnectionRepository = mock(classOf<ConnectionRepository>())
+        val connectionRepository: ConnectionRepository = mock(ConnectionRepository::class)
 
         val blockUser = BlockUserUseCaseImpl(connectionRepository)
 

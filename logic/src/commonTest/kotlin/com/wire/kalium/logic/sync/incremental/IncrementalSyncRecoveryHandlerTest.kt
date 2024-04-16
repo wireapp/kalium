@@ -24,7 +24,6 @@ import com.wire.kalium.logic.sync.slow.RestartSlowSyncProcessForRecoveryUseCase
 import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.EventRepositoryArrangementImpl
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
@@ -112,7 +111,7 @@ class IncrementalSyncRecoveryHandlerTest {
         EventRepositoryArrangement by EventRepositoryArrangementImpl() {
 
         @Mock
-        val restartSlowSyncProcessForRecoveryUseCase = mock(classOf<RestartSlowSyncProcessForRecoveryUseCase>())
+        val restartSlowSyncProcessForRecoveryUseCase = mock(RestartSlowSyncProcessForRecoveryUseCase::class)
 
         private val incrementalSyncRecoveryHandler by lazy {
             IncrementalSyncRecoveryHandlerImpl(

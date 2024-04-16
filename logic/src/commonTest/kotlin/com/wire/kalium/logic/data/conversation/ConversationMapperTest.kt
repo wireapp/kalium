@@ -38,7 +38,6 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
@@ -50,25 +49,25 @@ import kotlin.test.assertEquals
 class ConversationMapperTest {
 
     @Mock
-    val idMapper = mock(classOf<IdMapper>())
+    val idMapper = mock(IdMapper::class)
 
     @Mock
-    val protocolInfoMapper = mock(classOf<ProtocolInfoMapper>())
+    val protocolInfoMapper = mock(ProtocolInfoMapper::class)
 
     @Mock
-    val conversationStatusMapper = mock(classOf<ConversationStatusMapper>())
+    val conversationStatusMapper = mock(ConversationStatusMapper::class)
 
     @Mock
-    val userAvailabilityStatusMapper = mock(classOf<AvailabilityStatusMapper>())
+    val userAvailabilityStatusMapper = mock(AvailabilityStatusMapper::class)
 
     @Mock
-    val domainUserTypeMapper = mock(classOf<DomainUserTypeMapper>())
+    val domainUserTypeMapper = mock(DomainUserTypeMapper::class)
 
     @Mock
-    val connectionStatusMapper = mock(classOf<ConnectionStatusMapper>())
+    val connectionStatusMapper = mock(ConnectionStatusMapper::class)
 
     @Mock
-    val conversationMemberMapper = mock(classOf<ConversationRoleMapper>())
+    val conversationMemberMapper = mock(ConversationRoleMapper::class)
 
     private lateinit var conversationMapper: ConversationMapper
 

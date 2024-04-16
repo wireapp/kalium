@@ -26,7 +26,6 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -71,7 +70,7 @@ class ObserveClientsByUserIdUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
+        val clientRepository = mock(ClientRepository::class)
 
         val getOtherUserClientsUseCaseImpl = ObserveClientsByUserIdUseCase(clientRepository)
 

@@ -39,7 +39,6 @@ import com.wire.kalium.persistence.db.UserDBSecret
 import io.ktor.util.decodeBase64Bytes
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.every
@@ -186,16 +185,16 @@ class CreateBackupUseCaseTest {
         private var userId = UserId("some-user-id", "some-user-domain")
 
         @Mock
-        val clientIdProvider = mock(classOf<CurrentClientIdProvider>())
+        val clientIdProvider = mock(CurrentClientIdProvider::class)
 
         @Mock
-        val userRepository = mock(classOf<UserRepository>())
+        val userRepository = mock(UserRepository::class)
 
         @Mock
-        val databaseExporter = mock(classOf<DatabaseExporter>())
+        val databaseExporter = mock(DatabaseExporter::class)
 
         @Mock
-        val securityHelper = mock(classOf<SecurityHelper>())
+        val securityHelper = mock(SecurityHelper::class)
 
         fun withUserDBPassphrase(passphrase: UserDBSecret?) = apply {
             every {

@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -65,7 +64,7 @@ class UpdateDisplayNameUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val accountRepository = mock(classOf<AccountRepository>())
+        val accountRepository = mock(AccountRepository::class)
 
         suspend fun withSuccessfulUploadResponse() = apply {
             coEvery {

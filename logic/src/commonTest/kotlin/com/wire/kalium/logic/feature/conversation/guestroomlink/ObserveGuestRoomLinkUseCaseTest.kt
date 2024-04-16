@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -39,7 +38,7 @@ import kotlin.test.assertEquals
 class ObserveGuestRoomLinkUseCaseTest {
 
     @Mock
-    val conversationGroupRepository = mock(classOf<ConversationGroupRepository>())
+    val conversationGroupRepository = mock(ConversationGroupRepository::class)
 
     private lateinit var observeGuestRoomLink: ObserveGuestRoomLinkUseCase
 

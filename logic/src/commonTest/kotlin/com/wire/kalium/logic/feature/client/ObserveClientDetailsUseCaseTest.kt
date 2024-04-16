@@ -29,9 +29,7 @@ import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
-import io.mockative.configure
 import io.mockative.mock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -45,12 +43,10 @@ import kotlin.test.assertIs
 class ObserveClientDetailsUseCaseTest {
 
     @Mock
-    private val clientRepository = configure(mock(classOf<ClientRepository>())) {
-        stubsUnitByDefault = true
-    }
+    private val clientRepository = mock(ClientRepository::class)
 
     @Mock
-    private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+    private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
     private lateinit var observeClientDetailsUseCase: ObserveClientDetailsUseCase
     private val testDispatchers: KaliumDispatcher = TestKaliumDispatcher
 

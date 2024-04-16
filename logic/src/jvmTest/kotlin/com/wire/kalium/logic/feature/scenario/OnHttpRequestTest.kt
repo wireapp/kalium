@@ -31,7 +31,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.matches
 import io.mockative.coVerify
@@ -101,13 +100,13 @@ class OnHttpRequestTest {
     internal class Arrangement {
 
         @Mock
-        val calling = mock(classOf<Calling>())
+        val calling = mock(Calling::class)
 
         @Mock
-        val messageSender = mock(classOf<MessageSender>())
+        val messageSender = mock(MessageSender::class)
 
         @Mock
-        val selfConversationIdProvider = mock(classOf<SelfConversationIdProvider>())
+        val selfConversationIdProvider = mock(SelfConversationIdProvider::class)
 
         fun arrange() = this to OnHttpRequest(
             CompletableDeferred(),

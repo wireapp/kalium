@@ -26,7 +26,6 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
@@ -89,7 +88,7 @@ class ObserveOtherUserSecurityClassificationLabelUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val userConfigRepository = mock(classOf<UserConfigRepository>())
+        val userConfigRepository = mock(UserConfigRepository::class)
 
         fun withGettingClassifiedDomainsDisabled() = apply {
             every {

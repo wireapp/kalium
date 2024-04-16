@@ -40,10 +40,8 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
@@ -142,10 +140,10 @@ class EventRepositoryTest {
 
     private class Arrangement {
         @Mock
-        val notificationApi: NotificationApi = mock(classOf<NotificationApi>())
+        val notificationApi: NotificationApi = mock(NotificationApi::class)
 
         @Mock
-        val metaDAO = configure(mock(classOf<MetadataDAO>())) { }
+        val metaDAO = mock(MetadataDAO::class)
 
         @Mock
         val clientIdProvider = mock(CurrentClientIdProvider::class)

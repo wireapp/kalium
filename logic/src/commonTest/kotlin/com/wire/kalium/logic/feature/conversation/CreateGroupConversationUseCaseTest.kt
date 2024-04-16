@@ -36,8 +36,6 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -202,15 +200,13 @@ class CreateGroupConversationUseCaseTest {
         val refreshUsersWithoutMetadata = mock(RefreshUsersWithoutMetadataUseCase::class)
 
         @Mock
-        val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
         @Mock
-        val syncManager = configure(mock(SyncManager::class)) {
-            stubsUnitByDefault = true
-        }
+        val syncManager = mock(SyncManager::class)
 
         @Mock
-        val newGroupConversationSystemMessagesCreator = mock(classOf<NewGroupConversationSystemMessagesCreator>())
+        val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
 
         private val createGroupConversation = CreateGroupConversationUseCase(
             conversationRepository,

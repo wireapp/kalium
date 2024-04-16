@@ -30,7 +30,6 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
@@ -131,7 +130,7 @@ class AccountRepositoryTest {
 
     private class Arrangement {
         @Mock
-        val userDAO = configure(mock(UserDAO::class)) { }
+        val userDAO = mock(UserDAO::class)
 
         @Mock
         val selfApi = mock(SelfApi::class)

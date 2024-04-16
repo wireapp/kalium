@@ -51,7 +51,6 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.every
 import io.mockative.mock
@@ -748,7 +747,7 @@ class LegalHoldHandlerTest {
         val conversationRepository = mock(ConversationRepository::class)
 
         @Mock
-        val legalHoldSystemMessagesHandler = configure(mock(LegalHoldSystemMessagesHandler::class)) { }
+        val legalHoldSystemMessagesHandler = mock(LegalHoldSystemMessagesHandler::class)
 
         @Mock
         val observeSyncState = mock(ObserveSyncStateUseCase::class)

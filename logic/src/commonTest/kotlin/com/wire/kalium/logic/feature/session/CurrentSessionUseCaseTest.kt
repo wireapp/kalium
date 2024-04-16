@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -37,7 +36,7 @@ import kotlin.test.assertIs
 
 class CurrentSessionUseCaseTest {
     @Mock
-    val sessionRepository = mock(classOf<SessionRepository>())
+    val sessionRepository = mock(SessionRepository::class)
 
     lateinit var currentSessionUseCase: CurrentSessionUseCase
 

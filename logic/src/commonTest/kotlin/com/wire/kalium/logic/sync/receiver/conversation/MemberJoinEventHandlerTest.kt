@@ -33,7 +33,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -196,16 +195,16 @@ class MemberJoinEventHandlerTest {
 
     private class Arrangement {
         @Mock
-        val persistMessage = mock(classOf<PersistMessageUseCase>())
+        val persistMessage = mock(PersistMessageUseCase::class)
 
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
+        val conversationRepository = mock(ConversationRepository::class)
 
         @Mock
-        private val userRepository = mock(classOf<UserRepository>())
+        private val userRepository = mock(UserRepository::class)
 
         @Mock
-        val legalHoldHandler = mock(classOf<LegalHoldHandler>())
+        val legalHoldHandler = mock(LegalHoldHandler::class)
 
         private val memberJoinEventHandler: MemberJoinEventHandler = MemberJoinEventHandlerImpl(
             conversationRepository = conversationRepository,

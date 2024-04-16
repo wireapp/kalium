@@ -32,10 +32,8 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.every
 import io.mockative.mock
@@ -211,7 +209,7 @@ class ObserveNewClientsUseCaseTest {
         val clientRepository2 = mock(ClientRepository::class)
 
         @Mock
-        val userClientRepositoryProvider = mock(classOf<UserClientRepositoryProvider>())
+        val userClientRepositoryProvider = mock(UserClientRepositoryProvider::class)
 
         init {
             runBlocking {

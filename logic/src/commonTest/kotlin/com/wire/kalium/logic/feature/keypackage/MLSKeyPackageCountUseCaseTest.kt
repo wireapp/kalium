@@ -33,7 +33,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageCountDTO
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -100,13 +99,13 @@ class MLSKeyPackageCountUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val keyPackageRepository = mock(classOf<KeyPackageRepository>())
+        val keyPackageRepository = mock(KeyPackageRepository::class)
 
         @Mock
-        val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
         @Mock
-        val keyPackageLimitsProvider = mock(classOf<KeyPackageLimitsProvider>())
+        val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
 
         suspend fun withClientId(result: Either<CoreFailure, ClientId>) = apply {
             coEvery {

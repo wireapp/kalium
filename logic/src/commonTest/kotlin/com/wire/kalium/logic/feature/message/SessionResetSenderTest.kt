@@ -28,7 +28,6 @@ import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.every
@@ -49,10 +48,10 @@ class SessionResetSenderTest {
     private val slowSyncRepository: SlowSyncRepository = mock(SlowSyncRepository::class)
 
     @Mock
-    private val provideClientId = mock(classOf<CurrentClientIdProvider>())
+    private val provideClientId = mock(CurrentClientIdProvider::class)
 
     @Mock
-    private val messageSender = mock(classOf<MessageSender>())
+    private val messageSender = mock(MessageSender::class)
 
     private val testDispatchers: KaliumDispatcher = TestKaliumDispatcher
 

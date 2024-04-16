@@ -28,7 +28,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -135,19 +134,19 @@ class MLSConversationsRecoveryManagerTests {
 
     private class Arrangement {
         @Mock
-        val incrementalSyncRepository: IncrementalSyncRepository = mock(classOf<IncrementalSyncRepository>())
+        val incrementalSyncRepository: IncrementalSyncRepository = mock(IncrementalSyncRepository::class)
 
         @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
+        val clientRepository = mock(ClientRepository::class)
 
         @Mock
-        val featureSupport = mock(classOf<FeatureSupport>())
+        val featureSupport = mock(FeatureSupport::class)
 
         @Mock
-        val recoverMLSConversationsUseCase = mock(classOf<RecoverMLSConversationsUseCase>())
+        val recoverMLSConversationsUseCase = mock(RecoverMLSConversationsUseCase::class)
 
         @Mock
-        val slowSyncRepository = mock(classOf<SlowSyncRepository>())
+        val slowSyncRepository = mock(SlowSyncRepository::class)
 
         suspend fun withMLSNeedsRecoveryReturn(state: Boolean) = apply {
             coEvery {

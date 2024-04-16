@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
@@ -37,7 +36,7 @@ import kotlin.test.assertEquals
 class ConnectionPolicyIntegrationTest {
 
     @Mock
-    val sessionRepository = mock(classOf<SessionRepository>())
+    val sessionRepository = mock(SessionRepository::class)
 
     private val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
 

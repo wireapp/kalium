@@ -26,7 +26,6 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -718,15 +717,13 @@ class EphemeralMessageDeletionHandlerTest {
     ) {
 
         @Mock
-        val messageRepository = mock(classOf<MessageRepository>())
+        val messageRepository = mock(MessageRepository::class)
 
         @Mock
-        val deleteEphemeralMessageForSelfUserAsReceiver = mock(
-            classOf<DeleteEphemeralMessageForSelfUserAsReceiverUseCase>()
-        )
+        val deleteEphemeralMessageForSelfUserAsReceiver = mock(DeleteEphemeralMessageForSelfUserAsReceiverUseCase::class)
 
         @Mock
-        val deleteEphemeralMessageForSelfUserAsSender = mock(classOf<DeleteEphemeralMessageForSelfUserAsSenderUseCase>())
+        val deleteEphemeralMessageForSelfUserAsSender = mock(DeleteEphemeralMessageForSelfUserAsSenderUseCase::class)
 
         suspend fun withMessageRepositoryReturningMessage(message: Message): Arrangement {
             coEvery {

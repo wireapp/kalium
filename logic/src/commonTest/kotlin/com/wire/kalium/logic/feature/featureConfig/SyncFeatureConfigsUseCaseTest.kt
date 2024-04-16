@@ -56,7 +56,6 @@ import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.doesNothing
@@ -652,10 +651,10 @@ class SyncFeatureConfigsUseCaseTest {
             private set
 
         @Mock
-        val featureConfigRepository = mock(classOf<FeatureConfigRepository>())
+        val featureConfigRepository = mock(FeatureConfigRepository::class)
 
         @Mock
-        val updateSupportedProtocolsAndResolveOneOnOnes = mock(classOf<UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>())
+        val updateSupportedProtocolsAndResolveOneOnOnes = mock(UpdateSupportedProtocolsAndResolveOneOnOnesUseCase::class)
 
         private lateinit var syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
 

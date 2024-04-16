@@ -45,7 +45,6 @@ import com.wire.kalium.util.DelicateKaliumApi
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -408,7 +407,7 @@ class RegisterClientUseCaseTest {
         val CLIENT = TestClient.CLIENT
 
         @Mock
-        val MLS_CLIENT = mock(classOf<MLSClient>())
+        val MLS_CLIENT = mock(MLSClient::class)
         val MLS_PUBLIC_KEY = "public_key".encodeToByteArray()
         val TEST_FAILURE = NetworkFailure.ServerMiscommunication(KaliumException.GenericError(IOException("no internet")))
         const val TEST_COOKIE_LABEL = "cookieLabel"
@@ -418,25 +417,25 @@ class RegisterClientUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val isAllowedToRegisterMLSClient = mock(classOf<IsAllowedToRegisterMLSClientUseCase>())
+        val isAllowedToRegisterMLSClient = mock(IsAllowedToRegisterMLSClientUseCase::class)
 
         @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
+        val clientRepository = mock(ClientRepository::class)
 
         @Mock
-        val preKeyRepository = mock(classOf<PreKeyRepository>())
+        val preKeyRepository = mock(PreKeyRepository::class)
 
         @Mock
-        val keyPackageLimitsProvider = mock(classOf<KeyPackageLimitsProvider>())
+        val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
 
         @Mock
-        val sessionRepository = mock(classOf<SessionRepository>())
+        val sessionRepository = mock(SessionRepository::class)
 
         @Mock
-        val userRepository = mock(classOf<UserRepository>())
+        val userRepository = mock(UserRepository::class)
 
         @Mock
-        val registerMLSClient = mock(classOf<RegisterMLSClientUseCase>())
+        val registerMLSClient = mock(RegisterMLSClientUseCase::class)
 
         val secondFactorVerificationRepository: SecondFactorVerificationRepository = FakeSecondFactorVerificationRepository()
 

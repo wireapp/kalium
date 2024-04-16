@@ -31,7 +31,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -100,19 +99,19 @@ class MLSClientManagerTest {
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
         @Mock
-        var slowSyncRepository = mock(classOf<SlowSyncRepository>())
+        var slowSyncRepository = mock(SlowSyncRepository::class)
 
         @Mock
-        var clientIdProvider = mock(classOf<CurrentClientIdProvider>())
+        var clientIdProvider = mock(CurrentClientIdProvider::class)
 
         @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
+        val clientRepository = mock(ClientRepository::class)
 
         @Mock
-        val isAllowedToRegisterMLSClient = mock(classOf<IsAllowedToRegisterMLSClientUseCase>())
+        val isAllowedToRegisterMLSClient = mock(IsAllowedToRegisterMLSClientUseCase::class)
 
         @Mock
-        val registerMLSClient = mock(classOf<RegisterMLSClientUseCase>())
+        val registerMLSClient = mock(RegisterMLSClientUseCase::class)
 
         suspend fun withCurrentClientId(result: Either<CoreFailure, ClientId>) = apply {
             coEvery {

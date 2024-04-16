@@ -27,9 +27,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
-import io.mockative.configure
 import io.mockative.mock
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -42,12 +40,10 @@ import kotlin.test.assertIs
 class SelfClientsUseCaseTest {
 
     @Mock
-    private val clientRepository = configure(mock(classOf<ClientRepository>())) {
-        stubsUnitByDefault = true
-    }
+    private val clientRepository = mock(ClientRepository::class)
 
     @Mock
-    private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+    private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
     private lateinit var fetchSelfClientsFromRemoteUseCase: FetchSelfClientsFromRemoteUseCase
 
     @BeforeTest

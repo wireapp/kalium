@@ -29,7 +29,6 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -45,10 +44,10 @@ import kotlin.test.assertIs
 class SSOLoginRepositoryTest {
 
     @Mock
-    val ssoLogin = mock(classOf<SSOLoginApi>())
+    val ssoLogin = mock(SSOLoginApi::class)
 
     @Mock
-    val domainLookup = mock(classOf<DomainLookupApi>())
+    val domainLookup = mock(DomainLookupApi::class)
 
     private lateinit var ssoLoginRepository: SSOLoginRepository
 

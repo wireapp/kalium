@@ -43,7 +43,6 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -345,40 +344,40 @@ class ConversationEventReceiverTest {
         CodeDeletedHandlerArrangement by CodeDeletedHandlerArrangementImpl() {
 
         @Mock
-        val conversationMessageTimerEventHandler = mock(classOf<ConversationMessageTimerEventHandler>())
+        val conversationMessageTimerEventHandler = mock(ConversationMessageTimerEventHandler::class)
 
         @Mock
-        val receiptModeUpdateEventHandler = mock(classOf<ReceiptModeUpdateEventHandler>())
+        val receiptModeUpdateEventHandler = mock(ReceiptModeUpdateEventHandler::class)
 
         @Mock
-        val renamedConversationEventHandler = mock(classOf<RenamedConversationEventHandler>())
+        val renamedConversationEventHandler = mock(RenamedConversationEventHandler::class)
 
         @Mock
-        val mlsWelcomeEventHandler = mock(classOf<MLSWelcomeEventHandler>())
+        val mlsWelcomeEventHandler = mock(MLSWelcomeEventHandler::class)
 
         @Mock
-        val memberChangeEventHandler = mock(classOf<MemberChangeEventHandler>())
+        val memberChangeEventHandler = mock(MemberChangeEventHandler::class)
 
         @Mock
-        val memberLeaveEventHandler = mock(classOf<MemberLeaveEventHandler>())
+        val memberLeaveEventHandler = mock(MemberLeaveEventHandler::class)
 
         @Mock
-        val memberJoinEventHandler = mock(classOf<MemberJoinEventHandler>())
+        val memberJoinEventHandler = mock(MemberJoinEventHandler::class)
 
         @Mock
-        val newMessageEventHandler = mock(classOf<NewMessageEventHandler>())
+        val newMessageEventHandler = mock(NewMessageEventHandler::class)
 
         @Mock
-        val newConversationEventHandler = mock(classOf<NewConversationEventHandler>())
+        val newConversationEventHandler = mock(NewConversationEventHandler::class)
 
         @Mock
-        val deletedConversationEventHandler = mock(classOf<DeletedConversationEventHandler>())
+        val deletedConversationEventHandler = mock(DeletedConversationEventHandler::class)
 
         @Mock
-        val typingIndicatorHandler = mock(classOf<TypingIndicatorHandler>())
+        val typingIndicatorHandler = mock(TypingIndicatorHandler::class)
 
         @Mock
-        val protocolUpdateEventHandler = mock(classOf<ProtocolUpdateEventHandler>())
+        val protocolUpdateEventHandler = mock(ProtocolUpdateEventHandler::class)
 
         private val conversationEventReceiver: ConversationEventReceiver = ConversationEventReceiverImpl(
             newMessageHandler = newMessageEventHandler,

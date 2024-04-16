@@ -33,7 +33,6 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -137,10 +136,10 @@ class ClientRemoteRepositoryTest {
     private class Arrangement {
 
         @Mock
-        val clientApi = mock(classOf<ClientApi>())
+        val clientApi = mock(ClientApi::class)
 
         @Mock
-        val clientConfig: ClientConfig = mock(classOf<ClientConfig>())
+        val clientConfig: ClientConfig = mock(ClientConfig::class)
 
         var clientRepository: ClientRemoteRepository =
             ClientRemoteDataSource(clientApi, clientConfig)

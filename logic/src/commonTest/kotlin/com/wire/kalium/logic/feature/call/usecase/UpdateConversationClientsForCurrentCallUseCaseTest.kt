@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -37,10 +36,10 @@ import kotlin.test.Test
 class UpdateConversationClientsForCurrentCallUseCaseTest {
 
     @Mock
-    private val callRepository = mock(classOf<CallRepository>())
+    private val callRepository = mock(CallRepository::class)
 
     @Mock
-    private val conversationClientsInCallUpdater = mock(classOf<ConversationClientsInCallUpdater>())
+    private val conversationClientsInCallUpdater = mock(ConversationClientsInCallUpdater::class)
 
     private lateinit var updateConversationClientsForCurrentCall: UpdateConversationClientsForCurrentCallUseCase
 

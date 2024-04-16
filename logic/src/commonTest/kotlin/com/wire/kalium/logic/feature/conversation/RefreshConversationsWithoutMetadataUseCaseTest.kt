@@ -22,7 +22,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -49,7 +48,7 @@ class RefreshConversationsWithoutMetadataUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
+        val conversationRepository = mock(ConversationRepository::class)
 
         suspend fun withResponse(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
             coEvery {

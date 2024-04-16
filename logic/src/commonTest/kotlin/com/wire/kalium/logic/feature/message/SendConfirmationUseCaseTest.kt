@@ -36,7 +36,6 @@ import io.mockative.coEvery
 import io.mockative.every
 import io.mockative.coVerify
 import io.mockative.coEvery
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.mock
 import io.mockative.once
@@ -91,22 +90,22 @@ class SendConfirmationUseCaseTest {
     private class Arrangement {
 
         @Mock
-        private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+        private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
         @Mock
-        private val syncManager = mock(classOf<SyncManager>())
+        private val syncManager = mock(SyncManager::class)
 
         @Mock
-        val messageSender = mock(classOf<MessageSender>())
+        val messageSender = mock(MessageSender::class)
 
         @Mock
-        private val conversationRepository = mock(classOf<ConversationRepository>())
+        private val conversationRepository = mock(ConversationRepository::class)
 
         @Mock
-        val messageRepository = mock(classOf<MessageRepository>())
+        val messageRepository = mock(MessageRepository::class)
 
         @Mock
-        private val userPropertyRepository = mock(classOf<UserPropertyRepository>())
+        private val userPropertyRepository = mock(UserPropertyRepository::class)
 
         suspend fun withCurrentClientIdProvider() = apply {
             coEvery {

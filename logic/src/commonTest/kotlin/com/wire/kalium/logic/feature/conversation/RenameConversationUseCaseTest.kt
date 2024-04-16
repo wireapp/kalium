@@ -33,7 +33,6 @@ import com.wire.kalium.network.api.base.authenticated.notification.EventContentD
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -81,13 +80,13 @@ class RenameConversationUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
+        val conversationRepository = mock(ConversationRepository::class)
 
         @Mock
-        val persistMessage = mock(classOf<PersistMessageUseCase>())
+        val persistMessage = mock(PersistMessageUseCase::class)
 
         @Mock
-        val renamedConversationEventHandler = mock(classOf<RenamedConversationEventHandler>())
+        val renamedConversationEventHandler = mock(RenamedConversationEventHandler::class)
 
         val selfUserId = USER_ID
 

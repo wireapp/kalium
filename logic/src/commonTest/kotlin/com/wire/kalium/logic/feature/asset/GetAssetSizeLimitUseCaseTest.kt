@@ -23,7 +23,6 @@ import com.wire.kalium.logic.feature.asset.GetAssetSizeLimitUseCaseImpl.Companio
 import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -106,7 +105,7 @@ class GetAssetSizeLimitUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val isSelfATeamMember = mock(classOf<IsSelfATeamMemberUseCase>())
+        val isSelfATeamMember = mock(IsSelfATeamMemberUseCase::class)
 
         suspend fun withIsSelfATeamMember(hasUserTeam: Boolean) = apply {
             coEvery {

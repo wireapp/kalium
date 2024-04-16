@@ -30,8 +30,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -152,16 +150,16 @@ class StartCallUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val callManager = configure(mock(classOf<CallManager>())) { }
+        val callManager = mock(CallManager::class)
 
         @Mock
-        val syncManager = mock(classOf<SyncManager>())
+        val syncManager = mock(SyncManager::class)
 
         @Mock
-        val answerCall = mock(classOf<AnswerCallUseCase>())
+        val answerCall = mock(AnswerCallUseCase::class)
 
         @Mock
-        val callRepository = mock(classOf<CallRepository>())
+        val callRepository = mock(CallRepository::class)
 
         private val kaliumConfigs = KaliumConfigs()
 

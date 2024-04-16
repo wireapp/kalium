@@ -30,7 +30,6 @@ import com.wire.kalium.network.api.base.authenticated.client.SimpleClientRespons
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -91,10 +90,10 @@ class FetchUsersClientsFromRemoteUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val clientRemoteRepository = mock(classOf<ClientRemoteRepository>())
+        val clientRemoteRepository = mock(ClientRemoteRepository::class)
 
         @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
+        val clientRepository = mock(ClientRepository::class)
 
         val clientMapper = MapperProvider.clientMapper()
 

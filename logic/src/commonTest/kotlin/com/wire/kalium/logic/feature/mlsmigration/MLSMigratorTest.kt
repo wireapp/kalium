@@ -40,7 +40,6 @@ import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -194,22 +193,22 @@ class MLSMigratorTest {
     private class Arrangement {
 
         @Mock
-        val userRepository = mock(classOf<UserRepository>())
+        val userRepository = mock(UserRepository::class)
 
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
+        val conversationRepository = mock(ConversationRepository::class)
 
         @Mock
-        val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
+        val mlsConversationRepository = mock(MLSConversationRepository::class)
 
         @Mock
-        val selfTeamIdProvider = mock(classOf<SelfTeamIdProvider>())
+        val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
         @Mock
-        val systemMessageInserter = mock(classOf<SystemMessageInserter>())
+        val systemMessageInserter = mock(SystemMessageInserter::class)
 
         @Mock
-        val callRepository = mock(classOf<CallRepository>())
+        val callRepository = mock(CallRepository::class)
 
         suspend fun withFetchAllOtherUsersSucceeding() = apply {
             coEvery {

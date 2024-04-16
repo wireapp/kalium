@@ -23,7 +23,6 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -105,7 +104,7 @@ class TimestampKeyRepositoryTest {
 
     private class Arrangement {
         @Mock
-        val metadataDAO = mock(classOf<MetadataDAO>())
+        val metadataDAO = mock(MetadataDAO::class)
 
         suspend fun withMetaDataDaoValueReturns(timestamp: Instant?) = apply {
             coEvery {

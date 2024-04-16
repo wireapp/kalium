@@ -24,9 +24,7 @@ import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.mock
 import kotlinx.coroutines.flow.first
@@ -59,9 +57,7 @@ class ObserveIsServiceMemberUseCaseTest {
     private class Arrangement {
 
         @Mock
-        private val serviceRepository = configure(mock(classOf<ServiceRepository>())) {
-            stubsUnitByDefault = true
-        }
+        private val serviceRepository = mock(ServiceRepository::class)
 
         private val observeIsServiceMember = ObserveIsServiceMemberUseCaseImpl(
             serviceRepository = serviceRepository

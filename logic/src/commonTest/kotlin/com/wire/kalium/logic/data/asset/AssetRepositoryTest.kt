@@ -42,7 +42,6 @@ import com.wire.kalium.persistence.dao.asset.AssetEntity
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -667,10 +666,10 @@ class AssetRepositoryTest {
     class Arrangement {
 
         @Mock
-        val assetApi = mock(classOf<AssetApi>())
+        val assetApi = mock(AssetApi::class)
 
         @Mock
-        val assetDAO = mock(classOf<AssetDAO>())
+        val assetDAO = mock(AssetDAO::class)
 
         private val assetMapper by lazy { AssetMapperImpl() }
 

@@ -33,10 +33,8 @@ import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.every
 import io.mockative.matches
@@ -353,20 +351,20 @@ class IncrementalSyncManagerTest {
         val slowSyncRepository: SlowSyncRepository = SlowSyncRepositoryImpl(database.builder.metadataDAO)
 
         @Mock
-        val incrementalSyncWorker = mock(classOf<IncrementalSyncWorker>())
+        val incrementalSyncWorker = mock(IncrementalSyncWorker::class)
 
         @Mock
-        val incrementalSyncRepository = configure(mock(classOf<IncrementalSyncRepository>())) { }
+        val incrementalSyncRepository = mock(IncrementalSyncRepository::class)
 
         @Mock
-        val incrementalSyncRecoveryHandler = mock(classOf<IncrementalSyncRecoveryHandler>())
+        val incrementalSyncRecoveryHandler = mock(IncrementalSyncRecoveryHandler::class)
 
         @Mock
-        val networkStateObserver: NetworkStateObserver = mock(classOf<NetworkStateObserver>())
+        val networkStateObserver: NetworkStateObserver = mock(NetworkStateObserver::class)
 
         @Mock
         val exponentialDurationHelper: ExponentialDurationHelper =
-            configure(mock(classOf<ExponentialDurationHelper>())) { }
+            mock(ExponentialDurationHelper::class)
 
         private val incrementalSyncManager by lazy {
             IncrementalSyncManager(

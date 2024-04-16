@@ -24,7 +24,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.base.unauthenticated.SSOSettingsResponse
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -38,7 +37,7 @@ import kotlin.test.assertIs
 class SSOSettingsUseCaseTest {
 
     @Mock
-    val ssoLoginRepository = mock(classOf<SSOLoginRepository>())
+    val ssoLoginRepository = mock(SSOLoginRepository::class)
     lateinit var ssoSettingsUseCase: SSOSettingsUseCase
 
     @BeforeTest

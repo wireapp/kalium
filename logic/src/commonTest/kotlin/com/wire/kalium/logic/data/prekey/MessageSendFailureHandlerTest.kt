@@ -43,8 +43,6 @@ import com.wire.kalium.network.api.base.authenticated.client.SimpleClientRespons
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -358,19 +356,19 @@ class MessageSendFailureHandlerTest {
 
     class Arrangement : ClientRepositoryArrangement by ClientRepositoryArrangementImpl() {
         @Mock
-        internal val userRepository = mock(classOf<UserRepository>())
+        internal val userRepository = mock(UserRepository::class)
 
         @Mock
-        internal val messageRepository = mock(classOf<MessageRepository>())
+        internal val messageRepository = mock(MessageRepository::class)
 
         @Mock
-        val messageSendingScheduler = configure(mock(MessageSendingScheduler::class)) { }
+        val messageSendingScheduler = mock(MessageSendingScheduler::class)
 
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
+        val conversationRepository = mock(ConversationRepository::class)
 
         @Mock
-        val clientRemoteRepository = mock(classOf<ClientRemoteRepository>())
+        val clientRemoteRepository = mock(ClientRemoteRepository::class)
 
         val clientMapper: ClientMapper = MapperProvider.clientMapper()
 

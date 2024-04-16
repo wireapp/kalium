@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.kaliumLogger
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coVerify
 import io.mockative.every
 import io.mockative.mock
@@ -92,11 +91,11 @@ class AvsSyncStateReporterTest {
     private class Arrangement {
 
         @Mock
-        val callManager: CallManager = mock(classOf<CallManager>())
+        val callManager: CallManager = mock(CallManager::class)
 
         @Mock
         val incrementalSyncRepository: IncrementalSyncRepository =
-            mock(classOf<IncrementalSyncRepository>())
+            mock(IncrementalSyncRepository::class)
 
         fun arrange() = this to AvsSyncStateReporterImpl(
             callManager = lazy { callManager },

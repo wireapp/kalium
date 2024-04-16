@@ -26,7 +26,6 @@ import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -96,10 +95,10 @@ class UserPropertyRepositoryTest {
     private class Arrangement {
 
         @Mock
-        val propertiesApi = mock(classOf<PropertiesApi>())
+        val propertiesApi = mock(PropertiesApi::class)
 
         @Mock
-        val userConfigRepository = mock(classOf<UserConfigRepository>())
+        val userConfigRepository = mock(UserConfigRepository::class)
 
         private val userPropertyRepository = UserPropertyDataSource(propertiesApi, userConfigRepository)
 

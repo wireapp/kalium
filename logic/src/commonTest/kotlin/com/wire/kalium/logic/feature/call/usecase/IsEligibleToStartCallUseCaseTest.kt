@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.every
 import io.mockative.mock
@@ -37,10 +36,10 @@ import kotlin.test.assertEquals
 class IsEligibleToStartCallUseCaseTest {
 
     @Mock
-    val userConfigRepository = mock(classOf<UserConfigRepository>())
+    val userConfigRepository = mock(UserConfigRepository::class)
 
     @Mock
-    val callRepository = mock(classOf<CallRepository>())
+    val callRepository = mock(CallRepository::class)
 
     private lateinit var isEligibleToStartCall: IsEligibleToStartCallUseCase
 

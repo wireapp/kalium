@@ -42,7 +42,6 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationR
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -289,22 +288,22 @@ class NewConversationEventHandlerTest {
 
     private class Arrangement {
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
+        val conversationRepository = mock(ConversationRepository::class)
 
         @Mock
-        val userRepository = mock(classOf<UserRepository>())
+        val userRepository = mock(UserRepository::class)
 
         @Mock
-        val selfTeamIdProvider = mock(classOf<SelfTeamIdProvider>())
+        val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
         @Mock
-        val newGroupConversationSystemMessagesCreator = mock(classOf<NewGroupConversationSystemMessagesCreator>())
+        val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
 
         @Mock
-        private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
+        private val qualifiedIdMapper = mock(QualifiedIdMapper::class)
 
         @Mock
-        val oneOnOneResolver = mock(classOf<OneOnOneResolver>())
+        val oneOnOneResolver = mock(OneOnOneResolver::class)
 
 
         private val newConversationEventHandler: NewConversationEventHandler = NewConversationEventHandlerImpl(

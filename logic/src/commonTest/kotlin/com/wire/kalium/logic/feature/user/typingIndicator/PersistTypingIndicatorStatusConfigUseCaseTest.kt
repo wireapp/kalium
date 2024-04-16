@@ -21,7 +21,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -78,7 +77,7 @@ class PersistTypingIndicatorStatusConfigUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val userPropertyRepository = mock(classOf<UserPropertyRepository>())
+        val userPropertyRepository = mock(UserPropertyRepository::class)
 
         val persistTypingIndicatorStatusConfig = PersistTypingIndicatorStatusConfigUseCaseImpl(userPropertyRepository)
 

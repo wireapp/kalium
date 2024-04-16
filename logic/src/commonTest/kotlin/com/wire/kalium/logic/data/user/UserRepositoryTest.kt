@@ -64,8 +64,6 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -800,22 +798,22 @@ class UserRepositoryTest {
 
     private class Arrangement {
         @Mock
-        val userDAO = configure(mock(classOf<UserDAO>())) { }
+        val userDAO = mock(UserDAO::class)
 
         @Mock
-        val metadataDAO = configure(mock(classOf<MetadataDAO>())) { }
+        val metadataDAO = mock(MetadataDAO::class)
 
         @Mock
-        val clientDAO = configure(mock(classOf<ClientDAO>())) { }
+        val clientDAO = mock(ClientDAO::class)
 
         @Mock
-        val selfApi = mock(classOf<SelfApi>())
+        val selfApi = mock(SelfApi::class)
 
         @Mock
-        val userDetailsApi = mock(classOf<UserDetailsApi>())
+        val userDetailsApi = mock(UserDetailsApi::class)
 
         @Mock
-        val teamsApi = mock(classOf<TeamsApi>())
+        val teamsApi = mock(TeamsApi::class)
 
         @Mock
         val sessionRepository = mock(SessionRepository::class)

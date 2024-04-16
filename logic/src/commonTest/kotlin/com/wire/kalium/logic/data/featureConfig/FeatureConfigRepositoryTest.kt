@@ -37,7 +37,6 @@ import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -174,7 +173,7 @@ class FeatureConfigRepositoryTest {
         )
 
         @Mock
-        val featureConfigApi: FeatureConfigApi = mock(classOf<FeatureConfigApi>())
+        val featureConfigApi: FeatureConfigApi = mock(FeatureConfigApi::class)
 
         var featureConfigRepository = FeatureConfigDataSource(featureConfigApi)
 

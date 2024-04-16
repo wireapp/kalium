@@ -32,7 +32,6 @@ import com.wire.kalium.logic.util.shouldSucceed
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -191,21 +190,21 @@ class CheckRevocationListUseCaseTest {
     internal class Arrangement {
 
         @Mock
-        val certificateRevocationListRepository = mock(classOf<CertificateRevocationListRepository>())
+        val certificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
 
         @Mock
-        val coreCrypto = mock(classOf<CoreCryptoCentral>())
+        val coreCrypto = mock(CoreCryptoCentral::class)
 
         @Mock
         val currentClientIdProvider =
-            mock(classOf<CurrentClientIdProvider>())
+            mock(CurrentClientIdProvider::class)
 
         @Mock
         val mlsClientProvider =
-            mock(classOf<MLSClientProvider>())
+            mock(MLSClientProvider::class)
 
         @Mock
-        val isE2EIEnabledUseCase = mock(classOf<IsE2EIEnabledUseCase>())
+        val isE2EIEnabledUseCase = mock(IsE2EIEnabledUseCase::class)
 
         fun arrange() = this to CheckRevocationListUseCaseImpl(
             certificateRevocationListRepository = certificateRevocationListRepository,

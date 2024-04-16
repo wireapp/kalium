@@ -31,7 +31,6 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.every
 import io.mockative.mock
@@ -141,13 +140,13 @@ class ObserveSecurityClassificationLabelUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val observeConversationMembersUseCase = mock(classOf<ObserveConversationMembersUseCase>())
+        val observeConversationMembersUseCase = mock(ObserveConversationMembersUseCase::class)
 
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
+        val conversationRepository = mock(ConversationRepository::class)
 
         @Mock
-        val userConfigRepository = mock(classOf<UserConfigRepository>())
+        val userConfigRepository = mock(UserConfigRepository::class)
 
         private val getSecurityClassificationType = ObserveSecurityClassificationLabelUseCaseImpl(
             observeConversationMembersUseCase,

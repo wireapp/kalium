@@ -21,7 +21,6 @@ import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.feature.message.EphemeralEventsNotificationManager
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
@@ -36,7 +35,7 @@ internal interface EphemeralEventsNotificationManagerArrangement {
 internal open class EphemeralEventsNotificationManagerArrangementImpl : EphemeralEventsNotificationManagerArrangement {
 
     @Mock
-    override val ephemeralNotifications = mock(classOf<EphemeralEventsNotificationManager>())
+    override val ephemeralNotifications = mock(EphemeralEventsNotificationManager::class)
 
     override suspend fun withEphemeralNotification(ephemeralsFlow: Flow<LocalNotification>) {
         coEvery {

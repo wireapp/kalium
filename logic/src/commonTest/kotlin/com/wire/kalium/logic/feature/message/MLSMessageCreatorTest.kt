@@ -33,7 +33,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -118,7 +117,7 @@ class MLSMessageCreatorTest {
         val SELF_USER_ID = UserId("user-id", "domain")
         val GROUP_ID = GroupID("groupId")
         val CRYPTO_GROUP_ID = MapperProvider.idMapper().toCryptoModel(GroupID("groupId"))
-        val MLS_CLIENT = mock(classOf<MLSClient>())
+        val MLS_CLIENT = mock(MLSClient::class)
     }
 
 }

@@ -34,7 +34,6 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -47,7 +46,7 @@ import kotlin.test.assertIs
 
 class RegisterAccountUseCaseTest {
     @Mock
-    private val registerAccountRepository = mock(classOf<RegisterAccountRepository>())
+    private val registerAccountRepository = mock(RegisterAccountRepository::class)
 
     private val serverConfig = TEST_SERVER_CONFIG
     private val proxyCredentials = PROXY_CREDENTIALS

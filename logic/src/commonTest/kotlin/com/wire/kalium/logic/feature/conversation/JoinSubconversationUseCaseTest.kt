@@ -40,7 +40,6 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -180,16 +179,16 @@ class JoinSubconversationUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val conversationApi = mock(classOf<ConversationApi>())
+        val conversationApi = mock(ConversationApi::class)
 
         @Mock
-        val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
+        val mlsConversationRepository = mock(MLSConversationRepository::class)
 
         @Mock
-        val subconversationRepository = mock(classOf<SubconversationRepository>())
+        val subconversationRepository = mock(SubconversationRepository::class)
 
         @Mock
-        val mlsMessageUnpacker = mock(classOf<MLSMessageUnpacker>())
+        val mlsMessageUnpacker = mock(MLSMessageUnpacker::class)
 
         fun arrange() = this to JoinSubconversationUseCaseImpl(
             conversationApi,

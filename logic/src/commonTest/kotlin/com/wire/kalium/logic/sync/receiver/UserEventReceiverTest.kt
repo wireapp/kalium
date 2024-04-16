@@ -42,7 +42,6 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -351,25 +350,25 @@ class UserEventReceiverTest {
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl() {
         @Mock
-        val connectionRepository = mock(classOf<ConnectionRepository>())
+        val connectionRepository = mock(ConnectionRepository::class)
 
         @Mock
-        val logoutUseCase = mock(classOf<LogoutUseCase>())
+        val logoutUseCase = mock(LogoutUseCase::class)
 
         @Mock
-        private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+        private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
         @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
+        val clientRepository = mock(ClientRepository::class)
 
         @Mock
-        val newGroupConversationSystemMessagesCreator = mock(classOf<NewGroupConversationSystemMessagesCreator>())
+        val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
 
         @Mock
-        val legalHoldRequestHandler = mock(classOf<LegalHoldRequestHandler>())
+        val legalHoldRequestHandler = mock(LegalHoldRequestHandler::class)
 
         @Mock
-        val legalHoldHandler = mock(classOf<LegalHoldHandler>())
+        val legalHoldHandler = mock(LegalHoldHandler::class)
 
         private val userEventReceiver: UserEventReceiver = UserEventReceiverImpl(
             clientRepository,

@@ -26,7 +26,6 @@ import com.wire.kalium.logic.functional.Either
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -90,10 +89,10 @@ class DeleteSessionUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val sessionRepository = mock(classOf<SessionRepository>())
+        val sessionRepository = mock(SessionRepository::class)
 
         @Mock
-        val userSessionScopeProvider = mock(classOf<UserSessionScopeProvider>())
+        val userSessionScopeProvider = mock(UserSessionScopeProvider::class)
 
         val deleteSessionUseCase = DeleteSessionUseCase(sessionRepository, userSessionScopeProvider)
 

@@ -25,7 +25,6 @@ import com.wire.kalium.logic.feature.message.MarkMessagesAsNotifiedUseCase.Updat
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -104,7 +103,7 @@ class MarkMessagesAsNotifiedUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val conversationRepository: ConversationRepository = mock(classOf<ConversationRepository>())
+        val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
         suspend fun withUpdatingAllConversationsReturning(result: Either<StorageFailure, Unit>) = apply {
             coEvery {

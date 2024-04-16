@@ -34,7 +34,6 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -177,13 +176,13 @@ class GetIncomingCallsUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val userRepository: UserRepository = mock(classOf<UserRepository>())
+        val userRepository: UserRepository = mock(UserRepository::class)
 
         @Mock
-        val conversationRepository: ConversationRepository = mock(classOf<ConversationRepository>())
+        val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
         @Mock
-        val callRepository: CallRepository = mock(classOf<CallRepository>())
+        val callRepository: CallRepository = mock(CallRepository::class)
 
         val getIncomingCallsUseCase: GetIncomingCallsUseCase = GetIncomingCallsUseCaseImpl(
             userRepository = userRepository,

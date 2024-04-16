@@ -26,7 +26,6 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
@@ -95,7 +94,7 @@ class MessageDraftRepositoryTest {
     private class Arrangement {
 
         @Mock
-        val messageDraftDAO = configure(mock(MessageDraftDAO::class)) { }
+        val messageDraftDAO = mock(MessageDraftDAO::class)
 
         suspend fun withRemoveMessageDraftSucceeding() = apply {
             coEvery {

@@ -21,7 +21,6 @@ package com.wire.kalium.logic.sync.periodic
 import com.wire.kalium.logic.feature.server.UpdateApiVersionsUseCase
 import com.wire.kalium.logic.sync.Result
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -34,7 +33,7 @@ import kotlin.test.assertEquals
 class UpdateApiVersionsWorkerTest {
 
     @Mock
-    private val updateApiVersionsUseCase = mock(classOf<UpdateApiVersionsUseCase>())
+    private val updateApiVersionsUseCase = mock(UpdateApiVersionsUseCase::class)
 
     private lateinit var updateApiVersionsWorker: UpdateApiVersionsWorker
 

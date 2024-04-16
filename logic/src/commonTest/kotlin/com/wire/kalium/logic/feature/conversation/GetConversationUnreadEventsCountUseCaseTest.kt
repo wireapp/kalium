@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
@@ -33,7 +32,7 @@ import kotlin.test.assertEquals
 
 class GetConversationUnreadEventsCountUseCaseTest {
     @Mock
-    private val conversationRepository = mock(classOf<ConversationRepository>())
+    private val conversationRepository = mock(ConversationRepository::class)
 
     private lateinit var getConversationUnreadEventsCountUseCase: GetConversationUnreadEventsCountUseCase
 

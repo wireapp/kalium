@@ -23,7 +23,6 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.Dispatchers
@@ -49,7 +48,7 @@ class IncrementalSyncRepositoryTest {
     private lateinit var incrementalSyncRepository: IncrementalSyncRepository
 
     @Mock
-    val sessionRepository = mock(classOf<SessionRepository>())
+    val sessionRepository = mock(SessionRepository::class)
 
     @BeforeTest
     fun setup() {

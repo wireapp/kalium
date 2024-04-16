@@ -29,7 +29,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -119,16 +118,16 @@ class MLSMigrationManagerTest {
         val kaliumConfigs = KaliumConfigs()
 
         @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
+        val clientRepository = mock(ClientRepository::class)
 
         @Mock
-        val featureSupport = mock(classOf<FeatureSupport>())
+        val featureSupport = mock(FeatureSupport::class)
 
         @Mock
-        val timestampKeyRepository = mock(classOf<TimestampKeyRepository>())
+        val timestampKeyRepository = mock(TimestampKeyRepository::class)
 
         @Mock
-        val mlsMigrationWorker = mock(classOf<MLSMigrationWorker>())
+        val mlsMigrationWorker = mock(MLSMigrationWorker::class)
 
         suspend fun withRunMigrationSucceeds() = apply {
             coEvery {

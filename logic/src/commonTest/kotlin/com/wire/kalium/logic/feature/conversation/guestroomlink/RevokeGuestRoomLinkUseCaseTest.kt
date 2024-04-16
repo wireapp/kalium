@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -36,7 +35,7 @@ import kotlin.test.assertIs
 class RevokeGuestRoomLinkUseCaseTest {
 
     @Mock
-    val conversationGroupRepository = mock(classOf<ConversationGroupRepository>())
+    val conversationGroupRepository = mock(ConversationGroupRepository::class)
 
     private lateinit var revokeGuestRoomLink: RevokeGuestRoomLinkUseCase
 

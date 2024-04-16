@@ -24,7 +24,6 @@ import com.wire.kalium.logic.feature.user.readReceipts.PersistReadReceiptsStatus
 import com.wire.kalium.logic.feature.user.readReceipts.ReadReceiptStatusConfigResult
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -81,7 +80,7 @@ class PersistReadReceiptsStatusConfigUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val userPropertyRepository = mock(classOf<UserPropertyRepository>())
+        val userPropertyRepository = mock(UserPropertyRepository::class)
 
         val persistReadReceiptsStatusConfig = PersistReadReceiptsStatusConfigUseCaseImpl(userPropertyRepository)
 

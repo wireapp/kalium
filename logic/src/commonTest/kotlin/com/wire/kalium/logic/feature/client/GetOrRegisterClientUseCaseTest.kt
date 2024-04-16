@@ -32,10 +32,8 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
@@ -153,31 +151,31 @@ class GetOrRegisterClientUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
+        val clientRepository = mock(ClientRepository::class)
 
         @Mock
-        val pushTokenRepository = mock(classOf<PushTokenRepository>())
+        val pushTokenRepository = mock(PushTokenRepository::class)
 
         @Mock
-        val logoutRepository = configure(mock(classOf<LogoutRepository>())) { }
+        val logoutRepository = mock(LogoutRepository::class)
 
         @Mock
-        val registerClientUseCase = mock(classOf<RegisterClientUseCase>())
+        val registerClientUseCase = mock(RegisterClientUseCase::class)
 
         @Mock
-        val clearClientDataUseCase = configure(mock(classOf<ClearClientDataUseCase>())) { }
+        val clearClientDataUseCase = mock(ClearClientDataUseCase::class)
 
         @Mock
-        val upgradeCurrentSessionUseCase = mock(classOf<UpgradeCurrentSessionUseCase>())
+        val upgradeCurrentSessionUseCase = mock(UpgradeCurrentSessionUseCase::class)
 
         @Mock
-        val syncFeatureConfigsUseCase = mock(classOf<SyncFeatureConfigsUseCase>())
+        val syncFeatureConfigsUseCase = mock(SyncFeatureConfigsUseCase::class)
 
         @Mock
-        val verifyExistingClientUseCase = mock(classOf<VerifyExistingClientUseCase>())
+        val verifyExistingClientUseCase = mock(VerifyExistingClientUseCase::class)
 
         @Mock
-        val cachedClientIdClearer = configure(mock(classOf<CachedClientIdClearer>())) { }
+        val cachedClientIdClearer = mock(CachedClientIdClearer::class)
 
         val getOrRegisterClientUseCase: GetOrRegisterClientUseCase = GetOrRegisterClientUseCaseImpl(
             clientRepository,

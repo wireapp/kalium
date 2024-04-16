@@ -83,8 +83,7 @@ class SessionRepositoryTest {
         @Mock
         val authTokenStorage: AuthTokenStorage = mock(AuthTokenStorage::class)
 
-        @Mock
-        val kaliumConfigs: KaliumConfigs = mock(KaliumConfigs::class)
+        val kaliumConfigs: KaliumConfigs = KaliumConfigs()
 
         @Mock
         val serverConfigurationDAO: ServerConfigurationDAO = mock(ServerConfigurationDAO::class)

@@ -28,7 +28,6 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
@@ -39,10 +38,10 @@ import kotlin.test.Test
 class PendingMessagesSenderWorkerTest {
 
     @Mock
-    private val messageRepository = configure(mock(MessageRepository::class)) { }
+    private val messageRepository = mock(MessageRepository::class)
 
     @Mock
-    private val messageSender = configure(mock(MessageSender::class)) { }
+    private val messageSender = mock(MessageSender::class)
 
     private lateinit var pendingMessagesSenderWorker: PendingMessagesSenderWorker
 

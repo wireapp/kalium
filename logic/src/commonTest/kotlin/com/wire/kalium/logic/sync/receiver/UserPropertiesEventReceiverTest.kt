@@ -23,7 +23,6 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
@@ -50,7 +49,7 @@ class UserPropertiesEventReceiverTest {
     private class Arrangement {
 
         @Mock
-        val userConfigRepository = mock(classOf<UserConfigRepository>())
+        val userConfigRepository = mock(UserConfigRepository::class)
 
         private val userPropertiesEventReceiver: UserPropertiesEventReceiver = UserPropertiesEventReceiverImpl(
             userConfigRepository = userConfigRepository

@@ -23,7 +23,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -79,7 +78,7 @@ class GetAssetMessagesForConversationUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val messageRepository = mock(classOf<MessageRepository>())
+        val messageRepository = mock(MessageRepository::class)
 
         val getAssetMessagesByConversationUseCase = GetImageAssetMessagesForConversationUseCaseImpl(
             testDispatcher,

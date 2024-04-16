@@ -25,7 +25,6 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -71,10 +70,10 @@ class ImportClientUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
+        val clientRepository = mock(ClientRepository::class)
 
         @Mock
-        val getOrRegisterClientUseCase = mock(classOf<GetOrRegisterClientUseCase>())
+        val getOrRegisterClientUseCase = mock(GetOrRegisterClientUseCase::class)
 
         suspend fun withGetOrRegisterClientResult(result: RegisterClientResult): Arrangement = apply {
             coEvery {

@@ -32,7 +32,6 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.every
@@ -74,8 +73,8 @@ class OnCloseCallTest {
         every {
             callRepository.getCallMetadataProfile()
         }.returns(CallMetadataProfile(mapOf(conversationId to callMetadata)))
-        
-        every { 
+
+        every {
             networkStateObserver.observeNetworkState()
         }.returns(MutableStateFlow(NetworkState.ConnectedWithInternet))
     }
@@ -261,14 +260,14 @@ class OnCloseCallTest {
     fun givenDeviceOffline_whenOnCloseCallBackHappens_thenDoNotPersistMissedCall() = testScope.runTest {
         val reason = CallClosedReason.CANCELLED.avsValue
 
-        every { 
+        every {
             networkStateObserver.observeNetworkState()
         }.returns(MutableStateFlow(NetworkState.NotConnected))
 
         onCloseCall.onClosedCall(reason, conversationIdString, time, userIdString, clientId, null)
         yield()
 
-        coVerify { 
+        coVerify {
             callRepository.persistMissedCall(conversationId)
         }
     }

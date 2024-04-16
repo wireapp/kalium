@@ -49,7 +49,6 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.every
 import io.mockative.coVerify
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.matches
@@ -360,7 +359,7 @@ class RetryFailedMessageUseCaseTest {
         val getAssetMessageTransferStatus = mock(GetAssetMessageTransferStatusUseCase::class)
 
         @Mock
-        val messageSendFailureHandler = configure(mock(MessageSendFailureHandler::class)) { }
+        val messageSendFailureHandler = mock(MessageSendFailureHandler::class)
 
         private val testScope = TestScope(testDispatcher.default)
 

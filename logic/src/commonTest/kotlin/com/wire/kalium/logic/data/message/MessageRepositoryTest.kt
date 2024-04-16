@@ -51,7 +51,6 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.every
 import io.mockative.matches
@@ -564,7 +563,7 @@ class MessageRepositoryTest {
         val mlsMessageApi = mock(MLSMessageApi::class)
 
         @Mock
-        val messageDAO = configure(mock(MessageDAO::class)) { }
+        val messageDAO = mock(MessageDAO::class)
 
         @Mock
         val sendMessageFailureMapper = mock(SendMessageFailureMapper::class)

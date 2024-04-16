@@ -49,10 +49,8 @@ import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.matches
 import io.mockative.mock
@@ -388,35 +386,27 @@ class TeamRepositoryTest {
 
     private class Arrangement {
         @Mock
-        val teamDAO = configure(mock(classOf<TeamDAO>())) {
-            stubsUnitByDefault = true
-        }
+        val teamDAO = mock(TeamDAO::class)
 
         @Mock
-        val userDAO = configure(mock(classOf<UserDAO>())) {
-            stubsUnitByDefault = true
-        }
+        val userDAO = mock(UserDAO::class)
 
         val teamMapper = MapperProvider.teamMapper()
 
         @Mock
-        val userConfigDAO = configure(mock(classOf<UserConfigDAO>())) {
-            stubsUnitByDefault = true
-        }
+        val userConfigDAO = mock(UserConfigDAO::class)
 
         @Mock
-        val teamsApi = mock(classOf<TeamsApi>())
+        val teamsApi = mock(TeamsApi::class)
 
         @Mock
-        val serviceDAO = configure(mock(classOf<ServiceDAO>())) {
-            stubsUnitByDefault = true
-        }
+        val serviceDAO = mock(ServiceDAO::class)
 
         @Mock
-        val legalHoldHandler = mock(classOf<LegalHoldHandler>())
+        val legalHoldHandler = mock(LegalHoldHandler::class)
 
         @Mock
-        val legalHoldRequestHandler = mock(classOf<LegalHoldRequestHandler>())
+        val legalHoldRequestHandler = mock(LegalHoldRequestHandler::class)
 
         val teamRepository: TeamRepository = TeamDataSource(
             teamDAO = teamDAO,

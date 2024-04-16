@@ -44,7 +44,6 @@ import com.wire.kalium.logic.util.shouldSucceed
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -257,19 +256,19 @@ class MLSWelcomeEventHandlerTest {
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl() {
         @Mock
-        val mlsClient: MLSClient = mock(classOf<MLSClient>())
+        val mlsClient: MLSClient = mock(MLSClient::class)
 
         @Mock
-        val mlsClientProvider: MLSClientProvider = mock(classOf<MLSClientProvider>())
+        val mlsClientProvider: MLSClientProvider = mock(MLSClientProvider::class)
 
         @Mock
-        val refillKeyPackagesUseCase: RefillKeyPackagesUseCase = mock(classOf<RefillKeyPackagesUseCase>())
+        val refillKeyPackagesUseCase: RefillKeyPackagesUseCase = mock(RefillKeyPackagesUseCase::class)
 
         @Mock
-        val checkRevocationList: CheckRevocationListUseCase = mock(classOf<CheckRevocationListUseCase>())
+        val checkRevocationList: CheckRevocationListUseCase = mock(CheckRevocationListUseCase::class)
 
         @Mock
-        val certificateRevocationListRepository: CertificateRevocationListRepository = mock(classOf<CertificateRevocationListRepository>())
+        val certificateRevocationListRepository: CertificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
 
         suspend fun withMLSClientProviderReturningMLSClient() = apply {
             coEvery {

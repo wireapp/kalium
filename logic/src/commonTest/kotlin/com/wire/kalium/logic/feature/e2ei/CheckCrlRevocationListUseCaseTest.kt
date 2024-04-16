@@ -25,7 +25,6 @@ import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -84,10 +83,10 @@ class CheckCrlRevocationListUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val certificateRevocationListRepository = mock(classOf<CertificateRevocationListRepository>())
+        val certificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
 
         @Mock
-        val checkRevocationList = mock(classOf<CheckRevocationListUseCase>())
+        val checkRevocationList = mock(CheckRevocationListUseCase::class)
 
         fun arrange() = this to CheckCrlRevocationListUseCase(
             certificateRevocationListRepository, checkRevocationList, kaliumLogger

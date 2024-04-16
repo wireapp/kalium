@@ -95,7 +95,6 @@ import com.wire.kalium.util.DateTimeUtil
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -1390,7 +1389,7 @@ class ConversationRepositoryTest {
 
         @Mock
         val renamedConversationEventHandler =
-            configure(mock(RenamedConversationEventHandler::class)) { }
+            mock(RenamedConversationEventHandler::class)
 
         val conversationRepository =
             ConversationDataSource(
@@ -1494,12 +1493,13 @@ class ConversationRepositoryTest {
                 messageDAO.observeLastMessages()
             }.returns(flowOf(messages))
         }
+
         fun withMessageDrafts(messageDrafts: List<MessageDraftEntity>) = apply {
-            coEvery { 
+            coEvery {
                 messageDraftDAO.observeMessageDrafts()
             }.returns(flowOf(messageDrafts))
         }
-        
+
         suspend fun withUpdateConversationReadDateException(exception: Throwable) = apply {
             coEvery { conversationDAO.updateConversationReadDate(any(), any()) }
                 .throws(exception)

@@ -69,7 +69,6 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.every
 import io.mockative.matches
@@ -1028,10 +1027,10 @@ class MessageSenderTest {
         val mlsMessageCreator: MLSMessageCreator = mock(MLSMessageCreator::class)
 
         @Mock
-        val syncManager = configure(mock(SyncManager::class)) { }
+        val syncManager = mock(SyncManager::class)
 
         @Mock
-        val userRepository = configure(mock(UserRepository::class)) { }
+        val userRepository = mock(UserRepository::class)
 
         @Mock
         val selfDeleteMessageSenderHandler = mock(EphemeralMessageDeletionHandler::class)

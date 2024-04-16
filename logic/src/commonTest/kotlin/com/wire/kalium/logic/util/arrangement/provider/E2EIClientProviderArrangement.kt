@@ -27,7 +27,6 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.mock
 
@@ -66,12 +65,12 @@ interface E2EIClientProviderArrangement {
 }
 
 class E2EIClientProviderArrangementImpl : E2EIClientProviderArrangement {
-    override val mlsClientProvider: MLSClientProvider = mock(classOf<MLSClientProvider>())
-    override val mlsClient: MLSClient = mock(classOf<MLSClient>())
-    override val e2eiClient: E2EIClient = mock(classOf<E2EIClient>())
-    override val userRepository: UserRepository = mock(classOf<UserRepository>())
-    override val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
-    override val coreCryptoCentral = mock(classOf<CoreCryptoCentral>())
+    override val mlsClientProvider: MLSClientProvider = mock(MLSClientProvider::class)
+    override val mlsClient: MLSClient = mock(MLSClient::class)
+    override val e2eiClient: E2EIClient = mock(E2EIClient::class)
+    override val userRepository: UserRepository = mock(UserRepository::class)
+    override val currentClientIdProvider = mock(CurrentClientIdProvider::class)
+    override val coreCryptoCentral = mock(CoreCryptoCentral::class)
 
     override suspend fun withGettingCoreCryptoSuccessful() {
         coEvery {

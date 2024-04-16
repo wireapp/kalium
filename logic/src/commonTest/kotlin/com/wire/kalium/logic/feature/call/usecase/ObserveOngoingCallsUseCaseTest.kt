@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallStatus
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
@@ -37,7 +36,7 @@ import kotlin.test.assertEquals
 class ObserveOngoingCallsUseCaseTest {
 
     @Mock
-    val callRepository = mock(classOf<CallRepository>())
+    val callRepository = mock(CallRepository::class)
 
     private lateinit var observeOngoingCalls: ObserveOngoingCallsUseCase
 

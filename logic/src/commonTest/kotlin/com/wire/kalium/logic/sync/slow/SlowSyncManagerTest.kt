@@ -31,10 +31,8 @@ import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.every
 import io.mockative.instanceOf
@@ -382,23 +380,23 @@ class SlowSyncManagerTest {
     private class Arrangement : SyncMigrationStepsProviderArrangement by SyncMigrationStepsProviderArrangementImpl() {
 
         @Mock
-        val slowSyncCriteriaProvider: SlowSyncCriteriaProvider = mock(classOf<SlowSyncCriteriaProvider>())
+        val slowSyncCriteriaProvider: SlowSyncCriteriaProvider = mock(SlowSyncCriteriaProvider::class)
 
         @Mock
-        val slowSyncRepository: SlowSyncRepository = configure(mock(classOf<SlowSyncRepository>())) { }
+        val slowSyncRepository: SlowSyncRepository = mock(SlowSyncRepository::class)
 
         @Mock
-        val slowSyncWorker: SlowSyncWorker = mock(classOf<SlowSyncWorker>())
+        val slowSyncWorker: SlowSyncWorker = mock(SlowSyncWorker::class)
 
         @Mock
-        val slowSyncRecoveryHandler: SlowSyncRecoveryHandler = mock(classOf<SlowSyncRecoveryHandler>())
+        val slowSyncRecoveryHandler: SlowSyncRecoveryHandler = mock(SlowSyncRecoveryHandler::class)
 
         @Mock
-        val networkStateObserver: NetworkStateObserver = mock(classOf<NetworkStateObserver>())
+        val networkStateObserver: NetworkStateObserver = mock(NetworkStateObserver::class)
 
         @Mock
         val exponentialDurationHelper: ExponentialDurationHelper =
-            configure(mock(classOf<ExponentialDurationHelper>())) { }
+            mock(ExponentialDurationHelper::class)
 
         suspend fun withCriteriaProviderReturning(criteriaFlow: Flow<SyncCriteriaResolution>) = apply {
             coEvery {

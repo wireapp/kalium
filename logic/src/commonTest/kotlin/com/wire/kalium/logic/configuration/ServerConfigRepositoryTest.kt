@@ -37,8 +37,6 @@ import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.configure
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.every
@@ -175,15 +173,13 @@ class ServerConfigRepositoryTest {
         val SERVER_CONFIG = newServerConfig(1)
 
         @Mock
-        val serverConfigApi = mock(classOf<ServerConfigApi>())
+        val serverConfigApi = mock(ServerConfigApi::class)
 
         @Mock
-        val serverConfigDAO = configure(mock(classOf<ServerConfigurationDAO>())) {
-            stubsUnitByDefault = true
-        }
+        val serverConfigDAO = mock(ServerConfigurationDAO::class)
 
         @Mock
-        val versionApi = mock(classOf<VersionApi>())
+        val versionApi = mock(VersionApi::class)
 
         private var serverConfigRepository: ServerConfigRepository =
             ServerConfigDataSource(serverConfigDAO, versionApi)

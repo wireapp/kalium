@@ -51,7 +51,6 @@ import com.wire.kalium.persistence.dao.UserSearchEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -488,13 +487,13 @@ class SearchUserRepositoryTest {
         SearchDAOArrangement by SearchDAOArrangementImpl() {
 
         @Mock
-        internal val userDetailsApi: UserDetailsApi = mock(classOf<UserDetailsApi>())
+        internal val userDetailsApi: UserDetailsApi = mock(UserDetailsApi::class)
 
         @Mock
-        internal val userSearchApiWrapper: UserSearchApiWrapper = mock(classOf<UserSearchApiWrapper>())
+        internal val userSearchApiWrapper: UserSearchApiWrapper = mock(UserSearchApiWrapper::class)
 
         @Mock
-        internal val userDAO: UserDAO = mock(classOf<UserDAO>())
+        internal val userDAO: UserDAO = mock(UserDAO::class)
 
         private val searchUserRepository: SearchUserRepository by lazy {
             SearchUserRepositoryImpl(

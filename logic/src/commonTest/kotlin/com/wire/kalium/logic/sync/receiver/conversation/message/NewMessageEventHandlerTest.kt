@@ -37,8 +37,6 @@ import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -337,18 +335,16 @@ class NewMessageEventHandlerTest {
     private class Arrangement {
 
         @Mock
-        val proteusMessageUnpacker = mock(classOf<ProteusMessageUnpacker>())
+        val proteusMessageUnpacker = mock(ProteusMessageUnpacker::class)
 
         @Mock
-        val mlsMessageUnpacker = mock(classOf<MLSMessageUnpacker>())
+        val mlsMessageUnpacker = mock(MLSMessageUnpacker::class)
 
         @Mock
-        val applicationMessageHandler = configure(mock(classOf<ApplicationMessageHandler>())) {
-            stubsUnitByDefault = true
-        }
+        val applicationMessageHandler = mock(ApplicationMessageHandler::class)
 
         @Mock
-        val staleEpochVerifier = mock(classOf<StaleEpochVerifier>())
+        val staleEpochVerifier = mock(StaleEpochVerifier::class)
 
         @Mock
         val ephemeralMessageDeletionHandler = mock(EphemeralMessageDeletionHandler::class)

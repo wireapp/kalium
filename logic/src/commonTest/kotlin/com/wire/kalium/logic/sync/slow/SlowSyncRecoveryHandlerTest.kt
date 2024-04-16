@@ -24,9 +24,7 @@ import com.wire.kalium.logic.failure.SelfUserDeleted
 import com.wire.kalium.logic.feature.auth.LogoutUseCase
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coVerify
-import io.mockative.configure
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
@@ -78,10 +76,10 @@ class SlowSyncRecoveryHandlerTest {
     private class Arrangement {
 
         @Mock
-        val onSlowSyncRetryCallback: OnSlowSyncRetryCallback = mock(classOf<OnSlowSyncRetryCallback>())
+        val onSlowSyncRetryCallback: OnSlowSyncRetryCallback = mock(OnSlowSyncRetryCallback::class)
 
         @Mock
-        val logoutUseCase = configure(mock(classOf<LogoutUseCase>())) { }
+        val logoutUseCase = mock(LogoutUseCase::class)
 
         private val slowSyncRecoveryHandler by lazy {
             SlowSyncRecoveryHandlerImpl(logoutUseCase)

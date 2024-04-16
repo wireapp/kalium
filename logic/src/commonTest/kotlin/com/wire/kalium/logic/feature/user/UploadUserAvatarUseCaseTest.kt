@@ -32,7 +32,6 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -102,10 +101,10 @@ class UploadUserAvatarUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val assetRepository = mock(classOf<AssetRepository>())
+        val assetRepository = mock(AssetRepository::class)
 
         @Mock
-        val userRepository = mock(classOf<UserRepository>())
+        val userRepository = mock(UserRepository::class)
 
         private val uploadUserAvatarUseCase: UploadUserAvatarUseCase = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
 

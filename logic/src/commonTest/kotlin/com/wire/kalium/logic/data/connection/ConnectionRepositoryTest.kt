@@ -57,10 +57,8 @@ import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.configure
 import io.mockative.eq
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
@@ -402,25 +400,25 @@ class ConnectionRepositoryTest {
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
         @Mock
-        val conversationDAO = configure(mock(classOf<ConversationDAO>())) { }
+        val conversationDAO = mock(ConversationDAO::class)
 
         @Mock
-        val conversationRepository = configure(mock(classOf<ConversationRepository>())) { }
+        val conversationRepository = mock(ConversationRepository::class)
 
         @Mock
-        val connectionDAO = configure(mock(classOf<ConnectionDAO>())) { }
+        val connectionDAO = mock(ConnectionDAO::class)
 
         @Mock
-        val connectionApi = mock(classOf<ConnectionApi>())
+        val connectionApi = mock(ConnectionApi::class)
 
         @Mock
-        val userDetailsApi = mock(classOf<UserDetailsApi>())
+        val userDetailsApi = mock(UserDetailsApi::class)
 
         @Mock
-        val userDAO = mock(classOf<UserDAO>())
+        val userDAO = mock(UserDAO::class)
 
         @Mock
-        val selfTeamIdProvider = mock(classOf<SelfTeamIdProvider>())
+        val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
         val connectionRepository = ConnectionDataSource(
             conversationDAO = conversationDAO,

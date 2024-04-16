@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallStatus
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -39,10 +38,10 @@ import kotlin.test.assertEquals
 class GetAllCallsWithSortedParticipantsUseCaseTest {
 
     @Mock
-    private val callRepository = mock(classOf<CallRepository>())
+    private val callRepository = mock(CallRepository::class)
 
     @Mock
-    private val callingParticipantsOrder = mock(classOf<CallingParticipantsOrder>())
+    private val callingParticipantsOrder = mock(CallingParticipantsOrder::class)
 
     private lateinit var getAllCallsWithSortedParticipantsUseCase: GetAllCallsWithSortedParticipantsUseCase
 

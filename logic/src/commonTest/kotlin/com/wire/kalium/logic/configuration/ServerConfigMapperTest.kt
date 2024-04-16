@@ -31,7 +31,6 @@ import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.every
 import io.mockative.mock
 import kotlin.test.BeforeTest
@@ -44,7 +43,7 @@ class ServerConfigMapperTest {
     private lateinit var serverConfigMapper: ServerConfigMapper
 
     @Mock
-    private val versionMapper = mock(classOf<ApiVersionMapper>())
+    private val versionMapper = mock(ApiVersionMapper::class)
 
     @BeforeTest
     fun setup() {

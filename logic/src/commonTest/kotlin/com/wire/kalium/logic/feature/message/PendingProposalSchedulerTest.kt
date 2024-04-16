@@ -32,7 +32,6 @@ import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -185,14 +184,13 @@ class PendingProposalSchedulerTest {
 
         val kaliumConfigs = KaliumConfigs()
 
-        @Mock
         val incrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
         @Mock
-        val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
+        val mlsConversationRepository = mock(MLSConversationRepository::class)
 
         @Mock
-        val subconversationRepository = mock(classOf<SubconversationRepository>())
+        val subconversationRepository = mock(SubconversationRepository::class)
 
         val pendingProposalScheduler = PendingProposalSchedulerImpl(
             kaliumConfigs,

@@ -21,7 +21,6 @@ import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.data.call.TestVideoType
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -34,7 +33,7 @@ import kotlin.test.Test
 class SetTestVideoTypeUseCaseTest {
 
     @Mock
-    private val callManager = mock(classOf<CallManager>())
+    private val callManager = mock(CallManager::class)
 
     private lateinit var setTestVideoType: SetTestVideoTypeUseCase
 

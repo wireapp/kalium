@@ -35,7 +35,6 @@ import com.wire.kalium.logic.sync.receiver.conversation.message.hasValidData
 import com.wire.kalium.logic.sync.receiver.conversation.message.hasValidRemoteData
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -245,16 +244,16 @@ class AssetMessageHandlerTest {
     private class Arrangement {
 
         @Mock
-        val messageRepository = mock(classOf<MessageRepository>())
+        val messageRepository = mock(MessageRepository::class)
 
         @Mock
-        val persistMessage = mock(classOf<PersistMessageUseCase>())
+        val persistMessage = mock(PersistMessageUseCase::class)
 
         @Mock
-        val userConfigRepository = mock(classOf<UserConfigRepository>())
+        val userConfigRepository = mock(UserConfigRepository::class)
 
         @Mock
-        val validateAssetMimeType = mock(classOf<ValidateAssetMimeTypeUseCase>())
+        val validateAssetMimeType = mock(ValidateAssetMimeTypeUseCase::class)
 
         private val assetMessageHandlerImpl =
             AssetMessageHandlerImpl(messageRepository, persistMessage, userConfigRepository, validateAssetMimeType)

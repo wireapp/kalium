@@ -30,7 +30,6 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.every
@@ -102,10 +101,10 @@ class ObserveIsAppLockEditableUseCaseTest {
     class Arrangement {
 
         @Mock
-        val userSessionScopeProvider = mock(classOf<UserSessionScopeProvider>())
+        val userSessionScopeProvider = mock(UserSessionScopeProvider::class)
 
         @Mock
-        val sessionRepository = mock(classOf<SessionRepository>())
+        val sessionRepository = mock(SessionRepository::class)
 
         private val useCase by lazy {
             ObserveIsAppLockEditableUseCaseImpl(
@@ -122,7 +121,7 @@ class ObserveIsAppLockEditableUseCaseTest {
         }
 
         fun withObserveAppLockConfig(userId: UserId, result: Flow<Either<StorageFailure, AppLockTeamConfig>>) = apply {
-            val userConfigRepository = mock(classOf<UserConfigRepository>())
+            val userConfigRepository = mock(UserConfigRepository::class)
             every {
                 userSessionScopeProvider.getOrCreate(eq(userId), any<UserSessionScope.() -> UserConfigRepository>())
             }.returns(userConfigRepository)

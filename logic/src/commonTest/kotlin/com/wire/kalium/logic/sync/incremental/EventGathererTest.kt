@@ -36,7 +36,6 @@ import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.configure
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
@@ -415,7 +414,7 @@ class EventGathererTest {
     private class Arrangement {
 
         @Mock
-        val eventRepository = configure(mock(EventRepository::class)) { }
+        val eventRepository = mock(EventRepository::class)
 
         @Mock
         val incrementalSyncRepository = mock(IncrementalSyncRepository::class)

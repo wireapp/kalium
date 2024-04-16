@@ -28,10 +28,8 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.configure
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
@@ -44,13 +42,13 @@ import kotlin.test.assertIs
 
 class SetUserHandleUseCaseTest {
     @Mock
-    private val validateHandleUseCase = mock(classOf<ValidateUserHandleUseCase>())
+    private val validateHandleUseCase = mock(ValidateUserHandleUseCase::class)
 
     @Mock
-    private val accountRepository = configure(mock(classOf<AccountRepository>())) { }
+    private val accountRepository = mock(AccountRepository::class)
 
     @Mock
-    private val syncManager = configure(mock(classOf<SyncManager>())) { }
+    private val syncManager = mock(SyncManager::class)
 
     private lateinit var setUserHandleUseCase: SetUserHandleUseCase
 

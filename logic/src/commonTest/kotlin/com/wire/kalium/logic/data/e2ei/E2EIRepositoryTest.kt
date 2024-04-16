@@ -57,7 +57,6 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -1210,34 +1209,34 @@ class E2EIRepositoryTest {
         }
 
         @Mock
-        val e2eiApi: E2EIApi = mock(classOf<E2EIApi>())
+        val e2eiApi: E2EIApi = mock(E2EIApi::class)
 
         @Mock
-        val acmeApi: ACMEApi = mock(classOf<ACMEApi>())
+        val acmeApi: ACMEApi = mock(ACMEApi::class)
 
         @Mock
-        val e2eiClientProvider: E2EIClientProvider = mock(classOf<E2EIClientProvider>())
+        val e2eiClientProvider: E2EIClientProvider = mock(E2EIClientProvider::class)
 
         @Mock
-        val e2eiClient = mock(classOf<E2EIClient>())
+        val e2eiClient = mock(E2EIClient::class)
 
         @Mock
-        val coreCryptoCentral = mock(classOf<CoreCryptoCentral>())
+        val coreCryptoCentral = mock(CoreCryptoCentral::class)
 
         @Mock
-        val mlsClientProvider: MLSClientProvider = mock(classOf<MLSClientProvider>())
+        val mlsClientProvider: MLSClientProvider = mock(MLSClientProvider::class)
 
         @Mock
-        val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
+        val mlsConversationRepository = mock(MLSConversationRepository::class)
 
         @Mock
-        val mlsClient = mock(classOf<MLSClient>())
+        val mlsClient = mock(MLSClient::class)
 
         @Mock
-        val currentClientIdProvider: CurrentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+        val currentClientIdProvider: CurrentClientIdProvider = mock(CurrentClientIdProvider::class)
 
         @Mock
-        val userConfigRepository = mock(classOf<UserConfigRepository>())
+        val userConfigRepository = mock(UserConfigRepository::class)
 
         fun arrange() =
             this to E2EIRepositoryImpl(

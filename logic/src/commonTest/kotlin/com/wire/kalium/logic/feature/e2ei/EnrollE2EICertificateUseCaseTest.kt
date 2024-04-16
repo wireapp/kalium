@@ -38,7 +38,6 @@ import com.wire.kalium.network.api.base.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -1022,7 +1021,7 @@ class EnrollE2EICertificateUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val e2EIRepository = mock(classOf<E2EIRepository>())
+        val e2EIRepository = mock(E2EIRepository::class)
 
         suspend fun withInitializingE2EIClientSucceed() = apply {
             coEvery {

@@ -34,7 +34,6 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -143,22 +142,22 @@ class RegisterMLSClientUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val mlsClient = mock(classOf<MLSClient>())
+        val mlsClient = mock(MLSClient::class)
 
         @Mock
-        var mlsClientProvider = mock(classOf<MLSClientProvider>())
+        var mlsClientProvider = mock(MLSClientProvider::class)
 
         @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
+        val clientRepository = mock(ClientRepository::class)
 
         @Mock
-        val keyPackageRepository = mock(classOf<KeyPackageRepository>())
+        val keyPackageRepository = mock(KeyPackageRepository::class)
 
         @Mock
-        val keyPackageLimitsProvider = mock(classOf<KeyPackageLimitsProvider>())
+        val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
 
         @Mock
-        val userConfigRepository = mock(classOf<UserConfigRepository>())
+        val userConfigRepository = mock(UserConfigRepository::class)
 
         fun withGettingE2EISettingsReturns(result: Either<StorageFailure, E2EISettings>) = apply {
             every {

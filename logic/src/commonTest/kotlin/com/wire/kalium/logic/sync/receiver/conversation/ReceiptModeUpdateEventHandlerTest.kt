@@ -27,7 +27,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.matches
@@ -109,10 +108,10 @@ class ReceiptModeUpdateEventHandlerTest {
     private class Arrangement {
 
         @Mock
-        val conversationDAO = mock(classOf<ConversationDAO>())
+        val conversationDAO = mock(ConversationDAO::class)
 
         @Mock
-        val persistMessage = mock(classOf<PersistMessageUseCase>())
+        val persistMessage = mock(PersistMessageUseCase::class)
 
         private val receiptModeUpdateEventHandler: ReceiptModeUpdateEventHandler = ReceiptModeUpdateEventHandlerImpl(
             conversationDAO = conversationDAO,

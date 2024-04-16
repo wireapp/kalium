@@ -27,7 +27,6 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -60,7 +59,7 @@ class TeamEventReceiverTest {
     private class Arrangement : UserRepositoryArrangement by UserRepositoryArrangementImpl() {
 
         @Mock
-        val persistMessageUseCase = mock(classOf<PersistMessageUseCase>())
+        val persistMessageUseCase = mock(PersistMessageUseCase::class)
 
         private val teamEventReceiver: TeamEventReceiver = TeamEventReceiverImpl(
             userRepository,

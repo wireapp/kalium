@@ -25,7 +25,6 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -68,7 +67,7 @@ class RemoveMemberFromConversationUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val conversationGroupRepository = mock(classOf<ConversationGroupRepository>())
+        val conversationGroupRepository = mock(ConversationGroupRepository::class)
 
         private val removeMemberUseCase = RemoveMemberFromConversationUseCaseImpl(
             conversationGroupRepository

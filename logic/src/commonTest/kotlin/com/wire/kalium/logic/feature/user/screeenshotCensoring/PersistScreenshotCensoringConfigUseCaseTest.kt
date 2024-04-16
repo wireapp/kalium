@@ -25,7 +25,6 @@ import com.wire.kalium.logic.feature.user.screenshotCensoring.PersistScreenshotC
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -83,7 +82,7 @@ class PersistScreenshotCensoringConfigUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val userConfigRepository = mock(classOf<UserConfigRepository>())
+        val userConfigRepository = mock(UserConfigRepository::class)
 
         val persistScreenshotCensoringConfig = PersistScreenshotCensoringConfigUseCaseImpl(userConfigRepository)
 

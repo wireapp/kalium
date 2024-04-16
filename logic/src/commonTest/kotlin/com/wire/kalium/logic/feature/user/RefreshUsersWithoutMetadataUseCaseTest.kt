@@ -24,7 +24,6 @@ import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCa
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -51,7 +50,7 @@ class RefreshUsersWithoutMetadataUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val userRepository = mock(classOf<UserRepository>())
+        val userRepository = mock(UserRepository::class)
 
         suspend fun withResponse(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
             coEvery {

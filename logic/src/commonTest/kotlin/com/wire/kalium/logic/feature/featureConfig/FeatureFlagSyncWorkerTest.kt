@@ -23,7 +23,6 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangementImpl
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
@@ -130,7 +129,7 @@ class FeatureFlagSyncWorkerTest {
     ) : IncrementalSyncRepositoryArrangement by IncrementalSyncRepositoryArrangementImpl() {
 
         @Mock
-        val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase = mock(classOf<SyncFeatureConfigsUseCase>())
+        val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase = mock(SyncFeatureConfigsUseCase::class)
 
         var minimumIntervalBetweenPulls: Duration = 1.minutes
 

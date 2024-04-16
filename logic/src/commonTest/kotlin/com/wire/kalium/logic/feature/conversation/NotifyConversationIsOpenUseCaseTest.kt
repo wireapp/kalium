@@ -27,7 +27,6 @@ import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryA
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -101,7 +100,7 @@ class NotifyConversationIsOpenUseCaseTest {
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
 
         @Mock
-        private val deleteEphemeralMessageEndDate = mock(classOf<DeleteEphemeralMessagesAfterEndDateUseCase>())
+        private val deleteEphemeralMessageEndDate = mock(DeleteEphemeralMessagesAfterEndDateUseCase::class)
 
         suspend fun withDeleteEphemeralMessageEndDateSuccess() {
             coEvery {

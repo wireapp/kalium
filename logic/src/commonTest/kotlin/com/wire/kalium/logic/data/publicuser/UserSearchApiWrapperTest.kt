@@ -37,7 +37,6 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
@@ -320,7 +319,7 @@ class UserSearchApiWrapperTest {
         lateinit var selfUserId: UserId
 
         @Mock
-        private val userSearchApi: UserSearchApi = mock(classOf<UserSearchApi>())
+        private val userSearchApi: UserSearchApi = mock(UserSearchApi::class)
 
         fun withSelfUserId(selfUserId: UserId) = apply {
             this.selfUserId = selfUserId
