@@ -61,6 +61,7 @@ internal interface LegalHoldHandler {
         handleFailure: suspend () -> Either<CoreFailure, Unit>
     ): Either<CoreFailure, Boolean>
     suspend fun handleConversationMembersChanged(conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend fun handleUserFetch(userId: UserId, userIsUnderLegalHold: Boolean): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList")
@@ -195,6 +196,21 @@ internal class LegalHoldHandlerImpl internal constructor(
         } else {
             fetchUsersClientsFromRemote(listOf(userId))
         }
+    }
+
+    override suspend fun handleUserFetch(userId: UserId, userIsUnderLegalHold: Boolean): Either<CoreFailure, Unit> {
+        val userHasBeenUnderLegalHold = isUserUnderLegalHold(userId)
+        if (userHasBeenUnderLegalHold != userIsUnderLegalHold) {
+            processEvent(selfUserId, userId) // fetch and persist current clients for the given user
+            handleConversationsForUser(userId)
+            if (userIsUnderLegalHold) {
+                legalHoldSystemMessagesHandler.handleEnabledForUser(userId, DateTimeUtil.currentIsoDateTimeString())
+            } else {
+                legalHoldSystemMessagesHandler.handleDisabledForUser(userId, DateTimeUtil.currentIsoDateTimeString())
+            }
+        }
+
+        return Either.Right(Unit)
     }
 
     private suspend fun isUserUnderLegalHold(userId: UserId): Boolean =

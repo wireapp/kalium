@@ -738,6 +738,134 @@ class LegalHoldHandlerTest {
             expectedConversationLegalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
         )
 
+    @Test
+    fun givenUserHasNotBeenButNowIsUnderLegalHold_whenHandlingUserFetch_thenChangeConversationStatusesToEnabled() = runTest {
+        // given
+        val userId = TestUser.OTHER_USER_ID
+        val conversation = conversation(legalHoldStatus = Conversation.LegalHoldStatus.DISABLED)
+        val (arrangement, handler) = Arrangement()
+            .withGetConversationsByUserIdSuccess(listOf(conversation))
+            .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Disabled)  // used before legal hold state change
+            .withMembersHavingLegalHoldClientSuccess(listOf(userId)) // used after legal hold state change
+            .withUpdateLegalHoldStatusSuccess(isChanged = true)
+            .arrange()
+        // when
+        handler.handleUserFetch(userId, true)
+        // then
+        verify(arrangement.fetchUsersClientsFromRemote)
+            .suspendFunction(arrangement.fetchUsersClientsFromRemote::invoke)
+            .with(eq(listOf(userId)))
+            .wasInvoked()
+        verify(arrangement.legalHoldSystemMessagesHandler)
+            .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleEnabledForUser)
+            .with(eq(userId))
+            .wasInvoked()
+        verify(arrangement.legalHoldSystemMessagesHandler)
+            .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleDisabledForUser)
+            .with(eq(userId))
+            .wasNotInvoked()
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateLegalHoldStatus)
+            .with(eq(conversation.id), eq(Conversation.LegalHoldStatus.ENABLED))
+            .wasInvoked()
+    }
+
+    @Test
+    fun givenUserHasBeenButNowIsNotUnderLegalHold_whenHandlingUserFetch_thenChangeConversationStatusesToDisabled() = runTest {
+        // given
+        val userId = TestUser.OTHER_USER_ID
+        val conversation = conversation(legalHoldStatus = Conversation.LegalHoldStatus.ENABLED)
+        val (arrangement, handler) = Arrangement()
+            .withGetConversationsByUserIdSuccess(listOf(conversation))
+            .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Enabled)  // used before legal hold state change
+            .withMembersHavingLegalHoldClientSuccess(listOf()) // used after legal hold state change
+            .withUpdateLegalHoldStatusSuccess(isChanged = true)
+            .arrange()
+        // when
+        handler.handleUserFetch(userId, false)
+        // then
+        verify(arrangement.fetchUsersClientsFromRemote)
+            .suspendFunction(arrangement.fetchUsersClientsFromRemote::invoke)
+            .with(eq(listOf(userId)))
+            .wasInvoked()
+        verify(arrangement.legalHoldSystemMessagesHandler)
+            .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleEnabledForUser)
+            .with(eq(userId))
+            .wasNotInvoked()
+        verify(arrangement.legalHoldSystemMessagesHandler)
+            .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleDisabledForUser)
+            .with(eq(userId))
+            .wasInvoked()
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateLegalHoldStatus)
+            .with(eq(conversation.id), eq(Conversation.LegalHoldStatus.DISABLED))
+            .wasInvoked()
+    }
+
+    @Test
+    fun givenUserIsStillNotUnderLegalHold_whenHandlingUserFetch_thenDoNotChangeStatuses() = runTest {
+        // given
+        val userId = TestUser.OTHER_USER_ID
+        val conversation = conversation(legalHoldStatus = Conversation.LegalHoldStatus.DISABLED)
+        val (arrangement, handler) = Arrangement()
+            .withGetConversationsByUserIdSuccess(listOf(conversation))
+            .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Disabled)  // used before legal hold state change
+            .withMembersHavingLegalHoldClientSuccess(listOf()) // used after legal hold state change
+            .withUpdateLegalHoldStatusSuccess(isChanged = false)
+            .arrange()
+        // when
+        handler.handleUserFetch(userId, false)
+        // then
+        verify(arrangement.fetchUsersClientsFromRemote)
+            .suspendFunction(arrangement.fetchUsersClientsFromRemote::invoke)
+            .with(eq(listOf(userId)))
+            .wasNotInvoked()
+        verify(arrangement.legalHoldSystemMessagesHandler)
+            .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleEnabledForUser)
+            .with(eq(userId))
+            .wasNotInvoked()
+        verify(arrangement.legalHoldSystemMessagesHandler)
+            .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleDisabledForUser)
+            .with(eq(userId))
+            .wasNotInvoked()
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateLegalHoldStatus)
+            .with(eq(conversation.id), any())
+            .wasNotInvoked()
+    }
+
+    @Test
+    fun givenUserIsStillUnderLegalHold_whenHandlingUserFetch_thenDoNotChangeStatuses() = runTest {
+        // given
+        val userId = TestUser.OTHER_USER_ID
+        val conversation = conversation(legalHoldStatus = Conversation.LegalHoldStatus.ENABLED)
+        val (arrangement, handler) = Arrangement()
+            .withGetConversationsByUserIdSuccess(listOf(conversation))
+            .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Enabled)  // used before legal hold state change
+            .withMembersHavingLegalHoldClientSuccess(listOf(userId)) // used after legal hold state change
+            .withUpdateLegalHoldStatusSuccess(isChanged = false)
+            .arrange()
+        // when
+        handler.handleUserFetch(userId, true)
+        // then
+        verify(arrangement.fetchUsersClientsFromRemote)
+            .suspendFunction(arrangement.fetchUsersClientsFromRemote::invoke)
+            .with(eq(listOf(userId)))
+            .wasNotInvoked()
+        verify(arrangement.legalHoldSystemMessagesHandler)
+            .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleEnabledForUser)
+            .with(eq(userId))
+            .wasNotInvoked()
+        verify(arrangement.legalHoldSystemMessagesHandler)
+            .suspendFunction(arrangement.legalHoldSystemMessagesHandler::handleDisabledForUser)
+            .with(eq(userId))
+            .wasNotInvoked()
+        verify(arrangement.conversationRepository)
+            .suspendFunction(arrangement.conversationRepository::updateLegalHoldStatus)
+            .with(eq(conversation.id), any())
+            .wasNotInvoked()
+    }
+
     private class Arrangement {
 
         @Mock

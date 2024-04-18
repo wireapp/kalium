@@ -741,7 +741,7 @@ class UserSessionScope internal constructor(
             messageDraftDAO = userStorage.database.messageDraftDAO,
         )
 
-    private val userRepository: UserRepository = UserDataSource(
+    private val userRepository: UserRepository get() = UserDataSource(
         userStorage.database.userDAO,
         userStorage.database.metadataDAO,
         userStorage.database.clientDAO,
@@ -750,7 +750,8 @@ class UserSessionScope internal constructor(
         authenticatedNetworkContainer.teamsApi,
         globalScope.sessionRepository,
         userId,
-        selfTeamId
+        selfTeamId,
+        legalHoldHandler,
     )
 
     private val accountRepository: AccountRepository
