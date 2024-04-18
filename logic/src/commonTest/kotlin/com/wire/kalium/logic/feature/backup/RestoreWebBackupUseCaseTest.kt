@@ -43,7 +43,6 @@ import kotlin.test.Test
 import kotlin.test.assertTrue
 
 @IgnoreIOS // TODO re-enable when BackupUtils is implemented on Darwin
-@OptIn(ExperimentalCoroutinesApi::class)
 class RestoreWebBackupUseCaseTest {
 
     private val fakeFileSystem = FakeKaliumFileSystem()

@@ -74,8 +74,8 @@ internal class RestoreWebBackupUseCaseImpl(
 
     override suspend operator fun invoke(backupRootPath: Path, metadata: BackupMetadata): RestoreBackupResult =
         withContext(dispatchers.io) {
-            // currently we will support only latest version for testing purposes
-            if (metadata.version == "19") {
+            val version = metadata.version.toIntOrNull()
+            if (version != null && version in OLDEST_SUPPORTED_WEB_VERSION..NEWEST_SUPPORTED_WEB_VERSION) {
                 importWebBackup(backupRootPath, this)
             } else {
                 Either.Left(IncompatibleBackup("invoke: The provided backup format is not supported"))
@@ -155,5 +155,7 @@ internal class RestoreWebBackupUseCaseImpl(
     private companion object {
         const val TAG = "[RestoreWebBackupUseCase]"
         private const val MESSAGES_BATCH_SIZE = 1000
+        private const val OLDEST_SUPPORTED_WEB_VERSION = 19
+        private const val NEWEST_SUPPORTED_WEB_VERSION = 21
     }
 }

@@ -27,4 +27,3 @@ Message.visibility = 'VISIBLE' AND
 Conversation.muted_status != 'ALL_MUTED' AND
 Conversation.archived == 0
 ORDER BY Message.creation_date DESC;
-
