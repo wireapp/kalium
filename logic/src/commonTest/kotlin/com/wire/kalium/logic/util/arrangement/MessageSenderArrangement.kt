@@ -19,28 +19,31 @@ package com.wire.kalium.logic.util.arrangement
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.data.message.MessageTarget
+import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.fake.valueOf
+import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
+import io.mockative.matches
 import io.mockative.mock
 
 internal interface MessageSenderArrangement {
     @Mock
     val messageSender: MessageSender
 
-    fun withSendMessageSucceed(
-        message: Matcher<Message.Sendable> = any(),
-        target: Matcher<MessageTarget> = any()
+    suspend fun withSendMessageSucceed(
+        message: Matcher<Message.Sendable> = AnyMatcher(valueOf()),
+        target: Matcher<MessageTarget> = AnyMatcher(valueOf())
     )
 
-    fun withMessageSenderFailure(
+    suspend fun withMessageSenderFailure(
         result: Either.Left<CoreFailure>,
-        message: Matcher<Message.Sendable> = any(),
-        target: Matcher<MessageTarget> = any()
+        message: Matcher<Message.Sendable> = AnyMatcher(valueOf()),
+        target: Matcher<MessageTarget> = AnyMatcher(valueOf())
     )
 }
 
@@ -48,25 +51,23 @@ internal open class MessageSenderArrangementImpl : MessageSenderArrangement {
     @Mock
     override val messageSender: MessageSender = mock(MessageSender::class)
 
-    override fun withSendMessageSucceed(
+    override suspend fun withSendMessageSucceed(
         message: Matcher<Message.Sendable>,
         target: Matcher<MessageTarget>
     ) {
-        given(messageSender)
-            .suspendFunction(messageSender::sendMessage)
-            .whenInvokedWith(message, target)
-            .thenReturn(Either.Right(Unit))
+        coEvery {
+            messageSender.sendMessage(matches { message.matches(it) }, matches { target.matches(it) })
+        }.returns(Either.Right(Unit))
     }
 
-    override fun withMessageSenderFailure(
+    override suspend fun withMessageSenderFailure(
         result: Either.Left<CoreFailure>,
         message: Matcher<Message.Sendable>,
         target: Matcher<MessageTarget>
     ) {
-        given(messageSender)
-            .suspendFunction(messageSender::sendMessage)
-            .whenInvokedWith(message, target)
-            .thenReturn(result)
+        coEvery {
+            messageSender.sendMessage(matches { message.matches(it) }, matches { target.matches(it) })
+        }.returns(result)
     }
 
 }

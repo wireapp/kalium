@@ -29,13 +29,12 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -54,10 +53,9 @@ class MemberChangeEventHandlerTest {
 
         eventHandler.handle(event)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::fetchConversationIfUnknown)
-            .with(eq(event.conversationId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.fetchConversationIfUnknown(eq(event.conversationId))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -72,10 +70,9 @@ class MemberChangeEventHandlerTest {
 
         eventHandler.handle(event)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateMutedStatusLocally)
-            .with(eq(event.conversationId), any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.updateMutedStatusLocally(eq(event.conversationId), any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -91,10 +88,13 @@ class MemberChangeEventHandlerTest {
 
         eventHandler.handle(event)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateArchivedStatusLocally)
-            .with(eq(event.conversationId), matching { it == isNewEventArchiving }, any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.updateArchivedStatusLocally(
+                eq(event.conversationId),
+                matches { it == isNewEventArchiving },
+                any()
+            )
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -110,10 +110,9 @@ class MemberChangeEventHandlerTest {
 
         eventHandler.handle(event)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateMemberFromEvent)
-            .with(eq(updatedMember), eq(event.conversationId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.updateMemberFromEvent(eq(updatedMember), eq(event.conversationId))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -128,9 +127,11 @@ class MemberChangeEventHandlerTest {
 
         eventHandler.handle(event)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateMemberFromEvent)
-            .with(eq(updatedMember), eq(event.conversationId))
+        coVerify {
+
+            arrangement.conversationRepository.updateMemberFromEvent(eq(updatedMember), eq(event.conversationId))
+
+        }
     }
 
     @Test
@@ -145,67 +146,59 @@ class MemberChangeEventHandlerTest {
 
         eventHandler.handle(event)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateMemberFromEvent)
-            .with(eq(updatedMember), eq(event.conversationId))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.conversationRepository.updateMemberFromEvent(eq(updatedMember), eq(event.conversationId))
+        }.wasNotInvoked()
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::fetchConversationIfUnknown)
-            .with(eq(event.conversationId))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.conversationRepository.fetchConversationIfUnknown(eq(event.conversationId))
+        }.wasNotInvoked()
     }
 
     private class Arrangement {
 
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
+        val conversationRepository = mock(ConversationRepository::class)
 
         @Mock
-        private val userRepository = mock(classOf<UserRepository>())
+        private val userRepository = mock(UserRepository::class)
 
         private val memberChangeEventHandler: MemberChangeEventHandler = MemberChangeEventHandlerImpl(conversationRepository)
 
-        fun withFetchConversationIfUnknownSucceeding() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::fetchConversationIfUnknown)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withFetchConversationIfUnknownSucceeding() = apply {
+            coEvery {
+                conversationRepository.fetchConversationIfUnknown(any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withFetchConversationIfUnknownFailing(coreFailure: CoreFailure) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::fetchConversationIfUnknown)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Left(coreFailure))
+        suspend fun withFetchConversationIfUnknownFailing(coreFailure: CoreFailure) = apply {
+            coEvery {
+                conversationRepository.fetchConversationIfUnknown(any())
+            }.returns(Either.Left(coreFailure))
         }
 
-        fun withUpdateMemberSucceeding() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateMemberFromEvent)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withUpdateMemberSucceeding() = apply {
+            coEvery {
+                conversationRepository.updateMemberFromEvent(any(), any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withUpdateMutedStatusLocally(result: Either<StorageFailure, Unit>) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateMutedStatusLocally)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(result)
+        suspend fun withUpdateMutedStatusLocally(result: Either<StorageFailure, Unit>) = apply {
+            coEvery {
+                conversationRepository.updateMutedStatusLocally(any(), any(), any())
+            }.returns(result)
         }
 
-        fun withUpdateArchivedStatusLocally(result: Either<StorageFailure, Unit>) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateArchivedStatusLocally)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(result)
+        suspend fun withUpdateArchivedStatusLocally(result: Either<StorageFailure, Unit>) = apply {
+            coEvery {
+                conversationRepository.updateArchivedStatusLocally(any(), any(), any())
+            }.returns(result)
         }
 
-        fun withFetchUsersIfUnknownByIdsReturning(result: Either<StorageFailure, Unit>) = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::fetchUsersIfUnknownByIds)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withFetchUsersIfUnknownByIdsReturning(result: Either<StorageFailure, Unit>) = apply {
+            coEvery {
+                userRepository.fetchUsersIfUnknownByIds(any())
+            }.returns(result)
         }
 
         fun arrange() = this to memberChangeEventHandler

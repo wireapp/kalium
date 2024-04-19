@@ -26,11 +26,11 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -52,10 +52,9 @@ class ObserveIsSelfUserMemberUseCaseTest {
             val isMemberResult = awaitItem()
             assertEquals(IsSelfUserMemberResult.Success(true), isMemberResult)
 
-            verify(arrangement.conversationRepository)
-                .suspendFunction(arrangement.conversationRepository::observeIsUserMember)
-                .with(eq(conversationId), eq(selfUser.id))
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.conversationRepository.observeIsUserMember(eq(conversationId), eq(selfUser.id))
+            }.wasInvoked(exactly = once)
 
             awaitComplete()
         }
@@ -75,10 +74,9 @@ class ObserveIsSelfUserMemberUseCaseTest {
             val isMemberResult = awaitItem()
             assertEquals(IsSelfUserMemberResult.Success(false), isMemberResult)
 
-            verify(arrangement.conversationRepository)
-                .suspendFunction(arrangement.conversationRepository::observeIsUserMember)
-                .with(eq(conversationId), eq(selfUser.id))
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.conversationRepository.observeIsUserMember(eq(conversationId), eq(selfUser.id))
+            }.wasInvoked(exactly = once)
 
             awaitComplete()
         }
@@ -98,10 +96,9 @@ class ObserveIsSelfUserMemberUseCaseTest {
             val isMemberResult = awaitItem()
             assertIs<IsSelfUserMemberResult.Failure>(isMemberResult)
 
-            verify(arrangement.conversationRepository)
-                .suspendFunction(arrangement.conversationRepository::observeIsUserMember)
-                .with(eq(conversationId), eq(selfUser.id))
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.conversationRepository.observeIsUserMember(eq(conversationId), eq(selfUser.id))
+            }.wasInvoked(exactly = once)
 
             awaitComplete()
         }
@@ -115,25 +112,22 @@ class ObserveIsSelfUserMemberUseCaseTest {
         val observeIsSelfUserMember: ObserveIsSelfUserMemberUseCase =
             ObserveIsSelfUserMemberUseCaseImpl(conversationRepository, TestUser.SELF.id)
 
-        fun withExistingMembership() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::observeIsUserMember)
-                .whenInvokedWith(any(), any())
-                .thenReturn(flowOf(Either.Right(true)))
+        suspend fun withExistingMembership() = apply {
+            coEvery {
+                conversationRepository.observeIsUserMember(any(), any())
+            }.returns(flowOf(Either.Right(true)))
         }
 
-        fun withNonExistingMembership() = apply {
-            given(conversationRepository).suspendFunction(conversationRepository::observeIsUserMember).whenInvokedWith(any(), any())
-                .thenReturn(
-                    flowOf(Either.Right(false))
-                )
+        suspend fun withNonExistingMembership() = apply {
+            coEvery {
+                conversationRepository.observeIsUserMember(any(), any())
+            }.returns(flowOf(Either.Right(false)))
         }
 
-        fun withExistingMembershipError() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::observeIsUserMember)
-                .whenInvokedWith(any(), any())
-                .thenReturn(flowOf(Either.Left(CoreFailure.Unknown(null))))
+        suspend fun withExistingMembershipError() = apply {
+            coEvery {
+                conversationRepository.observeIsUserMember(any(), any())
+            }.returns(flowOf(Either.Left(CoreFailure.Unknown(null))))
         }
 
         fun arrange() = this to observeIsSelfUserMember

@@ -24,10 +24,10 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -43,9 +43,9 @@ class RemoveMessageDraftUseCaseTest {
 
         removeMessageDraft(CONVERSATION_ID)
 
-        verify(arrangement.messageDraftRepository)
-            .coroutine { arrangement.messageDraftRepository.removeMessageDraft(CONVERSATION_ID) }
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageDraftRepository.removeMessageDraft(CONVERSATION_ID)
+        }.wasInvoked(exactly = once)
     }
 
     private inner class Arrangement {
@@ -58,9 +58,9 @@ class RemoveMessageDraftUseCaseTest {
         }
 
         suspend fun withRemoveMessageDraft(conversationId: ConversationId) = apply {
-            given(messageDraftRepository)
-                .coroutine { messageDraftRepository.removeMessageDraft(conversationId) }
-                .thenReturn(Unit)
+            coEvery {
+                messageDraftRepository.removeMessageDraft(conversationId)
+            }.returns(Unit)
         }
 
         fun arrange() = this to removeMessageDraft

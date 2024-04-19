@@ -27,18 +27,15 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import okio.IOException
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class ConversationMessageTimerEventHandlerTest {
 
     @Test
@@ -52,9 +49,8 @@ class ConversationMessageTimerEventHandlerTest {
         eventHandler.handle(event)
 
         with(arrangement) {
-            verify(persistMessageUseCase)
-                .suspendFunction(persistMessageUseCase::invoke)
-                .with(
+            coVerify {
+                persistMessageUseCase.invoke(
                     eq(Message.System(
                     event.id,
                     MessageContent.ConversationMessageTimerChanged(
@@ -67,7 +63,7 @@ class ConversationMessageTimerEventHandlerTest {
                     Message.Visibility.VISIBLE,
                     expirationData = null
                 )))
-                .wasInvoked(once)
+            }.wasInvoked(once)
         }
     }
 
@@ -82,45 +78,41 @@ class ConversationMessageTimerEventHandlerTest {
         eventHandler.handle(event)
 
         with(arrangement) {
-            verify(persistMessageUseCase)
-                .suspendFunction(persistMessageUseCase::invoke)
-                .with(any())
-                .wasNotInvoked()
+            coVerify {
+                persistMessageUseCase.invoke(any())
+            }.wasNotInvoked()
         }
     }
 
     private class Arrangement {
 
         @Mock
-        val conversationDAO = mock(classOf<ConversationDAO>())
+        val conversationDAO = mock(ConversationDAO::class)
 
         @Mock
-        val persistMessageUseCase = mock(classOf<PersistMessageUseCase>())
+        val persistMessageUseCase = mock(PersistMessageUseCase::class)
 
         private val conversationMessageTimerEventHandler: ConversationMessageTimerEventHandler = ConversationMessageTimerEventHandlerImpl(
             conversationDAO,
             persistMessageUseCase
         )
 
-        fun withConversationUpdateMessageTimer() = apply {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::updateMessageTimer)
-                .whenInvokedWith(any())
-                .thenReturn(Unit)
+        suspend fun withConversationUpdateMessageTimer() = apply {
+            coEvery {
+                conversationDAO.updateMessageTimer(any(), any())
+            }.returns(Unit)
         }
 
-        fun withConversationUpdateMessageTimerError() = apply {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::updateMessageTimer)
-                .whenInvokedWith(any())
-                .thenThrow(IOException("Some error"))
+        suspend fun withConversationUpdateMessageTimerError() = apply {
+            coEvery {
+                conversationDAO.updateMessageTimer(any(), any())
+            }.throws(IOException("Some error"))
         }
 
-        fun withPersistMessage(result: Either<CoreFailure, Unit>) = apply {
-            given(persistMessageUseCase)
-                .suspendFunction(persistMessageUseCase::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withPersistMessage(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                persistMessageUseCase.invoke(any())
+            }.returns(result)
         }
 
         fun arrange() = this to conversationMessageTimerEventHandler

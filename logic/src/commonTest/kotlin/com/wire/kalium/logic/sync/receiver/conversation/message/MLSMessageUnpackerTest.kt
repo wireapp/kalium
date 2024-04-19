@@ -38,14 +38,12 @@ import com.wire.kalium.util.DateTimeUtil
 import io.ktor.util.decodeBase64Bytes
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
-import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -120,10 +118,9 @@ class MLSMessageUnpackerTest {
         val messageEvent = TestEvent.newMLSMessageEvent(eventTimestamp)
         mlsUnpacker.unpackMlsMessage(messageEvent)
 
-        verify(arrangement.pendingProposalScheduler)
-            .suspendFunction(arrangement.pendingProposalScheduler::scheduleCommit)
-            .with(eq(TestConversation.GROUP_ID), eq(eventTimestamp.plus(commitDelay.seconds)))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.pendingProposalScheduler.scheduleCommit(eq(TestConversation.GROUP_ID), eq(eventTimestamp.plus(commitDelay.seconds)))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -138,31 +135,30 @@ class MLSMessageUnpackerTest {
         val messageEvent = TestEvent.newMLSMessageEvent(eventTimestamp)
         mlsUnpacker.unpackMlsMessage(messageEvent)
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::decryptMessage)
-            .with(matching { it.contentEquals(messageEvent.content.decodeBase64Bytes()) }, eq(TestConversation.GROUP_ID))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.mlsConversationRepository.decryptMessage(matches { it.contentEquals(messageEvent.content.decodeBase64Bytes()) }, eq(TestConversation.GROUP_ID))
+        }.wasInvoked(once)
     }
 
     private class Arrangement {
 
         @Mock
-        val mlsClient = mock(classOf<MLSClient>())
+        val mlsClient = mock(MLSClient::class)
 
         @Mock
-        val mlsClientProvider = mock(classOf<MLSClientProvider>())
+        val mlsClientProvider = mock(MLSClientProvider::class)
 
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
+        val conversationRepository = mock(ConversationRepository::class)
 
         @Mock
-        val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
+        val mlsConversationRepository = mock(MLSConversationRepository::class)
 
         @Mock
-        val pendingProposalScheduler = mock(classOf<PendingProposalScheduler>())
+        val pendingProposalScheduler = mock(PendingProposalScheduler::class)
 
         @Mock
-        val subconversationRepository = mock(classOf<SubconversationRepository>())
+        val subconversationRepository = mock(SubconversationRepository::class)
 
         private val mlsMessageUnpacker = MLSMessageUnpackerImpl(
             conversationRepository,
@@ -172,32 +168,28 @@ class MLSMessageUnpackerTest {
             SELF_USER_ID
         )
 
-        fun withMLSClientProviderReturningClient() = apply {
-            given(mlsClientProvider)
-                .suspendFunction(mlsClientProvider::getMLSClient)
-                .whenInvokedWith(anything())
-                .then { Either.Right(mlsClient) }
+        suspend fun withMLSClientProviderReturningClient() = apply {
+            coEvery {
+                mlsClientProvider.getMLSClient(any())
+            }.returns(Either.Right(mlsClient))
         }
 
-        fun withDecryptMessageReturning(result: Either<CoreFailure, List<DecryptedMessageBundle>>) = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::decryptMessage)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(result)
+        suspend fun withDecryptMessageReturning(result: Either<CoreFailure, List<DecryptedMessageBundle>>) = apply {
+            coEvery {
+                mlsConversationRepository.decryptMessage(any(), any())
+            }.returns(result)
         }
 
-        fun withScheduleCommitSucceeding() = apply {
-            given(pendingProposalScheduler)
-                .suspendFunction(pendingProposalScheduler::scheduleCommit)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Unit)
+        suspend fun withScheduleCommitSucceeding() = apply {
+            coEvery {
+                pendingProposalScheduler.scheduleCommit(any(), any())
+            }.returns(Unit)
         }
 
-        fun withGetConversationProtocolInfoSuccessful(protocolInfo: Conversation.ProtocolInfo) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationProtocolInfo)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(protocolInfo))
+        suspend fun withGetConversationProtocolInfoSuccessful(protocolInfo: Conversation.ProtocolInfo) = apply {
+            coEvery {
+                conversationRepository.getConversationProtocolInfo(any())
+            }.returns(Either.Right(protocolInfo))
         }
 
         fun arrange() = this to mlsMessageUnpacker

@@ -33,13 +33,14 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.matchers.OneOfMatcher
+import io.mockative.`in`
 import io.mockative.once
 import io.mockative.twice
-import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -59,10 +60,9 @@ class OneOnOneResolverTest {
         resolver.resolveAllOneOnOneConversations().shouldSucceed()
 
         // then
-        verify(arrangement.oneOnOneProtocolSelector)
-            .suspendFunction(arrangement.oneOnOneProtocolSelector::getProtocolForUser)
-            .with(OneOfMatcher(oneOnOneUsers.map { it.id }))
-            .wasInvoked(exactly = twice)
+        coVerify {
+            arrangement.oneOnOneProtocolSelector.getProtocolForUser(`in`(oneOnOneUsers.map { it.id }))
+        }.wasInvoked(exactly = twice)
     }
 
     @Test
@@ -83,19 +83,17 @@ class OneOnOneResolverTest {
         resolver.resolveAllOneOnOneConversations(true).shouldSucceed()
 
         // then
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::fetchAllOtherUsers)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userRepository.fetchAllOtherUsers()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::fetchUserInfo)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.userRepository.fetchUserInfo(any())
+        }.wasNotInvoked()
 
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::fetchUsersByIds)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.userRepository.fetchUsersByIds(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -112,19 +110,17 @@ class OneOnOneResolverTest {
         resolver.resolveOneOnOneConversationWithUser(oneOnOneUser, true).shouldSucceed()
 
         // then
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::fetchAllOtherUsers)
-            .wasNotInvoked()
+        coVerify {
+            arrangement.userRepository.fetchAllOtherUsers()
+        }.wasNotInvoked()
 
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::fetchUserInfo)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.userRepository.fetchUserInfo(any())
+        }.wasNotInvoked()
 
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::fetchUsersByIds)
-            .with(eq(setOf(oneOnOneUser.id)))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userRepository.fetchUsersByIds(eq(setOf(oneOnOneUser.id)))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -139,13 +135,12 @@ class OneOnOneResolverTest {
 
         // when
         resolver.resolveOneOnOneConversationWithUser(oneOnOneUser, true)
-        // then
+            // then
             .shouldSucceed()
 
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::fetchUsersByIds)
-            .with(eq(setOf(oneOnOneUser.id)))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userRepository.fetchUsersByIds(eq(setOf(oneOnOneUser.id)))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -163,19 +158,17 @@ class OneOnOneResolverTest {
         resolver.resolveOneOnOneConversationWithUserId(oneOnOneUser.id, true).shouldSucceed()
 
         // then
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::fetchAllOtherUsers)
-            .wasNotInvoked()
+        coVerify {
+            arrangement.userRepository.fetchAllOtherUsers()
+        }.wasNotInvoked()
 
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::fetchUserInfo)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.userRepository.fetchUserInfo(any())
+        }.wasNotInvoked()
 
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::fetchUsersByIds)
-            .with(eq(setOf(oneOnOneUser.id)))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userRepository.fetchUsersByIds(eq(setOf(oneOnOneUser.id)))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -191,13 +184,12 @@ class OneOnOneResolverTest {
 
         // when
         resolver.resolveOneOnOneConversationWithUserId(oneOnOneUser.id, true)
-        // then
+            // then
             .shouldSucceed()
 
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::fetchUsersByIds)
-            .with(eq(setOf(oneOnOneUser.id)))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userRepository.fetchUsersByIds(eq(setOf(oneOnOneUser.id)))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -210,10 +202,9 @@ class OneOnOneResolverTest {
             withMigrateToMLSReturns(Either.Right(TestConversation.ID))
         }
 
-        given(arrangement.oneOnOneMigrator)
-            .suspendFunction(arrangement.oneOnOneMigrator::migrateToMLS)
-            .whenInvokedWith(eq(oneOnOneUsers.last()))
-            .thenReturn(Either.Left(CoreFailure.Unknown(null)))
+        coEvery {
+            arrangement.oneOnOneMigrator.migrateToMLS(eq(oneOnOneUsers.last()))
+        }.returns(Either.Left(CoreFailure.Unknown(null)))
 
         // when then
         resolver.resolveAllOneOnOneConversations().shouldFail()
@@ -231,10 +222,9 @@ class OneOnOneResolverTest {
         resolver.resolveOneOnOneConversationWithUser(OTHER_USER, false).shouldSucceed()
 
         // then
-        verify(arrangement.oneOnOneMigrator)
-            .suspendFunction(arrangement.oneOnOneMigrator::migrateToMLS)
-            .with(eq(OTHER_USER))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.oneOnOneMigrator.migrateToMLS(eq(OTHER_USER))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -249,19 +239,18 @@ class OneOnOneResolverTest {
         resolver.resolveOneOnOneConversationWithUser(OTHER_USER, false).shouldSucceed()
 
         // then
-        verify(arrangement.oneOnOneMigrator)
-            .suspendFunction(arrangement.oneOnOneMigrator::migrateToProteus)
-            .with(eq(OTHER_USER))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.oneOnOneMigrator.migrateToProteus(eq(OTHER_USER))
+        }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement(private val block: Arrangement.() -> Unit) :
+    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         OneOnOneProtocolSelectorArrangement by OneOnOneProtocolSelectorArrangementImpl(),
         OneOnOneMigratorArrangement by OneOnOneMigratorArrangementImpl(),
         IncrementalSyncRepositoryArrangement by IncrementalSyncRepositoryArrangementImpl() {
         fun arrange() = run {
-            block()
+            runBlocking { block() }
             this@Arrangement to OneOnOneResolverImpl(
                 userRepository = userRepository,
                 oneOnOneProtocolSelector = oneOnOneProtocolSelector,
@@ -272,7 +261,7 @@ class OneOnOneResolverTest {
     }
 
     private companion object {
-        fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+        fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
         val OTHER_USER = TestUser.OTHER
     }

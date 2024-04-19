@@ -23,21 +23,23 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.fake.valueOf
+import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
+import io.mockative.matches
 import io.mockative.mock
 
 internal interface CodeDeletedHandlerArrangement {
     val codeDeletedHandler: CodeDeletedHandler
 
-    fun withHandleCodeDeleteEvent(
+    suspend fun withHandleCodeDeleteEvent(
         result: Either<StorageFailure, Unit>,
-        event: Matcher<Event.Conversation.CodeDeleted> = any()
+        event: Matcher<Event.Conversation.CodeDeleted> = AnyMatcher(valueOf())
     ) {
-        given(codeDeletedHandler)
-            .suspendFunction(codeDeletedHandler::handle)
-            .whenInvokedWith(event)
-            .thenReturn(result)
+        coEvery {
+            codeDeletedHandler.handle(matches { event.matches(it) })
+        }.returns(result)
     }
 }
 
