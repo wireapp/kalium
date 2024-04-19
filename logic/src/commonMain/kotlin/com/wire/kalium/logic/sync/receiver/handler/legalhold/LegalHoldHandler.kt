@@ -217,6 +217,7 @@ internal class LegalHoldHandlerImpl internal constructor(
     private suspend fun isUserUnderLegalHold(userId: UserId): Boolean =
         observeLegalHoldStateForUser(userId).firstOrNull() == LegalHoldState.Enabled
 
+    @Suppress("NestedBlockDepth")
     private suspend fun handleForConversation(
         conversationId: ConversationId,
         newStatus: Conversation.LegalHoldStatus,
