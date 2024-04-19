@@ -30,10 +30,13 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -57,7 +60,7 @@ class SendKnockUserCaseTest {
     fun givenAValidSendKnockRequest_whenSendingKnock_thenShouldReturnASuccessResult() = runTest {
         // Given
         val conversationId = ConversationId("some-convo-id", "some-domain-id")
-        val (arrangement, sendKnockUseCase) = Arrangement()
+        val (arrangement, sendKnockUseCase) = Arrangement(testKaliumDispatcher)
             .withCurrentClientProviderSuccess()
             .withPersistMessageSuccess()
             .withSlowSyncStatusComplete()
@@ -83,7 +86,7 @@ class SendKnockUserCaseTest {
     fun givenNoNetwork_whenSendingKnock_thenShouldReturnAFailure() = runTest {
         // Given
         val conversationId = ConversationId("some-convo-id", "some-domain-id")
-        val (arrangement, sendKnockUseCase) = Arrangement()
+        val (arrangement, sendKnockUseCase) = Arrangement(testKaliumDispatcher)
             .withCurrentClientProviderSuccess()
             .withPersistMessageSuccess()
             .withSlowSyncStatusComplete()
@@ -110,7 +113,7 @@ class SendKnockUserCaseTest {
         // Given
         val expectedDuration = Duration.parse("PT1H")
         val conversationId = ConversationId("some-convo-id", "some-domain-id")
-        val (arrangement, sendKnockUseCase) = Arrangement()
+        val (arrangement, sendKnockUseCase) = Arrangement(testKaliumDispatcher)
             .withCurrentClientProviderSuccess()
             .withPersistMessageSuccess()
             .withSlowSyncStatusComplete()
@@ -138,7 +141,7 @@ class SendKnockUserCaseTest {
         }.wasNotInvoked()
     }
 
-    private class Arrangement :
+    private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) :
         ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement by ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangementImpl() {
 
         @Mock
@@ -196,7 +199,8 @@ class SendKnockUserCaseTest {
                 slowSyncRepository,
                 messageSender,
                 messageSendFailureHandler,
-                observeSelfDeletionTimerSettingsForConversation
+                observeSelfDeletionTimerSettingsForConversation,
+                dispatcher
             )
         }
     }

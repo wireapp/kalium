@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -53,7 +54,7 @@ class MembersToMentionUseCaseTest {
 
     @BeforeTest
     fun setup() = runBlocking {
-        membersToMention = MembersToMentionUseCase(observeConversationMembers, userRepository)
+        membersToMention = MembersToMentionUseCase(observeConversationMembers, userRepository, TestKaliumDispatcher)
         coEvery {
             userRepository.getSelfUser()
         }.returns(SELF_USER)
@@ -63,46 +64,50 @@ class MembersToMentionUseCaseTest {
     }
 
     @Test
-    fun givenAListOfMembers_whenRequestingMembersToMentionWithAnEmptySearchQuery_thenReturnAllConversationMembers() = runTest {
-        val searchQuery = ""
+    fun givenAListOfMembers_whenRequestingMembersToMentionWithAnEmptySearchQuery_thenReturnAllConversationMembers() =
+        runTest(TestKaliumDispatcher.main) {
+            val searchQuery = ""
 
-        val result = membersToMention(CONVERSATION_ID, searchQuery)
+            val result = membersToMention(CONVERSATION_ID, searchQuery)
 
-        assertEquals(members, result)
-    }
-
-    @Test
-    fun givenAListOfMembers_whenRequestingMembersToMentionWithWhiteSpaceSearchQuery_thenReturnAnEmptyList() = runTest {
-        val searchQuery = " "
-
-        val result = membersToMention(CONVERSATION_ID, searchQuery)
-
-        assertEquals(true, result.isEmpty())
-    }
+            assertEquals(members, result)
+        }
 
     @Test
-    fun givenAListOfMembers_whenRequestingMembersToMentionWithSearchQueryThatDoesNotExistInTheList_thenReturnAnEmptyList() = runTest {
-        val searchQuery = "randomName9-0("
+    fun givenAListOfMembers_whenRequestingMembersToMentionWithWhiteSpaceSearchQuery_thenReturnAnEmptyList() =
+        runTest(TestKaliumDispatcher.main) {
+            val searchQuery = " "
 
-        val result = membersToMention(CONVERSATION_ID, searchQuery)
+            val result = membersToMention(CONVERSATION_ID, searchQuery)
 
-        assertEquals(true, result.isEmpty())
-    }
+            assertEquals(true, result.isEmpty())
+        }
 
     @Test
-    fun givenAListOfMembers_whenRequestingMembersToMentionWithValidSearchQuery_thenReturnSortedMembersToMention() = runTest {
-        val searchQuery = "KillUa"
+    fun givenAListOfMembers_whenRequestingMembersToMentionWithSearchQueryThatDoesNotExistInTheList_thenReturnAnEmptyList() =
+        runTest(TestKaliumDispatcher.main) {
+            val searchQuery = "randomName9-0("
 
-        val result = membersToMention(CONVERSATION_ID, searchQuery)
+            val result = membersToMention(CONVERSATION_ID, searchQuery)
 
-        assertEquals(5, result.size)
-        assertEquals(members[3], result.first())
-        assertEquals(members.last(), result[1])
-        assertEquals(members[4], result[2])
-        assertEquals(members[1], result[3])
-        assertEquals(members.first(), result[4])
+            assertEquals(true, result.isEmpty())
+        }
 
-    }
+    @Test
+    fun givenAListOfMembers_whenRequestingMembersToMentionWithValidSearchQuery_thenReturnSortedMembersToMention() =
+        runTest(TestKaliumDispatcher.main) {
+            val searchQuery = "KillUa"
+
+            val result = membersToMention(CONVERSATION_ID, searchQuery)
+
+            assertEquals(5, result.size)
+            assertEquals(members[3], result.first())
+            assertEquals(members.last(), result[1])
+            assertEquals(members[4], result[2])
+            assertEquals(members[1], result[3])
+            assertEquals(members.first(), result[4])
+
+        }
 
     companion object {
         private const val DOMAIN = "some_domain"

@@ -21,6 +21,8 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -35,7 +37,7 @@ class UpdateDisplayNameUseCaseTest {
 
     @Test
     fun givenValidParams_whenUpdatingDisplayName_thenShouldReturnASuccessResult() = runTest {
-        val (arrangement, updateDisplayName) = Arrangement()
+        val (arrangement, updateDisplayName) = Arrangement(testKaliumDispatcher)
             .withSuccessfulUploadResponse()
             .arrange()
 
@@ -49,7 +51,7 @@ class UpdateDisplayNameUseCaseTest {
 
     @Test
     fun givenAnError_whenUpdatingDisplayName_thenShouldReturnAMappedCoreFailure() = runTest {
-        val (arrangement, updateDisplayName) = Arrangement()
+        val (arrangement, updateDisplayName) = Arrangement(testKaliumDispatcher)
             .withErrorResponse()
             .arrange()
 
@@ -61,7 +63,7 @@ class UpdateDisplayNameUseCaseTest {
         }.wasInvoked(once)
     }
 
-    private class Arrangement {
+    private class Arrangement(private var dispatcher: KaliumDispatcher) {
 
         @Mock
         val accountRepository = mock(AccountRepository::class)
@@ -78,7 +80,7 @@ class UpdateDisplayNameUseCaseTest {
             }.returns(Either.Left(CoreFailure.Unknown(Throwable("an error"))))
         }
 
-        fun arrange() = this to UpdateDisplayNameUseCaseImpl(accountRepository)
+        fun arrange() = this to UpdateDisplayNameUseCaseImpl(accountRepository, dispatcher)
     }
 
     companion object {

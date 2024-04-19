@@ -18,6 +18,9 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepository
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.coVerify
 import io.mockative.mock
@@ -29,7 +32,7 @@ class ClearUsersTypingEventsUseCaseTest {
 
     @Test
     fun givenClearingTypingIndicatorSucceeds_whenInvoking_thenShouldDelegateToRepositoryCall() = runTest {
-        val (arrangement, useCase) = Arrangement().arrange()
+        val (arrangement, useCase) = Arrangement(testKaliumDispatcher).arrange()
 
         useCase()
 
@@ -38,13 +41,14 @@ class ClearUsersTypingEventsUseCaseTest {
         }.wasInvoked(once)
     }
 
-    private class Arrangement {
+    private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
 
         @Mock
         val typingIndicatorIncomingRepository: TypingIndicatorIncomingRepository = mock(TypingIndicatorIncomingRepository::class)
 
         fun arrange() = this to ClearUsersTypingEventsUseCaseImpl(
-            typingIndicatorIncomingRepository = typingIndicatorIncomingRepository
+            typingIndicatorIncomingRepository = typingIndicatorIncomingRepository,
+            dispatcher = dispatcher
         )
     }
 }

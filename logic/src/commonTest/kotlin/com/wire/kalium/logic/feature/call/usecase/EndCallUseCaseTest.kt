@@ -18,18 +18,19 @@
 
 package com.wire.kalium.logic.feature.call.usecase
 
+import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.feature.call.CallManager
-import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.doesNothing
+import io.mockative.eq
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
@@ -52,7 +53,7 @@ class EndCallUseCaseTest {
 
     @BeforeTest
     fun setup() = runBlocking {
-        endCall = EndCallUseCaseImpl(lazy { callManager }, callRepository)
+        endCall = EndCallUseCaseImpl(lazy { callManager }, callRepository, TestKaliumDispatcher)
 
         coEvery {
             callManager.endCall(eq(conversationId))
@@ -63,8 +64,7 @@ class EndCallUseCaseTest {
     }
 
     @Test
-    fun givenAnEstablishedCall_whenEndCallIsInvoked_thenUpdateStatusAndInvokeEndCallOnce() = runTest {
-
+    fun givenAnEstablishedCall_whenEndCallIsInvoked_thenUpdateStatusAndInvokeEndCallOnce() = runTest(TestKaliumDispatcher.main) {
         coEvery {
             callRepository.callsFlow()
         }.returns(flowOf(listOf(call)))
@@ -85,7 +85,7 @@ class EndCallUseCaseTest {
     }
 
     @Test
-    fun givenStillOngoingCall_whenEndCallIsInvoked_thenUpdateStatusAndInvokeEndCallOnce() = runTest {
+    fun givenStillOngoingCall_whenEndCallIsInvoked_thenUpdateStatusAndInvokeEndCallOnce() = runTest(TestKaliumDispatcher.main) {
         val stillOngoingCall = call.copy(
             status = CallStatus.STILL_ONGOING,
             conversationType = Conversation.Type.GROUP
@@ -112,7 +112,7 @@ class EndCallUseCaseTest {
     }
 
     @Test
-    fun givenNoValidCalls_whenEndCallIsInvoked_thenDoNotUpdateStatus() = runTest {
+    fun givenNoValidCalls_whenEndCallIsInvoked_thenDoNotUpdateStatus() = runTest(TestKaliumDispatcher.main) {
         val closedCall = call.copy(
             status = CallStatus.CLOSED
         )

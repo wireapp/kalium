@@ -31,6 +31,7 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.any
@@ -51,7 +52,7 @@ class SendButtonMessageCaseTest {
     @Test
     fun givenATextMessageContainsButtons_whenSendingIt_thenShouldBeCompositeAndReturnASuccessResult() = runTest {
         // Given
-        val (arrangement, sendTextMessage) = SendButtonMessageCaseTest.Arrangement(this)
+        val (arrangement, sendTextMessage) = Arrangement(this)
             .withToggleReadReceiptsStatus()
             .withCurrentClientProviderSuccess()
             .withPersistMessageSuccess()
@@ -148,7 +149,8 @@ class SendButtonMessageCaseTest {
             messageSender,
             messageSendFailureHandler,
             userPropertyRepository,
-            scope = coroutineScope
+            scope = coroutineScope,
+            dispatchers = coroutineScope.testKaliumDispatcher
         )
     }
 }

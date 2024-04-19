@@ -23,6 +23,9 @@ import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -42,7 +45,9 @@ class UpdateAssetMessageTransferStatusUseCaseTest {
         val newDownloadStatus = AssetTransferStatus.DOWNLOAD_IN_PROGRESS
         val dummyConvId = ConversationId("dummy-value", "dummy.domain")
         val dummyMessageId = "dummy-message-id"
-        val (arrangement, useCase) = Arrangement().withSuccessfulResponse().arrange()
+        val (arrangement, useCase) = Arrangement(testKaliumDispatcher)
+            .withSuccessfulResponse()
+            .arrange()
 
         // When
         val result = useCase.invoke(newDownloadStatus, dummyConvId, dummyMessageId)
@@ -60,7 +65,9 @@ class UpdateAssetMessageTransferStatusUseCaseTest {
         val newDownloadStatus = AssetTransferStatus.SAVED_INTERNALLY
         val dummyConvId = ConversationId("dummy-value", "dummy.domain")
         val dummyMessageId = "dummy-message-id"
-        val (arrangement, useCase) = Arrangement().withErrorResponse().arrange()
+        val (arrangement, useCase) = Arrangement(testKaliumDispatcher)
+            .withErrorResponse()
+            .arrange()
 
         // When
         val result = useCase.invoke(newDownloadStatus, dummyConvId, dummyMessageId)
@@ -72,7 +79,7 @@ class UpdateAssetMessageTransferStatusUseCaseTest {
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement {
+    private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
         @Mock
         val messageRepository = mock(MessageRepository::class)
 
@@ -90,7 +97,7 @@ class UpdateAssetMessageTransferStatusUseCaseTest {
             return this
         }
 
-        fun arrange() = this to UpdateAssetMessageTransferStatusUseCaseImpl(messageRepository)
+        fun arrange() = this to UpdateAssetMessageTransferStatusUseCaseImpl(messageRepository, dispatcher)
 
     }
 }

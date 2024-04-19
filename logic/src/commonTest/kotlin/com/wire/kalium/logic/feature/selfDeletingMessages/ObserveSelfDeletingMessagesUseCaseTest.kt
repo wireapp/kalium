@@ -28,6 +28,9 @@ import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
 import com.wire.kalium.logic.data.message.TeamSettingsSelfDeletionStatus
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -54,7 +57,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
         )
         val storedTeamSettingsFlow = flowOf(Either.Left(StorageFailure.Generic(RuntimeException("DB failed"))))
 
-        val (arrangement, observeSelfDeletionMessagesFlag) = Arrangement()
+        val (arrangement, observeSelfDeletionMessagesFlag) = Arrangement(testKaliumDispatcher)
             .withObserveTeamSettingsSelfDeletionStatus(storedTeamSettingsFlow)
             .withStoredConversation(storedConversationStatus)
             .arrange()
@@ -86,7 +89,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
         val expectedSelfDeletionStatus =
             ConversationSelfDeletionStatus(conversationId, SelfDeletionTimer.Enforced.ByGroup(conversationSettingsDuration))
 
-        val (arrangement, observeSelfDeletionMessagesFlag) = Arrangement()
+        val (arrangement, observeSelfDeletionMessagesFlag) = Arrangement(testKaliumDispatcher)
             .withObserveTeamSettingsSelfDeletionStatus(storedTeamSettingsFlow)
             .withStoredConversation(userStoredConversationStatus)
             .arrange()
@@ -116,7 +119,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
         )
         val storedTeamSettingsFlow = flowOf(Either.Right(storedTeamSettingsSelfDeletionStatus))
 
-        val (arrangement, observeSelfDeletionTimer) = Arrangement()
+        val (arrangement, observeSelfDeletionTimer) = Arrangement(testKaliumDispatcher)
             .withObserveTeamSettingsSelfDeletionStatus(storedTeamSettingsFlow)
             .withStoredConversation(storedConversationStatus)
             .arrange()
@@ -143,7 +146,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
         )
         val storedTeamSettingsFlow = flowOf(Either.Right(storedTeamSettingsSelfDeletionStatus))
 
-        val (arrangement, observeSelfDeletionTimer) = Arrangement()
+        val (arrangement, observeSelfDeletionTimer) = Arrangement(testKaliumDispatcher)
             .withObserveTeamSettingsSelfDeletionStatus(storedTeamSettingsFlow)
             .withStoredConversation(storedConversationStatus)
             .arrange()
@@ -175,7 +178,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
             userMessageTimer = null
         )
 
-        val (arrangement, observeSelfDeletionTimer) = Arrangement()
+        val (arrangement, observeSelfDeletionTimer) = Arrangement(testKaliumDispatcher)
             .withObserveTeamSettingsSelfDeletionStatus(storedTeamSettingsSelfDeletionStatus)
             .withStoredConversation(storedConversationStatus)
             .arrange()
@@ -196,7 +199,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
         val TEST_CONVERSION = TestConversation.CONVERSATION
     }
 
-    private class Arrangement {
+    private class Arrangement(private var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
         @Mock
         val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
 
@@ -204,7 +207,7 @@ class ObserveSelfDeletingMessagesUseCaseTest {
         val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
         val observeSelfDeletionStatus: ObserveSelfDeletionTimerSettingsForConversationUseCase by lazy {
-            ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl(userConfigRepository, conversationRepository)
+            ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl(userConfigRepository, conversationRepository, dispatcher)
         }
 
         suspend fun withStoredConversation(conversation: Conversation) = apply {

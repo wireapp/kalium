@@ -21,10 +21,13 @@ import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.EI2EIClientProviderImpl
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.provider.E2EIClientProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.E2EIClientProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.once
@@ -36,6 +39,7 @@ class E2EIClientProviderTest {
     fun givenMLSClientWithoutE2EI_whenGettingE2EIClient_callsNewRotateEnrollment() = runTest {
         val (arrangement, e2eiClientProvider) = Arrangement()
             .arrange {
+                dispatcher = this@runTest.testKaliumDispatcher
                 withGetMLSClientSuccessful()
                 withE2EINewActivationEnrollmentSuccessful()
                 withSelfUser(TestUser.SELF)
@@ -61,6 +65,7 @@ class E2EIClientProviderTest {
     fun givenMLSClientWithE2EI_whenGettingE2EIClient_callsNewActivationEnrollment() = runTest {
         val (arrangement, e2eiClientProvider) = Arrangement()
             .arrange {
+                dispatcher = this@runTest.testKaliumDispatcher
                 withGetMLSClientSuccessful()
                 withE2EINewRotationEnrollmentSuccessful()
                 withSelfUser(TestUser.SELF)
@@ -90,6 +95,7 @@ class E2EIClientProviderTest {
     fun givenSelfUserNotFound_whenGettingE2EIClient_ReturnsError() = runTest {
         val (arrangement, e2eiClientProvider) = Arrangement()
             .arrange {
+                dispatcher = this@runTest.testKaliumDispatcher
                 withGetMLSClientSuccessful()
                 withE2EINewRotationEnrollmentSuccessful()
                 withSelfUser(null)
@@ -119,6 +125,7 @@ class E2EIClientProviderTest {
     fun givenIsNewClientTrue_whenGettingE2EIClient_newAcmeEnrollmentCalled()= runTest {
         val (arrangement, e2eiClientProvider) = Arrangement()
             .arrange {
+                dispatcher = this@runTest.testKaliumDispatcher
                 withGettingCoreCryptoSuccessful()
                 withGetNewAcmeEnrollmentSuccessful()
                 withSelfUser(TestUser.SELF)
@@ -139,12 +146,15 @@ class E2EIClientProviderTest {
         E2EIClientProviderArrangement by E2EIClientProviderArrangementImpl() {
         private lateinit var e2eiClientProvider: E2EIClientProvider
 
+        var dispatcher: KaliumDispatcher = TestKaliumDispatcher
+
         suspend fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, E2EIClientProvider> {
             block()
             e2eiClientProvider = EI2EIClientProviderImpl(
                 currentClientIdProvider,
                 mlsClientProvider,
-                userRepository
+                userRepository,
+                dispatcher
             )
 
             return this to e2eiClientProvider

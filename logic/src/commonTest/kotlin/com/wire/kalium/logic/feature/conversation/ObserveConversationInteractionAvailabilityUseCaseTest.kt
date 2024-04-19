@@ -27,13 +27,17 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -47,6 +51,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
         val conversationId = TestConversation.ID
 
         val (arrangement, observeConversationInteractionAvailability) = arrange {
+            dispatcher = testKaliumDispatcher
             withSelfUserBeingMemberOfConversation(isMember = true)
         }
 
@@ -68,6 +73,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
         val conversationId = TestConversation.ID
 
         val (arrangement, observeConversationInteractionAvailability) = arrange {
+            dispatcher = testKaliumDispatcher
             withSelfUserBeingMemberOfConversation(isMember = false)
         }
 
@@ -89,6 +95,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
         val conversationId = TestConversation.ID
 
         val (arrangement, observeConversationInteractionAvailability) = arrange {
+            dispatcher = testKaliumDispatcher
             withGroupConversationError()
         }
 
@@ -110,6 +117,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
         val conversationId = TestConversation.ID
 
         val (arrangement, observeConversationInteractionAvailability) = arrange {
+            dispatcher = testKaliumDispatcher
             withBlockedUserConversation()
         }
 
@@ -131,6 +139,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
         val conversationId = TestConversation.ID
 
         val (arrangement, observeConversationInteractionAvailability) = arrange {
+            dispatcher = testKaliumDispatcher
             withDeletedUserConversation()
         }
 
@@ -200,13 +209,14 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
         )
     }
 
-    private suspend fun testProtocolSupport(
+    private suspend fun CoroutineScope.testProtocolSupport(
         conversationProtocolInfo: Conversation.ProtocolInfo,
         userSupportedProtocols: Set<SupportedProtocol>,
         expectedResult: InteractionAvailability
     ) {
         val convId = TestConversationDetails.CONVERSATION_GROUP.conversation.id
         val (_, observeConversationInteractionAvailabilityUseCase) = arrange {
+            dispatcher = testKaliumDispatcher
             val proteusGroupDetails = TestConversationDetails.CONVERSATION_GROUP.copy(
                 conversation = TestConversationDetails.CONVERSATION_GROUP.conversation.copy(
                     protocol = conversationProtocolInfo
@@ -228,6 +238,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
     fun givenConversationLegalHoldIsEnabled_whenInvokingInteractionForConversation_thenInteractionShouldBeEnabled() = runTest {
         val conversationId = TestConversation.ID
         val (_, observeConversationInteractionAvailability) = arrange {
+            dispatcher = testKaliumDispatcher
             withLegalHoldOneOnOneConversation(Conversation.LegalHoldStatus.ENABLED)
         }
         observeConversationInteractionAvailability(conversationId).test {
@@ -241,6 +252,7 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
     fun givenConversationLegalHoldIsDegraded_whenInvokingInteractionForConversation_thenInteractionShouldBeLegalHold() = runTest {
         val conversationId = TestConversation.ID
         val (_, observeConversationInteractionAvailability) = arrange {
+            dispatcher = testKaliumDispatcher
             withLegalHoldOneOnOneConversation(Conversation.LegalHoldStatus.DEGRADED)
         }
         observeConversationInteractionAvailability(conversationId).test {
@@ -254,6 +266,8 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
         private val configure: suspend Arrangement.() -> Unit
     ) : UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
+
+        var dispatcher: KaliumDispatcher = TestKaliumDispatcher
 
         suspend fun withSelfUserBeingMemberOfConversation(isMember: Boolean) = apply {
             withObserveConversationDetailsByIdReturning(
@@ -308,7 +322,8 @@ class ObserveConversationInteractionAvailabilityUseCaseTest {
             configure()
             this@Arrangement to ObserveConversationInteractionAvailabilityUseCase(
                 conversationRepository = conversationRepository,
-                userRepository = userRepository
+                userRepository = userRepository,
+                dispatcher = dispatcher
             )
         }
     }

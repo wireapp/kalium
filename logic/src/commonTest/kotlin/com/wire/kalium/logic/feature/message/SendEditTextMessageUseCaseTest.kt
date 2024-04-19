@@ -28,9 +28,12 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -49,7 +52,7 @@ class SendEditTextMessageUseCaseTest {
     @Test
     fun givenAValidMessage_whenSendingEditTextIsSuccessful_thenMarkMessageAsSentAndReturnSuccess() = runTest {
         // Given
-        val (arrangement, sendEditTextMessage) = Arrangement()
+        val (arrangement, sendEditTextMessage) = Arrangement(testKaliumDispatcher)
             .withSlowSyncStatusComplete()
             .withCurrentClientProviderSuccess()
             .withUpdateTextMessageSuccess()
@@ -82,7 +85,7 @@ class SendEditTextMessageUseCaseTest {
     @Test
     fun givenAValidMessage_whenSendingEditTextIsFailed_thenMarkMessageAsFailedAndReturnFailure() = runTest {
         // Given
-        val (arrangement, sendEditTextMessage) = Arrangement()
+        val (arrangement, sendEditTextMessage) = Arrangement(testKaliumDispatcher)
             .withSlowSyncStatusComplete()
             .withCurrentClientProviderSuccess()
             .withUpdateTextMessageSuccess()
@@ -115,7 +118,7 @@ class SendEditTextMessageUseCaseTest {
         }.wasInvoked(once)
     }
 
-    private class Arrangement {
+    private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
 
         @Mock
         val messageRepository = mock(MessageRepository::class)
@@ -170,7 +173,8 @@ class SendEditTextMessageUseCaseTest {
             currentClientIdProvider,
             slowSyncRepository,
             messageSender,
-            messageSendFailureHandler
+            messageSendFailureHandler,
+            dispatcher
         )
     }
 }

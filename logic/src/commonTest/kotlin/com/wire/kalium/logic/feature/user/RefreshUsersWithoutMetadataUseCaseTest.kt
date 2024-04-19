@@ -23,6 +23,9 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCaseImpl
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -37,7 +40,7 @@ class RefreshUsersWithoutMetadataUseCaseTest {
 
     @Test
     fun givenUsersWithoutMetadata_whenRefreshing_thenShouldRefreshThoseUsersInformation() = runTest {
-        val (arrangement, refreshUsersWithoutMetadata) = Arrangement()
+        val (arrangement, refreshUsersWithoutMetadata) = Arrangement(testKaliumDispatcher)
             .withResponse()
             .arrange()
 
@@ -48,7 +51,7 @@ class RefreshUsersWithoutMetadataUseCaseTest {
         }.wasInvoked(once)
     }
 
-    private class Arrangement {
+    private class Arrangement(private var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
         @Mock
         val userRepository = mock(UserRepository::class)
 
@@ -59,6 +62,6 @@ class RefreshUsersWithoutMetadataUseCaseTest {
         }
 
         fun arrange(): Pair<Arrangement, RefreshUsersWithoutMetadataUseCase> =
-            this to RefreshUsersWithoutMetadataUseCaseImpl(userRepository)
+            this to RefreshUsersWithoutMetadataUseCaseImpl(userRepository, dispatcher)
     }
 }

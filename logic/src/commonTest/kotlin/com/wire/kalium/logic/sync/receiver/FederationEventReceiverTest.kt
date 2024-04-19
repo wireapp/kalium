@@ -26,6 +26,8 @@ import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangement
@@ -37,6 +39,7 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.eq
@@ -60,6 +63,7 @@ class FederationEventReceiverTest {
                 conversationId = conversationId.value,
             )
         )
+
         val defederatedConnections = List(defederatedUsersCount) {
             createConnection(
                 conversationId = ConversationId("def_connection$it", defederatedDomain),
@@ -95,6 +99,7 @@ class FederationEventReceiverTest {
         val systemMessageCount = defederatedOneOnOneConversations.size + (defederatedGroupConversations.size * 2)
 
         val (arrangement, useCase) = arrange {
+            dispatcher = testKaliumDispatcher
             withGetConnections(Either.Right(flowOf(connectionConversationList)))
             withDeleteConnection(Either.Right(Unit))
             withGetGroupConversationsWithMembersWithBothDomains(Either.Right(defederatedGroupConversations))
@@ -134,7 +139,10 @@ class FederationEventReceiverTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.memberDAO.deleteMembersByQualifiedID(eq(userIdWithBothDomainsList.map { it.toDao() }), eq(otherConversation.toDao()))
+            arrangement.memberDAO.deleteMembersByQualifiedID(
+                eq(userIdWithBothDomainsList.map { it.toDao() }),
+                eq(otherConversation.toDao())
+            )
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -161,6 +169,7 @@ class FederationEventReceiverTest {
             val systemMessageCount = defederatedGroupConversations.size * 2
 
             val (arrangement, useCase) = arrange {
+                dispatcher = testKaliumDispatcher
                 withGetGroupConversationsWithMembersWithBothDomains(Either.Right(defederatedGroupConversations))
                 withDeleteMembersByQualifiedID(defederatedUserIdList.size.toLong())
                 withPersistingMessage(Either.Right(Unit))
@@ -176,15 +185,24 @@ class FederationEventReceiverTest {
             useCase.onEvent(event, TestEvent.liveDeliveryInfo).shouldSucceed()
 
             coVerify {
-                arrangement.memberDAO.deleteMembersByQualifiedID(eq(defederatedUserIdListTwo.map { it.toDao() }), eq(defederatedConversation.toDao()))
+                arrangement.memberDAO.deleteMembersByQualifiedID(
+                    eq(defederatedUserIdListTwo.map { it.toDao() }),
+                    eq(defederatedConversation.toDao())
+                )
             }.wasInvoked(exactly = once)
 
             coVerify {
-                arrangement.memberDAO.deleteMembersByQualifiedID(eq(defederatedUserIdList.map { it.toDao() }), eq(defederatedConversationTwo.toDao()))
+                arrangement.memberDAO.deleteMembersByQualifiedID(
+                    eq(defederatedUserIdList.map { it.toDao() }),
+                    eq(defederatedConversationTwo.toDao())
+                )
             }.wasInvoked(exactly = once)
 
             coVerify {
-                arrangement.memberDAO.deleteMembersByQualifiedID(eq(userIdWithBothDomainsList.map { it.toDao() }), eq(selfConversation.toDao()))
+                arrangement.memberDAO.deleteMembersByQualifiedID(
+                    eq(userIdWithBothDomainsList.map { it.toDao() }),
+                    eq(selfConversation.toDao())
+                )
             }.wasInvoked(exactly = once)
 
             coVerify {
@@ -217,6 +235,8 @@ class FederationEventReceiverTest {
         MemberDAOArrangement by MemberDAOArrangementImpl(),
         PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl() {
 
+        var dispatcher: KaliumDispatcher = TestKaliumDispatcher
+
         suspend fun arrange() = run {
             block()
             this@Arrangement to FederationEventReceiverImpl(
@@ -225,7 +245,8 @@ class FederationEventReceiverTest {
                 userRepository = userRepository,
                 memberDAO = memberDAO,
                 persistMessage = persistMessageUseCase,
-                selfUserId = selfUserId
+                selfUserId = selfUserId,
+                dispatchers = dispatcher
             )
         }
     }

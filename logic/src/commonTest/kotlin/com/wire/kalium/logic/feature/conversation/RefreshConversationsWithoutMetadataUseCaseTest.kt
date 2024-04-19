@@ -21,6 +21,9 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -35,7 +38,7 @@ class RefreshConversationsWithoutMetadataUseCaseTest {
 
     @Test
     fun givenConversationsWithoutMetadata_whenRefreshing_thenShouldRefreshThoseConversationInformation() = runTest {
-        val (arrangement, refreshConversationsWithoutMetadata) = Arrangement()
+        val (arrangement, refreshConversationsWithoutMetadata) = Arrangement(testKaliumDispatcher)
             .withResponse()
             .arrange()
 
@@ -46,7 +49,7 @@ class RefreshConversationsWithoutMetadataUseCaseTest {
         }.wasInvoked(once)
     }
 
-    private class Arrangement {
+    private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
         @Mock
         val conversationRepository = mock(ConversationRepository::class)
 
@@ -56,6 +59,9 @@ class RefreshConversationsWithoutMetadataUseCaseTest {
             }.returns(result)
         }
 
-        fun arrange() = this to RefreshConversationsWithoutMetadataUseCaseImpl(conversationRepository)
+        fun arrange() = this to RefreshConversationsWithoutMetadataUseCaseImpl(
+            conversationRepository,
+            dispatcher
+        )
     }
 }

@@ -21,6 +21,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -38,11 +39,14 @@ class GetConversationUnreadEventsCountUseCaseTest {
 
     @BeforeTest
     fun setUp() {
-        getConversationUnreadEventsCountUseCase = GetConversationUnreadEventsCountUseCaseImpl(conversationRepository)
+        getConversationUnreadEventsCountUseCase = GetConversationUnreadEventsCountUseCaseImpl(
+            conversationRepository,
+            TestKaliumDispatcher
+        )
     }
 
     @Test
-    fun givenGettingUnreadEventsCountSucceed_whenItIsRequested_thenSuccessResultReturned() = runTest {
+    fun givenGettingUnreadEventsCountSucceed_whenItIsRequested_thenSuccessResultReturned() = runTest(TestKaliumDispatcher.main) {
         // given
         coEvery {
             conversationRepository.getConversationUnreadEventsCount(any())
@@ -56,7 +60,7 @@ class GetConversationUnreadEventsCountUseCaseTest {
     }
 
     @Test
-    fun givenGettingUnreadEventsCountFailed_whenItIsRequested_thenFailureResultReturned() = runTest {
+    fun givenGettingUnreadEventsCountFailed_whenItIsRequested_thenFailureResultReturned() = runTest(TestKaliumDispatcher.main) {
         // given
         coEvery {
             conversationRepository.getConversationUnreadEventsCount(any())

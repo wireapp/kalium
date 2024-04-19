@@ -33,6 +33,8 @@ import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
@@ -40,6 +42,7 @@ import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -58,7 +61,7 @@ class JoinExistingMLSConversationUseCaseTest {
     @Test
     fun givenMLSSupportIsDisabled_whenInvokingUseCase_ThenRequestToJoinConversationIsNotCalled() =
         runTest {
-            val (arrangement, joinExistingMLSConversationUseCase) = Arrangement()
+            val (arrangement, joinExistingMLSConversationUseCase) = Arrangement(testKaliumDispatcher)
                 .withIsMLSSupported(false)
                 .withGetConversationsByIdSuccessful()
                 .withJoinByExternalCommitSuccessful()
@@ -77,7 +80,7 @@ class JoinExistingMLSConversationUseCaseTest {
     @Test
     fun givenNoMLSClientIsRegistered_whenInvokingUseCase_ThenRequestToJoinConversationIsNotCalled() =
         runTest {
-            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
                 .withIsMLSSupported(true)
                 .withHasRegisteredMLSClient(false)
                 .withGetConversationsByIdSuccessful()
@@ -97,7 +100,7 @@ class JoinExistingMLSConversationUseCaseTest {
     @Test
     fun givenGroupConversationWithNonZeroEpoch_whenInvokingUseCase_ThenJoinViaExternalCommit() = runTest {
         val conversation = Arrangement.MLS_CONVERSATION1
-        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
             .withIsMLSSupported(true)
             .withHasRegisteredMLSClient(true)
             .withGetConversationsByIdSuccessful(conversation)
@@ -118,7 +121,7 @@ class JoinExistingMLSConversationUseCaseTest {
     @Test
     fun givenGroupConversationWithZeroEpoch_whenInvokingUseCase_ThenDoNotEstablishMlsGroup() =
         runTest {
-            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
                 .withIsMLSSupported(true)
                 .withHasRegisteredMLSClient(true)
                 .withGetConversationsByIdSuccessful(Arrangement.MLS_UNESTABLISHED_GROUP_CONVERSATION)
@@ -134,7 +137,7 @@ class JoinExistingMLSConversationUseCaseTest {
     @Test
     fun givenSelfConversationWithZeroEpoch_whenInvokingUseCase_ThenEstablishMlsGroup() =
         runTest {
-            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
                 .withIsMLSSupported(true)
                 .withHasRegisteredMLSClient(true)
                 .withGetConversationsByIdSuccessful(Arrangement.MLS_UNESTABLISHED_SELF_CONVERSATION)
@@ -152,7 +155,7 @@ class JoinExistingMLSConversationUseCaseTest {
     fun givenOneOnOneConversationWithZeroEpoch_whenInvokingUseCase_ThenEstablishMlsGroup() =
         runTest {
             val members = listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID)
-            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
                 .withIsMLSSupported(true)
                 .withHasRegisteredMLSClient(true)
                 .withGetConversationsByIdSuccessful(Arrangement.MLS_UNESTABLISHED_ONE_ONE_ONE_CONVERSATION)
@@ -169,7 +172,7 @@ class JoinExistingMLSConversationUseCaseTest {
 
     @Test
     fun givenOutOfDateEpochFailure_whenInvokingUseCase_ThenRetryWithNewEpoch() = runTest {
-        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
             .withIsMLSSupported(true)
             .withHasRegisteredMLSClient(true)
             .withGetConversationsByIdSuccessful(Arrangement.MLS_CONVERSATION1)
@@ -193,7 +196,7 @@ class JoinExistingMLSConversationUseCaseTest {
 
     @Test
     fun givenNonRecoverableFailure_whenInvokingUseCase_ThenFailureIsReported() = runTest {
-        val (_, joinExistingMLSConversationsUseCase) = Arrangement()
+        val (_, joinExistingMLSConversationsUseCase) = Arrangement(testKaliumDispatcher)
             .withIsMLSSupported(true)
             .withHasRegisteredMLSClient(true)
             .withGetConversationsByIdSuccessful()
@@ -204,7 +207,7 @@ class JoinExistingMLSConversationUseCaseTest {
         joinExistingMLSConversationsUseCase(Arrangement.MLS_CONVERSATION1.id).shouldFail()
     }
 
-    private class Arrangement {
+    private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
 
         @Mock
         val featureSupport = mock(FeatureSupport::class)
@@ -226,7 +229,8 @@ class JoinExistingMLSConversationUseCaseTest {
             conversationApi,
             clientRepository,
             conversationRepository,
-            mlsConversationRepository
+            mlsConversationRepository,
+            dispatcher
         )
 
         @Suppress("MaxLineLength")

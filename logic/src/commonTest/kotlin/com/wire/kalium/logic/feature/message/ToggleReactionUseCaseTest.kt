@@ -33,6 +33,9 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.stub.ReactionRepositoryStub
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -79,7 +82,7 @@ class ToggleReactionUseCaseTest {
             }
         }
 
-        val (_, toggleReactionUseCase) = Arrangement().arrange(reactionRepository)
+        val (_, toggleReactionUseCase) = Arrangement(testKaliumDispatcher).arrange(reactionRepository)
 
         toggleReactionUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_ID, emojiReaction)
 
@@ -99,7 +102,7 @@ class ToggleReactionUseCaseTest {
             }
         }
 
-        val (arrangement, toggleReactionUseCase) = Arrangement().arrange(reactionRepository)
+        val (arrangement, toggleReactionUseCase) = Arrangement(testKaliumDispatcher).arrange(reactionRepository)
 
         toggleReactionUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_ID, emojiReaction)
 
@@ -143,7 +146,7 @@ class ToggleReactionUseCaseTest {
             }
         }
 
-        val (_, toggleReactionUseCase) = Arrangement().arrange(reactionRepository)
+        val (_, toggleReactionUseCase) = Arrangement(testKaliumDispatcher).arrange(reactionRepository)
 
         toggleReactionUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_ID, emojiReaction)
 
@@ -163,7 +166,7 @@ class ToggleReactionUseCaseTest {
             }
         }
 
-        val (arrangement, toggleReactionUseCase) = Arrangement().arrange(reactionRepository)
+        val (arrangement, toggleReactionUseCase) = Arrangement(testKaliumDispatcher).arrange(reactionRepository)
 
         toggleReactionUseCase(TEST_CONVERSATION_ID, TEST_MESSAGE_ID, emojiReaction)
 
@@ -177,7 +180,7 @@ class ToggleReactionUseCaseTest {
         }
     }
 
-    private class Arrangement {
+    private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
 
         val currentClientIdProvider: CurrentClientIdProvider = CurrentClientIdProvider { Either.Right(TEST_CURRENT_CLIENT) }
 
@@ -204,7 +207,8 @@ class ToggleReactionUseCaseTest {
             TEST_SELF_USER,
             slowSyncRepository,
             reactionRepository,
-            messageSender
+            messageSender,
+            dispatcher
         ).also {
             withSlowSyncCompleted()
             withMessageSendingReturning(Either.Right(Unit))

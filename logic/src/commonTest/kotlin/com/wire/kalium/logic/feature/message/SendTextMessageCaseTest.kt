@@ -32,6 +32,7 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
@@ -193,7 +194,8 @@ class SendTextMessageCaseTest {
             messageSendFailureHandler,
             userPropertyRepository,
             observeSelfDeletionTimerSettingsForConversation,
-            scope = coroutineScope
+            scope = coroutineScope,
+            dispatchers = coroutineScope.testKaliumDispatcher
         )
     }
 

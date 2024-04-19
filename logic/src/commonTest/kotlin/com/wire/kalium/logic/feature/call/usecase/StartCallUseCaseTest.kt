@@ -28,11 +28,14 @@ import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.flow.flowOf
@@ -47,7 +50,7 @@ class StartCallUseCaseTest {
         runTest {
             val conversationId = TestConversation.ID
 
-            val (arrangement, startCall) = Arrangement()
+            val (arrangement, startCall) = Arrangement(testKaliumDispatcher)
                 .withWaitingForSyncSucceeding()
                 .withAnIncomingCall()
                 .arrange()
@@ -67,7 +70,7 @@ class StartCallUseCaseTest {
     fun givenCallingParamsAndSyncSucceeds_whenRunningUseCase_thenInvokeStartCallOnce() = runTest {
         val conversationId = TestConversation.ID
 
-        val (arrangement, startCall) = Arrangement()
+        val (arrangement, startCall) = Arrangement(testKaliumDispatcher)
             .withWaitingForSyncSucceeding()
             .withNoIncomingCall()
             .arrange()
@@ -87,7 +90,7 @@ class StartCallUseCaseTest {
     fun givenCallingParamsAndSyncSucceeds_whenRunningUseCase_thenReturnSuccess() = runTest {
         val conversationId = TestConversation.ID
 
-        val (arrangement, startCall) = Arrangement()
+        val (arrangement, startCall) = Arrangement(testKaliumDispatcher)
             .withWaitingForSyncSucceeding()
             .withNoIncomingCall()
             .arrange()
@@ -104,7 +107,7 @@ class StartCallUseCaseTest {
     fun givenCallingParamsAndSyncFails_whenRunningUseCase_thenStartCallIsNotInvoked() = runTest {
         val conversationId = TestConversation.ID
 
-        val (arrangement, startCall) = Arrangement()
+        val (arrangement, startCall) = Arrangement(testKaliumDispatcher)
             .withWaitingForSyncFailing()
             .arrange()
 
@@ -119,7 +122,7 @@ class StartCallUseCaseTest {
     fun givenCallingParamsAndSyncFails_whenRunningUseCase_thenShouldReturnSyncFailure() = runTest {
         val conversationId = TestConversation.ID
 
-        val (_, startCall) = Arrangement()
+        val (_, startCall) = Arrangement(testKaliumDispatcher)
             .withWaitingForSyncFailing()
             .arrange()
 
@@ -132,7 +135,7 @@ class StartCallUseCaseTest {
     fun givenCbrEnabled_WhenStartingACall_thenStartTheCallOnCBR() = runTest {
         val conversationId = TestConversation.ID
 
-        val (arrangement, startCall) = Arrangement()
+        val (arrangement, startCall) = Arrangement(testKaliumDispatcher)
             .withWaitingForSyncSucceeding()
             .withNoIncomingCall()
             .arrangeWithCBR()
@@ -147,7 +150,7 @@ class StartCallUseCaseTest {
         }.wasNotInvoked()
     }
 
-    private class Arrangement {
+    private class Arrangement(private var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
 
         @Mock
         val callManager = mock(CallManager::class)
@@ -164,7 +167,12 @@ class StartCallUseCaseTest {
         private val kaliumConfigs = KaliumConfigs()
 
         private val startCallUseCase = StartCallUseCase(
-            lazy { callManager }, syncManager, kaliumConfigs, callRepository, answerCall
+            lazy { callManager },
+            syncManager,
+            kaliumConfigs,
+            callRepository,
+            answerCall,
+            dispatcher
         )
 
         private val startCallUseCaseWithCBR = StartCallUseCase(
@@ -172,7 +180,8 @@ class StartCallUseCaseTest {
             syncManager,
             KaliumConfigs(forceConstantBitrateCalls = true),
             callRepository,
-            answerCall
+            answerCall,
+            dispatcher
         )
 
         suspend fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))

@@ -23,6 +23,7 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigDataSource
 import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.failure.ServerConfigFailure
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.util.stubs.newServerConfig
@@ -35,6 +36,7 @@ import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.model.ServerConfigEntity
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -57,7 +59,7 @@ class ServerConfigRepositoryTest {
         val expectedDTO = newServerConfigDTO(1)
 
         val expectedEntity = newServerConfigEntity(1)
-        val (arrangement, repository) = Arrangement()
+        val (arrangement, repository) = Arrangement(testKaliumDispatcher)
             .withApiAversionResponse(expectedDTO.metaData)
             .withConfigById(expectedEntity)
             .withConfigByLinks(null)
@@ -86,7 +88,7 @@ class ServerConfigRepositoryTest {
         val expectedMetaDataDTO = ServerConfigDTO.MetaData(false, ApiVersionDTO.Invalid.Unknown, "domain")
         val expectedEntity = newServerConfigEntity(1).copy(metaData = ServerConfigEntity.MetaData(false, -2, "domain"))
 
-        val (arrangement, repository) = Arrangement()
+        val (arrangement, repository) = Arrangement(testKaliumDispatcher)
             .withApiAversionResponse(expectedMetaDataDTO)
             .withConfigByLinks(expectedEntity)
             .arrange()
@@ -114,7 +116,7 @@ class ServerConfigRepositoryTest {
 
     @Test
     fun givenStoredConfig_whenAddingTheSameOneWithNewApiVersionParams_thenStoredOneShouldBeUpdatedAndReturned() = runTest {
-        val (arrangement, repository) = Arrangement()
+        val (arrangement, repository) = Arrangement(testKaliumDispatcher)
             .withUpdatedServerConfig()
             .arrange()
 
@@ -142,7 +144,7 @@ class ServerConfigRepositoryTest {
     @Test
     fun givenStoredConfig_whenAddingNewOne_thenNewOneShouldBeInsertedAndReturned() = runTest {
         val expected = newServerConfig(1)
-        val (arrangement, repository) = Arrangement()
+        val (arrangement, repository) = Arrangement(testKaliumDispatcher)
             .withConfigForNewRequest(newServerConfigEntity(1))
             .arrange()
 
@@ -167,7 +169,7 @@ class ServerConfigRepositoryTest {
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement {
+    private class Arrangement(private val dispatcher: KaliumDispatcher) {
         val SERVER_CONFIG_URL = "https://test.test/test.json"
         val SERVER_CONFIG_RESPONSE = newServerConfigDTO(1)
         val SERVER_CONFIG = newServerConfig(1)
@@ -182,7 +184,7 @@ class ServerConfigRepositoryTest {
         val versionApi = mock(VersionApi::class)
 
         private var serverConfigRepository: ServerConfigRepository =
-            ServerConfigDataSource(serverConfigDAO, versionApi)
+            ServerConfigDataSource(serverConfigDAO, versionApi, dispatchers = dispatcher)
 
         val serverConfigEntity = newServerConfigEntity(1)
         val expectedServerConfig = newServerConfig(1).copy(

@@ -22,6 +22,9 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.TypingIndicatorOutgoingRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -36,7 +39,7 @@ class SendTypingEventUseCaseTest {
 
     @Test
     fun givenATypingEvent_whenCallingSendSucceed_thenReturnSuccess() = runTest {
-        val (arrangement, useCase) = Arrangement()
+        val (arrangement, useCase) = Arrangement(testKaliumDispatcher)
             .withTypingIndicatorStatusAndResult(Conversation.TypingIndicatorMode.STOPPED)
             .arrange()
 
@@ -49,7 +52,7 @@ class SendTypingEventUseCaseTest {
 
     @Test
     fun givenATypingEvent_whenCallingSendFails_thenReturnIgnoringFailure() = runTest {
-        val (arrangement, useCase) = Arrangement()
+        val (arrangement, useCase) = Arrangement(testKaliumDispatcher)
             .withTypingIndicatorStatusAndResult(
                 Conversation.TypingIndicatorMode.STARTED,
                 Either.Left(CoreFailure.Unknown(RuntimeException("Some error")))
@@ -64,7 +67,7 @@ class SendTypingEventUseCaseTest {
         assertEquals(Unit, result)
     }
 
-    private class Arrangement {
+    private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
         @Mock
         val typingIndicatorRepository: TypingIndicatorOutgoingRepository = mock(TypingIndicatorOutgoingRepository::class)
 
@@ -78,7 +81,8 @@ class SendTypingEventUseCaseTest {
         }
 
         fun arrange() = this to SendTypingEventUseCaseImpl(
-            typingIndicatorRepository
+            typingIndicatorRepository,
+            dispatcher
         )
     }
 }

@@ -38,7 +38,10 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -61,7 +64,7 @@ class DeleteMessageUseCaseTest {
         // given
         val deleteForEveryone = true
 
-        val (arrangement, deleteMessageUseCase) = Arrangement()
+        val (arrangement, deleteMessageUseCase) = Arrangement(testKaliumDispatcher)
             .withSendMessageSucceed()
             .withSelfUser(TestUser.SELF)
             .withCurrentClientId(SELF_CLIENT_ID)
@@ -92,7 +95,7 @@ class DeleteMessageUseCaseTest {
     fun givenAFailedMessage_WhenItGetsDeletedForEveryone_TheMessageShouldBeDeleted() = runTest {
         // given
         val deleteForEveryone = true
-        val (arrangement, deleteMessageUseCase) = Arrangement()
+        val (arrangement, deleteMessageUseCase) = Arrangement(testKaliumDispatcher)
             .withSendMessageSucceed()
             .withSelfUser(TestUser.SELF)
             .withCurrentClientId(SELF_CLIENT_ID)
@@ -122,7 +125,7 @@ class DeleteMessageUseCaseTest {
     fun givenASentMessage_WhenDeleteForEveryoneIsFalse_TheGeneratedMessageShouldBeDeletedOnlyLocally() = runTest {
         // given
         val deleteForEveryone = false
-        val (arrangement, deleteMessageUseCase) = Arrangement()
+        val (arrangement, deleteMessageUseCase) = Arrangement(testKaliumDispatcher)
             .withSendMessageSucceed()
             .withSelfUser(TestUser.SELF)
             .withCurrentClientId(SELF_CLIENT_ID)
@@ -159,7 +162,7 @@ class DeleteMessageUseCaseTest {
     @Test
     fun givenAMessageWithAsset_WhenDelete_TheDeleteAssetShouldBeInvoked() = runTest {
         // given
-        val (arrangement, deleteMessageUseCase) = Arrangement()
+        val (arrangement, deleteMessageUseCase) = Arrangement(testKaliumDispatcher)
             .withSendMessageSucceed()
             .withSelfUser(TestUser.SELF)
             .withCurrentClientId(SELF_CLIENT_ID)
@@ -202,7 +205,7 @@ class DeleteMessageUseCaseTest {
         // given
         val deleteForEveryone = true
 
-        val (arrangement, deleteMessageUseCase) = Arrangement()
+        val (arrangement, deleteMessageUseCase) = Arrangement(testKaliumDispatcher)
             .withSendMessageSucceed()
             .withSelfUser(TestUser.SELF)
             .withCurrentClientId(SELF_CLIENT_ID)
@@ -235,7 +238,7 @@ class DeleteMessageUseCaseTest {
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement {
+    private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
 
         @Mock
         val currentClientIdProvider: CurrentClientIdProvider = mock(CurrentClientIdProvider::class)
@@ -267,7 +270,8 @@ class DeleteMessageUseCaseTest {
             messageSender,
             TestUser.SELF.id,
             currentClientIdProvider,
-            selfConversationIdProvider
+            selfConversationIdProvider,
+            dispatcher
         )
 
         suspend fun withSendMessageSucceed() = apply {

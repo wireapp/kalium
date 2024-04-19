@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -44,11 +45,11 @@ class RejectCallUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        rejectCallUseCase = RejectCallUseCase(lazy { callManager }, callRepository)
+        rejectCallUseCase = RejectCallUseCase(lazy { callManager }, callRepository, TestKaliumDispatcher)
     }
 
     @Test
-    fun givenCallingParams_whenRunningUseCase_thenInvokeRejectCallOnce() = runTest {
+    fun givenCallingParams_whenRunningUseCase_thenInvokeRejectCallOnce() = runTest(TestKaliumDispatcher.main) {
         val conversationId = ConversationId("someone", "wire.com")
 
         coEvery {
