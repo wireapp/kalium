@@ -45,19 +45,16 @@ internal class MemberJoinEventHandlerImpl(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val persistMessage: PersistMessageUseCase,
-    private val legalHoldHandler: LegalHoldHandler,
-    private val selfUserId: UserId
+    private val legalHoldHandler: LegalHoldHandler
 ) : MemberJoinEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
     override suspend fun handle(event: Event.Conversation.MemberJoin) =
-        // we need to force fetching conversation when self user rejoined to conversation,
-        // because he may not received member change events
-        if (event.members.map { it.id }.contains(selfUserId)) {
-            conversationRepository.fetchConversation(event.conversationId)
-        } else {
-            conversationRepository.fetchConversationIfUnknown(event.conversationId)
-        }
+        // the group info need to be fetched for the following cases:
+        // 1. self user is added/re-added to a group and we need to update the group info in case something changed form last time
+        // 2. the new member is a bot in that case we need to make the group a bot 1:1
+        // 3. fetch group info in case it is not stored in the first place
+        conversationRepository.fetchConversation(event.conversationId)
             .run {
                 onSuccess {
                     val logMap = mapOf(
