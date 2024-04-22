@@ -308,9 +308,10 @@ internal class MessageDataSource internal constructor(
                     LocalNotification.Conversation(
                         // todo: needs some clean up!
                         id = conversationId.toModel(),
-                        conversationName = messages.first().conversationName ?: "",
-                        messages = messages.take(messageSizePerConversation)
-                            .mapNotNull { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
+                        conversationName = messages.first().conversationName,
+                        messages = messages.mapNotNull { message ->
+                            messageMapper.fromMessageToLocalNotificationMessage(message)
+                        },
                         isOneToOneConversation = messages.first().conversationType == ConversationEntity.Type.ONE_ON_ONE
                     )
                 }

@@ -81,7 +81,6 @@ internal class GetNotificationsUseCaseImpl internal constructor(
                         list.filter { it !is LocalNotification.Conversation || it.messages.isNotEmpty() }
                     }
             }
-            .distinctUntilChanged()
             .filter { it.isNotEmpty() }
     }
 

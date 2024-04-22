@@ -75,7 +75,7 @@ interface MessageDAO {
 
     suspend fun getLastMessagesByConversations(conversationIds: List<QualifiedIDEntity>): Map<QualifiedIDEntity, MessageEntity>
 
-    suspend fun getNotificationMessage(): Flow<List<NotificationMessageEntity>>
+    suspend fun getNotificationMessage(maxNumberOfMessagesPerConversation: Int = 10): Flow<List<NotificationMessageEntity>>
 
     suspend fun observeMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
