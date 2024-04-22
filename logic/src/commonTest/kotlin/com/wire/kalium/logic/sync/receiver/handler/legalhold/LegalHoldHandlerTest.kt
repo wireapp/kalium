@@ -53,7 +53,6 @@ import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.every
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.Dispatchers
@@ -767,10 +766,10 @@ class LegalHoldHandlerTest {
             arrangement.fetchUsersClientsFromRemote.invoke(any())
         }.wasInvoked()
         coVerify {
-            arrangement.legalHoldSystemMessagesHandler.handleEnabledForUser(eq(userId))
+            arrangement.legalHoldSystemMessagesHandler.handleEnabledForUser(eq(userId), any())
         }.wasInvoked()
         coVerify {
-            arrangement.legalHoldSystemMessagesHandler.handleDisabledForUser(eq(userId))
+            arrangement.legalHoldSystemMessagesHandler.handleDisabledForUser(eq(userId), any())
         }.wasNotInvoked()
         coVerify {
             arrangement.conversationRepository.updateLegalHoldStatus(
@@ -799,10 +798,10 @@ class LegalHoldHandlerTest {
             arrangement.fetchUsersClientsFromRemote.invoke(eq(listOf(userId)))
         }.wasInvoked()
         coVerify {
-            arrangement.legalHoldSystemMessagesHandler.handleEnabledForUser(eq(userId))
+            arrangement.legalHoldSystemMessagesHandler.handleEnabledForUser(eq(userId), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.legalHoldSystemMessagesHandler.handleDisabledForUser(eq(userId))
+            arrangement.legalHoldSystemMessagesHandler.handleDisabledForUser(eq(userId), any())
         }.wasInvoked()
         coVerify {
             arrangement.conversationRepository.updateLegalHoldStatus(
@@ -830,10 +829,10 @@ class LegalHoldHandlerTest {
             arrangement.fetchUsersClientsFromRemote.invoke(eq(listOf(userId)))
         }.wasNotInvoked()
         coVerify {
-            arrangement.legalHoldSystemMessagesHandler.handleEnabledForUser(eq(userId))
+            arrangement.legalHoldSystemMessagesHandler.handleEnabledForUser(eq(userId), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.legalHoldSystemMessagesHandler.handleDisabledForUser(eq(userId))
+            arrangement.legalHoldSystemMessagesHandler.handleDisabledForUser(eq(userId), any())
         }.wasNotInvoked()
         coVerify {
             arrangement.conversationRepository.updateLegalHoldStatus(
@@ -861,10 +860,10 @@ class LegalHoldHandlerTest {
             arrangement.fetchUsersClientsFromRemote.invoke(eq(listOf(userId)))
         }.wasNotInvoked()
         coVerify {
-            arrangement.legalHoldSystemMessagesHandler.handleEnabledForUser(eq(userId))
+            arrangement.legalHoldSystemMessagesHandler.handleEnabledForUser(eq(userId), any())
         }.wasNotInvoked()
         coVerify {
-            arrangement.legalHoldSystemMessagesHandler.handleDisabledForUser(eq(userId))
+            arrangement.legalHoldSystemMessagesHandler.handleDisabledForUser(eq(userId), any())
         }.wasNotInvoked()
         coVerify {
             arrangement.conversationRepository.updateLegalHoldStatus(
@@ -895,7 +894,7 @@ class LegalHoldHandlerTest {
                 )
             }.wasNotInvoked()
             coVerify {
-                arrangement.legalHoldSystemMessagesHandler.handleEnabledForUser(any())
+                arrangement.legalHoldSystemMessagesHandler.handleEnabledForUser(any(), any())
             }.wasInvoked()
     }
 

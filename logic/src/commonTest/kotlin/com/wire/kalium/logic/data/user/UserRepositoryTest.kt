@@ -65,11 +65,10 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.every
-import io.mockative.given
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
@@ -1040,7 +1039,7 @@ class UserRepositoryTest {
             }.returns(Either.Right(Unit))
             withGetTeamMemberSuccess(TestTeam.memberDTO(selfUserId.value))
             coEvery {
-                legalHoldHandler.handleUserFetch(any())
+                legalHoldHandler.handleUserFetch(any(), any())
             }.returns(Either.Right(Unit))
             apply(block)
             return this to userRepository
