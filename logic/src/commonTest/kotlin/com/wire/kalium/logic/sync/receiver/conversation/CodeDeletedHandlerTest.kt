@@ -24,9 +24,10 @@ import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandlerImpl
 import com.wire.kalium.logic.util.arrangement.dao.ConversionDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.ConversionDAOArrangementImpl
 import com.wire.kalium.persistence.dao.ConversationIDEntity
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -45,21 +46,24 @@ class CodeDeletedHandlerTest {
 
         handler.handle(event)
 
-        verify(arrangement.conversionDAO)
-            .suspendFunction(arrangement.conversionDAO::deleteGuestRoomLink)
-            .with(
-                eq(ConversationIDEntity(
-                    event.conversationId.value,
-                    event.conversationId.domain
-                ))
-            ).wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversionDAO.deleteGuestRoomLink(
+                eq(
+                    ConversationIDEntity(
+                        value = event.conversationId.value,
+                        domain = event.conversationId.domain
+                    )
+                )
+            )
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement : ConversionDAOArrangement by ConversionDAOArrangementImpl() {
 
         private val handler: CodeDeletedHandler = CodeDeletedHandlerImpl(conversionDAO)
 
-        fun arrange(block: Arrangement.() -> Unit) = apply(block).run {
+        fun arrange(block: suspend Arrangement.() -> Unit) = run {
+            runBlocking { block() }
             this to handler
         }
     }

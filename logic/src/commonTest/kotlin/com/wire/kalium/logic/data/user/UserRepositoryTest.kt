@@ -63,14 +63,14 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.http.HttpStatusCode
-import io.mockative.KFunction1
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.configure
 import io.mockative.eq
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.every
 import io.mockative.given
-import io.mockative.matching
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
@@ -102,17 +102,15 @@ class UserRepositoryTest {
             .withSuccessfulGetUsersByQualifiedIdList(knownUserEntities)
             .arrange()
 
-        given(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::getUsersDetailsByQualifiedIDList)
-            .whenInvokedWith(any())
-            .thenReturn(knownUserEntities)
+        coEvery {
+            arrangement.userDAO.getUsersDetailsByQualifiedIDList(any())
+        }.returns(knownUserEntities)
 
         userRepository.fetchUsersIfUnknownByIds(requestedUserIds).shouldSucceed()
 
-        verify(arrangement.userDetailsApi)
-            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.userDetailsApi.getMultipleUsers(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -128,12 +126,11 @@ class UserRepositoryTest {
 
         userRepository.fetchUsersIfUnknownByIds(requestedUserIds).shouldSucceed()
 
-        verify(arrangement.userDetailsApi)
-            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
-            .with(matching { request: ListUserRequest ->
+        coVerify {
+            arrangement.userDetailsApi.getMultipleUsers(matches { request: ListUserRequest ->
                 (request as QualifiedUserIdListRequest).qualifiedIds.first() == missingUserId.toApi()
             })
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -146,10 +143,9 @@ class UserRepositoryTest {
 
         with(result) {
             shouldSucceed()
-            verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::updateUser, KFunction1<PartialUserEntity>())
-                .with(any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.userDAO.updateUser(any<PartialUserEntity>())
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -168,10 +164,9 @@ class UserRepositoryTest {
         // when
         userRepository.fetchUsersByIds(requestedUserIds).shouldSucceed()
         // then
-        verify(arrangement.userDetailsApi)
-            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.userDetailsApi.getMultipleUsers(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -184,14 +179,12 @@ class UserRepositoryTest {
         // when
         userRepository.fetchUsersByIds(requestedUserIds).shouldFail()
         // then
-        verify(arrangement.userDetailsApi)
-            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
-            .with(eq(QualifiedUserIdListRequest(requestedUserIds.map { it.toApi() }.toList())))
-            .wasInvoked(exactly = once)
-        verify(arrangement.userDetailsApi)
-            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
-            .with(eq(QualifiedUserIdListRequest(listOf(TestUser.OTHER_USER_ID.toApi()))))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userDetailsApi.getMultipleUsers(eq(QualifiedUserIdListRequest(requestedUserIds.map { it.toApi() }.toList())))
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userDetailsApi.getMultipleUsers(eq(QualifiedUserIdListRequest(listOf(TestUser.OTHER_USER_ID.toApi()))))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -208,10 +201,9 @@ class UserRepositoryTest {
         // when
         userRepository.fetchUsersByIds(requestedUserIds).shouldSucceed()
         // then
-        verify(arrangement.userDetailsApi)
-            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userDetailsApi.getMultipleUsers(any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -231,10 +223,9 @@ class UserRepositoryTest {
         // when
         userRepository.fetchUsersByIds(requestedUserIds).shouldSucceed()
         // then
-        verify(arrangement.userDetailsApi)
-            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userDetailsApi.getMultipleUsers(any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -254,10 +245,9 @@ class UserRepositoryTest {
         // when
         userRepository.fetchUsersByIds(requestedUserIds).shouldSucceed()
         // then
-        verify(arrangement.userDetailsApi)
-            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
-            .with(any())
-            .wasInvoked(exactly = twice)
+        coVerify {
+            arrangement.userDetailsApi.getMultipleUsers(any())
+        }.wasInvoked(exactly = twice)
     }
 
     @Test
@@ -271,9 +261,9 @@ class UserRepositoryTest {
         // then
         with(result) {
             shouldFail { it is SelfUserDeleted }
-            verify(arrangement.selfApi)
-                .suspendFunction(arrangement.selfApi::getSelfInfo)
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.selfApi.getSelfInfo()
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -295,14 +285,13 @@ class UserRepositoryTest {
         userRepository.fetchAllOtherUsers().shouldSucceed()
 
         // Then
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::allOtherUsersId)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userDAO.allOtherUsersId()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.userDetailsApi)
-            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
-            .with(eq(ListUserRequest.qualifiedIds(knownUserIds.map { userId -> userId.toApi() })))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userDetailsApi.getMultipleUsers(eq(ListUserRequest.qualifiedIds(knownUserIds.map { userId -> userId.toApi() })))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -318,9 +307,9 @@ class UserRepositoryTest {
         // when
         userRepository.observeSelfUser().first()
         // then
-        verify(arrangement.selfApi)
-            .suspendFunction(arrangement.selfApi::getSelfInfo)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.selfApi.getSelfInfo()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -333,14 +322,12 @@ class UserRepositoryTest {
         val result = userRepository.getKnownUser(TestUser.OTHER_USER_ID)
 
         result.collect {
-            verify(arrangement.userDetailsApi)
-                .suspendFunction(arrangement.userDetailsApi::getUserInfo)
-                .with(any())
-                .wasInvoked(exactly = once)
-            verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::upsertUsers)
-                .with(any())
-                .wasInvoked()
+            coVerify {
+                arrangement.userDetailsApi.getUserInfo(any())
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.userDAO.upsertUsers(any())
+            }.wasInvoked()
         }
     }
 
@@ -354,14 +341,12 @@ class UserRepositoryTest {
         val result = userRepository.getKnownUser(TestUser.OTHER_USER_ID)
 
         result.collect {
-            verify(arrangement.userDetailsApi)
-                .suspendFunction(arrangement.userDetailsApi::getUserInfo)
-                .with(any())
-                .wasInvoked(exactly = once)
-            verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::upsertUsers)
-                .with(any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.userDetailsApi.getUserInfo(any())
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.userDAO.upsertUsers(any())
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -375,26 +360,22 @@ class UserRepositoryTest {
         val result = userRepository.getKnownUser(TestUser.OTHER_USER_ID)
 
         result.collect {
-            verify(arrangement.userDetailsApi)
-                .suspendFunction(arrangement.userDetailsApi::getUserInfo)
-                .with(any())
-                .wasInvoked(exactly = once)
-            verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::upsertUsers)
-                .with(any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.userDetailsApi.getUserInfo(any())
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.userDAO.upsertUsers(any())
+            }.wasInvoked(exactly = once)
         }
 
         val resultSecondTime = userRepository.getKnownUser(TestUser.OTHER_USER_ID)
         resultSecondTime.collect {
-            verify(arrangement.userDetailsApi)
-                .suspendFunction(arrangement.userDetailsApi::getUserInfo)
-                .with(any())
-                .wasNotInvoked()
-            verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::upsertUsers)
-                .with(any())
-                .wasNotInvoked()
+            coVerify {
+                arrangement.userDetailsApi.getUserInfo(any())
+            }.wasNotInvoked()
+            coVerify {
+                arrangement.userDAO.upsertUsers(any())
+            }.wasNotInvoked()
         }
     }
 
@@ -409,17 +390,15 @@ class UserRepositoryTest {
         val result = userRepository.observeSelfUser()
 
         result.collect {
-            verify(arrangement.selfApi)
-                .suspendFunction(arrangement.selfApi::getSelfInfo)
-                .wasInvoked(exactly = once)
-            verify(arrangement.teamsApi)
-                .suspendFunction(arrangement.teamsApi::getTeamMember)
-                .with(eq(TestTeam.TEAM_ID.value))
-                .wasInvoked(exactly = once)
-            verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::upsertUser)
-                .with(any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.selfApi.getSelfInfo()
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.teamsApi.getTeamMember(eq(TestTeam.TEAM_ID.value), any())
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.userDAO.upsertUser(any())
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -434,32 +413,28 @@ class UserRepositoryTest {
         val result = userRepository.observeSelfUser()
 
         result.collect {
-            verify(arrangement.selfApi)
-                .suspendFunction(arrangement.selfApi::getSelfInfo)
-                .wasInvoked(exactly = once)
-            verify(arrangement.teamsApi)
-                .suspendFunction(arrangement.teamsApi::getTeamMember)
-                .with(eq(TestTeam.TEAM_ID.value))
-                .wasInvoked(exactly = once)
-            verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::upsertUser)
-                .with(any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.selfApi.getSelfInfo()
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.teamsApi.getTeamMember(eq(TestTeam.TEAM_ID.value), any())
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.userDAO.upsertUser(any())
+            }.wasInvoked(exactly = once)
         }
 
         val resultSecondTime = userRepository.observeSelfUser()
         resultSecondTime.collect {
-            verify(arrangement.selfApi)
-                .suspendFunction(arrangement.selfApi::getSelfInfo)
-                .wasNotInvoked()
-            verify(arrangement.teamsApi)
-                .suspendFunction(arrangement.teamsApi::getTeamMember)
-                .with(eq(TestTeam.TEAM_ID.value))
-                .wasNotInvoked()
-            verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::upsertUser)
-                .with(any())
-                .wasNotInvoked()
+            coVerify {
+                arrangement.selfApi.getSelfInfo()
+            }.wasNotInvoked()
+            coVerify {
+                arrangement.teamsApi.getTeamMember(eq(TestTeam.TEAM_ID.value), any())
+            }.wasNotInvoked()
+            coVerify {
+                arrangement.userDAO.upsertUser(any())
+            }.wasNotInvoked()
         }
     }
 
@@ -476,16 +451,14 @@ class UserRepositoryTest {
             .shouldSucceed()
 
         // then
-        verify(arrangement.userDetailsApi)
-            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
-            .with(any())
-            .wasInvoked(exactly = once)
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::upsertUsers)
-            .with(matching {
-                it.firstOrNull()?.name != null
-            })
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userDetailsApi.getMultipleUsers(any())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userDAO.upsertUsers(
+                matches { it.firstOrNull()?.name != null },
+            )
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -500,14 +473,12 @@ class UserRepositoryTest {
             .shouldSucceed()
 
         // then
-        verify(arrangement.userDetailsApi)
-            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
-            .with(any())
-            .wasNotInvoked()
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::upsertUsers)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.userDetailsApi.getMultipleUsers(any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.userDAO.upsertUsers(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -522,10 +493,9 @@ class UserRepositoryTest {
         userRepository.removeUserBrokenAsset(qualifiedIdToRemove).shouldSucceed()
 
         // Then
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::removeUserAsset)
-            .with(any())
-            .wasInvoked()
+        coVerify {
+            arrangement.userDAO.removeUserAsset(any())
+        }.wasInvoked()
     }
 
     @Test
@@ -552,10 +522,9 @@ class UserRepositoryTest {
             cancelAndIgnoreRemainingEvents()
         }
 
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::observeAllUsersDetailsByConnectionStatus)
-            .with(any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.userDAO.observeAllUsersDetailsByConnectionStatus(any())
+        }.wasInvoked(once)
     }
 
     @Test
@@ -582,10 +551,9 @@ class UserRepositoryTest {
             cancelAndIgnoreRemainingEvents()
         }
 
-        verify(arrangement.userDAO)
-            .function(arrangement.userDAO::observeUsersDetailsNotInConversation)
-            .with(any())
-            .wasInvoked(once)
+        verify {
+            arrangement.userDAO.observeUsersDetailsNotInConversation(any())
+        }.wasInvoked(once)
     }
 
     @Test
@@ -599,10 +567,9 @@ class UserRepositoryTest {
         userRepository.defederateUser(TestUser.OTHER_FEDERATED_USER_ID).shouldSucceed()
 
         // Then
-        verify(arrangement.userDAO)
-            .function(arrangement.userDAO::markUserAsDefederated)
-            .with(eq(TestUser.OTHER_FEDERATED_USER_ID.toDao()))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.userDAO.markUserAsDefederated(eq(TestUser.OTHER_FEDERATED_USER_ID.toDao()))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -624,10 +591,9 @@ class UserRepositoryTest {
         userRepository.getUsersSummaryByIds(requestedUserIds).shouldSucceed()
 
         // Then
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::getUsersDetailsByQualifiedIDList)
-            .with(any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.userDAO.getUsersDetailsByQualifiedIDList(any())
+        }.wasInvoked(once)
     }
 
     @Test
@@ -642,14 +608,12 @@ class UserRepositoryTest {
 
         with(result) {
             shouldSucceed()
-            verify(arrangement.selfApi)
-                .suspendFunction(arrangement.selfApi::updateSupportedProtocols)
-                .with(any())
-                .wasInvoked(exactly = once)
-            verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::updateUserSupportedProtocols)
-                .with(any(), any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.selfApi.updateSupportedProtocols(any())
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.userDAO.updateUserSupportedProtocols(any(), any())
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -664,14 +628,12 @@ class UserRepositoryTest {
 
         with(result) {
             shouldFail()
-            verify(arrangement.selfApi)
-                .suspendFunction(arrangement.selfApi::updateSupportedProtocols)
-                .with(any())
-                .wasInvoked(exactly = once)
-            verify(arrangement.userDAO)
-                .suspendFunction(arrangement.userDAO::updateUserSupportedProtocols)
-                .with(any(), any())
-                .wasNotInvoked()
+            coVerify {
+                arrangement.selfApi.updateSupportedProtocols(any())
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.userDAO.updateUserSupportedProtocols(any(), any())
+            }.wasNotInvoked()
         }
     }
 
@@ -689,10 +651,9 @@ class UserRepositoryTest {
             conversationId
         ).shouldSucceed()
 
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::updateActiveOneOnOneConversation)
-            .with(eq(userId.toDao()), eq(conversationId.toDao()))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userDAO.updateActiveOneOnOneConversation(eq(userId.toDao()), eq(conversationId.toDao()))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -738,10 +699,9 @@ class UserRepositoryTest {
 
         val result = userRepository.getKnownUserMinimized(TestUser.USER_ID)
 
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::getUserMinimizedByQualifiedID)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userDAO.getUserMinimizedByQualifiedID(any())
+        }.wasInvoked(exactly = once)
         result.shouldSucceed {
             assertIs<OtherUserMinimized>(it)
         }
@@ -758,26 +718,21 @@ class UserRepositoryTest {
         val result = userRepository.fetchUserInfo(TestUser.USER_ID)
 
         assertIs<Either.Right<Unit>>(result)
-        verify(arrangement.userDetailsApi)
-            .suspendFunction(arrangement.userDetailsApi::getUserInfo)
-            .with(any())
-            .wasInvoked(exactly = once)
-        verify(arrangement.teamsApi)
-            .suspendFunction(arrangement.teamsApi::getTeamMembersByIds)
-            .with(any())
-            .wasInvoked(exactly = once)
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::upsertUsers)
-            .with(any())
-            .wasInvoked(exactly = once)
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::upsertConnectionStatuses)
-            .with(any())
-            .wasInvoked(exactly = once)
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::upsertUsers)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.userDetailsApi.getUserInfo(any())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.teamsApi.getTeamMembersByIds(any(), any())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userDAO.upsertUsers(any())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userDAO.upsertConnectionStatuses(any())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userDAO.upsertUsers(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -788,10 +743,9 @@ class UserRepositoryTest {
 
         userRepository.fetchUserInfo(TestUser.USER_ID)
 
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::insertOrIgnoreIncompleteUsers)
-            .with(any())
-            .wasInvoked()
+        coVerify {
+            arrangement.userDAO.insertOrIgnoreIncompleteUsers(any())
+        }.wasInvoked()
     }
 
     @Test
@@ -823,10 +777,9 @@ class UserRepositoryTest {
         result.shouldSucceed {
             assertEquals(expectedResult, it)
         }
-        verify(arrangement.userDetailsApi)
-            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
-            .with(eq(QualifiedUserIdListRequest(requestedUserIds.map { it.toApi() }.toList())))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userDetailsApi.getMultipleUsers(eq(QualifiedUserIdListRequest(requestedUserIds.map { it.toApi() }.toList())))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -840,30 +793,29 @@ class UserRepositoryTest {
         val result = userRepository.fetchUsersLegalHoldConsent(requestedUserIds)
         // then
         result.shouldFail()
-        verify(arrangement.userDetailsApi)
-            .suspendFunction(arrangement.userDetailsApi::getMultipleUsers)
-            .with(eq(QualifiedUserIdListRequest(requestedUserIds.map { it.toApi() }.toList())))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userDetailsApi.getMultipleUsers(eq(QualifiedUserIdListRequest(requestedUserIds.map { it.toApi() }.toList())))
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
         @Mock
-        val userDAO = configure(mock(classOf<UserDAO>())) { stubsUnitByDefault = true }
+        val userDAO = mock(UserDAO::class)
 
         @Mock
-        val metadataDAO = configure(mock(classOf<MetadataDAO>())) { stubsUnitByDefault = true }
+        val metadataDAO = mock(MetadataDAO::class)
 
         @Mock
-        val clientDAO = configure(mock(classOf<ClientDAO>())) { stubsUnitByDefault = true }
+        val clientDAO = mock(ClientDAO::class)
 
         @Mock
-        val selfApi = mock(classOf<SelfApi>())
+        val selfApi = mock(SelfApi::class)
 
         @Mock
-        val userDetailsApi = mock(classOf<UserDetailsApi>())
+        val userDetailsApi = mock(UserDetailsApi::class)
 
         @Mock
-        val teamsApi = mock(classOf<TeamsApi>())
+        val teamsApi = mock(TeamsApi::class)
 
         @Mock
         val sessionRepository = mock(SessionRepository::class)
@@ -891,238 +843,205 @@ class UserRepositoryTest {
             )
         }
 
-        init {
-            withSelfUserIdFlowMetadataReturning(flowOf(TestUser.JSON_QUALIFIED_ID))
-            given(userDAO).suspendFunction(userDAO::observeUserDetailsByQualifiedID)
-                .whenInvokedWith(any())
-                .then { flowOf(TestUser.DETAILS_ENTITY) }
-
-            given(selfTeamIdProvider)
-                .suspendFunction(selfTeamIdProvider::invoke)
-                .whenInvoked()
-                .then { Either.Right(TestTeam.TEAM_ID) }
-            given(sessionRepository)
-                .suspendFunction(sessionRepository::updateSsoIdAndScimInfo)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
-            withGetTeamMemberSuccess(TestTeam.memberDTO(selfUserId.value))
-            given(legalHoldHandler)
-                .suspendFunction(legalHoldHandler::handleUserFetch)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withUserDAOReturning(value: UserEntityMinimized?) = apply {
+            coEvery {
+                userDAO.getUserMinimizedByQualifiedID(any())
+            }.returns(value)
         }
 
-        fun withUserDAOReturning(value: UserEntityMinimized?) = apply {
-            given(userDAO)
-                .suspendFunction(userDAO::getUserMinimizedByQualifiedID)
-                .whenInvokedWith(any())
-                .thenReturn(value)
+        suspend fun withSelfUserIdFlowMetadataReturning(selfUserIdStringFlow: Flow<String?>) = apply {
+            coEvery {
+                metadataDAO.valueByKeyFlow(eq(SELF_USER_ID_KEY))
+            }.returns(selfUserIdStringFlow)
         }
 
-        fun withSelfUserIdFlowMetadataReturning(selfUserIdStringFlow: Flow<String?>) = apply {
-            given(metadataDAO)
-                .suspendFunction(metadataDAO::valueByKeyFlow)
-                .whenInvokedWith(eq(SELF_USER_ID_KEY))
-                .thenReturn(selfUserIdStringFlow)
-        }
-
-        fun withDaoObservingByConnectionStatusReturning(userEntities: List<UserDetailsEntity>) = apply {
-            given(userDAO)
-                .suspendFunction(userDAO::observeAllUsersDetailsByConnectionStatus)
-                .whenInvokedWith(any())
-                .thenReturn(flowOf(userEntities))
+        suspend fun withDaoObservingByConnectionStatusReturning(userEntities: List<UserDetailsEntity>) = apply {
+            coEvery {
+                userDAO.observeAllUsersDetailsByConnectionStatus(any())
+            }.returns(flowOf(userEntities))
         }
 
         fun withDaoObservingNotInConversationReturning(userEntities: List<UserDetailsEntity>) = apply {
-            given(userDAO)
-                .function(userDAO::observeUsersDetailsNotInConversation)
-                .whenInvokedWith(any())
-                .thenReturn(flowOf(userEntities))
+            every {
+                userDAO.observeUsersDetailsNotInConversation(any())
+            }.returns(flowOf(userEntities))
         }
 
-        fun withUpdateUserReturning() = apply {
-            given(userDAO)
-                .suspendFunction(userDAO::updateUser, KFunction1<PartialUserEntity>())
-                .whenInvokedWith(any())
-                .thenReturn(Unit)
+        suspend fun withUpdateUserReturning() = apply {
+            coEvery {
+                userDAO.updateUser(any<PartialUserEntity>())
+            }.returns(Unit)
         }
 
-        fun withSuccessfulGetUsersInfo(result: UserProfileDTO = TestUser.USER_PROFILE_DTO) = apply {
-            given(userDetailsApi)
-                .suspendFunction(userDetailsApi::getUserInfo)
-                .whenInvokedWith(any())
-                .thenReturn(NetworkResponse.Success(result, mapOf(), 200))
+        suspend fun withSuccessfulGetUsersInfo(result: UserProfileDTO = TestUser.USER_PROFILE_DTO) = apply {
+            coEvery {
+                userDetailsApi.getUserInfo(any())
+            }.returns(NetworkResponse.Success(result, mapOf(), 200))
         }
 
-        fun withFailingGetUserInfo() = apply {
-            given(userDetailsApi)
-                .suspendFunction(userDetailsApi::getUserInfo)
-                .whenInvokedWith(any())
-                .thenReturn(NetworkResponse.Error(TestNetworkException.generic))
+        suspend fun withFailingGetUserInfo() = apply {
+            coEvery {
+                userDetailsApi.getUserInfo(any())
+            }.returns(NetworkResponse.Error(TestNetworkException.generic))
         }
 
-        fun withSuccessfulFetchTeamMembersByIds(result: List<TeamsApi.TeamMemberDTO>) = apply {
-            given(teamsApi)
-                .suspendFunction(teamsApi::getTeamMembersByIds)
-                .whenInvokedWith(any(), any())
-                .thenReturn(NetworkResponse.Success(TeamsApi.TeamMemberListNonPaginated(false, result), mapOf(), 200))
+        suspend fun withSuccessfulFetchTeamMembersByIds(result: List<TeamsApi.TeamMemberDTO>) = apply {
+            coEvery {
+                teamsApi.getTeamMembersByIds(any(), any())
+            }.returns(NetworkResponse.Success(TeamsApi.TeamMemberListNonPaginated(false, result), mapOf(), 200))
         }
 
-        fun withSuccessfulGetUsersByQualifiedIdList(knownUserEntities: List<UserDetailsEntity>) = apply {
-            given(userDAO)
-                .suspendFunction(userDAO::getUsersDetailsByQualifiedIDList)
-                .whenInvokedWith(any())
-                .thenReturn(knownUserEntities)
+        suspend fun withSuccessfulGetUsersByQualifiedIdList(knownUserEntities: List<UserDetailsEntity>) = apply {
+            coEvery {
+                userDAO.getUsersDetailsByQualifiedIDList(any())
+            }.returns(knownUserEntities)
         }
 
-        fun withUserDaoReturning(userEntity: UserDetailsEntity? = TestUser.DETAILS_ENTITY) = apply {
-            given(userDAO).suspendFunction(userDAO::observeUserDetailsByQualifiedID)
-                .whenInvokedWith(any())
-                .then { flowOf(userEntity) }
+        suspend fun withUserDaoReturning(userEntity: UserDetailsEntity? = TestUser.DETAILS_ENTITY) = apply {
+            coEvery {
+                userDAO.observeUserDetailsByQualifiedID(any())
+            }.returns(flowOf(userEntity))
         }
 
-        fun withDaoReturningNoMetadataUsers(userEntity: List<UserDetailsEntity> = emptyList()) = apply {
-            given(userDAO).suspendFunction(userDAO::getUsersDetailsWithoutMetadata)
-                .whenInvoked()
-                .then { userEntity }
+        suspend fun withDaoReturningNoMetadataUsers(userEntity: List<UserDetailsEntity> = emptyList()) = apply {
+            coEvery {
+                userDAO.getUsersDetailsWithoutMetadata()
+            }.returns(userEntity)
         }
 
-        fun withGetSelfUserId() = apply {
-            given(metadataDAO)
-                .suspendFunction(metadataDAO::valueByKey)
-                .whenInvokedWith(any())
-                .thenReturn(
-                    """
+        suspend fun withGetSelfUserId() = apply {
+            coEvery {
+                metadataDAO.valueByKey(any())
+            }.returns(
+                """
                     {
                         "value" : "someValue",
                         "domain" : "someDomain"
                     }
                 """.trimIndent()
-                )
+            )
         }
 
-        fun withRemoteGetSelfReturningUser(): Arrangement = apply {
-            given(selfApi)
-                .suspendFunction(selfApi::getSelfInfo)
-                .whenInvoked()
-                .thenReturn(NetworkResponse.Success(TestUser.SELF_USER_DTO.copy(teamId = TestTeam.TEAM_ID.value), mapOf(), 200))
+        suspend fun withRemoteGetSelfReturningUser(): Arrangement = apply {
+            coEvery {
+                selfApi.getSelfInfo()
+            }.returns(NetworkResponse.Success(TestUser.SELF_USER_DTO.copy(teamId = TestTeam.TEAM_ID.value), mapOf(), 200))
         }
 
-        fun withRemoteGetSelfReturningDeletedUser(): Arrangement = apply {
-            given(selfApi)
-                .suspendFunction(selfApi::getSelfInfo)
-                .whenInvoked()
-                .thenReturn(NetworkResponse.Success(TestUser.SELF_USER_DTO.copy(deleted = true), mapOf(), 200))
+        suspend fun withRemoteGetSelfReturningDeletedUser(): Arrangement = apply {
+            coEvery {
+                selfApi.getSelfInfo()
+            }.returns(NetworkResponse.Success(TestUser.SELF_USER_DTO.copy(deleted = true), mapOf(), 200))
         }
 
-        fun withSuccessfulGetMultipleUsersApiRequest(result: ListUsersDTO) = apply {
-            given(userDetailsApi)
-                .suspendFunction(userDetailsApi::getMultipleUsers)
-                .whenInvokedWith(any())
-                .thenReturn(NetworkResponse.Success(result, mapOf(), HttpStatusCode.OK.value))
+        suspend fun withSuccessfulGetMultipleUsersApiRequest(result: ListUsersDTO) = apply {
+            coEvery {
+                userDetailsApi.getMultipleUsers(any())
+            }.returns(NetworkResponse.Success(result, mapOf(), HttpStatusCode.OK.value))
         }
 
-        fun withGetMultipleUsersApiRequestFederationNotEnabledError() = apply {
-            given(userDetailsApi)
-                .suspendFunction(userDetailsApi::getMultipleUsers)
-                .whenInvokedWith(any())
-                .thenReturn(NetworkResponse.Error(federationNotEnabled))
+        suspend fun withGetMultipleUsersApiRequestFederationNotEnabledError() = apply {
+            coEvery {
+                userDetailsApi.getMultipleUsers(any())
+            }.returns(NetworkResponse.Error(federationNotEnabled))
         }
 
-        fun withGetMultipleUsersApiRequestGenericError() = apply {
-            given(userDetailsApi)
-                .suspendFunction(userDetailsApi::getMultipleUsers)
-                .whenInvokedWith(any())
-                .thenReturn(NetworkResponse.Error(generic))
+        suspend fun withGetMultipleUsersApiRequestGenericError() = apply {
+            coEvery {
+                userDetailsApi.getMultipleUsers(any())
+            }.returns(NetworkResponse.Error(generic))
         }
 
-        fun withUpdateDisplayNameApiRequestResponse(response: NetworkResponse<Unit>) = apply {
-            given(selfApi)
-                .suspendFunction(selfApi::updateSelf)
-                .whenInvokedWith(any())
-                .thenReturn(response)
+        suspend fun withUpdateDisplayNameApiRequestResponse(response: NetworkResponse<Unit>) = apply {
+            coEvery {
+                selfApi.updateSelf(any())
+            }.returns(response)
         }
 
-        fun withUpdateSupportedProtocolsApiRequestResponse(response: NetworkResponse<Unit>) = apply {
-            given(selfApi)
-                .suspendFunction(selfApi::updateSupportedProtocols)
-                .whenInvokedWith(any())
-                .thenReturn(response)
+        suspend fun withUpdateSupportedProtocolsApiRequestResponse(response: NetworkResponse<Unit>) = apply {
+            coEvery {
+                selfApi.updateSupportedProtocols(any())
+            }.returns(response)
         }
 
-        fun withRemoteUpdateEmail(result: NetworkResponse<Boolean>) = apply {
-            given(selfApi)
-                .suspendFunction(selfApi::updateEmailAddress)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withRemoteUpdateEmail(result: NetworkResponse<Boolean>) = apply {
+            coEvery {
+                selfApi.updateEmailAddress(any())
+            }.returns(result)
         }
 
-        fun withSuccessfulRemoveUserAsset() = apply {
-            given(userDAO)
-                .suspendFunction(userDAO::removeUserAsset)
-                .whenInvokedWith(any())
-                .then { Either.Right(Unit) }
+        suspend fun withSuccessfulRemoveUserAsset() = apply {
+            coEvery {
+                userDAO.removeUserAsset(any())
+            }.returns(Unit)
         }
 
-        fun withSuccessfulGetAllUsers(userEntities: List<UserDetailsEntity>) = apply {
-            given(userDAO)
-                .suspendFunction(userDAO::getAllUsersDetails)
-                .whenInvoked()
-                .then { flowOf(userEntities) }
+        suspend fun withSuccessfulGetAllUsers(userEntities: List<UserDetailsEntity>) = apply {
+            coEvery {
+                userDAO.getAllUsersDetails()
+            }.returns(flowOf(userEntities))
         }
 
-        fun withSuccessfulGetMultipleUsers() = apply {
-            given(userDetailsApi)
-                .suspendFunction(userDetailsApi::getMultipleUsers)
-                .whenInvokedWith(any())
-                .then { NetworkResponse.Success(value = LIST_USERS_DTO, headers = mapOf(), httpCode = 200) }
+        suspend fun withSuccessfulGetMultipleUsers() = apply {
+            coEvery {
+                userDetailsApi.getMultipleUsers(any())
+            }.returns(NetworkResponse.Success(value = LIST_USERS_DTO, headers = mapOf(), httpCode = 200) )
         }
 
-        fun withAllOtherUsersIdSuccess(
+        suspend fun withAllOtherUsersIdSuccess(
             result: List<UserIDEntity>,
         ) {
-            given(userDAO)
-                .suspendFunction(userDAO::allOtherUsersId)
-                .whenInvoked()
-                .then { result }
+            coEvery {
+                userDAO.allOtherUsersId()
+            }.returns(result)
         }
 
-        fun withMarkUserAsDefederated() = apply {
-            given(userDAO)
-                .suspendFunction(userDAO::markUserAsDefederated)
-                .whenInvokedWith(any())
-                .thenReturn(Unit)
+        suspend fun withMarkUserAsDefederated() = apply {
+            coEvery {
+                userDAO.markUserAsDefederated(any())
+            }.returns(Unit)
         }
 
-        fun withUpdateOneOnOneConversationSuccess() = apply {
-            given(userDAO)
-                .suspendFunction(userDAO::updateActiveOneOnOneConversation)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Unit)
+        suspend fun withUpdateOneOnOneConversationSuccess() = apply {
+            coEvery {
+                userDAO.updateActiveOneOnOneConversation(any(), any())
+            }.returns(Unit)
         }
 
-        fun withUpdateOneOnOneConversationFailing(exception: Throwable) = apply {
-            given(userDAO)
-                .suspendFunction(userDAO::updateActiveOneOnOneConversation)
-                .whenInvokedWith(any(), any())
-                .thenThrow(exception)
+        suspend fun withUpdateOneOnOneConversationFailing(exception: Throwable) = apply {
+            coEvery {
+                userDAO.updateActiveOneOnOneConversation(any(), any())
+            }.throws(exception)
         }
 
-        fun withInsertOrIgnoreUsers() {
-            given(userDAO)
-                .suspendFunction(userDAO::insertOrIgnoreIncompleteUsers)
-                .whenInvokedWith(any())
-                .thenReturn(Unit)
+        suspend fun withInsertOrIgnoreUsers() {
+            coEvery {
+                userDAO.insertOrIgnoreIncompleteUsers(any())
+            }.returns(Unit)
         }
 
-        fun withGetTeamMemberSuccess(result: TeamsApi.TeamMemberDTO) = apply {
-            given(teamsApi)
-                .suspendFunction(teamsApi::getTeamMember)
-                .whenInvokedWith(any(), any())
-                .thenReturn(NetworkResponse.Success(result, mapOf(), 200))
+        suspend fun withGetTeamMemberSuccess(result: TeamsApi.TeamMemberDTO) = apply {
+            coEvery {
+                teamsApi.getTeamMember(any(), any())
+            }.returns(NetworkResponse.Success(result, mapOf(), 200))
         }
 
-        fun arrange(block: (Arrangement.() -> Unit) = { }): Pair<Arrangement, UserRepository> {
+        suspend inline fun arrange(block: (Arrangement.() -> Unit) = { }): Pair<Arrangement, UserRepository> {
+            withSelfUserIdFlowMetadataReturning(flowOf(TestUser.JSON_QUALIFIED_ID))
+            coEvery {
+                userDAO.observeUserDetailsByQualifiedID(any())
+            }.returns(flowOf(TestUser.DETAILS_ENTITY))
+
+            coEvery {
+                selfTeamIdProvider()
+            }.returns(Either.Right(TestTeam.TEAM_ID))
+            coEvery {
+                sessionRepository.updateSsoIdAndScimInfo(any(), any(), any())
+            }.returns(Either.Right(Unit))
+            withGetTeamMemberSuccess(TestTeam.memberDTO(selfUserId.value))
+            coEvery {
+                legalHoldHandler.handleUserFetch(any())
+            }.returns(Either.Right(Unit))
             apply(block)
             return this to userRepository
         }

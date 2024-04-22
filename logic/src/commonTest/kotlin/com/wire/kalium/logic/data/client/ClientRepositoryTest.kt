@@ -41,7 +41,6 @@ import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
 import com.wire.kalium.network.api.base.model.ErrorResponse
-import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
@@ -55,13 +54,11 @@ import com.wire.kalium.util.DelicateKaliumApi
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.configure
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.asFlow
@@ -87,14 +84,13 @@ class ClientRepositoryTest {
 
         clientRepository.registerMLSClient(CLIENT_ID, MLS_PUBLIC_KEY)
 
-        verify(arrangement.clientRemoteRepository)
-            .suspendFunction(arrangement.clientRemoteRepository::registerMLSClient)
-            .with(eq(CLIENT_ID), eq(MLS_PUBLIC_KEY.encodeBase64()))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.clientRemoteRepository.registerMLSClient(eq(CLIENT_ID), eq(MLS_PUBLIC_KEY.encodeBase64()))
+        }.wasInvoked(once)
 
-        verify(arrangement.clientRegistrationStorage)
-            .suspendFunction(arrangement.clientRegistrationStorage::setHasRegisteredMLSClient)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clientRegistrationStorage.setHasRegisteredMLSClient()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -106,10 +102,9 @@ class ClientRepositoryTest {
 
         clientRepository.registerClient(REGISTER_CLIENT_PARAMS)
 
-        verify(arrangement.clientRemoteRepository)
-            .suspendFunction(arrangement.clientRemoteRepository::registerClient)
-            .with(eq(REGISTER_CLIENT_PARAMS))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.clientRemoteRepository.registerClient(eq(REGISTER_CLIENT_PARAMS))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -151,9 +146,9 @@ class ClientRepositoryTest {
 
         clientRepository.persistClientId(clientId)
 
-        verify(arrangement.clientRegistrationStorage)
-            .suspendFunction(arrangement.clientRegistrationStorage::setRegisteredClientId)
-            .with(eq(clientRepository))
+        coVerify {
+            arrangement.clientRegistrationStorage.setRegisteredClientId(clientId.value)
+        }.wasInvoked()
     }
 
     @OptIn(DelicateKaliumApi::class)
@@ -196,9 +191,9 @@ class ClientRepositoryTest {
 
         clientRepository.persistRetainedClientId(clientId)
 
-        verify(arrangement.clientRegistrationStorage)
-            .suspendFunction(arrangement.clientRegistrationStorage::setRetainedClientId)
-            .with(eq(clientRepository))
+        coVerify {
+            arrangement.clientRegistrationStorage.setRetainedClientId(clientId.value)
+        }.wasInvoked()
     }
 
     @Test
@@ -215,12 +210,12 @@ class ClientRepositoryTest {
 
         actual.shouldFail { expected.value }
 
-        verify(arrangement.clientRemoteRepository)
-            .coroutine { arrangement.clientRemoteRepository.deleteClient(param) }
-            .wasInvoked(exactly = once)
-        verify(arrangement.clientDAO)
-            .coroutine { arrangement.clientDAO.deleteClient(selfUserId.toDao(), param.clientId.value) }
-            .wasNotInvoked()
+        coVerify {
+            arrangement.clientRemoteRepository.deleteClient(param)
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clientDAO.deleteClient(selfUserId.toDao(), param.clientId.value)
+        }.wasNotInvoked()
     }
 
     @Test
@@ -236,12 +231,12 @@ class ClientRepositoryTest {
 
         actual.shouldSucceed()
 
-        verify(arrangement.clientRemoteRepository)
-            .coroutine { clientRepository.deleteClient(param) }
-            .wasInvoked(exactly = once)
-        verify(arrangement.clientDAO)
-            .coroutine { arrangement.clientDAO.deleteClient(selfUserId.toDao(), param.clientId.value) }
-            .wasInvoked(exactly = once)
+        coVerify {
+            clientRepository.deleteClient(param)
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clientDAO.deleteClient(selfUserId.toDao(), param.clientId.value)
+        }.wasInvoked(exactly = once)
     }
 
     // selfListOfClients
@@ -411,10 +406,9 @@ class ClientRepositoryTest {
 
         repository.saveNewClientEvent(newClientEvent)
 
-        verify(arrangement.newClientDAO)
-            .suspendFunction(arrangement.newClientDAO::insertNewClient)
-            .with(eq(insertClientParam))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.newClientDAO.insertNewClient(eq(insertClientParam))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -423,9 +417,9 @@ class ClientRepositoryTest {
 
         repository.clearNewClients()
 
-        verify(arrangement.newClientDAO)
-            .suspendFunction(arrangement.newClientDAO::clearNewClients)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.newClientDAO.clearNewClients()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -491,21 +485,19 @@ class ClientRepositoryTest {
     private class Arrangement {
 
         @Mock
-        val clientApi = mock(classOf<ClientApi>())
+        val clientApi = mock(ClientApi::class)
 
         @Mock
-        val clientRemoteRepository = mock(classOf<ClientRemoteRepository>())
+        val clientRemoteRepository = mock(ClientRemoteRepository::class)
 
         @Mock
-        val clientRegistrationStorage = configure(mock(classOf<ClientRegistrationStorage>())) {
-            stubsUnitByDefault = true
-        }
+        val clientRegistrationStorage = mock(ClientRegistrationStorage::class)
 
         @Mock
-        val clientDAO = mock(classOf<ClientDAO>())
+        val clientDAO = mock(ClientDAO::class)
 
         @Mock
-        val newClientDAO = mock(classOf<NewClientDAO>())
+        val newClientDAO = mock(NewClientDAO::class)
 
         val clientMapper = MapperProvider.clientMapper()
 
@@ -513,84 +505,76 @@ class ClientRepositoryTest {
             clientRemoteRepository, clientRegistrationStorage, clientDAO, newClientDAO, selfUserId, clientApi, clientMapper
         )
 
-        fun withObserveRegisteredClientId(values: Flow<String?>) = apply {
-            given(clientRegistrationStorage)
-                .suspendFunction(clientRegistrationStorage::observeRegisteredClientId)
-                .whenInvoked()
-                .thenReturn(values)
+        suspend fun withObserveRegisteredClientId(values: Flow<String?>) = apply {
+            coEvery {
+                clientRegistrationStorage.observeRegisteredClientId()
+            }.returns(values)
         }
 
-        fun withFetchSelfUserClient(result: NetworkResponse<List<ClientDTO>>) = apply {
-            given(clientApi)
-                .suspendFunction(clientApi::fetchSelfUserClient)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withFetchSelfUserClient(result: NetworkResponse<List<ClientDTO>>) = apply {
+            coEvery {
+                clientApi.fetchSelfUserClient()
+            }.returns(result)
         }
 
-        fun withObserveClientsList(result: List<ClientEntity>) = apply {
-            given(clientDAO)
-                .suspendFunction(clientDAO::observeClientsByUserId)
-                .whenInvokedWith(any())
-                .thenReturn(flowOf(result))
+        suspend fun withObserveClientsList(result: List<ClientEntity>) = apply {
+            coEvery {
+                clientDAO.observeClientsByUserId(any())
+            }.returns(flowOf(result))
         }
 
-        fun withSuccessfulResponse(expectedResponse: Map<UserIdDTO, List<SimpleClientResponse>>) = apply {
-            given(clientApi)
-                .suspendFunction(clientApi::listClientsOfUsers).whenInvokedWith(any()).then {
-                    NetworkResponse.Success(expectedResponse, mapOf(), 200)
-                }
+        suspend fun withSuccessfulResponse(expectedResponse: Map<UserIdDTO, List<SimpleClientResponse>>) = apply {
+            coEvery {
+                clientApi.listClientsOfUsers(any())
+            }.returns(
+                NetworkResponse.Success(expectedResponse, mapOf(), 200)
+            )
         }
 
-        fun withErrorResponse(kaliumException: KaliumException) = apply {
-            given(clientApi)
-                .suspendFunction(clientApi::listClientsOfUsers)
-                .whenInvokedWith(any())
-                .then {
-                    NetworkResponse.Error(
-                        kaliumException
-                    )
-                }
+        suspend fun withErrorResponse(kaliumException: KaliumException) = apply {
+            coEvery {
+                clientApi.listClientsOfUsers(any())
+            }.returns(
+                NetworkResponse.Error(
+                    kaliumException
+                )
+            )
         }
 
-        fun withDeleteClientReportedly(resultL: Either<NetworkFailure, Unit>) = apply {
-            given(clientRemoteRepository)
-                .suspendFunction(clientRemoteRepository::deleteClient)
-                .whenInvokedWith(any())
-                .thenReturn(resultL)
+        suspend fun withDeleteClientReportedly(resultL: Either<NetworkFailure, Unit>) = apply {
+            coEvery {
+                clientRemoteRepository.deleteClient(any())
+            }.returns(resultL)
         }
 
-        fun witGgetRegisteredClientId(result: String?) = apply {
-            given(clientRegistrationStorage)
-                .suspendFunction(clientRegistrationStorage::getRegisteredClientId)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun witGgetRegisteredClientId(result: String?) = apply {
+            coEvery {
+                clientRegistrationStorage.getRegisteredClientId()
+            }.returns(result)
         }
 
-        fun withRegisterClient(result: Either<NetworkFailure, Client>) = apply {
-            given(clientRemoteRepository)
-                .suspendFunction(clientRemoteRepository::registerClient)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withRegisterClient(result: Either<NetworkFailure, Client>) = apply {
+            coEvery {
+                clientRemoteRepository.registerClient(any())
+            }.returns(result)
         }
 
-        fun withRegisterMLSClient(result: Either<NetworkFailure, Unit>) = apply {
-            given(clientRemoteRepository)
-                .suspendFunction(clientRemoteRepository::registerMLSClient)
-                .whenInvokedWith(any(), any())
-                .thenReturn(result)
+        suspend fun withRegisterMLSClient(result: Either<NetworkFailure, Unit>) = apply {
+            coEvery {
+                clientRemoteRepository.registerMLSClient(any(), any())
+            }.returns(result)
         }
 
-        fun withDeleteClientLocally() = apply {
-            given(clientDAO)
-                .suspendFunction(clientDAO::deleteClient)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Unit)
+        suspend fun withDeleteClientLocally() = apply {
+            coEvery {
+                clientDAO.deleteClient(any(), any())
+            }.returns(Unit)
         }
-        fun withGetClientsOfConversation(result: Map<QualifiedIDEntity, List<ClientEntity>>) = apply {
-            given(clientDAO)
-                .suspendFunction(clientDAO::getClientsOfConversation)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+
+        suspend fun withGetClientsOfConversation(result: Map<QualifiedIDEntity, List<ClientEntity>>) = apply {
+            coEvery {
+                clientDAO.getClientsOfConversation(any())
+            }.returns(result)
         }
 
         fun arrange() = this to clientRepository

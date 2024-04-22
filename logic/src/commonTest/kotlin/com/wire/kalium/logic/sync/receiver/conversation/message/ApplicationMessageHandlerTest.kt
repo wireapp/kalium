@@ -46,12 +46,12 @@ import com.wire.kalium.logic.util.Base64
 import com.wire.kalium.logic.util.MessageContentEncoder
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.every
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -91,14 +91,13 @@ class ApplicationMessageHandlerTest {
             protoContent
         )
 
-        verify(arrangement.assetMessageHandler)
-            .suspendFunction(arrangement.assetMessageHandler::handle)
-            .with(
-                matching {
+        coVerify {
+            arrangement.assetMessageHandler.handle(
+                matches {
                     it.content is MessageContent.Asset
                 }
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -129,54 +128,53 @@ class ApplicationMessageHandlerTest {
             protoContent
         )
 
-        verify(arrangement.buttonActionConfirmationHandler)
-            .suspendFunction(arrangement.buttonActionConfirmationHandler::handle)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.buttonActionConfirmationHandler.handle(any(), any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
         @Mock
-        val persistMessage = mock(classOf<PersistMessageUseCase>())
+        val persistMessage = mock(PersistMessageUseCase::class)
 
         @Mock
-        val messageRepository = mock(classOf<MessageRepository>())
+        val messageRepository = mock(MessageRepository::class)
 
         @Mock
-        private val userRepository = mock(classOf<UserRepository>())
+        private val userRepository = mock(UserRepository::class)
 
         @Mock
-        val userConfigRepository = mock(classOf<UserConfigRepository>())
+        val userConfigRepository = mock(UserConfigRepository::class)
 
         @Mock
-        private val callManager = mock(classOf<CallManager>())
+        private val callManager = mock(CallManager::class)
 
         @Mock
-        val persistReactionsUseCase = mock(classOf<PersistReactionUseCase>())
+        val persistReactionsUseCase = mock(PersistReactionUseCase::class)
 
         @Mock
-        val messageTextEditHandler = mock(classOf<MessageTextEditHandler>())
+        val messageTextEditHandler = mock(MessageTextEditHandler::class)
 
         @Mock
-        val lastReadContentHandler = mock(classOf<LastReadContentHandler>())
+        val lastReadContentHandler = mock(LastReadContentHandler::class)
 
         @Mock
-        val clearConversationContentHandler = mock(classOf<ClearConversationContentHandler>())
+        val clearConversationContentHandler = mock(ClearConversationContentHandler::class)
 
         @Mock
-        val deleteForMeHandler = mock(classOf<DeleteForMeHandler>())
+        val deleteForMeHandler = mock(DeleteForMeHandler::class)
 
         @Mock
-        val deleteMessageHandler = mock(classOf<DeleteMessageHandler>())
+        val deleteMessageHandler = mock(DeleteMessageHandler::class)
 
         @Mock
-        val receiptMessageHandler = mock(classOf<ReceiptMessageHandler>())
+        val receiptMessageHandler = mock(ReceiptMessageHandler::class)
 
         @Mock
-        val assetMessageHandler = mock(classOf<AssetMessageHandler>())
+        val assetMessageHandler = mock(AssetMessageHandler::class)
 
         @Mock
-        val buttonActionConfirmationHandler = mock(classOf<ButtonActionConfirmationHandler>())
+        val buttonActionConfirmationHandler = mock(ButtonActionConfirmationHandler::class)
 
         private val applicationMessageHandler = ApplicationMessageHandlerImpl(
             userRepository,
@@ -196,39 +194,35 @@ class ApplicationMessageHandlerTest {
             TestUser.SELF.id
         )
 
-        fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
-            given(persistMessage)
-                .suspendFunction(persistMessage::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                persistMessage.invoke(any())
+            }.returns(result)
         }
 
         fun withFileSharingEnabled() = apply {
-            given(userConfigRepository)
-                .function(userConfigRepository::isFileSharingEnabled)
-                .whenInvoked()
-                .thenReturn(
-                    Either.Right(
-                        FileSharingStatus(
-                            state = FileSharingStatus.Value.EnabledAll,
-                            isStatusChanged = false
-                        )
+            every {
+                userConfigRepository.isFileSharingEnabled()
+            }.returns(
+                Either.Right(
+                    FileSharingStatus(
+                        state = FileSharingStatus.Value.EnabledAll,
+                        isStatusChanged = false
                     )
                 )
+            )
         }
 
-        fun withErrorGetMessageById(storageFailure: StorageFailure) = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::getMessageById)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Left(storageFailure))
+        suspend fun withErrorGetMessageById(storageFailure: StorageFailure) = apply {
+            coEvery {
+                messageRepository.getMessageById(any(), any())
+            }.returns(Either.Left(storageFailure))
         }
 
-        fun withButtonActionConfirmation(result: Either<StorageFailure, Unit>) = apply {
-            given(buttonActionConfirmationHandler)
-                .suspendFunction(buttonActionConfirmationHandler::handle)
-                .whenInvokedWith(any(), any())
-                .thenReturn(result)
+        suspend fun withButtonActionConfirmation(result: Either<StorageFailure, Unit>) = apply {
+            coEvery {
+                buttonActionConfirmationHandler.handle(any(), any(), any())
+            }.returns(result)
         }
 
         fun arrange() = this to applicationMessageHandler

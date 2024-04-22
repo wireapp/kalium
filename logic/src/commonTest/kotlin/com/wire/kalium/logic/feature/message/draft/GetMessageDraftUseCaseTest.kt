@@ -25,10 +25,10 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -45,9 +45,9 @@ class GetMessageDraftUseCaseTest {
 
         getMessageDraftUseCase(CONVERSATION_ID)
 
-        verify(arrangement.messageDraftRepository)
-            .coroutine { arrangement.messageDraftRepository.getMessageDraft(CONVERSATION_ID) }
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageDraftRepository.getMessageDraft(CONVERSATION_ID)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -63,9 +63,9 @@ class GetMessageDraftUseCaseTest {
         // Then
         assertEquals(null, result)
 
-        verify(arrangement.messageDraftRepository)
-            .coroutine { arrangement.messageDraftRepository.getMessageDraft(CONVERSATION_ID) }
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageDraftRepository.getMessageDraft(CONVERSATION_ID)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -81,9 +81,9 @@ class GetMessageDraftUseCaseTest {
         // Then
         assertEquals(MESSAGE_DRAFT, result)
 
-        verify(arrangement.messageDraftRepository)
-            .coroutine { arrangement.messageDraftRepository.getMessageDraft(CONVERSATION_ID) }
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageDraftRepository.getMessageDraft(CONVERSATION_ID)
+        }.wasInvoked(exactly = once)
     }
 
     private inner class Arrangement {
@@ -99,9 +99,9 @@ class GetMessageDraftUseCaseTest {
             conversationId: ConversationId,
             response: MessageDraft?
         ) = apply {
-            given(messageDraftRepository)
-                .coroutine { messageDraftRepository.getMessageDraft(conversationId) }
-                .thenReturn(response)
+            coEvery {
+                messageDraftRepository.getMessageDraft(conversationId)
+            }.returns(response)
         }
 
         fun arrange() = this to getMessageDraft

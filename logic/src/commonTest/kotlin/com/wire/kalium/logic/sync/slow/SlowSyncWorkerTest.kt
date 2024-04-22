@@ -20,8 +20,8 @@ package com.wire.kalium.logic.sync.slow
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
-import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.data.sync.SlowSyncStep
+import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.feature.connection.SyncConnectionsUseCase
 import com.wire.kalium.logic.feature.conversation.SyncConversationsUseCase
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
@@ -42,13 +42,14 @@ import com.wire.kalium.logic.util.stubs.MigrationCrashStep
 import com.wire.kalium.logic.util.stubs.SuccessSyncMigration
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.times
-import io.mockative.verify
 import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFails
@@ -230,7 +231,6 @@ class SlowSyncWorkerTest {
         assertUseCases(arrangement, steps)
     }
 
-
     @Test
     fun givenFetchLegalHoldStatusFails_whenPerformingSlowSync_thenThrowSyncException() = runTest(TestKaliumDispatcher.default) {
         val steps = hashSetOf(
@@ -348,9 +348,9 @@ class SlowSyncWorkerTest {
             slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
         }
 
-        verify(arrangement.eventRepository)
-            .suspendFunction(arrangement.eventRepository::fetchMostRecentEventId)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.eventRepository.fetchMostRecentEventId()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -364,14 +364,13 @@ class SlowSyncWorkerTest {
             slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
         }
 
-        verify(arrangement.eventRepository)
-            .suspendFunction(arrangement.eventRepository::fetchMostRecentEventId)
-            .wasNotInvoked()
+        coVerify {
+            arrangement.eventRepository.fetchMostRecentEventId()
+        }.wasNotInvoked()
 
-        verify(arrangement.eventRepository)
-            .suspendFunction(arrangement.eventRepository::updateLastProcessedEventId)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.eventRepository.updateLastProcessedEventId(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -386,10 +385,9 @@ class SlowSyncWorkerTest {
             slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
         }
 
-        verify(arrangement.eventRepository)
-            .suspendFunction(arrangement.eventRepository::updateLastProcessedEventId)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.eventRepository.updateLastProcessedEventId(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -414,10 +412,9 @@ class SlowSyncWorkerTest {
 
         slowSyncWorker.slowSyncStepsFlow(successfullyMigration).collect()
 
-        verify(arrangement.eventRepository)
-            .suspendFunction(arrangement.eventRepository::updateLastProcessedEventId)
-            .with(eq(fetchedEventId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.eventRepository.updateLastProcessedEventId(eq(fetchedEventId))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -435,52 +432,51 @@ class SlowSyncWorkerTest {
             }
         }
 
-        verify(arrangement.syncSelfUser)
-            .suspendFunction(arrangement.syncSelfUser::invoke)
-            .wasNotInvoked()
+        coVerify {
+            arrangement.syncSelfUser.invoke()
+        }.wasNotInvoked()
 
-        verify(arrangement.syncFeatureConfigs)
-            .suspendFunction(arrangement.syncFeatureConfigs::invoke)
-            .wasNotInvoked()
+        coVerify {
+            arrangement.syncFeatureConfigs.invoke()
+        }.wasNotInvoked()
     }
 
-    private fun assertUseCases(arrangement: Arrangement, steps: HashSet<SlowSyncStep>) {
-        verify(arrangement.syncSelfUser)
-            .suspendFunction(arrangement.syncSelfUser::invoke)
-            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.SELF_USER)) once else 0.times)
+    private suspend fun assertUseCases(arrangement: Arrangement, steps: HashSet<SlowSyncStep>) {
+        coVerify {
+            arrangement.syncSelfUser.invoke()
+        }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.SELF_USER)) once else 0.times)
 
-        verify(arrangement.syncFeatureConfigs)
-            .suspendFunction(arrangement.syncFeatureConfigs::invoke)
-            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.FEATURE_FLAGS)) once else 0.times)
+        coVerify {
+            arrangement.syncFeatureConfigs.invoke()
+        }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.FEATURE_FLAGS)) once else 0.times)
 
-        verify(arrangement.updateSupportedProtocols)
-            .suspendFunction(arrangement.updateSupportedProtocols::invoke)
-            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS)) once else 0.times)
+        coVerify {
+            arrangement.updateSupportedProtocols.invoke()
+        }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.UPDATE_SUPPORTED_PROTOCOLS)) once else 0.times)
 
-        verify(arrangement.syncConversations)
-            .suspendFunction(arrangement.syncConversations::invoke)
-            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.CONVERSATIONS)) once else 0.times)
+        coVerify {
+            arrangement.syncConversations.invoke()
+        }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.CONVERSATIONS)) once else 0.times)
 
-        verify(arrangement.syncConnections)
-            .suspendFunction(arrangement.syncConnections::invoke)
-            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.CONNECTIONS)) once else 0.times)
+        coVerify {
+            arrangement.syncConnections.invoke()
+        }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.CONNECTIONS)) once else 0.times)
 
-        verify(arrangement.syncSelfTeam)
-            .suspendFunction(arrangement.syncSelfTeam::invoke)
-            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.SELF_TEAM)) once else 0.times)
+        coVerify {
+            arrangement.syncSelfTeam.invoke()
+        }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.SELF_TEAM)) once else 0.times)
 
-        verify(arrangement.syncContacts)
-            .suspendFunction(arrangement.syncContacts::invoke)
-            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.CONTACTS)) once else 0.times)
+        coVerify {
+            arrangement.syncContacts.invoke()
+        }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.CONTACTS)) once else 0.times)
 
-        verify(arrangement.joinMLSConversations)
-            .suspendFunction(arrangement.joinMLSConversations::invoke)
-            .with(any())
-            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.JOINING_MLS_CONVERSATIONS)) once else 0.times)
+        coVerify {
+            arrangement.joinMLSConversations.invoke(any())
+        }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.JOINING_MLS_CONVERSATIONS)) once else 0.times)
 
-        verify(arrangement.fetchLegalHoldForSelfUserFromRemoteUseCase)
-            .suspendFunction(arrangement.fetchLegalHoldForSelfUserFromRemoteUseCase::invoke)
-            .wasInvoked(exactly = if (steps.contains(SlowSyncStep.LEGAL_HOLD)) once else 0.times)
+        coVerify {
+            arrangement.fetchLegalHoldForSelfUserFromRemoteUseCase.invoke()
+        }.wasInvoked(exactly = if (steps.contains(SlowSyncStep.LEGAL_HOLD)) once else 0.times)
     }
 
     private class Arrangement : EventRepositoryArrangement by EventRepositoryArrangementImpl() {
@@ -516,7 +512,9 @@ class SlowSyncWorkerTest {
         val fetchLegalHoldForSelfUserFromRemoteUseCase = mock(FetchLegalHoldForSelfUserFromRemoteUseCase::class)
 
         init {
-            withLastProcessedEventIdReturning(Either.Right("lastProcessedEventId"))
+            runBlocking {
+                withLastProcessedEventIdReturning(Either.Right("lastProcessedEventId"))
+            }
         }
 
         fun arrange() = this to SlowSyncWorkerImpl(
@@ -533,137 +531,118 @@ class SlowSyncWorkerTest {
             oneOnOneResolver = oneOnOneResolver,
         )
 
-        fun withSyncSelfUserFailure() = apply {
-            given(syncSelfUser)
-                .suspendFunction(syncSelfUser::invoke)
-                .whenInvoked()
-                .thenReturn(failure)
+        suspend fun withSyncSelfUserFailure() = apply {
+            coEvery {
+                syncSelfUser.invoke()
+            }.returns(failure)
         }
 
-        fun withSyncSelfUserSuccess() = apply {
-            given(syncSelfUser)
-                .suspendFunction(syncSelfUser::invoke)
-                .whenInvoked()
-                .thenReturn(success)
+        suspend fun withSyncSelfUserSuccess() = apply {
+            coEvery {
+                syncSelfUser.invoke()
+            }.returns(success)
         }
 
-        fun withSyncFeatureConfigsFailure() = apply {
-            given(syncFeatureConfigs)
-                .suspendFunction(syncFeatureConfigs::invoke)
-                .whenInvoked()
-                .thenReturn(failure)
+        suspend fun withSyncFeatureConfigsFailure() = apply {
+            coEvery {
+                syncFeatureConfigs.invoke()
+            }.returns(failure)
         }
 
-        fun withSyncFeatureConfigsSuccess() = apply {
-            given(syncFeatureConfigs)
-                .suspendFunction(syncFeatureConfigs::invoke)
-                .whenInvoked()
-                .thenReturn(success)
+        suspend fun withSyncFeatureConfigsSuccess() = apply {
+            coEvery {
+                syncFeatureConfigs.invoke()
+            }.returns(success)
         }
 
-        fun withUpdateSupportedProtocolsSuccess() = apply {
-            given(updateSupportedProtocols)
-                .suspendFunction(updateSupportedProtocols::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Right(true))
+        suspend fun withUpdateSupportedProtocolsSuccess() = apply {
+            coEvery {
+                updateSupportedProtocols.invoke()
+            }.returns(Either.Right(true))
         }
 
-        fun withUpdateSupportedProtocolsFailure() = apply {
-            given(updateSupportedProtocols)
-                .suspendFunction(updateSupportedProtocols::invoke)
-                .whenInvoked()
-                .thenReturn(failure)
+        suspend fun withUpdateSupportedProtocolsFailure() = apply {
+            coEvery {
+                updateSupportedProtocols.invoke()
+            }.returns(failure)
         }
 
-        fun withSyncConversationsFailure() = apply {
-            given(syncConversations)
-                .suspendFunction(syncConversations::invoke)
-                .whenInvoked()
-                .thenReturn(failure)
+        suspend fun withSyncConversationsFailure() = apply {
+            coEvery {
+                syncConversations.invoke()
+            }.returns(failure)
         }
 
-        fun withSyncConversationsSuccess() = apply {
-            given(syncConversations)
-                .suspendFunction(syncConversations::invoke)
-                .whenInvoked()
-                .thenReturn(success)
+        suspend fun withSyncConversationsSuccess() = apply {
+            coEvery {
+                syncConversations.invoke()
+            }.returns(success)
         }
 
-        fun withSyncConnectionsFailure() = apply {
-            given(syncConnections)
-                .suspendFunction(syncConnections::invoke)
-                .whenInvoked()
-                .thenReturn(failure)
+        suspend fun withSyncConnectionsFailure() = apply {
+            coEvery {
+                syncConnections.invoke()
+            }.returns(failure)
         }
 
-        fun withSyncConnectionsSuccess() = apply {
-            given(syncConnections)
-                .suspendFunction(syncConnections::invoke)
-                .whenInvoked()
-                .thenReturn(success)
+        suspend fun withSyncConnectionsSuccess() = apply {
+            coEvery {
+                syncConnections.invoke()
+            }.returns(success)
         }
 
-        fun withSyncSelfTeamFailure() = apply {
-            given(syncSelfTeam)
-                .suspendFunction(syncConnections::invoke)
-                .whenInvoked()
-                .thenReturn(failure)
+        suspend fun withSyncSelfTeamFailure() = apply {
+            coEvery {
+                syncSelfTeam.invoke()
+            }.returns(failure)
         }
 
-        fun withSyncSelfTeamSuccess() = apply {
-            given(syncSelfTeam)
-                .suspendFunction(syncConnections::invoke)
-                .whenInvoked()
-                .thenReturn(success)
+        suspend fun withSyncSelfTeamSuccess() = apply {
+            coEvery {
+                syncSelfTeam.invoke()
+            }.returns(success)
         }
 
-        fun withSyncContactsFailure() = apply {
-            given(syncContacts)
-                .suspendFunction(syncContacts::invoke)
-                .whenInvoked()
-                .thenReturn(failure)
+        suspend fun withSyncContactsFailure() = apply {
+            coEvery {
+                syncContacts.invoke()
+            }.returns(failure)
         }
 
-        fun withSyncContactsSuccess() = apply {
-            given(syncContacts)
-                .suspendFunction(syncContacts::invoke)
-                .whenInvoked()
-                .thenReturn(success)
+        suspend fun withSyncContactsSuccess() = apply {
+            coEvery {
+                syncContacts.invoke()
+            }.returns(success)
         }
 
-        fun withJoinMLSConversationsFailure(keepRetryingOnFailure: Boolean = true) = apply {
-            given(joinMLSConversations)
-                .suspendFunction(joinMLSConversations::invoke)
-                .whenInvokedWith(eq(keepRetryingOnFailure))
-                .thenReturn(failure)
+        suspend fun withJoinMLSConversationsFailure(keepRetryingOnFailure: Boolean = true) = apply {
+            coEvery {
+                joinMLSConversations.invoke(eq(keepRetryingOnFailure))
+            }.returns(failure)
         }
 
-        fun withJoinMLSConversationsSuccess(keepRetryingOnFailure: Boolean = true) = apply {
-            given(joinMLSConversations)
-                .suspendFunction(joinMLSConversations::invoke)
-                .whenInvokedWith(eq(keepRetryingOnFailure))
-                .thenReturn(success)
+        suspend fun withJoinMLSConversationsSuccess(keepRetryingOnFailure: Boolean = true) = apply {
+            coEvery {
+                joinMLSConversations.invoke(eq(keepRetryingOnFailure))
+            }.returns(success)
         }
 
-        fun withFetchLegalHoldStatusFailure() = apply {
-            given(fetchLegalHoldForSelfUserFromRemoteUseCase)
-                .suspendFunction(fetchLegalHoldForSelfUserFromRemoteUseCase::invoke)
-                .whenInvoked()
-                .thenReturn(failure)
+        suspend fun withFetchLegalHoldStatusFailure() = apply {
+            coEvery {
+                fetchLegalHoldForSelfUserFromRemoteUseCase.invoke()
+            }.returns(failure)
         }
 
-        fun withFetchLegalHoldStatusSuccess(status: LegalHoldStatus = LegalHoldStatus.NO_CONSENT) = apply {
-            given(fetchLegalHoldForSelfUserFromRemoteUseCase)
-                .suspendFunction(fetchLegalHoldForSelfUserFromRemoteUseCase::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Right(status))
+        suspend fun withFetchLegalHoldStatusSuccess(status: LegalHoldStatus = LegalHoldStatus.NO_CONSENT) = apply {
+            coEvery {
+                fetchLegalHoldForSelfUserFromRemoteUseCase.invoke()
+            }.returns(Either.Right(status))
         }
 
-        fun withResolveOneOnOneConversationsSuccess() = apply {
-            given(oneOnOneResolver)
-                .suspendFunction(oneOnOneResolver::resolveAllOneOnOneConversations)
-                .whenInvokedWith(any())
-                .thenReturn(success)
+        suspend fun withResolveOneOnOneConversationsSuccess() = apply {
+            coEvery {
+                oneOnOneResolver.resolveAllOneOnOneConversations(any())
+            }.returns(success)
         }
     }
 

@@ -24,19 +24,16 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import io.mockative.Mock
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.fun2
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class StoreServerConfigUseCaseTest {
 
     @Test
@@ -54,9 +51,9 @@ class StoreServerConfigUseCaseTest {
             assertEquals(expected, it.serverConfig)
         }
 
-        verify(arrangement.customServerConfigRepository)
-            .coroutine { arrangement.customServerConfigRepository.storeConfig(links, versionInfo) }
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.customServerConfigRepository.storeConfig(links, versionInfo)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -74,9 +71,9 @@ class StoreServerConfigUseCaseTest {
             assertEquals(expected, it.serverConfig)
         }
 
-        verify(arrangement.customServerConfigRepository)
-            .coroutine { arrangement.customServerConfigRepository.storeConfig(expected.links, versionInfo) }
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.customServerConfigRepository.storeConfig(expected.links, versionInfo)
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -89,12 +86,8 @@ class StoreServerConfigUseCaseTest {
             versionInfo: ServerConfig.VersionInfo,
             result: Either<StorageFailure, ServerConfig>
         ) = apply {
-            given(customServerConfigRepository)
-                .suspendFunction(
-                    customServerConfigRepository::storeConfig,
-                    fun2<ServerConfig.Links, ServerConfig.VersionInfo>())
-                .whenInvokedWith(eq(links), eq(versionInfo))
-                .thenReturn(result)
+            coEvery { customServerConfigRepository.storeConfig(eq(links), eq(versionInfo)) }
+                .returns(result)
         }
 
         fun arrange() = this to useCase

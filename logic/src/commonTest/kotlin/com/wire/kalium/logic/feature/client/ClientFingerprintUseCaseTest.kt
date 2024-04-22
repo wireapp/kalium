@@ -21,20 +21,20 @@ import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.exceptions.ProteusException
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.ProteusFailure
+import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
-import com.wire.kalium.logic.data.client.ProteusClientProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -58,15 +58,13 @@ class ClientFingerprintUseCaseTest {
             assertEquals(fingerprint, result.fingerprint)
         }
 
-        verify(arrange.proteusClient)
-            .suspendFunction(arrange.proteusClient::remoteFingerPrint)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrange.proteusClient.remoteFingerPrint(any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrange.preKeyRepository)
-            .suspendFunction(arrange.preKeyRepository::establishSessions)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrange.preKeyRepository.establishSessions(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -86,16 +84,13 @@ class ClientFingerprintUseCaseTest {
             assertEquals(fingerprint, result.fingerprint)
         }
 
-        verify(arrange.proteusClient)
-            .suspendFunction(arrange.proteusClient::remoteFingerPrint)
-            .with(any())
-            .wasInvoked(exactly = twice)
+        coVerify {
+            arrange.proteusClient.remoteFingerPrint(any())
+        }.wasInvoked(exactly = twice)
 
-
-        verify(arrange.preKeyRepository)
-            .suspendFunction(arrange.preKeyRepository::establishSessions)
-            .with(eq(mapOf(userId to listOf(clientId))))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrange.preKeyRepository.establishSessions(eq(mapOf(userId to listOf(clientId))))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -115,17 +110,14 @@ class ClientFingerprintUseCaseTest {
             assertEquals(error.code, (result.error as ProteusFailure).proteusException.code)
         }
 
-        verify(arrange.proteusClient)
-            .suspendFunction(arrange.proteusClient::remoteFingerPrint)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrange.proteusClient.remoteFingerPrint(any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrange.preKeyRepository)
-            .suspendFunction(arrange.preKeyRepository::establishSessions)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrange.preKeyRepository.establishSessions(any())
+        }.wasNotInvoked()
     }
-
 
     private class Arrangement {
 
@@ -143,27 +135,16 @@ class ClientFingerprintUseCaseTest {
             prekeyRepository = preKeyRepository
         )
 
-
-        init {
-            given(proteusClientProvider)
-                .suspendFunction(proteusClientProvider::getOrError)
-                .whenInvoked()
-                .thenReturn(Either.Right(proteusClient))
-        }
-
-        fun withRemoteFingerprintFailure(error: ProteusException) = apply {
-            given(proteusClient)
-                .suspendFunction(proteusClient::remoteFingerPrint)
-                .whenInvokedWith(any())
-                .thenThrow(error)
+        suspend fun withRemoteFingerprintFailure(error: ProteusException) = apply {
+            coEvery {
+                proteusClient.remoteFingerPrint(any())
+            }.throws(error)
         }
 
         private var getSessionCalled = 0
-        fun withSessionNotFound(secondTimeResult: ByteArray) = apply {
-            given(proteusClient)
-                .suspendFunction(proteusClient::remoteFingerPrint)
-                .whenInvokedWith(any())
-                .then {
+        suspend fun withSessionNotFound(secondTimeResult: ByteArray) = apply {
+            coEvery { proteusClient.remoteFingerPrint(any()) }
+                .invokes { _ ->
                     if (getSessionCalled == 0) {
                         getSessionCalled++
                         throw ProteusException(null, ProteusException.Code.SESSION_NOT_FOUND)
@@ -172,20 +153,22 @@ class ClientFingerprintUseCaseTest {
                 }
         }
 
-        fun withRemoteFingerprintSuccess(result: ByteArray) = apply {
-            given(proteusClient)
-                .suspendFunction(proteusClient::remoteFingerPrint)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withRemoteFingerprintSuccess(result: ByteArray) = apply {
+            coEvery {
+                proteusClient.remoteFingerPrint(any())
+            }.returns(result)
         }
 
-        fun withEstablishSession(result: Either<CoreFailure, UsersWithoutSessions>) = apply {
-            given(preKeyRepository)
-                .suspendFunction(preKeyRepository::establishSessions)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withEstablishSession(result: Either<CoreFailure, UsersWithoutSessions>) = apply {
+            coEvery {
+                preKeyRepository.establishSessions(any())
+            }.returns(result)
         }
 
-        fun arrange() = this to userCase
+        suspend fun arrange() = this to userCase.also {
+            coEvery {
+                proteusClientProvider.getOrError()
+            }.returns(Either.Right(proteusClient))
+        }
     }
 }

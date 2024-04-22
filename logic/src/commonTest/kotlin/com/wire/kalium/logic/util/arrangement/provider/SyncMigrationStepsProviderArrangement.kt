@@ -18,12 +18,14 @@
 package com.wire.kalium.logic.util.arrangement.provider
 
 import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProvider
-import com.wire.kalium.logic.sync.slow.migration.SyncMigrationStepsProviderTest
 import com.wire.kalium.logic.sync.slow.migration.steps.SyncMigrationStep
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.every
+import io.mockative.fake.valueOf
+import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
+import io.mockative.matches
 import io.mockative.mock
 
 internal interface SyncMigrationStepsProviderArrangement {
@@ -32,8 +34,8 @@ internal interface SyncMigrationStepsProviderArrangement {
 
     fun withSyncMigrationSteps(
         steps: List<SyncMigrationStep>,
-        fromVersion: Matcher<Int> = any(),
-        toVersion: Matcher<Int> = any()
+        fromVersion: Matcher<Int> = AnyMatcher(valueOf()),
+        toVersion: Matcher<Int> = AnyMatcher(valueOf())
     )
 }
 
@@ -47,9 +49,11 @@ internal class SyncMigrationStepsProviderArrangementImpl : SyncMigrationStepsPro
         fromVersion: Matcher<Int>,
         toVersion: Matcher<Int>
     ) {
-        given(syncMigrationStepsProvider)
-            .function(syncMigrationStepsProvider::getMigrationSteps)
-            .whenInvokedWith(fromVersion, toVersion)
-            .thenReturn(steps)
+        every {
+            syncMigrationStepsProvider.getMigrationSteps(
+                matches { fromVersion.matches(it) },
+                matches { toVersion.matches(it) }
+            )
+        }.returns(steps)
     }
 }

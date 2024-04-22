@@ -30,7 +30,8 @@ import com.wire.kalium.logic.util.arrangement.mls.CertificateStatusMapperArrange
 import com.wire.kalium.logic.util.arrangement.mls.CertificateStatusMapperArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
-import io.mockative.eq
+import io.mockative.matchers.EqualsMatcher
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -106,25 +107,25 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
             assertEquals(CertificateStatus.VALID, result[userId2])
         }
 
-    private class Arrangement(private val block: Arrangement.() -> Unit) :
+    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
         CertificateStatusMapperArrangement by CertificateStatusMapperArrangementImpl() {
 
         fun arrange() = run {
             withCertificateStatusMapperReturning(
                 CertificateStatus.VALID,
-                eq(CryptoCertificateStatus.VALID)
+                EqualsMatcher(CryptoCertificateStatus.VALID)
             )
             withCertificateStatusMapperReturning(
                 CertificateStatus.EXPIRED,
-                eq(CryptoCertificateStatus.EXPIRED)
+                EqualsMatcher(CryptoCertificateStatus.EXPIRED)
             )
             withCertificateStatusMapperReturning(
                 CertificateStatus.REVOKED,
-                eq(CryptoCertificateStatus.REVOKED)
+                EqualsMatcher(CryptoCertificateStatus.REVOKED)
             )
 
-            block()
+            runBlocking { block() }
             this@Arrangement to GetMembersE2EICertificateStatusesUseCaseImpl(
                 mlsConversationRepository = mlsConversationRepository,
                 certificateStatusMapper = certificateStatusMapper
@@ -133,7 +134,7 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
     }
 
     private companion object {
-        fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+        fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
         private val USER_ID = UserId("value", "domain")
         private val CRYPTO_QUALIFIED_CLIENT_ID =

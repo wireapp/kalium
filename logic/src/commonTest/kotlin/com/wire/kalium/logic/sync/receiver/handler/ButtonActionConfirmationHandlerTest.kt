@@ -28,9 +28,10 @@ import com.wire.kalium.logic.util.arrangement.repository.MessageMetadataReposito
 import com.wire.kalium.logic.util.arrangement.repository.MessageMetadataRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import io.mockative.any
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -51,15 +52,13 @@ class ButtonActionConfirmationHandlerTest {
 
         handler.handle(convId, senderId, content)
 
-        verify(arrangement.compositeMessageRepository)
-            .suspendFunction(arrangement.compositeMessageRepository::markSelected)
-            .with(eq("messageId"), eq(convId), eq("buttonId"))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.compositeMessageRepository.markSelected(eq("messageId"), eq(convId), eq("buttonId"))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.compositeMessageRepository)
-            .suspendFunction(arrangement.compositeMessageRepository::resetSelection)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.compositeMessageRepository.resetSelection(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -78,18 +77,14 @@ class ButtonActionConfirmationHandlerTest {
 
         handler.handle(convId, senderId, content)
 
-        verify(arrangement.compositeMessageRepository)
-            .suspendFunction(arrangement.compositeMessageRepository::markSelected)
-            .with(any(), any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.compositeMessageRepository.markSelected(any(), any(), any())
+        }.wasNotInvoked()
 
-
-        verify(arrangement.compositeMessageRepository)
-            .suspendFunction(arrangement.compositeMessageRepository::resetSelection)
-            .with(eq("messageId"), eq(convId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.compositeMessageRepository.resetSelection(eq("messageId"), eq(convId))
+        }.wasInvoked(exactly = once)
     }
-
 
     @Test
     fun givenSenderIdIsNotTheSameAsOriginalSender_whenHandlingEvent_thenIgnore() = runTest {
@@ -111,16 +106,13 @@ class ButtonActionConfirmationHandlerTest {
             it is CoreFailure.InvalidEventSenderID
         }
 
-        verify(arrangement.compositeMessageRepository)
-            .suspendFunction(arrangement.compositeMessageRepository::markSelected)
-            .with(any(), any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.compositeMessageRepository.markSelected(any(), any(), any())
+        }.wasNotInvoked()
 
-
-        verify(arrangement.compositeMessageRepository)
-            .suspendFunction(arrangement.compositeMessageRepository::resetSelection)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.compositeMessageRepository.resetSelection(any(), any())
+        }.wasNotInvoked()
     }
 
     private companion object {
@@ -137,8 +129,8 @@ class ButtonActionConfirmationHandlerTest {
             messageMetadataRepository = messageMetadataRepository
         )
 
-        fun arrange(block: Arrangement.() -> Unit): Pair<Arrangement, ButtonActionConfirmationHandler> {
-            block()
+        fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, ButtonActionConfirmationHandler> {
+            runBlocking { block() }
             return this to handler
         }
     }
