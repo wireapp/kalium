@@ -24,7 +24,7 @@ import com.wire.kalium.logic.functional.isRight
 import kotlinx.coroutines.flow.first
 
 /**
- * Operation that indicates if we have one-to-one Conversation with specific [UserId].
+ * Operation that indicates if we have one-o-one Conversation with specific [UserId].
  *
  * @param otherUserId [UserId] private conversation with which we are interested in.
  * @return true
