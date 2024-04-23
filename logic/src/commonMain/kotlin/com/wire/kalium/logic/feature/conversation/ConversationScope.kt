@@ -171,6 +171,9 @@ class ConversationScope internal constructor(
             oneOnOneResolver
         )
 
+    val isOneToOneConversationCreatedUseCase: IsOneToOneConversationCreatedUseCase
+        get() = IsOneToOneConversationCreatedUseCaseImpl(conversationRepository)
+
     val updateConversationMutedStatus: UpdateConversationMutedStatusUseCase
         get() = UpdateConversationMutedStatusUseCaseImpl(conversationRepository)
 
