@@ -61,7 +61,7 @@ konsist = "0.15.1"
 postgres = "1.0.5.RELEASE"
 r2dbc = "1.0.0.RELEASE"
 slf4js = "2.0.13"
-dagCommand = "1.11.0"
+dagCommand = "1.9.0"
 
 [plugins]
 # Home-made convention plugins
