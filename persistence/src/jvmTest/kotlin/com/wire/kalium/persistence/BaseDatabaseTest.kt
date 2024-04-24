@@ -54,14 +54,16 @@ actual open class BaseDatabaseTest actual constructor() {
     actual fun createDatabase(
         userId: UserIDEntity,
         passphrase: UserDBSecret?,
-        enableWAL: Boolean
+        enableWAL: Boolean,
+        shouldTune: Boolean
     ): UserDatabaseBuilder {
         return userDatabaseBuilder(
             platformDatabaseData = platformDBData(userId),
             userId = userId,
             passphrase = null,
             dispatcher = dispatcher,
-            enableWAL = enableWAL
+            enableWAL = enableWAL,
+            shouldTune = shouldTune
         )
     }
 

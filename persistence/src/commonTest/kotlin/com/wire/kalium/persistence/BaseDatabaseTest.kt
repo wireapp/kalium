@@ -46,7 +46,8 @@ expect open class BaseDatabaseTest() {
     fun createDatabase(
         userId: UserIDEntity,
         passphrase: UserDBSecret?,
-        enableWAL: Boolean
+        enableWAL: Boolean,
+        shouldTune: Boolean = false,
     ): UserDatabaseBuilder
 
 }

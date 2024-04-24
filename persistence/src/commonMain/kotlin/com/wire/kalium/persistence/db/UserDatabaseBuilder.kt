@@ -101,13 +101,15 @@ expect class PlatformDatabaseData
  * @param passphrase The passphrase used to encrypt the database
  * @param dispatcher The dispatcher used to perform database operations
  * @param enableWAL Whether to enable WAL mode for the database https://www.sqlite.org/wal.html
+ * @param shouldTune Whether we should perform optimizations to the db.
  **/
 expect fun userDatabaseBuilder(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity,
     passphrase: UserDBSecret?,
     dispatcher: CoroutineDispatcher,
-    enableWAL: Boolean = true
+    enableWAL: Boolean = true,
+    shouldTune: Boolean
 ): UserDatabaseBuilder
 
 internal expect fun userDatabaseDriverByPath(
@@ -350,4 +352,26 @@ fun SqlDriver.checkFKViolations(): Boolean {
     }, 0, null)
 
     return result
+}
+
+/**
+ * todo, move this to props in JdbcSqliteDriver ?
+ * Perform suggested sqlite tune configs, from community.
+ */
+fun SqlDriver.tune() {
+    // https://www.sqlite.org/pragma.html#pragma_synchronous
+    execute(null, "PRAGMA synchronous=normal;", 0, null)
+    // https://www.sqlite.org/tempfiles.html#transient_indices
+    execute(null, "PRAGMA temp_store=memory;", 0, null)
+}
+
+/**
+ * * todo, move this to props in JdbcSqliteDriver ?
+ *
+ * Re-org and cleanup dead space
+ *
+ * See: https://www.sqlite.org/pragma.html#pragma_incremental_vacuum
+ */
+fun SqlDriver.vacuumAtStart() {
+    execute(null, "PRAGMA auto_vacuum=incremental;", 0, null)
 }

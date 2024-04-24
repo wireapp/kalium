@@ -36,7 +36,9 @@ actual open class BaseDatabaseTest actual constructor() {
     actual fun createDatabase(
         userId: UserIDEntity,
         passphrase: UserDBSecret?,
-        enableWAL: Boolean): UserDatabaseBuilder {
+        enableWAL: Boolean,
+        shouldTune: Boolean
+    ): UserDatabaseBuilder {
         TODO("Not yet implemented")
     }
 

@@ -44,7 +44,8 @@ actual fun userDatabaseBuilder(
     userId: UserIDEntity,
     passphrase: UserDBSecret?,
     dispatcher: CoroutineDispatcher,
-    enableWAL: Boolean
+    enableWAL: Boolean,
+    shouldTune: Boolean
 ): UserDatabaseBuilder {
     val storageData = platformDatabaseData.storageData
     if (storageData is StorageData.InMemory) {
@@ -65,8 +66,13 @@ actual fun userDatabaseBuilder(
 
     val driver: SqlDriver = sqlDriver("jdbc:sqlite:${databasePath.absolutePath}", enableWAL)
 
+    if (shouldTune) {
+        driver.tune()
+    }
+
     if (!databaseExists) {
         UserDatabase.Schema.create(driver)
+        driver.vacuumAtStart()
     }
     return UserDatabaseBuilder(userId, driver, dispatcher, platformDatabaseData, !passphrase.isNullOrBlank())
 }

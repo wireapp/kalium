@@ -72,6 +72,7 @@ internal class DatabaseExporterImpl internal constructor(
                 backupUserId,
                 UserDBSecret(ByteArray(0)),
                 KaliumDispatcherImpl.io,
+                false,
                 false
             )
 

@@ -31,7 +31,8 @@ actual fun userDatabaseBuilder(
     userId: UserIDEntity,
     passphrase: UserDBSecret?,
     dispatcher: CoroutineDispatcher,
-    enableWAL: Boolean
+    enableWAL: Boolean,
+    shouldTune: Boolean
 ): UserDatabaseBuilder = TODO("Not yet implemented")
 
 actual fun userDatabaseDriverByPath(

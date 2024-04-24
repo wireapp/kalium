@@ -45,7 +45,8 @@ actual fun userDatabaseBuilder(
     userId: UserIDEntity,
     passphrase: UserDBSecret?,
     dispatcher: CoroutineDispatcher,
-    enableWAL: Boolean
+    enableWAL: Boolean,
+    shouldTune: Boolean
 ): UserDatabaseBuilder {
     NSFileManager.defaultManager.createDirectoryAtPath(platformDatabaseData.storePath, true, null, null)
     val schema = UserDatabase.Schema

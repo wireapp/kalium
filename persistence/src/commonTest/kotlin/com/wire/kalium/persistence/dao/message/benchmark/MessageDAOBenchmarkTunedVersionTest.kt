@@ -16,13 +16,17 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.persistence.dao.message
+package com.wire.kalium.persistence.dao.message.benchmark
 
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.persistence.dao.message.benchmark.MessageDAOBenchmarkParams.MESSAGE_COUNT
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -33,13 +37,11 @@ import kotlinx.datetime.Instant
 import kotlin.random.Random
 import kotlin.random.nextInt
 import kotlin.test.BeforeTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.time.measureTime
 
 // Ignore to avoid running unnecessarily on CI. Can be easily re-enabled by developers when needed.
-@Ignore
-class MessageDAOBenchmarkTest : BaseDatabaseTest() {
+class MessageDAOBenchmarkTunedVersionTest : BaseDatabaseTest() {
 
     private lateinit var messageDAO: MessageDAO
     private lateinit var conversationDAO: ConversationDAO
@@ -53,7 +55,7 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
     @BeforeTest
     fun setUp() {
         deleteDatabase(selfUserId)
-        val db = createDatabase(selfUserId, encryptedDBSecret, true)
+        val db = createDatabase(selfUserId, encryptedDBSecret, enableWAL = true, shouldTune = false)
         messageDAO = db.messageDAO
         conversationDAO = db.conversationDAO
         userDAO = db.userDAO
@@ -189,7 +191,4 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
         userDAO.upsertUser(userEntity2)
     }
 
-    private companion object {
-        const val MESSAGE_COUNT = 1_000
-    }
 }
