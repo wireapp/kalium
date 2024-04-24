@@ -23,6 +23,8 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -34,7 +36,7 @@ class IsOneToOneConversationCreatedUseCaseTest {
     fun givenConversationExist_whenCallingTheUseCase_ThenReturnTrue() = runTest {
         // given
         val (_, useCase) = arrange {
-            withObserveOneToOneConversationWithOtherUserReturning(Either.Right(TestConversation.ONE_ON_ONE()))
+            withOneOnOnConversationId(Either.Right(TestConversation.ID))
         }
 
         // when
@@ -48,7 +50,7 @@ class IsOneToOneConversationCreatedUseCaseTest {
     fun givenNotConversationExist_whenCallingTheUseCase_ThenReturnFalse() = runTest {
         // given
         val (_, useCase) = arrange {
-            withObserveOneToOneConversationWithOtherUserReturning(Either.Left(StorageFailure.DataNotFound))
+            withOneOnOnConversationId(Either.Left(StorageFailure.DataNotFound))
         }
 
         // when
@@ -62,11 +64,11 @@ class IsOneToOneConversationCreatedUseCaseTest {
 
     internal class Arrangement(
         private val block: Arrangement.() -> Unit
-    ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
+    ) : UserRepositoryArrangement by UserRepositoryArrangementImpl() {
 
         fun arrange() = block().run {
             this@Arrangement to IsOneToOneConversationCreatedUseCaseImpl(
-                conversationRepository = conversationRepository
+                userRepository = userRepository
             )
         }
     }

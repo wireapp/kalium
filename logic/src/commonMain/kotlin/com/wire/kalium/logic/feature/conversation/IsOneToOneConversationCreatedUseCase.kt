@@ -18,10 +18,9 @@
 
 package com.wire.kalium.logic.feature.conversation
 
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.isRight
-import kotlinx.coroutines.flow.first
 
 /**
  * Operation that indicates if we have one-o-one Conversation with specific [UserId].
@@ -34,11 +33,9 @@ interface IsOneToOneConversationCreatedUseCase {
 }
 
 internal class IsOneToOneConversationCreatedUseCaseImpl(
-    private val conversationRepository: ConversationRepository
+    private val userRepository: UserRepository
 ) : IsOneToOneConversationCreatedUseCase {
     override suspend operator fun invoke(otherUserId: UserId): Boolean {
-        return conversationRepository.observeOneToOneConversationWithOtherUser(otherUserId)
-            .first()
-            .isRight()
+        return userRepository.getOneOnOnConversationId(otherUserId).isRight()
     }
 }
