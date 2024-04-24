@@ -37,7 +37,7 @@ buildscript {
         classpath("com.google.protobuf:protobuf-gradle-plugin:${libs.versions.protobufCodegen.get()}")
         classpath("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:${libs.versions.detekt.get()}")
         classpath("io.gitlab.arturbosch.detekt:detekt-cli:${libs.versions.detekt.get()}")
-        classpath("com.github.leandroborgesferreira:dag-command:1.5.3")
+        classpath("com.github.leandroborgesferreira:dag-command:${libs.versions.dagCommand.get()}")
     }
 }
 
