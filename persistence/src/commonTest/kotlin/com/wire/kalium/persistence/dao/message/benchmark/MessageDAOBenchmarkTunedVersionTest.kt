@@ -55,7 +55,7 @@ class MessageDAOBenchmarkTunedVersionTest : BaseDatabaseTest() {
     @BeforeTest
     fun setUp() {
         deleteDatabase(selfUserId)
-        val db = createDatabase(selfUserId, encryptedDBSecret, enableWAL = true, shouldTune = false)
+        val db = createDatabase(selfUserId, encryptedDBSecret, enableWAL = true, shouldTune = true)
         messageDAO = db.messageDAO
         conversationDAO = db.conversationDAO
         userDAO = db.userDAO
