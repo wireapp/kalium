@@ -273,6 +273,7 @@ class LegalHoldHandlerTest {
         val (arrangement, handler) = Arrangement()
             .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Enabled)
             .withGetConversationsByUserIdSuccess(listOf(conversation(legalHoldStatus = Conversation.LegalHoldStatus.ENABLED)))
+            .withObserveConversationLegalHoldStatus(Conversation.LegalHoldStatus.ENABLED)
             .arrange()
         // when
         handler.handleDisable(legalHoldEventDisabled)
@@ -315,6 +316,7 @@ class LegalHoldHandlerTest {
         // given
         val (arrangement, handler) = Arrangement()
             .withGetConversationsByUserIdSuccess(listOf(conversation(legalHoldStatus = Conversation.LegalHoldStatus.DISABLED)))
+            .withObserveConversationLegalHoldStatus(Conversation.LegalHoldStatus.DISABLED)
             .withMembersHavingLegalHoldClientSuccess(listOf(TestUser.OTHER_USER_ID))
             .arrange()
         // when
@@ -330,6 +332,7 @@ class LegalHoldHandlerTest {
         // given
         val (arrangement, handler) = Arrangement()
             .withGetConversationsByUserIdSuccess(listOf(conversation(legalHoldStatus = Conversation.LegalHoldStatus.ENABLED)))
+            .withObserveConversationLegalHoldStatus(Conversation.LegalHoldStatus.ENABLED)
             .withUpdateLegalHoldStatusSuccess(false)
             .withMembersHavingLegalHoldClientSuccess(listOf(TestUser.OTHER_USER_ID))
             .arrange()
@@ -346,6 +349,7 @@ class LegalHoldHandlerTest {
         // given
         val (arrangement, handler) = Arrangement()
             .withGetConversationsByUserIdSuccess(listOf(conversation(legalHoldStatus = Conversation.LegalHoldStatus.ENABLED)))
+            .withObserveConversationLegalHoldStatus(Conversation.LegalHoldStatus.ENABLED)
             .arrange()
         // when
         handler.handleEnable(legalHoldEventEnabled.copy(userId = TestUser.OTHER_USER_ID))
@@ -360,6 +364,7 @@ class LegalHoldHandlerTest {
         // given
         val (arrangement, handler) = Arrangement()
             .withGetConversationsByUserIdSuccess(listOf(conversation(legalHoldStatus = Conversation.LegalHoldStatus.DISABLED)))
+            .withObserveConversationLegalHoldStatus(Conversation.LegalHoldStatus.DISABLED)
             .withUpdateLegalHoldStatusSuccess(false)
             .arrange()
         // when
@@ -375,6 +380,7 @@ class LegalHoldHandlerTest {
         // given
         val (arrangement, handler) = Arrangement()
             .withGetConversationsByUserIdSuccess(listOf(conversation(legalHoldStatus = Conversation.LegalHoldStatus.DISABLED)))
+            .withObserveConversationLegalHoldStatus(Conversation.LegalHoldStatus.DISABLED)
             .arrange()
         // when
         handler.handleNewMessage(applicationMessage(Conversation.LegalHoldStatus.ENABLED), false)
@@ -389,6 +395,7 @@ class LegalHoldHandlerTest {
         // given
         val (arrangement, handler) = Arrangement()
             .withGetConversationsByUserIdSuccess(listOf(conversation(legalHoldStatus = Conversation.LegalHoldStatus.DISABLED)))
+            .withObserveConversationLegalHoldStatus(Conversation.LegalHoldStatus.DISABLED)
             .withUpdateLegalHoldStatusSuccess(false)
             .arrange()
         // when
@@ -404,6 +411,7 @@ class LegalHoldHandlerTest {
         // given
         val (arrangement, handler) = Arrangement()
             .withGetConversationsByUserIdSuccess(listOf(conversation(legalHoldStatus = Conversation.LegalHoldStatus.ENABLED)))
+            .withObserveConversationLegalHoldStatus(Conversation.LegalHoldStatus.ENABLED)
             .arrange()
         // when
         handler.handleNewMessage(applicationMessage(Conversation.LegalHoldStatus.DISABLED), false)
@@ -418,6 +426,7 @@ class LegalHoldHandlerTest {
         // given
         val (arrangement, handler) = Arrangement()
             .withGetConversationsByUserIdSuccess(listOf(conversation(legalHoldStatus = Conversation.LegalHoldStatus.DISABLED)))
+            .withObserveConversationLegalHoldStatus(Conversation.LegalHoldStatus.DISABLED)
             .arrange()
         val message = applicationMessage(Conversation.LegalHoldStatus.ENABLED)
         // when
@@ -438,6 +447,7 @@ class LegalHoldHandlerTest {
         val syncStatesFlow = MutableStateFlow<SyncState>(SyncState.GatheringPendingEvents)
         val (arrangement, handler) = Arrangement()
             .withGetConversationsByUserIdSuccess(listOf(conversation(legalHoldStatus = Conversation.LegalHoldStatus.DISABLED)))
+            .withObserveConversationLegalHoldStatus(Conversation.LegalHoldStatus.DISABLED)
             .withGetConversationMembersSuccess(listOf(TestUser.OTHER_USER_ID))
             .withMembersHavingLegalHoldClientSuccess(emptyList()) // checked before legal hold state change so empty
             .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Enabled) // checked after legal hold state change, that's why enabled
@@ -464,6 +474,7 @@ class LegalHoldHandlerTest {
         // given
         val (arrangement, handler) = Arrangement()
             .withGetConversationsByUserIdSuccess(listOf(conversation(legalHoldStatus = Conversation.LegalHoldStatus.DISABLED)))
+            .withObserveConversationLegalHoldStatus(Conversation.LegalHoldStatus.DISABLED)
             .withGetConversationMembersSuccess(listOf(TestUser.OTHER_USER_ID))
             .withMembersHavingLegalHoldClientSuccess(emptyList()) // checked before legal hold state change so empty
             .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Enabled) // checked after legal hold state change, that's why enabled
@@ -506,6 +517,7 @@ class LegalHoldHandlerTest {
         val membersHavingLegalHoldClientAfter = listOf(TestUser.OTHER_USER_ID)
         val (arrangement, handler) = Arrangement()
             .withMembersHavingLegalHoldClientSuccess(membersHavingLegalHoldClientBefore, membersHavingLegalHoldClientAfter)
+            .withObserveConversationLegalHoldStatus(Conversation.LegalHoldStatus.DISABLED)
             .withUpdateLegalHoldStatusSuccess(true)
             .arrange()
         // when
@@ -529,6 +541,7 @@ class LegalHoldHandlerTest {
         val membersHavingLegalHoldClientAfter = emptyList<UserId>()
         val (arrangement, handler) = Arrangement()
             .withMembersHavingLegalHoldClientSuccess(membersHavingLegalHoldClientBefore, membersHavingLegalHoldClientAfter)
+            .withObserveConversationLegalHoldStatus(Conversation.LegalHoldStatus.ENABLED)
             .withUpdateLegalHoldStatusSuccess(true)
             .arrange()
         // when
@@ -552,6 +565,7 @@ class LegalHoldHandlerTest {
         val membersHavingLegalHoldClientAfter = listOf(TestUser.OTHER_USER_ID)
         val (arrangement, handler) = Arrangement()
             .withMembersHavingLegalHoldClientSuccess(membersHavingLegalHoldClientBefore, membersHavingLegalHoldClientAfter)
+            .withObserveConversationLegalHoldStatus(Conversation.LegalHoldStatus.DISABLED)
             .withUpdateLegalHoldStatusSuccess(true)
             .arrange()
         // when
@@ -575,6 +589,7 @@ class LegalHoldHandlerTest {
         val membersHavingLegalHoldClientAfter = listOf(TestUser.OTHER_USER_ID)
         val (arrangement, handler) = Arrangement()
             .withMembersHavingLegalHoldClientSuccess(membersHavingLegalHoldClientBefore, membersHavingLegalHoldClientAfter)
+            .withObserveConversationLegalHoldStatus(Conversation.LegalHoldStatus.DISABLED)
             .withUpdateLegalHoldStatusSuccess(false)
             .arrange()
         // when
@@ -601,6 +616,7 @@ class LegalHoldHandlerTest {
         val membersHavingLegalHoldClientAfter = listOf(TestUser.OTHER_USER_ID_2)
         val (arrangement, handler) = Arrangement()
             .withMembersHavingLegalHoldClientSuccess(membersHavingLegalHoldClientBefore, membersHavingLegalHoldClientAfter)
+            .withObserveConversationLegalHoldStatus(Conversation.LegalHoldStatus.ENABLED)
             .withUpdateLegalHoldStatusSuccess()
             .arrange()
         // when
@@ -625,8 +641,13 @@ class LegalHoldHandlerTest {
         val conversationId = TestConversation.CONVERSATION.id
         val userId = TestUser.OTHER_USER_ID
         val membersHavingLegalHoldClient = if (thereAreMembersWithLegalHoldEnabledAfterChange) listOf(userId) else emptyList()
+        val conversationLegalHoldStatusBefore = when {
+            thereAreMembersWithLegalHoldEnabledAfterChange != legalHoldStatusForConversationChanged -> Conversation.LegalHoldStatus.ENABLED
+            else -> Conversation.LegalHoldStatus.DISABLED
+        }
         val (arrangement, handler) = Arrangement()
             .withMembersHavingLegalHoldClientSuccess(membersHavingLegalHoldClient)
+            .withObserveConversationLegalHoldStatus(conversationLegalHoldStatusBefore)
             .withUpdateLegalHoldStatusSuccess(isChanged = legalHoldStatusForConversationChanged)
             .arrange()
         // when
@@ -725,6 +746,157 @@ class LegalHoldHandlerTest {
             connectionStatus = ConnectionState.ACCEPTED,
             expectedConversationLegalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
         )
+
+    @Test
+    fun givenUserHasNotBeenButNowIsUnderLegalHold_whenHandlingUserFetch_thenChangeConversationStatusesToEnabled() = runTest {
+        // given
+        val userId = TestUser.OTHER_USER_ID
+        val conversation = conversation(legalHoldStatus = Conversation.LegalHoldStatus.DISABLED)
+        val (arrangement, handler) = Arrangement()
+            .withGetConversationsByUserIdSuccess(listOf(conversation))
+            .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Disabled)  // used before legal hold state change
+            .withObserveConversationLegalHoldStatus(Conversation.LegalHoldStatus.DISABLED) // used before legal hold state change
+            .withMembersHavingLegalHoldClientSuccess(listOf(userId)) // used after legal hold state change
+            .withUpdateLegalHoldStatusSuccess(isChanged = true)
+            .arrange()
+        // when
+        handler.handleUserFetch(userId, true)
+        // then
+        coVerify {
+            arrangement.fetchUsersClientsFromRemote.invoke(any())
+        }.wasInvoked()
+        coVerify {
+            arrangement.legalHoldSystemMessagesHandler.handleEnabledForUser(eq(userId), any())
+        }.wasInvoked()
+        coVerify {
+            arrangement.legalHoldSystemMessagesHandler.handleDisabledForUser(eq(userId), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.conversationRepository.updateLegalHoldStatus(
+                eq(conversation.id),
+                eq(Conversation.LegalHoldStatus.ENABLED)
+            )
+        }.wasInvoked()
+    }
+
+    @Test
+    fun givenUserHasBeenButNowIsNotUnderLegalHold_whenHandlingUserFetch_thenChangeConversationStatusesToDisabled() = runTest {
+        // given
+        val userId = TestUser.OTHER_USER_ID
+        val conversation = conversation(legalHoldStatus = Conversation.LegalHoldStatus.ENABLED)
+        val (arrangement, handler) = Arrangement()
+            .withGetConversationsByUserIdSuccess(listOf(conversation))
+            .withObserveConversationLegalHoldStatus(Conversation.LegalHoldStatus.ENABLED)
+            .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Enabled)  // used before legal hold state change
+            .withMembersHavingLegalHoldClientSuccess(listOf()) // used after legal hold state change
+            .withUpdateLegalHoldStatusSuccess(isChanged = true)
+            .arrange()
+        // when
+        handler.handleUserFetch(userId, false)
+        // then
+        coVerify {
+            arrangement.fetchUsersClientsFromRemote.invoke(eq(listOf(userId)))
+        }.wasInvoked()
+        coVerify {
+            arrangement.legalHoldSystemMessagesHandler.handleEnabledForUser(eq(userId), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.legalHoldSystemMessagesHandler.handleDisabledForUser(eq(userId), any())
+        }.wasInvoked()
+        coVerify {
+            arrangement.conversationRepository.updateLegalHoldStatus(
+                eq(conversation.id),
+                eq(Conversation.LegalHoldStatus.DISABLED)
+            )
+        }.wasInvoked()
+    }
+
+    @Test
+    fun givenUserIsStillNotUnderLegalHold_whenHandlingUserFetch_thenDoNotChangeStatuses() = runTest {
+        // given
+        val userId = TestUser.OTHER_USER_ID
+        val conversation = conversation(legalHoldStatus = Conversation.LegalHoldStatus.DISABLED)
+        val (arrangement, handler) = Arrangement()
+            .withGetConversationsByUserIdSuccess(listOf(conversation))
+            .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Disabled)  // used before legal hold state change
+            .withMembersHavingLegalHoldClientSuccess(listOf()) // used after legal hold state change
+            .withUpdateLegalHoldStatusSuccess(isChanged = false)
+            .arrange()
+        // when
+        handler.handleUserFetch(userId, false)
+        // then
+        coVerify {
+            arrangement.fetchUsersClientsFromRemote.invoke(eq(listOf(userId)))
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.legalHoldSystemMessagesHandler.handleEnabledForUser(eq(userId), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.legalHoldSystemMessagesHandler.handleDisabledForUser(eq(userId), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.conversationRepository.updateLegalHoldStatus(
+                eq(conversation.id),
+                any()
+            )
+        }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenUserIsStillUnderLegalHold_whenHandlingUserFetch_thenDoNotChangeStatuses() = runTest {
+        // given
+        val userId = TestUser.OTHER_USER_ID
+        val conversation = conversation(legalHoldStatus = Conversation.LegalHoldStatus.ENABLED)
+        val (arrangement, handler) = Arrangement()
+            .withGetConversationsByUserIdSuccess(listOf(conversation))
+            .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Enabled)  // used before legal hold state change
+            .withMembersHavingLegalHoldClientSuccess(listOf(userId)) // used after legal hold state change
+            .withUpdateLegalHoldStatusSuccess(isChanged = false)
+            .arrange()
+        // when
+        handler.handleUserFetch(userId, true)
+        // then
+        coVerify {
+            arrangement.fetchUsersClientsFromRemote.invoke(eq(listOf(userId)))
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.legalHoldSystemMessagesHandler.handleEnabledForUser(eq(userId), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.legalHoldSystemMessagesHandler.handleDisabledForUser(eq(userId), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.conversationRepository.updateLegalHoldStatus(
+                eq(conversation.id),
+                any()
+            )
+        }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenUserLegalHoldDisabledButConversationDegraded_whenHandlingEnable_thenDoNotChangeConversationStatusButCreateSystemMessages() =
+        runTest {
+            // given
+            val conversation = conversation(legalHoldStatus = Conversation.LegalHoldStatus.DEGRADED)
+            val (arrangement, handler) = Arrangement()
+                .withObserveLegalHoldStateForUserSuccess(LegalHoldState.Disabled)
+                .withGetConversationsByUserIdSuccess(listOf(conversation))
+                .withObserveConversationLegalHoldStatus(Conversation.LegalHoldStatus.DEGRADED)
+                .withSetLegalHoldChangeNotifiedSuccess()
+                .arrange()
+            // when
+            handler.handleEnable(legalHoldEventEnabled)
+            // then
+            coVerify {
+                arrangement.conversationRepository.updateLegalHoldStatus(
+                    eq(conversation.id),
+                    eq(Conversation.LegalHoldStatus.ENABLED)
+                )
+            }.wasNotInvoked()
+            coVerify {
+                arrangement.legalHoldSystemMessagesHandler.handleEnabledForUser(any(), any())
+            }.wasInvoked()
+    }
 
     private class Arrangement {
 
@@ -825,6 +997,12 @@ class LegalHoldHandlerTest {
             coEvery {
                 conversationRepository.updateLegalHoldStatus(any(), any())
             }.returns(Either.Right(isChanged))
+        }
+
+        suspend fun withObserveConversationLegalHoldStatus(status: Conversation.LegalHoldStatus) = apply {
+            coEvery {
+                conversationRepository.observeLegalHoldStatus(any())
+            }.returns(flowOf(Either.Right(status)))
         }
 
         suspend fun withGetConversationsByUserIdSuccess(conversations: List<Conversation> = emptyList()) = apply {
