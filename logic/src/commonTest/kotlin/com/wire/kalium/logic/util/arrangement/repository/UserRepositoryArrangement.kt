@@ -84,7 +84,12 @@ internal interface UserRepositoryArrangement {
         userIdList: Matcher<List<UserId>> = AnyMatcher(valueOf())
     )
 
+<<<<<<< HEAD
     suspend fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: Matcher<List<UserId>>)
+=======
+    fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: Matcher<List<UserId>>)
+    fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>, userId: Matcher<UserId> = any())
+>>>>>>> eb8eaddaf3 (fix: UseCase for getting if one on one conversation with user exist [WPB-6936] (#2713))
 }
 
 @Suppress("INAPPLICABLE_JVM_NAME")
@@ -200,5 +205,12 @@ internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
         coEvery {
             userRepository.markAsDeleted(matches { userId.matches(it) })
         }.returns(result)
+    }
+
+    override fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>, userId: Matcher<UserId>) {
+        given(userRepository)
+            .suspendFunction(userRepository::getOneOnOnConversationId)
+            .whenInvokedWith(userId)
+            .thenReturn(result)
     }
 }

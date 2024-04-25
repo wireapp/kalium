@@ -23,6 +23,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
@@ -33,7 +34,11 @@ import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
+<<<<<<< HEAD
 import kotlinx.coroutines.flow.flowOf
+=======
+import io.mockative.verify
+>>>>>>> eb8eaddaf3 (fix: UseCase for getting if one on one conversation with user exist [WPB-6936] (#2713))
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -68,8 +73,23 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         // given
         val (_, useCase) = arrange {
             withObserveOneToOneConversationWithOtherUserReturning(Either.Left(StorageFailure.DataNotFound))
-            withGetKnownUserReturning(flowOf(OTHER_USER))
+            withUserByIdReturning(OTHER_USER.right())
             withResolveOneOnOneConversationWithUserReturning(Either.Left(CoreFailure.NoCommonProtocolFound))
+        }
+
+        // when
+        val result = useCase.invoke(OTHER_USER_ID)
+
+        // then
+        assertIs<CreateConversationResult.Failure>(result)
+    }
+
+    @Test
+    fun givenFailureWhileGettingUser_whenCallingTheUseCase_ThenErrorIsPropagated() = runTest {
+        // given
+        val (_, useCase) = arrange {
+            withObserveOneToOneConversationWithOtherUserReturning(Either.Left(StorageFailure.DataNotFound))
+            withUserByIdReturning(Either.Left(StorageFailure.DataNotFound))
         }
 
         // when
@@ -84,9 +104,9 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         // given
         val (arrangement, useCase) = arrange {
             withObserveOneToOneConversationWithOtherUserReturning(Either.Left(StorageFailure.DataNotFound))
-            withGetKnownUserReturning(flowOf(OTHER_USER))
+            withUserByIdReturning(OTHER_USER.right())
             withResolveOneOnOneConversationWithUserReturning(Either.Right(CONVERSATION.id))
-            withGetConversationByIdReturning(CONVERSATION)
+            withConversationDetailsByIdReturning(CONVERSATION.right())
         }
 
         // when
