@@ -27,7 +27,7 @@ class ExpirableCache<K, V>(private val timeToLive: Duration, private val current
     private val map = mutableMapOf<K, Pair<Instant, V>>()
 
     init {
-        if (timeToLive.isNegative()) throw IllegalArgumentException("Expiration must be positive")
+        if (timeToLive.isNegative()) throw IllegalArgumentException("timeToLive must be positive")
     }
 
     suspend fun getOrPut(key: K, create: suspend () -> V): V = mutex.withLock {
