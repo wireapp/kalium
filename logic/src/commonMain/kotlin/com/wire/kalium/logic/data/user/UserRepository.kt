@@ -54,6 +54,7 @@ import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
@@ -167,6 +168,7 @@ internal class UserDataSource internal constructor(
     private val sessionRepository: SessionRepository,
     private val selfUserId: UserId,
     private val selfTeamIdProvider: SelfTeamIdProvider,
+    private val legalHoldHandler: LegalHoldHandler,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
@@ -341,7 +343,7 @@ internal class UserDataSource internal constructor(
     private suspend fun persistUsers(
         listUserProfileDTO: List<UserProfileDTO>,
         listTeamMemberDTO: List<TeamsApi.TeamMemberDTO>,
-    ) = wrapStorageRequest {
+    ): Either<CoreFailure, Unit> {
         val mapTeamMemberDTO = listTeamMemberDTO.associateBy { it.nonQualifiedUserId }
         val selfUserTeamId = selfTeamIdProvider().getOrNull()?.value
         val teamMembers = listUserProfileDTO
@@ -370,13 +372,22 @@ internal class UserDataSource internal constructor(
                     )
                 )
             }
-        if (teamMembers.isNotEmpty()) {
-            userDAO.upsertUsers(teamMembers)
-            userDAO.upsertConnectionStatuses(teamMembers.associate { it.id to it.connectionStatus })
-        }
-        if (otherUsers.isNotEmpty()) {
-            userDAO.upsertUsers(otherUsers)
-        }
+        return listUserProfileDTO
+            .map {
+                legalHoldHandler.handleUserFetch(it.id.toModel(), it.legalHoldStatus == LegalHoldStatusDTO.ENABLED)
+            }
+            .foldToEitherWhileRight(Unit) { value, _ -> value }
+            .flatMap {
+                wrapStorageRequest {
+                    if (teamMembers.isNotEmpty()) {
+                        userDAO.upsertUsers(teamMembers)
+                        userDAO.upsertConnectionStatuses(teamMembers.associate { it.id to it.connectionStatus })
+                    }
+                    if (otherUsers.isNotEmpty()) {
+                        userDAO.upsertUsers(otherUsers)
+                    }
+                }
+            }
     }
 
     override suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit> = wrapStorageRequest {

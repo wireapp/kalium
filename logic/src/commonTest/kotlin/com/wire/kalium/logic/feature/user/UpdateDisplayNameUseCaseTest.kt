@@ -21,71 +21,66 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class UpdateDisplayNameUseCaseTest {
 
     @Test
     fun givenValidParams_whenUpdatingDisplayName_thenShouldReturnASuccessResult() = runTest {
-        val (arrangement, updateDisplayName) = Arrangement()
+        val (arrangement, updateDisplayName) = Arrangement(testKaliumDispatcher)
             .withSuccessfulUploadResponse()
             .arrange()
 
         val result = updateDisplayName(NEW_DISPLAY_NAME)
 
         assertTrue(result is DisplayNameUpdateResult.Success)
-        verify(arrangement.accountRepository)
-            .suspendFunction(arrangement.accountRepository::updateSelfDisplayName)
-            .with(any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.accountRepository.updateSelfDisplayName(any())
+        }.wasInvoked(once)
     }
 
     @Test
     fun givenAnError_whenUpdatingDisplayName_thenShouldReturnAMappedCoreFailure() = runTest {
-        val (arrangement, updateDisplayName) = Arrangement()
+        val (arrangement, updateDisplayName) = Arrangement(testKaliumDispatcher)
             .withErrorResponse()
             .arrange()
 
         val result = updateDisplayName(NEW_DISPLAY_NAME)
 
         assertTrue(result is DisplayNameUpdateResult.Failure)
-        verify(arrangement.accountRepository)
-            .suspendFunction(arrangement.accountRepository::updateSelfDisplayName)
-            .with(any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.accountRepository.updateSelfDisplayName(any())
+        }.wasInvoked(once)
     }
 
-    private class Arrangement {
+    private class Arrangement(private var dispatcher: KaliumDispatcher) {
 
         @Mock
-        val accountRepository = mock(classOf<AccountRepository>())
+        val accountRepository = mock(AccountRepository::class)
 
-        fun withSuccessfulUploadResponse() = apply {
-            given(accountRepository)
-                .suspendFunction(accountRepository::updateSelfDisplayName)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withSuccessfulUploadResponse() = apply {
+            coEvery {
+                accountRepository.updateSelfDisplayName(any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withErrorResponse() = apply {
-            given(accountRepository)
-                .suspendFunction(accountRepository::updateSelfDisplayName)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Left(CoreFailure.Unknown(Throwable("an error"))))
+        suspend fun withErrorResponse() = apply {
+            coEvery {
+                accountRepository.updateSelfDisplayName(any())
+            }.returns(Either.Left(CoreFailure.Unknown(Throwable("an error"))))
         }
 
-        fun arrange() = this to UpdateDisplayNameUseCaseImpl(accountRepository)
+        fun arrange() = this to UpdateDisplayNameUseCaseImpl(accountRepository, dispatcher)
     }
 
     companion object {

@@ -25,18 +25,21 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.fake.valueOf
+import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
+import io.mockative.matches
 import io.mockative.mock
 
 interface MessageMetadataRepositoryArrangement {
     @Mock
     val messageMetadataRepository: MessageMetadataRepository
 
-    fun withMessageOriginalSender(
+    suspend fun withMessageOriginalSender(
         result: Either<StorageFailure, UserId>,
-        conversationId: Matcher<ConversationId> = any(),
-        messageId: Matcher<MessageId> = any()
+        conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()),
+        messageId: Matcher<MessageId> = AnyMatcher(valueOf())
     )
 }
 
@@ -44,15 +47,16 @@ class MessageMetadataRepositoryArrangementImpl : MessageMetadataRepositoryArrang
     @Mock
     override val messageMetadataRepository: MessageMetadataRepository = mock(MessageMetadataRepository::class)
 
-    override fun withMessageOriginalSender(
+    override suspend fun withMessageOriginalSender(
         result: Either<StorageFailure, UserId>,
         conversationId: Matcher<ConversationId>,
         messageId: Matcher<MessageId>
     ) {
-        given(messageMetadataRepository)
-            .suspendFunction(messageMetadataRepository::originalSenderId)
-            .whenInvokedWith(conversationId, messageId)
-            .thenReturn(result)
+        coEvery {
+            messageMetadataRepository.originalSenderId(
+                matches { conversationId.matches(it) },
+                matches { messageId.matches(it) }
+            )
+        }.returns(result)
     }
-
 }

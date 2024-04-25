@@ -29,8 +29,11 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.fake.valueOf
+import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
+import io.mockative.matches
 import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -38,50 +41,50 @@ import kotlinx.coroutines.flow.flowOf
 @Suppress("INAPPLICABLE_JVM_NAME")
 internal interface UserRepositoryArrangement {
     val userRepository: UserRepository
-    fun withDefederateUser(result: Either<CoreFailure, Unit>, userId: Matcher<UserId> = any())
-    fun withObserveUser(result: Flow<User?> = flowOf(TestUser.OTHER), userId: Matcher<UserId> = any())
+    suspend fun withDefederateUser(result: Either<CoreFailure, Unit>, userId: Matcher<UserId> = AnyMatcher(valueOf()))
+    suspend fun withObserveUser(result: Flow<User?> = flowOf(TestUser.OTHER), userId: Matcher<UserId> = AnyMatcher(valueOf()))
 
-    fun withUpdateUserSuccess()
+    suspend fun withUpdateUserSuccess()
 
-    fun withUpdateUserFailure(coreFailure: CoreFailure)
+    suspend fun withUpdateUserFailure(coreFailure: CoreFailure)
 
-    fun withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(
+    suspend fun withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(
         result: List<ConversationId>,
-        userIdMatcher: Matcher<UserId> = any()
+        userIdMatcher: Matcher<UserId> = AnyMatcher(valueOf())
     )
 
-    fun withSelfUserReturning(selfUser: SelfUser?)
+    suspend fun withSelfUserReturning(selfUser: SelfUser?)
 
-    fun withObservingSelfUserReturning(selfUserFlow: Flow<SelfUser>)
+    suspend fun withObservingSelfUserReturning(selfUserFlow: Flow<SelfUser>)
 
-    fun withUserByIdReturning(result: Either<CoreFailure, OtherUser>)
+    suspend fun withUserByIdReturning(result: Either<CoreFailure, OtherUser>)
 
-    fun withUpdateOneOnOneConversationReturning(result: Either<CoreFailure, Unit>)
+    suspend fun withUpdateOneOnOneConversationReturning(result: Either<CoreFailure, Unit>)
 
-    fun withGetKnownUserReturning(result: Flow<OtherUser?>)
+    suspend fun withGetKnownUserReturning(result: Flow<OtherUser?>)
 
-    fun withGetUsersWithOneOnOneConversationReturning(result: List<OtherUser>)
+    suspend fun withGetUsersWithOneOnOneConversationReturning(result: List<OtherUser>)
 
-    fun withFetchAllOtherUsersReturning(result: Either<CoreFailure, Unit>)
+    suspend fun withFetchAllOtherUsersReturning(result: Either<CoreFailure, Unit>)
 
-    fun withFetchUserInfoReturning(result: Either<CoreFailure, Unit>)
+    suspend fun withFetchUserInfoReturning(result: Either<CoreFailure, Unit>)
 
-    fun withFetchUsersByIdReturning(
+    suspend fun withFetchUsersByIdReturning(
         result: Either<CoreFailure, Unit>,
-        userIdList: Matcher<Set<UserId>> = any()
+        userIdList: Matcher<Set<UserId>> = AnyMatcher(valueOf())
     )
 
-    fun withFetchUsersIfUnknownByIdsReturning(
+    suspend fun withFetchUsersIfUnknownByIdsReturning(
         result: Either<CoreFailure, Unit>,
-        userIdList: Matcher<Set<UserId>> = any()
+        userIdList: Matcher<Set<UserId>> = AnyMatcher(valueOf())
     )
 
-    fun withIsAtLeastOneUserATeamMember(
+    suspend fun withIsAtLeastOneUserATeamMember(
         result: Either<StorageFailure, Boolean>,
-        userIdList: Matcher<List<UserId>> = any()
+        userIdList: Matcher<List<UserId>> = AnyMatcher(valueOf())
     )
 
-    fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: Matcher<List<UserId>>)
+    suspend fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: Matcher<List<UserId>>)
 }
 
 @Suppress("INAPPLICABLE_JVM_NAME")
@@ -89,127 +92,113 @@ internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
     @Mock
     override val userRepository: UserRepository = mock(UserRepository::class)
 
-    override fun withDefederateUser(
+    override suspend fun withDefederateUser(
         result: Either<CoreFailure, Unit>,
         userId: Matcher<UserId>
     ) {
-        given(userRepository)
-            .suspendFunction(userRepository::defederateUser)
-            .whenInvokedWith(userId)
-            .thenReturn(result)
+        coEvery {
+            userRepository.defederateUser(matches { userId.matches(it) })
+        }.returns(result)
     }
 
-    override fun withObserveUser(result: Flow<User?>, userId: Matcher<UserId>) {
-        given(userRepository)
-            .suspendFunction(userRepository::observeUser)
-            .whenInvokedWith(userId)
-            .thenReturn(result)
+    override suspend fun withObserveUser(result: Flow<User?>, userId: Matcher<UserId>) {
+        coEvery {
+            userRepository.observeUser(matches { userId.matches(it) })
+        }.returns(result)
     }
 
-    override fun withUpdateUserSuccess() {
-        given(userRepository).suspendFunction(userRepository::updateUserFromEvent).whenInvokedWith(any())
-            .thenReturn(Either.Right(Unit))
+    override suspend fun withUpdateUserSuccess() {
+        coEvery {
+            userRepository.updateUserFromEvent(any())
+        }.returns(Either.Right(Unit))
     }
 
-    override fun withUpdateUserFailure(coreFailure: CoreFailure) {
-        given(userRepository).suspendFunction(userRepository::updateUserFromEvent)
-            .whenInvokedWith(any()).thenReturn(Either.Left(coreFailure))
+    override suspend fun withUpdateUserFailure(coreFailure: CoreFailure) {
+        coEvery {
+            userRepository.updateUserFromEvent(any())
+        }.returns(Either.Left(coreFailure))
     }
 
-    override fun withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(
+    override suspend fun withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(
         result: List<ConversationId>,
         userIdMatcher: Matcher<UserId>
     ) {
-        given(userRepository).suspendFunction(
-            userRepository::markUserAsDeletedAndRemoveFromGroupConversations
-        ).whenInvokedWith(userIdMatcher)
-            .thenReturn(Either.Right(result))
+        coEvery { userRepository.markUserAsDeletedAndRemoveFromGroupConversations(matches { userIdMatcher.matches(it) }) }
+            .returns(Either.Right(result))
     }
 
-    override fun withSelfUserReturning(selfUser: SelfUser?) {
-        given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
-            .whenInvoked()
-            .thenReturn(selfUser)
+    override suspend fun withSelfUserReturning(selfUser: SelfUser?) {
+        coEvery {
+            userRepository.getSelfUser()
+        }.returns(selfUser)
     }
 
-    override fun withObservingSelfUserReturning(selfUserFlow: Flow<SelfUser>) {
-        given(userRepository)
-            .suspendFunction(userRepository::observeSelfUser)
-            .whenInvoked()
-            .thenReturn(selfUserFlow)
+    override suspend fun withObservingSelfUserReturning(selfUserFlow: Flow<SelfUser>) {
+        coEvery {
+            userRepository.observeSelfUser()
+        }.returns(selfUserFlow)
     }
 
-    override fun withUserByIdReturning(result: Either<CoreFailure, OtherUser>) {
-        given(userRepository)
-            .suspendFunction(userRepository::userById)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withUserByIdReturning(result: Either<CoreFailure, OtherUser>) {
+        coEvery {
+            userRepository.userById(any())
+        }.returns(result)
     }
 
-    override fun withUpdateOneOnOneConversationReturning(result: Either<CoreFailure, Unit>) {
-        given(userRepository)
-            .suspendFunction(userRepository::updateActiveOneOnOneConversation)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withUpdateOneOnOneConversationReturning(result: Either<CoreFailure, Unit>) {
+        coEvery {
+            userRepository.updateActiveOneOnOneConversation(any(), any())
+        }.returns(result)
     }
 
-    override fun withGetKnownUserReturning(result: Flow<OtherUser?>) {
-        given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withGetKnownUserReturning(result: Flow<OtherUser?>) {
+        coEvery {
+            userRepository.getKnownUser(any())
+        }.returns(result)
     }
 
-    override fun withGetUsersWithOneOnOneConversationReturning(result: List<OtherUser>) {
-        given(userRepository)
-            .suspendFunction(userRepository::getUsersWithOneOnOneConversation)
-            .whenInvoked()
-            .thenReturn(result)
+    override suspend fun withGetUsersWithOneOnOneConversationReturning(result: List<OtherUser>) {
+        coEvery {
+            userRepository.getUsersWithOneOnOneConversation()
+        }.returns(result)
     }
 
-    override fun withFetchAllOtherUsersReturning(result: Either<CoreFailure, Unit>) {
-        given(userRepository)
-            .suspendFunction(userRepository::fetchAllOtherUsers)
-            .whenInvoked()
-            .thenReturn(result)
+    override suspend fun withFetchAllOtherUsersReturning(result: Either<CoreFailure, Unit>) {
+        coEvery {
+            userRepository.fetchAllOtherUsers()
+        }.returns(result)
     }
 
-    override fun withFetchUserInfoReturning(result: Either<CoreFailure, Unit>) {
-        given(userRepository)
-            .suspendFunction(userRepository::fetchUserInfo)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withFetchUserInfoReturning(result: Either<CoreFailure, Unit>) {
+        coEvery {
+            userRepository.fetchUserInfo(any())
+        }.returns(result)
     }
 
-    override fun withFetchUsersByIdReturning(
+    override suspend fun withFetchUsersByIdReturning(
         result: Either<CoreFailure, Unit>,
         userIdList: Matcher<Set<UserId>>
     ) {
-        given(userRepository)
-            .suspendFunction(userRepository::fetchUsersByIds)
-            .whenInvokedWith(userIdList)
-            .thenReturn(result)
+        coEvery {
+            userRepository.fetchUsersByIds(matches { userIdList.matches(it) })
+        }.returns(result)
     }
 
-    override fun withFetchUsersIfUnknownByIdsReturning(result: Either<CoreFailure, Unit>, userIdList: Matcher<Set<UserId>>) {
-        given(userRepository)
-            .suspendFunction(userRepository::fetchUsersIfUnknownByIds)
-            .whenInvokedWith(userIdList)
-            .thenReturn(result)
+    override suspend fun withFetchUsersIfUnknownByIdsReturning(result: Either<CoreFailure, Unit>, userIdList: Matcher<Set<UserId>>) {
+        coEvery {
+            userRepository.fetchUsersIfUnknownByIds(matches { userIdList.matches(it) })
+        }.returns(result)
     }
 
-    override fun withIsAtLeastOneUserATeamMember(result: Either<StorageFailure, Boolean>, userIdList: Matcher<List<UserId>>) {
-        given(userRepository)
-            .suspendFunction(userRepository::isAtLeastOneUserATeamMember)
-            .whenInvokedWith(userIdList)
-            .thenReturn(result)
+    override suspend fun withIsAtLeastOneUserATeamMember(result: Either<StorageFailure, Boolean>, userIdList: Matcher<List<UserId>>) {
+        coEvery {
+            userRepository.isAtLeastOneUserATeamMember(matches { userIdList.matches(it) }, any())
+        }.returns(result)
     }
 
-    override fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: Matcher<List<UserId>>) {
-        given(userRepository)
-            .suspendFunction(userRepository::markAsDeleted)
-            .whenInvokedWith(userId)
-            .thenReturn(result)
+    override suspend fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: Matcher<List<UserId>>) {
+        coEvery {
+            userRepository.markAsDeleted(matches { userId.matches(it) })
+        }.returns(result)
     }
 }

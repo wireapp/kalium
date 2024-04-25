@@ -21,10 +21,10 @@ package com.wire.kalium.logic.feature.conversation
 import app.cash.turbine.test
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -48,18 +48,17 @@ class ObserveArchivedUnreadConversationsCountUseCaseTest {
         // Given
         val unreadCount = 10L
 
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeUnreadArchivedConversationsCount)
-            .whenInvoked()
-            .then { flowOf(unreadCount) }
+        coEvery {
+            conversationRepository.observeUnreadArchivedConversationsCount()
+        }.returns(flowOf(unreadCount))
 
         // When
         observeArchivedUnreadConversationsCount().test {
             // Then
             val result = awaitItem()
-            verify(conversationRepository)
-                .suspendFunction(conversationRepository::observeUnreadArchivedConversationsCount)
-                .wasInvoked(exactly = once)
+            coVerify {
+                conversationRepository.observeUnreadArchivedConversationsCount()
+            }.wasInvoked(exactly = once)
 
             assertEquals(unreadCount, result)
             awaitComplete()

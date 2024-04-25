@@ -30,7 +30,7 @@ import kotlinx.datetime.Instant
 sealed class LocalNotification(open val conversationId: ConversationId) {
     data class Conversation(
         val id: ConversationId,
-        val conversationName: String,
+        val conversationName: String?,
         val messages: List<LocalNotificationMessage>,
         val isOneToOneConversation: Boolean
     ) : LocalNotification(id)

@@ -26,10 +26,10 @@ import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -45,9 +45,9 @@ class IsReadOnlyAccountUseCaseTest {
 
         val result = isReadOnlyAccountUseCase()
         assertTrue(result)
-        verify(arrangement.sessionRepository)
-            .coroutine { arrangement.sessionRepository.isAccountReadOnly(arrangement.selfUserId) }
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.sessionRepository.isAccountReadOnly(arrangement.selfUserId)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -58,9 +58,9 @@ class IsReadOnlyAccountUseCaseTest {
 
         val result = isReadOnlyAccountUseCase()
         assertTrue(result)
-        verify(arrangement.sessionRepository)
-            .coroutine { arrangement.sessionRepository.isAccountReadOnly(arrangement.selfUserId) }
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.sessionRepository.isAccountReadOnly(arrangement.selfUserId)
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -70,11 +70,10 @@ class IsReadOnlyAccountUseCaseTest {
 
         val selfUserId = UserId("user_id", "domain")
 
-        fun withIsReadOnlyAccountRepository(isReadOnlyResult: Either<StorageFailure, Boolean>) = apply {
-            given(sessionRepository)
-                .suspendFunction(sessionRepository::isAccountReadOnly)
-                .whenInvokedWith(any())
-                .then { isReadOnlyResult }
+        suspend fun withIsReadOnlyAccountRepository(isReadOnlyResult: Either<StorageFailure, Boolean>) = apply {
+            coEvery {
+                sessionRepository.isAccountReadOnly(any())
+            }.returns(isReadOnlyResult)
         }
 
         fun arrange() = this to IsReadOnlyAccountUseCaseImpl(selfUserId, sessionRepository, testDispatchers)

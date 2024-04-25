@@ -38,13 +38,11 @@ import com.wire.kalium.logic.util.arrangement.repository.CallRepositoryArrangeme
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.thenDoNothing
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -58,10 +56,9 @@ class EndCallOnConversationChangeUseCaseTest {
 
         endCallOnConversationChange()
 
-        verify(arrangement.endCall)
-            .suspendFunction(arrangement.endCall::invoke)
-            .with(eq(conversationId))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.endCall.invoke(eq(conversationId))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -72,10 +69,9 @@ class EndCallOnConversationChangeUseCaseTest {
 
         endCallOnConversationChange()
 
-        verify(arrangement.endCall)
-            .suspendFunction(arrangement.endCall::invoke)
-            .with(eq(conversationId))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.endCall.invoke(eq(conversationId))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -86,10 +82,9 @@ class EndCallOnConversationChangeUseCaseTest {
 
         endCallOnConversationChange()
 
-        verify(arrangement.endCall)
-            .suspendFunction(arrangement.endCall::invoke)
-            .with(eq(conversationId))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.endCall.invoke(eq(conversationId))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -111,10 +106,9 @@ class EndCallOnConversationChangeUseCaseTest {
 
         endCallOnConversationChange()
 
-        verify(arrangement.endCall)
-            .suspendFunction(arrangement.endCall::invoke)
-            .with(eq(conversationId))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.endCall.invoke(eq(conversationId))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -136,10 +130,9 @@ class EndCallOnConversationChangeUseCaseTest {
 
         endCallOnConversationChange()
 
-        verify(arrangement.endCall)
-            .suspendFunction(arrangement.endCall::invoke)
-            .with(eq(conversationId))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.endCall.invoke(eq(conversationId))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -154,36 +147,22 @@ class EndCallOnConversationChangeUseCaseTest {
 
         endCallOnConversationChange()
 
-        verify(arrangement.endCall)
-            .suspendFunction(arrangement.endCall::invoke)
-            .with(eq(conversationId))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.endCall.invoke(eq(conversationId))
+        }.wasNotInvoked()
     }
 
-    private class Arrangement(private val block: Arrangement.() -> Unit) :
+    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         CallRepositoryArrangement by CallRepositoryArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
 
         @Mock
-        val endCall = mock(classOf<EndCallUseCase>())
+        val endCall = mock(EndCallUseCase::class)
 
         @Mock
-        val endCallDialogManager = mock(classOf<EndCallResultListener>())
+        val endCallDialogManager = mock(EndCallResultListener::class)
 
-        init {
-            given(endCall)
-                .suspendFunction(endCall::invoke)
-                .whenInvokedWith(eq(conversationId))
-                .thenDoNothing()
-            given(endCallDialogManager)
-                .suspendFunction(endCallDialogManager::onCallEndedBecauseOfVerificationDegraded)
-                .whenInvokedWith(eq(conversationId))
-                .thenDoNothing()
-
-            withEstablishedCallsFlow(listOf(call))
-        }
-
-        fun arrange() = run {
+        suspend fun arrange() = run {
             block()
             this@Arrangement to EndCallOnConversationChangeUseCaseImpl(
                 callRepository = callRepository,
@@ -191,11 +170,20 @@ class EndCallOnConversationChangeUseCaseTest {
                 endCallUseCase = endCall,
                 endCallListener = endCallDialogManager
             )
+        }.also {
+            coEvery {
+                endCall.invoke(eq(conversationId))
+            }.returns(Unit)
+            coEvery {
+                endCallDialogManager.onCallEndedBecauseOfVerificationDegraded(eq(conversationId))
+            }.returns(Unit)
+
+            withEstablishedCallsFlow(listOf(call))
         }
     }
 
     companion object {
-        private fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+        private suspend fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
         val conversationId = ConversationId("conversationId", "domainId")
         private val call = Call(

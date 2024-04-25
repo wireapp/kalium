@@ -36,7 +36,8 @@ import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.reaction.MessageReactionEntity
 import io.mockative.Mock
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -150,24 +151,21 @@ class ReactionsMapperTest {
         val domainUserTypeMapper = mock(DomainUserTypeMapper::class)
 
         fun withDomainUserTypeStandard() = apply {
-            given(domainUserTypeMapper)
-                .function(domainUserTypeMapper::fromUserTypeEntity)
-                .whenInvokedWith(eq(UserTypeEntity.STANDARD))
-                .then { UserType.INTERNAL }
+            every {
+                domainUserTypeMapper.fromUserTypeEntity(eq(UserTypeEntity.STANDARD))
+            }.returns(UserType.INTERNAL)
         }
 
         fun withConnectionStateAccepted() = apply {
-            given(connectionStateMapper)
-                .function(connectionStateMapper::fromDaoConnectionStateToUser)
-                .whenInvokedWith(eq(ConnectionEntity.State.ACCEPTED))
-                .then { ConnectionState.ACCEPTED }
+            every {
+                connectionStateMapper.fromDaoConnectionStateToUser(eq(ConnectionEntity.State.ACCEPTED))
+            }.returns(ConnectionState.ACCEPTED)
         }
 
         fun withAvailabilityStatusNone() = apply {
-            given(availabilityStatusMapper)
-                .function(availabilityStatusMapper::fromDaoAvailabilityStatusToModel)
-                .whenInvokedWith(eq(UserAvailabilityStatusEntity.NONE))
-                .then { UserAvailabilityStatus.NONE }
+            every {
+                availabilityStatusMapper.fromDaoAvailabilityStatusToModel(eq(UserAvailabilityStatusEntity.NONE))
+            }.returns(UserAvailabilityStatus.NONE)
         }
 
         fun arrange() = this to ReactionsMapperImpl(

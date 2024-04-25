@@ -26,9 +26,10 @@ import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArr
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.UpdateSupportedProtocolsAndResolveOneOnOnesArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.UpdateSupportedProtocolsAndResolveOneOnOnesArrangementImpl
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -42,15 +43,17 @@ class MLSConfigHandlerTest {
             withSetMLSEnabledSuccessful()
         }
 
-        handler.handle(MLS_CONFIG.copy(
-            status = Status.ENABLED,
-            defaultProtocol = SupportedProtocol.MLS
-        ), duringSlowSync = false)
+        handler.handle(
+            MLS_CONFIG.copy(
+                status = Status.ENABLED,
+                defaultProtocol = SupportedProtocol.MLS
+            ),
+            duringSlowSync = false
+        )
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::setDefaultProtocol)
-            .with(eq(SupportedProtocol.MLS))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userConfigRepository.setDefaultProtocol(eq(SupportedProtocol.MLS))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -62,15 +65,17 @@ class MLSConfigHandlerTest {
             withSetMLSEnabledSuccessful()
         }
 
-        handler.handle(MLS_CONFIG.copy(
-            status = Status.ENABLED,
-            defaultProtocol = SupportedProtocol.PROTEUS
-        ), duringSlowSync = false)
+        handler.handle(
+            MLS_CONFIG.copy(
+                status = Status.ENABLED,
+                defaultProtocol = SupportedProtocol.PROTEUS
+            ),
+            duringSlowSync = false
+        )
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::setDefaultProtocol)
-            .with(eq(SupportedProtocol.PROTEUS))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userConfigRepository.setDefaultProtocol(eq(SupportedProtocol.PROTEUS))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -82,15 +87,17 @@ class MLSConfigHandlerTest {
             withSetMLSEnabledSuccessful()
         }
 
-        handler.handle(MLS_CONFIG.copy(
-            status = Status.DISABLED,
-            defaultProtocol = SupportedProtocol.MLS
-        ), duringSlowSync = false)
+        handler.handle(
+            MLS_CONFIG.copy(
+                status = Status.DISABLED,
+                defaultProtocol = SupportedProtocol.MLS
+            ),
+            duringSlowSync = false
+        )
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::setDefaultProtocol)
-            .with(eq(SupportedProtocol.PROTEUS))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userConfigRepository.setDefaultProtocol(eq(SupportedProtocol.PROTEUS))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -103,15 +110,17 @@ class MLSConfigHandlerTest {
             withUpdateSupportedProtocolsAndResolveOneOnOnesSuccessful()
         }
 
-        handler.handle(MLS_CONFIG.copy(
-            status = Status.ENABLED,
-            supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS)
-        ), duringSlowSync = false)
+        handler.handle(
+            MLS_CONFIG.copy(
+                status = Status.ENABLED,
+                supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS)
+            ),
+            duringSlowSync = false
+        )
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::setMLSEnabled)
-            .with(eq(true))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userConfigRepository.setMLSEnabled(eq(true))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -123,14 +132,16 @@ class MLSConfigHandlerTest {
             withSetMLSEnabledSuccessful()
         }
 
-        handler.handle(MLS_CONFIG.copy(
-            status = Status.DISABLED
-        ), duringSlowSync = false)
+        handler.handle(
+            MLS_CONFIG.copy(
+                status = Status.DISABLED
+            ),
+            duringSlowSync = false
+        )
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::setMLSEnabled)
-            .with(eq(false))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userConfigRepository.setMLSEnabled(eq(false))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -143,15 +154,17 @@ class MLSConfigHandlerTest {
             withSetMLSEnabledSuccessful()
         }
 
-        handler.handle(MLS_CONFIG.copy(
-            status = Status.ENABLED,
-            supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS)
-        ), duringSlowSync = false)
+        handler.handle(
+            MLS_CONFIG.copy(
+                status = Status.ENABLED,
+                supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS)
+            ),
+            duringSlowSync = false
+        )
 
-        verify(arrangement.updateSupportedProtocolsAndResolveOneOnOnes)
-            .suspendFunction(arrangement.updateSupportedProtocolsAndResolveOneOnOnes::invoke)
-            .with(eq(true))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(eq(true))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -164,23 +177,24 @@ class MLSConfigHandlerTest {
             withSetMLSEnabledSuccessful()
         }
 
-        handler.handle(MLS_CONFIG.copy(
-            status = Status.ENABLED,
-            supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS)
-        ), duringSlowSync = true)
+        handler.handle(
+            MLS_CONFIG.copy(
+                status = Status.ENABLED,
+                supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS)
+            ),
+            duringSlowSync = true
+        )
 
-        verify(arrangement.updateSupportedProtocolsAndResolveOneOnOnes)
-            .suspendFunction(arrangement.updateSupportedProtocolsAndResolveOneOnOnes::invoke)
-            .with(eq(false))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(eq(false))
+        }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement(private val block: Arrangement.() -> Unit) :
+    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(),
-        UpdateSupportedProtocolsAndResolveOneOnOnesArrangement by UpdateSupportedProtocolsAndResolveOneOnOnesArrangementImpl()
-    {
+        UpdateSupportedProtocolsAndResolveOneOnOnesArrangement by UpdateSupportedProtocolsAndResolveOneOnOnesArrangementImpl() {
         fun arrange() = run {
-            block()
+            runBlocking { block() }
             this@Arrangement to MLSConfigHandler(
                 userConfigRepository = userConfigRepository,
                 updateSupportedProtocolsAndResolveOneOnOnes = updateSupportedProtocolsAndResolveOneOnOnes
@@ -189,7 +203,7 @@ class MLSConfigHandlerTest {
     }
 
     private companion object {
-        fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+        fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
         val SELF_USER_ID = TestUser.USER_ID
         val MLS_CONFIG = MLSModel(

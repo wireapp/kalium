@@ -20,14 +20,14 @@ package com.wire.kalium.logic.util.arrangement.repository
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.Call
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
 
 internal interface CallRepositoryArrangement {
     val callRepository: CallRepository
 
-    fun withEstablishedCallsFlow(calls: List<Call>)
+    suspend fun withEstablishedCallsFlow(calls: List<Call>)
 }
 
 internal open class CallRepositoryArrangementImpl : CallRepositoryArrangement {
@@ -35,10 +35,9 @@ internal open class CallRepositoryArrangementImpl : CallRepositoryArrangement {
     @Mock
     override val callRepository: CallRepository = mock(CallRepository::class)
 
-    override fun withEstablishedCallsFlow(calls: List<Call>) {
-        given(callRepository)
-            .suspendFunction(callRepository::establishedCallsFlow)
-            .whenInvoked()
-            .thenReturn(flowOf(calls))
+    override suspend fun withEstablishedCallsFlow(calls: List<Call>) {
+        coEvery {
+            callRepository.establishedCallsFlow()
+        }.returns(flowOf(calls))
     }
 }

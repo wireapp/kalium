@@ -29,9 +29,10 @@ import com.wire.kalium.logic.util.arrangement.SyncManagerArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangementImpl
 import io.mockative.any
-import io.mockative.matching
+import io.mockative.coVerify
+import io.mockative.matches
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -58,20 +59,19 @@ class SendButtonActionConfirmationMessageTest {
 
         assertIs<SendButtonActionConfirmationMessageUseCase.Result.Success>(result)
 
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(any(), matching {
+        coVerify {
+            arrangement.messageSender.sendMessage(any(), matches {
                 it is MessageTarget.Users && it.userId == listOf(buttonActionSender)
             })
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.currentClientIdProvider)
-            .suspendFunction(arrangement.currentClientIdProvider::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.currentClientIdProvider.invoke()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.syncManager)
-            .suspendFunction(arrangement.syncManager::waitUntilLiveOrFailure)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.syncManager.waitUntilLiveOrFailure()
+        }.wasInvoked(exactly = once)
     }
 
     private companion object {
@@ -85,8 +85,8 @@ class SendButtonActionConfirmationMessageTest {
 
         private lateinit var useCase: SendButtonActionConfirmationMessageUseCase
 
-        fun arrange(block: Arrangement.() -> Unit): Pair<Arrangement, SendButtonActionConfirmationMessageUseCase> {
-            apply(block)
+        fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, SendButtonActionConfirmationMessageUseCase> {
+            runBlocking { block() }
             useCase = SendButtonActionConfirmationMessageUseCase(
                 messageSender = messageSender,
                 syncManager = syncManager,

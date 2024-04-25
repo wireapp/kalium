@@ -23,9 +23,10 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.arrangement.repository.ServerConfigRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ServerConfigRepositoryArrangementImpl
 import com.wire.kalium.logic.util.stubs.newServerConfig
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -46,10 +47,9 @@ class CanCreatePasswordProtectedLinksUseCaseTest {
             assertTrue(it)
         }
 
-        verify(arrangement.serverConfigRepository)
-            .suspendFunction(arrangement.serverConfigRepository::configForUser)
-            .with(eq(SELF_USER_ID))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.serverConfigRepository.configForUser(eq(SELF_USER_ID))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -65,10 +65,9 @@ class CanCreatePasswordProtectedLinksUseCaseTest {
             assertTrue(it)
         }
 
-        verify(arrangement.serverConfigRepository)
-            .suspendFunction(arrangement.serverConfigRepository::configForUser)
-            .with(eq(SELF_USER_ID))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.serverConfigRepository.configForUser(eq(SELF_USER_ID))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -84,15 +83,15 @@ class CanCreatePasswordProtectedLinksUseCaseTest {
             assertFalse(it)
         }
 
-        verify(arrangement.serverConfigRepository)
-            .suspendFunction(arrangement.serverConfigRepository::configForUser)
-            .with(eq(SELF_USER_ID))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.serverConfigRepository.configForUser(eq(SELF_USER_ID))
+        }.wasInvoked(exactly = once)
     }
 
     private companion object {
         val SELF_USER_ID = UserId("selfUser", "domain")
     }
+
     private class Arrangement : ServerConfigRepositoryArrangement by ServerConfigRepositoryArrangementImpl() {
 
         private val useCase: CanCreatePasswordProtectedLinksUseCase = CanCreatePasswordProtectedLinksUseCase(
@@ -100,8 +99,8 @@ class CanCreatePasswordProtectedLinksUseCaseTest {
             SELF_USER_ID
         )
 
-        fun arrange(block: Arrangement.() -> Unit): Pair<Arrangement, CanCreatePasswordProtectedLinksUseCase> {
-            apply(block)
+        fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, CanCreatePasswordProtectedLinksUseCase> {
+            runBlocking { block() }
             return this to useCase
         }
     }

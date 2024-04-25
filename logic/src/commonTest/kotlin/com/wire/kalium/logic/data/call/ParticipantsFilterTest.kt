@@ -21,8 +21,7 @@ package com.wire.kalium.logic.data.call
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserId
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -31,7 +30,7 @@ import kotlin.test.assertEquals
 class ParticipantsFilterTest {
 
     @Mock
-    private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
+    private val qualifiedIdMapper = mock(QualifiedIdMapper::class)
 
     lateinit var participantsFilter: ParticipantsFilter
 
@@ -39,14 +38,17 @@ class ParticipantsFilterTest {
     fun setUp() {
         participantsFilter = ParticipantsFilterImpl(qualifiedIdMapper)
 
-        given(qualifiedIdMapper).invocation { fromStringToQualifiedID(selfUserIdString) }
-            .then { selfUserId }
+        every {
+            qualifiedIdMapper.fromStringToQualifiedID(selfUserIdString)
+        }.returns(selfUserId)
 
-        given(qualifiedIdMapper).invocation { fromStringToQualifiedID(userId2String) }
-            .then { userId2 }
+        every {
+            qualifiedIdMapper.fromStringToQualifiedID(userId2String)
+        }.returns(userId2)
 
-        given(qualifiedIdMapper).invocation { fromStringToQualifiedID(userId3String) }
-            .then { userId3 }
+        every {
+            qualifiedIdMapper.fromStringToQualifiedID(userId3String)
+        }.returns(userId3)
     }
 
     @Test

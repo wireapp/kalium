@@ -22,7 +22,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import okio.IOException
@@ -42,6 +42,7 @@ class MarkLegalHoldChangeAsNotifiedForSelfUseCaseTest {
         // then
         assertEquals(MarkLegalHoldChangeAsNotifiedForSelfUseCase.Result.Success, result)
     }
+
     @Test
     fun givenAFailure_whenSettingLegalHoldChangeAsNotified_thenReturnSuccess() = runTest {
         // given
@@ -61,11 +62,10 @@ class MarkLegalHoldChangeAsNotifiedForSelfUseCaseTest {
         val useCase: MarkLegalHoldChangeAsNotifiedForSelfUseCase = MarkLegalHoldChangeAsNotifiedForSelfUseCaseImpl(userConfigRepository)
 
         fun arrange() = this to useCase
-        fun withSetLegalHoldChangeNotifiedResult(result: Either<StorageFailure, Unit>) = apply {
-            given(userConfigRepository)
-                .suspendFunction(userConfigRepository::setLegalHoldChangeNotified)
-                .whenInvokedWith(any())
-                .then { result }
+        suspend fun withSetLegalHoldChangeNotifiedResult(result: Either<StorageFailure, Unit>) = apply {
+            coEvery {
+                userConfigRepository.setLegalHoldChangeNotified(any())
+            }.returns(result)
         }
     }
 }

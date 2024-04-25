@@ -21,8 +21,9 @@ import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.logic.feature.e2ei.CertificateStatus
 import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapper
 import io.mockative.any
-import io.mockative.given
+import io.mockative.every
 import io.mockative.matchers.Matcher
+import io.mockative.matches
 import io.mockative.mock
 
 interface CertificateStatusMapperArrangement {
@@ -30,7 +31,7 @@ interface CertificateStatusMapperArrangement {
 
     fun withCertificateStatusMapperReturning(
         result: CertificateStatus,
-        certificateMatcher: Matcher<CryptoCertificateStatus> = any<CryptoCertificateStatus>()
+        certificateMatcher: Matcher<CryptoCertificateStatus> = any()
     )
 }
 
@@ -42,9 +43,8 @@ class CertificateStatusMapperArrangementImpl : CertificateStatusMapperArrangemen
         result: CertificateStatus,
         certificateMatcher: Matcher<CryptoCertificateStatus>
     ) {
-        given(certificateStatusMapper)
-            .function(certificateStatusMapper::toCertificateStatus)
-            .whenInvokedWith(certificateMatcher)
-            .thenReturn(result)
+        every {
+            certificateStatusMapper.toCertificateStatus(matches { certificateMatcher.matches(it) })
+        }.returns(result)
     }
 }

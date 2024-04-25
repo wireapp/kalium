@@ -22,15 +22,15 @@ import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 
 internal interface SystemMessageInserterArrangement {
     val systemMessageInserter: SystemMessageInserter
 
-    fun withInsertProtocolChangedSystemMessage()
+    suspend fun withInsertProtocolChangedSystemMessage()
 
-    fun withInsertLostCommitSystemMessage(result: Either<CoreFailure, Unit>)
+    suspend fun withInsertLostCommitSystemMessage(result: Either<CoreFailure, Unit>)
 }
 
 internal class SystemMessageInserterArrangementImpl: SystemMessageInserterArrangement {
@@ -38,17 +38,15 @@ internal class SystemMessageInserterArrangementImpl: SystemMessageInserterArrang
     @Mock
     override val systemMessageInserter = mock(SystemMessageInserter::class)
 
-    override fun withInsertProtocolChangedSystemMessage() {
-        given(systemMessageInserter)
-            .suspendFunction(systemMessageInserter::insertProtocolChangedSystemMessage)
-            .whenInvokedWith(any(), any(), any())
-            .thenReturn(Unit)
+    override suspend fun withInsertProtocolChangedSystemMessage() {
+        coEvery {
+            systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
+        }.returns(Unit)
     }
 
-    override fun withInsertLostCommitSystemMessage(result: Either<CoreFailure, Unit>) {
-        given(systemMessageInserter)
-            .suspendFunction(systemMessageInserter::insertLostCommitSystemMessage)
-            .whenInvokedWith(any(), any())
-            .thenReturn(result)
+    override suspend fun withInsertLostCommitSystemMessage(result: Either<CoreFailure, Unit>) {
+        coEvery {
+            systemMessageInserter.insertLostCommitSystemMessage(any(), any())
+        }.returns(result)
     }
 }

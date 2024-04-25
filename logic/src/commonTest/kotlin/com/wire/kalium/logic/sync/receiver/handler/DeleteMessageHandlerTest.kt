@@ -30,9 +30,10 @@ import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrang
 import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangementImpl
 import io.mockative.any
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.time.Duration
@@ -64,10 +65,9 @@ class DeleteMessageHandlerTest {
             conversationId = conversationId
         )
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::deleteMessage)
-            .with(eq(originalMessageID), eq(conversationId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.deleteMessage(eq(originalMessageID), eq(conversationId))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -94,25 +94,21 @@ class DeleteMessageHandlerTest {
             conversationId = conversationId
         )
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::markMessageAsDeleted)
-            .with(eq(originalMessageID), eq(conversationId))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.messageRepository.markMessageAsDeleted(eq(originalMessageID), eq(conversationId))
+        }.wasNotInvoked()
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::deleteMessage)
-            .with(eq(originalMessageID), eq(conversationId))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.messageRepository.deleteMessage(eq(originalMessageID), eq(conversationId))
+        }.wasNotInvoked()
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::getMessageById)
-            .with(eq(conversationId), eq(originalMessageID))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.getMessageById(eq(conversationId), eq(originalMessageID))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.ephemeralNotifications)
-            .suspendFunction(arrangement.ephemeralNotifications::scheduleDeleteMessageNotification)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.ephemeralNotifications.scheduleDeleteMessageNotification(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -140,25 +136,21 @@ class DeleteMessageHandlerTest {
             conversationId = conversationId
         )
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::markMessageAsDeleted)
-            .with(eq(originalMessageID), eq(conversationId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.markMessageAsDeleted(eq(originalMessageID), eq(conversationId))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::deleteMessage)
-            .with(eq(originalMessageID), eq(conversationId))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.messageRepository.deleteMessage(eq(originalMessageID), eq(conversationId))
+        }.wasNotInvoked()
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::getMessageById)
-            .with(eq(conversationId), eq(originalMessageID))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.getMessageById(eq(conversationId), eq(originalMessageID))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.ephemeralNotifications)
-            .suspendFunction(arrangement.ephemeralNotifications::scheduleDeleteMessageNotification)
-            .with(eq(originalMessage))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.ephemeralNotifications.scheduleDeleteMessageNotification(eq(originalMessage))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -182,25 +174,21 @@ class DeleteMessageHandlerTest {
 
         handler(content = content, senderUserId = deleteMessageSenderID, conversationId = conversationId)
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::markMessageAsDeleted)
-            .with(eq(originalMessageID), eq(conversationId))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.messageRepository.markMessageAsDeleted(eq(originalMessageID), eq(conversationId))
+        }.wasNotInvoked()
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::deleteMessage)
-            .with(eq(originalMessageID), eq(conversationId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.deleteMessage(eq(originalMessageID), eq(conversationId))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::getMessageById)
-            .with(eq(conversationId), eq(originalMessageID))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.getMessageById(eq(conversationId), eq(originalMessageID))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.ephemeralNotifications)
-            .suspendFunction(arrangement.ephemeralNotifications::scheduleDeleteMessageNotification)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.ephemeralNotifications.scheduleDeleteMessageNotification(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -226,40 +214,37 @@ class DeleteMessageHandlerTest {
 
         handler(content = content, senderUserId = deleteMessageSenderID, conversationId = conversationId)
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::markMessageAsDeleted)
-            .with(eq(originalMessageID), eq(conversationId))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.messageRepository.markMessageAsDeleted(eq(originalMessageID), eq(conversationId))
+        }.wasNotInvoked()
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::deleteMessage)
-            .with(eq(originalMessageID), eq(conversationId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.deleteMessage(eq(originalMessageID), eq(conversationId))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::getMessageById)
-            .with(eq(conversationId), eq(originalMessageID))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.getMessageById(eq(conversationId), eq(originalMessageID))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.ephemeralNotifications)
-            .suspendFunction(arrangement.ephemeralNotifications::scheduleDeleteMessageNotification)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.ephemeralNotifications.scheduleDeleteMessageNotification(any())
+        }.wasNotInvoked()
     }
 
     private companion object {
         val SELF_USER_ID = UserId("selfID", "selfDomain")
     }
 
-    private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
+    private fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     private class Arrangement(
-        private val block: Arrangement.() -> Unit
+        private val block: suspend Arrangement.() -> Unit
     ) : MessageRepositoryArrangement by MessageRepositoryArrangementImpl(),
         AssetRepositoryArrangement by AssetRepositoryArrangementImpl(),
         EphemeralEventsNotificationManagerArrangement by EphemeralEventsNotificationManagerArrangementImpl() {
 
-        fun arrange() = block().run {
+        fun arrange() = run {
+            runBlocking { block() }
             this@Arrangement to DeleteMessageHandlerImpl(
                 messageRepository = messageRepository,
                 assetRepository = assetRepository,

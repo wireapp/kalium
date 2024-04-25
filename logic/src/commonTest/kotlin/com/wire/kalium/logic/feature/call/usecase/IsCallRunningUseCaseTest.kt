@@ -24,8 +24,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallStatus
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -36,7 +35,7 @@ import kotlin.test.assertEquals
 class IsCallRunningUseCaseTest {
 
     @Mock
-    private val callRepository = mock(classOf<CallRepository>())
+    private val callRepository = mock(CallRepository::class)
 
     private lateinit var isCallRunningUseCase: IsCallRunningUseCase
 
@@ -49,9 +48,9 @@ class IsCallRunningUseCaseTest {
 
     @Test
     fun givenAFlowWithEmptyValues_whenInvokingUseCase_thenReturnsFalse() = runTest {
-        given(callRepository)
-            .suspendFunction(callRepository::callsFlow).whenInvoked()
-            .thenReturn(flowOf(listOf()))
+        coEvery {
+            callRepository.callsFlow()
+        }.returns(flowOf(listOf()))
 
         val result = isCallRunningUseCase()
 
@@ -60,9 +59,9 @@ class IsCallRunningUseCaseTest {
 
     @Test
     fun givenAFlowThatDoesNotContainIncomingOrOutgoingOrOngoingCall_whenInvokingUseCase_thenReturnsFalse() = runTest {
-        given(callRepository)
-            .suspendFunction(callRepository::callsFlow).whenInvoked()
-            .thenReturn(flowOf(listOf(call2)))
+        coEvery {
+            callRepository.callsFlow()
+        }.returns(flowOf(listOf(call2)))
 
         val result = isCallRunningUseCase()
 
@@ -71,9 +70,9 @@ class IsCallRunningUseCaseTest {
 
     @Test
     fun givenAFlowContainingAnIncomingCall_whenInvokingUseCase_thenReturnsTrue() = runTest {
-        given(callRepository)
-            .suspendFunction(callRepository::callsFlow).whenInvoked()
-            .thenReturn(flowOf(listOf(call1, call2)))
+        coEvery {
+            callRepository.callsFlow()
+        }.returns(flowOf(listOf(call1, call2)))
 
         val result = isCallRunningUseCase()
 

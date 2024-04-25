@@ -26,7 +26,7 @@ import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -44,18 +44,17 @@ class AppLockConfigHandlerTest {
 
         appLockConfigHandler.handle(appLockModel)
 
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::isTeamAppLockEnabled)
-            .wasInvoked(exactly = once)
+        verify {
+            arrangement.userConfigRepository.isTeamAppLockEnabled()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setAppLockStatus)
-            .with(
+        verify {
+            arrangement.userConfigRepository.setAppLockStatus(
                 eq(appLockModel.status.toBoolean()),
                 eq(appLockModel.inactivityTimeoutSecs),
                 eq(false)
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -67,18 +66,17 @@ class AppLockConfigHandlerTest {
 
         appLockConfigHandler.handle(appLockModel)
 
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::isTeamAppLockEnabled)
-            .wasInvoked(exactly = once)
+        verify {
+            arrangement.userConfigRepository.isTeamAppLockEnabled()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setAppLockStatus)
-            .with(
+        verify {
+            arrangement.userConfigRepository.setAppLockStatus(
                 eq(appLockModel.status.toBoolean()),
                 eq(appLockModel.inactivityTimeoutSecs),
                 eq(true)
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -90,18 +88,17 @@ class AppLockConfigHandlerTest {
 
         appLockConfigHandler.handle(appLockModel)
 
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::isTeamAppLockEnabled)
-            .wasInvoked(exactly = once)
+        verify {
+            arrangement.userConfigRepository.isTeamAppLockEnabled()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setAppLockStatus)
-            .with(
+        verify {
+            arrangement.userConfigRepository.setAppLockStatus(
                 eq(appLockModel.status.toBoolean()),
                 eq(appLockModel.inactivityTimeoutSecs),
                 eq(appLockTeamConfigEnabled.isStatusChanged)
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -113,18 +110,17 @@ class AppLockConfigHandlerTest {
 
         appLockConfigHandler.handle(appLockModel)
 
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::isTeamAppLockEnabled)
-            .wasInvoked(exactly = once)
+        verify {
+            arrangement.userConfigRepository.isTeamAppLockEnabled()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setAppLockStatus)
-            .with(
+        verify {
+            arrangement.userConfigRepository.setAppLockStatus(
                 eq(appLockModel.status.toBoolean()),
                 eq(appLockModel.inactivityTimeoutSecs),
                 eq(true)
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -139,31 +135,27 @@ class AppLockConfigHandlerTest {
         }
 
         init {
-            given(userConfigRepository)
-                .function(userConfigRepository::setAppLockStatus)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+            every {
+                userConfigRepository.setAppLockStatus(any(), any(), any())
+            }.returns(Either.Right(Unit))
         }
 
         fun withUserConfigRepositoryFailure() = apply {
-            given(userConfigRepository)
-                .function(userConfigRepository::isTeamAppLockEnabled)
-                .whenInvoked()
-                .thenReturn(Either.Left(StorageFailure.DataNotFound))
+            every {
+                userConfigRepository.isTeamAppLockEnabled()
+            }.returns(Either.Left(StorageFailure.DataNotFound))
         }
 
         fun withAppLocked() = apply {
-            given(userConfigRepository)
-                .function(userConfigRepository::isTeamAppLockEnabled)
-                .whenInvoked()
-                .thenReturn(Either.Right(appLockTeamConfigEnabled))
+            every {
+                userConfigRepository.isTeamAppLockEnabled()
+            }.returns(Either.Right(appLockTeamConfigEnabled))
         }
 
         fun withAppNotLocked() = apply {
-            given(userConfigRepository)
-                .function(userConfigRepository::isTeamAppLockEnabled)
-                .whenInvoked()
-                .thenReturn(Either.Right(appLockTeamConfigDisabled))
+            every {
+                userConfigRepository.isTeamAppLockEnabled()
+            }.returns(Either.Right(appLockTeamConfigDisabled))
         }
     }
 

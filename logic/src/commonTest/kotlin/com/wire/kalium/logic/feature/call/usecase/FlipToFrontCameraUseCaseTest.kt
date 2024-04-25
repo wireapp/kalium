@@ -20,14 +20,11 @@ package com.wire.kalium.logic.feature.call.usecase
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.FlowManagerService
 import io.mockative.Mock
-import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.thenDoNothing
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -35,7 +32,7 @@ import kotlin.test.Test
 class FlipToFrontCameraUseCaseTest {
 
     @Mock
-    private val flowManagerService = mock(classOf<FlowManagerService>())
+    private val flowManagerService = mock(FlowManagerService::class)
 
     private lateinit var flipToFrontCamera: FlipToFrontCameraUseCase
 
@@ -44,20 +41,17 @@ class FlipToFrontCameraUseCaseTest {
         flipToFrontCamera = FlipToFrontCameraUseCase(flowManagerService)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenFlowManagerService_whenUseCaseCaseIsInvoked_thenInvokeFlipToFrontCameraOnce() = runTest {
-        given(flowManagerService)
-            .suspendFunction(flowManagerService::flipToFrontCamera)
-            .whenInvokedWith(eq(conversationId))
-            .thenDoNothing()
+        coEvery {
+            flowManagerService.flipToFrontCamera(eq(conversationId))
+        }.returns(Unit)
 
         flipToFrontCamera(conversationId)
 
-        verify(flowManagerService)
-            .function(flowManagerService::flipToFrontCamera)
-            .with(eq(conversationId))
-            .wasInvoked(once)
+        coVerify {
+            flowManagerService.flipToFrontCamera(eq(conversationId))
+        }.wasInvoked(once)
     }
 
     companion object {

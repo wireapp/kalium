@@ -25,12 +25,12 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallStatus
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.doesNothing
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.thenDoNothing
 import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -40,17 +40,15 @@ import kotlin.test.Test
 class UpdateVideoStateUseCaseTest {
 
     @Mock
-    private val callRepository = mock(classOf<CallRepository>())
+    private val callRepository = mock(CallRepository::class)
 
     private lateinit var updateVideoStateUseCase: UpdateVideoStateUseCase
 
     @BeforeTest
     fun setup() {
         updateVideoStateUseCase = UpdateVideoStateUseCase(callRepository)
-        given(callRepository)
-            .function(callRepository::updateIsCameraOnById)
-            .whenInvokedWith(eq(conversationId.toString()), eq(isCameraOn))
-            .thenDoNothing()
+        every { callRepository.updateIsCameraOnById(eq(conversationId), eq(isCameraOn)) }
+            .doesNothing()
     }
 
     @Test
@@ -68,43 +66,28 @@ class UpdateVideoStateUseCaseTest {
             null
         )
 
-        given(callRepository)
-            .suspendFunction(callRepository::establishedCallsFlow)
-            .whenInvoked().then {
-                flowOf(listOf(establishedCall))
-            }
-        given(callRepository)
-            .function(callRepository::updateIsCameraOnById)
-            .whenInvokedWith(eq(conversationId), eq(isCameraOn))
-            .thenDoNothing()
+        coEvery {
+            callRepository.establishedCallsFlow()
+        }.returns(flowOf(listOf(establishedCall)))
 
         updateVideoStateUseCase(conversationId, videoState)
 
-        verify(callRepository)
-            .function(callRepository::updateIsCameraOnById)
-            .with(eq(conversationId), eq(isCameraOn))
-            .wasInvoked(once)
+        verify {
+            callRepository.updateIsCameraOnById(eq(conversationId), eq(isCameraOn))
+        }.wasInvoked(once)
     }
 
     @Test
     fun givenAFlowOfEstablishedCallsThatContainsNonEstablishedCall_whenUseCaseInvoked_thenDoNotInvokeUpdateVideoState() = runTest {
-
-        given(callRepository)
-            .suspendFunction(callRepository::establishedCallsFlow)
-            .whenInvoked().then {
-                flowOf(listOf())
-            }
-        given(callRepository)
-            .function(callRepository::updateIsCameraOnById)
-            .whenInvokedWith(eq(conversationId), eq(isCameraOn))
-            .thenDoNothing()
+        coEvery {
+            callRepository.establishedCallsFlow()
+        }.returns(flowOf(listOf()))
 
         updateVideoStateUseCase(conversationId, videoState)
 
-        verify(callRepository)
-            .function(callRepository::updateIsCameraOnById)
-            .with(eq(conversationId), eq(isCameraOn))
-            .wasInvoked(once)
+        verify {
+            callRepository.updateIsCameraOnById(eq(conversationId), eq(isCameraOn))
+        }.wasInvoked(once)
     }
 
     companion object {
