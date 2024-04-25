@@ -34,7 +34,7 @@ class ExpirableCacheTest {
     private val currentTime: CurrentTimeProvider = { Instant.fromEpochMilliseconds(dispatcher.scheduler.currentTime) }
 
     @Test
-    fun `before the cache expiration the cached value is still available`() = runTest(dispatcher) {
+    fun before_the_cache_expiration_the_cached_value_is_still_available() = runTest(dispatcher) {
         val cache = ExpirableCache<String, String>(5.seconds, currentTime)
         var createCallCount = 0
 
@@ -47,7 +47,7 @@ class ExpirableCacheTest {
     }
 
     @Test
-    fun `after the cache expiration the cached value is no more available`() = runTest(dispatcher) {
+    fun after_the_cache_expiration_the_cached_value_is_no_more_available() = runTest(dispatcher) {
         val cache = ExpirableCache<String, String>(5.seconds, currentTime)
         var createCallCount = 0
 
