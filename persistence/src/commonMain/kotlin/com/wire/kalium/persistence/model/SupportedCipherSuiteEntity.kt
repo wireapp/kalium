@@ -15,10 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cryptography
+package com.wire.kalium.persistence.model
 
-actual suspend fun coreCryptoCentral(
-    rootDir: String,
-    databaseKey: String,
-    cipherSuite: List<UShort>
-): CoreCryptoCentral = TODO("Not yet implemented")
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class SupportedCipherSuiteEntity(
+    @SerialName("supported")
+    val supported: List<Int>,
+    @SerialName("default")
+    val default: Int
+)

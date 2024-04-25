@@ -28,11 +28,13 @@ import com.wire.kalium.cryptography.coreCryptoCentral
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.right
@@ -48,7 +50,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 interface MLSClientProvider {
-    fun isMLSClientInitialised(): Boolean
+    suspend fun isMLSClientInitialised(): Boolean
 
     suspend fun getMLSClient(clientId: ClientId? = null): Either<CoreFailure, MLSClient>
 
@@ -67,6 +69,7 @@ class MLSClientProviderImpl(
     private val userId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val passphraseStorage: PassphraseStorage,
+    private val userConfigRepository: UserConfigRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : MLSClientProvider {
 
@@ -76,7 +79,7 @@ class MLSClientProviderImpl(
     private val mlsClientMutex = Mutex()
     private val coreCryptoCentralMutex = Mutex()
 
-    override fun isMLSClientInitialised() = mlsClient != null
+    override suspend fun isMLSClientInitialised() = mlsClientMutex.withLock { mlsClient != null }
 
     override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> = mlsClientMutex.withLock {
         withContext(dispatchers.io) {
@@ -127,8 +130,11 @@ class MLSClientProviderImpl(
     }
 
     @Suppress("TooGenericExceptionCaught")
-    override suspend fun getCoreCrypto(clientId: ClientId?) = coreCryptoCentralMutex.withLock {
+    override suspend fun getCoreCrypto(clientId: ClientId?): Either<CoreFailure, CoreCryptoCentral> = coreCryptoCentralMutex.withLock {
         withContext(dispatchers.io) {
+            val (supportedCipherSuite, defaultCipherSuite) = userConfigRepository.getSupportedCipherSuite()
+                .getOrElse { return@withContext Either.Left(it) }
+
             val currentClientId = clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
 
             val location = "$rootKeyStorePath/${currentClientId.value}".also {
@@ -142,7 +148,9 @@ class MLSClientProviderImpl(
                 val cc = try {
                     coreCryptoCentral(
                         rootDir = "$location/$KEYSTORE_NAME",
-                        databaseKey = passphrase
+                        databaseKey = passphrase,
+                        cipherSuite = supportedCipherSuite.map { it.tag.toUShort() },
+                        defaultCipherSuite = defaultCipherSuite.tag.toUShort()
                     )
                 } catch (e: Exception) {
 

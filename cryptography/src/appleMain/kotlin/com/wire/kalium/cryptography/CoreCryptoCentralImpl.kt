@@ -24,7 +24,11 @@ import com.wire.crypto.CoreCryptoCallbacks
 import platform.Foundation.NSFileManager
 import kotlin.time.Duration
 
-actual suspend fun coreCryptoCentral(rootDir: String, databaseKey: String): CoreCryptoCentral {
+actual suspend fun coreCryptoCentral(
+    rootDir: String,
+    databaseKey: String,
+    cipherSuite: List<UShort>
+): CoreCryptoCentral {
     val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
     NSFileManager.defaultManager.createDirectoryAtPath(rootDir, withIntermediateDirectories = true, null, null)
     val coreCrypto = CoreCrypto.deferredInit(path, databaseKey, null)
