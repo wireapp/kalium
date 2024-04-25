@@ -677,9 +677,9 @@ internal class MLSConversationDataSource(
     })
 
     private val getDeviceIdentitiesCache =
-        ExpirableCache<Pair<MLSGroupId, Set<CryptoQualifiedClientId>>, List<WireIdentity>>(IDENTITIES_EXPIRATION, currentTimeProvider)
+        ExpirableCache<Pair<MLSGroupId, Set<CryptoQualifiedClientId>>, List<WireIdentity>>(IDENTITIES_TTL, currentTimeProvider)
     private val getUserIdentitiesCache =
-        ExpirableCache<Pair<MLSGroupId, Set<UserId>>, Map<String, List<WireIdentity>>>(IDENTITIES_EXPIRATION, currentTimeProvider)
+        ExpirableCache<Pair<MLSGroupId, Set<UserId>>, Map<String, List<WireIdentity>>>(IDENTITIES_TTL, currentTimeProvider)
 
     override suspend fun getClientIdentity(clientId: ClientId) =
         wrapStorageRequest { conversationDAO.getE2EIConversationClientInfoByClientId(clientId.value) }.flatMap {
@@ -904,4 +904,4 @@ internal class MLSConversationDataSource(
     private data class CommitOperationResult<T>(val commitBundle: CommitBundle?, val result: T)
 }
 
-val IDENTITIES_EXPIRATION = 1.seconds
+val IDENTITIES_TTL = 1.seconds

@@ -1657,7 +1657,7 @@ class MLSConversationRepositoryTest {
             .arrange()
 
         val result1 = mlsConversationRepository.getClientIdentity(TestClient.CLIENT_ID)
-        advanceTimeBy(IDENTITIES_EXPIRATION - 500.milliseconds)
+        advanceTimeBy(IDENTITIES_TTL - 500.milliseconds)
         arrangement.withGetDeviceIdentitiesReturn(listOf(identity2))
         val result2 = mlsConversationRepository.getClientIdentity(TestClient.CLIENT_ID)
 
@@ -1680,7 +1680,7 @@ class MLSConversationRepositoryTest {
             .arrange()
 
         val result1 = mlsConversationRepository.getClientIdentity(TestClient.CLIENT_ID)
-        advanceTimeBy(IDENTITIES_EXPIRATION + 500.milliseconds)
+        advanceTimeBy(IDENTITIES_TTL + 500.milliseconds)
         arrangement.withGetDeviceIdentitiesReturn(listOf(identity2))
         val result2 = mlsConversationRepository.getClientIdentity(TestClient.CLIENT_ID)
 
@@ -1704,7 +1704,7 @@ class MLSConversationRepositoryTest {
             .arrange()
 
         val result1 = mlsConversationRepository.getUserIdentity(TestUser.USER_ID)
-        advanceTimeBy(IDENTITIES_EXPIRATION - 500.milliseconds)
+        advanceTimeBy(IDENTITIES_TTL - 500.milliseconds)
         arrangement.withGetUserIdentitiesReturn(mapOf(TestUser.USER_ID.value to listOf(identity2)))
         val result2 = mlsConversationRepository.getUserIdentity(TestUser.USER_ID)
 
@@ -1728,7 +1728,7 @@ class MLSConversationRepositoryTest {
             .arrange()
 
         val result1 = mlsConversationRepository.getUserIdentity(TestUser.USER_ID)
-        advanceTimeBy(IDENTITIES_EXPIRATION + 500.milliseconds)
+        advanceTimeBy(IDENTITIES_TTL + 500.milliseconds)
         arrangement.withGetUserIdentitiesReturn(mapOf(TestUser.USER_ID.value to listOf(identity2)))
         val result2 = mlsConversationRepository.getUserIdentity(TestUser.USER_ID)
 
@@ -1751,7 +1751,7 @@ class MLSConversationRepositoryTest {
             .arrange()
 
         val result1 = mlsConversationRepository.getMembersIdentities(TestConversation.ID, listOf(TestUser.USER_ID))
-        advanceTimeBy(IDENTITIES_EXPIRATION - 500.milliseconds)
+        advanceTimeBy(IDENTITIES_TTL - 500.milliseconds)
         arrangement.withGetUserIdentitiesReturn(mapOf(TestUser.USER_ID.value to listOf(identity2)))
         val result2 = mlsConversationRepository.getMembersIdentities(TestConversation.ID, listOf(TestUser.USER_ID))
 
@@ -1774,7 +1774,7 @@ class MLSConversationRepositoryTest {
             .arrange()
 
         val result1 = mlsConversationRepository.getMembersIdentities(TestConversation.ID, listOf(TestUser.USER_ID))
-        advanceTimeBy(IDENTITIES_EXPIRATION + 500.milliseconds)
+        advanceTimeBy(IDENTITIES_TTL + 500.milliseconds)
         arrangement.withGetUserIdentitiesReturn(mapOf(TestUser.USER_ID.value to listOf(identity2)))
         val result2 = mlsConversationRepository.getMembersIdentities(TestConversation.ID, listOf(TestUser.USER_ID))
 

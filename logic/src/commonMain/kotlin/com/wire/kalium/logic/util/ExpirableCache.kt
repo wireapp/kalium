@@ -22,17 +22,17 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
 
-class ExpirableCache<K, V>(private val expiration: Duration, private val currentTime: CurrentTimeProvider) {
+class ExpirableCache<K, V>(private val timeToLive: Duration, private val currentTime: CurrentTimeProvider) {
     private val mutex = Mutex()
     private val map = mutableMapOf<K, Pair<Instant, V>>()
 
     init {
-        if (expiration.isNegative()) throw IllegalArgumentException("Expiration must be positive")
+        if (timeToLive.isNegative()) throw IllegalArgumentException("Expiration must be positive")
     }
 
     suspend fun getOrPut(key: K, create: suspend () -> V): V = mutex.withLock {
         val currentValue = map[key]?.let { (addedAt, value) ->
-            if (addedAt.plus(expiration) >= currentTime()) value else null
+            if (addedAt.plus(timeToLive) >= currentTime()) value else null
         }
         currentValue ?: create().also { map[key] = currentTime() to it }
     }
