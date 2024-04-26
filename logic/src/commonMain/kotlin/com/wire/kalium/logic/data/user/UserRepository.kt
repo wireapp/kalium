@@ -153,12 +153,10 @@ interface UserRepository {
     suspend fun isAtLeastOneUserATeamMember(userId: List<UserId>, teamId: TeamId): Either<StorageFailure, Boolean>
 
     suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedID>): Either<StorageFailure, Unit>
-<<<<<<< HEAD
 
     suspend fun fetchUsersLegalHoldConsent(userIds: Set<UserId>): Either<CoreFailure, ListUsersLegalHoldConsent>
-=======
+
     suspend fun getOneOnOnConversationId(userId: QualifiedID): Either<StorageFailure, ConversationId>
->>>>>>> eb8eaddaf3 (fix: UseCase for getting if one on one conversation with user exist [WPB-6936] (#2713))
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
