@@ -23,6 +23,7 @@ import com.wire.kalium.logic.util.arrangement.repository.MLSConversationReposito
 import com.wire.kalium.logic.util.arrangement.repository.MLSConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.FetchMLSVerificationStatusArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.FetchMLSVerificationStatusArrangementImpl
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -43,20 +44,20 @@ class ObserveE2EIConversationsVerificationStatusesUseCaseTest {
         handler()
         advanceUntilIdle()
 
-        verify(arrangement.fetchMLSVerificationStatusUseCase)
-            .suspendFunction(arrangement.fetchMLSVerificationStatusUseCase::invoke)
-            .with(eq(TestConversation.GROUP_ID))
+        coVerify { arrangement.fetchMLSVerificationStatusUseCase(eq(TestConversation.GROUP_ID)) }
             .wasInvoked()
     }
 
-    private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
+    private suspend fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     private class Arrangement(
         private val block: Arrangement.() -> Unit
     ) : FetchMLSVerificationStatusArrangement by FetchMLSVerificationStatusArrangementImpl(),
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl() {
 
-        fun arrange() = apply(block).let {
+        suspend fun arrange() = let {
+            block()
+            mockFetchMLSVerificationStatus()
             this to ObserveE2EIConversationsVerificationStatusesUseCaseImpl(
                 epochChangesObserver = epochChangesObserver,
                 fetchMLSVerificationStatus = fetchMLSVerificationStatusUseCase,

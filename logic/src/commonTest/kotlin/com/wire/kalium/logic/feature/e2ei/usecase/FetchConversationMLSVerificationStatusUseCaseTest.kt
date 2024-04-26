@@ -25,6 +25,7 @@ import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryA
 import com.wire.kalium.logic.util.arrangement.usecase.FetchMLSVerificationStatusArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.FetchMLSVerificationStatusArrangementImpl
 import io.mockative.any
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -44,9 +45,7 @@ class FetchConversationMLSVerificationStatusUseCaseTest {
         useCase(TestConversation.ID)
         advanceUntilIdle()
 
-        verify(arrangement.fetchMLSVerificationStatusUseCase)
-            .suspendFunction(arrangement.fetchMLSVerificationStatusUseCase::invoke)
-            .with(any())
+        coVerify { arrangement.fetchMLSVerificationStatusUseCase(any()) }
             .wasNotInvoked()
     }
 
@@ -59,9 +58,7 @@ class FetchConversationMLSVerificationStatusUseCaseTest {
         useCase(TestConversation.ID)
         advanceUntilIdle()
 
-        verify(arrangement.fetchMLSVerificationStatusUseCase)
-            .suspendFunction(arrangement.fetchMLSVerificationStatusUseCase::invoke)
-            .with(any())
+        coVerify { arrangement.fetchMLSVerificationStatusUseCase(any()) }
             .wasNotInvoked()
     }
 
@@ -75,20 +72,20 @@ class FetchConversationMLSVerificationStatusUseCaseTest {
         useCase(TestConversation.ID)
         advanceUntilIdle()
 
-        verify(arrangement.fetchMLSVerificationStatusUseCase)
-            .suspendFunction(arrangement.fetchMLSVerificationStatusUseCase::invoke)
-            .with(eq(protocolInfo.groupId))
+        coVerify { arrangement.fetchMLSVerificationStatusUseCase(eq(protocolInfo.groupId)) }
             .wasInvoked()
     }
 
-    private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
+    private suspend fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     private class Arrangement(
-        private val block: Arrangement.() -> Unit
+        private val block: suspend Arrangement.() -> Unit
     ) : FetchMLSVerificationStatusArrangement by FetchMLSVerificationStatusArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl() {
 
-        fun arrange() = apply(block).let {
+        suspend fun arrange() = let {
+            block()
+            mockFetchMLSVerificationStatus()
             this to FetchConversationMLSVerificationStatusUseCaseImpl(
                 conversationRepository = conversationRepository,
                 fetchMLSVerificationStatusUseCase = fetchMLSVerificationStatusUseCase

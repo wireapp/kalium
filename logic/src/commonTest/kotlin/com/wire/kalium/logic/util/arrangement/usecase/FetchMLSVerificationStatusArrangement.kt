@@ -20,12 +20,13 @@ package com.wire.kalium.logic.util.arrangement.usecase
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseCase
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 
 internal interface FetchMLSVerificationStatusArrangement {
 
     val fetchMLSVerificationStatusUseCase: FetchMLSVerificationStatusUseCase
+    suspend fun mockFetchMLSVerificationStatus()
 }
 
 internal class FetchMLSVerificationStatusArrangementImpl : FetchMLSVerificationStatusArrangement {
@@ -34,10 +35,7 @@ internal class FetchMLSVerificationStatusArrangementImpl : FetchMLSVerificationS
     override val fetchMLSVerificationStatusUseCase: FetchMLSVerificationStatusUseCase =
         mock(FetchMLSVerificationStatusUseCase::class)
 
-    init {
-        given(fetchMLSVerificationStatusUseCase)
-            .suspendFunction(fetchMLSVerificationStatusUseCase::invoke)
-            .whenInvokedWith(any())
-            .thenReturn(Unit)
+    override suspend fun mockFetchMLSVerificationStatus() {
+        coEvery { fetchMLSVerificationStatusUseCase(any()) }.returns(Unit)
     }
 }

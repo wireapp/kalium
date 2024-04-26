@@ -256,7 +256,7 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
 
     override suspend fun withConversationDetailsByIdReturning(result: Either<StorageFailure, Conversation>) {
         coEvery {
-            conversationRepository.detailsById(any())
+            conversationRepository.detailsById(any()) }
         }.returns(result)
     }
 }
