@@ -32,10 +32,12 @@ import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.util.arrangement.repository.SearchRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.SearchRepositoryArrangementImpl
 import io.mockative.any
-import io.mockative.anything
+import io.mockative.coVerify
 import io.mockative.eq
+import io.mockative.matchers.AnyMatcher
+import io.mockative.matchers.EqualsMatcher
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -44,11 +46,9 @@ class SearchUseCaseTest {
 
     @Test
     fun givenEmptySearchQueryAndNoExcludedConversation_whenInvokingSearch_thenRespondWithAllKnownContacts() = runTest {
-
         val (arrangement, searchUseCase) = Arrangement().arrange {
             withGetKnownContacts(
-                result = emptyList<UserSearchDetails>().right(),
-                excludeConversation = eq(null)
+                result = emptyList<UserSearchDetails>().right()
             )
         }
 
@@ -59,13 +59,12 @@ class SearchUseCaseTest {
         )
 
         assertEquals(
-            expected = emptyList<UserSearchDetails>(),
+            expected = emptyList(),
             actual = result.connected
         )
-        verify(arrangement.searchUserRepository)
-            .suspendFunction(arrangement.searchUserRepository::getKnownContacts)
-            .with(eq(null))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.searchUserRepository.getKnownContacts(null)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -85,18 +84,16 @@ class SearchUseCaseTest {
         )
 
         assertEquals(
-            expected = emptyList<UserSearchDetails>(),
+            expected = emptyList(),
             actual = result.connected
         )
-        verify(arrangement.searchUserRepository)
-            .suspendFunction(arrangement.searchUserRepository::getKnownContacts)
-            .with(eq(conversationId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.searchUserRepository.getKnownContacts(eq(conversationId))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenNonEmptySearchQueryAndNoExcludedConversation_whenInvokingSearch_thenRespondWithAllKnownContacts() = runTest {
-
         val (arrangement, searchUseCase) = Arrangement().arrange {
             withSearchLocalByName(
                 result = emptyList<UserSearchDetails>().right(),
@@ -113,13 +110,12 @@ class SearchUseCaseTest {
         )
 
         assertEquals(
-            expected = emptyList<UserSearchDetails>(),
+            expected = emptyList(),
             actual = result.connected
         )
-        verify(arrangement.searchUserRepository)
-            .suspendFunction(arrangement.searchUserRepository::searchUserRemoteDirectory)
-            .with(eq("searchquery"), any(), any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.searchUserRepository.searchUserRemoteDirectory(eq("searchquery"), any(), any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -151,11 +147,11 @@ class SearchUseCaseTest {
         val (arrangement, searchUseCase) = Arrangement().arrange {
             withSearchUserRemoteDirectory(
                 result = UserSearchResult(remoteSearchResult).right(),
-                searchQuery = eq("searchquery"),
+                searchQuery = EqualsMatcher("searchquery"),
             )
             withSearchLocalByName(
                 result = localSearchResult.right(),
-                searchQuery = eq("searchquery"),
+                searchQuery = EqualsMatcher("searchquery"),
             )
         }
 
@@ -169,49 +165,45 @@ class SearchUseCaseTest {
             expected = expected,
             actual = result
         )
-        verify(arrangement.searchUserRepository)
-            .suspendFunction(arrangement.searchUserRepository::searchUserRemoteDirectory)
-            .with(eq("searchquery"), any(), any(), any())
-            .wasInvoked(exactly = once)
-        verify(arrangement.searchUserRepository)
-            .suspendFunction(arrangement.searchUserRepository::searchLocalByName)
-            .with(eq("searchquery"), anything())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.searchUserRepository.searchUserRemoteDirectory(eq("searchquery"), any(), any(), any())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.searchUserRepository.searchLocalByName(eq("searchquery"), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenSearchQuery_whenDoingSearch_thenCallTheSearchFunctionsWithCleanQuery() = runTest {
-            val searchQuery = "    search Query     "
-            val cleanQuery = "search query"
-            val (arrangement, searchUseCase) = Arrangement().arrange {
-                withSearchUserRemoteDirectory(
-                    result = UserSearchResult(emptyList()).right(),
-                    searchQuery = eq(cleanQuery),
-                )
-                withSearchLocalByName(
-                    result = emptyList<UserSearchDetails>().right(),
-                    searchQuery = eq(cleanQuery),
-                )
-            }
-
-            val result = searchUseCase(
-                searchQuery = searchQuery,
-                excludingMembersOfConversation = null,
-                customDomain = null
+        val searchQuery = "    search Query     "
+        val cleanQuery = "search query"
+        val (arrangement, searchUseCase) = Arrangement().arrange {
+            withSearchUserRemoteDirectory(
+                result = UserSearchResult(emptyList()).right(),
+                searchQuery = EqualsMatcher(cleanQuery),
             )
-
-            assertEquals(
-                expected = emptyList<UserSearchDetails>(),
-                actual = result.connected
+            withSearchLocalByName(
+                result = emptyList<UserSearchDetails>().right(),
+                searchQuery = EqualsMatcher(cleanQuery),
             )
-            verify(arrangement.searchUserRepository)
-                .suspendFunction(arrangement.searchUserRepository::searchUserRemoteDirectory)
-                .with(eq(cleanQuery), any(), any(), any())
-                .wasInvoked(exactly = once)
-            verify(arrangement.searchUserRepository)
-                .suspendFunction(arrangement.searchUserRepository::searchLocalByName)
-                .with(eq(cleanQuery), anything())
-                .wasInvoked(exactly = once)
+        }
+
+        val result = searchUseCase(
+            searchQuery = searchQuery,
+            excludingMembersOfConversation = null,
+            customDomain = null
+        )
+
+        assertEquals(
+            expected = emptyList(),
+            actual = result.connected
+        )
+        coVerify {
+            arrangement.searchUserRepository.searchUserRemoteDirectory(eq(cleanQuery), any(), any(), any())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.searchUserRepository.searchLocalByName(eq(cleanQuery), any())
+        }.wasInvoked(exactly = once)
     }
 
     private companion object {
@@ -257,7 +249,8 @@ class SearchUseCaseTest {
             maxRemoteSearchResultCount = 30
         )
 
-        fun arrange(block: Arrangement.() -> Unit) = apply(block)
-            .run { this to searchUseCase }
+        fun arrange(block: suspend Arrangement.() -> Unit) = apply {
+            runBlocking { block() }
+        }.run { this to searchUseCase }
     }
 }

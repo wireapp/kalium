@@ -25,13 +25,14 @@ import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
-import io.mockative.anything
+import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -49,78 +50,79 @@ class ObserveConversationDetailsUseCaseTest {
 
     @BeforeTest
     fun setup() {
-        observeConversationsUseCase = ObserveConversationDetailsUseCase(conversationRepository)
+        observeConversationsUseCase = ObserveConversationDetailsUseCase(
+            conversationRepository,
+            TestKaliumDispatcher
+        )
     }
 
     @Test
-    fun givenAConversationId_whenObservingConversationUseCase_thenTheConversationRepositoryShouldBeCalledWithTheCorrectID() = runTest {
-        val conversationId = TestConversation.ID
+    fun givenAConversationId_whenObservingConversationUseCase_thenTheConversationRepositoryShouldBeCalledWithTheCorrectID() =
+        runTest(TestKaliumDispatcher.main) {
+            val conversationId = TestConversation.ID
 
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(anything())
-            .then { flowOf() }
+            coEvery {
+                conversationRepository.observeConversationDetailsById(any())
+            }.returns(flowOf())
 
-        observeConversationsUseCase(conversationId)
+            observeConversationsUseCase(conversationId)
 
-        verify(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationDetailsById)
-            .with(eq(conversationId))
-            .wasInvoked(exactly = once)
-    }
+            coVerify {
+                conversationRepository.observeConversationDetailsById(eq(conversationId))
+            }.wasInvoked(exactly = once)
+        }
 
     @Test
-    fun givenTheConversationIsUpdated_whenObservingConversationUseCase_thenThisUpdateIsPropagatedInTheFlow() = runTest {
-        val conversation = TestConversation.GROUP()
-        val conversationDetailsValues = listOf(
-            Either.Right(
-                ConversationDetails.Group(
-                    conversation,
-                    lastMessage = null,
-                    isSelfUserMember = true,
-                    isSelfUserCreator = true,
-                    unreadEventCount = emptyMap(),
-                    selfRole = Conversation.Member.Role.Member
-                )
-            ),
-            Either.Right(
-                ConversationDetails.Group(
-                    conversation.copy(name = "New Name"),
-                    lastMessage = null,
-                    isSelfUserMember = true,
-                    isSelfUserCreator = true,
-                    unreadEventCount = emptyMap(),
-                    selfRole = Conversation.Member.Role.Member
+    fun givenTheConversationIsUpdated_whenObservingConversationUseCase_thenThisUpdateIsPropagatedInTheFlow() =
+        runTest(TestKaliumDispatcher.main) {
+            val conversation = TestConversation.GROUP()
+            val conversationDetailsValues = listOf(
+                Either.Right(
+                    ConversationDetails.Group(
+                        conversation,
+                        lastMessage = null,
+                        isSelfUserMember = true,
+                        isSelfUserCreator = true,
+                        unreadEventCount = emptyMap(),
+                        selfRole = Conversation.Member.Role.Member
+                    )
+                ),
+                Either.Right(
+                    ConversationDetails.Group(
+                        conversation.copy(name = "New Name"),
+                        lastMessage = null,
+                        isSelfUserMember = true,
+                        isSelfUserCreator = true,
+                        unreadEventCount = emptyMap(),
+                        selfRole = Conversation.Member.Role.Member
+                    )
                 )
             )
-        )
 
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(anything())
-            .then { conversationDetailsValues.asFlow() }
+            coEvery {
+                conversationRepository.observeConversationDetailsById(any())
+            }.returns(conversationDetailsValues.asFlow())
 
-        observeConversationsUseCase(TestConversation.ID).test {
-            awaitItem().let { item ->
-                assertIs<ObserveConversationDetailsUseCase.Result.Success>(item)
-                assertEquals(conversationDetailsValues[0].value, item.conversationDetails)
+            observeConversationsUseCase(TestConversation.ID).test {
+                awaitItem().let { item ->
+                    assertIs<ObserveConversationDetailsUseCase.Result.Success>(item)
+                    assertEquals(conversationDetailsValues[0].value, item.conversationDetails)
+                }
+                awaitItem().let { item ->
+                    assertIs<ObserveConversationDetailsUseCase.Result.Success>(item)
+                    assertEquals(conversationDetailsValues[1].value, item.conversationDetails)
+                }
+                awaitComplete()
             }
-            awaitItem().let { item ->
-                assertIs<ObserveConversationDetailsUseCase.Result.Success>(item)
-                assertEquals(conversationDetailsValues[1].value, item.conversationDetails)
-            }
-            awaitComplete()
         }
-    }
 
     @Test
-    fun givenTheStorageFailure_whenObservingConversationUseCase_thenThisUpdateIsPropagatedInTheFlow() = runTest {
+    fun givenTheStorageFailure_whenObservingConversationUseCase_thenThisUpdateIsPropagatedInTheFlow() = runTest(TestKaliumDispatcher.main) {
         val failure = StorageFailure.DataNotFound
 
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(anything())
-            .then { flowOf(Either.Left(failure)) }
+        coEvery {
+            conversationRepository.observeConversationDetailsById(any())
+        }.returns(flowOf(Either.Left(failure)))
 
         observeConversationsUseCase(TestConversation.ID).test {
             awaitItem().let { item ->

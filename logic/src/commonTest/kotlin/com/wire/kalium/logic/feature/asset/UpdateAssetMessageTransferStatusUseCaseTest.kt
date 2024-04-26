@@ -23,7 +23,16 @@ import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.Either
-import io.mockative.*
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcher
+import io.mockative.Mock
+import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.eq
+import io.mockative.mock
+import io.mockative.once
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -36,17 +45,18 @@ class UpdateAssetMessageTransferStatusUseCaseTest {
         val newDownloadStatus = AssetTransferStatus.DOWNLOAD_IN_PROGRESS
         val dummyConvId = ConversationId("dummy-value", "dummy.domain")
         val dummyMessageId = "dummy-message-id"
-        val (arrangement, useCase) = Arrangement().withSuccessfulResponse().arrange()
+        val (arrangement, useCase) = Arrangement(testKaliumDispatcher)
+            .withSuccessfulResponse()
+            .arrange()
 
         // When
         val result = useCase.invoke(newDownloadStatus, dummyConvId, dummyMessageId)
 
         // Then
         assertTrue(result is UpdateTransferStatusResult.Success)
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::updateAssetMessageTransferStatus)
-            .with(eq(newDownloadStatus), eq(dummyConvId), eq(dummyMessageId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.updateAssetMessageTransferStatus(eq(newDownloadStatus), eq(dummyConvId), eq(dummyMessageId))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -55,40 +65,39 @@ class UpdateAssetMessageTransferStatusUseCaseTest {
         val newDownloadStatus = AssetTransferStatus.SAVED_INTERNALLY
         val dummyConvId = ConversationId("dummy-value", "dummy.domain")
         val dummyMessageId = "dummy-message-id"
-        val (arrangement, useCase) = Arrangement().withErrorResponse().arrange()
+        val (arrangement, useCase) = Arrangement(testKaliumDispatcher)
+            .withErrorResponse()
+            .arrange()
 
         // When
         val result = useCase.invoke(newDownloadStatus, dummyConvId, dummyMessageId)
 
         // Then
         assertTrue(result is UpdateTransferStatusResult.Failure)
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::updateAssetMessageTransferStatus)
-            .with(eq(newDownloadStatus), eq(dummyConvId), eq(dummyMessageId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.updateAssetMessageTransferStatus(eq(newDownloadStatus), eq(dummyConvId), eq(dummyMessageId))
+        }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement {
+    private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
         @Mock
-        val messageRepository = mock(classOf<MessageRepository>())
+        val messageRepository = mock(MessageRepository::class)
 
-        fun withSuccessfulResponse(): Arrangement {
-            given(messageRepository)
-                .suspendFunction(messageRepository::updateAssetMessageTransferStatus)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withSuccessfulResponse(): Arrangement {
+            coEvery {
+                messageRepository.updateAssetMessageTransferStatus(any(), any(), any())
+            }.returns(Either.Right(Unit))
             return this
         }
 
-        fun withErrorResponse(): Arrangement {
-            given(messageRepository)
-                .suspendFunction(messageRepository::updateAssetMessageTransferStatus)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Either.Left(NetworkFailure.ServerMiscommunication(RuntimeException())))
+        suspend fun withErrorResponse(): Arrangement {
+            coEvery {
+                messageRepository.updateAssetMessageTransferStatus(any(), any(), any())
+            }.returns(Either.Left(NetworkFailure.ServerMiscommunication(RuntimeException())))
             return this
         }
 
-        fun arrange() = this to UpdateAssetMessageTransferStatusUseCaseImpl(messageRepository)
+        fun arrange() = this to UpdateAssetMessageTransferStatusUseCaseImpl(messageRepository, dispatcher)
 
     }
 }

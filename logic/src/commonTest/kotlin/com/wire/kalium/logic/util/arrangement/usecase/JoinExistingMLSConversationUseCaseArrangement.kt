@@ -22,13 +22,13 @@ import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCas
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 
 internal interface JoinExistingMLSConversationUseCaseArrangement {
     val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase
 
-    fun withJoinExistingMLSConversationUseCaseReturning(result: Either<CoreFailure, Unit>)
+    suspend fun withJoinExistingMLSConversationUseCaseReturning(result: Either<CoreFailure, Unit>)
 }
 
 internal class JoinExistingMLSConversationUseCaseArrangementImpl : JoinExistingMLSConversationUseCaseArrangement {
@@ -37,10 +37,9 @@ internal class JoinExistingMLSConversationUseCaseArrangementImpl : JoinExistingM
     override val joinExistingMLSConversationUseCase: JoinExistingMLSConversationUseCase =
         mock(JoinExistingMLSConversationUseCase::class)
 
-    override fun withJoinExistingMLSConversationUseCaseReturning(result: Either<CoreFailure, Unit>) {
-        given(joinExistingMLSConversationUseCase)
-            .suspendFunction(joinExistingMLSConversationUseCase::invoke)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withJoinExistingMLSConversationUseCaseReturning(result: Either<CoreFailure, Unit>) {
+        coEvery {
+            joinExistingMLSConversationUseCase.invoke(any())
+        }.returns(result)
     }
 }

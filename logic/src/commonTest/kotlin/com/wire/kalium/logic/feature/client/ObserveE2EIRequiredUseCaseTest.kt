@@ -36,7 +36,8 @@ import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.verify
 import kotlinx.coroutines.CoroutineDispatcher
@@ -175,9 +176,9 @@ class ObserveE2EIRequiredUseCaseTest {
             awaitComplete()
         }
 
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::observeE2EINotificationTime)
-            .wasNotInvoked()
+        verify {
+            arrangement.userConfigRepository.observeE2EINotificationTime()
+        }.wasNotInvoked()
     }
 
     @Test
@@ -333,37 +334,31 @@ class ObserveE2EIRequiredUseCaseTest {
             ObserveE2EIRequiredUseCaseImpl(userConfigRepository, featureSupport, e2eiCertificate, currentClientIdProvider, testDispatcher)
 
         fun withMLSE2EISetting(setting: E2EISettings) = apply {
-            given(userConfigRepository)
-                .function(userConfigRepository::observeE2EISettings)
-                .whenInvoked()
-                .then { flowOf(Either.Right(setting)) }
+            every { userConfigRepository.observeE2EISettings() }
+                .returns(flowOf(Either.Right(setting)))
         }
 
         fun withE2EINotificationTime(instant: Instant) = apply {
-            given(userConfigRepository)
-                .function(userConfigRepository::observeE2EINotificationTime)
-                .whenInvoked()
-                .then { flowOf(Either.Right(instant)) }
+            every { userConfigRepository.observeE2EINotificationTime() }
+                .returns(flowOf(Either.Right(instant)))
         }
 
         fun withIsMLSSupported(supported: Boolean) = apply {
-            given(featureSupport)
-                .invocation { featureSupport.isMLSSupported }
-                .thenReturn(supported)
+            every {
+                featureSupport.isMLSSupported
+            }.returns(supported)
         }
 
-        fun withCurrentClientProviderSuccess(clientId: ClientId = TestClient.CLIENT_ID) = apply {
-            given(currentClientIdProvider)
-                .suspendFunction(currentClientIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Right(clientId))
+        suspend fun withCurrentClientProviderSuccess(clientId: ClientId = TestClient.CLIENT_ID) = apply {
+            coEvery {
+                currentClientIdProvider.invoke()
+            }.returns(Either.Right(clientId))
         }
 
-        fun withGetE2EICertificateUseCaseResult(result: GetE2EICertificateUseCaseResult) = apply {
-            given(e2eiCertificate)
-                .suspendFunction(e2eiCertificate::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withGetE2EICertificateUseCaseResult(result: GetE2EICertificateUseCaseResult) = apply {
+            coEvery {
+                e2eiCertificate.invoke(any())
+            }.returns(result)
         }
 
         fun arrange() = this to observeMLSEnabledUseCase

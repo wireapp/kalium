@@ -24,11 +24,10 @@ import com.wire.kalium.logic.feature.user.readReceipts.PersistReadReceiptsStatus
 import com.wire.kalium.logic.feature.user.readReceipts.ReadReceiptStatusConfigResult
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -43,9 +42,9 @@ class PersistReadReceiptsStatusConfigUseCaseTest {
 
         val actual = persistReadReceiptsStatusConfig(true)
 
-        verify(arrangement.userPropertyRepository)
-            .suspendFunction(arrangement.userPropertyRepository::setReadReceiptsEnabled)
-            .wasInvoked(once)
+        coVerify {
+            arrangement.userPropertyRepository.setReadReceiptsEnabled()
+        }.wasInvoked(once)
         assertTrue(actual is ReadReceiptStatusConfigResult.Success)
     }
 
@@ -57,9 +56,9 @@ class PersistReadReceiptsStatusConfigUseCaseTest {
 
         val actual = persistReadReceiptsStatusConfig(false)
 
-        verify(arrangement.userPropertyRepository)
-            .suspendFunction(arrangement.userPropertyRepository::deleteReadReceiptsProperty)
-            .wasInvoked(once)
+        coVerify {
+            arrangement.userPropertyRepository.deleteReadReceiptsProperty()
+        }.wasInvoked(once)
 
         assertTrue(actual is ReadReceiptStatusConfigResult.Success)
     }
@@ -72,42 +71,39 @@ class PersistReadReceiptsStatusConfigUseCaseTest {
 
         val actual = persistReadReceiptsStatusConfig(true)
 
-        verify(arrangement.userPropertyRepository)
-            .suspendFunction(arrangement.userPropertyRepository::setReadReceiptsEnabled)
-            .wasInvoked(once)
+        coVerify {
+            arrangement.userPropertyRepository.setReadReceiptsEnabled()
+        }.wasInvoked(once)
 
         assertTrue(actual is ReadReceiptStatusConfigResult.Failure)
     }
 
     private class Arrangement {
         @Mock
-        val userPropertyRepository = mock(classOf<UserPropertyRepository>())
+        val userPropertyRepository = mock(UserPropertyRepository::class)
 
         val persistReadReceiptsStatusConfig = PersistReadReceiptsStatusConfigUseCaseImpl(userPropertyRepository)
 
-        fun withSuccessfulCall() = apply {
-            given(userPropertyRepository)
-                .suspendFunction(userPropertyRepository::setReadReceiptsEnabled)
-                .whenInvoked()
-                .thenReturn(Either.Right(Unit))
+        suspend fun withSuccessfulCall() = apply {
+            coEvery {
+                userPropertyRepository.setReadReceiptsEnabled()
+            }.returns(Either.Right(Unit))
 
             return this
         }
 
-        fun withSuccessfulCallToDelete() = apply {
-            given(userPropertyRepository)
-                .suspendFunction(userPropertyRepository::deleteReadReceiptsProperty)
-                .whenInvoked()
-                .thenReturn(Either.Right(Unit))
+        suspend fun withSuccessfulCallToDelete() = apply {
+            coEvery {
+                userPropertyRepository.deleteReadReceiptsProperty()
+            }.returns(Either.Right(Unit))
 
             return this
         }
 
-        fun withFailureToCallRepo() = apply {
-            given(userPropertyRepository)
-                .suspendFunction(userPropertyRepository::setReadReceiptsEnabled)
-                .whenInvoked()
-                .thenReturn(Either.Left(CoreFailure.Unknown(RuntimeException("Some error"))))
+        suspend fun withFailureToCallRepo() = apply {
+            coEvery {
+                userPropertyRepository.setReadReceiptsEnabled()
+            }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("Some error"))))
 
             return this
         }

@@ -25,7 +25,7 @@ import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
-import com.wire.kalium.persistence.utils.stubs.newConversationEntity
+import com.wire.kalium.persistence.utils.stubs.TestStubs.conversationEntity1
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import kotlinx.coroutines.test.runTest
@@ -41,7 +41,6 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
     private lateinit var conversationDAO: ConversationDAO
     private lateinit var userDAO: UserDAO
 
-    private val conversationEntity1 = newConversationEntity("Test1")
     private val userEntity1 = newUserEntity()
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
 
@@ -61,10 +60,10 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
         insertInitialData()
 
         // When
-        messageDraftDAO.upsertMessageDraft(conversationEntity1.id, MESSAGE_DRAFT)
+        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
 
         // Then
-        val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
+        val result = messageDraftDAO.getMessageDraft(MESSAGE_DRAFT.conversationId)
         assertEquals(MESSAGE_DRAFT, result)
     }
 
@@ -72,10 +71,10 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
     fun givenAlreadyExistingMessageDraft_whenUpserting_thenItShouldBeProperlyUpdatedInDb() = runTest {
         // Given
         insertInitialData()
-        messageDraftDAO.upsertMessageDraft(conversationEntity1.id, MESSAGE_DRAFT.copy("@John I need"))
+        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT.copy(text = "@John I need"))
 
         // When
-        messageDraftDAO.upsertMessageDraft(conversationEntity1.id, MESSAGE_DRAFT)
+        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
 
         // Then
         val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
@@ -86,7 +85,7 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
     fun givenAlreadyExistingMessageDraft_whenDeletingIt_thenItShouldBeProperlyRemovedInDb() = runTest {
         // Given
         insertInitialData()
-        messageDraftDAO.upsertMessageDraft(conversationEntity1.id, MESSAGE_DRAFT)
+        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
         val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
         assertEquals(MESSAGE_DRAFT, result)
 
@@ -102,7 +101,7 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
     fun givenAlreadyExistingMessageDraft_whenConversationIsRemoved_thenItShouldBeProperlyRemovedInDb() = runTest {
         // Given
         insertInitialData()
-        messageDraftDAO.upsertMessageDraft(conversationEntity1.id, MESSAGE_DRAFT)
+        messageDraftDAO.upsertMessageDraft(MESSAGE_DRAFT)
         val result = messageDraftDAO.getMessageDraft(conversationEntity1.id)
         assertEquals(MESSAGE_DRAFT, result)
 
@@ -135,6 +134,7 @@ class MessageDraftDAOTest : BaseDatabaseTest() {
 
     companion object {
         val MESSAGE_DRAFT = MessageDraftEntity(
+            conversationId = conversationEntity1.id,
             text = "@John I need help",
             editMessageId = "editMessageId",
             quotedMessageId = "quotedMessageId",

@@ -27,12 +27,11 @@ import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -84,10 +83,9 @@ class SecondFactorVerificationRepositoryTest {
             VerifiableAction.LOGIN_OR_CLIENT_REGISTRATION
         )
 
-        verify(arrangement.verificationCodeApi)
-            .suspendFunction(arrangement.verificationCodeApi::sendVerificationCode)
-            .with(eq(EMAIL), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.verificationCodeApi.sendVerificationCode(eq(EMAIL), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -166,9 +164,9 @@ class SecondFactorVerificationRepositoryTest {
     private class Arrangement {
 
         @Mock
-        val verificationCodeApi = mock(classOf<VerificationCodeApi>())
+        val verificationCodeApi = mock(VerificationCodeApi::class)
 
-        fun withCodeRequestSucceeding() = withCodeRequestReturning(
+        suspend fun withCodeRequestSucceeding() = withCodeRequestReturning(
             NetworkResponse.Success(
                 value = Unit,
                 headers = mapOf(),
@@ -176,15 +174,14 @@ class SecondFactorVerificationRepositoryTest {
             )
         )
 
-        fun withCodeRequestFailingWith(kaliumException: KaliumException) = withCodeRequestReturning(
+        suspend fun withCodeRequestFailingWith(kaliumException: KaliumException) = withCodeRequestReturning(
             NetworkResponse.Error(kaliumException)
         )
 
-        fun withCodeRequestReturning(networkResponse: NetworkResponse<Unit>) = apply {
-            given(verificationCodeApi)
-                .suspendFunction(verificationCodeApi::sendVerificationCode)
-                .whenInvokedWith(any(), any())
-                .thenReturn(networkResponse)
+        suspend fun withCodeRequestReturning(networkResponse: NetworkResponse<Unit>) = apply {
+            coEvery {
+                verificationCodeApi.sendVerificationCode(any(), any())
+            }.returns(networkResponse)
         }
 
         fun arrange(): Pair<Arrangement, SecondFactorVerificationRepository> =

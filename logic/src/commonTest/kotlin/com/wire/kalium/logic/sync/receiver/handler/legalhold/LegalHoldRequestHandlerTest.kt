@@ -26,11 +26,11 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -45,14 +45,13 @@ class LegalHoldRequestHandlerTest {
         val result = handler.handle(legalHoldRequestSelfUser)
 
         result.shouldSucceed()
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::setLegalHoldRequest)
-            .with(
+        coVerify {
+            arrangement.userConfigRepository.setLegalHoldRequest(
                 eq(legalHoldRequestSelfUser.clientId.value),
                 eq(legalHoldRequestSelfUser.lastPreKey.id),
                 eq(legalHoldRequestSelfUser.lastPreKey.key)
             )
-            .wasInvoked(once)
+        }.wasInvoked(once)
     }
 
     @Test
@@ -63,10 +62,9 @@ class LegalHoldRequestHandlerTest {
         val result = handler.handle(legalHoldRequestOtherUser)
 
         result.shouldSucceed()
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::setLegalHoldRequest)
-            .with(any(), any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.userConfigRepository.setLegalHoldRequest(any(), any(), any())
+        }.wasNotInvoked()
     }
 
     private class Arrangement {
@@ -77,11 +75,10 @@ class LegalHoldRequestHandlerTest {
         fun arrange() =
             this to LegalHoldRequestHandlerImpl(TestUser.SELF.id, userConfigRepository)
 
-        fun withSetLegalHoldSuccess() = apply {
-            given(userConfigRepository)
-                .suspendFunction(userConfigRepository::setLegalHoldRequest)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withSetLegalHoldSuccess() = apply {
+            coEvery {
+                userConfigRepository.setLegalHoldRequest(any(), any(), any())
+            }.returns(Either.Right(Unit))
         }
     }
 

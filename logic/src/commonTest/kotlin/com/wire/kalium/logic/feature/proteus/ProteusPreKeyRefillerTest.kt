@@ -25,12 +25,13 @@ import com.wire.kalium.logic.util.arrangement.PreKeyRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlinx.coroutines.test.runTest
 
 class ProteusPreKeyRefillerTest {
 
@@ -48,15 +49,13 @@ class ProteusPreKeyRefillerTest {
 
         proteusPreKeyRefiller.refillIfNeeded()
 
-        verify(arrangement.preKeyRepository)
-            .suspendFunction(arrangement.preKeyRepository::generateNewPreKeys)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.preKeyRepository.generateNewPreKeys(any(), any())
+        }.wasNotInvoked()
 
-        verify(arrangement.preKeyRepository)
-            .suspendFunction(arrangement.preKeyRepository::uploadNewPrekeyBatch)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.preKeyRepository.uploadNewPrekeyBatch(any())
+        }.wasNotInvoked()
 
     }
 
@@ -77,10 +76,9 @@ class ProteusPreKeyRefillerTest {
 
         proteusPreKeyRefiller.refillIfNeeded()
 
-        verify(arrangement.preKeyRepository)
-            .suspendFunction(arrangement.preKeyRepository::generateNewPreKeys)
-            .with(eq(0), eq(remoteTarget))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.preKeyRepository.generateNewPreKeys(eq(0), eq(remoteTarget))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -101,10 +99,9 @@ class ProteusPreKeyRefillerTest {
 
         proteusPreKeyRefiller.refillIfNeeded()
 
-        verify(arrangement.preKeyRepository)
-            .suspendFunction(arrangement.preKeyRepository::generateNewPreKeys)
-            .with(eq(mostRecentKey + 1), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.preKeyRepository.generateNewPreKeys(eq(mostRecentKey + 1), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -124,15 +121,13 @@ class ProteusPreKeyRefillerTest {
             assertEquals(failure, it)
         }
 
-        verify(arrangement.preKeyRepository)
-            .suspendFunction(arrangement.preKeyRepository::uploadNewPrekeyBatch)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.preKeyRepository.uploadNewPrekeyBatch(any())
+        }.wasNotInvoked()
 
-        verify(arrangement.preKeyRepository)
-            .suspendFunction(arrangement.preKeyRepository::updateMostRecentPreKeyId)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.preKeyRepository.updateMostRecentPreKeyId(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -153,7 +148,6 @@ class ProteusPreKeyRefillerTest {
             assertEquals(failure, it)
         }
     }
-
 
     @Test
     fun givenGeneratingSucceeds_thenShouldSetMostRecentPreKeyAndUploadThem() = runTest {
@@ -177,15 +171,13 @@ class ProteusPreKeyRefillerTest {
 
         proteusPreKeyRefiller.refillIfNeeded()
 
-        verify(arrangement.preKeyRepository)
-            .suspendFunction(arrangement.preKeyRepository::uploadNewPrekeyBatch)
-            .with(eq(generatedPreKeys))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.preKeyRepository.uploadNewPrekeyBatch(eq(generatedPreKeys))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.preKeyRepository)
-            .suspendFunction(arrangement.preKeyRepository::updateMostRecentPreKeyId)
-            .with(eq(mostRecentPreKeyId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.preKeyRepository.updateMostRecentPreKeyId(eq(mostRecentPreKeyId))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -212,7 +204,7 @@ class ProteusPreKeyRefillerTest {
     private fun fakePreKeys(preKeyRange: IntRange): List<Int> =
         Array(preKeyRange.last - preKeyRange.first) { preKeyRange.first + it }.toList()
 
-    private class Arrangement(private val configure: Arrangement.() -> Unit) :
+    private class Arrangement(private val configure: suspend Arrangement.() -> Unit) :
         PreKeyRepositoryArrangement by PreKeyRepositoryArrangementImpl() {
 
         var lowOnPreKeysThreshold: Int = ProteusPreKeyRefiller.MINIMUM_PREKEYS_COUNT
@@ -220,7 +212,7 @@ class ProteusPreKeyRefillerTest {
         var maxPreKeyId: Int = ProteusPreKeyRefiller.MAX_PREKEY_ID
 
         fun arrange() = run {
-            configure()
+            runBlocking { configure() }
             this@Arrangement to ProteusPreKeyRefillerImpl(
                 preKeyRepository = preKeyRepository,
                 lowOnPrekeysTreshold = lowOnPreKeysThreshold,
@@ -231,6 +223,6 @@ class ProteusPreKeyRefillerTest {
     }
 
     private companion object {
-        fun arrange(configure: Arrangement.() -> Unit) = Arrangement(configure).arrange()
+        fun arrange(configure: suspend Arrangement.() -> Unit) = Arrangement(configure).arrange()
     }
 }

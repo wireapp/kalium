@@ -23,7 +23,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -49,6 +49,7 @@ class ObserveLegalHoldChangeNotifiedForSelfUseCaseTest {
         // then
         assertEquals(expected, result.first())
     }
+
     @Test
     fun givenStorageError_whenObserving_thenEmitFailure() =
         StorageFailure.Generic(IOException()).let { failure ->
@@ -58,24 +59,28 @@ class ObserveLegalHoldChangeNotifiedForSelfUseCaseTest {
                 expected = ObserveLegalHoldChangeNotifiedForSelfUseCase.Result.Failure(failure)
             )
         }
+
     @Test
     fun givenLegalHoldForSelfEnabledAndNotYetNotified_whenObserving_thenEmitShouldNotifyWithLegalHoldEnabledState() = testResult(
         givenLegalHoldStateResult = LegalHoldState.Enabled,
         givenIsNotifiedResult = Either.Right(false),
         expected = ObserveLegalHoldChangeNotifiedForSelfUseCase.Result.ShouldNotify(LegalHoldState.Enabled)
     )
+
     @Test
     fun givenLegalHoldForSelfEnabledAndAlreadyNotified_whenObserving_thenEmitAlreadyNotified() = testResult(
         givenLegalHoldStateResult = LegalHoldState.Enabled,
         givenIsNotifiedResult = Either.Right(true),
         expected = ObserveLegalHoldChangeNotifiedForSelfUseCase.Result.AlreadyNotified
     )
+
     @Test
     fun givenLegalHoldForSelfDisabledAndNotYetNotified_whenObserving_thenEmitShouldNotifyWithLegalHoldDisabledState() = testResult(
         givenLegalHoldStateResult = LegalHoldState.Disabled,
         givenIsNotifiedResult = Either.Right(false),
         expected = ObserveLegalHoldChangeNotifiedForSelfUseCase.Result.ShouldNotify(LegalHoldState.Disabled)
     )
+
     @Test
     fun givenLegalHoldForSelfDisabledAndAlreadyNotified_whenObserving_thenEmitAlreadyNotified() = testResult(
         givenLegalHoldStateResult = LegalHoldState.Disabled,
@@ -85,25 +90,26 @@ class ObserveLegalHoldChangeNotifiedForSelfUseCaseTest {
 
     private class Arrangement {
         val selfUserId = TestUser.SELF.id
+
         @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
+
         @Mock
         val observeLegalHoldForUser = mock(ObserveLegalHoldStateForUserUseCase::class)
         val useCase: ObserveLegalHoldChangeNotifiedForSelfUseCase =
             ObserveLegalHoldChangeNotifiedForSelfUseCaseImpl(selfUserId, userConfigRepository, observeLegalHoldForUser)
 
         fun arrange() = this to useCase
-        fun withLegalHoldEnabledState(result: LegalHoldState) = apply {
-            given(observeLegalHoldForUser)
-                .suspendFunction(observeLegalHoldForUser::invoke)
-                .whenInvokedWith(any())
-                .then { flowOf(result) }
+        suspend fun withLegalHoldEnabledState(result: LegalHoldState) = apply {
+            coEvery {
+                observeLegalHoldForUser.invoke(any())
+            }.returns(flowOf(result))
         }
-        fun withLegalHoldChangeNotified(result: Either<StorageFailure, Boolean>) = apply {
-            given(userConfigRepository)
-                .suspendFunction(userConfigRepository::observeLegalHoldChangeNotified)
-                .whenInvoked()
-                .then { flowOf(result) }
+
+        suspend fun withLegalHoldChangeNotified(result: Either<StorageFailure, Boolean>) = apply {
+            coEvery {
+                userConfigRepository.observeLegalHoldChangeNotified()
+            }.returns(flowOf(result))
         }
     }
 }

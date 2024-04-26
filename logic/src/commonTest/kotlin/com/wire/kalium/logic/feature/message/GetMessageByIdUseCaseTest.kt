@@ -28,10 +28,10 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -49,9 +49,9 @@ class GetMessageByIdUseCaseTest {
 
         getMessageByIdUseCase(CONVERSATION_ID, MESSAGE_ID)
 
-        verify(arrangement.messageRepository)
-            .coroutine { arrangement.messageRepository.getMessageById(CONVERSATION_ID, MESSAGE_ID) }
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.getMessageById(CONVERSATION_ID, MESSAGE_ID)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -93,9 +93,9 @@ class GetMessageByIdUseCaseTest {
             messageId: String,
             response: Either<StorageFailure, Message>
         ) = apply {
-            given(messageRepository)
-                .coroutine { messageRepository.getMessageById(conversationId, messageId) }
-                .thenReturn(response)
+            coEvery {
+                messageRepository.getMessageById(conversationId, messageId)
+            }.returns(response)
         }
 
         fun arrange() = this to getMessageById

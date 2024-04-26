@@ -111,7 +111,7 @@ internal interface MessageRepository {
         conversationId: ConversationId,
         limit: Int,
         offset: Int,
-        visibility: List<Message.Visibility> = Message.Visibility.values().toList()
+        visibility: List<Message.Visibility> = Message.Visibility.entries
     ): Flow<List<Message>>
 
     suspend fun getLastMessagesForConversationIds(
@@ -123,7 +123,7 @@ internal interface MessageRepository {
     suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
         date: String,
-        visibility: List<Message.Visibility> = Message.Visibility.values().toList()
+        visibility: List<Message.Visibility> = Message.Visibility.entries
     ): Flow<List<Message>>
 
     /**
@@ -159,7 +159,7 @@ internal interface MessageRepository {
     suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>>
     suspend fun getPendingConfirmationMessagesByConversationAfterDate(
         conversationId: ConversationId,
-        visibility: List<Message.Visibility> = Message.Visibility.values().toList()
+        visibility: List<Message.Visibility> = Message.Visibility.entries
     ): Either<CoreFailure, List<String>>
 
     suspend fun updateTextMessage(
@@ -308,9 +308,10 @@ internal class MessageDataSource internal constructor(
                     LocalNotification.Conversation(
                         // todo: needs some clean up!
                         id = conversationId.toModel(),
-                        conversationName = messages.first().conversationName ?: "",
-                        messages = messages.take(messageSizePerConversation)
-                            .mapNotNull { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
+                        conversationName = messages.first().conversationName,
+                        messages = messages.mapNotNull { message ->
+                            messageMapper.fromMessageToLocalNotificationMessage(message)
+                        },
                         isOneToOneConversation = messages.first().conversationType == ConversationEntity.Type.ONE_ON_ONE
                     )
                 }

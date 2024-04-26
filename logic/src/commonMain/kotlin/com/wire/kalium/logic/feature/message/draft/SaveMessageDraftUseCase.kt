@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.feature.message.draft
 
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.draft.MessageDraft
 import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
 import com.wire.kalium.util.KaliumDispatcher
@@ -27,18 +26,17 @@ import kotlinx.coroutines.withContext
 
 /**
  * Save message draft for given conversation
- * @param conversationId the id of the conversation to save message draft
  * @param messageDraft message payload to save
  */
 interface SaveMessageDraftUseCase {
-    suspend operator fun invoke(conversationId: ConversationId, messageDraft: MessageDraft)
+    suspend operator fun invoke(messageDraft: MessageDraft)
 }
 
 class SaveMessageDraftUseCaseImpl internal constructor(
     private val messageDraftRepository: MessageDraftRepository,
     private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : SaveMessageDraftUseCase {
-    override suspend operator fun invoke(conversationId: ConversationId, messageDraft: MessageDraft): Unit = withContext(dispatcher.io) {
-        messageDraftRepository.saveMessageDraft(conversationId, messageDraft)
+    override suspend operator fun invoke(messageDraft: MessageDraft): Unit = withContext(dispatcher.io) {
+        messageDraftRepository.saveMessageDraft(messageDraft)
     }
 }

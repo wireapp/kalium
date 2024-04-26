@@ -20,8 +20,10 @@ package com.wire.kalium.logic.feature.legalhold
 import com.wire.kalium.logic.framework.TestUser
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -47,13 +49,12 @@ class ObserveLegalHoldStateForSelfUserUseCaseTest {
         val result = useCase()
         // then
         assertEquals(expected, result.first())
-        verify(arrangement.observeLegalHoldStateForUser)
-            .suspendFunction(arrangement.observeLegalHoldStateForUser::invoke)
-            .with(eq(TestUser.SELF.id))
-            .wasInvoked(once)
-        verify(arrangement.observeLegalHoldRequestUseCase)
-            .function(arrangement.observeLegalHoldRequestUseCase::invoke)
-            .wasInvoked(once)
+        coVerify {
+            arrangement.observeLegalHoldStateForUser.invoke(eq(TestUser.SELF.id))
+        }.wasInvoked(once)
+        verify {
+            arrangement.observeLegalHoldRequestUseCase.invoke()
+        }.wasInvoked(once)
     }
 
     @Test
@@ -97,18 +98,15 @@ class ObserveLegalHoldStateForSelfUserUseCaseTest {
 
         fun arrange() = this to observeLegalHoldForSelfUser
 
-        fun withLegalHoldState(result: LegalHoldState) = apply {
-            given(observeLegalHoldStateForUser)
-                .suspendFunction(observeLegalHoldStateForUser::invoke)
-                .whenInvokedWith(eq(TestUser.SELF.id))
-                .then { flowOf(result) }
+        suspend fun withLegalHoldState(result: LegalHoldState) = apply {
+            coEvery {
+                observeLegalHoldStateForUser.invoke(eq(TestUser.SELF.id))
+            }.returns(flowOf(result))
         }
 
         fun withLegalHoldRequestState(result: ObserveLegalHoldRequestUseCase.Result) = apply {
-            given(observeLegalHoldRequestUseCase)
-                .function(observeLegalHoldRequestUseCase::invoke)
-                .whenInvoked()
-                .then { flowOf(result) }
+            every { observeLegalHoldRequestUseCase() }
+                .returns(flowOf(result))
         }
     }
 }
