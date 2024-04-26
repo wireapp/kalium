@@ -78,35 +78,54 @@ data class CryptoQualifiedClientId(
 
 data class WireIdentity(
     val clientId: CryptoQualifiedClientId,
-    val handle: Handle,
-    val displayName: String,
-    val domain: String,
-    val certificate: String,
+    val certificate: Certificate?,
     val status: CryptoCertificateStatus,
-    val thumbprint: String,
-    val serialNumber: String,
-    val endTimestampSeconds: Long
 ) {
-    constructor(
-        clientId: CryptoQualifiedClientId,
-        handle: String,
-        displayName: String,
-        domain: String,
-        certificate: String,
-        status: CryptoCertificateStatus,
-        thumbprint: String,
-        serialNumber: String,
-        endTimestampSeconds: Long
-    ) : this(
-        clientId = clientId,
-        handle = Handle.fromString(handle, domain),
-        displayName = displayName,
-        domain = domain,
-        certificate = certificate,
-        status = status,
-        thumbprint = thumbprint,
-        serialNumber = serialNumber,
-        endTimestampSeconds = endTimestampSeconds
+    companion object {
+        @Suppress("LongParameterList")
+        operator fun invoke(
+            clientId: CryptoQualifiedClientId,
+            handle: String?,
+            displayName: String?,
+            domain: String?,
+            certificate: String?,
+            status: CryptoCertificateStatus,
+            thumbprint: String?,
+            serialNumber: String?,
+            endTimestampSeconds: Long?
+        ): WireIdentity {
+            @Suppress("ComplexCondition")
+            val certificateData = if (handle == null || displayName == null || domain == null || certificate == null
+                || thumbprint == null || serialNumber == null || endTimestampSeconds == null
+            ) {
+                null
+            } else {
+                Certificate(
+                    Handle.fromString(handle, domain),
+                    displayName,
+                    domain,
+                    certificate,
+                    thumbprint,
+                    serialNumber,
+                    endTimestampSeconds
+                )
+            }
+            return WireIdentity(
+                clientId = clientId,
+                certificate = certificateData,
+                status = status
+            )
+        }
+    }
+
+    data class Certificate(
+        val handle: Handle,
+        val displayName: String,
+        val domain: String,
+        val certificate: String,
+        val thumbprint: String,
+        val serialNumber: String,
+        val endTimestampSeconds: Long
     )
 
     // WireIdentity handle format is "{scheme}%40{username}@{domain}"
