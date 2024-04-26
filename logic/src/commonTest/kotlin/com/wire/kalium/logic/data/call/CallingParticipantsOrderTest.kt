@@ -30,15 +30,15 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.times
 import io.mockative.twice
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -47,16 +47,16 @@ import kotlin.test.assertEquals
 class CallingParticipantsOrderTest {
 
     @Mock
-    private val userRepository = mock(classOf<UserRepository>())
+    private val userRepository = mock(UserRepository::class)
 
     @Mock
-    private val participantsFilter = mock(classOf<ParticipantsFilter>())
+    private val participantsFilter = mock(ParticipantsFilter::class)
 
     @Mock
-    private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+    private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
     @Mock
-    private val participantsOrderByName = mock(classOf<ParticipantsOrderByName>())
+    private val participantsOrderByName = mock(ParticipantsOrderByName::class)
 
     private lateinit var callingParticipantsOrder: CallingParticipantsOrder
 
@@ -66,7 +66,6 @@ class CallingParticipantsOrderTest {
             CallingParticipantsOrderImpl(userRepository, currentClientIdProvider, participantsFilter, participantsOrderByName)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenAnEmptyListOfParticipants_whenOrderingParticipants_thenDoNotOrderItemsAndReturnEmptyList() = runTest {
         val emptyParticipantsList = listOf<Participant>()
@@ -76,62 +75,63 @@ class CallingParticipantsOrderTest {
         assertEquals(emptyParticipantsList, result)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenANullClientIdWhenOrderingParticipants_thenReturnDoNotOrder() = runTest {
         val participants = listOf(participant3, participant4)
-        given(currentClientIdProvider).coroutine { invoke() }
-            .then { Either.Left(CoreFailure.MissingClientRegistration) }
+        coEvery {
+            currentClientIdProvider.invoke()
+        }.returns(Either.Left(CoreFailure.MissingClientRegistration))
 
         val result = callingParticipantsOrder.reorderItems(participants)
 
         assertEquals(participants, result)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenAListOfParticipants_whenOrderingParticipants_thenOrderItemsAlphabeticallyByNameExceptFirstOne() = runTest {
-        given(currentClientIdProvider).coroutine { invoke() }
-            .then { Either.Right(ClientId(selfClientId)) }
+        coEvery {
+            currentClientIdProvider.invoke()
+        }.returns(Either.Right(ClientId(selfClientId)))
 
-        given(userRepository).coroutine { getSelfUser() }
-            .then { selfUser }
+        coEvery {
+            userRepository.getSelfUser()
+        }.returns(selfUser)
 
-        given(participantsFilter).invocation {
+        every {
             participantsFilter.otherParticipants(participants, selfClientId)
-        }.then { otherParticipants }
+        }.returns(otherParticipants)
 
-        given(participantsFilter).invocation {
+        every {
             participantsFilter.selfParticipant(participants, selfUserId, selfClientId)
-        }.then { participant1 }
+        }.returns(participant1)
 
-        given(participantsFilter).invocation {
+        every {
             participantsFilter.participantsSharingScreen(otherParticipants, true)
-        }.then { participantsSharingScreen }
+        }.returns(participantsSharingScreen)
 
-        given(participantsFilter).invocation {
+        every {
             participantsFilter.participantsSharingScreen(otherParticipants, false)
-        }.then { participantsNotSharingScreen }
+        }.returns(participantsNotSharingScreen)
 
-        given(participantsFilter).invocation {
+        every {
             participantsFilter.participantsByCamera(participantsNotSharingScreen, true)
-        }.then { participantsWithCameraOn }
+        }.returns(participantsWithCameraOn)
 
-        given(participantsFilter).invocation {
+        every {
             participantsFilter.participantsByCamera(participantsNotSharingScreen, false)
-        }.then { participantsWithCameraOff }
+        }.returns(participantsWithCameraOff)
 
-        given(participantsOrderByName).invocation {
+        every {
             participantsOrderByName.sortItems(participantsWithCameraOff)
-        }.then { listOf(participant3, participant11) }
+        }.returns(listOf(participant3, participant11))
 
-        given(participantsOrderByName).invocation {
+        every {
             participantsOrderByName.sortItems(participantsWithCameraOn)
-        }.then { listOf(participant2) }
+        }.returns(listOf(participant2))
 
-        given(participantsOrderByName).invocation {
+        every {
             participantsOrderByName.sortItems(participantsSharingScreen)
-        }.then { listOf(participant4) }
+        }.returns(listOf(participant4))
 
         val result = callingParticipantsOrder.reorderItems(participants)
 
@@ -139,29 +139,29 @@ class CallingParticipantsOrderTest {
         assertEquals(participant1, result.first())
         assertEquals(participant11, result.last())
 
-        verify(currentClientIdProvider).function(currentClientIdProvider::invoke)
-            .with()
-            .wasInvoked(exactly = once)
+        coVerify {
+            currentClientIdProvider()
+        }.wasInvoked(exactly = once)
 
-        verify(participantsFilter).function(participantsFilter::otherParticipants)
-            .with(eq(participants), eq(selfClientId))
-            .wasInvoked(exactly = once)
+        verify {
+            participantsFilter.otherParticipants(eq(participants), eq(selfClientId))
+        }.wasInvoked(exactly = once)
 
-        verify(participantsFilter).function(participantsFilter::selfParticipant)
-            .with(eq(participants), eq(selfUserId), eq(selfClientId))
-            .wasInvoked(exactly = once)
+        verify {
+            participantsFilter.selfParticipant(eq(participants), eq(selfUserId), eq(selfClientId))
+        }.wasInvoked(exactly = once)
 
-        verify(participantsFilter).function(participantsFilter::participantsSharingScreen)
-            .with(eq(otherParticipants), eq(true))
-            .wasInvoked(exactly = once)
+        verify {
+            participantsFilter.participantsSharingScreen(eq(otherParticipants), eq(true))
+        }.wasInvoked(exactly = once)
 
-        verify(participantsFilter).function(participantsFilter::participantsByCamera)
-            .with(any(), any())
-            .wasInvoked(exactly = twice)
+        verify {
+            participantsFilter.participantsByCamera(any(), any())
+        }.wasInvoked(exactly = twice)
 
-        verify(participantsOrderByName).function(participantsOrderByName::sortItems)
-            .with(any())
-            .wasInvoked(exactly = 3.times)
+        verify {
+            participantsOrderByName.sortItems(any())
+        }.wasInvoked(exactly = 3.times)
     }
 
     companion object {

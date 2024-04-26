@@ -74,6 +74,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.flow.Flow
@@ -311,6 +312,7 @@ internal class ConversationDataSource internal constructor(
     private val clientDAO: ClientDAO,
     private val clientApi: ClientApi,
     private val conversationMetaDataDAO: ConversationMetaDataDAO,
+    private val messageDraftDAO: MessageDraftDAO,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
@@ -475,12 +477,17 @@ internal class ConversationDataSource internal constructor(
             conversationDAO.getAllConversationDetails(fromArchive),
             if (fromArchive) flowOf(listOf()) else messageDAO.observeLastMessages(),
             messageDAO.observeConversationsUnreadEvents(),
-        ) { conversationList, lastMessageList, unreadEvents ->
+            messageDraftDAO.observeMessageDrafts()
+        ) { conversationList, lastMessageList, unreadEvents, drafts ->
             val lastMessageMap = lastMessageList.associateBy { it.conversationId }
+            val messageDraftMap = drafts.filter { it.text.isNotBlank() }.associateBy { it.conversationId }
+
             conversationList.map { conversation ->
-                conversationMapper.fromDaoModelToDetails(conversation,
-                    lastMessageMap[conversation.id]?.let { messageMapper.fromEntityToMessagePreview(it) },
-                    unreadEvents.firstOrNull { it.conversationId == conversation.id }?.unreadEvents?.mapKeys {
+                conversationMapper.fromDaoModelToDetails(
+                    conversation,
+                    lastMessage = messageDraftMap[conversation.id]?.let { messageMapper.fromDraftToMessagePreview(it) }
+                        ?: lastMessageMap[conversation.id]?.let { messageMapper.fromEntityToMessagePreview(it) },
+                    unreadEventCount = unreadEvents.firstOrNull { it.conversationId == conversation.id }?.unreadEvents?.mapKeys {
                         when (it.key) {
                             UnreadEventTypeEntity.KNOCK -> UnreadEventType.KNOCK
                             UnreadEventTypeEntity.MISSED_CALL -> UnreadEventType.MISSED_CALL

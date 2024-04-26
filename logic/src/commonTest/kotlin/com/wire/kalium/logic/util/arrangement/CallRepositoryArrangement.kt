@@ -24,14 +24,14 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
 
 interface CallRepositoryArrangement {
     val callRepository: CallRepository
-    fun withEstablishedCall()
-    fun withoutAnyEstablishedCall()
+    suspend fun withEstablishedCall()
+    suspend fun withoutAnyEstablishedCall()
 }
 
 internal class CallRepositoryArrangementImpl : CallRepositoryArrangement {
@@ -39,18 +39,16 @@ internal class CallRepositoryArrangementImpl : CallRepositoryArrangement {
     @Mock
     override val callRepository = mock(CallRepository::class)
 
-    override fun withEstablishedCall() {
-        given(callRepository)
-            .suspendFunction(callRepository::establishedCallsFlow)
-            .whenInvoked()
-            .thenReturn(flowOf(listOf(call)))
+    override suspend fun withEstablishedCall() {
+        coEvery {
+            callRepository.establishedCallsFlow()
+        }.returns(flowOf(listOf(call)))
     }
 
-    override fun withoutAnyEstablishedCall() {
-        given(callRepository)
-            .suspendFunction(callRepository::establishedCallsFlow)
-            .whenInvoked()
-            .thenReturn(flowOf(listOf()))
+    override suspend fun withoutAnyEstablishedCall() {
+        coEvery {
+            callRepository.establishedCallsFlow()
+        }.returns(flowOf(listOf()))
     }
 
     companion object {

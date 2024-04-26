@@ -27,10 +27,10 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -41,14 +41,14 @@ class SaveMessageDraftUseCaseTest {
     @Test
     fun givenConversationId_whenInvokingUseCase_thenShouldCallMessageDraftRepository() = runTest(testDispatchers.io) {
         val (arrangement, saveMessageDraft) = Arrangement()
-            .withSaveMessageDraft(CONVERSATION_ID, MESSAGE_DRAFT, Either.Right(Unit))
+            .withSaveMessageDraft(MESSAGE_DRAFT, Either.Right(Unit))
             .arrange()
 
-        saveMessageDraft(CONVERSATION_ID, MESSAGE_DRAFT)
+        saveMessageDraft(MESSAGE_DRAFT)
 
-        verify(arrangement.messageDraftRepository)
-            .coroutine { arrangement.messageDraftRepository.saveMessageDraft(CONVERSATION_ID, MESSAGE_DRAFT) }
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageDraftRepository.saveMessageDraft(MESSAGE_DRAFT)
+        }.wasInvoked(exactly = once)
     }
 
     private inner class Arrangement {
@@ -61,25 +61,25 @@ class SaveMessageDraftUseCaseTest {
         }
 
         suspend fun withSaveMessageDraft(
-            conversationId: ConversationId,
             messageDraft: MessageDraft,
             response: Either<StorageFailure, Unit>
         ) = apply {
-            given(messageDraftRepository)
-                .coroutine { messageDraftRepository.saveMessageDraft(conversationId, messageDraft) }
-                .thenReturn(response)
+            coEvery {
+                messageDraftRepository.saveMessageDraft(messageDraft)
+            }.returns(response)
         }
 
         fun arrange() = this to saveMessageDraft
     }
 
     private companion object {
+        val CONVERSATION_ID = TestConversation.ID
         val MESSAGE_DRAFT = MessageDraft(
+            conversationId = CONVERSATION_ID,
             text = "hello",
             editMessageId = null,
             quotedMessageId = null,
             selectedMentionList = listOf()
         )
-        val CONVERSATION_ID = TestConversation.ID
     }
 }

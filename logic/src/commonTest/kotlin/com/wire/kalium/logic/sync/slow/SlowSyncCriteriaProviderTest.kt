@@ -25,8 +25,7 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.framework.TestClient
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -149,32 +148,29 @@ class SlowSyncCriteriaProviderTest {
     private class Arrangement {
 
         @Mock
-        private val clientRepository = mock(classOf<ClientRepository>())
+        private val clientRepository = mock(ClientRepository::class)
 
         @Mock
-        private val logoutRepository = mock(classOf<LogoutRepository>())
+        private val logoutRepository = mock(LogoutRepository::class)
 
         private val syncCriteriaProvider = SlowSlowSyncCriteriaProviderImpl(clientRepository, logoutRepository)
 
-        fun withObserveClientReturning(flow: Flow<ClientId?>) = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::observeCurrentClientId)
-                .whenInvoked()
-                .thenReturn(flow)
+        suspend fun withObserveClientReturning(flow: Flow<ClientId?>) = apply {
+            coEvery {
+                clientRepository.observeCurrentClientId()
+            }.returns(flow)
         }
 
-        fun withObserveLogoutReturning(flow: Flow<LogoutReason>) = apply {
-            given(logoutRepository)
-                .suspendFunction(logoutRepository::observeLogout)
-                .whenInvoked()
-                .thenReturn(flow)
+        suspend fun withObserveLogoutReturning(flow: Flow<LogoutReason>) = apply {
+            coEvery {
+                logoutRepository.observeLogout()
+            }.returns(flow)
         }
 
-        fun withNoLogouts() = apply {
-            given(logoutRepository)
-                .suspendFunction(logoutRepository::observeLogout)
-                .whenInvoked()
-                .thenReturn(emptyFlow())
+        suspend fun withNoLogouts() = apply {
+            coEvery {
+                logoutRepository.observeLogout()
+            }.returns(emptyFlow())
         }
 
         fun arrange() = this to syncCriteriaProvider

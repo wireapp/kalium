@@ -50,12 +50,13 @@ import io.ktor.http.HttpStatusCode
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
@@ -92,10 +93,9 @@ class PreKeyRepositoryTest {
             assertIs<Either.Right<List<QualifiedUserPreKeyInfo>>>(it)
         }
 
-        verify(arrange.preKeyApi)
-            .suspendFunction(arrange.preKeyApi::getUsersPreKey)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrange.preKeyApi.getUsersPreKey(any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -110,10 +110,9 @@ class PreKeyRepositoryTest {
             assertEquals(expected, it.value)
         }
 
-        verify(arrange.proteusClient)
-            .suspendFunction(arrange.proteusClient::newPreKeys)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrange.proteusClient.newPreKeys(any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -128,9 +127,9 @@ class PreKeyRepositoryTest {
             assertEquals(expected, it.value)
         }
 
-        verify(arrange.proteusClient)
-            .suspendFunction(arrange.proteusClient::newLastResortPreKey)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrange.proteusClient.newLastResortPreKey()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -166,17 +165,15 @@ class PreKeyRepositoryTest {
 
         preKeyRepository.establishSessions(expectedInvalid)
 
-        verify(arrangement.proteusClient)
-            .coroutine { arrangement.proteusClient.createSessions(expectedValid) }
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.proteusClient.createSessions(expectedValid)
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.clientDAO)
-            .coroutine {
-                arrangement.clientDAO.tryMarkInvalid(
-                    listOf(UserIDEntity(TEST_USER_ID_1.value, TEST_USER_ID_1.domain) to listOf("invalidClient"))
-                )
-            }
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clientDAO.tryMarkInvalid(
+                listOf(UserIDEntity(TEST_USER_ID_1.value, TEST_USER_ID_1.domain) to listOf("invalidClient"))
+            )
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -221,9 +218,8 @@ class PreKeyRepositoryTest {
 
         sessionEstablisher.establishSessions(mapOf(TEST_RECIPIENT_1.id to TEST_RECIPIENT_1.clients))
 
-        verify(arrangement.preKeyApi)
-            .suspendFunction(arrangement.preKeyApi::getUsersPreKey)
-            .with(
+        coVerify {
+            arrangement.preKeyApi.getUsersPreKey(
                 eq(
                     mapOf(
                         TEST_USER_ID_1.domain to mapOf(
@@ -232,7 +228,7 @@ class PreKeyRepositoryTest {
                     )
                 )
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -288,10 +284,9 @@ class PreKeyRepositoryTest {
 
         preKeyRepository.fetchRemotelyAvailablePrekeys()
 
-        verify(arrangement.preKeyApi)
-            .suspendFunction(arrangement.preKeyApi::getClientAvailablePrekeys)
-            .with(eq(TEST_CLIENT_ID_1.value))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.preKeyApi.getClientAvailablePrekeys(eq(TEST_CLIENT_ID_1.value))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -319,10 +314,9 @@ class PreKeyRepositoryTest {
         preKeyRepository.uploadNewPrekeyBatch(preKeys)
             .shouldSucceed()
 
-        verify(arrangement.preKeyApi)
-            .suspendFunction(arrangement.preKeyApi::uploadNewPrekeys)
-            .with(eq(TEST_CLIENT_ID_1.value), eq(preKeys.map { PreKeyDTO(it.id, it.encodedData) }))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.preKeyApi.uploadNewPrekeys(eq(TEST_CLIENT_ID_1.value), eq(preKeys.map { PreKeyDTO(it.id, it.encodedData) }))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -366,6 +360,20 @@ class PreKeyRepositoryTest {
         @Mock
         val clientDAO: ClientDAO = mock(ClientDAO::class)
 
+        init {
+            runBlocking {
+                coEvery {
+                    proteusClientProvider.getOrCreate()
+                }.returns(proteusClient)
+
+                coEvery {
+                    proteusClientProvider.getOrError()
+                }.returns(Either.Right(proteusClient))
+
+                withCurrentClientIdReturning(Either.Right(TEST_CLIENT_ID_1))
+            }
+        }
+
         private val preKeyRepository: PreKeyDataSource =
             PreKeyDataSource(
                 preKeyApi = preKeyApi,
@@ -376,110 +384,85 @@ class PreKeyRepositoryTest {
                 metadataDAO = metadataDAO,
             )
 
-        init {
-            given(proteusClientProvider)
-                .suspendFunction(proteusClientProvider::getOrCreate)
-                .whenInvoked()
-                .thenReturn(proteusClient)
-
-            given(proteusClientProvider)
-                .suspendFunction(proteusClientProvider::getOrError)
-                .whenInvoked()
-                .thenReturn(Either.Right(proteusClient))
-
-            withCurrentClientIdReturning(Either.Right(TEST_CLIENT_ID_1))
-        }
-
-        fun withGetRemoteUsersPreKeySuccess(preKeyMap: DomainToUserIdToClientsToPreKeyMap) = apply {
-            given(preKeyApi)
-                .suspendFunction(preKeyApi::getUsersPreKey)
-                .whenInvokedWith(any())
-                .then {
+        suspend fun withGetRemoteUsersPreKeySuccess(preKeyMap: DomainToUserIdToClientsToPreKeyMap) = apply {
+            coEvery { preKeyApi.getUsersPreKey(any()) }
+                .returns(
                     NetworkResponse.Success(
                         ListPrekeysResponse(qualifiedUserClientPrekeys = preKeyMap),
                         emptyMap(),
                         200
                     )
-                }
+                )
         }
 
-        fun withGetRemoteUsersPreKeyFail(error: NetworkResponse.Error? = null) = apply {
+        suspend fun withGetRemoteUsersPreKeyFail(error: NetworkResponse.Error? = null) = apply {
             if (error == null) {
-                given(preKeyApi)
-                    .suspendFunction(preKeyApi::getUsersPreKey)
-                    .whenInvokedWith(any())
-                    .then { NetworkResponse.Error(KaliumException.GenericError(IOException("offline"))) }
+                coEvery {
+                    preKeyApi.getUsersPreKey(any())
+                }.returns(NetworkResponse.Error(KaliumException.GenericError(IOException("offline"))))
             } else {
-                given(preKeyApi)
-                    .suspendFunction(preKeyApi::getUsersPreKey)
-                    .whenInvokedWith(any())
-                    .then { error }
+                coEvery {
+                    preKeyApi.getUsersPreKey(any())
+                }.returns(error)
             }
         }
 
         suspend fun withGenerateNewPreKeysSuccess(from: Int, count: Int, expected: List<PreKeyCrypto>) = apply {
-            given(proteusClient)
-                .coroutine { proteusClient.newPreKeys(from, count) }
-                .then { expected }
+            coEvery {
+                proteusClient.newPreKeys(from, count)
+            }.returns(expected)
         }
 
         suspend fun withGenerateLastPreKeysSuccess(expected: PreKeyCrypto) = apply {
-            given(proteusClient)
-                .coroutine { proteusClient.newLastResortPreKey() }
-                .then { expected }
+            coEvery {
+                proteusClient.newLastResortPreKey()
+            }.returns(expected)
         }
 
-        fun withMarkInvalid() = apply {
-            given(clientDAO)
-                .suspendFunction(clientDAO::tryMarkInvalid)
-                .whenInvokedWith(any())
-                .thenReturn(Unit)
+        suspend fun withMarkInvalid() = apply {
+            coEvery {
+                clientDAO.tryMarkInvalid(any())
+            }.returns(Unit)
         }
 
-        fun withDoesSessionExist(result: Boolean) = apply {
-            given(proteusClient)
-                .suspendFunction(proteusClient::doesSessionExist)
-                .whenInvokedWith(any())
-                .then { result }
+        suspend fun withDoesSessionExist(result: Boolean) = apply {
+            coEvery {
+                proteusClient.doesSessionExist(any())
+            }.returns(result)
         }
 
-        fun withPreKeysOfClientsByQualifiedUsersSuccess(
+        suspend fun withPreKeysOfClientsByQualifiedUsersSuccess(
             preKeyMap: NetworkResponse<ListPrekeysResponse>
         ) = apply {
-            given(preKeyApi)
-                .suspendFunction(preKeyApi::getUsersPreKey)
-                .whenInvokedWith(any())
-                .then { preKeyMap }
+            coEvery {
+                preKeyApi.getUsersPreKey(any())
+            }.returns(preKeyMap)
         }
 
-        fun withCreateSession(throwable: Throwable) = apply {
-            given(proteusClient)
-                .suspendFunction(proteusClient::createSession)
-                .whenInvokedWith(anything(), anything())
-                .thenThrow(throwable)
+        suspend fun withCreateSession(throwable: Throwable) = apply {
+            coEvery {
+                proteusClient.createSession(any(), any())
+            }.throws(throwable)
         }
 
-        fun withGetClientAvailablePrekeysReturning(result: NetworkResponse<List<Int>>) = apply {
-            given(preKeyApi)
-                .suspendFunction(preKeyApi::getClientAvailablePrekeys)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withGetClientAvailablePrekeysReturning(result: NetworkResponse<List<Int>>) = apply {
+            coEvery {
+                preKeyApi.getClientAvailablePrekeys(any())
+            }.returns(result)
         }
 
-        fun withUploadPrekeysReturning(result: NetworkResponse<Unit>) = apply {
-            given(preKeyApi)
-                .suspendFunction(preKeyApi::uploadNewPrekeys)
-                .whenInvokedWith(any(), any())
-                .thenReturn(result)
+        suspend fun withUploadPrekeysReturning(result: NetworkResponse<Unit>) = apply {
+            coEvery {
+                preKeyApi.uploadNewPrekeys(any(), any())
+            }.returns(result)
         }
 
-        fun withCurrentClientIdReturning(result: Either<CoreFailure, ClientId>) = apply {
-            given(currentClientIdProvider)
-                .suspendFunction(currentClientIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withCurrentClientIdReturning(result: Either<CoreFailure, ClientId>) = apply {
+            coEvery {
+                currentClientIdProvider.invoke()
+            }.returns(result)
         }
 
-        fun arrange() = this to preKeyRepository
+        suspend fun arrange() = this to preKeyRepository
     }
 }

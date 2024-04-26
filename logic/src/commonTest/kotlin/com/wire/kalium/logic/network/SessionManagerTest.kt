@@ -20,10 +20,10 @@ package com.wire.kalium.logic.network
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
+import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.feature.session.token.AccessTokenRefresher
 import com.wire.kalium.logic.feature.session.token.AccessTokenRefresherFactory
 import com.wire.kalium.logic.framework.TestUser
@@ -38,11 +38,11 @@ import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.dao.UserIDEntity
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.coroutines.EmptyCoroutineContext
 import kotlin.test.Test
@@ -97,9 +97,11 @@ class SessionManagerTest {
         val refreshToken = "refreshToken"
         sessionManager.updateToken(arrangement.accessTokenApi, accessToken, refreshToken)
 
-        verify(arrangement.accessTokenRefresher)
-            .suspendFunction(arrangement.accessTokenRefresher::refreshTokenAndPersistSession)
-            .with(eq(accessToken), eq(refreshToken))
+        coVerify {
+
+            arrangement.accessTokenRefresher.refreshTokenAndPersistSession(eq(accessToken), eq(refreshToken))
+
+        }
     }
 
     @Test
@@ -142,7 +144,7 @@ class SessionManagerTest {
         assertEquals(updatedTokens.cookieLabel, secondResult.cookieLabel)
     }
 
-    private class Arrangement(private val configure: Arrangement.() -> Unit) {
+    private class Arrangement(private val configure: suspend Arrangement.() -> Unit) {
 
         @Mock
         private val sessionRepository = mock(SessionRepository::class)
@@ -170,7 +172,7 @@ class SessionManagerTest {
 
         private val sessionMapper = MapperProvider.sessionMapper()
 
-        fun arrange(): Pair<Arrangement, SessionManager> = run {
+        suspend fun arrange(): Pair<Arrangement, SessionManager> = run {
             configure()
             this@Arrangement to SessionManagerImpl(
                 sessionRepository = sessionRepository,
@@ -184,9 +186,10 @@ class SessionManagerTest {
             )
         }
 
-        fun withTokenRefresherResult(result: Either<CoreFailure, AccountTokens>) = apply {
-            given(accessTokenRefresher).suspendFunction(accessTokenRefresher::refreshTokenAndPersistSession)
-                .whenInvokedWith(anything(), anything()).thenReturn(result)
+        suspend fun withTokenRefresherResult(result: Either<CoreFailure, AccountTokens>) = apply {
+            coEvery {
+                accessTokenRefresher.refreshTokenAndPersistSession(any(), any())
+            }.returns(result)
         }
 
         fun withCurrentTokenResult(result: AuthTokenEntity) = apply {
@@ -194,15 +197,14 @@ class SessionManagerTest {
         }
 
         fun withCurrentTokenReturning(block: () -> AuthTokenEntity) = apply {
-            given(tokenStorage)
-                .function(tokenStorage::getToken)
-                .whenInvokedWith(any())
-                .then { block() }
+            every {
+                tokenStorage.getToken(any())
+            }.invokes(block)
         }
     }
 
     private companion object {
-        fun arrange(configure: Arrangement.() -> Unit) = Arrangement(configure).arrange()
+        suspend fun arrange(configure: suspend Arrangement.() -> Unit) = Arrangement(configure).arrange()
         val TEST_ACCOUNT_TOKENS = AccountTokens(
             userId = TestUser.USER_ID,
             accessToken = "access-token",

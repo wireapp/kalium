@@ -26,8 +26,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallStatus
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
@@ -39,10 +38,10 @@ import kotlin.test.assertEquals
 class GetAllCallsWithSortedParticipantsUseCaseTest {
 
     @Mock
-    private val callRepository = mock(classOf<CallRepository>())
+    private val callRepository = mock(CallRepository::class)
 
     @Mock
-    private val callingParticipantsOrder = mock(classOf<CallingParticipantsOrder>())
+    private val callingParticipantsOrder = mock(CallingParticipantsOrder::class)
 
     private lateinit var getAllCallsWithSortedParticipantsUseCase: GetAllCallsWithSortedParticipantsUseCase
 
@@ -60,17 +59,18 @@ class GetAllCallsWithSortedParticipantsUseCaseTest {
         val calls1 = listOf(call1, call2)
         val calls2 = listOf(call2)
 
-        given(callingParticipantsOrder).coroutine { reorderItems(calls1.first().participants) }
-            .thenReturn(calls1.first().participants)
+        coEvery {
+            callingParticipantsOrder.reorderItems(calls1.first().participants) 
+        }.returns(calls1.first().participants)
 
-        given(callingParticipantsOrder).coroutine { reorderItems(calls2.first().participants) }
-            .thenReturn(calls2.first().participants)
+        coEvery {
+            callingParticipantsOrder.reorderItems(calls2.first().participants) 
+        }.returns(calls2.first().participants)
 
         val callsFlow = flowOf(calls1, calls2)
-        given(callRepository)
-            .suspendFunction(callRepository::callsFlow)
-            .whenInvoked()
-            .then { callsFlow }
+        coEvery {
+            callRepository.callsFlow()
+        }.returns(callsFlow)
 
         val result = getAllCallsWithSortedParticipantsUseCase()
 

@@ -25,11 +25,14 @@ import com.wire.kalium.logic.feature.message.GetSearchedConversationMessagePosit
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -39,7 +42,7 @@ class GetSearchedConversationMessagePositionUseCaseTest {
 
     @Test
     fun givenConversationIdAndMessageId_whenInvokingUseCase_thenShouldCallMessageRepository() = runTest {
-        val (arrangement, getSearchedConversationMessagePosition) = Arrangement()
+        val (arrangement, getSearchedConversationMessagePosition) = Arrangement(testKaliumDispatcher)
             .withRepositoryMessagePositionReturning(
                 conversationId = CONVERSATION_ID,
                 messageId = MESSAGE_ID,
@@ -52,20 +55,18 @@ class GetSearchedConversationMessagePositionUseCaseTest {
             messageId = MESSAGE_ID
         )
 
-        verify(arrangement.messageRepository)
-            .coroutine {
-                arrangement.messageRepository.getSearchedConversationMessagePosition(
-                    conversationId = CONVERSATION_ID,
-                    messageId = MESSAGE_ID
-                )
-            }
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.getSearchedConversationMessagePosition(
+                conversationId = CONVERSATION_ID,
+                messageId = MESSAGE_ID
+            )
+        }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenRepositoryFails_whenInvokingUseCase_thenShouldPropagateTheFailure() = runTest {
         val cause = StorageFailure.DataNotFound
-        val (_, getSearchedConversationMessagePosition) = Arrangement()
+        val (_, getSearchedConversationMessagePosition) = Arrangement(testKaliumDispatcher)
             .withRepositoryMessagePositionReturning(
                 conversationId = CONVERSATION_ID,
                 messageId = MESSAGE_ID,
@@ -85,7 +86,7 @@ class GetSearchedConversationMessagePositionUseCaseTest {
     @Test
     fun givenRepositorySucceeds_whenInvokingUseCase_thenShouldPropagateTheSuccess() = runTest {
         val expectedMessagePosition = 113
-        val (_, getSearchedConversationMessagePosition) = Arrangement()
+        val (_, getSearchedConversationMessagePosition) = Arrangement(testKaliumDispatcher)
             .withRepositoryMessagePositionReturning(
                 conversationId = CONVERSATION_ID,
                 messageId = MESSAGE_ID,
@@ -102,13 +103,16 @@ class GetSearchedConversationMessagePositionUseCaseTest {
         assertEquals(expectedMessagePosition, result.position)
     }
 
-    private inner class Arrangement {
+    private inner class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
 
         @Mock
         val messageRepository: MessageRepository = mock(MessageRepository::class)
 
         private val getSearchedConversationMessagePosition by lazy {
-            GetSearchedConversationMessagePositionUseCaseImpl(messageRepository = messageRepository)
+            GetSearchedConversationMessagePositionUseCaseImpl(
+                messageRepository = messageRepository,
+                dispatcher = dispatcher
+            )
         }
 
         suspend fun withRepositoryMessagePositionReturning(
@@ -116,14 +120,12 @@ class GetSearchedConversationMessagePositionUseCaseTest {
             messageId: String,
             response: Either<StorageFailure, Int>
         ) = apply {
-            given(messageRepository)
-                .coroutine {
-                    messageRepository.getSearchedConversationMessagePosition(
-                        conversationId = conversationId,
-                        messageId = messageId
-                    )
-                }
-                .thenReturn(response)
+            coEvery {
+                messageRepository.getSearchedConversationMessagePosition(
+                    conversationId = conversationId,
+                    messageId = messageId
+                )
+            }.returns(response)
         }
 
         fun arrange() = this to getSearchedConversationMessagePosition

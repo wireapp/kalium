@@ -47,6 +47,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
+import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
@@ -59,6 +60,7 @@ interface MessageMapper {
     fun fromEntityToMessage(message: MessageEntity): Message.Standalone
     fun fromAssetEntityToAssetMessage(message: AssetMessageEntity): AssetMessage
     fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview
+    fun fromDraftToMessagePreview(message: MessageDraftEntity): MessagePreview
     fun fromMessageToLocalNotificationMessage(message: NotificationMessageEntity): LocalNotificationMessage?
     fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular
 }
@@ -218,10 +220,20 @@ class MessageMapperImpl(
             id = message.id,
             conversationId = message.conversationId.toModel(),
             content = message.content.toMessageContent(),
-            date = message.date,
             visibility = message.visibility.toModel(),
             isSelfMessage = message.isSelfMessage,
             senderUserId = message.senderUserId.toModel()
+        )
+    }
+
+    override fun fromDraftToMessagePreview(message: MessageDraftEntity): MessagePreview {
+        return MessagePreview(
+            id = message.conversationId.toString(),
+            conversationId = message.conversationId.toModel(),
+            content = MessagePreviewContent.Draft(message.text),
+            visibility = Message.Visibility.VISIBLE,
+            isSelfMessage = true,
+            senderUserId = selfUserId
         )
     }
 

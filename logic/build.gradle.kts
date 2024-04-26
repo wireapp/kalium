@@ -133,10 +133,6 @@ dependencies {
         }
 }
 
-ksp {
-    arg("mockative.stubsUnitByDefault", "true")
-}
-
 android {
     testOptions.unitTests.all { test ->
         // only run tests that are different for the android platform, the rest is covered by the jvm tests

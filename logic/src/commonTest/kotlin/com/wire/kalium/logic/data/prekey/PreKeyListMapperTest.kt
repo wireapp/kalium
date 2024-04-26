@@ -23,9 +23,8 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
@@ -37,7 +36,7 @@ import kotlin.test.assertEquals
 class PreKeyListMapperTest {
 
     @Mock
-    private val preKeyMapper = mock(classOf<PreKeyMapper>())
+    private val preKeyMapper = mock(PreKeyMapper::class)
 
     private lateinit var subject: PreKeyListMapper
 
@@ -45,8 +44,9 @@ class PreKeyListMapperTest {
     fun setup() {
         subject = PreKeyListMapper(preKeyMapper)
 
-        given(preKeyMapper).function(preKeyMapper::fromPreKeyDTO).whenInvokedWith(any()).then { PreKeyCrypto(1, "2") }
-
+        every {
+            preKeyMapper.fromPreKeyDTO(any())
+        }.returns(PreKeyCrypto(1, "2"))
     }
 
     @Test
@@ -55,10 +55,12 @@ class PreKeyListMapperTest {
             "domA" to mapOf(
                 "userA" to mapOf(
                     "clientA" to PreKeyDTO(1, "keyA")
-                ), "userB" to mapOf(
+                ),
+                "userB" to mapOf(
                     "clientB" to PreKeyDTO(32, "key")
                 )
-            ), "domB" to mapOf(
+            ),
+            "domB" to mapOf(
                 "userB" to mapOf(
                     "clientB" to PreKeyDTO(22, "keyC")
                 )
@@ -94,7 +96,9 @@ class PreKeyListMapperTest {
 
         subject.fromRemoteQualifiedPreKeyInfoMap(preKeyResponse)
 
-        verify(preKeyMapper).function(preKeyMapper::fromPreKeyDTO).with(any()).wasInvoked(exactly = twice)
+        verify {
+            preKeyMapper.fromPreKeyDTO(any())
+        }.wasInvoked(exactly = twice)
     }
 
     @Test
@@ -111,15 +115,13 @@ class PreKeyListMapperTest {
 
         subject.fromRemoteQualifiedPreKeyInfoMap(preKeyResponse)
 
-        verify(preKeyMapper)
-            .function(preKeyMapper::fromPreKeyDTO)
-            .with(eq(firstKey))
-            .wasInvoked(exactly = once)
+        verify {
+            preKeyMapper.fromPreKeyDTO(eq(firstKey))
+        }.wasInvoked(exactly = once)
 
-        verify(preKeyMapper)
-            .function(preKeyMapper::fromPreKeyDTO)
-            .with(eq(secondKey))
-            .wasInvoked(exactly = once)
+        verify {
+            preKeyMapper.fromPreKeyDTO(eq(secondKey))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -151,7 +153,7 @@ class PreKeyListMapperTest {
     }
 
     @Test
-    fun `given_PreKeyMap_when_mapping_to_list_QualifiedUserPreKeyInfo_then_keys_should_be_returned_in_the_right_clients`() {
+    fun given_PreKeyMap_when_mapping_to_list_QualifiedUserPreKeyInfo_then_keys_should_be_returned_in_the_right_clients() {
         class KeyMappingTestSet(val clientId: String, val response: PreKeyDTO, val mapped: PreKeyCrypto)
 
         val firstKeySet = KeyMappingTestSet(
@@ -174,23 +176,21 @@ class PreKeyListMapperTest {
             "domA" to mapOf(
                 "userA" to mapOf(
                     firstKeySet.clientId to firstKeySet.response, secondKeySet.clientId to secondKeySet.response
-                ), "userB" to mapOf(thirdKeySet.clientId to thirdKeySet.response)
+                ),
+                "userB" to mapOf(thirdKeySet.clientId to thirdKeySet.response)
             )
         )
-        given(preKeyMapper)
-            .function(preKeyMapper::fromPreKeyDTO)
-            .whenInvokedWith(eq(firstKeySet.response))
-            .then { firstKeySet.mapped }
+        every {
+            preKeyMapper.fromPreKeyDTO(eq(firstKeySet.response))
+        }.returns(firstKeySet.mapped)
 
-        given(preKeyMapper)
-            .function(preKeyMapper::fromPreKeyDTO)
-            .whenInvokedWith(eq(secondKeySet.response))
-            .then { secondKeySet.mapped }
+        every {
+            preKeyMapper.fromPreKeyDTO(eq(secondKeySet.response))
+        }.returns(secondKeySet.mapped)
 
-        given(preKeyMapper)
-            .function(preKeyMapper::fromPreKeyDTO)
-            .whenInvokedWith(eq(thirdKeySet.response))
-            .then { thirdKeySet.mapped }
+        every {
+            preKeyMapper.fromPreKeyDTO(eq(thirdKeySet.response))
+        }.returns(thirdKeySet.mapped)
 
         val result = subject.fromRemoteQualifiedPreKeyInfoMap(preKeyResponse)
 

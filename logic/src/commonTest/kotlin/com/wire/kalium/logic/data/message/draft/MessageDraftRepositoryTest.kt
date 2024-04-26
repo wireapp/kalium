@@ -24,13 +24,11 @@ import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
-import io.mockative.configure
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -51,29 +49,27 @@ class MessageDraftRepositoryTest {
         assertEquals(TEST_MESSAGE_DRAFT_ENTITY.toModel(), result)
 
         with(arrangement) {
-            verify(messageDraftDAO)
-                .suspendFunction(messageDraftDAO::getMessageDraft)
-                .with(eq(TEST_CONVERSATION_ID.toDao()))
-                .wasInvoked(exactly = once)
+            coVerify {
+                messageDraftDAO.getMessageDraft(eq(TEST_CONVERSATION_ID.toDao()))
+            }.wasInvoked(exactly = once)
         }
     }
 
     @Test
-    fun givenAConversationId_whenSavingDraftMessage_thenShouldMapItProperly() = runTest {
+    fun givenADraft_whenSavingDraftMessage_thenShouldMapItProperly() = runTest {
         // Given
         val (arrangement, messageDraftRepository) = Arrangement()
             .withUpsertMessageDraft()
             .arrange()
 
         // When
-        messageDraftRepository.saveMessageDraft(TEST_CONVERSATION_ID, TEST_MESSAGE_DRAFT)
+        messageDraftRepository.saveMessageDraft(TEST_MESSAGE_DRAFT)
 
         // Then
         with(arrangement) {
-            verify(messageDraftDAO)
-                .suspendFunction(messageDraftDAO::upsertMessageDraft)
-                .with(eq(TEST_CONVERSATION_ID.toDao()), eq(TEST_MESSAGE_DRAFT.toDao()))
-                .wasInvoked(exactly = once)
+            coVerify {
+                messageDraftDAO.upsertMessageDraft(TEST_MESSAGE_DRAFT.toDao())
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -89,37 +85,33 @@ class MessageDraftRepositoryTest {
 
         // Then
         with(arrangement) {
-            verify(messageDraftDAO)
-                .suspendFunction(messageDraftDAO::removeMessageDraft)
-                .with(eq(TEST_CONVERSATION_ID.toDao()))
-                .wasInvoked(exactly = once)
+            coVerify {
+                messageDraftDAO.removeMessageDraft(eq(TEST_CONVERSATION_ID.toDao()))
+            }.wasInvoked(exactly = once)
         }
     }
 
     private class Arrangement {
 
         @Mock
-        val messageDraftDAO = configure(mock(MessageDraftDAO::class)) { stubsUnitByDefault = true }
+        val messageDraftDAO = mock(MessageDraftDAO::class)
 
-        fun withRemoveMessageDraftSucceeding() = apply {
-            given(messageDraftDAO)
-                .suspendFunction(messageDraftDAO::removeMessageDraft)
-                .whenInvokedWith(any())
-                .thenReturn(Unit)
+        suspend fun withRemoveMessageDraftSucceeding() = apply {
+            coEvery {
+                messageDraftDAO.removeMessageDraft(any())
+            }.returns(Unit)
         }
 
-        fun withGetMessageDraft(result: MessageDraftEntity?) = apply {
-            given(messageDraftDAO)
-                .suspendFunction(messageDraftDAO::getMessageDraft)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withGetMessageDraft(result: MessageDraftEntity?) = apply {
+            coEvery {
+                messageDraftDAO.getMessageDraft(any())
+            }.returns(result)
         }
 
-        fun withUpsertMessageDraft() = apply {
-            given(messageDraftDAO)
-                .suspendFunction(messageDraftDAO::upsertMessageDraft)
-                .whenInvokedWith(anything())
-                .thenReturn(Unit)
+        suspend fun withUpsertMessageDraft() = apply {
+            coEvery {
+                messageDraftDAO.upsertMessageDraft(any())
+            }.returns(Unit)
         }
 
         fun arrange() = this to MessageDraftDataSource(
@@ -128,8 +120,10 @@ class MessageDraftRepositoryTest {
     }
 
     private companion object {
+        val TEST_CONVERSATION_ID = ConversationId("value", "domain")
         val TEST_MESSAGE_DRAFT =
             MessageDraft(
+                conversationId = TEST_CONVERSATION_ID,
                 text = "hello",
                 editMessageId = null,
                 quotedMessageId = null,
@@ -137,11 +131,11 @@ class MessageDraftRepositoryTest {
             )
         val TEST_MESSAGE_DRAFT_ENTITY =
             MessageDraftEntity(
+                conversationId = TEST_CONVERSATION_ID.toDao(),
                 text = "hello",
                 editMessageId = null,
                 quotedMessageId = null,
                 selectedMentionList = listOf()
             )
-        val TEST_CONVERSATION_ID = ConversationId("value", "domain")
     }
 }

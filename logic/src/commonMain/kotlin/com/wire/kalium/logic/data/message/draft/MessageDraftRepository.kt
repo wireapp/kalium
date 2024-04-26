@@ -28,7 +28,7 @@ import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
 internal interface MessageDraftRepository {
 
     suspend fun getMessageDraft(conversationId: ConversationId): MessageDraft?
-    suspend fun saveMessageDraft(conversationId: ConversationId, messageDraft: MessageDraft): Either<StorageFailure, Unit>
+    suspend fun saveMessageDraft(messageDraft: MessageDraft): Either<StorageFailure, Unit>
     suspend fun removeMessageDraft(conversationId: ConversationId)
 }
 
@@ -37,11 +37,11 @@ internal class MessageDraftDataSource internal constructor(
 ) : MessageDraftRepository {
 
     override suspend fun getMessageDraft(conversationId: ConversationId): MessageDraft? = wrapStorageRequest {
-       messageDraftDAO.getMessageDraft(conversationId.toDao())?.toModel()
+        messageDraftDAO.getMessageDraft(conversationId.toDao())?.toModel()
     }.getOrNull()
 
-    override suspend fun saveMessageDraft(conversationId: ConversationId, messageDraft: MessageDraft) = wrapStorageRequest {
-        messageDraftDAO.upsertMessageDraft(conversationId.toDao(), messageDraft.toDao())
+    override suspend fun saveMessageDraft(messageDraft: MessageDraft) = wrapStorageRequest {
+        messageDraftDAO.upsertMessageDraft(messageDraft.toDao())
     }
 
     override suspend fun removeMessageDraft(conversationId: ConversationId) {

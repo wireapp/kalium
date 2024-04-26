@@ -23,22 +23,21 @@ import com.wire.kalium.logic.feature.protocol.OneOnOneProtocolSelector
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 
 internal interface OneOnOneProtocolSelectorArrangement {
     val oneOnOneProtocolSelector: OneOnOneProtocolSelector
-    fun withGetProtocolForUser(result: Either<CoreFailure, SupportedProtocol>): OneOnOneProtocolSelectorArrangementImpl
+    suspend fun withGetProtocolForUser(result: Either<CoreFailure, SupportedProtocol>): OneOnOneProtocolSelectorArrangementImpl
 }
 
 internal open class OneOnOneProtocolSelectorArrangementImpl : OneOnOneProtocolSelectorArrangement {
     @Mock
     override val oneOnOneProtocolSelector: OneOnOneProtocolSelector = mock(OneOnOneProtocolSelector::class)
 
-    override fun withGetProtocolForUser(result: Either<CoreFailure, SupportedProtocol>) = apply {
-        given(oneOnOneProtocolSelector)
-            .suspendFunction(oneOnOneProtocolSelector::getProtocolForUser)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withGetProtocolForUser(result: Either<CoreFailure, SupportedProtocol>) = apply {
+        coEvery {
+            oneOnOneProtocolSelector.getProtocolForUser(any())
+        }.returns(result)
     }
 }

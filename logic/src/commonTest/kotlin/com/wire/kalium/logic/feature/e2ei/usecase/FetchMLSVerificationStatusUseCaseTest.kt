@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.e2ei.usecase
+package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
@@ -45,12 +45,13 @@ import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArran
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anyInstanceOf
-import io.mockative.anything
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.flowOf
 import io.mockative.verify
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -69,20 +70,17 @@ class FetchMLSVerificationStatusUseCaseTest {
         handler(TestConversation.GROUP_ID)
         advanceUntilIdle()
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateMlsVerificationStatus)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.conversationRepository.updateMlsVerificationStatus(any(), any())
+        }.wasNotInvoked()
 
-        verify(arrangement.persistMessageUseCase)
-            .suspendFunction(arrangement.persistMessageUseCase::invoke)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.persistMessageUseCase.invoke(any())
+        }.wasNotInvoked()
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::setDegradedConversationNotifiedFlag)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.conversationRepository.setDegradedConversationNotifiedFlag(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -100,20 +98,20 @@ class FetchMLSVerificationStatusUseCaseTest {
         handler(TestConversation.GROUP_ID)
         advanceUntilIdle()
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateMlsVerificationStatus)
-            .with(eq(Conversation.VerificationStatus.DEGRADED), eq(conversationDetails.conversation.id))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.conversationRepository.updateMlsVerificationStatus(
+                verificationStatus = eq(Conversation.VerificationStatus.DEGRADED),
+                conversationID = eq(conversationDetails.conversation.id)
+            )
+        }.wasInvoked(once)
 
-        verify(arrangement.persistMessageUseCase)
-            .suspendFunction(arrangement.persistMessageUseCase::invoke)
-            .with(anyInstanceOf(Message.System::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.persistMessageUseCase.invoke(any<Message.System>())
+        }.wasInvoked(once)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::setDegradedConversationNotifiedFlag)
-            .with(any(), eq(false))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.conversationRepository.setDegradedConversationNotifiedFlag(any(), eq(false))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -130,20 +128,17 @@ class FetchMLSVerificationStatusUseCaseTest {
         handler(TestConversation.GROUP_ID)
         advanceUntilIdle()
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateMlsVerificationStatus)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.conversationRepository.updateMlsVerificationStatus(any(), any())
+        }.wasNotInvoked()
 
-        verify(arrangement.persistMessageUseCase)
-            .suspendFunction(arrangement.persistMessageUseCase::invoke)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.persistMessageUseCase.invoke(any())
+        }.wasNotInvoked()
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::setDegradedConversationNotifiedFlag)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.conversationRepository.setDegradedConversationNotifiedFlag(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -201,20 +196,20 @@ class FetchMLSVerificationStatusUseCaseTest {
         handler(TestConversation.GROUP_ID)
         advanceUntilIdle()
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateMlsVerificationStatus)
-            .with(eq(Conversation.VerificationStatus.VERIFIED), eq(epochChangedData.conversationId))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.conversationRepository.updateMlsVerificationStatus(
+                eq(Conversation.VerificationStatus.VERIFIED),
+                eq(epochChangedData.conversationId)
+            )
+        }.wasInvoked(once)
 
-        verify(arrangement.persistMessageUseCase)
-            .suspendFunction(arrangement.persistMessageUseCase::invoke)
-            .with(anyInstanceOf(Message.System::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.persistMessageUseCase.invoke(any<Message.System>())
+        }.wasInvoked(once)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::setDegradedConversationNotifiedFlag)
-            .with(any(), eq(true))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.conversationRepository.setDegradedConversationNotifiedFlag(any(), eq(true))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -272,26 +267,26 @@ class FetchMLSVerificationStatusUseCaseTest {
         handler(TestConversation.GROUP_ID)
         advanceUntilIdle()
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateMlsVerificationStatus)
-            .with(eq(Conversation.VerificationStatus.DEGRADED), eq(epochChangedData.conversationId))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.conversationRepository.updateMlsVerificationStatus(
+                eq(Conversation.VerificationStatus.DEGRADED),
+                eq(epochChangedData.conversationId)
+            )
+        }.wasInvoked(once)
 
-        verify(arrangement.persistMessageUseCase)
-            .suspendFunction(arrangement.persistMessageUseCase::invoke)
-            .with(anyInstanceOf(Message.System::class))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.persistMessageUseCase.invoke(any<Message.System>())
+        }.wasInvoked(once)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::setDegradedConversationNotifiedFlag)
-            .with(any(), eq(false))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.conversationRepository.setDegradedConversationNotifiedFlag(any(), eq(false))
+        }.wasInvoked(once)
     }
 
-    private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
+    private suspend fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     private class Arrangement(
-        private val block: Arrangement.() -> Unit
+        private val block: suspend Arrangement.() -> Unit
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl() {
@@ -305,32 +300,26 @@ class FetchMLSVerificationStatusUseCaseTest {
         @Mock
         val mlsConversationRepository = mock(MLSConversationRepository::class)
 
-        init {
+        suspend fun withIsGroupVerified(result: E2EIConversationState) {
+            coEvery {
+                mlsClient.isGroupVerified(any())
+            }.returns(result)
+        }
+
+        suspend fun withGetMembersIdentities(result: Either<CoreFailure, Map<UserId, List<WireIdentity>>>) {
+            coEvery {
+                mlsConversationRepository.getMembersIdentities(any(), any())
+            }.returns(result)
+        }
+
+        suspend inline fun arrange() = run {
             withUpdateVerificationStatus(Either.Right(Unit))
             withPersistingMessage(Either.Right(Unit))
             withSetDegradedConversationNotifiedFlag(Either.Right(Unit))
-            given(mlsClientProvider)
-                .suspendFunction(mlsClientProvider::getMLSClient)
-                .whenInvokedWith(anything())
-                .then { Either.Right(mlsClient) }
-        }
-
-        fun withIsGroupVerified(result: E2EIConversationState) {
-            given(mlsClient)
-                .suspendFunction(mlsClient::isGroupVerified)
-                .whenInvokedWith(any())
-                .thenReturn(result)
-        }
-
-        fun withGetMembersIdentities(result: Either<CoreFailure, Map<UserId, List<WireIdentity>>>) {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::getMembersIdentities)
-                .whenInvokedWith(any())
-                .thenReturn(result)
-        }
-
-
-        fun arrange() = apply(block).let {
+            coEvery {
+                mlsClientProvider.getMLSClient(any())
+            }.returns(Either.Right(mlsClient))
+            block()
             this to FetchMLSVerificationStatusUseCaseImpl(
                 conversationRepository = conversationRepository,
                 persistMessage = persistMessageUseCase,

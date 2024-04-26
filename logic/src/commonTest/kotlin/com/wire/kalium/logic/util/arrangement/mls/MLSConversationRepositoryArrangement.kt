@@ -23,38 +23,35 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 
 interface MLSConversationRepositoryArrangement {
     val mlsConversationRepository: MLSConversationRepository
 
-    fun withIsGroupOutOfSync(result: Either<CoreFailure, Boolean>)
-    fun withUserIdentity(result: Either<CoreFailure, List<WireIdentity>>)
-    fun withMembersIdentities(result: Either<CoreFailure, Map<UserId, List<WireIdentity>>>)
+    suspend fun withIsGroupOutOfSync(result: Either<CoreFailure, Boolean>)
+    suspend fun withUserIdentity(result: Either<CoreFailure, List<WireIdentity>>)
+    suspend fun withMembersIdentities(result: Either<CoreFailure, Map<UserId, List<WireIdentity>>>)
 }
 
 class MLSConversationRepositoryArrangementImpl : MLSConversationRepositoryArrangement {
     override val mlsConversationRepository = mock(MLSConversationRepository::class)
 
-    override fun withIsGroupOutOfSync(result: Either<CoreFailure, Boolean>) {
-        given(mlsConversationRepository)
-            .suspendFunction(mlsConversationRepository::isGroupOutOfSync)
-            .whenInvokedWith(any(), any())
-            .thenReturn(result)
+    override suspend fun withIsGroupOutOfSync(result: Either<CoreFailure, Boolean>) {
+        coEvery {
+            mlsConversationRepository.isGroupOutOfSync(any(), any())
+        }.returns(result)
     }
 
-    override fun withUserIdentity(result: Either<CoreFailure, List<WireIdentity>>) {
-        given(mlsConversationRepository)
-            .suspendFunction(mlsConversationRepository::getUserIdentity)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withUserIdentity(result: Either<CoreFailure, List<WireIdentity>>) {
+        coEvery {
+            mlsConversationRepository.getUserIdentity(any())
+        }.returns(result)
     }
 
-    override fun withMembersIdentities(result: Either<CoreFailure, Map<UserId, List<WireIdentity>>>) {
-        given(mlsConversationRepository)
-            .suspendFunction(mlsConversationRepository::getMembersIdentities)
-            .whenInvokedWith(any(), any())
-            .thenReturn(result)
+    override suspend fun withMembersIdentities(result: Either<CoreFailure, Map<UserId, List<WireIdentity>>>) {
+        coEvery {
+            mlsConversationRepository.getMembersIdentities(any(), any())
+        }.returns(result)
     }
 }
