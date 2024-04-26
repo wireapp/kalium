@@ -65,7 +65,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
-import com.wire.kalium.logic.util.CurrentTimeProvider
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
@@ -102,30 +101,22 @@ import io.mockative.once
 import io.mockative.thenDoNothing
 import io.mockative.twice
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import kotlin.test.assertNotEquals
-import kotlin.time.Duration.Companion.milliseconds
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MLSConversationRepositoryTest {
 
-    val dispatcher = TestKaliumDispatcher.default
-    private val currentTime: CurrentTimeProvider = { Instant.fromEpochMilliseconds(dispatcher.scheduler.currentTime) }
-
     @Test
-    fun givenCommitMessage_whenDecryptingMessage_thenEmitEpochChange() = runTest(dispatcher) {
-        val (arrangement, mlsConversationRepository) = Arrangement(currentTime)
+    fun givenCommitMessage_whenDecryptingMessage_thenEmitEpochChange() = runTest(TestKaliumDispatcher.default) {
+        val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
             .withDecryptMLSMessageSuccessful(Arrangement.DECRYPTED_MESSAGE_BUNDLE)
             .arrange()
@@ -1645,147 +1636,7 @@ class MLSConversationRepositoryTest {
         }
     }
 
-    @Test
-    fun givenClientId_whenGettingIdentitiesTwiceInAShortTime_thenGetIdentitiesFromMlsClientOnceAndCacheThem() = runTest(dispatcher) {
-        val groupId = TestConversation.MLS_PROTOCOL_INFO.groupId.value
-        val identity1 = WIRE_IDENTITY.copy(certificate = WIRE_IDENTITY.certificate?.copy(displayName = "name1"))
-        val identity2 = WIRE_IDENTITY.copy(certificate = WIRE_IDENTITY.certificate?.copy(displayName = "name2"))
-        val (arrangement, mlsConversationRepository) = Arrangement(currentTime)
-            .withGetMLSClientSuccessful()
-            .withGetDeviceIdentitiesReturn(listOf(identity1))
-            .withGetE2EIConversationClientInfoByClientIdReturns(E2EI_CONVERSATION_CLIENT_INFO_ENTITY.copy(mlsGroupId = groupId))
-            .arrange()
-
-        val result1 = mlsConversationRepository.getClientIdentity(TestClient.CLIENT_ID)
-        advanceTimeBy(IDENTITIES_TTL - 500.milliseconds)
-        arrangement.withGetDeviceIdentitiesReturn(listOf(identity2))
-        val result2 = mlsConversationRepository.getClientIdentity(TestClient.CLIENT_ID)
-
-        assertEquals(result1, result2)
-        verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::getDeviceIdentities)
-            .with(eq(groupId), any())
-            .wasInvoked(once)
-    }
-
-    @Test
-    fun givenClientId_whenGettingIdentitiesTwiceInALongTime_thenBothTimesGetIdentitiesFromMlsClient() = runTest(dispatcher) {
-        val groupId = TestConversation.MLS_PROTOCOL_INFO.groupId.value
-        val identity1 = WIRE_IDENTITY.copy(certificate = WIRE_IDENTITY.certificate?.copy(displayName = "name1"))
-        val identity2 = WIRE_IDENTITY.copy(certificate = WIRE_IDENTITY.certificate?.copy(displayName = "name2"))
-        val (arrangement, mlsConversationRepository) = Arrangement(currentTime)
-            .withGetMLSClientSuccessful()
-            .withGetDeviceIdentitiesReturn(listOf(identity1))
-            .withGetE2EIConversationClientInfoByClientIdReturns(E2EI_CONVERSATION_CLIENT_INFO_ENTITY.copy(mlsGroupId = groupId))
-            .arrange()
-
-        val result1 = mlsConversationRepository.getClientIdentity(TestClient.CLIENT_ID)
-        advanceTimeBy(IDENTITIES_TTL + 500.milliseconds)
-        arrangement.withGetDeviceIdentitiesReturn(listOf(identity2))
-        val result2 = mlsConversationRepository.getClientIdentity(TestClient.CLIENT_ID)
-
-        assertNotEquals(result1, result2)
-        verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::getDeviceIdentities)
-            .with(eq(groupId), any())
-            .wasInvoked(twice)
-    }
-
-    @Test
-    fun givenUserId_whenGettingIdentitiesTwiceInAShortTime_thenGetIdentitiesFromMlsClientOnceAndCacheThem() = runTest(dispatcher) {
-        val groupId = TestConversation.MLS_PROTOCOL_INFO.groupId.value
-        val identity1 = WIRE_IDENTITY.copy(certificate = WIRE_IDENTITY.certificate?.copy(displayName = "name1"))
-        val identity2 = WIRE_IDENTITY.copy(certificate = WIRE_IDENTITY.certificate?.copy(displayName = "name2"))
-        val (arrangement, mlsConversationRepository) = Arrangement(currentTime)
-            .withGetMLSClientSuccessful()
-            .withGetUserIdentitiesReturn(mapOf(TestUser.USER_ID.value to listOf(identity1)))
-            .withGetMLSGroupIdByUserIdReturns(groupId)
-            .withGetEstablishedSelfMLSGroupIdReturns(groupId)
-            .arrange()
-
-        val result1 = mlsConversationRepository.getUserIdentity(TestUser.USER_ID)
-        advanceTimeBy(IDENTITIES_TTL - 500.milliseconds)
-        arrangement.withGetUserIdentitiesReturn(mapOf(TestUser.USER_ID.value to listOf(identity2)))
-        val result2 = mlsConversationRepository.getUserIdentity(TestUser.USER_ID)
-
-        assertEquals(result1, result2)
-        verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::getUserIdentities)
-            .with(eq(groupId), any())
-            .wasInvoked(once)
-    }
-
-    @Test
-    fun givenUserId_whenGettingIdentitiesTwiceInALongTime_thenBothTimesGetIdentitiesFromMlsClient() = runTest(dispatcher) {
-        val groupId = TestConversation.MLS_PROTOCOL_INFO.groupId.value
-        val identity1 = WIRE_IDENTITY.copy(certificate = WIRE_IDENTITY.certificate?.copy(displayName = "name1"))
-        val identity2 = WIRE_IDENTITY.copy(certificate = WIRE_IDENTITY.certificate?.copy(displayName = "name2"))
-        val (arrangement, mlsConversationRepository) = Arrangement(currentTime)
-            .withGetMLSClientSuccessful()
-            .withGetUserIdentitiesReturn(mapOf(TestUser.USER_ID.value to listOf(identity1)))
-            .withGetMLSGroupIdByUserIdReturns(groupId)
-            .withGetEstablishedSelfMLSGroupIdReturns(groupId)
-            .arrange()
-
-        val result1 = mlsConversationRepository.getUserIdentity(TestUser.USER_ID)
-        advanceTimeBy(IDENTITIES_TTL + 500.milliseconds)
-        arrangement.withGetUserIdentitiesReturn(mapOf(TestUser.USER_ID.value to listOf(identity2)))
-        val result2 = mlsConversationRepository.getUserIdentity(TestUser.USER_ID)
-
-        assertNotEquals(result1, result2)
-        verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::getUserIdentities)
-            .with(eq(groupId), any())
-            .wasInvoked(twice)
-    }
-
-    @Test
-    fun givenMemberId_whenGettingIdentitiesTwiceInAShortTime_thenGetIdentitiesFromMlsClientOnceAndCacheThem() = runTest(dispatcher) {
-        val groupId = TestConversation.MLS_PROTOCOL_INFO.groupId.value
-        val identity1 = WIRE_IDENTITY.copy(certificate = WIRE_IDENTITY.certificate?.copy(displayName = "name1"))
-        val identity2 = WIRE_IDENTITY.copy(certificate = WIRE_IDENTITY.certificate?.copy(displayName = "name2"))
-        val (arrangement, mlsConversationRepository) = Arrangement(currentTime)
-            .withGetMLSClientSuccessful()
-            .withGetUserIdentitiesReturn(mapOf(TestUser.USER_ID.value to listOf(identity1)))
-            .withGetMLSGroupIdByConversationIdReturns(groupId)
-            .arrange()
-
-        val result1 = mlsConversationRepository.getMembersIdentities(TestConversation.ID, listOf(TestUser.USER_ID))
-        advanceTimeBy(IDENTITIES_TTL - 500.milliseconds)
-        arrangement.withGetUserIdentitiesReturn(mapOf(TestUser.USER_ID.value to listOf(identity2)))
-        val result2 = mlsConversationRepository.getMembersIdentities(TestConversation.ID, listOf(TestUser.USER_ID))
-
-        assertEquals(result1, result2)
-        verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::getUserIdentities)
-            .with(eq(groupId), any())
-            .wasInvoked(once)
-    }
-
-    @Test
-    fun givenMemberId_whenGettingIdentitiesTwiceInALongTime_thenBothTimesGetIdentitiesFromMlsClient() = runTest(dispatcher) {
-        val groupId = TestConversation.MLS_PROTOCOL_INFO.groupId.value
-        val identity1 = WIRE_IDENTITY.copy(certificate = WIRE_IDENTITY.certificate?.copy(displayName = "name1"))
-        val identity2 = WIRE_IDENTITY.copy(certificate = WIRE_IDENTITY.certificate?.copy(displayName = "name2"))
-        val (arrangement, mlsConversationRepository) = Arrangement(currentTime)
-            .withGetMLSClientSuccessful()
-            .withGetUserIdentitiesReturn(mapOf(TestUser.USER_ID.value to listOf(identity1)))
-            .withGetMLSGroupIdByConversationIdReturns(groupId)
-            .arrange()
-
-        val result1 = mlsConversationRepository.getMembersIdentities(TestConversation.ID, listOf(TestUser.USER_ID))
-        advanceTimeBy(IDENTITIES_TTL + 500.milliseconds)
-        arrangement.withGetUserIdentitiesReturn(mapOf(TestUser.USER_ID.value to listOf(identity2)))
-        val result2 = mlsConversationRepository.getMembersIdentities(TestConversation.ID, listOf(TestUser.USER_ID))
-
-        assertNotEquals(result1, result2)
-        verify(arrangement.mlsClient)
-            .suspendFunction(arrangement.mlsClient::getUserIdentities)
-            .with(eq(groupId), any())
-            .wasInvoked(twice)
-    }
-
-    private class Arrangement(val currentTimeProvider: CurrentTimeProvider = DateTimeUtil::currentInstant) {
+    private class Arrangement {
 
         @Mock
         val commitBundleEventReceiver = mock(classOf<CommitBundleEventReceiver>())
@@ -1848,8 +1699,7 @@ class MLSConversationRepositoryTest {
             proposalTimersFlow,
             keyPackageLimitsProvider,
             checkRevocationList,
-            certificateRevocationListRepository,
-            currentTimeProvider
+            certificateRevocationListRepository
         )
 
         fun withCommitBundleEventReceiverSucceeding() = apply {

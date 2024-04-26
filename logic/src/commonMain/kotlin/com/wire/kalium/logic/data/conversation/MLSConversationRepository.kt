@@ -25,7 +25,6 @@ import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.Ed22519Key
 import com.wire.kalium.cryptography.MLSClient
-import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
@@ -68,8 +67,6 @@ import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.incremental.EventSource
-import com.wire.kalium.logic.util.CurrentTimeProvider
-import com.wire.kalium.logic.util.ExpirableCache
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -95,7 +92,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.withContext
 import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
 
 data class ApplicationMessage(
     val message: ByteArray,
@@ -223,7 +219,6 @@ internal class MLSConversationDataSource(
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
     private val checkRevocationList: CheckRevocationListUseCase,
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
-    currentTimeProvider: CurrentTimeProvider = DateTimeUtil::currentInstant,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
     private val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper(),
@@ -676,19 +671,15 @@ internal class MLSConversationDataSource(
         })
     })
 
-    private val getDeviceIdentitiesCache =
-        ExpirableCache<Pair<MLSGroupId, Set<CryptoQualifiedClientId>>, List<WireIdentity>>(IDENTITIES_TTL, currentTimeProvider)
-    private val getUserIdentitiesCache =
-        ExpirableCache<Pair<MLSGroupId, Set<UserId>>, Map<String, List<WireIdentity>>>(IDENTITIES_TTL, currentTimeProvider)
-
     override suspend fun getClientIdentity(clientId: ClientId) =
         wrapStorageRequest { conversationDAO.getE2EIConversationClientInfoByClientId(clientId.value) }.flatMap {
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
-                    val cryptoQualifiedClientId = CryptoQualifiedClientId(it.clientId, it.userId.toModel().toCrypto())
-                    getDeviceIdentitiesCache.getOrPut(it.mlsGroupId to setOf(cryptoQualifiedClientId)) {
-                        mlsClient.getDeviceIdentities(it.mlsGroupId, listOf(cryptoQualifiedClientId))
-                    }.firstOrNull()
+
+                    mlsClient.getDeviceIdentities(
+                        it.mlsGroupId,
+                        listOf(CryptoQualifiedClientId(it.clientId, it.userId.toModel().toCrypto()))
+                    ).firstOrNull()
                 }
             }
         }
@@ -703,9 +694,10 @@ internal class MLSConversationDataSource(
         }.flatMap { mlsGroupId ->
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
-                    getUserIdentitiesCache.getOrPut(mlsGroupId to setOf(userId)) {
-                        mlsClient.getUserIdentities(mlsGroupId, listOf(userId.toCrypto()))
-                    }[userId.value] ?: emptyList()
+                    mlsClient.getUserIdentities(
+                        mlsGroupId,
+                        listOf(userId.toCrypto())
+                    )[userId.value] ?: emptyList()
                 }
             }
         }
@@ -720,13 +712,13 @@ internal class MLSConversationDataSource(
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
                     val userIdsAndIdentity = mutableMapOf<UserId, List<WireIdentity>>()
-                    getUserIdentitiesCache.getOrPut(mlsGroupId to userIds.toSet()) {
-                        mlsClient.getUserIdentities(mlsGroupId, userIds.map { it.toCrypto() })
-                    }.forEach { (userIdValue, identities) ->
-                        userIds.firstOrNull { it.value == userIdValue }?.also {
-                            userIdsAndIdentity[it] = identities
+
+                    mlsClient.getUserIdentities(mlsGroupId, userIds.map { it.toCrypto() })
+                        .forEach { (userIdValue, identities) ->
+                            userIds.firstOrNull { it.value == userIdValue }?.also {
+                                userIdsAndIdentity[it] = identities
+                            }
                         }
-                    }
 
                     userIdsAndIdentity
                 }
@@ -903,5 +895,3 @@ internal class MLSConversationDataSource(
 
     private data class CommitOperationResult<T>(val commitBundle: CommitBundle?, val result: T)
 }
-
-val IDENTITIES_TTL = 1.seconds
