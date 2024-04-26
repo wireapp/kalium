@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
@@ -52,7 +53,12 @@ import kotlinx.coroutines.flow.map
 @Suppress("TooManyFunctions")
 interface ClientRepository {
     suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client>
-    suspend fun registerMLSClient(clientId: ClientId, publicKey: ByteArray): Either<CoreFailure, Unit>
+    suspend fun registerMLSClient(
+        clientId: ClientId,
+        publicKey: ByteArray,
+        cipherSuite: CipherSuite
+    ): Either<CoreFailure, Unit>
+
     suspend fun hasRegisteredMLSClient(): Either<CoreFailure, Boolean>
     suspend fun persistClientId(clientId: ClientId): Either<CoreFailure, Unit>
 
@@ -204,8 +210,11 @@ class ClientDataSource(
             .map { it?.let { clientMapper.fromClientEntity(it) } }
             .wrapStorageRequest()
 
-    override suspend fun registerMLSClient(clientId: ClientId, publicKey: ByteArray): Either<CoreFailure, Unit> =
-        clientRemoteRepository.registerMLSClient(clientId, publicKey.encodeBase64())
+    override suspend fun registerMLSClient(
+        clientId: ClientId, publicKey: ByteArray,
+        cipherSuite: CipherSuite
+    ): Either<CoreFailure, Unit> =
+        clientRemoteRepository.registerMLSClient(clientId, publicKey.encodeBase64(), cipherSuite)
             .flatMap {
                 wrapStorageRequest {
                     clientRegistrationStorage.setHasRegisteredMLSClient()
