@@ -26,14 +26,14 @@ import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.call.CallManager
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -41,13 +41,13 @@ import kotlin.test.Test
 class ConversationClientsInCallUpdaterTest {
 
     @Mock
-    private val callManager = mock(classOf<CallManager>())
+    private val callManager = mock(CallManager::class)
 
     @Mock
-    private val conversationRepository = mock(classOf<ConversationRepository>())
+    private val conversationRepository = mock(ConversationRepository::class)
 
     @Mock
-    private val federatedIdMapper = mock(classOf<FederatedIdMapper>())
+    private val federatedIdMapper = mock(FederatedIdMapper::class)
 
     private lateinit var conversationClientsInCallUpdater: ConversationClientsInCallUpdater
 
@@ -56,42 +56,42 @@ class ConversationClientsInCallUpdaterTest {
         conversationClientsInCallUpdater = ConversationClientsInCallUpdaterImpl(
             callManager = lazy { callManager },
             conversationRepository = conversationRepository,
-            federatedIdMapper = federatedIdMapper
+            federatedIdMapper = federatedIdMapper,
+            dispatchers = TestKaliumDispatcher
         )
     }
 
     @Test
-    fun givenConversationRepositoryReturnsFailure_whenGettingConversationRecipients_thenDoNothing() = runTest {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationRecipientsForCalling)
-            .whenInvokedWith(eq(conversationId))
-            .thenReturn(Either.Left(CoreFailure.MissingClientRegistration))
+    fun givenConversationRepositoryReturnsFailure_whenGettingConversationRecipients_thenDoNothing() =
+        runTest(TestKaliumDispatcher.main) {
+            coEvery {
+                conversationRepository.getConversationRecipientsForCalling(eq(conversationId))
+            }.returns(Either.Left(CoreFailure.MissingClientRegistration))
 
-        conversationClientsInCallUpdater(conversationId)
+            conversationClientsInCallUpdater(conversationId)
 
-        verify(callManager)
-            .suspendFunction(callManager::updateConversationClients)
-            .with(any(), any())
-            .wasNotInvoked()
-    }
+            coVerify {
+                callManager.updateConversationClients(any(), any())
+            }.wasNotInvoked()
+        }
 
     @Test
-    fun givenConversationRepositoryReturnsValidValues_whenGettingConversationRecipients_thenUpdateConversationClients() = runTest {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationRecipientsForCalling)
-            .whenInvokedWith(eq(conversationId))
-            .thenReturn(Either.Right(recipients))
+    fun givenConversationRepositoryReturnsValidValues_whenGettingConversationRecipients_thenUpdateConversationClients() =
+        runTest(TestKaliumDispatcher.main) {
+            coEvery {
+                conversationRepository.getConversationRecipientsForCalling(eq(conversationId))
+            }.returns(Either.Right(recipients))
 
-        given(federatedIdMapper).coroutine { parseToFederatedId(userId) }
-            .thenReturn(userIdString)
+            coEvery {
+                federatedIdMapper.parseToFederatedId(userId)
+            }.returns(userIdString)
 
-        conversationClientsInCallUpdater(conversationId)
+            conversationClientsInCallUpdater(conversationId)
 
-        verify(callManager)
-            .suspendFunction(callManager::updateConversationClients)
-            .with(any(), any())
-            .wasInvoked(once)
-    }
+            coVerify {
+                callManager.updateConversationClients(any(), any())
+            }.wasInvoked(once)
+        }
 
     companion object {
         private val conversationId = ConversationId("conversation", "wire.com")

@@ -35,8 +35,8 @@ import com.wire.kalium.persistence.dao.message.MessageExtensions
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.every
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -72,13 +72,15 @@ class MessageRepositoryExtensionsTest {
             startingOffset
         )
 
-        verify(arrangement.messageDaoExtensions)
-            .function(arrangement.messageDaoExtensions::getPagerForConversation)
-            .with(eq(CONVERSATION_ID_ENTITY), matching {
-                val list = it.toList()
-                list.size == 1 && list[0] == MessageEntity.Visibility.VISIBLE
-            }, eq(pagingConfig))
-            .wasInvoked(exactly = once)
+        verify {
+            arrangement.messageDaoExtensions.getPagerForConversation(
+                eq(CONVERSATION_ID_ENTITY), matches {
+                    val list = it.toList()
+                    list.size == 1 && list[0] == MessageEntity.Visibility.VISIBLE
+                }, eq(pagingConfig),
+                any()
+            )
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -94,22 +96,19 @@ class MessageRepositoryExtensionsTest {
 
         init {
 
-            given(messageMapper)
-                .function(messageMapper::fromEntityToMessage)
-                .whenInvokedWith(any())
-                .thenReturn(MESSAGE)
+            every {
+                messageMapper.fromEntityToMessage(any())
+            }.returns(MESSAGE)
 
-            given(messageDAO)
-                .getter(messageDAO::platformExtensions)
-                .whenInvoked()
-                .thenReturn(messageDaoExtensions)
+            every {
+                messageDAO.platformExtensions
+            }.returns(messageDaoExtensions)
         }
 
         fun withMessageExtensionsReturningPager(kaliumPager: KaliumPager<MessageEntity>) = apply {
-            given(messageDaoExtensions)
-                .function(messageDaoExtensions::getPagerForConversation)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(kaliumPager)
+            every {
+                messageDaoExtensions.getPagerForConversation(any(), any(), any(), any())
+            }.returns(kaliumPager)
         }
 
         private val messageRepositoryExtensions: MessageRepositoryExtensions by lazy {

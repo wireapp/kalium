@@ -29,12 +29,11 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -42,7 +41,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class CheckConversationInviteCodeUseCaseTest {
 
     @Test
@@ -67,15 +65,13 @@ class CheckConversationInviteCodeUseCaseTest {
         }
 
         with(arrangement) {
-            verify(conversationGroupRepository)
-                .suspendFunction(conversationGroupRepository::fetchLimitedInfoViaInviteCode)
-                .with(any(), any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
+            }.wasInvoked(exactly = once)
 
-            verify(conversationRepository)
-                .suspendFunction(conversationRepository::observeIsUserMember)
-                .with(any(), any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                conversationRepository.observeIsUserMember(any(), any())
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -101,15 +97,13 @@ class CheckConversationInviteCodeUseCaseTest {
         }
 
         with(arrangement) {
-            verify(conversationGroupRepository)
-                .suspendFunction(conversationGroupRepository::fetchLimitedInfoViaInviteCode)
-                .with(any(), any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
+            }.wasInvoked(exactly = once)
 
-            verify(conversationRepository)
-                .suspendFunction(conversationRepository::observeIsUserMember)
-                .with(any(), any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                conversationRepository.observeIsUserMember(any(), any())
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -130,15 +124,13 @@ class CheckConversationInviteCodeUseCaseTest {
         }
 
         with(arrangement) {
-            verify(conversationGroupRepository)
-                .suspendFunction(conversationGroupRepository::fetchLimitedInfoViaInviteCode)
-                .with(any(), any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
+            }.wasInvoked(exactly = once)
 
-            verify(conversationRepository)
-                .suspendFunction(conversationRepository::observeIsUserMember)
-                .with(any(), any())
-                .wasNotInvoked()
+            coVerify {
+                conversationRepository.observeIsUserMember(any(), any())
+            }.wasNotInvoked()
         }
     }
 
@@ -159,15 +151,13 @@ class CheckConversationInviteCodeUseCaseTest {
         }
 
         with(arrangement) {
-            verify(conversationGroupRepository)
-                .suspendFunction(conversationGroupRepository::fetchLimitedInfoViaInviteCode)
-                .with(any(), any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
+            }.wasInvoked(exactly = once)
 
-            verify(conversationRepository)
-                .suspendFunction(conversationRepository::observeIsUserMember)
-                .with(any(), any())
-                .wasNotInvoked()
+            coVerify {
+                conversationRepository.observeIsUserMember(any(), any())
+            }.wasNotInvoked()
         }
     }
 
@@ -188,15 +178,13 @@ class CheckConversationInviteCodeUseCaseTest {
         }
 
         with(arrangement) {
-            verify(conversationGroupRepository)
-                .suspendFunction(conversationGroupRepository::fetchLimitedInfoViaInviteCode)
-                .with(any(), any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
+            }.wasInvoked(exactly = once)
 
-            verify(conversationRepository)
-                .suspendFunction(conversationRepository::observeIsUserMember)
-                .with(any(), any())
-                .wasNotInvoked()
+            coVerify {
+                conversationRepository.observeIsUserMember(any(), any())
+            }.wasNotInvoked()
         }
     }
 
@@ -217,15 +205,13 @@ class CheckConversationInviteCodeUseCaseTest {
         }
 
         with(arrangement) {
-            verify(conversationGroupRepository)
-                .suspendFunction(conversationGroupRepository::fetchLimitedInfoViaInviteCode)
-                .with(any(), any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
+            }.wasInvoked(exactly = once)
 
-            verify(conversationRepository)
-                .suspendFunction(conversationRepository::observeIsUserMember)
-                .with(any(), any())
-                .wasNotInvoked()
+            coVerify {
+                conversationRepository.observeIsUserMember(any(), any())
+            }.wasNotInvoked()
         }
     }
 
@@ -246,15 +232,13 @@ class CheckConversationInviteCodeUseCaseTest {
         }
 
         with(arrangement) {
-            verify(conversationGroupRepository)
-                .suspendFunction(conversationGroupRepository::fetchLimitedInfoViaInviteCode)
-                .with(any(), any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
+            }.wasInvoked(exactly = once)
 
-            verify(conversationRepository)
-                .suspendFunction(conversationRepository::observeIsUserMember)
-                .with(any(), any())
-                .wasNotInvoked()
+            coVerify {
+                conversationRepository.observeIsUserMember(any(), any())
+            }.wasNotInvoked()
         }
     }
 
@@ -275,26 +259,24 @@ class CheckConversationInviteCodeUseCaseTest {
             selfUserId = selfUserId
         )
 
-        fun withFetchLimitedInfoViaInviteCodeResult(
+        suspend fun withFetchLimitedInfoViaInviteCodeResult(
             code: String,
             key: String,
             result: Either<NetworkFailure, ConversationCodeInfo>
         ) = apply {
-            given(conversationGroupRepository)
-                .suspendFunction(conversationGroupRepository::fetchLimitedInfoViaInviteCode)
-                .whenInvokedWith(eq(code), eq(key))
-                .thenReturn(result)
+            coEvery {
+                conversationGroupRepository.fetchLimitedInfoViaInviteCode(eq(code), eq(key))
+            }.returns(result)
         }
 
-        fun withObserveIsUserMemberResult(
+        suspend fun withObserveIsUserMemberResult(
             conversationId: ConversationId,
             userId: UserId,
             result: Either<CoreFailure, Boolean>
         ) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::observeIsUserMember)
-                .whenInvokedWith(eq(conversationId), eq(userId))
-                .thenReturn(flowOf(result))
+            coEvery {
+                conversationRepository.observeIsUserMember(eq(conversationId), eq(userId))
+            }.returns(flowOf(result))
         }
 
         fun arrange() = this to useCase

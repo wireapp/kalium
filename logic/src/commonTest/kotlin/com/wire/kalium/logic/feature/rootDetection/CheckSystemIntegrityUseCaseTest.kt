@@ -17,26 +17,24 @@
  */
 package com.wire.kalium.logic.feature.rootDetection
 
+import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.session.SessionRepository
-import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.anything
-import io.mockative.classOf
+import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class CheckSystemIntegrityUseCaseTest {
 
     @Test
@@ -52,15 +50,13 @@ class CheckSystemIntegrityUseCaseTest {
 
         assertEquals(CheckSystemIntegrityUseCase.Result.Failed, result)
 
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::deleteSession)
-            .with(eq(Arrangement.INVALID_ACCOUNT.userId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.sessionRepository.deleteSession(eq(Arrangement.INVALID_ACCOUNT.userId))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::deleteSession)
-            .with(eq(Arrangement.VALID_ACCOUNT.userId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.sessionRepository.deleteSession(eq(Arrangement.VALID_ACCOUNT.userId))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -75,10 +71,9 @@ class CheckSystemIntegrityUseCaseTest {
 
         assertEquals(CheckSystemIntegrityUseCase.Result.Success, result)
 
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::deleteSession)
-            .with(eq(Arrangement.VALID_ACCOUNT.userId))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.sessionRepository.deleteSession(eq(Arrangement.VALID_ACCOUNT.userId))
+        }.wasNotInvoked()
     }
 
     @Test
@@ -93,10 +88,9 @@ class CheckSystemIntegrityUseCaseTest {
 
         assertEquals(CheckSystemIntegrityUseCase.Result.Success, result)
 
-        verify(arrangement.sessionRepository)
-            .suspendFunction(arrangement.sessionRepository::deleteSession)
-            .with(eq(Arrangement.VALID_ACCOUNT.userId))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.sessionRepository.deleteSession(eq(Arrangement.VALID_ACCOUNT.userId))
+        }.wasNotInvoked()
     }
 
     private class Arrangement {
@@ -104,10 +98,10 @@ class CheckSystemIntegrityUseCaseTest {
         var kaliumConfigs = KaliumConfigs()
 
         @Mock
-        val rootDetector = mock(classOf<RootDetector>())
+        val rootDetector = mock(RootDetector::class)
 
         @Mock
-        val sessionRepository = mock(classOf<SessionRepository>())
+        val sessionRepository = mock(SessionRepository::class)
 
         fun arrange() = this to CheckSystemIntegrityUseCaseImpl(
             kaliumConfigs,
@@ -120,24 +114,21 @@ class CheckSystemIntegrityUseCaseTest {
         }
 
         fun withIsSystemRooted(result: Boolean) = apply {
-            given(rootDetector)
-                .function(rootDetector::isSystemRooted)
-                .whenInvoked()
-                .thenReturn(result)
+            every {
+                rootDetector.isSystemRooted()
+            }.returns(result)
         }
 
-        fun withAccounts(accounts: List<AccountInfo>) = apply {
-            given(sessionRepository)
-                .suspendFunction(sessionRepository::allSessions)
-                .whenInvoked()
-                .thenReturn(Either.Right(accounts))
+        suspend fun withAccounts(accounts: List<AccountInfo>) = apply {
+            coEvery {
+                sessionRepository.allSessions()
+            }.returns(Either.Right(accounts))
         }
 
-        fun withDeleteSessionSucceeds() = apply {
-            given(sessionRepository)
-                .suspendFunction(sessionRepository::deleteSession)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withDeleteSessionSucceeds() = apply {
+            coEvery {
+                sessionRepository.deleteSession(any())
+            }.returns(Either.Right(Unit))
         }
 
         companion object {

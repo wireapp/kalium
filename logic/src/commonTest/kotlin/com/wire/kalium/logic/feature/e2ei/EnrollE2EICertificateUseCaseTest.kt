@@ -38,10 +38,9 @@ import com.wire.kalium.network.api.base.unbound.acme.ACMEResponse
 import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
-import io.mockative.classOf
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -72,70 +71,59 @@ class EnrollE2EICertificateUseCaseTest {
         // then
         result.shouldFail()
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::fetchAndSetTrustAnchors)
-            .with()
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.fetchAndSetTrustAnchors()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::loadACMEDirectories)
-            .with()
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.loadACMEDirectories()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getACMENonce)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewAccount)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewOrder)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getAuthorizations)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::getOAuthRefreshToken).with().wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireNonce)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getDPoPToken)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireAccessToken)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateDPoPChallenge)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateOIDCChallenge)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::checkOrderRequest)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::finalize)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::certificateRequest)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations).with().wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getACMENonce(any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.createNewAccount(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.createNewOrder(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getAuthorizations(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getOAuthRefreshToken()
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getWireNonce()
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getDPoPToken(any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getWireAccessToken(any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.validateDPoPChallenge(any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.validateOIDCChallenge(any(), any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.checkOrderRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.finalize(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.certificateRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -155,68 +143,57 @@ class EnrollE2EICertificateUseCaseTest {
         // then
         result.shouldFail()
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::fetchAndSetTrustAnchors)
-            .with()
-            .wasInvoked(exactly = once)
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::loadACMEDirectories)
-            .with()
-            .wasInvoked(exactly = once)
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getACMENonce)
-            .with(any<String>())
-            .wasInvoked(exactly = once)
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewAccount)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewOrder)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getAuthorizations)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::getOAuthRefreshToken).with().wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireNonce)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getDPoPToken)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireAccessToken)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateDPoPChallenge)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateOIDCChallenge)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::checkOrderRequest)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::finalize)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::certificateRequest)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
-            .with()
-            .wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.fetchAndSetTrustAnchors()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.loadACMEDirectories()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getACMENonce(any<String>())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.createNewAccount(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.createNewOrder(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getAuthorizations(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getOAuthRefreshToken()
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getWireNonce()
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getDPoPToken(any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getWireAccessToken(any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.validateDPoPChallenge(any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.validateOIDCChallenge(any(), any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.checkOrderRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.finalize(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.certificateRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -237,72 +214,61 @@ class EnrollE2EICertificateUseCaseTest {
         // then
         result.shouldFail()
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::fetchAndSetTrustAnchors)
-            .with()
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.fetchAndSetTrustAnchors()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::loadACMEDirectories)
-            .with()
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.loadACMEDirectories()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getACMENonce)
-            .with(any<String>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getACMENonce(any<String>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewAccount)
-            .with(any<Nonce>(), any<String>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.createNewAccount(any<Nonce>(), any<String>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewOrder)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getAuthorizations)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::getOAuthRefreshToken).with().wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireNonce)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getDPoPToken)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireAccessToken)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateDPoPChallenge)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateOIDCChallenge)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::checkOrderRequest)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::finalize)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::certificateRequest).with().wasNotInvoked()
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
-            .with()
-            .wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.createNewOrder(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getAuthorizations(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getOAuthRefreshToken()
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getWireNonce()
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getDPoPToken(any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getWireAccessToken(any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.validateDPoPChallenge(any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.validateOIDCChallenge(any(), any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.checkOrderRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.finalize(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.certificateRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -324,73 +290,62 @@ class EnrollE2EICertificateUseCaseTest {
         // then
         result.shouldFail()
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::fetchAndSetTrustAnchors)
-            .with()
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.fetchAndSetTrustAnchors()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::loadACMEDirectories)
-            .with()
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.loadACMEDirectories()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getACMENonce)
-            .with(any<String>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getACMENonce(any<String>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewAccount)
-            .with(any<Nonce>(), any<String>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.createNewAccount(any<Nonce>(), any<String>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewOrder)
-            .with(any<Nonce>(), any<String>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.createNewOrder(any<Nonce>(), any<String>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getAuthorizations).with().wasNotInvoked()
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::getOAuthRefreshToken)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireNonce)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getDPoPToken)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireAccessToken)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateDPoPChallenge)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateOIDCChallenge)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::checkOrderRequest)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::finalize)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::certificateRequest).with().wasNotInvoked()
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
-            .with()
-            .wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getAuthorizations(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getOAuthRefreshToken()
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getWireNonce()
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getDPoPToken(any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getWireAccessToken(any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.validateDPoPChallenge(any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.validateOIDCChallenge(any(), any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.checkOrderRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.finalize(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.certificateRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -413,74 +368,63 @@ class EnrollE2EICertificateUseCaseTest {
         // then
         result.shouldFail()
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::fetchAndSetTrustAnchors)
-            .with()
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.fetchAndSetTrustAnchors()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::loadACMEDirectories)
-            .with()
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.loadACMEDirectories()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getACMENonce)
-            .with(any<String>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getACMENonce(any<String>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewAccount)
-            .with(any<Nonce>(), any<String>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.createNewAccount(any<Nonce>(), any<String>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::createNewOrder)
-            .with(any<Nonce>(), any<String>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.createNewOrder(any<Nonce>(), any<String>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getAuthorizations)
-            .with(any<Nonce>(), any<List<String>>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getAuthorizations(any<Nonce>(), any<List<String>>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::getOAuthRefreshToken).with().wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireNonce)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getDPoPToken)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireAccessToken)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateDPoPChallenge)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateOIDCChallenge)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::checkOrderRequest)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::finalize)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::certificateRequest).with().wasNotInvoked()
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
-            .with()
-            .wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getOAuthRefreshToken()
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getWireNonce()
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getDPoPToken(any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getWireAccessToken(any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.validateDPoPChallenge(any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.validateOIDCChallenge(any(), any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.checkOrderRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.finalize(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.certificateRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -511,33 +455,64 @@ class EnrollE2EICertificateUseCaseTest {
 
         assertEquals(expected, result.value as E2EIEnrollmentResult.Initialized)
 
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::fetchAndSetTrustAnchors).with().wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.fetchAndSetTrustAnchors()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::loadACMEDirectories).with().wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.loadACMEDirectories()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::getACMENonce).with(any<String>()).wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getACMENonce(any<String>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::createNewAccount).with(any<Nonce>(), any<String>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.createNewAccount(any<Nonce>(), any<String>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::createNewOrder).with(any<Nonce>(), any<String>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.createNewOrder(any<Nonce>(), any<String>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::getAuthorizations).with(any<Nonce>(), any<List<String>>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getAuthorizations(any<Nonce>(), any<List<String>>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::getOAuthRefreshToken).with().wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getOAuthRefreshToken()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::getWireNonce).with().wasNotInvoked()
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::getDPoPToken).with().wasNotInvoked()
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::getWireAccessToken).with().wasNotInvoked()
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::validateDPoPChallenge).with().wasNotInvoked()
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::validateOIDCChallenge).with().wasNotInvoked()
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::checkOrderRequest).with().wasNotInvoked()
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::finalize).with().wasNotInvoked()
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::certificateRequest).with().wasNotInvoked()
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations).with().wasNotInvoked()
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations).with().wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getWireNonce()
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getDPoPToken(any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getWireAccessToken(any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.validateDPoPChallenge(any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.validateOIDCChallenge(any(), any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.checkOrderRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.finalize(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.certificateRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -553,43 +528,34 @@ class EnrollE2EICertificateUseCaseTest {
         // then
         result.shouldFail()
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireNonce)
-            .with()
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getWireNonce()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getDPoPToken)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireAccessToken)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateDPoPChallenge)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateOIDCChallenge)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::checkOrderRequest)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::finalize)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::certificateRequest)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
-            .with()
-            .wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getDPoPToken(any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getWireAccessToken(any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.validateDPoPChallenge(any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.validateOIDCChallenge(any(), any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.checkOrderRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.finalize(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.certificateRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -606,45 +572,36 @@ class EnrollE2EICertificateUseCaseTest {
         // then
         result.shouldFail()
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireNonce)
-            .with()
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getWireNonce()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getDPoPToken)
-            .with(any<Nonce>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getDPoPToken(any<Nonce>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireAccessToken)
-            .with()
-            .wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.getWireAccessToken(any())
+        }.wasNotInvoked()
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateDPoPChallenge)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateOIDCChallenge)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::checkOrderRequest)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::finalize)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::certificateRequest)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
-            .with()
-            .wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.validateDPoPChallenge(any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.validateOIDCChallenge(any(), any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.checkOrderRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.finalize(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.certificateRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -662,44 +619,36 @@ class EnrollE2EICertificateUseCaseTest {
         // then
         result.shouldFail()
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireNonce)
-            .with()
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getWireNonce()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getDPoPToken)
-            .with(any<Nonce>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getDPoPToken(any<Nonce>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireAccessToken).with(eq(RANDOM_DPoP_TOKEN))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getWireAccessToken(eq(RANDOM_DPoP_TOKEN))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateDPoPChallenge)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateOIDCChallenge)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::checkOrderRequest)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::finalize)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::certificateRequest)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
-            .with()
-            .wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.validateDPoPChallenge(any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.validateOIDCChallenge(any(), any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.checkOrderRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.finalize(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.certificateRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -718,45 +667,37 @@ class EnrollE2EICertificateUseCaseTest {
         // then
         result.shouldFail()
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireNonce)
-            .with()
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getWireNonce()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getDPoPToken)
-            .with(any<Nonce>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getDPoPToken(any<Nonce>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireAccessToken).with(eq(RANDOM_DPoP_TOKEN))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getWireAccessToken(eq(RANDOM_DPoP_TOKEN))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateDPoPChallenge)
-            .with(eq(WIRE_ACCESS_TOKEN.token), any<Nonce>(), eq(DPOP_AUTHZ.challenge))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.validateDPoPChallenge(eq(WIRE_ACCESS_TOKEN.token), any<Nonce>(), eq(DPOP_AUTHZ.challenge))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateOIDCChallenge)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::checkOrderRequest)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::finalize)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::certificateRequest)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
-            .with()
-            .wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.validateOIDCChallenge(any(), any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.checkOrderRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.finalize(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.certificateRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -776,45 +717,37 @@ class EnrollE2EICertificateUseCaseTest {
         // then
         result.shouldFail()
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireNonce)
-            .with()
-            .wasInvoked(exactly = once)
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getDPoPToken)
-            .with(any<Nonce>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getWireNonce()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getDPoPToken(any<Nonce>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireAccessToken).with(eq(RANDOM_DPoP_TOKEN))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getWireAccessToken(eq(RANDOM_DPoP_TOKEN))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateDPoPChallenge)
-            .with(eq(WIRE_ACCESS_TOKEN.token), any<Nonce>(), eq(DPOP_AUTHZ.challenge))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.validateDPoPChallenge(eq(WIRE_ACCESS_TOKEN.token), any<Nonce>(), eq(DPOP_AUTHZ.challenge))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateOIDCChallenge)
-            .with(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any<Nonce>(), eq(OIDC_AUTHZ.challenge))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.validateOIDCChallenge(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any<Nonce>(), eq(OIDC_AUTHZ.challenge))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::checkOrderRequest)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::finalize)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::certificateRequest)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
-            .with()
-            .wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.checkOrderRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.finalize(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.certificateRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -835,44 +768,38 @@ class EnrollE2EICertificateUseCaseTest {
         // then
         result.shouldFail()
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireNonce)
-            .with()
-            .wasInvoked(exactly = once)
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getDPoPToken)
-            .with(any<Nonce>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getWireNonce()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getDPoPToken(any<Nonce>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireAccessToken).with(eq(RANDOM_DPoP_TOKEN))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getWireAccessToken(eq(RANDOM_DPoP_TOKEN))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateDPoPChallenge)
-            .with(eq(WIRE_ACCESS_TOKEN.token), any<Nonce>(), eq(DPOP_AUTHZ.challenge)).wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.validateDPoPChallenge(eq(WIRE_ACCESS_TOKEN.token), any<Nonce>(), eq(DPOP_AUTHZ.challenge))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::validateOIDCChallenge)
-            .with(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any<Nonce>(), eq(OIDC_AUTHZ.challenge))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.validateOIDCChallenge(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any<Nonce>(), eq(OIDC_AUTHZ.challenge))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::checkOrderRequest)
-            .with(any<String>(), any<Nonce>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.checkOrderRequest(any<String>(), any<Nonce>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::finalize)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::certificateRequest)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
-            .with()
-            .wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.finalize(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.certificateRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -894,41 +821,36 @@ class EnrollE2EICertificateUseCaseTest {
         // then
         result.shouldFail()
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireNonce)
-            .with()
-            .wasInvoked(exactly = once)
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getDPoPToken)
-            .with(any<Nonce>())
-            .wasInvoked(exactly = once)
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireAccessToken).with(eq(RANDOM_DPoP_TOKEN))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getWireNonce()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getDPoPToken(any<Nonce>())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getWireAccessToken(eq(RANDOM_DPoP_TOKEN))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateDPoPChallenge)
-            .with(eq(WIRE_ACCESS_TOKEN.token), any<Nonce>(), eq(DPOP_AUTHZ.challenge)).wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.validateDPoPChallenge(eq(WIRE_ACCESS_TOKEN.token), any<Nonce>(), eq(DPOP_AUTHZ.challenge))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::validateOIDCChallenge)
-            .with(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any<Nonce>(), eq(OIDC_AUTHZ.challenge))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.validateOIDCChallenge(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any<Nonce>(), eq(OIDC_AUTHZ.challenge))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::checkOrderRequest)
-            .with(any<String>(), any<Nonce>())
-            .wasInvoked(exactly = once)
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::finalize)
-            .with(any<String>(), any<Nonce>())
-            .wasInvoked(exactly = once)
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::certificateRequest)
-            .with()
-            .wasNotInvoked()
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
-            .with()
-            .wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.checkOrderRequest(any<String>(), any<Nonce>())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.finalize(any<String>(), any<Nonce>())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.certificateRequest(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -952,28 +874,40 @@ class EnrollE2EICertificateUseCaseTest {
         // then
         result.shouldFail()
 
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::getWireNonce).with().wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getWireNonce()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::getDPoPToken).with(any<Nonce>()).wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getDPoPToken(any<Nonce>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::getWireAccessToken).with(eq(RANDOM_DPoP_TOKEN))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getWireAccessToken(eq(RANDOM_DPoP_TOKEN))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::validateDPoPChallenge)
-            .with(eq(WIRE_ACCESS_TOKEN.token), any<Nonce>(), eq(DPOP_AUTHZ.challenge)).wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.validateDPoPChallenge(eq(WIRE_ACCESS_TOKEN.token), any<Nonce>(), eq(DPOP_AUTHZ.challenge))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::validateOIDCChallenge)
-            .with(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any<Nonce>(), eq(OIDC_AUTHZ.challenge)).wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.validateOIDCChallenge(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any<Nonce>(), eq(OIDC_AUTHZ.challenge))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::checkOrderRequest).with(any<String>(), any<Nonce>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.checkOrderRequest(any<String>(), any<Nonce>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::finalize).with(any<String>(), any<Nonce>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.finalize(any<String>(), any<Nonce>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::certificateRequest).with(any<String>(), any<Nonce>())
-            .wasInvoked(exactly = once)
-        verify(arrangement.e2EIRepository).function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations).with().wasNotInvoked()
+        coVerify {
+            arrangement.e2EIRepository.certificateRequest(any<String>(), any<Nonce>())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -997,40 +931,33 @@ class EnrollE2EICertificateUseCaseTest {
         // then
         result.shouldFail()
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireNonce)
-            .with()
-            .wasInvoked(exactly = once)
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getDPoPToken)
-            .with(any<Nonce>())
-            .wasInvoked(exactly = once)
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireAccessToken).with(eq(RANDOM_DPoP_TOKEN))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getWireNonce()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getDPoPToken(any<Nonce>())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getWireAccessToken(eq(RANDOM_DPoP_TOKEN))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateDPoPChallenge)
-            .with(eq(WIRE_ACCESS_TOKEN.token), any<Nonce>(), eq(DPOP_AUTHZ.challenge))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.validateDPoPChallenge(eq(WIRE_ACCESS_TOKEN.token), any<Nonce>(), eq(DPOP_AUTHZ.challenge))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateOIDCChallenge)
-            .with(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any<Nonce>(), eq(OIDC_AUTHZ.challenge))
-            .wasInvoked(exactly = once)
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::checkOrderRequest)
-            .with(any<String>(), any<Nonce>())
-            .wasInvoked(exactly = once)
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::finalize)
-            .with(any<String>(), any<Nonce>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.validateOIDCChallenge(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any<Nonce>(), eq(OIDC_AUTHZ.challenge))
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.checkOrderRequest(any<String>(), any<Nonce>())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.finalize(any<String>(), any<Nonce>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
-            .with(any<String>(), any<Boolean>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any<String>(), any<Boolean>())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -1054,177 +981,154 @@ class EnrollE2EICertificateUseCaseTest {
         // then
         result.shouldSucceed()
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireNonce)
-            .with()
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getWireNonce()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getDPoPToken)
-            .with(any<Nonce>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getDPoPToken(any<Nonce>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::getWireAccessToken).with(eq(RANDOM_DPoP_TOKEN))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.getWireAccessToken(eq(RANDOM_DPoP_TOKEN))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateDPoPChallenge)
-            .with(eq(WIRE_ACCESS_TOKEN.token), any<Nonce>(), eq(DPOP_AUTHZ.challenge))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.validateDPoPChallenge(eq(WIRE_ACCESS_TOKEN.token), any<Nonce>(), eq(DPOP_AUTHZ.challenge))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::validateOIDCChallenge)
-            .with(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any<Nonce>(), eq(OIDC_AUTHZ.challenge))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.validateOIDCChallenge(eq(RANDOM_ID_TOKEN), eq(REFRESH_TOKEN), any<Nonce>(), eq(OIDC_AUTHZ.challenge))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::checkOrderRequest)
-            .with(any<String>(), any<Nonce>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.checkOrderRequest(any<String>(), any<Nonce>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::finalize)
-            .with(any<String>(), any<Nonce>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.finalize(any<String>(), any<Nonce>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::certificateRequest)
-            .with(any<String>(), any<Nonce>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.certificateRequest(any<String>(), any<Nonce>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.e2EIRepository)
-            .function(arrangement.e2EIRepository::rotateKeysAndMigrateConversations)
-            .with(any<String>(), any<Boolean>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.e2EIRepository.rotateKeysAndMigrateConversations(any<String>(), any<Boolean>())
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
 
         @Mock
-        val e2EIRepository = mock(classOf<E2EIRepository>())
+        val e2EIRepository = mock(E2EIRepository::class)
 
-        fun withInitializingE2EIClientSucceed() = apply {
-            given(e2EIRepository).suspendFunction(e2EIRepository::initFreshE2EIClient)
-                .whenInvokedWith(anything(), anything() )
-                .thenReturn(Either.Right(Unit))
+        suspend fun withInitializingE2EIClientSucceed() = apply {
+            coEvery {
+                e2EIRepository.initFreshE2EIClient(any(), any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withLoadTrustAnchorsResulting(result: Either<E2EIFailure, Unit>) = apply {
-            given(e2EIRepository)
-                .suspendFunction(e2EIRepository::fetchAndSetTrustAnchors)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withLoadTrustAnchorsResulting(result: Either<E2EIFailure, Unit>) = apply {
+            coEvery {
+                e2EIRepository.fetchAndSetTrustAnchors()
+            }.returns(result)
         }
 
-        fun withFetchFederationCertificateChainResulting(result: Either<E2EIFailure, Unit>) = apply {
-            given(e2EIRepository)
-                .suspendFunction(e2EIRepository::fetchFederationCertificates)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withFetchFederationCertificateChainResulting(result: Either<E2EIFailure, Unit>) = apply {
+            coEvery {
+                e2EIRepository.fetchFederationCertificates()
+            }.returns(result)
         }
 
-        fun withLoadACMEDirectoriesResulting(result: Either<E2EIFailure, AcmeDirectory>) = apply {
-            given(e2EIRepository)
-                .suspendFunction(e2EIRepository::loadACMEDirectories)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withLoadACMEDirectoriesResulting(result: Either<E2EIFailure, AcmeDirectory>) = apply {
+            coEvery {
+                e2EIRepository.loadACMEDirectories()
+            }.returns(result)
         }
 
-        fun withGetACMENonceResulting(result: Either<E2EIFailure, Nonce>) = apply {
-            given(e2EIRepository)
-                .suspendFunction(e2EIRepository::getACMENonce)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withGetACMENonceResulting(result: Either<E2EIFailure, Nonce>) = apply {
+            coEvery {
+                e2EIRepository.getACMENonce(any())
+            }.returns(result)
         }
 
-        fun withCreateNewAccountResulting(result: Either<E2EIFailure, Nonce>) = apply {
-            given(e2EIRepository)
-                .suspendFunction(e2EIRepository::createNewAccount)
-                .whenInvokedWith(any(), any())
-                .thenReturn(result)
+        suspend fun withCreateNewAccountResulting(result: Either<E2EIFailure, Nonce>) = apply {
+            coEvery {
+                e2EIRepository.createNewAccount(any(), any())
+            }.returns(result)
         }
 
-        fun withCreateNewOrderResulting(result: Either<E2EIFailure, Triple<NewAcmeOrder, Nonce, String>>) = apply {
-            given(e2EIRepository)
-                .suspendFunction(e2EIRepository::createNewOrder)
-                .whenInvokedWith(any(), any())
-                .thenReturn(result)
+        suspend fun withCreateNewOrderResulting(result: Either<E2EIFailure, Triple<NewAcmeOrder, Nonce, String>>) = apply {
+            coEvery {
+                e2EIRepository.createNewOrder(any(), any())
+            }.returns(result)
         }
 
-        fun withGettingChallenges(result: Either<E2EIFailure, AuthorizationResult>) = apply {
-            given(e2EIRepository)
-                .suspendFunction(e2EIRepository::getAuthorizations)
-                .whenInvokedWith(any(), any())
-                .thenReturn(result)
+        suspend fun withGettingChallenges(result: Either<E2EIFailure, AuthorizationResult>) = apply {
+            coEvery {
+                e2EIRepository.getAuthorizations(any(), any())
+            }.returns(result)
         }
 
-        fun withGettingRefreshTokenSucceeding() = apply {
-            given(e2EIRepository).suspendFunction(e2EIRepository::getOAuthRefreshToken).whenInvoked()
-                .thenReturn(Either.Right(REFRESH_TOKEN))
+        suspend fun withGettingRefreshTokenSucceeding() = apply {
+            coEvery {
+                e2EIRepository.getOAuthRefreshToken()
+            }.returns(Either.Right(REFRESH_TOKEN))
         }
 
-        fun withGetWireNonceResulting(result: Either<E2EIFailure, Nonce>) = apply {
-            given(e2EIRepository)
-                .suspendFunction(e2EIRepository::getWireNonce)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withGetWireNonceResulting(result: Either<E2EIFailure, Nonce>) = apply {
+            coEvery {
+                e2EIRepository.getWireNonce()
+            }.returns(result)
         }
 
-        fun withGetDPoPTokenResulting(result: Either<E2EIFailure, String>) = apply {
-            given(e2EIRepository)
-                .suspendFunction(e2EIRepository::getDPoPToken)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withGetDPoPTokenResulting(result: Either<E2EIFailure, String>) = apply {
+            coEvery {
+                e2EIRepository.getDPoPToken(any())
+            }.returns(result)
         }
 
-        fun withGetWireAccessTokenResulting(result: Either<E2EIFailure, AccessTokenResponse>) = apply {
-            given(e2EIRepository)
-                .suspendFunction(e2EIRepository::getWireAccessToken)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withGetWireAccessTokenResulting(result: Either<E2EIFailure, AccessTokenResponse>) = apply {
+            coEvery {
+                e2EIRepository.getWireAccessToken(any())
+            }.returns(result)
         }
 
-        fun withValidateDPoPChallengeResulting(result: Either<E2EIFailure, ChallengeResponse>) = apply {
-            given(e2EIRepository)
-                .suspendFunction(e2EIRepository::validateDPoPChallenge)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(result)
+        suspend fun withValidateDPoPChallengeResulting(result: Either<E2EIFailure, ChallengeResponse>) = apply {
+            coEvery {
+                e2EIRepository.validateDPoPChallenge(any(), any(), any())
+            }.returns(result)
         }
 
-        fun withValidateOIDCChallengeResulting(result: Either<E2EIFailure, ChallengeResponse>) = apply {
-            given(e2EIRepository)
-                .suspendFunction(e2EIRepository::validateOIDCChallenge)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(result)
+        suspend fun withValidateOIDCChallengeResulting(result: Either<E2EIFailure, ChallengeResponse>) = apply {
+            coEvery {
+                e2EIRepository.validateOIDCChallenge(any(), any(), any(), any())
+            }.returns(result)
         }
 
-        fun withCheckOrderRequestResulting(result: Either<E2EIFailure, Pair<ACMEResponse, String>>) = apply {
-            given(e2EIRepository)
-                .suspendFunction(e2EIRepository::checkOrderRequest)
-                .whenInvokedWith(any(), any())
-                .thenReturn(result)
+        suspend fun withCheckOrderRequestResulting(result: Either<E2EIFailure, Pair<ACMEResponse, String>>) = apply {
+            coEvery {
+                e2EIRepository.checkOrderRequest(any(), any())
+            }.returns(result)
         }
 
-        fun withFinalizeResulting(result: Either<E2EIFailure, Pair<ACMEResponse, String>>) = apply {
-            given(e2EIRepository)
-                .suspendFunction(e2EIRepository::finalize)
-                .whenInvokedWith(any(), any())
-                .thenReturn(result)
+        suspend fun withFinalizeResulting(result: Either<E2EIFailure, Pair<ACMEResponse, String>>) = apply {
+            coEvery {
+                e2EIRepository.finalize(any(), any())
+            }.returns(result)
         }
 
-        fun withRotateKeysAndMigrateConversations(result: Either<E2EIFailure, Unit>) = apply {
-            given(e2EIRepository)
-                .suspendFunction(e2EIRepository::rotateKeysAndMigrateConversations)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withRotateKeysAndMigrateConversations(result: Either<E2EIFailure, Unit>) = apply {
+            coEvery {
+                e2EIRepository.rotateKeysAndMigrateConversations(any(), any())
+            }.returns(result)
         }
 
-        fun withCertificateRequestResulting(result: Either<E2EIFailure, ACMEResponse>) = apply {
-            given(e2EIRepository)
-                .suspendFunction(e2EIRepository::certificateRequest)
-                .whenInvokedWith(any(), any())
-                .thenReturn(result)
+        suspend fun withCertificateRequestResulting(result: Either<E2EIFailure, ACMEResponse>) = apply {
+            coEvery {
+                e2EIRepository.certificateRequest(any(), any())
+            }.returns(result)
         }
 
         fun arrange(): Pair<Arrangement, EnrollE2EIUseCase> = this to EnrollE2EIUseCaseImpl(e2EIRepository)

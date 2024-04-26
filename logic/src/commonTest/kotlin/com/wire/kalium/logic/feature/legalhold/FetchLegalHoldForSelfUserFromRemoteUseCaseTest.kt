@@ -20,10 +20,10 @@ package com.wire.kalium.logic.feature.legalhold
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.team.TeamRepository
+import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
@@ -31,12 +31,12 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
-import io.mockative.anything
+import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -54,10 +54,9 @@ class FetchLegalHoldForSelfUserFromRemoteUseCaseTest {
         // when
         useCase.invoke()
         // then
-        verify(arrangement.teamRepository)
-            .suspendFunction(arrangement.teamRepository::fetchLegalHoldStatus)
-            .with(eq(selfTeamId))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.teamRepository.fetchLegalHoldStatus(eq(selfTeamId))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -87,7 +86,7 @@ class FetchLegalHoldForSelfUserFromRemoteUseCaseTest {
         // when
         val result = useCase.invoke()
         // then
-        result.shouldSucceed() {
+        result.shouldSucceed {
             assertEquals(status, it)
         }
     }
@@ -101,7 +100,7 @@ class FetchLegalHoldForSelfUserFromRemoteUseCaseTest {
         // when
         val result = useCase.invoke()
         // then
-        result.shouldFail() {
+        result.shouldFail {
             assertEquals(StorageFailure.DataNotFound, it)
         }
     }
@@ -118,7 +117,7 @@ class FetchLegalHoldForSelfUserFromRemoteUseCaseTest {
         // when
         val result = useCase()
         // then
-        result.shouldFail() {
+        result.shouldFail {
             assertEquals(failure, it)
         }
     }
@@ -127,6 +126,7 @@ class FetchLegalHoldForSelfUserFromRemoteUseCaseTest {
 
         @Mock
         val teamRepository: TeamRepository = mock(TeamRepository::class)
+
         @Mock
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
         val useCase: FetchLegalHoldForSelfUserFromRemoteUseCase by lazy {
@@ -135,17 +135,16 @@ class FetchLegalHoldForSelfUserFromRemoteUseCaseTest {
 
         fun arrange() = this to useCase
 
-        fun withGetSelfTeamResult(result: Either<CoreFailure, TeamId?>) = apply {
-            given(selfTeamIdProvider)
-                .suspendFunction(selfTeamIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withGetSelfTeamResult(result: Either<CoreFailure, TeamId?>) = apply {
+            coEvery {
+                selfTeamIdProvider.invoke()
+            }.returns(result)
         }
-        fun withFetchLegalHoldStatusResult(result: Either<CoreFailure, LegalHoldStatus>) = apply {
-            given(teamRepository)
-                .suspendFunction(teamRepository::fetchLegalHoldStatus)
-                .whenInvokedWith(anything())
-                .thenReturn(result)
+
+        suspend fun withFetchLegalHoldStatusResult(result: Either<CoreFailure, LegalHoldStatus>) = apply {
+            coEvery {
+                teamRepository.fetchLegalHoldStatus(any())
+            }.returns(result)
         }
     }
 }

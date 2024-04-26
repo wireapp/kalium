@@ -23,11 +23,11 @@ import com.wire.kalium.logic.feature.user.MarkEnablingE2EIAsNotifiedUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.time.Duration
@@ -43,10 +43,9 @@ class MarkEnablingE2EIAsNotifiedUseCaseTest {
 
         useCase(2.days)
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::snoozeE2EINotification)
-            .with(eq(1.days))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userConfigRepository.snoozeE2EINotification(eq(1.days))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -55,10 +54,9 @@ class MarkEnablingE2EIAsNotifiedUseCaseTest {
 
         useCase(5.hours)
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::snoozeE2EINotification)
-            .with(eq(4.hours))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userConfigRepository.snoozeE2EINotification(eq(4.hours))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -67,10 +65,9 @@ class MarkEnablingE2EIAsNotifiedUseCaseTest {
 
         useCase(2.hours)
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::snoozeE2EINotification)
-            .with(eq(1.hours))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userConfigRepository.snoozeE2EINotification(eq(1.hours))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -79,10 +76,9 @@ class MarkEnablingE2EIAsNotifiedUseCaseTest {
 
         useCase(16.minutes)
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::snoozeE2EINotification)
-            .with(eq(15.minutes))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userConfigRepository.snoozeE2EINotification(eq(15.minutes))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -91,10 +87,9 @@ class MarkEnablingE2EIAsNotifiedUseCaseTest {
 
         useCase(14.minutes)
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::snoozeE2EINotification)
-            .with(eq(5.minutes))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userConfigRepository.snoozeE2EINotification(eq(5.minutes))
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -102,10 +97,9 @@ class MarkEnablingE2EIAsNotifiedUseCaseTest {
         val userConfigRepository = mock(UserConfigRepository::class)
 
         init {
-            given(userConfigRepository)
-                .function(userConfigRepository::snoozeE2EINotification)
-                .whenInvokedWith(any<Duration>())
-                .thenReturn(Either.Right(Unit))
+            every {
+                userConfigRepository.snoozeE2EINotification(any<Duration>())
+            }.returns(Either.Right(Unit))
         }
 
         private var markMLSE2EIEnableChangeAsNotified: MarkEnablingE2EIAsNotifiedUseCase =

@@ -25,18 +25,15 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class AddServiceToConversationUseCaseTest {
 
     @Test
@@ -50,10 +47,9 @@ class AddServiceToConversationUseCaseTest {
 
         assertIs<AddServiceToConversationUseCase.Result.Success>(result)
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::addService)
-            .with(eq(serviceId), eq(TestConversation.ID))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationGroupRepository.addService(eq(serviceId), eq(TestConversation.ID))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -68,10 +64,9 @@ class AddServiceToConversationUseCaseTest {
         assertIs<AddServiceToConversationUseCase.Result.Failure>(result)
         assertIs<MLSFailure.Generic>(result.cause)
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::addService)
-            .with(eq(serviceId), eq(TestConversation.ID))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationGroupRepository.addService(eq(serviceId), eq(TestConversation.ID))
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -82,11 +77,10 @@ class AddServiceToConversationUseCaseTest {
             conversationGroupRepository
         )
 
-        fun withAddService(either: Either<CoreFailure, Unit>) = apply {
-            given(conversationGroupRepository)
-                .suspendFunction(conversationGroupRepository::addService)
-                .whenInvokedWith(any(), any())
-                .thenReturn(either)
+        suspend fun withAddService(either: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                conversationGroupRepository.addService(any(), any())
+            }.returns(either)
         }
 
         fun arrange() = this to addService

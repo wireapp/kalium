@@ -27,10 +27,10 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -46,9 +46,9 @@ class SaveMessageDraftUseCaseTest {
 
         saveMessageDraft(MESSAGE_DRAFT)
 
-        verify(arrangement.messageDraftRepository)
-            .coroutine { arrangement.messageDraftRepository.saveMessageDraft(MESSAGE_DRAFT) }
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageDraftRepository.saveMessageDraft(MESSAGE_DRAFT)
+        }.wasInvoked(exactly = once)
     }
 
     private inner class Arrangement {
@@ -64,9 +64,9 @@ class SaveMessageDraftUseCaseTest {
             messageDraft: MessageDraft,
             response: Either<StorageFailure, Unit>
         ) = apply {
-            given(messageDraftRepository)
-                .coroutine { messageDraftRepository.saveMessageDraft(messageDraft) }
-                .thenReturn(response)
+            coEvery {
+                messageDraftRepository.saveMessageDraft(messageDraft)
+            }.returns(response)
         }
 
         fun arrange() = this to saveMessageDraft

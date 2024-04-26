@@ -32,12 +32,12 @@ import com.wire.kalium.logic.util.shouldSucceed
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -55,15 +55,13 @@ class CheckRevocationListUseCaseTest {
             val result = checkRevocationList.invoke(DUMMY_URL)
 
             result.shouldFail()
-            verify(arrangement.certificateRevocationListRepository)
-                .suspendFunction(arrangement.certificateRevocationListRepository::getClientDomainCRL)
-                .with(any())
-                .wasInvoked(once)
+            coVerify {
+                arrangement.certificateRevocationListRepository.getClientDomainCRL(any())
+            }.wasInvoked(once)
 
-            verify(arrangement.coreCrypto)
-                .suspendFunction(arrangement.coreCrypto::registerCrl)
-                .with(any())
-                .wasNotInvoked()
+            coVerify {
+                arrangement.coreCrypto.registerCrl(any(), any())
+            }.wasNotInvoked()
         }
 
     @Test
@@ -78,19 +76,17 @@ class CheckRevocationListUseCaseTest {
             val result = checkRevocationList.invoke(DUMMY_URL)
 
             result.shouldFail()
-            verify(arrangement.certificateRevocationListRepository)
-                .suspendFunction(arrangement.certificateRevocationListRepository::getClientDomainCRL)
-                .with(any())
-                .wasInvoked(once)
+            coVerify {
+                arrangement.certificateRevocationListRepository.getClientDomainCRL(any())
+            }.wasInvoked(once)
 
-            verify(arrangement.currentClientIdProvider)
-                .suspendFunction(arrangement.currentClientIdProvider::invoke)
-                .wasInvoked(once)
+            coVerify {
+                arrangement.currentClientIdProvider.invoke()
+            }.wasInvoked(once)
 
-            verify(arrangement.coreCrypto)
-                .suspendFunction(arrangement.coreCrypto::registerCrl)
-                .with(any())
-                .wasNotInvoked()
+            coVerify {
+                arrangement.coreCrypto.registerCrl(any(), any())
+            }.wasNotInvoked()
         }
 
     @Test
@@ -106,19 +102,17 @@ class CheckRevocationListUseCaseTest {
             val result = checkRevocationList.invoke(DUMMY_URL)
 
             result.shouldFail()
-            verify(arrangement.currentClientIdProvider)
-                .suspendFunction(arrangement.currentClientIdProvider::invoke)
-                .wasInvoked(once)
+            coVerify {
+                arrangement.currentClientIdProvider.invoke()
+            }.wasInvoked(once)
 
-            verify(arrangement.mlsClientProvider)
-                .suspendFunction(arrangement.mlsClientProvider::getCoreCrypto)
-                .with(eq(TestClient.CLIENT_ID))
-                .wasInvoked(once)
+            coVerify {
+                arrangement.mlsClientProvider.getCoreCrypto(eq(TestClient.CLIENT_ID))
+            }.wasInvoked(once)
 
-            verify(arrangement.coreCrypto)
-                .suspendFunction(arrangement.coreCrypto::registerCrl)
-                .with(any())
-                .wasNotInvoked()
+            coVerify {
+                arrangement.coreCrypto.registerCrl(any(), any())
+            }.wasNotInvoked()
         }
 
     @Test
@@ -137,19 +131,17 @@ class CheckRevocationListUseCaseTest {
             result.shouldSucceed {
                 assertEquals(EXPIRATION, it)
             }
-            verify(arrangement.currentClientIdProvider)
-                .suspendFunction(arrangement.currentClientIdProvider::invoke)
-                .wasInvoked(once)
+            coVerify {
+                arrangement.currentClientIdProvider.invoke()
+            }.wasInvoked(once)
 
-            verify(arrangement.mlsClientProvider)
-                .suspendFunction(arrangement.mlsClientProvider::getCoreCrypto)
-                .with(eq(TestClient.CLIENT_ID))
-                .wasInvoked(once)
+            coVerify {
+                arrangement.mlsClientProvider.getCoreCrypto(eq(TestClient.CLIENT_ID))
+            }.wasInvoked(once)
 
-            verify(arrangement.coreCrypto)
-                .suspendFunction(arrangement.coreCrypto::registerCrl)
-                .with(any())
-                .wasInvoked(once)
+            coVerify {
+                arrangement.coreCrypto.registerCrl(any(), any())
+            }.wasInvoked(once)
         }
 
     @Test
@@ -170,10 +162,9 @@ class CheckRevocationListUseCaseTest {
                 assertEquals(EXPIRATION, it)
             }
 
-            verify(arrangement.coreCrypto)
-                .suspendFunction(arrangement.coreCrypto::registerCrl)
-                .with(any())
-                .wasInvoked(once)
+            coVerify {
+                arrangement.coreCrypto.registerCrl(any(), any())
+            }.wasInvoked(once)
         }
 
     @Test
@@ -191,99 +182,89 @@ class CheckRevocationListUseCaseTest {
             assertEquals(E2EIFailure.Disabled, it)
         }
 
-        verify(arrangement.coreCrypto)
-            .suspendFunction(arrangement.coreCrypto::registerCrl)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.coreCrypto.registerCrl(any(), any())
+        }.wasNotInvoked()
     }
 
     internal class Arrangement {
 
         @Mock
-        val certificateRevocationListRepository = mock(classOf<CertificateRevocationListRepository>())
+        val certificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
 
         @Mock
-        val coreCrypto = mock(classOf<CoreCryptoCentral>())
+        val coreCrypto = mock(CoreCryptoCentral::class)
 
         @Mock
         val currentClientIdProvider =
-            mock(classOf<CurrentClientIdProvider>())
+            mock(CurrentClientIdProvider::class)
 
         @Mock
         val mlsClientProvider =
-            mock(classOf<MLSClientProvider>())
+            mock(MLSClientProvider::class)
 
         @Mock
-        val isE2EIEnabledUseCase = mock(classOf<IsE2EIEnabledUseCase>())
+        val isE2EIEnabledUseCase = mock(IsE2EIEnabledUseCase::class)
 
         fun arrange() = this to CheckRevocationListUseCaseImpl(
             certificateRevocationListRepository = certificateRevocationListRepository,
             currentClientIdProvider = currentClientIdProvider,
             mlsClientProvider = mlsClientProvider,
-            isE2EIEnabledUseCase =  isE2EIEnabledUseCase
+            isE2EIEnabledUseCase = isE2EIEnabledUseCase
         )
 
-        fun withE2EIRepositoryFailure() = apply {
-            given(certificateRevocationListRepository)
-                .suspendFunction(certificateRevocationListRepository::getClientDomainCRL)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Left(E2EIFailure.Generic(Exception())))
+        suspend fun withE2EIRepositoryFailure() = apply {
+            coEvery {
+                certificateRevocationListRepository.getClientDomainCRL(any())
+            }.returns(Either.Left(E2EIFailure.Generic(Exception())))
         }
 
-        fun withE2EIRepositorySuccess() = apply {
-            given(certificateRevocationListRepository)
-                .suspendFunction(certificateRevocationListRepository::getClientDomainCRL)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right("result".toByteArray()))
+        suspend fun withE2EIRepositorySuccess() = apply {
+            coEvery {
+                certificateRevocationListRepository.getClientDomainCRL(any())
+            }.returns(Either.Right("result".toByteArray()))
         }
 
-        fun withCurrentClientIdProviderFailure() = apply {
-            given(currentClientIdProvider)
-                .suspendFunction(currentClientIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Left(CoreFailure.SyncEventOrClientNotFound))
+        suspend fun withCurrentClientIdProviderFailure() = apply {
+            coEvery {
+                currentClientIdProvider.invoke()
+            }.returns(Either.Left(CoreFailure.SyncEventOrClientNotFound))
         }
 
-        fun withCurrentClientIdProviderSuccess() = apply {
-            given(currentClientIdProvider)
-                .suspendFunction(currentClientIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Right(TestClient.CLIENT_ID))
+        suspend fun withCurrentClientIdProviderSuccess() = apply {
+            coEvery {
+                currentClientIdProvider.invoke()
+            }.returns(Either.Right(TestClient.CLIENT_ID))
         }
 
-        fun withMlsClientProviderFailure() = apply {
-            given(mlsClientProvider)
-                .suspendFunction(mlsClientProvider::getCoreCrypto)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Left(CoreFailure.SyncEventOrClientNotFound))
+        suspend fun withMlsClientProviderFailure() = apply {
+            coEvery {
+                mlsClientProvider.getCoreCrypto(any())
+            }.returns(Either.Left(CoreFailure.SyncEventOrClientNotFound))
         }
 
-        fun withMlsClientProviderSuccess() = apply {
-            given(mlsClientProvider)
-                .suspendFunction(mlsClientProvider::getCoreCrypto)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(coreCrypto))
+        suspend fun withMlsClientProviderSuccess() = apply {
+            coEvery {
+                mlsClientProvider.getCoreCrypto(any())
+            }.returns(Either.Right(coreCrypto))
         }
 
-        fun withRegisterCrl() = apply {
-            given(coreCrypto)
-                .suspendFunction(coreCrypto::registerCrl)
-                .whenInvokedWith(any(), any())
-                .thenReturn(CrlRegistration(false, EXPIRATION))
+        suspend fun withRegisterCrl() = apply {
+            coEvery {
+                coreCrypto.registerCrl(any(), any())
+            }.returns(CrlRegistration(false, EXPIRATION))
         }
 
-        fun withRegisterCrlFlagChanged() = apply {
-            given(coreCrypto)
-                .suspendFunction(coreCrypto::registerCrl)
-                .whenInvokedWith(any())
-                .thenReturn(CrlRegistration(true, EXPIRATION))
+        suspend fun withRegisterCrlFlagChanged() = apply {
+            coEvery {
+                coreCrypto.registerCrl(any(), any())
+            }.returns(CrlRegistration(true, EXPIRATION))
         }
 
         fun withE2EIEnabledAndMLSEnabled(result: Boolean) = apply {
-            given(isE2EIEnabledUseCase)
-                .function(isE2EIEnabledUseCase::invoke)
-                .whenInvoked()
-                .thenReturn(result)
+            every {
+                isE2EIEnabledUseCase.invoke()
+            }.returns(result)
         }
     }
 

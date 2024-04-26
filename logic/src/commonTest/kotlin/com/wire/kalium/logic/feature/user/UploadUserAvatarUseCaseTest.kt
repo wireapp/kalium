@@ -32,13 +32,11 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import okio.Path
 import okio.Path.Companion.toPath
@@ -46,7 +44,6 @@ import okio.fakefilesystem.FakeFileSystem
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class UploadUserAvatarUseCaseTest {
 
     @Test
@@ -65,15 +62,13 @@ class UploadUserAvatarUseCaseTest {
         assertEquals(expected.key, (actual as UploadAvatarResult.Success).userAssetId.value)
 
         with(arrangement) {
-            verify(assetRepository)
-                .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
-                .with(any(), any(), any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                assetRepository.uploadAndPersistPublicAsset(any(), any(), any())
+            }.wasInvoked(exactly = once)
 
-            verify(userRepository)
-                .suspendFunction(userRepository::updateSelfUser)
-                .with(eq(null), eq(null), eq(expected.key))
-                .wasInvoked(exactly = once)
+            coVerify {
+                userRepository.updateSelfUser(eq<String?>(null), eq<Int?>(null), eq(expected.key))
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -93,25 +88,23 @@ class UploadUserAvatarUseCaseTest {
         assertEquals(CoreFailure.Unknown::class, (actual as UploadAvatarResult.Failure).coreFailure::class)
 
         with(arrangement) {
-            verify(assetRepository)
-                .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
-                .with(any(), any(), any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                assetRepository.uploadAndPersistPublicAsset(any(), any(), any())
+            }.wasInvoked(exactly = once)
 
-            verify(userRepository)
-                .suspendFunction(userRepository::updateSelfUser)
-                .with(eq(null), eq(null), any())
-                .wasNotInvoked()
+            coVerify {
+                userRepository.updateSelfUser(eq<String?>(null), eq<Int?>(null), any())
+            }.wasNotInvoked()
         }
     }
 
     private class Arrangement {
 
         @Mock
-        val assetRepository = mock(classOf<AssetRepository>())
+        val assetRepository = mock(AssetRepository::class)
 
         @Mock
-        val userRepository = mock(classOf<UserRepository>())
+        val userRepository = mock(UserRepository::class)
 
         private val uploadUserAvatarUseCase: UploadUserAvatarUseCase = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
 
@@ -144,24 +137,21 @@ class UploadUserAvatarUseCaseTest {
             return this
         }
 
-        fun withSuccessfulUploadResponse(expectedResponse: UploadedAssetId): Arrangement {
-            given(assetRepository)
-                .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Either.Right(expectedResponse))
+        suspend fun withSuccessfulUploadResponse(expectedResponse: UploadedAssetId): Arrangement {
+            coEvery {
+                assetRepository.uploadAndPersistPublicAsset(any(), any(), any())
+            }.returns(Either.Right(expectedResponse))
 
-            given(userRepository)
-                .suspendFunction(userRepository::updateSelfUser)
-                .whenInvokedWith(eq(null), eq(null), eq(expectedResponse.key))
-                .thenReturn(Either.Right(Unit))
+            coEvery {
+                userRepository.updateSelfUser(eq<String?>(null), eq<Int?>(null), eq(expectedResponse.key))
+            }.returns(Either.Right(Unit))
             return this
         }
 
-        fun withErrorResponse(expectedError: CoreFailure): Arrangement {
-            given(assetRepository)
-                .suspendFunction(assetRepository::uploadAndPersistPublicAsset)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Either.Left(expectedError))
+        suspend fun withErrorResponse(expectedError: CoreFailure): Arrangement {
+            coEvery {
+                assetRepository.uploadAndPersistPublicAsset(any(), any(), any())
+            }.returns(Either.Left(expectedError))
             return this
         }
 

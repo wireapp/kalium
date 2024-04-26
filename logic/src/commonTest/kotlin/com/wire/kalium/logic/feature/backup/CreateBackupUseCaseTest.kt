@@ -39,12 +39,11 @@ import com.wire.kalium.persistence.db.UserDBSecret
 import io.ktor.util.decodeBase64Bytes
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -100,9 +99,9 @@ class CreateBackupUseCaseTest {
         // Then
         assertTrue(result is CreateBackupResult.Success)
         assertTrue(result.backupFilePath.name.contains(".zip"))
-        verify(arrangement.clientIdProvider)
-            .suspendFunction(arrangement.clientIdProvider::invoke)
-            .wasInvoked(once)
+        coVerify {
+            arrangement.clientIdProvider.invoke()
+        }.wasInvoked(once)
 
         // Check that there is a metadata file and a db file whose content is the same as the one we provided
         with(fakeFileSystem) {
@@ -140,9 +139,9 @@ class CreateBackupUseCaseTest {
         // Then
         assertTrue(result is CreateBackupResult.Failure)
         assertTrue(result.coreFailure is StorageFailure.DataNotFound)
-        verify(arrangement.clientIdProvider)
-            .suspendFunction(arrangement.clientIdProvider::invoke)
-            .wasNotInvoked()
+        coVerify {
+            arrangement.clientIdProvider.invoke()
+        }.wasNotInvoked()
     }
 
     @Test
@@ -167,9 +166,9 @@ class CreateBackupUseCaseTest {
 
         // Then
         assertIs<CreateBackupResult.Success>(result)
-        verify(arrangement.clientIdProvider)
-            .suspendFunction(arrangement.clientIdProvider::invoke)
-            .wasInvoked(once)
+        coVerify {
+            arrangement.clientIdProvider.invoke()
+        }.wasInvoked(once)
 
         // Check there is only one .cc20 file in the backup file
         with(fakeFileSystem) {
@@ -186,67 +185,55 @@ class CreateBackupUseCaseTest {
         private var userId = UserId("some-user-id", "some-user-domain")
 
         @Mock
-        val clientIdProvider = mock(classOf<CurrentClientIdProvider>())
+        val clientIdProvider = mock(CurrentClientIdProvider::class)
 
         @Mock
-        val userRepository = mock(classOf<UserRepository>())
+        val userRepository = mock(UserRepository::class)
 
         @Mock
-        val databaseExporter = mock(classOf<DatabaseExporter>())
+        val databaseExporter = mock(DatabaseExporter::class)
 
         @Mock
-        val securityHelper = mock(classOf<SecurityHelper>())
+        val securityHelper = mock(SecurityHelper::class)
 
         fun withUserDBPassphrase(passphrase: UserDBSecret?) = apply {
-            given(securityHelper)
-                .function(securityHelper::userDBOrSecretNull)
-                .whenInvokedWith(any())
-                .thenReturn(passphrase)
+            every {
+                securityHelper.userDBOrSecretNull(any())
+            }.returns(passphrase)
         }
 
-        fun withObservedClientId(clientId: ClientId?) = apply {
-            given(clientIdProvider)
-                .suspendFunction(clientIdProvider::invoke)
-                .whenInvoked()
-                .then {
-                    clientId?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
-                }
+        suspend fun withObservedClientId(clientId: ClientId?) = apply {
+            coEvery {
+                clientIdProvider.invoke()
+            }.returns(clientId?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound))
         }
 
         fun withExportedDB(dbName: String?, dbData: ByteArray) = apply {
             with(fakeFileSystem) {
                 val exportedDBPath = dbName?.let { rootDBPath / it } ?: "null".toPath()
                 sink(exportedDBPath).buffer().use { it.write(dbData) }
-                given(databaseExporter)
-                    .function(databaseExporter::exportToPlainDB)
-                    .whenInvokedWith(anything())
-                    .thenReturn(exportedDBPath.toString())
+                every {
+                    databaseExporter.exportToPlainDB(any())
+                }.returns(exportedDBPath.toString())
             }
         }
 
         fun withExportedDBError() = apply {
-            given(databaseExporter)
-                .function(databaseExporter::exportToPlainDB)
-                .whenInvokedWith(anything())
-                .thenReturn(null)
+            every {
+                databaseExporter.exportToPlainDB(any())
+            }.returns(null)
         }
 
-        fun withDeleteBackupDB(result: Boolean, throwable: Throwable? = null) = apply {
-            if (throwable != null) given(databaseExporter)
-                .function(databaseExporter::deleteBackupDBFile)
-                .whenInvoked()
-                .thenThrow(throwable)
-            else given(databaseExporter)
-                .function(databaseExporter::deleteBackupDBFile)
-                .whenInvoked()
-                .thenReturn(result)
+        fun withDeleteBackupDB(result: Boolean) = apply {
+            every {
+                databaseExporter.deleteBackupDBFile()
+            }.returns(result)
         }
 
-        fun withUserHandle(selfUser: SelfUser) = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::getSelfUser)
-                .whenInvoked()
-                .thenReturn(selfUser)
+        suspend fun withUserHandle(selfUser: SelfUser) = apply {
+            coEvery {
+                userRepository.getSelfUser()
+            }.returns(selfUser)
         }
 
         fun arrange(): Pair<Arrangement, CreateBackupUseCase> =

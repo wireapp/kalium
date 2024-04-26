@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.asset;
+package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.logic.feature.asset.GetAssetSizeLimitUseCaseImpl.Companion.ASSET_SIZE_DEFAULT_LIMIT_BYTES
 import com.wire.kalium.logic.feature.asset.GetAssetSizeLimitUseCaseImpl.Companion.ASSET_SIZE_TEAM_USER_LIMIT_BYTES
@@ -23,11 +23,10 @@ import com.wire.kalium.logic.feature.asset.GetAssetSizeLimitUseCaseImpl.Companio
 import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -64,9 +63,9 @@ class GetAssetSizeLimitUseCaseTest {
         advanceUntilIdle()
 
         assertEquals(assetLimit, IMAGE_SIZE_LIMIT_BYTES)
-        verify(arrangement.isSelfATeamMember)
-            .suspendFunction(arrangement.isSelfATeamMember::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.isSelfATeamMember.invoke()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -81,9 +80,9 @@ class GetAssetSizeLimitUseCaseTest {
         advanceUntilIdle()
 
         assertEquals(assetLimit, ASSET_SIZE_DEFAULT_LIMIT_BYTES)
-        verify(arrangement.isSelfATeamMember)
-            .suspendFunction(arrangement.isSelfATeamMember::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.isSelfATeamMember.invoke()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -98,21 +97,20 @@ class GetAssetSizeLimitUseCaseTest {
         advanceUntilIdle()
 
         assertEquals(assetLimit, ASSET_SIZE_TEAM_USER_LIMIT_BYTES)
-        verify(arrangement.isSelfATeamMember)
-            .suspendFunction(arrangement.isSelfATeamMember::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.isSelfATeamMember.invoke()
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
 
         @Mock
-        val isSelfATeamMember = mock(classOf<IsSelfATeamMemberUseCase>())
+        val isSelfATeamMember = mock(IsSelfATeamMemberUseCase::class)
 
-        fun withIsSelfATeamMember(hasUserTeam: Boolean) = apply {
-            given(isSelfATeamMember)
-                .suspendFunction(isSelfATeamMember::invoke)
-                .whenInvoked()
-                .thenReturn(hasUserTeam)
+        suspend fun withIsSelfATeamMember(hasUserTeam: Boolean) = apply {
+            coEvery {
+                isSelfATeamMember.invoke()
+            }.returns(hasUserTeam)
         }
 
         fun arrange() = this to GetAssetSizeLimitUseCaseImpl(isSelfATeamMember, dispatcher)
