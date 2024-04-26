@@ -82,8 +82,8 @@ import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepositoryDataSource
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryImpl
-import com.wire.kalium.logic.data.e2ei.MLSConversationsVerificationStatusesHandler
-import com.wire.kalium.logic.data.e2ei.MLSConversationsVerificationStatusesHandlerImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.ObserveE2EIConversationsVerificationStatusesUseCase
+import com.wire.kalium.logic.feature.e2ei.usecase.ObserveE2EIConversationsVerificationStatusesUseCaseImpl
 import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
@@ -214,6 +214,10 @@ import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorkerImpl
 import com.wire.kalium.logic.feature.e2ei.CheckCrlRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCaseImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.FetchConversationMLSVerificationStatusUseCase
+import com.wire.kalium.logic.feature.e2ei.usecase.FetchConversationMLSVerificationStatusUseCaseImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseCase
+import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
@@ -1955,6 +1959,9 @@ class UserSessionScope internal constructor(
     val observeScreenshotCensoringConfig: ObserveScreenshotCensoringConfigUseCase
         get() = ObserveScreenshotCensoringConfigUseCaseImpl(userConfigRepository = userConfigRepository)
 
+    val fetchConversationMLSVerificationStatus: FetchConversationMLSVerificationStatusUseCase
+        get() = FetchConversationMLSVerificationStatusUseCaseImpl(conversationRepository, fetchMLSVerificationStatusUseCase)
+
     val kaliumFileSystem: KaliumFileSystem by lazy {
         // Create the cache and asset storage directories
         KaliumFileSystemImpl(dataStoragePaths).also {
@@ -1981,15 +1988,22 @@ class UserSessionScope internal constructor(
 
     private val epochChangesObserver by lazy { EpochChangesObserverImpl(epochsFlow) }
 
-    private val mlsConversationsVerificationStatusesHandler: MLSConversationsVerificationStatusesHandler by lazy {
-        MLSConversationsVerificationStatusesHandlerImpl(
+    private val fetchMLSVerificationStatusUseCase: FetchMLSVerificationStatusUseCase by lazy {
+        FetchMLSVerificationStatusUseCaseImpl(
             conversationRepository,
             persistMessage,
             mlsClientProvider,
             mlsConversationRepository,
-            epochChangesObserver,
             userId,
             userRepository,
+            userScopedLogger,
+        )
+    }
+
+    private val observeE2EIConversationsVerificationStatuses: ObserveE2EIConversationsVerificationStatusesUseCase by lazy {
+        ObserveE2EIConversationsVerificationStatusesUseCaseImpl(
+            fetchMLSVerificationStatusUseCase,
+            epochChangesObserver,
             userScopedLogger,
         )
     }
@@ -2034,7 +2048,11 @@ class UserSessionScope internal constructor(
         }
 
         launch {
-            mlsConversationsVerificationStatusesHandler.invoke()
+            avsSyncStateReporter.execute()
+        }
+
+        launch {
+            observeE2EIConversationsVerificationStatuses.invoke()
         }
 
         launch {
