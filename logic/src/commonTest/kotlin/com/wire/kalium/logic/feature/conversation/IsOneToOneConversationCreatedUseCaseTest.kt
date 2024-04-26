@@ -60,13 +60,14 @@ class IsOneToOneConversationCreatedUseCaseTest {
         assertFalse(result)
     }
 
-    private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
+    private suspend fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     internal class Arrangement(
-        private val block: Arrangement.() -> Unit
+        private val block: suspend Arrangement.() -> Unit
     ) : UserRepositoryArrangement by UserRepositoryArrangementImpl() {
 
-        fun arrange() = block().run {
+        suspend fun arrange() = run {
+            block()
             this@Arrangement to IsOneToOneConversationCreatedUseCaseImpl(
                 userRepository = userRepository
             )
