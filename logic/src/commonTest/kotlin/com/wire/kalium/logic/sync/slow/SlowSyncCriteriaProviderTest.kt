@@ -33,7 +33,6 @@ import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertIs
 
@@ -184,11 +183,10 @@ class SlowSyncCriteriaProviderTest {
             }.returns(flow)
         }
 
-        fun withObserveIsClientRegistrationBlockedByE2EIReturning(flow: Flow<Boolean?>) = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::observeIsClientRegistrationBlockedByE2EI)
-                .whenInvoked()
-                .thenReturn(flow)
+        suspend fun withObserveIsClientRegistrationBlockedByE2EIReturning(flow: Flow<Boolean?>) = apply {
+            coEvery {
+                clientRepository::observeIsClientRegistrationBlockedByE2EI.invoke()
+            }.returns(flow)
         }
 
         suspend fun withObserveLogoutReturning(flow: Flow<LogoutReason>) = apply {

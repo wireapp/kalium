@@ -40,7 +40,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
-import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -52,6 +51,7 @@ class GetOrRegisterClientUseCaseTest {
         val clientId = ClientId("clientId")
         val client = TestClient.CLIENT.copy(id = clientId)
         val (arrangement, useCase) = Arrangement()
+            .withSyncFeatureConfigResult()
             .withRetainedClientIdResult(Either.Right(clientId))
             .withVerifyExistingClientResult(VerifyExistingClientResult.Success(client))
             .withUpgradeCurrentSessionResult(Either.Right(Unit))
@@ -78,6 +78,7 @@ class GetOrRegisterClientUseCaseTest {
         val clientId = ClientId("clientId")
         val client = TestClient.CLIENT.copy(id = clientId)
         val (arrangement, useCase) = Arrangement()
+            .withSyncFeatureConfigResult()
             .withRetainedClientIdResult(Either.Right(clientId))
             .withVerifyExistingClientResult(VerifyExistingClientResult.Failure.ClientNotRegistered)
             .withRegisterClientResult(RegisterClientResult.Success(client))
@@ -122,6 +123,7 @@ class GetOrRegisterClientUseCaseTest {
         val clientId = ClientId("clientId")
         val client = TestClient.CLIENT.copy(id = clientId)
         val (arrangement, useCase) = Arrangement()
+            .withSyncFeatureConfigResult()
             .withRetainedClientIdResult(Either.Left(CoreFailure.MissingClientRegistration))
             .withRegisterClientResult(RegisterClientResult.Success(client))
             .withUpgradeCurrentSessionResult(Either.Right(Unit))
@@ -149,6 +151,7 @@ class GetOrRegisterClientUseCaseTest {
         val client = TestClient.CLIENT.copy(id = clientId)
         val userId = TestClient.USER_ID
         val (arrangement, useCase) = Arrangement()
+            .withSyncFeatureConfigResult()
             .withRetainedClientIdResult(Either.Left(CoreFailure.MissingClientRegistration))
             .withRegisterClientResult(RegisterClientResult.E2EICertificateRequired(client, userId))
             .withUpgradeCurrentSessionResult(Either.Right(Unit))
@@ -160,21 +163,18 @@ class GetOrRegisterClientUseCaseTest {
 
         assertIs<RegisterClientResult.E2EICertificateRequired>(result)
         assertEquals(client, result.client)
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::setClientRegistrationBlockedByE2EI)
-            .wasInvoked(exactly = once)
-        verify(arrangement.registerClientUseCase)
-            .suspendFunction(arrangement.registerClientUseCase::invoke)
-            .with(any())
-            .wasInvoked(exactly = once)
-        verify(arrangement.upgradeCurrentSessionUseCase)
-            .suspendFunction(arrangement.upgradeCurrentSessionUseCase::invoke)
-            .with(eq(clientId))
-            .wasInvoked(exactly = once)
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::persistClientId)
-            .with(eq(clientId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clientRepository.setClientRegistrationBlockedByE2EI()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.registerClientUseCase.invoke(any())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.upgradeCurrentSessionUseCase.invoke(eq(clientId))
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clientRepository.persistClientId(eq(clientId))
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -217,11 +217,11 @@ class GetOrRegisterClientUseCaseTest {
             cachedClientIdClearer,
             syncFeatureConfigsUseCase
         )
-        init {
-            given(syncFeatureConfigsUseCase)
-                .suspendFunction(syncFeatureConfigsUseCase::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Right(Unit))
+
+        suspend fun withSyncFeatureConfigResult(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
+            coEvery {
+                syncFeatureConfigsUseCase.invoke()
+            }.returns(Either.Right(Unit))
         }
 
         suspend fun withRetainedClientIdResult(result: Either<CoreFailure, ClientId>) = apply {
@@ -248,11 +248,10 @@ class GetOrRegisterClientUseCaseTest {
             }.returns(result)
         }
 
-        fun withSetClientRegistrationBlockedByE2EISucceed() = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::setClientRegistrationBlockedByE2EI)
-                .whenInvoked()
-                .thenReturn(Unit.right())
+        suspend fun withSetClientRegistrationBlockedByE2EISucceed() = apply {
+            coEvery {
+                clientRepository::setClientRegistrationBlockedByE2EI.invoke()
+            }.returns(Unit.right())
         }
 
         suspend fun withVerifyExistingClientResult(result: VerifyExistingClientResult) = apply {
