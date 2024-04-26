@@ -27,12 +27,14 @@ data class E2eiCertificate(
     val endAt: Instant
 ) {
     companion object {
-        fun fromWireIdentity(identity: WireIdentity, certificateStatusMapper: CertificateStatusMapper): E2eiCertificate =
-            E2eiCertificate(
-                status = certificateStatusMapper.toCertificateStatus(identity.status),
-                serialNumber = identity.serialNumber,
-                certificateDetail = identity.certificate,
-                endAt = Instant.fromEpochSeconds(identity.endTimestampSeconds)
-            )
+        fun fromWireIdentity(identity: WireIdentity, certificateStatusMapper: CertificateStatusMapper): E2eiCertificate? =
+            identity.certificate?.let {
+                E2eiCertificate(
+                    status = certificateStatusMapper.toCertificateStatus(identity.status),
+                    serialNumber = it.serialNumber,
+                    certificateDetail = it.certificate,
+                    endAt = Instant.fromEpochSeconds(it.endTimestampSeconds)
+                )
+            }
     }
 }
