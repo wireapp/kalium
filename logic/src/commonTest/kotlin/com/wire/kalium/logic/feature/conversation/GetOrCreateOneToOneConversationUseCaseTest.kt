@@ -34,11 +34,6 @@ import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-<<<<<<< HEAD
-import kotlinx.coroutines.flow.flowOf
-=======
-import io.mockative.verify
->>>>>>> eb8eaddaf3 (fix: UseCase for getting if one on one conversation with user exist [WPB-6936] (#2713))
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -106,7 +101,6 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             withObserveOneToOneConversationWithOtherUserReturning(Either.Left(StorageFailure.DataNotFound))
             withUserByIdReturning(OTHER_USER.right())
             withResolveOneOnOneConversationWithUserReturning(Either.Right(CONVERSATION.id))
-            withConversationDetailsByIdReturning(CONVERSATION.right())
         }
 
         // when
