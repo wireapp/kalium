@@ -92,16 +92,14 @@ import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.every
-import io.mockative.matchers.EqualsMatcher
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
-import io.mockative.verify
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
@@ -109,7 +107,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlinx.datetime.Instant
 import kotlin.test.Test
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
@@ -1449,7 +1446,11 @@ class MLSConversationRepositoryTest {
         val domain = "domain.com"
         val handleWithSchemeAndDomain = "$scheme://%40$handle@$domain"
         val groupId = Arrangement.GROUP_ID.value
-        val wireIdentity = WIRE_IDENTITY.copy(handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain))
+        val wireIdentity = WIRE_IDENTITY.copy(
+            certificate = WIRE_IDENTITY.certificate!!.copy(
+                handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain)
+            )
+        )
         val (_, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
             .withGetEstablishedSelfMLSGroupIdReturns(groupId)
             .withGetMLSClientSuccessful()
@@ -1460,9 +1461,9 @@ class MLSConversationRepositoryTest {
         // then
         result.shouldSucceed() {
             it.forEach {
-                assertEquals(scheme, it.handle.scheme)
-                assertEquals(handle, it.handle.handle)
-                assertEquals(domain, it.handle.domain)
+                assertEquals(scheme, it.certificate?.handle?.scheme)
+                assertEquals(handle, it.certificate?.handle?.handle)
+                assertEquals(domain, it.certificate?.handle?.domain)
             }
         }
     }
@@ -1475,7 +1476,11 @@ class MLSConversationRepositoryTest {
         val domain = "domain.com"
         val handleWithSchemeAndDomain = "$scheme://%40$handle@$domain"
         val groupId = Arrangement.GROUP_ID.value
-        val wireIdentity = WIRE_IDENTITY.copy(handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain))
+        val wireIdentity = WIRE_IDENTITY.copy(
+            certificate = WIRE_IDENTITY.certificate!!.copy(
+                handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain)
+            )
+        )
         val (_, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
             .withGetMLSGroupIdByConversationIdReturns(groupId)
             .withGetMLSClientSuccessful()
@@ -1487,9 +1492,9 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed() {
             it.values.forEach {
                 it.forEach {
-                    assertEquals(scheme, it.handle.scheme)
-                    assertEquals(handle, it.handle.handle)
-                    assertEquals(domain, it.handle.domain)
+                    assertEquals(scheme, it.certificate?.handle?.scheme)
+                    assertEquals(handle, it.certificate?.handle?.handle)
+                    assertEquals(domain, it.certificate?.handle?.domain)
                 }
             }
         }
