@@ -87,7 +87,7 @@ internal interface UserRepositoryArrangement {
     )
 
     suspend fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: Matcher<List<UserId>>)
-    suspend fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>, userId: Matcher<UserId> = any())
+    suspend fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>, userId: Matcher<UserId> = AnyMatcher(valueOf()))
 }
 
 @Suppress("INAPPLICABLE_JVM_NAME")

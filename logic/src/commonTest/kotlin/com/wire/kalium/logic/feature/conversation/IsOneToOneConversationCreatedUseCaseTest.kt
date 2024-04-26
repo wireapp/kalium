@@ -21,6 +21,8 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.left
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
@@ -36,7 +38,7 @@ class IsOneToOneConversationCreatedUseCaseTest {
     fun givenConversationExist_whenCallingTheUseCase_ThenReturnTrue() = runTest {
         // given
         val (_, useCase) = arrange {
-            withOneOnOnConversationId(Either.Right(TestConversation.ID))
+            withOneOnOnConversationId(TestConversation.ID.right())
         }
 
         // when
@@ -50,7 +52,7 @@ class IsOneToOneConversationCreatedUseCaseTest {
     fun givenNotConversationExist_whenCallingTheUseCase_ThenReturnFalse() = runTest {
         // given
         val (_, useCase) = arrange {
-            withOneOnOnConversationId(Either.Left(StorageFailure.DataNotFound))
+            withOneOnOnConversationId(StorageFailure.DataNotFound.left())
         }
 
         // when
