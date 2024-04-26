@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -55,6 +56,6 @@ class ObserveConversationMembersUseCaseImpl internal constructor(
             }
         }.flatMapLatest { detailsFlows ->
             combine(detailsFlows) { it.toList() }
-        }
+        }.distinctUntilChanged()
     }
 }
