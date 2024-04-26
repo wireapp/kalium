@@ -31,10 +31,9 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.every
 import io.mockative.mock
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flowOf
@@ -44,7 +43,6 @@ import kotlinx.datetime.toInstant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class ObserveSecurityClassificationLabelUseCaseTest {
 
     @Test
@@ -142,70 +140,68 @@ class ObserveSecurityClassificationLabelUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val observeConversationMembersUseCase = mock(classOf<ObserveConversationMembersUseCase>())
+        val observeConversationMembersUseCase = mock(ObserveConversationMembersUseCase::class)
 
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
+        val conversationRepository = mock(ConversationRepository::class)
 
         @Mock
-        val userConfigRepository = mock(classOf<UserConfigRepository>())
+        val userConfigRepository = mock(UserConfigRepository::class)
 
         private val getSecurityClassificationType = ObserveSecurityClassificationLabelUseCaseImpl(
-            observeConversationMembersUseCase, conversationRepository, userConfigRepository
+            observeConversationMembersUseCase,
+            conversationRepository,
+            userConfigRepository
         )
 
         fun withGettingClassifiedDomainsDisabled() = apply {
-            given(userConfigRepository)
-                .function(userConfigRepository::getClassifiedDomainsStatus)
-                .whenInvoked()
-                .thenReturn(emptyFlow())
+            every {
+                userConfigRepository.getClassifiedDomainsStatus()
+            }.returns(emptyFlow())
         }
 
         fun withGettingClassifiedDomains(domains: List<String>) = apply {
-            given(userConfigRepository)
-                .function(userConfigRepository::getClassifiedDomainsStatus)
-                .whenInvoked()
-                .thenReturn(flowOf(Either.Right(ClassifiedDomainsStatus(true, domains))))
+            every {
+                userConfigRepository.getClassifiedDomainsStatus()
+            }.returns(flowOf(Either.Right(ClassifiedDomainsStatus(true, domains))))
         }
 
-        fun withParticipantsResponseDomains(domains: List<String>, expiresAt: Instant? = null) = apply {
-            given(observeConversationMembersUseCase)
-                .suspendFunction(observeConversationMembersUseCase::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(flowOf(stubUserIds(domains, expiresAt)))
+        suspend fun withParticipantsResponseDomains(domains: List<String>, expiresAt: Instant? = null) = apply {
+            coEvery {
+                observeConversationMembersUseCase.invoke(any())
+            }.returns(flowOf(stubUserIds(domains, expiresAt)))
         }
 
-        fun withObserveConversationSuccess(conversationDomain: String) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::observeById)
-                .whenInvokedWith(any())
-                .thenReturn(
-                    flowOf(
-                        Either.Right(
-                            TestConversation.CONVERSATION.copy(
-                                TestConversation.ID.copy(
-                                    domain = conversationDomain
-                                )
+        suspend fun withObserveConversationSuccess(conversationDomain: String) = apply {
+            coEvery {
+                conversationRepository.observeById(any())
+            }.returns(
+                flowOf(
+                    Either.Right(
+                        TestConversation.CONVERSATION.copy(
+                            TestConversation.ID.copy(
+                                domain = conversationDomain
                             )
                         )
                     )
                 )
+            )
         }
 
-        fun withObserveConversationError() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::observeById)
-                .whenInvokedWith(any())
-                .thenReturn(flowOf(Either.Left(StorageFailure.Generic(Throwable("error")))))
+        suspend fun withObserveConversationError() = apply {
+            coEvery {
+                conversationRepository.observeById(any())
+            }.returns(flowOf(Either.Left(StorageFailure.Generic(Throwable("error")))))
         }
 
         private fun stubUserIds(domains: List<String>, expiresAt: Instant?) =
             domains.map { domain ->
                 MemberDetails(
-                    TestUser.OTHER.copy(
+                    user = TestUser.OTHER.copy(
                         UserId(uuid4().toString(), domain),
                         expiresAt = expiresAt
-                    ), Conversation.Member.Role.Member
+                    ),
+                    role = Conversation.Member.Role.Member
                 )
             }
 

@@ -29,12 +29,12 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -49,9 +49,9 @@ class UpdateSelfClientCapabilityToLegalHoldConsentUseCaseTest {
 
         useCase.invoke()
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::shouldUpdateClientLegalHoldCapability)
-            .wasNotInvoked()
+        coVerify {
+            arrangement.userConfigRepository.shouldUpdateClientLegalHoldCapability()
+        }.wasNotInvoked()
     }
 
     @Test
@@ -64,12 +64,12 @@ class UpdateSelfClientCapabilityToLegalHoldConsentUseCaseTest {
 
             useCase.invoke()
 
-            verify(arrangement.userConfigRepository)
-                .suspendFunction(arrangement.userConfigRepository::shouldUpdateClientLegalHoldCapability)
-                .wasInvoked(once)
-            verify(arrangement.selfClientIdProvider)
-                .suspendFunction(arrangement.selfClientIdProvider::invoke)
-                .wasNotInvoked()
+            coVerify {
+                arrangement.userConfigRepository.shouldUpdateClientLegalHoldCapability()
+            }.wasInvoked(once)
+            coVerify {
+                arrangement.selfClientIdProvider.invoke()
+            }.wasNotInvoked()
         }
 
     @Test
@@ -86,20 +86,18 @@ class UpdateSelfClientCapabilityToLegalHoldConsentUseCaseTest {
 
             useCase.invoke()
 
-            verify(arrangement.userConfigRepository)
-                .suspendFunction(arrangement.userConfigRepository::shouldUpdateClientLegalHoldCapability)
-                .wasInvoked(once)
-            verify(arrangement.selfClientIdProvider)
-                .suspendFunction(arrangement.selfClientIdProvider::invoke)
-                .wasInvoked(once)
-            verify(arrangement.clientRemoteRepository)
-                .suspendFunction(arrangement.clientRemoteRepository::updateClientCapabilities)
-                .with(anything(), anything())
-                .wasInvoked(once)
-            verify(arrangement.userConfigRepository)
-                .suspendFunction(arrangement.userConfigRepository::setShouldUpdateClientLegalHoldCapability)
-                .with(eq(false))
-                .wasInvoked(once)
+            coVerify {
+                arrangement.userConfigRepository.shouldUpdateClientLegalHoldCapability()
+            }.wasInvoked(once)
+            coVerify {
+                arrangement.selfClientIdProvider.invoke()
+            }.wasInvoked(once)
+            coVerify {
+                arrangement.clientRemoteRepository.updateClientCapabilities(any(), any())
+            }.wasInvoked(once)
+            coVerify {
+                arrangement.userConfigRepository.setShouldUpdateClientLegalHoldCapability(eq(false))
+            }.wasInvoked(once)
         }
 
     private class Arrangement {
@@ -129,47 +127,42 @@ class UpdateSelfClientCapabilityToLegalHoldConsentUseCaseTest {
         fun arrange() = this to useCase
 
         fun withSyncOngoing() = apply {
-            given(incrementalSyncRepository)
-                .getter(incrementalSyncRepository::incrementalSyncState)
-                .whenInvoked()
-                .thenReturn(flowOf(IncrementalSyncStatus.FetchingPendingEvents))
+            every {
+                incrementalSyncRepository.incrementalSyncState
+            }.returns(flowOf(IncrementalSyncStatus.FetchingPendingEvents))
         }
 
         fun withSyncDone() = apply {
-            given(incrementalSyncRepository)
-                .getter(incrementalSyncRepository::incrementalSyncState)
-                .whenInvoked()
-                .thenReturn(flowOf(IncrementalSyncStatus.Live))
-        }
-        fun withShouldUpdateClientLegalHoldCapabilityResult(result: Boolean) = apply {
-            given(userConfigRepository)
-                .suspendFunction(userConfigRepository::shouldUpdateClientLegalHoldCapability)
-                .whenInvoked()
-                .thenReturn(result)
+            every {
+                incrementalSyncRepository.incrementalSyncState
+            }.returns(flowOf(IncrementalSyncStatus.Live))
         }
 
-        fun withClientId() = apply {
-            given(selfClientIdProvider)
-                .suspendFunction(selfClientIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Right(ClientId("clientId")))
+        suspend fun withShouldUpdateClientLegalHoldCapabilityResult(result: Boolean) = apply {
+            coEvery {
+                userConfigRepository.shouldUpdateClientLegalHoldCapability()
+            }.returns(result)
         }
 
-        fun withUpdateClientCapabilitiesSuccess() = apply {
-            given(clientRemoteRepository)
-                .suspendFunction(clientRemoteRepository::updateClientCapabilities)
-                .whenInvokedWith(
+        suspend fun withClientId() = apply {
+            coEvery {
+                selfClientIdProvider.invoke()
+            }.returns(Either.Right(ClientId("clientId")))
+        }
+
+        suspend fun withUpdateClientCapabilitiesSuccess() = apply {
+            coEvery {
+                clientRemoteRepository.updateClientCapabilities(
                     eq(UpdateClientCapabilitiesParam(listOf(ClientCapability.LegalHoldImplicitConsent))),
                     any()
                 )
-                .thenReturn(Either.Right(Unit))
+            }.returns(Either.Right(Unit))
         }
 
-        fun withSetShouldUpdateClientLegalHoldCapabilitySuccess() = apply {
-            given(userConfigRepository)
-                .suspendFunction(userConfigRepository::setShouldUpdateClientLegalHoldCapability)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withSetShouldUpdateClientLegalHoldCapabilitySuccess() = apply {
+            coEvery {
+                userConfigRepository.setShouldUpdateClientLegalHoldCapability(any())
+            }.returns(Either.Right(Unit))
         }
     }
 }

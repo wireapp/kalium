@@ -54,6 +54,7 @@ import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
@@ -167,6 +168,7 @@ internal class UserDataSource internal constructor(
     private val sessionRepository: SessionRepository,
     private val selfUserId: UserId,
     private val selfTeamIdProvider: SelfTeamIdProvider,
+    private val legalHoldHandler: LegalHoldHandler,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val userMapper: UserMapper = MapperProvider.userMapper(),
     private val teamMapper: TeamMapper = MapperProvider.teamMapper(),
@@ -184,12 +186,24 @@ internal class UserDataSource internal constructor(
     private val userDetailsRefreshInstantCache = ConcurrentMutableMap<UserId, Instant>()
 
     override suspend fun fetchSelfUser(): Either<CoreFailure, Unit> = wrapApiRequest { selfApi.getSelfInfo() }
-        .flatMap { userDTO ->
+        .flatMap { selfUserDTO ->
+            selfUserDTO.teamId.let { selfUserTeamId ->
+                if (selfUserTeamId.isNullOrEmpty()) Either.Right(null)
+                else wrapApiRequest { teamsApi.getTeamMember(selfUserTeamId, selfUserId.value) }
+            }.map { selfUserDTO to it }
+        }
+        .flatMap { (userDTO, teamMemberDTO) ->
             if (userDTO.deleted == true) {
                 Either.Left(SelfUserDeleted)
             } else {
                 updateSelfUserProviderAccountInfo(userDTO)
-                    .map { userMapper.fromSelfUserDtoToUserEntity(userDTO).copy(connectionStatus = ConnectionEntity.State.ACCEPTED) }
+                    .map {
+                        userMapper.fromSelfUserDtoToUserEntity(
+                            userDTO = userDTO,
+                            connectionState = ConnectionEntity.State.ACCEPTED,
+                            userTypeEntity = userTypeEntityMapper.teamRoleCodeToUserType(teamMemberDTO?.permissions?.own)
+                        )
+                    }
                     .flatMap { userEntity ->
                         wrapStorageRequest { userDAO.upsertUser(userEntity) }
                             .flatMap {
@@ -223,15 +237,18 @@ internal class UserDataSource internal constructor(
      * @see userDetailsRefreshInstantCache
      * @see USER_DETAILS_MAX_AGE
      */
-    private suspend fun refreshUserDetailsIfNeeded(userId: UserId) {
+    private suspend fun refreshUserDetailsIfNeeded(userId: UserId): Either<CoreFailure, Unit> {
         val now = DateTimeUtil.currentInstant()
         val wasFetchedRecently = userDetailsRefreshInstantCache[userId]?.let { now < it + USER_DETAILS_MAX_AGE } ?: false
-        if (!wasFetchedRecently) {
-            fetchUserInfo(userId).also {
-                kaliumLogger.d("Federated user, refreshing user info from API after $USER_DETAILS_MAX_AGE")
+        return if (!wasFetchedRecently) {
+            when (userId) {
+                selfUserId -> fetchSelfUser()
+                else -> fetchUserInfo(userId)
+            }.also {
+                kaliumLogger.d("Refreshing user info from API after $USER_DETAILS_MAX_AGE")
+                userDetailsRefreshInstantCache[userId] = now
             }
-            userDetailsRefreshInstantCache[userId] = now
-        }
+        } else Either.Right(Unit)
     }
 
     override suspend fun fetchAllOtherUsers(): Either<CoreFailure, Unit> {
@@ -326,7 +343,7 @@ internal class UserDataSource internal constructor(
     private suspend fun persistUsers(
         listUserProfileDTO: List<UserProfileDTO>,
         listTeamMemberDTO: List<TeamsApi.TeamMemberDTO>,
-    ) = wrapStorageRequest {
+    ): Either<CoreFailure, Unit> {
         val mapTeamMemberDTO = listTeamMemberDTO.associateBy { it.nonQualifiedUserId }
         val selfUserTeamId = selfTeamIdProvider().getOrNull()?.value
         val teamMembers = listUserProfileDTO
@@ -355,13 +372,22 @@ internal class UserDataSource internal constructor(
                     )
                 )
             }
-        if (teamMembers.isNotEmpty()) {
-            userDAO.upsertUsers(teamMembers)
-            userDAO.upsertConnectionStatuses(teamMembers.associate { it.id to it.connectionStatus })
-        }
-        if (otherUsers.isNotEmpty()) {
-            userDAO.upsertUsers(otherUsers)
-        }
+        return listUserProfileDTO
+            .map {
+                legalHoldHandler.handleUserFetch(it.id.toModel(), it.legalHoldStatus == LegalHoldStatusDTO.ENABLED)
+            }
+            .foldToEitherWhileRight(Unit) { value, _ -> value }
+            .flatMap {
+                wrapStorageRequest {
+                    if (teamMembers.isNotEmpty()) {
+                        userDAO.upsertUsers(teamMembers)
+                        userDAO.upsertConnectionStatuses(teamMembers.associate { it.id to it.connectionStatus })
+                    }
+                    if (otherUsers.isNotEmpty()) {
+                        userDAO.upsertUsers(otherUsers)
+                    }
+                }
+            }
     }
 
     override suspend fun fetchUsersIfUnknownByIds(ids: Set<UserId>): Either<CoreFailure, Unit> = wrapStorageRequest {
@@ -386,8 +412,9 @@ internal class UserDataSource internal constructor(
                     kaliumLogger.e("""$logPrefix failed: {"failure":"$failure"}""")
                 }, {
                     kaliumLogger.i("$logPrefix: Succeeded")
+                    userDetailsRefreshInstantCache[selfUserId] = DateTimeUtil.currentInstant()
                 })
-            }
+            } else { refreshUserDetailsIfNeeded(selfUserId) }
         }.filterNotNull().flatMapMerge { encodedValue ->
             val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
             userDAO.observeUserDetailsByQualifiedID(selfUserID)

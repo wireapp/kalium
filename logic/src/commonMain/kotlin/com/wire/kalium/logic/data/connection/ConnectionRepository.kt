@@ -43,7 +43,9 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.InvalidMappingFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.isRight
+import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
@@ -77,6 +79,7 @@ interface ConnectionRepository {
     suspend fun setAllConnectionsAsNotified()
     suspend fun deleteConnection(connection: Connection): Either<StorageFailure, Unit>
     suspend fun getConnection(conversationId: ConversationId): Either<StorageFailure, ConversationDetails.Connection>
+    suspend fun ignoreConnectionRequest(userId: UserId): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -127,22 +130,36 @@ internal class ConnectionDataSource(
         }.map { }
     }
 
-    override suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Connection> {
+    private suspend fun updateRemoteConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, ConnectionDTO> {
         val isValidConnectionState = isValidConnectionState(connectionState)
         val newConnectionStatus = connectionStatusMapper.toApiModel(connectionState)
         if (!isValidConnectionState || newConnectionStatus == null) {
             return Either.Left(InvalidMappingFailure)
         }
 
-        return wrapApiRequest {
-            connectionApi.updateConnection(userId.toApi(), newConnectionStatus)
-        }.map { connectionDTO ->
-            val connectionStatus = connectionDTO.copy(status = newConnectionStatus)
+        return wrapApiRequest { connectionApi.updateConnection(userId.toApi(), newConnectionStatus) }
+    }
+
+    override suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Connection> =
+        updateRemoteConnectionStatus(userId, connectionState).map { connectionDTO ->
+            val connectionStatus = connectionDTO.copy(status = connectionStatusMapper.toApiModel(connectionState)!!)
             val connectionModel = connectionMapper.fromApiToModel(connectionDTO)
             handleUserConnectionStatusPersistence(connectionMapper.fromApiToModel(connectionStatus))
             connectionModel
         }
-    }
+
+    override suspend fun ignoreConnectionRequest(userId: UserId): Either<CoreFailure, Unit> =
+        updateRemoteConnectionStatus(userId, IGNORED)
+            .flatMapLeft {
+                if (it is NetworkFailure.FederatedBackendFailure.FailedDomains)
+                    wrapStorageRequest { connectionDAO.getConnectionByUser(userId.toDao()) }
+                        .map { connectionEntity ->
+                            val updatedConnection = connectionMapper.fromDaoToModel(connectionEntity).copy(status = IGNORED)
+                            handleUserConnectionStatusPersistence(updatedConnection)
+                        }
+                else it.left()
+            }
+            .map { Unit }
 
     /**
      * Check if we can transition to the correct connection status

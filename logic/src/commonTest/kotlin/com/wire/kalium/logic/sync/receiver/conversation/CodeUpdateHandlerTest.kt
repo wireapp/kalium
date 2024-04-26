@@ -25,9 +25,10 @@ import com.wire.kalium.logic.util.arrangement.dao.ConversionDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.ConversionDAOArrangementImpl
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.persistence.dao.ConversationIDEntity
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -50,16 +51,18 @@ class CodeUpdateHandlerTest {
 
         handler.handle(event)
 
-        verify(arrangement.conversionDAO)
-            .suspendFunction(arrangement.conversionDAO::updateGuestRoomLink)
-            .with(
-                eq(ConversationIDEntity(
-                    event.conversationId.value,
-                    event.conversationId.domain
-                )),
-                eq(event.uri),
+        coVerify {
+            arrangement.conversionDAO.updateGuestRoomLink(
+                eq(
+                    ConversationIDEntity(
+                        event.conversationId.value,
+                        event.conversationId.domain
+                    )
+                ),
+                eq(event.uri!!),
                 eq(event.isPasswordProtected)
-            ).wasInvoked(exactly = once)
+            )
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -81,16 +84,18 @@ class CodeUpdateHandlerTest {
 
         handler.handle(event)
 
-        verify(arrangement.conversionDAO)
-            .suspendFunction(arrangement.conversionDAO::updateGuestRoomLink)
-            .with(
-                eq(ConversationIDEntity(
-                    event.conversationId.value,
-                    event.conversationId.domain
-                )),
+        coVerify {
+            arrangement.conversionDAO.updateGuestRoomLink(
+                eq(
+                    ConversationIDEntity(
+                        event.conversationId.value,
+                        event.conversationId.domain
+                    )
+                ),
                 eq(expected),
                 eq(event.isPasswordProtected)
-            ).wasInvoked(exactly = once)
+            )
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement : ConversionDAOArrangement by ConversionDAOArrangementImpl() {
@@ -99,7 +104,8 @@ class CodeUpdateHandlerTest {
 
         private val handler: CodeUpdatedHandler = CodeUpdateHandlerImpl(conversionDAO, serverConfigLinks)
 
-        fun arrange(block: Arrangement.() -> Unit) = apply(block).run {
+        fun arrange(block: suspend Arrangement.() -> Unit) = run {
+            runBlocking { block() }
             this to handler
         }
     }

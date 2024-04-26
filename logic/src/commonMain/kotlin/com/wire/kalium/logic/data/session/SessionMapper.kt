@@ -49,9 +49,11 @@ interface SessionMapper {
     fun fromSsoIdEntity(ssoIdEntity: SsoIdEntity?): SsoId?
     fun toLogoutReason(reason: LogoutReasonEntity): LogoutReason
     fun fromEntityToProxyCredentialsDTO(proxyCredentialsEntity: ProxyCredentialsEntity): ProxyCredentialsDTO
+    fun formEntityToProxyModel(proxyCredentialsEntity: ProxyCredentialsEntity): ProxyCredentials
     fun fromPersistentWebSocketStatusEntity(
         persistentWebSocketStatusEntity: PersistentWebSocketStatusEntity
     ): PersistentWebSocketStatus
+
     fun fromModelToProxyCredentialsEntity(proxyCredentialsModel: ProxyCredentials): ProxyCredentialsEntity
     fun fromModelToProxyCredentialsDTO(proxyCredentialsModel: ProxyCredentials): ProxyCredentialsDTO
     fun fromDTOToProxyCredentialsModel(proxyCredentialsDTO: ProxyCredentialsDTO?): ProxyCredentials?
@@ -143,12 +145,19 @@ internal class SessionMapperImpl : SessionMapper {
     override fun fromEntityToProxyCredentialsDTO(proxyCredentialsEntity: ProxyCredentialsEntity): ProxyCredentialsDTO =
         ProxyCredentialsDTO(proxyCredentialsEntity.username, proxyCredentialsEntity.password)
 
+    override fun formEntityToProxyModel(proxyCredentialsEntity: ProxyCredentialsEntity): ProxyCredentials =
+        ProxyCredentials(
+            username = proxyCredentialsEntity.username,
+            password = proxyCredentialsEntity.password
+        )
+
     override fun fromPersistentWebSocketStatusEntity(
         persistentWebSocketStatusEntity: PersistentWebSocketStatusEntity
     ): PersistentWebSocketStatus = PersistentWebSocketStatus(
         persistentWebSocketStatusEntity.userIDEntity.toModel(),
         persistentWebSocketStatusEntity.isPersistentWebSocketEnabled
     )
+
     override fun fromModelToProxyCredentialsEntity(proxyCredentialsModel: ProxyCredentials): ProxyCredentialsEntity =
         ProxyCredentialsEntity(proxyCredentialsModel.username, proxyCredentialsModel.password)
 

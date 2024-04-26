@@ -20,7 +20,7 @@ package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAssetIdEntity
-import com.wire.kalium.persistence.dao.UserEntity
+import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -48,8 +48,8 @@ sealed interface MessageEntity {
     val visibility: Visibility
     val isSelfMessage: Boolean
     val expireAfterMs: Long?
-    val selfDeletionStartDate: Instant?
-    val sender: UserEntity?
+    val selfDeletionEndDate: Instant?
+    val sender: UserDetailsEntity?
 
     data class Regular(
         override val id: String,
@@ -62,8 +62,8 @@ sealed interface MessageEntity {
         override val isSelfMessage: Boolean = false,
         override val readCount: Long,
         override val expireAfterMs: Long? = null,
-        override val selfDeletionStartDate: Instant? = null,
-        override val sender: UserEntity? = null,
+        override val selfDeletionEndDate: Instant? = null,
+        override val sender: UserDetailsEntity? = null,
         val senderName: String?,
         val senderClientId: String,
         val editStatus: EditStatus,
@@ -80,11 +80,11 @@ sealed interface MessageEntity {
         override val senderUserId: QualifiedIDEntity,
         override val status: Status,
         override val expireAfterMs: Long?,
-        override val selfDeletionStartDate: Instant?,
+        override val selfDeletionEndDate: Instant?,
         override val readCount: Long,
         override val visibility: Visibility = Visibility.VISIBLE,
         override val isSelfMessage: Boolean = false,
-        override val sender: UserEntity? = null,
+        override val sender: UserDetailsEntity? = null,
         val senderName: String?,
     ) : MessageEntity
 

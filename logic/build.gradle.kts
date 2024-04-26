@@ -68,7 +68,6 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                implementation(kotlin("test"))
                 implementation(project(":persistence-test"))
                 // coroutines
                 implementation(libs.coroutines.test)
@@ -132,10 +131,6 @@ dependencies {
         .forEach {
             add(it.name, libs.mockative.processor)
         }
-}
-
-ksp {
-    arg("mockative.stubsUnitByDefault", "true")
 }
 
 android {

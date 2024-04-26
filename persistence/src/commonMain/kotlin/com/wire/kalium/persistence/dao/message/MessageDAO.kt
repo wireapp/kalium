@@ -70,17 +70,17 @@ interface MessageDAO {
         conversationId: QualifiedIDEntity,
         limit: Int,
         offset: Int,
-        visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
+        visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.entries
     ): Flow<List<MessageEntity>>
 
     suspend fun getLastMessagesByConversations(conversationIds: List<QualifiedIDEntity>): Map<QualifiedIDEntity, MessageEntity>
 
-    suspend fun getNotificationMessage(): Flow<List<NotificationMessageEntity>>
+    suspend fun getNotificationMessage(maxNumberOfMessagesPerConversation: Int = 10): Flow<List<NotificationMessageEntity>>
 
     suspend fun observeMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
         date: String,
-        visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
+        visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.entries
     ): Flow<List<MessageEntity>>
 
     suspend fun getAllPendingMessagesFromUser(userId: UserIDEntity): List<MessageEntity>
@@ -110,7 +110,7 @@ interface MessageDAO {
 
     suspend fun getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
-        visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
+        visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.entries
     ): List<String>
 
     suspend fun getReceiptModeFromGroupConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity.ReceiptMode?
@@ -122,11 +122,9 @@ interface MessageDAO {
         millis: Long
     )
 
-    suspend fun getEphemeralMessagesMarkedForDeletion(): List<MessageEntity>
+    suspend fun getAllPendingEphemeralMessages(): List<MessageEntity>
 
-    suspend fun getEphemeralMessagedMarkedForEndDeletion(): List<MessageEntity>
-
-    suspend fun updateSelfDeletionStartDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionStartDate: Instant)
+    suspend fun getAllAlreadyEndedEphemeralMessages(): List<MessageEntity>
 
     suspend fun updateSelfDeletionEndDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionEndDate: Instant)
 

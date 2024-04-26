@@ -59,7 +59,7 @@ class CallManagerImpl : CallManager {
         TODO("Not yet implemented")
     }
 
-    override suspend fun updateVideoState(conversationId: ConversationId, videoState: VideoState) {
+    override suspend fun setVideoSendState(conversationId: ConversationId, videoState: VideoState) {
         TODO("Not yet implemented")
     }
 
@@ -88,6 +88,10 @@ class CallManagerImpl : CallManager {
     }
 
     override suspend fun setTestRemoteVideoStates(conversationId: ConversationId, participants: List<Participant>) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun cancelJobs() {
         TODO("Not yet implemented")
     }
 }

@@ -29,6 +29,7 @@ import com.wire.kalium.logic.feature.conversation.ClearConversationContentUseCas
 import com.wire.kalium.logic.feature.debug.BrokenState
 import com.wire.kalium.logic.feature.debug.SendBrokenAssetMessageResult
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
+import com.wire.kalium.logic.data.message.receipt.DetailedReceipt
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
@@ -380,6 +381,30 @@ sealed class ConversationRepository {
                 }
             }
             throw WebApplicationException("Instance ${instance.instanceId}: Could not get recent messages")
+        }
+
+        suspend fun getMessageReceipts(
+            instance: Instance,
+            conversationId: ConversationId,
+            messageId: String,
+            type: ReceiptType
+        ): List<DetailedReceipt> {
+            instance.coreLogic.globalScope {
+                when (val session = session.currentSession()) {
+                    is CurrentSessionResult.Success -> {
+                        instance.coreLogic.sessionScope(session.accountInfo.userId) {
+                            log.info("Instance ${instance.instanceId}: Get receipts...")
+                            val receipts = messages.observeMessageReceipts(conversationId, messageId, type).first()
+                            return receipts
+                        }
+                    }
+
+                    is CurrentSessionResult.Failure -> {
+                        Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Session failure").build()
+                    }
+                }
+            }
+            throw WebApplicationException("Instance ${instance.instanceId}: Could not get receipts from message")
         }
 
         @Suppress("LongParameterList", "LongMethod", "ThrowsCount")

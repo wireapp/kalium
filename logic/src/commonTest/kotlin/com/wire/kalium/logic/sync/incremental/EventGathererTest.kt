@@ -34,11 +34,11 @@ import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEven
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
-import io.mockative.configure
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -69,18 +69,18 @@ class EventGathererTest {
             .arrange()
 
         eventGatherer.gatherEvents().test {
-            verify(arrangement.eventRepository)
-                .suspendFunction(arrangement.eventRepository::pendingEvents)
-                .wasNotInvoked()
+            coVerify {
+                arrangement.eventRepository.pendingEvents()
+            }.wasNotInvoked()
 
             // Open Websocket should trigger fetching pending events
             liveEventsChannel.send(WebSocketEvent.Open())
 
             advanceUntilIdle()
 
-            verify(arrangement.eventRepository)
-                .suspendFunction(arrangement.eventRepository::pendingEvents)
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.eventRepository.pendingEvents()
+            }.wasInvoked(exactly = once)
 
             cancelAndIgnoreRemainingEvents()
         }
@@ -98,18 +98,18 @@ class EventGathererTest {
             .arrange()
 
         eventGatherer.gatherEvents().test {
-            verify(arrangement.eventRepository)
-                .suspendFunction(arrangement.eventRepository::pendingEvents)
-                .wasNotInvoked()
+            coVerify {
+                arrangement.eventRepository.pendingEvents()
+            }.wasNotInvoked()
 
             // Open Websocket should trigger fetching pending events
             liveEventsChannel.send(WebSocketEvent.Open())
 
             advanceUntilIdle()
 
-            verify(arrangement.eventRepository)
-                .suspendFunction(arrangement.eventRepository::pendingEvents)
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.eventRepository.pendingEvents()
+            }.wasInvoked(exactly = once)
 
             cancelAndIgnoreRemainingEvents()
         }
@@ -128,9 +128,9 @@ class EventGathererTest {
             .arrange()
 
         eventGatherer.gatherEvents().test {
-            verify(arrangement.eventRepository)
-                .suspendFunction(arrangement.eventRepository::pendingEvents)
-                .wasNotInvoked()
+            coVerify {
+                arrangement.eventRepository.pendingEvents()
+            }.wasNotInvoked()
 
             // Open Websocket should trigger fetching pending events
             liveEventsChannel.send(WebSocketEvent.Open())
@@ -414,46 +414,41 @@ class EventGathererTest {
     private class Arrangement {
 
         @Mock
-        val eventRepository = configure(mock(EventRepository::class)) { stubsUnitByDefault = true }
+        val eventRepository = mock(EventRepository::class)
 
         @Mock
         val incrementalSyncRepository = mock(IncrementalSyncRepository::class)
 
         val eventGatherer: EventGatherer = EventGathererImpl(eventRepository, incrementalSyncRepository)
 
-        fun withLiveEventsReturning(either: Either<CoreFailure, Flow<WebSocketEvent<EventEnvelope>>>) = apply {
-            given(eventRepository)
-                .suspendFunction(eventRepository::liveEvents)
-                .whenInvoked()
-                .thenReturn(either)
+        suspend fun withLiveEventsReturning(either: Either<CoreFailure, Flow<WebSocketEvent<EventEnvelope>>>) = apply {
+            coEvery {
+                eventRepository.liveEvents()
+            }.returns(either)
         }
 
-        fun withPendingEventsReturning(either: Flow<Either<CoreFailure, EventEnvelope>>) = apply {
-            given(eventRepository)
-                .suspendFunction(eventRepository::pendingEvents)
-                .whenInvoked()
-                .thenReturn(either)
+        suspend fun withPendingEventsReturning(either: Flow<Either<CoreFailure, EventEnvelope>>) = apply {
+            coEvery {
+                eventRepository.pendingEvents()
+            }.returns(either)
         }
 
-        fun withLastEventIdReturning(either: Either<StorageFailure, String>) = apply {
-            given(eventRepository)
-                .suspendFunction(eventRepository::lastProcessedEventId)
-                .whenInvoked()
-                .thenReturn(either)
+        suspend fun withLastEventIdReturning(either: Either<StorageFailure, String>) = apply {
+            coEvery {
+                eventRepository.lastProcessedEventId()
+            }.returns(either)
         }
 
         fun withConnectionPolicyReturning(policyStateFlow: StateFlow<ConnectionPolicy>) = apply {
-            given(incrementalSyncRepository)
-                .getter(incrementalSyncRepository::connectionPolicyState)
-                .whenInvoked()
-                .thenReturn(policyStateFlow)
+            every {
+                incrementalSyncRepository.connectionPolicyState
+            }.returns(policyStateFlow)
         }
 
         fun withKeepAliveConnectionPolicy() = apply {
-            given(incrementalSyncRepository)
-                .getter(incrementalSyncRepository::connectionPolicyState)
-                .whenInvoked()
-                .thenReturn(MutableStateFlow(ConnectionPolicy.KEEP_ALIVE))
+            every {
+                incrementalSyncRepository.connectionPolicyState
+            }.returns(MutableStateFlow(ConnectionPolicy.KEEP_ALIVE))
         }
 
         fun arrange() = this to eventGatherer

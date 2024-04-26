@@ -17,18 +17,16 @@
  */
 package com.wire.kalium.logic.data.e2ei
 
-import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepositoryDataSource.Companion.CRL_LIST_KEY
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
-import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
+import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.dao.MetadataDAO
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -42,14 +40,15 @@ class CertificateRevocationListRepositoryTest {
 
         crlRepository.addOrUpdateCRL(DUMMY_URL, TIMESTAMP)
 
-        verify(arrangement.metadataDAO).coroutine {
-            putSerializable(
+        coVerify {
+            arrangement.metadataDAO.putSerializable(
                 CRL_LIST_KEY,
                 CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP))),
                 CRLUrlExpirationList.serializer()
             )
         }.wasInvoked(once)
     }
+
     @Test
     fun givenNoStoredList_whenUpdatingCRLs_thenAddNewCRL() = runTest {
         val (arrangement, crlRepository) = Arrangement()
@@ -58,8 +57,8 @@ class CertificateRevocationListRepositoryTest {
 
         crlRepository.addOrUpdateCRL(DUMMY_URL, TIMESTAMP)
 
-        verify(arrangement.metadataDAO).coroutine {
-            putSerializable(
+        coVerify {
+            arrangement.metadataDAO.putSerializable(
                 CRL_LIST_KEY,
                 CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP))),
                 CRLUrlExpirationList.serializer()
@@ -75,8 +74,8 @@ class CertificateRevocationListRepositoryTest {
 
         crlRepository.addOrUpdateCRL(DUMMY_URL, TIMESTAMP2)
 
-        verify(arrangement.metadataDAO).coroutine {
-            putSerializable(
+        coVerify {
+            arrangement.metadataDAO.putSerializable(
                 CRL_LIST_KEY,
                 CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP2))),
                 CRLUrlExpirationList.serializer()
@@ -92,8 +91,8 @@ class CertificateRevocationListRepositoryTest {
 
         crlRepository.addOrUpdateCRL(DUMMY_URL2, TIMESTAMP)
 
-        verify(arrangement.metadataDAO).coroutine {
-            putSerializable(
+        coVerify {
+            arrangement.metadataDAO.putSerializable(
                 CRL_LIST_KEY,
                 CRLUrlExpirationList(
                     listOf(
@@ -109,40 +108,38 @@ class CertificateRevocationListRepositoryTest {
     private class Arrangement {
 
         @Mock
-        val acmeApi = mock(classOf<ACMEApi>())
+        val acmeApi = mock(ACMEApi::class)
 
         @Mock
-        val metadataDAO = mock(classOf<MetadataDAO>())
+        val metadataDAO = mock(MetadataDAO::class)
 
-        @Mock
-        val userConfigRepository = mock(classOf<UserConfigRepository>())
-
-        fun arrange() = this to CertificateRevocationListRepositoryDataSource(acmeApi, metadataDAO, userConfigRepository)
+        fun arrange() = this to CertificateRevocationListRepositoryDataSource(acmeApi, metadataDAO)
 
         suspend fun withEmptyList() = apply {
-            given(metadataDAO).coroutine {
+            coEvery {
                 metadataDAO.getSerializable(
                     CRL_LIST_KEY,
                     CRLUrlExpirationList.serializer()
                 )
-            }.thenReturn(CRLUrlExpirationList(listOf()))
+            }.returns(CRLUrlExpirationList(listOf()))
         }
+
         suspend fun withNullCRLResult() = apply {
-            given(metadataDAO).coroutine {
+            coEvery {
                 metadataDAO.getSerializable(
                     CRL_LIST_KEY,
                     CRLUrlExpirationList.serializer()
                 )
-            }.thenReturn(null)
+            }.returns(null)
         }
 
         suspend fun withCRLs() = apply {
-            given(metadataDAO).coroutine {
+            coEvery {
                 metadataDAO.getSerializable(
                     CRL_LIST_KEY,
                     CRLUrlExpirationList.serializer()
                 )
-            }.thenReturn(CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP))))
+            }.returns(CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP))))
         }
     }
 

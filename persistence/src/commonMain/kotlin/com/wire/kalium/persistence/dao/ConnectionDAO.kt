@@ -30,7 +30,7 @@ data class ConnectionEntity(
     val status: State,
     val toId: String,
     val shouldNotify: Boolean? = null,
-    val otherUser: UserDetailsEntity? = null
+    val otherUser: UserEntity? = null
 ) {
 
     enum class State {
@@ -71,4 +71,5 @@ interface ConnectionDAO {
     suspend fun updateNotificationFlag(flag: Boolean, userId: QualifiedIDEntity)
     suspend fun setAllConnectionsAsNotified()
     suspend fun getConnection(id: ConversationIDEntity): ConnectionEntity?
+    suspend fun getConnectionByUser(userId: QualifiedIDEntity): ConnectionEntity?
 }

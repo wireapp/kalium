@@ -117,7 +117,7 @@ internal class MessageDAOImpl internal constructor(
     }
 
     private fun nonSuspendNeedsToBeNotified(id: String, conversationId: QualifiedIDEntity) =
-        queries.needsToBeNotified(id, conversationId).executeAsList().first() == 1L
+        queries.needsToBeNotified(id, conversationId).executeAsList().firstOrNull() == 1L
 
     @Deprecated("For test only!")
     override suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>) = withContext(coroutineContext) {
@@ -292,12 +292,11 @@ internal class MessageDAOImpl internal constructor(
                 .associateBy { it.conversationId }
         }
 
-    override suspend fun getNotificationMessage(): Flow<List<NotificationMessageEntity>> =
+    override suspend fun getNotificationMessage(maxNumberOfMessagesPerConversation: Int): Flow<List<NotificationMessageEntity>> =
         notificationQueries.getNotificationsMessages(mapper::toNotificationEntity)
             .asFlow()
             .flowOn(coroutineContext)
             .mapToList()
-            .distinctUntilChanged()
 
     override suspend fun observeMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
@@ -342,7 +341,8 @@ internal class MessageDAOImpl internal constructor(
                     user_id = it.userId
                 )
             }
-            val selfMention = newTextContent.mentions.firstNotNullOfOrNull { it.userId == selfUserId }
+
+            val selfMention = newTextContent.mentions.firstOrNull { it.userId == selfUserId }
             if (selfMention != null) {
                 unreadEventsQueries.updateEvent(UnreadEventTypeEntity.MENTION, currentMessageId, conversationId)
             } else {
@@ -418,21 +418,15 @@ internal class MessageDAOImpl internal constructor(
         )
     }
 
-    override suspend fun getEphemeralMessagesMarkedForDeletion(): List<MessageEntity> {
+    override suspend fun getAllPendingEphemeralMessages(): List<MessageEntity> {
         return withContext(coroutineContext) {
-            queries.selectAllEphemeralMessagesMarkedForDeletion(mapper::toEntityMessageFromView).executeAsList()
+            queries.selectPendingEphemeralMessages(mapper::toEntityMessageFromView).executeAsList()
         }
     }
 
-    override suspend fun getEphemeralMessagedMarkedForEndDeletion(): List<MessageEntity> {
+    override suspend fun getAllAlreadyEndedEphemeralMessages(): List<MessageEntity> {
         return withContext(coroutineContext) {
-            queries.selectAllEphemeralMessagesMarkedForEndDeletion(mapper::toEntityMessageFromView).executeAsList()
-        }
-    }
-
-    override suspend fun updateSelfDeletionStartDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionStartDate: Instant) {
-        return withContext(coroutineContext) {
-            queries.markSelfDeletionStartDate(selfDeletionStartDate, conversationId, messageId)
+            queries.selectAlreadyEndedEphemeralMessages(mapper::toEntityMessageFromView).executeAsList()
         }
     }
 

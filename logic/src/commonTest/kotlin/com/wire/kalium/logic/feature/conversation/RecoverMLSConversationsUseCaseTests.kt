@@ -31,23 +31,19 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
-import io.mockative.Times
 import io.mockative.any
-import io.mockative.anything
-import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.every
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class RecoverMLSConversationsUseCaseTests {
     @Test
     fun givenOutdatedListGroups_ThenRequestToJoinThemPerformed() = runTest {
@@ -62,15 +58,13 @@ class RecoverMLSConversationsUseCaseTests {
 
         val actual = recoverMLSConversationsUseCase()
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::isGroupOutOfSync)
-            .with(any(), any())
-            .wasInvoked(Times(conversations.size))
+        coVerify {
+            arrangement.mlsConversationRepository.isGroupOutOfSync(any(), any())
+        }.wasInvoked(conversations.size)
 
-        verify(arrangement.joinExistingMLSConversationUseCase)
-            .suspendFunction(arrangement.joinExistingMLSConversationUseCase::invoke)
-            .with(any())
-            .wasInvoked(Times(conversations.size))
+        coVerify {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+        }.wasInvoked(conversations.size)
 
         assertIs<RecoverMLSConversationsResult.Success>(actual)
     }
@@ -88,15 +82,13 @@ class RecoverMLSConversationsUseCaseTests {
 
         val actual = recoverMLSConversationsUseCase()
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::isGroupOutOfSync)
-            .with(any(), any())
-            .wasInvoked(Times(conversations.size))
+        coVerify {
+            arrangement.mlsConversationRepository.isGroupOutOfSync(any(), any())
+        }.wasInvoked(conversations.size)
 
-        verify(arrangement.joinExistingMLSConversationUseCase)
-            .suspendFunction(arrangement.joinExistingMLSConversationUseCase::invoke)
-            .with(any())
-            .wasInvoked(Times(conversations.size))
+        coVerify {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+        }.wasInvoked(conversations.size)
 
         assertIs<RecoverMLSConversationsResult.Failure>(actual)
     }
@@ -114,15 +106,13 @@ class RecoverMLSConversationsUseCaseTests {
 
         val actual = recoverMLSConversationsUseCase()
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::isGroupOutOfSync)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.mlsConversationRepository.isGroupOutOfSync(any(), any())
+        }.wasNotInvoked()
 
-        verify(arrangement.joinExistingMLSConversationUseCase)
-            .suspendFunction(arrangement.joinExistingMLSConversationUseCase::invoke)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+        }.wasNotInvoked()
 
         assertIs<RecoverMLSConversationsResult.Success>(actual)
     }
@@ -140,15 +130,13 @@ class RecoverMLSConversationsUseCaseTests {
 
         val actual = recoverMLSConversationsUseCase()
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::isGroupOutOfSync)
-            .with(any(), any())
-            .wasInvoked(twice)
+        coVerify {
+            arrangement.mlsConversationRepository.isGroupOutOfSync(any(), any())
+        }.wasInvoked(twice)
 
-        verify(arrangement.joinExistingMLSConversationUseCase)
-            .suspendFunction(arrangement.joinExistingMLSConversationUseCase::invoke)
-            .with(any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+        }.wasInvoked(once)
 
         assertIs<RecoverMLSConversationsResult.Success>(actual)
     }
@@ -165,29 +153,28 @@ class RecoverMLSConversationsUseCaseTests {
 
         val actual = recoverMLSConversationsUseCase()
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::isGroupOutOfSync)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.mlsConversationRepository.isGroupOutOfSync(any(), any())
+        }.wasNotInvoked()
 
         assertIs<RecoverMLSConversationsResult.Failure>(actual)
     }
 
     private class Arrangement {
         @Mock
-        val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
+        val mlsConversationRepository = mock(MLSConversationRepository::class)
 
         @Mock
-        val featureSupport = mock(classOf<FeatureSupport>())
+        val featureSupport = mock(FeatureSupport::class)
 
         @Mock
-        val joinExistingMLSConversationUseCase = mock(classOf<JoinExistingMLSConversationUseCase>())
+        val joinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
 
         @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
+        val clientRepository = mock(ClientRepository::class)
 
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
+        val conversationRepository = mock(ConversationRepository::class)
 
         private var recoverMLSConversationsUseCase = RecoverMLSConversationsUseCaseImpl(
             featureSupport,
@@ -198,59 +185,51 @@ class RecoverMLSConversationsUseCaseTests {
         )
 
         fun withIsMLSSupported(supported: Boolean) = apply {
-            given(featureSupport)
-                .invocation { featureSupport.isMLSSupported }
-                .thenReturn(supported)
+            every {
+                featureSupport.isMLSSupported
+            }.returns(supported)
         }
 
-        fun withHasRegisteredMLSClient(result: Boolean) = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::hasRegisteredMLSClient)
-                .whenInvoked()
-                .thenReturn(Either.Right(result))
+        suspend fun withHasRegisteredMLSClient(result: Boolean) = apply {
+            coEvery {
+                clientRepository.hasRegisteredMLSClient()
+            }.returns(Either.Right(result))
         }
 
-        fun withConversationsByGroupStateReturns(either: Either<StorageFailure, List<Conversation>>) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationsByGroupState)
-                .whenInvokedWith(anything())
-                .thenReturn(either)
+        suspend fun withConversationsByGroupStateReturns(either: Either<StorageFailure, List<Conversation>>) = apply {
+            coEvery {
+                conversationRepository.getConversationsByGroupState(any())
+            }.returns(either)
         }
 
-        fun withJoinExistingMLSConversationUseCaseSuccessful() = apply {
-            given(joinExistingMLSConversationUseCase)
-                .suspendFunction(joinExistingMLSConversationUseCase::invoke)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withJoinExistingMLSConversationUseCaseSuccessful() = apply {
+            coEvery {
+                joinExistingMLSConversationUseCase.invoke(any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withConversationIsOutOfSyncReturnsTrueFor(groupIds: List<GroupID>) = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::isGroupOutOfSync)
-                .whenInvokedWith(matching { it in groupIds }, any())
-                .thenReturn(Either.Right(true))
+        suspend fun withConversationIsOutOfSyncReturnsTrueFor(groupIds: List<GroupID>) = apply {
+            coEvery {
+                mlsConversationRepository.isGroupOutOfSync(matches { it in groupIds }, any())
+            }.returns(Either.Right(true))
         }
 
-        fun withConversationIsOutOfSyncReturnsFalseFor(groupID: GroupID) = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::isGroupOutOfSync)
-                .whenInvokedWith(eq(groupID), anything())
-                .thenReturn(Either.Right(false))
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::isGroupOutOfSync)
-                .whenInvokedWith(matching { it != groupID }, anything())
-                .thenReturn(Either.Right(true))
+        suspend fun withConversationIsOutOfSyncReturnsFalseFor(groupID: GroupID) = apply {
+            coEvery {
+                mlsConversationRepository.isGroupOutOfSync(eq(groupID), any())
+            }.returns(Either.Right(false))
+            coEvery {
+                mlsConversationRepository.isGroupOutOfSync(matches { it != groupID }, any())
+            }.returns(Either.Right(true))
         }
 
-        fun withJoinExistingMLSConversationUseCaseFailsFor(failedGroupId: ConversationId) = apply {
-            given(joinExistingMLSConversationUseCase)
-                .suspendFunction(joinExistingMLSConversationUseCase::invoke)
-                .whenInvokedWith(eq(failedGroupId))
-                .thenReturn(Either.Left(StorageFailure.DataNotFound))
-            given(joinExistingMLSConversationUseCase)
-                .suspendFunction(joinExistingMLSConversationUseCase::invoke)
-                .whenInvokedWith(matching { it != failedGroupId })
-                .thenReturn(Either.Right(Unit))
+        suspend fun withJoinExistingMLSConversationUseCaseFailsFor(failedGroupId: ConversationId) = apply {
+            coEvery {
+                joinExistingMLSConversationUseCase.invoke(eq(failedGroupId))
+            }.returns(Either.Left(StorageFailure.DataNotFound))
+            coEvery {
+                joinExistingMLSConversationUseCase.invoke(matches { it != failedGroupId })
+            }.returns(Either.Right(Unit))
         }
 
         fun arrange() = this to recoverMLSConversationsUseCase

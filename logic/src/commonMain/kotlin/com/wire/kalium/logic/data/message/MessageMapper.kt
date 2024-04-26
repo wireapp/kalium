@@ -47,6 +47,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
+import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
@@ -59,6 +60,7 @@ interface MessageMapper {
     fun fromEntityToMessage(message: MessageEntity): Message.Standalone
     fun fromAssetEntityToAssetMessage(message: AssetMessageEntity): AssetMessage
     fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview
+    fun fromDraftToMessagePreview(message: MessageDraftEntity): MessagePreview
     fun fromMessageToLocalNotificationMessage(message: NotificationMessageEntity): LocalNotificationMessage?
     fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular
 }
@@ -92,9 +94,9 @@ class MessageMapperImpl(
             is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp.toInstant())
         },
         expireAfterMs = message.expirationData?.expireAfter?.inWholeMilliseconds,
-        selfDeletionStartDate = message.expirationData?.let {
+        selfDeletionEndDate = message.expirationData?.let {
             when (it.selfDeletionStatus) {
-                is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionStatus.selfDeletionStartDate
+                is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionStatus.selfDeletionEndDate
                 is Message.ExpirationData.SelfDeletionStatus.NotStarted -> null
             }
         },
@@ -117,9 +119,9 @@ class MessageMapperImpl(
         senderName = message.senderUserName,
         expireAfterMs = message.expirationData?.expireAfter?.inWholeMilliseconds,
         readCount = if (message.status is Message.Status.Read) message.status.readCount else 0,
-        selfDeletionStartDate = message.expirationData?.let {
+        selfDeletionEndDate = message.expirationData?.let {
             when (it.selfDeletionStatus) {
-                is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionStatus.selfDeletionStartDate
+                is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionStatus.selfDeletionEndDate
                 is Message.ExpirationData.SelfDeletionStatus.NotStarted -> null
             }
         }
@@ -161,9 +163,10 @@ class MessageMapperImpl(
         expirationData = message.expireAfterMs?.let {
             Message.ExpirationData(
                 expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
-                selfDeletionStatus = message.selfDeletionStartDate
+                selfDeletionStatus = message.selfDeletionEndDate
                     ?.let { Message.ExpirationData.SelfDeletionStatus.Started(it) }
-                    ?: Message.ExpirationData.SelfDeletionStatus.NotStarted)
+                    ?: Message.ExpirationData.SelfDeletionStatus.NotStarted
+            )
         },
         visibility = message.visibility.toModel(),
         reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
@@ -179,9 +182,9 @@ class MessageMapperImpl(
         },
         sender = message.sender?.let {
             if (message.isSelfMessage) {
-                userMapper.fromUserEntityToSelfUser(it)
+                userMapper.fromUserDetailsEntityToSelfUser(it)
             } else {
-                userMapper.fromUserEntityToOtherUser(it)
+                userMapper.fromUserDetailsEntityToOtherUser(it)
             }
         }
     )
@@ -198,15 +201,16 @@ class MessageMapperImpl(
         expirationData = message.expireAfterMs?.let {
             Message.ExpirationData(
                 expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
-                selfDeletionStatus = message.selfDeletionStartDate
+                selfDeletionStatus = message.selfDeletionEndDate
                     ?.let { Message.ExpirationData.SelfDeletionStatus.Started(it) }
-                    ?: Message.ExpirationData.SelfDeletionStatus.NotStarted)
+                    ?: Message.ExpirationData.SelfDeletionStatus.NotStarted
+            )
         },
         sender = message.sender?.let {
             if (message.isSelfMessage) {
-                userMapper.fromUserEntityToSelfUser(it)
+                userMapper.fromUserDetailsEntityToSelfUser(it)
             } else {
-                userMapper.fromUserEntityToOtherUser(it)
+                userMapper.fromUserDetailsEntityToOtherUser(it)
             }
         }
     )
@@ -216,10 +220,20 @@ class MessageMapperImpl(
             id = message.id,
             conversationId = message.conversationId.toModel(),
             content = message.content.toMessageContent(),
-            date = message.date,
             visibility = message.visibility.toModel(),
             isSelfMessage = message.isSelfMessage,
             senderUserId = message.senderUserId.toModel()
+        )
+    }
+
+    override fun fromDraftToMessagePreview(message: MessageDraftEntity): MessagePreview {
+        return MessagePreview(
+            id = message.conversationId.toString(),
+            conversationId = message.conversationId.toModel(),
+            content = MessagePreviewContent.Draft(message.text),
+            visibility = Message.Visibility.VISIBLE,
+            isSelfMessage = true,
+            senderUserId = selfUserId
         )
     }
 

@@ -29,11 +29,11 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -57,10 +57,9 @@ class ObserveUserInfoUseCaseTest {
             assertEquals(TestUser.OTHER, (result as GetUserInfoResult.Success).otherUser)
 
             with(arrangement) {
-                verify(userRepository)
-                    .suspendFunction(userRepository::fetchUsersByIds)
-                    .with(any())
-                    .wasNotInvoked()
+                coVerify {
+                    userRepository.fetchUsersByIds(any())
+                }.wasNotInvoked()
             }
 
             awaitComplete()
@@ -80,10 +79,9 @@ class ObserveUserInfoUseCaseTest {
             awaitComplete()
 
             with(arrangement) {
-                verify(userRepository)
-                    .suspendFunction(userRepository::fetchUsersByIds)
-                    .with(any())
-                    .wasInvoked(once)
+                coVerify {
+                    userRepository.fetchUsersByIds(any())
+                }.wasInvoked(once)
             }
 
         }
@@ -104,10 +102,9 @@ class ObserveUserInfoUseCaseTest {
             assertIs<GetUserInfoResult.Failure>(result)
 
             with(arrangement) {
-                verify(userRepository)
-                    .suspendFunction(userRepository::fetchUsersByIds)
-                    .with(any())
-                    .wasInvoked(once)
+                coVerify {
+                    userRepository.fetchUsersByIds(any())
+                }.wasInvoked(once)
             }
 
             awaitComplete()
@@ -129,15 +126,13 @@ class ObserveUserInfoUseCaseTest {
             assertEquals(TestUser.OTHER.copy(teamId = null), (result as GetUserInfoResult.Success).otherUser)
 
             with(arrangement) {
-                verify(userRepository)
-                    .suspendFunction(userRepository::getKnownUser)
-                    .with(eq(userId))
-                    .wasInvoked(once)
+                coVerify {
+                    userRepository.getKnownUser(eq(userId))
+                }.wasInvoked(once)
 
-                verify(teamRepository)
-                    .suspendFunction(teamRepository::getTeam)
-                    .with(any())
-                    .wasNotInvoked()
+                coVerify {
+                    teamRepository.getTeam(any())
+                }.wasNotInvoked()
             }
             awaitComplete()
         }
@@ -159,20 +154,17 @@ class ObserveUserInfoUseCaseTest {
             assertEquals(TestUser.OTHER.copy(userType = UserType.INTERNAL), (result as GetUserInfoResult.Success).otherUser)
 
             with(arrangement) {
-                verify(userRepository)
-                    .suspendFunction(userRepository::getKnownUser)
-                    .with(eq(userId))
-                    .wasInvoked(once)
+                coVerify {
+                    userRepository.getKnownUser(eq(userId))
+                }.wasInvoked(once)
 
-                verify(teamRepository)
-                    .suspendFunction(teamRepository::getTeam)
-                    .with(any())
-                    .wasInvoked(once)
+                coVerify {
+                    teamRepository.getTeam(any())
+                }.wasInvoked(once)
 
-                verify(teamRepository)
-                    .suspendFunction(teamRepository::fetchTeamById)
-                    .with(any())
-                    .wasInvoked(once)
+                coVerify {
+                    teamRepository.fetchTeamById(any())
+                }.wasInvoked(once)
             }
             awaitComplete()
         }
@@ -190,20 +182,17 @@ class ObserveUserInfoUseCaseTest {
             // when
             useCase(userId).test {
                 with(arrangement) {
-                    verify(userRepository)
-                        .suspendFunction(userRepository::getKnownUser)
-                        .with(eq(userId))
-                        .wasInvoked(once)
+                    coVerify {
+                        userRepository.getKnownUser(eq(userId))
+                    }.wasInvoked(once)
 
-                    verify(teamRepository)
-                        .suspendFunction(teamRepository::getTeam)
-                        .with(any())
-                        .wasNotInvoked()
+                    coVerify {
+                        teamRepository.getTeam(any())
+                    }.wasNotInvoked()
 
-                    verify(teamRepository)
-                        .suspendFunction(teamRepository::fetchTeamById)
-                        .with(any())
-                        .wasNotInvoked()
+                    coVerify {
+                        teamRepository.fetchTeamById(any())
+                    }.wasNotInvoked()
                 }
                 awaitComplete()
             }
@@ -226,20 +215,17 @@ class ObserveUserInfoUseCaseTest {
             assertIs<GetUserInfoResult.Failure>(result)
 
             with(arrangement) {
-                verify(userRepository)
-                    .suspendFunction(userRepository::getKnownUser)
-                    .with(eq(userId))
-                    .wasInvoked(once)
+                coVerify {
+                    userRepository.getKnownUser(eq(userId))
+                }.wasInvoked(once)
 
-                verify(teamRepository)
-                    .suspendFunction(teamRepository::getTeam)
-                    .with(any())
-                    .wasInvoked(once)
+                coVerify {
+                    teamRepository.getTeam(any())
+                }.wasInvoked(once)
 
-                verify(teamRepository)
-                    .suspendFunction(teamRepository::fetchTeamById)
-                    .with(any())
-                    .wasInvoked(once)
+                coVerify {
+                    teamRepository.fetchTeamById(any())
+                }.wasInvoked(once)
             }
             awaitComplete()
         }
@@ -253,14 +239,13 @@ class ObserveUserInfoUseCaseTest {
         @Mock
         val teamRepository: TeamRepository = mock(TeamRepository::class)
 
-        fun withSuccessfulUserRetrieveFromDB(
+        suspend fun withSuccessfulUserRetrieveFromDB(
             hasTeam: Boolean = true,
             userType: UserType = UserType.EXTERNAL
         ): ObserveUserInfoUseCaseTestArrangement {
-            given(userRepository)
-                .suspendFunction(userRepository::getKnownUser)
-                .whenInvokedWith(any())
-                .thenReturn(
+            coEvery {
+                userRepository.getKnownUser(any())
+            }.returns(
                     flowOf(
                         if (hasTeam) TestUser.OTHER.copy(userType = userType) else TestUser.OTHER.copy(
                             teamId = null,
@@ -272,40 +257,36 @@ class ObserveUserInfoUseCaseTest {
             return this
         }
 
-        fun withFailingUserRetrieveFromDB(): ObserveUserInfoUseCaseTestArrangement {
-            given(userRepository)
-                .suspendFunction(userRepository::getKnownUser)
-                .whenInvokedWith(any())
-                .thenReturn(flowOf(null))
+        suspend fun withFailingUserRetrieveFromDB(): ObserveUserInfoUseCaseTestArrangement {
+            coEvery {
+                userRepository.getKnownUser(any())
+            }.returns(flowOf(null))
 
             return this
         }
 
-        fun withFailingUserFetching(): ObserveUserInfoUseCaseTestArrangement {
-            given(userRepository)
-                .suspendFunction(userRepository::fetchUsersByIds)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Left(CoreFailure.Unknown(RuntimeException("fetchUsersByIds error"))))
+        suspend fun withFailingUserFetching(): ObserveUserInfoUseCaseTestArrangement {
+            coEvery {
+                userRepository.fetchUsersByIds(any())
+            }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("fetchUsersByIds error"))))
 
             return this
         }
 
-        fun withSuccessfulUserFetching(): ObserveUserInfoUseCaseTestArrangement {
-            given(userRepository)
-                .suspendFunction(userRepository::fetchUsersByIds)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withSuccessfulUserFetching(): ObserveUserInfoUseCaseTestArrangement {
+            coEvery {
+                userRepository.fetchUsersByIds(any())
+            }.returns(Either.Right(Unit))
 
             return this
         }
 
-        fun withSuccessfulTeamRetrieve(
+        suspend fun withSuccessfulTeamRetrieve(
             localTeamPresent: Boolean = true,
         ): ObserveUserInfoUseCaseTestArrangement {
-            given(teamRepository)
-                .suspendFunction(teamRepository::getTeam)
-                .whenInvokedWith(any())
-                .thenReturn(
+            coEvery {
+                teamRepository.getTeam(any())
+            }.returns(
                     flowOf(
                         if (!localTeamPresent) null
                         else TestTeam.TEAM
@@ -313,29 +294,22 @@ class ObserveUserInfoUseCaseTest {
                 )
 
             if (!localTeamPresent) {
-                given(teamRepository)
-                    .suspendFunction(teamRepository::fetchTeamById)
-                    .whenInvokedWith(any())
-                    .thenReturn(Either.Right(TestTeam.TEAM))
+                coEvery {
+                    teamRepository.fetchTeamById(any())
+                }.returns(Either.Right(TestTeam.TEAM))
             }
 
             return this
         }
 
-        fun withFailingTeamRetrieve(): ObserveUserInfoUseCaseTestArrangement {
-            given(teamRepository)
-                .suspendFunction(teamRepository::getTeam)
-                .whenInvokedWith(any())
-                .thenReturn(
-                    flowOf(null)
-                )
+        suspend fun withFailingTeamRetrieve(): ObserveUserInfoUseCaseTestArrangement {
+            coEvery {
+                teamRepository.getTeam(any())
+            }.returns(flowOf(null))
 
-            given(teamRepository)
-                .suspendFunction(teamRepository::fetchTeamById)
-                .whenInvokedWith(any())
-                .thenReturn(
-                    Either.Left(CoreFailure.Unknown(RuntimeException("some error")))
-                )
+            coEvery {
+                teamRepository.fetchTeamById(any())
+            }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
 
             return this
         }

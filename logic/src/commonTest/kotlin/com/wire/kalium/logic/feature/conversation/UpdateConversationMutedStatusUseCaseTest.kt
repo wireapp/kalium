@@ -25,11 +25,11 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -50,51 +50,44 @@ class UpdateConversationMutedStatusUseCaseTest {
     @Test
     fun givenAConversationId_whenInvokingAMutedStatusChange_thenShouldDelegateTheCallAndReturnASuccessResult() = runTest {
         val conversationId = TestConversation.ID
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::updateMutedStatusRemotely)
-            .whenInvokedWith(any(), eq(MutedConversationStatus.AllMuted), any())
-            .thenReturn(Either.Right(Unit))
+        coEvery {
+            conversationRepository.updateMutedStatusRemotely(any(), eq(MutedConversationStatus.AllMuted), any())
+        }.returns(Either.Right(Unit))
 
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::updateMutedStatusLocally)
-            .whenInvokedWith(any(), eq(MutedConversationStatus.AllMuted), any())
-            .thenReturn(Either.Right(Unit))
+        coEvery {
+            conversationRepository.updateMutedStatusLocally(any(), eq(MutedConversationStatus.AllMuted), any())
+        }.returns(Either.Right(Unit))
 
         val result = updateConversationMutedStatus(conversationId, MutedConversationStatus.AllMuted)
         assertEquals(ConversationUpdateStatusResult.Success::class, result::class)
 
-        verify(conversationRepository)
-            .suspendFunction(conversationRepository::updateMutedStatusRemotely)
-            .with(any(), eq(MutedConversationStatus.AllMuted), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            conversationRepository.updateMutedStatusRemotely(any(), eq(MutedConversationStatus.AllMuted), any())
+        }.wasInvoked(exactly = once)
 
-        verify(conversationRepository)
-            .suspendFunction(conversationRepository::updateMutedStatusLocally)
-            .with(any(), eq(MutedConversationStatus.AllMuted), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            conversationRepository.updateMutedStatusLocally(any(), eq(MutedConversationStatus.AllMuted), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenAConversationId_whenInvokingAMutedStatusChangeAndFails_thenShouldDelegateTheCallAndReturnAFailureResult() = runTest {
         val conversationId = TestConversation.ID
 
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::updateMutedStatusRemotely)
-            .whenInvokedWith(any(), eq(MutedConversationStatus.AllMuted), any())
-            .thenReturn(Either.Left(NetworkFailure.ServerMiscommunication(RuntimeException("some error"))))
+        coEvery {
+            conversationRepository.updateMutedStatusRemotely(any(), eq(MutedConversationStatus.AllMuted), any())
+        }.returns(Either.Left(NetworkFailure.ServerMiscommunication(RuntimeException("some error"))))
 
         val result = updateConversationMutedStatus(conversationId, MutedConversationStatus.AllMuted)
         assertEquals(ConversationUpdateStatusResult.Failure::class, result::class)
 
-        verify(conversationRepository)
-            .suspendFunction(conversationRepository::updateMutedStatusRemotely)
-            .with(any(), eq(MutedConversationStatus.AllMuted), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            conversationRepository.updateMutedStatusRemotely(any(), eq(MutedConversationStatus.AllMuted), any())
+        }.wasInvoked(exactly = once)
 
-        verify(conversationRepository)
-            .suspendFunction(conversationRepository::updateMutedStatusLocally)
-            .with(any(), eq(MutedConversationStatus.AllMuted), any())
-            .wasNotInvoked()
+        coVerify {
+            conversationRepository.updateMutedStatusLocally(any(), eq(MutedConversationStatus.AllMuted), any())
+        }.wasNotInvoked()
 
     }
 

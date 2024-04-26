@@ -21,13 +21,13 @@ import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneO
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 
 internal interface UpdateSupportedProtocolsAndResolveOneOnOnesArrangement {
     val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 
-    fun withUpdateSupportedProtocolsAndResolveOneOnOnesSuccessful()
+    suspend fun withUpdateSupportedProtocolsAndResolveOneOnOnesSuccessful()
 }
 
 internal class UpdateSupportedProtocolsAndResolveOneOnOnesArrangementImpl
@@ -36,11 +36,10 @@ internal class UpdateSupportedProtocolsAndResolveOneOnOnesArrangementImpl
         override val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase =
             mock(UpdateSupportedProtocolsAndResolveOneOnOnesUseCase::class)
 
-    override fun withUpdateSupportedProtocolsAndResolveOneOnOnesSuccessful() {
-        given(updateSupportedProtocolsAndResolveOneOnOnes)
-            .suspendFunction(updateSupportedProtocolsAndResolveOneOnOnes::invoke)
-            .whenInvokedWith(any())
-            .thenReturn(Either.Right(Unit))
+    override suspend fun withUpdateSupportedProtocolsAndResolveOneOnOnesSuccessful() {
+        coEvery {
+            updateSupportedProtocolsAndResolveOneOnOnes.invoke(any())
+        }.returns(Either.Right(Unit))
     }
 
 }
