@@ -37,8 +37,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -320,23 +319,22 @@ class UserSearchApiWrapperTest {
         lateinit var selfUserId: UserId
 
         @Mock
-        private val userSearchApi: UserSearchApi = mock(classOf<UserSearchApi>())
+        private val userSearchApi: UserSearchApi = mock(UserSearchApi::class)
 
         fun withSelfUserId(selfUserId: UserId) = apply {
             this.selfUserId = selfUserId
         }
 
-        fun withSuccessConversationExcludedFullSearch(
+        suspend fun withSuccessConversationExcludedFullSearch(
             conversationMembers: List<MemberEntity>,
             searchApiUsers: List<ContactDTO>,
         ): Arrangement {
 
             withObserveConversationMembers(flowOf(conversationMembers))
 
-            given(userSearchApi)
-                .suspendFunction(userSearchApi::search)
-                .whenInvokedWith(any())
-                .thenReturn(
+            coEvery {
+                userSearchApi.search(any())
+            }.returns(
                     NetworkResponse.Success(
                         generateUserSearchResponse(searchApiUsers),
                         mapOf(),
@@ -347,14 +345,13 @@ class UserSearchApiWrapperTest {
             return this
         }
 
-        fun withSuccessFullSearch(
+        suspend fun withSuccessFullSearch(
             searchApiUsers: List<ContactDTO>,
         ): Arrangement {
 
-            given(userSearchApi)
-                .suspendFunction(userSearchApi::search)
-                .whenInvokedWith(any())
-                .thenReturn(
+            coEvery {
+                userSearchApi.search(any())
+            }.returns(
                     NetworkResponse.Success(
                         generateUserSearchResponse(searchApiUsers),
                         mapOf(),

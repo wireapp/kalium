@@ -33,13 +33,12 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -59,15 +58,13 @@ class MemberJoinEventHandlerTest {
 
         eventHandler.handle(event)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::fetchConversationIfUnknown)
-            .with(eq(event.conversationId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.fetchConversationIfUnknown(eq(event.conversationId))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::fetchConversation)
-            .with(eq(event.conversationId))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.conversationRepository.fetchConversation(eq(event.conversationId))
+        }.wasNotInvoked()
     }
 
     @Test
@@ -84,15 +81,13 @@ class MemberJoinEventHandlerTest {
 
         eventHandler.handle(event)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::fetchConversationIfUnknown)
-            .with(eq(event.conversationId))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.conversationRepository.fetchConversationIfUnknown(eq(event.conversationId))
+        }.wasNotInvoked()
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::fetchConversation)
-            .with(eq(event.conversationId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.fetchConversation(eq(event.conversationId))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -109,10 +104,9 @@ class MemberJoinEventHandlerTest {
 
         eventHandler.handle(event)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::persistMembers)
-            .with(eq(newMembers), eq(event.conversationId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.persistMembers(eq(newMembers), eq(event.conversationId))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -129,10 +123,9 @@ class MemberJoinEventHandlerTest {
 
         eventHandler.handle(event)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::persistMembers)
-            .with(eq(newMembers), eq(event.conversationId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.persistMembers(eq(newMembers), eq(event.conversationId))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -149,14 +142,13 @@ class MemberJoinEventHandlerTest {
 
         eventHandler.handle(event)
 
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(
-                matching {
+        coVerify {
+            arrangement.persistMessage.invoke(
+                matches {
                     it is Message.System && it.content is MessageContent.MemberChange
                 }
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -173,14 +165,13 @@ class MemberJoinEventHandlerTest {
 
         eventHandler.handle(event)
 
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(
-                matching {
+        coVerify {
+            arrangement.persistMessage.invoke(
+                matches {
                     it is Message.System && it.content is MessageContent.MemberChange && it.id.isNotEmpty()
                 }
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -197,24 +188,23 @@ class MemberJoinEventHandlerTest {
         // when
         eventHandler.handle(event)
         // then
-        verify(arrangement.legalHoldHandler)
-            .suspendFunction(arrangement.legalHoldHandler::handleConversationMembersChanged)
-            .with(eq(event.conversationId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.legalHoldHandler.handleConversationMembersChanged(eq(event.conversationId))
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
         @Mock
-        val persistMessage = mock(classOf<PersistMessageUseCase>())
+        val persistMessage = mock(PersistMessageUseCase::class)
 
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
+        val conversationRepository = mock(ConversationRepository::class)
 
         @Mock
-        private val userRepository = mock(classOf<UserRepository>())
+        private val userRepository = mock(UserRepository::class)
 
         @Mock
-        val legalHoldHandler = mock(classOf<LegalHoldHandler>())
+        val legalHoldHandler = mock(LegalHoldHandler::class)
 
         private val memberJoinEventHandler: MemberJoinEventHandler = MemberJoinEventHandlerImpl(
             conversationRepository = conversationRepository,
@@ -224,57 +214,48 @@ class MemberJoinEventHandlerTest {
             selfUserId = TestUser.SELF.id
         )
 
-        init {
-            given(legalHoldHandler)
-                .suspendFunction(legalHoldHandler::handleConversationMembersChanged)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                persistMessage.invoke(any())
+            }.returns(result)
         }
 
-        fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
-            given(persistMessage)
-                .suspendFunction(persistMessage::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withFetchConversationIfUnknownSucceeding() = apply {
+            coEvery {
+                conversationRepository.fetchConversationIfUnknown(any())
+            }.returns(Either.Right(Unit))
+            coEvery {
+                conversationRepository.fetchConversation(any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withFetchConversationIfUnknownSucceeding() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::fetchConversationIfUnknown)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::fetchConversation)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withFetchConversationIfUnknownFailing(coreFailure: CoreFailure) = apply {
+            coEvery {
+                conversationRepository.fetchConversationIfUnknown(any())
+            }.returns(Either.Left(coreFailure))
+            coEvery {
+                conversationRepository.fetchConversation(any())
+            }.returns(Either.Left(coreFailure))
         }
 
-        fun withFetchConversationIfUnknownFailing(coreFailure: CoreFailure) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::fetchConversationIfUnknown)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Left(coreFailure))
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::fetchConversation)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Left(coreFailure))
+        suspend fun withPersistMembersSucceeding() = apply {
+            coEvery {
+                conversationRepository.persistMembers(any(), any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withPersistMembersSucceeding() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::persistMembers)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withFetchUsersIfUnknownByIdsReturning(result: Either<StorageFailure, Unit>) = apply {
+            coEvery {
+                userRepository.fetchUsersIfUnknownByIds(any())
+            }.returns(result)
         }
 
-        fun withFetchUsersIfUnknownByIdsReturning(result: Either<StorageFailure, Unit>) = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::fetchUsersIfUnknownByIds)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun arrange() = run {
+            coEvery {
+                legalHoldHandler.handleConversationMembersChanged(any())
+            }.returns(Either.Right(Unit))
+            this to memberJoinEventHandler
         }
-
-        fun arrange() = this to memberJoinEventHandler
     }
 
 }

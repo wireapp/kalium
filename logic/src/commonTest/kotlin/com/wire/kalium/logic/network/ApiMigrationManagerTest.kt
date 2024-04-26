@@ -22,12 +22,11 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.persistence.dao.MetadataDAO
 import io.mockative.Mock
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -44,7 +43,6 @@ class ApiMigrationMock : ApiMigration {
 
 }
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class ApiMigrationManagerTest {
 
     @Test
@@ -123,10 +121,9 @@ class ApiMigrationManagerTest {
 
         apiUpgradeManager.performMigrations()
 
-        verify(arrangement.metadataDAO)
-            .suspendFunction(arrangement.metadataDAO::insertValue)
-            .with(eq("2"), eq(ApiMigrationManager.LAST_API_VERSION_IN_USE_KEY))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.metadataDAO.insertValue(eq("2"), eq(ApiMigrationManager.LAST_API_VERSION_IN_USE_KEY))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -143,15 +140,15 @@ class ApiMigrationManagerTest {
 
         apiUpgradeManager.performMigrations()
 
-        verify(arrangement.metadataDAO)
-            .suspendFunction(arrangement.metadataDAO::insertValue)
-            .with(eq("1"), eq(ApiMigrationManager.LAST_API_VERSION_IN_USE_KEY))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.metadataDAO.insertValue(eq("1"), eq(ApiMigrationManager.LAST_API_VERSION_IN_USE_KEY))
+        }.wasInvoked(once)
     }
 
     class Arrangement {
 
         var apiVersion: Int = 0
+
         @Mock
         val metadataDAO = mock(MetadataDAO::class)
         var migrations: MutableList<Pair<Int, ApiMigration>> = mutableListOf()
@@ -160,11 +157,10 @@ class ApiMigrationManagerTest {
             this.apiVersion = apiVersion
         }
 
-        fun withPreviousApiVersion(apiVersion: Int) = apply {
-            given(metadataDAO)
-                .suspendFunction(metadataDAO::valueByKey)
-                .whenInvokedWith(eq(ApiMigrationManager.LAST_API_VERSION_IN_USE_KEY))
-                .thenReturn(apiVersion.toString())
+        suspend fun withPreviousApiVersion(apiVersion: Int) = apply {
+            coEvery {
+                metadataDAO.valueByKey(eq(ApiMigrationManager.LAST_API_VERSION_IN_USE_KEY))
+            }.returns(apiVersion.toString())
         }
 
         fun withMigration(api: Int, migration: ApiMigration) = apply {

@@ -24,14 +24,13 @@ import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 class PersistReactionUseCaseTest {
-
 
     @Test
     fun givenHeavyBlackHeartInReactions_whenPersisting_thenShouldConvertToHeartEmoji() = runTest {
@@ -47,24 +46,21 @@ class PersistReactionUseCaseTest {
             date = "date"
         )
 
-        verify(arrangement.reactionRepository)
-            .suspendFunction(arrangement.reactionRepository::updateReaction)
-            .with(any(), any(), any(), any(), eq("❤️"))
+        coVerify {
+            arrangement.reactionRepository.updateReaction(any(), any(), any(), any(), eq(setOf("❤️")))
+        }
     }
 
     private class Arrangement {
         @Mock
         val reactionRepository = mock(ReactionRepository::class)
 
-        init {
-            given(reactionRepository)
-                .suspendFunction(reactionRepository::updateReaction)
-                .whenInvokedWith(any(), any(), any(), any(), any())
-                .thenReturn(Either.Right(Unit))
-        }
-
-        fun arrange() = this to PersistReactionUseCaseImpl(
+        suspend fun arrange() = this to PersistReactionUseCaseImpl(
             reactionRepository = reactionRepository
-        )
+        ).also {
+            coEvery {
+                reactionRepository.updateReaction(any(), any(), any(), any(), any())
+            }.returns(Either.Right(Unit))
+        }
     }
 }

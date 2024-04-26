@@ -292,12 +292,11 @@ internal class MessageDAOImpl internal constructor(
                 .associateBy { it.conversationId }
         }
 
-    override suspend fun getNotificationMessage(): Flow<List<NotificationMessageEntity>> =
+    override suspend fun getNotificationMessage(maxNumberOfMessagesPerConversation: Int): Flow<List<NotificationMessageEntity>> =
         notificationQueries.getNotificationsMessages(mapper::toNotificationEntity)
             .asFlow()
             .flowOn(coroutineContext)
             .mapToList()
-            .distinctUntilChanged()
 
     override suspend fun observeMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,

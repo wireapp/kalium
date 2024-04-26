@@ -28,12 +28,11 @@ import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
-import io.mockative.KFunction2
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -102,9 +101,10 @@ class ObserveIsAppLockEditableUseCaseTest {
     class Arrangement {
 
         @Mock
-        val userSessionScopeProvider = mock(classOf<UserSessionScopeProvider>())
+        val userSessionScopeProvider = mock(UserSessionScopeProvider::class)
+
         @Mock
-        val sessionRepository = mock(classOf<SessionRepository>())
+        val sessionRepository = mock(SessionRepository::class)
 
         private val useCase by lazy {
             ObserveIsAppLockEditableUseCaseImpl(
@@ -114,22 +114,20 @@ class ObserveIsAppLockEditableUseCaseTest {
         }
 
         fun arrange() = this to useCase
-        fun withAllValidSessionsFlow(result: Flow<List<AccountInfo>>) = apply {
-            given(sessionRepository)
-                .suspendFunction(sessionRepository::allValidSessionsFlow)
-                .whenInvoked()
-                .thenReturn(result.map { Either.Right(it) })
+        suspend fun withAllValidSessionsFlow(result: Flow<List<AccountInfo>>) = apply {
+            coEvery {
+                sessionRepository.allValidSessionsFlow()
+            }.returns(result.map { Either.Right(it) })
         }
+
         fun withObserveAppLockConfig(userId: UserId, result: Flow<Either<StorageFailure, AppLockTeamConfig>>) = apply {
-            val userConfigRepository = mock(classOf<UserConfigRepository>())
-            given(userSessionScopeProvider)
-                .function(userSessionScopeProvider::getOrCreate, KFunction2<UserId, UserSessionScope.() -> UserConfigRepository>())
-                .whenInvokedWith(eq(userId), any())
-                .thenReturn(userConfigRepository)
-            given(userConfigRepository)
-                .function(userConfigRepository::observeAppLockConfig)
-                .whenInvoked()
-                .thenReturn(result)
+            val userConfigRepository = mock(UserConfigRepository::class)
+            every {
+                userSessionScopeProvider.getOrCreate(eq(userId), any<UserSessionScope.() -> UserConfigRepository>())
+            }.returns(userConfigRepository)
+            every {
+                userConfigRepository.observeAppLockConfig()
+            }.returns(result)
         }
     }
 }

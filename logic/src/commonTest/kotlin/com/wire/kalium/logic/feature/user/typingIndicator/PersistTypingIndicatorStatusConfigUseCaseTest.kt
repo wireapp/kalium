@@ -21,11 +21,10 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
@@ -40,9 +39,9 @@ class PersistTypingIndicatorStatusConfigUseCaseTest {
 
         val actual = persistTypingIndicatorStatusConfig(true)
 
-        verify(arrangement.userPropertyRepository)
-            .suspendFunction(arrangement.userPropertyRepository::setTypingIndicatorEnabled)
-            .wasInvoked(once)
+        coVerify {
+            arrangement.userPropertyRepository.setTypingIndicatorEnabled()
+        }.wasInvoked(once)
         assertTrue(actual is TypingIndicatorConfigResult.Success)
     }
 
@@ -54,9 +53,9 @@ class PersistTypingIndicatorStatusConfigUseCaseTest {
 
         val actual = persistTypingIndicatorStatusConfig(false)
 
-        verify(arrangement.userPropertyRepository)
-            .suspendFunction(arrangement.userPropertyRepository::removeTypingIndicatorProperty)
-            .wasInvoked(once)
+        coVerify {
+            arrangement.userPropertyRepository.removeTypingIndicatorProperty()
+        }.wasInvoked(once)
 
         assertTrue(actual is TypingIndicatorConfigResult.Success)
     }
@@ -69,42 +68,39 @@ class PersistTypingIndicatorStatusConfigUseCaseTest {
 
         val actual = persistTypingIndicatorStatusConfig(true)
 
-        verify(arrangement.userPropertyRepository)
-            .suspendFunction(arrangement.userPropertyRepository::setTypingIndicatorEnabled)
-            .wasInvoked(once)
+        coVerify {
+            arrangement.userPropertyRepository.setTypingIndicatorEnabled()
+        }.wasInvoked(once)
 
         assertTrue(actual is TypingIndicatorConfigResult.Failure)
     }
 
     private class Arrangement {
         @Mock
-        val userPropertyRepository = mock(classOf<UserPropertyRepository>())
+        val userPropertyRepository = mock(UserPropertyRepository::class)
 
         val persistTypingIndicatorStatusConfig = PersistTypingIndicatorStatusConfigUseCaseImpl(userPropertyRepository)
 
-        fun withSuccessfulCall() = apply {
-            given(userPropertyRepository)
-                .suspendFunction(userPropertyRepository::setTypingIndicatorEnabled)
-                .whenInvoked()
-                .thenReturn(Either.Right(Unit))
+        suspend fun withSuccessfulCall() = apply {
+            coEvery {
+                userPropertyRepository.setTypingIndicatorEnabled()
+            }.returns(Either.Right(Unit))
 
             return this
         }
 
-        fun withSuccessfulCallToDelete() = apply {
-            given(userPropertyRepository)
-                .suspendFunction(userPropertyRepository::removeTypingIndicatorProperty)
-                .whenInvoked()
-                .thenReturn(Either.Right(Unit))
+        suspend fun withSuccessfulCallToDelete() = apply {
+            coEvery {
+                userPropertyRepository.removeTypingIndicatorProperty()
+            }.returns(Either.Right(Unit))
 
             return this
         }
 
-        fun withFailureCallToRepo() = apply {
-            given(userPropertyRepository)
-                .suspendFunction(userPropertyRepository::setTypingIndicatorEnabled)
-                .whenInvoked()
-                .thenReturn(Either.Left(CoreFailure.Unknown(RuntimeException("Some error"))))
+        suspend fun withFailureCallToRepo() = apply {
+            coEvery {
+                userPropertyRepository.setTypingIndicatorEnabled()
+            }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("Some error"))))
 
             return this
         }

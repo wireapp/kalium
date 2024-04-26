@@ -17,8 +17,14 @@
  */
 package com.wire.kalium.persistence.dao.message.draft
 
+import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.MessageDraftsQueries
 import com.wire.kalium.persistence.dao.ConversationIDEntity
+import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.util.mapToList
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
 
@@ -27,10 +33,10 @@ class MessageDraftDAOImpl internal constructor(
     private val coroutineContext: CoroutineContext,
 ) : MessageDraftDAO {
 
-    override suspend fun upsertMessageDraft(conversationIDEntity: ConversationIDEntity, messageDraft: MessageDraftEntity) =
+    override suspend fun upsertMessageDraft(messageDraft: MessageDraftEntity) =
         withContext(coroutineContext) {
             queries.upsertDraft(
-                conversation_id = conversationIDEntity,
+                conversation_id = messageDraft.conversationId,
                 text = messageDraft.text,
                 edit_message_id = messageDraft.editMessageId,
                 quoted_message_id = messageDraft.quotedMessageId,
@@ -40,17 +46,30 @@ class MessageDraftDAOImpl internal constructor(
 
     override suspend fun getMessageDraft(conversationIDEntity: ConversationIDEntity): MessageDraftEntity? =
         withContext(coroutineContext) {
-            queries.getDraft(conversationIDEntity) { qualifiedIDEntity, text, editMessageID, quotedMessageId, mentionList ->
-                MessageDraftEntity(
-                    text = text.orEmpty(),
-                    editMessageId = editMessageID,
-                    quotedMessageId = quotedMessageId,
-                    selectedMentionList = mentionList
-                )
-            }.executeAsOneOrNull()
+            queries.getDraft(conversationIDEntity, ::toDao).executeAsOneOrNull()
         }
 
     override suspend fun removeMessageDraft(conversationIDEntity: ConversationIDEntity) {
         queries.deleteDraft(conversationIDEntity)
     }
+
+    override suspend fun observeMessageDrafts(): Flow<List<MessageDraftEntity>> = queries.getDrafts(::toDao)
+        .asFlow()
+        .flowOn(coroutineContext)
+        .mapToList()
+
+    private fun toDao(
+        conversationId: QualifiedIDEntity,
+        text: String?,
+        editMessageId: String?,
+        quotedMessageId: String?,
+        mentionList: List<MessageEntity.Mention>
+    ): MessageDraftEntity =
+        MessageDraftEntity(
+            conversationId = conversationId,
+            text = text.orEmpty(),
+            editMessageId = editMessageId,
+            quotedMessageId = quotedMessageId,
+            selectedMentionList = mentionList
+        )
 }

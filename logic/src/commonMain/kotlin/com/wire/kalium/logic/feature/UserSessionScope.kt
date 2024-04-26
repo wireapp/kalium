@@ -696,7 +696,8 @@ class UserSessionScope internal constructor(
             userStorage.database.messageDAO,
             userStorage.database.clientDAO,
             authenticatedNetworkContainer.clientApi,
-            userStorage.database.conversationMetaDataDAO
+            userStorage.database.conversationMetaDataDAO,
+            userStorage.database.messageDraftDAO
         )
 
     private val conversationGroupRepository: ConversationGroupRepository
@@ -740,6 +741,28 @@ class UserSessionScope internal constructor(
             messageDraftDAO = userStorage.database.messageDraftDAO,
         )
 
+    private val slowSyncRepository: SlowSyncRepository by lazy { SlowSyncRepositoryImpl(userStorage.database.metadataDAO) }
+    private val incrementalSyncRepository: IncrementalSyncRepository by lazy { InMemoryIncrementalSyncRepository() }
+
+    private val legalHoldSystemMessagesHandler = LegalHoldSystemMessagesHandlerImpl(
+        selfUserId = userId,
+        persistMessage = persistMessage,
+        conversationRepository = conversationRepository,
+        messageRepository = messageRepository
+    )
+
+    private val legalHoldHandler = LegalHoldHandlerImpl(
+        selfUserId = userId,
+        fetchUsersClientsFromRemote = fetchUsersClientsFromRemote,
+        fetchSelfClientsFromRemote = fetchSelfClientsFromRemote,
+        observeLegalHoldStateForUser = observeLegalHoldStateForUser,
+        membersHavingLegalHoldClient = membersHavingLegalHoldClient,
+        userConfigRepository = userConfigRepository,
+        conversationRepository = conversationRepository,
+        observeSyncState = observeSyncState,
+        legalHoldSystemMessagesHandler = legalHoldSystemMessagesHandler,
+    )
+
     private val userRepository: UserRepository = UserDataSource(
         userStorage.database.userDAO,
         userStorage.database.metadataDAO,
@@ -749,7 +772,8 @@ class UserSessionScope internal constructor(
         authenticatedNetworkContainer.teamsApi,
         globalScope.sessionRepository,
         userId,
-        selfTeamId
+        selfTeamId,
+        legalHoldHandler
     )
 
     private val accountRepository: AccountRepository
@@ -874,12 +898,6 @@ class UserSessionScope internal constructor(
             assetDao = userStorage.database.assetDAO,
             kaliumFileSystem = kaliumFileSystem
         )
-
-    private val incrementalSyncRepository: IncrementalSyncRepository by lazy {
-        InMemoryIncrementalSyncRepository()
-    }
-
-    private val slowSyncRepository: SlowSyncRepository by lazy { SlowSyncRepositoryImpl(userStorage.database.metadataDAO) }
 
     private val eventGatherer: EventGatherer get() = EventGathererImpl(eventRepository, incrementalSyncRepository)
 
@@ -1463,13 +1481,6 @@ class UserSessionScope internal constructor(
     val membersHavingLegalHoldClient: MembersHavingLegalHoldClientUseCase
         get() = MembersHavingLegalHoldClientUseCaseImpl(clientRepository)
 
-    private val legalHoldSystemMessagesHandler = LegalHoldSystemMessagesHandlerImpl(
-        selfUserId = userId,
-        persistMessage = persistMessage,
-        conversationRepository = conversationRepository,
-        messageRepository = messageRepository
-    )
-
     private val updateSelfClientCapabilityToLegalHoldConsent: UpdateSelfClientCapabilityToLegalHoldConsentUseCase
         get() = UpdateSelfClientCapabilityToLegalHoldConsentUseCaseImpl(
             clientRemoteRepository = clientRemoteRepository,
@@ -1478,18 +1489,6 @@ class UserSessionScope internal constructor(
             incrementalSyncRepository = incrementalSyncRepository,
             kaliumLogger = userScopedLogger,
         )
-
-    private val legalHoldHandler = LegalHoldHandlerImpl(
-        selfUserId = userId,
-        fetchUsersClientsFromRemote = fetchUsersClientsFromRemote,
-        fetchSelfClientsFromRemote = fetchSelfClientsFromRemote,
-        observeLegalHoldStateForUser = observeLegalHoldStateForUser,
-        membersHavingLegalHoldClient = membersHavingLegalHoldClient,
-        userConfigRepository = userConfigRepository,
-        conversationRepository = conversationRepository,
-        observeSyncState = observeSyncState,
-        legalHoldSystemMessagesHandler = legalHoldSystemMessagesHandler,
-    )
 
     private val fetchLegalHoldForSelfUserFromRemoteUseCase: FetchLegalHoldForSelfUserFromRemoteUseCase
         get() = FetchLegalHoldForSelfUserFromRemoteUseCaseImpl(

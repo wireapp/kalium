@@ -31,9 +31,10 @@ import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryA
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -52,15 +53,13 @@ class ProtocolUpdateEventHandlerTest {
 
         useCase.handle(event).shouldSucceed()
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateProtocolLocally)
-            .with(eq(event.conversationId), eq(event.protocol))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.updateProtocolLocally(eq(event.conversationId), eq(event.protocol))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.systemMessageInserter)
-            .suspendFunction(arrangement.systemMessageInserter::insertProtocolChangedSystemMessage)
-            .with(any(), any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -75,20 +74,17 @@ class ProtocolUpdateEventHandlerTest {
 
         useCase.handle(event).shouldSucceed()
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateProtocolLocally)
-            .with(eq(event.conversationId), eq(event.protocol))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.updateProtocolLocally(eq(event.conversationId), eq(event.protocol))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.systemMessageInserter)
-            .suspendFunction(arrangement.systemMessageInserter::insertProtocolChangedSystemMessage)
-            .with(any(), any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(any(), any(), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.systemMessageInserter)
-            .suspendFunction(arrangement.systemMessageInserter::insertProtocolChangedDuringACallSystemMessage)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.systemMessageInserter.insertProtocolChangedDuringACallSystemMessage(any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -105,10 +101,9 @@ class ProtocolUpdateEventHandlerTest {
             assertEquals(failure, it)
         }
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateProtocolLocally)
-            .with(eq(event.conversationId), eq(event.protocol))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.updateProtocolLocally(eq(event.conversationId), eq(event.protocol))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -123,10 +118,9 @@ class ProtocolUpdateEventHandlerTest {
 
         useCase.handle(event).shouldSucceed()
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateProtocolLocally)
-            .with(eq(event.conversationId), eq(event.protocol))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.updateProtocolLocally(eq(event.conversationId), eq(event.protocol))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -140,17 +134,19 @@ class ProtocolUpdateEventHandlerTest {
 
         useCase.handle(event).shouldSucceed()
 
-        verify(arrangement.systemMessageInserter)
-            .suspendFunction(arrangement.systemMessageInserter::insertProtocolChangedSystemMessage)
-            .with(eq(event.conversationId), eq(event.senderUserId), eq(event.protocol))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.systemMessageInserter.insertProtocolChangedSystemMessage(
+                eq(event.conversationId),
+                eq(event.senderUserId),
+                eq(event.protocol)
+            )
+        }.wasNotInvoked()
     }
 
-    private class Arrangement(private val block: Arrangement.() -> Unit) :
+    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         SystemMessageInserterArrangement by SystemMessageInserterArrangementImpl(),
-        CallRepositoryArrangement by CallRepositoryArrangementImpl()
-    {
+        CallRepositoryArrangement by CallRepositoryArrangementImpl() {
         private val protocolUpdateEventHandler: ProtocolUpdateEventHandler = ProtocolUpdateEventHandlerImpl(
             conversationRepository,
             systemMessageInserter,
@@ -158,12 +154,12 @@ class ProtocolUpdateEventHandlerTest {
         )
 
         fun arrange() = run {
-            block()
+            runBlocking { block() }
             this@Arrangement to protocolUpdateEventHandler
         }
     }
 
     companion object {
-        private fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+        private fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
     }
 }

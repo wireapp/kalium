@@ -29,12 +29,12 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
-import io.mockative.anything
+import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.TestResult
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -53,10 +53,9 @@ class AccessTokenRefresherTest {
             .shouldFail {
                 assertEquals(failure, it)
             }
-        verify(arrangement.repository)
-            .suspendFunction(arrangement.repository::persistTokens)
-            .with(anything())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.repository.persistTokens(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -90,10 +89,9 @@ class AccessTokenRefresherTest {
         }
 
         accessTokenRefresher.refreshTokenAndPersistSession("egal")
-        verify(arrangement.repository)
-            .suspendFunction(arrangement.repository::persistTokens)
-            .with(eq(TEST_REFRESH_RESULT.accessToken), eq(TEST_REFRESH_RESULT.refreshToken))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.repository.persistTokens(eq(TEST_REFRESH_RESULT.accessToken), eq(TEST_REFRESH_RESULT.refreshToken))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -108,33 +106,31 @@ class AccessTokenRefresherTest {
         accessTokenRefresher.refreshTokenAndPersistSession("egal").shouldSucceed { }
     }
 
-    private class Arrangement(private val configure: Arrangement.() -> Unit) {
+    private class Arrangement(private val configure: suspend Arrangement.() -> Unit) {
 
         @Mock
         val repository = mock(AccessTokenRepository::class)
 
-        fun arrange(): Pair<Arrangement, AccessTokenRefresher> = run {
+        suspend fun arrange(): Pair<Arrangement, AccessTokenRefresher> = run {
             configure()
             this@Arrangement to AccessTokenRefresherImpl(repository)
         }
 
-        fun withRefreshTokenReturning(result: Either<NetworkFailure, AccessTokenRefreshResult>) {
-            given(repository)
-                .suspendFunction(repository::getNewAccessToken)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(result)
+        suspend fun withRefreshTokenReturning(result: Either<NetworkFailure, AccessTokenRefreshResult>) {
+            coEvery {
+                repository.getNewAccessToken(any(), any())
+            }.returns(result)
         }
 
-        fun withPersistReturning(result: Either<StorageFailure, AccountTokens>) {
-            given(repository)
-                .suspendFunction(repository::persistTokens)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(result)
+        suspend fun withPersistReturning(result: Either<StorageFailure, AccountTokens>) {
+            coEvery {
+                repository.persistTokens(any(), any())
+            }.returns(result)
         }
     }
 
     private companion object {
-        fun arrange(configure: Arrangement.() -> Unit) = Arrangement(configure).arrange()
+        suspend fun arrange(configure: suspend Arrangement.() -> Unit) = Arrangement(configure).arrange()
 
         val TEST_REFRESH_RESULT = AccessTokenRefreshResult(
             AccessToken("access", "refresh"),

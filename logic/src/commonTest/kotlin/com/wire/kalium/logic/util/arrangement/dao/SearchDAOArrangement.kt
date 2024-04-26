@@ -22,43 +22,46 @@ import com.wire.kalium.persistence.dao.SearchDAO
 import com.wire.kalium.persistence.dao.UserSearchEntity
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.fake.valueOf
+import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
+import io.mockative.matches
 import io.mockative.mock
 
 internal interface SearchDAOArrangement {
     @Mock
     val searchDAO: SearchDAO
 
-    fun withGetKnownContacts(
+    suspend fun withGetKnownContacts(
         result: List<UserSearchEntity>
     )
 
-    fun withGetKnownContactsExcludingAConversation(
+    suspend fun withGetKnownContactsExcludingAConversation(
         result: List<UserSearchEntity>,
-        conversationId: Matcher<ConversationIDEntity> = any()
+        conversationId: Matcher<ConversationIDEntity> = AnyMatcher(valueOf())
     )
 
-    fun withSearchList(
+    suspend fun withSearchList(
         result: List<UserSearchEntity>,
-        query: Matcher<String> = any()
+        query: Matcher<String> = AnyMatcher(valueOf())
     )
 
-    fun withSearchListExcludingAConversation(
+    suspend fun withSearchListExcludingAConversation(
         result: List<UserSearchEntity>,
-        conversationId: Matcher<ConversationIDEntity> = any(),
-        query: Matcher<String> = any()
+        conversationId: Matcher<ConversationIDEntity> = AnyMatcher(valueOf()),
+        query: Matcher<String> = AnyMatcher(valueOf())
     )
 
-    fun withSearchByHandle(
+    suspend fun withSearchByHandle(
         result: List<UserSearchEntity>,
-        handle: Matcher<String> = any()
+        handle: Matcher<String> = AnyMatcher(valueOf())
     )
 
-    fun withSearchByHandleExcludingConversation(
+    suspend fun withSearchByHandleExcludingConversation(
         result: List<UserSearchEntity>,
-        conversationId: Matcher<ConversationIDEntity> = any(),
-        handle: Matcher<String> = any()
+        conversationId: Matcher<ConversationIDEntity> = AnyMatcher(valueOf()),
+        handle: Matcher<String> = AnyMatcher(valueOf())
     )
 }
 
@@ -67,58 +70,60 @@ internal class SearchDAOArrangementImpl : SearchDAOArrangement {
     @Mock
     override val searchDAO: SearchDAO = mock(SearchDAO::class)
 
-    override fun withGetKnownContacts(
+    override suspend fun withGetKnownContacts(
         result: List<UserSearchEntity>
     ) {
-        given(searchDAO)
-            .suspendFunction(searchDAO::getKnownContacts)
-            .whenInvoked()
-            .then { result }
+        coEvery {
+            searchDAO.getKnownContacts()
+        }.returns(result)
     }
 
-    override fun withGetKnownContactsExcludingAConversation(
+    override suspend fun withGetKnownContactsExcludingAConversation(
         result: List<UserSearchEntity>,
         conversationId: Matcher<ConversationIDEntity>
     ) {
-        given(searchDAO)
-            .suspendFunction(searchDAO::getKnownContactsExcludingAConversation)
-            .whenInvokedWith(conversationId)
-            .then { result }
+        coEvery {
+            searchDAO.getKnownContactsExcludingAConversation(matches { conversationId.matches(it) })
+        }.returns(result)
     }
 
-    override fun withSearchList(result: List<UserSearchEntity>, query: Matcher<String>) {
-        given(searchDAO)
-            .suspendFunction(searchDAO::searchList)
-            .whenInvokedWith(query)
-            .then { result }
+    override suspend fun withSearchList(result: List<UserSearchEntity>, query: Matcher<String>) {
+        coEvery {
+            searchDAO.searchList(matches { query.matches(it) })
+        }.returns(result)
     }
 
-    override fun withSearchListExcludingAConversation(
+    override suspend fun withSearchListExcludingAConversation(
         result: List<UserSearchEntity>,
         conversationId: Matcher<ConversationIDEntity>,
         query: Matcher<String>
     ) {
-        given(searchDAO)
-            .suspendFunction(searchDAO::searchListExcludingAConversation)
-            .whenInvokedWith(conversationId, query)
-            .thenReturn(result)
+        coEvery {
+            searchDAO.searchListExcludingAConversation(
+                matches { conversationId.matches(it) },
+                matches { query.matches(it) }
+            )
+        }.returns(result)
     }
 
-    override fun withSearchByHandle(result: List<UserSearchEntity>, handle: Matcher<String>) {
-        given(searchDAO)
-            .suspendFunction(searchDAO::handleSearch)
-            .whenInvokedWith(handle)
-            .thenReturn(result)
+    override suspend fun withSearchByHandle(result: List<UserSearchEntity>, handle: Matcher<String>) {
+        coEvery {
+            searchDAO.handleSearch(
+                matches { handle.matches(it) }
+            )
+        }.returns(result)
     }
 
-    override fun withSearchByHandleExcludingConversation(
+    override suspend fun withSearchByHandleExcludingConversation(
         result: List<UserSearchEntity>,
         conversationId: Matcher<ConversationIDEntity>,
         handle: Matcher<String>
     ) {
-        given(searchDAO)
-            .suspendFunction(searchDAO::handleSearchExcludingAConversation)
-            .whenInvokedWith(handle, conversationId)
-            .thenReturn(result)
+        coEvery {
+            searchDAO.handleSearchExcludingAConversation(
+                matches { handle.matches(it) },
+                matches { conversationId.matches(it) }
+            )
+        }.returns(result)
     }
 }

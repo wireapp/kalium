@@ -28,15 +28,16 @@ import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.configure
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -49,51 +50,47 @@ class StartCallUseCaseTest {
         runTest {
             val conversationId = TestConversation.ID
 
-            val (arrangement, startCall) = Arrangement()
+            val (arrangement, startCall) = Arrangement(testKaliumDispatcher)
                 .withWaitingForSyncSucceeding()
                 .withAnIncomingCall()
                 .arrange()
 
             startCall.invoke(conversationId)
 
-            verify(arrangement.answerCall)
-                .suspendFunction(arrangement.answerCall::invoke)
-                .with(eq(conversationId))
-                .wasInvoked(once)
+            coVerify {
+                arrangement.answerCall.invoke(eq(conversationId))
+            }.wasInvoked(once)
 
-            verify(arrangement.callManager)
-                .suspendFunction(arrangement.callManager::startCall)
-                .with(any(), any(), any())
-                .wasNotInvoked()
+            coVerify {
+                arrangement.callManager.startCall(any(), any(), any())
+            }.wasNotInvoked()
         }
 
     @Test
     fun givenCallingParamsAndSyncSucceeds_whenRunningUseCase_thenInvokeStartCallOnce() = runTest {
         val conversationId = TestConversation.ID
 
-        val (arrangement, startCall) = Arrangement()
+        val (arrangement, startCall) = Arrangement(testKaliumDispatcher)
             .withWaitingForSyncSucceeding()
             .withNoIncomingCall()
             .arrange()
 
         startCall.invoke(conversationId, CallType.AUDIO)
 
-        verify(arrangement.callManager)
-            .suspendFunction(arrangement.callManager::startCall)
-            .with(eq(conversationId), eq(CallType.AUDIO), eq(false))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.callManager.startCall(eq(conversationId), eq(CallType.AUDIO), eq(false))
+        }.wasInvoked(once)
 
-        verify(arrangement.answerCall)
-            .suspendFunction(arrangement.answerCall::invoke)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.answerCall.invoke(any())
+        }.wasNotInvoked()
     }
 
     @Test
     fun givenCallingParamsAndSyncSucceeds_whenRunningUseCase_thenReturnSuccess() = runTest {
         val conversationId = TestConversation.ID
 
-        val (arrangement, startCall) = Arrangement()
+        val (arrangement, startCall) = Arrangement(testKaliumDispatcher)
             .withWaitingForSyncSucceeding()
             .withNoIncomingCall()
             .arrange()
@@ -101,33 +98,31 @@ class StartCallUseCaseTest {
         val result = startCall.invoke(conversationId, CallType.AUDIO)
 
         assertIs<StartCallUseCase.Result.Success>(result)
-        verify(arrangement.answerCall)
-            .suspendFunction(arrangement.answerCall::invoke)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.answerCall.invoke(any())
+        }.wasNotInvoked()
     }
 
     @Test
     fun givenCallingParamsAndSyncFails_whenRunningUseCase_thenStartCallIsNotInvoked() = runTest {
         val conversationId = TestConversation.ID
 
-        val (arrangement, startCall) = Arrangement()
+        val (arrangement, startCall) = Arrangement(testKaliumDispatcher)
             .withWaitingForSyncFailing()
             .arrange()
 
         startCall.invoke(conversationId, CallType.AUDIO)
 
-        verify(arrangement.callManager)
-            .suspendFunction(arrangement.callManager::startCall)
-            .with(any(), any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.callManager.startCall(any(), any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
     fun givenCallingParamsAndSyncFails_whenRunningUseCase_thenShouldReturnSyncFailure() = runTest {
         val conversationId = TestConversation.ID
 
-        val (_, startCall) = Arrangement()
+        val (_, startCall) = Arrangement(testKaliumDispatcher)
             .withWaitingForSyncFailing()
             .arrange()
 
@@ -140,41 +135,44 @@ class StartCallUseCaseTest {
     fun givenCbrEnabled_WhenStartingACall_thenStartTheCallOnCBR() = runTest {
         val conversationId = TestConversation.ID
 
-        val (arrangement, startCall) = Arrangement()
+        val (arrangement, startCall) = Arrangement(testKaliumDispatcher)
             .withWaitingForSyncSucceeding()
             .withNoIncomingCall()
             .arrangeWithCBR()
 
         startCall.invoke(conversationId, CallType.AUDIO)
 
-        verify(arrangement.callManager)
-            .suspendFunction(arrangement.callManager::startCall)
-            .with(eq(conversationId), eq(CallType.AUDIO), eq(true))
-            .wasInvoked(once)
-        verify(arrangement.answerCall)
-            .suspendFunction(arrangement.answerCall::invoke)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.callManager.startCall(eq(conversationId), eq(CallType.AUDIO), eq(true))
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.answerCall.invoke(any())
+        }.wasNotInvoked()
     }
 
-    private class Arrangement {
+    private class Arrangement(private var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
 
         @Mock
-        val callManager = configure(mock(classOf<CallManager>())) { stubsUnitByDefault = true }
+        val callManager = mock(CallManager::class)
 
         @Mock
-        val syncManager = mock(classOf<SyncManager>())
+        val syncManager = mock(SyncManager::class)
 
         @Mock
-        val answerCall = mock(classOf<AnswerCallUseCase>())
+        val answerCall = mock(AnswerCallUseCase::class)
 
         @Mock
-        val callRepository = mock(classOf<CallRepository>())
+        val callRepository = mock(CallRepository::class)
 
         private val kaliumConfigs = KaliumConfigs()
 
         private val startCallUseCase = StartCallUseCase(
-            lazy { callManager }, syncManager, kaliumConfigs, callRepository, answerCall
+            lazy { callManager },
+            syncManager,
+            kaliumConfigs,
+            callRepository,
+            answerCall,
+            dispatcher
         )
 
         private val startCallUseCaseWithCBR = StartCallUseCase(
@@ -182,34 +180,30 @@ class StartCallUseCaseTest {
             syncManager,
             KaliumConfigs(forceConstantBitrateCalls = true),
             callRepository,
-            answerCall
+            answerCall,
+            dispatcher
         )
 
-        fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))
-        fun withAnIncomingCall() = apply {
-            given(callRepository)
-                .suspendFunction(callRepository::incomingCallsFlow)
-                .whenInvoked()
-                .then {
-                    flowOf(listOf(TestCall.groupIncomingCall(TestConversation.ID)))
-                }
+        suspend fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))
+        suspend fun withAnIncomingCall() = apply {
+            coEvery {
+                callRepository.incomingCallsFlow()
+            }.returns(flowOf(listOf(TestCall.groupIncomingCall(TestConversation.ID))))
         }
 
-        fun withNoIncomingCall() = apply {
-            given(callRepository)
-                .suspendFunction(callRepository::incomingCallsFlow)
-                .whenInvoked()
-                .then { flowOf(listOf()) }
+        suspend fun withNoIncomingCall() = apply {
+            coEvery {
+                callRepository.incomingCallsFlow()
+            }.returns(flowOf(listOf()))
         }
 
-        fun withWaitingForSyncFailing() =
+        suspend fun withWaitingForSyncFailing() =
             withSyncReturning(Either.Left(NetworkFailure.NoNetworkConnection(null)))
 
-        private fun withSyncReturning(result: Either<CoreFailure, Unit>) = apply {
-            given(syncManager)
-                .suspendFunction(syncManager::waitUntilLiveOrFailure)
-                .whenInvoked()
-                .then { result }
+        private suspend fun withSyncReturning(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                syncManager.waitUntilLiveOrFailure()
+            }.returns(result)
         }
 
         fun arrange() = this to startCallUseCase

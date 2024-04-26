@@ -29,12 +29,12 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
-import io.mockative.anything
+import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -54,10 +54,9 @@ class ApproveLegalHoldRequestUseCaseTest {
         // when
         useCase.invoke(password)
         // then
-        verify(arrangement.teamRepository)
-            .suspendFunction(arrangement.teamRepository::approveLegalHoldRequest)
-            .with(eq(selfTeamId), eq(password))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.teamRepository.approveLegalHoldRequest(eq(selfTeamId), eq(password))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -141,6 +140,7 @@ class ApproveLegalHoldRequestUseCaseTest {
 
         @Mock
         val teamRepository: TeamRepository = mock(TeamRepository::class)
+
         @Mock
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
@@ -148,18 +148,16 @@ class ApproveLegalHoldRequestUseCaseTest {
 
         fun arrange() = this to useCase
 
-        fun withGetSelfTeamResult(result: Either<CoreFailure, TeamId?>) = apply {
-            given(selfTeamIdProvider)
-                .suspendFunction(selfTeamIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withGetSelfTeamResult(result: Either<CoreFailure, TeamId?>) = apply {
+            coEvery {
+                selfTeamIdProvider.invoke()
+            }.returns(result)
         }
 
-        fun withApproveLegalHoldResult(result: Either<CoreFailure, Unit>) = apply {
-            given(teamRepository)
-                .suspendFunction(teamRepository::approveLegalHoldRequest)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(result)
+        suspend fun withApproveLegalHoldResult(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                teamRepository.approveLegalHoldRequest(any(), any())
+            }.returns(result)
         }
     }
 }

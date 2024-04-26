@@ -21,8 +21,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -58,24 +57,22 @@ class ObserveShouldNotifyForRevokedCertificateUseCaseTest {
     internal class Arrangement {
 
         @Mock
-        val userConfigRepository = mock(classOf<UserConfigRepository>())
+        val userConfigRepository = mock(UserConfigRepository::class)
 
         fun arrange() = this to ObserveShouldNotifyForRevokedCertificateUseCaseImpl(
             userConfigRepository = userConfigRepository
         )
 
-        fun withUserConfigRepositoryFailure() = apply {
-            given(userConfigRepository)
-                .suspendFunction(userConfigRepository::observeShouldNotifyForRevokedCertificate)
-                .whenInvoked()
-                .thenReturn(flowOf(Either.Left(StorageFailure.DataNotFound)))
+        suspend fun withUserConfigRepositoryFailure() = apply {
+            coEvery {
+                userConfigRepository.observeShouldNotifyForRevokedCertificate()
+            }.returns(flowOf(Either.Left(StorageFailure.DataNotFound)))
         }
 
-        fun withUserConfigRepositorySuccess() = apply {
-            given(userConfigRepository)
-                .suspendFunction(userConfigRepository::observeShouldNotifyForRevokedCertificate)
-                .whenInvoked()
-                .thenReturn(flowOf(Either.Right(true)))
+        suspend fun withUserConfigRepositorySuccess() = apply {
+            coEvery {
+                userConfigRepository.observeShouldNotifyForRevokedCertificate()
+            }.returns(flowOf(Either.Right(true)))
         }
     }
 }

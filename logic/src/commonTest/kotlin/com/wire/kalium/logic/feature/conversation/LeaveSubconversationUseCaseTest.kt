@@ -22,11 +22,11 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCaseImpl
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toCrypto
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -35,13 +35,12 @@ import com.wire.kalium.network.api.base.authenticated.conversation.Subconversati
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
-import io.mockative.anything
-import io.mockative.classOf
+import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -58,14 +57,16 @@ class LeaveSubconversationUseCaseTest {
 
         leaveSubconversation(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID)
 
-        verify(arrangement.conversationApi)
-            .suspendFunction(arrangement.conversationApi::leaveSubconversation)
-            .with(eq(Arrangement.CONVERSATION_ID.toApi()), eq(Arrangement.SUBCONVERSATION_ID.toApi()))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationApi.leaveSubconversation(
+                eq(Arrangement.CONVERSATION_ID.toApi()),
+                eq(Arrangement.SUBCONVERSATION_ID.toApi())
+            )
+        }.wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenNotMemberOfSubconversation_whenInvokingUseCase_thenNoApiCallToRemoveSelfIsMade() = runTest  {
+    fun givenNotMemberOfSubconversation_whenInvokingUseCase_thenNoApiCallToRemoveSelfIsMade() = runTest {
         val (arrangement, leaveSubconversation) = Arrangement()
             .withGetSubconversationInfoReturns(null)
             .withFetchingSubconversationDetails(Arrangement.SUBCONVERSATION_RESPONSE_WITH_ZERO_EPOCH)
@@ -73,10 +74,12 @@ class LeaveSubconversationUseCaseTest {
 
         leaveSubconversation(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID)
 
-        verify(arrangement.conversationApi)
-            .suspendFunction(arrangement.conversationApi::leaveSubconversation)
-            .with(eq(Arrangement.CONVERSATION_ID.toApi()), eq(Arrangement.SUBCONVERSATION_ID.toApi()))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.conversationApi.leaveSubconversation(
+                eq(Arrangement.CONVERSATION_ID.toApi()),
+                eq(Arrangement.SUBCONVERSATION_ID.toApi())
+            )
+        }.wasNotInvoked()
     }
 
     @Test
@@ -88,10 +91,12 @@ class LeaveSubconversationUseCaseTest {
 
         leaveSubconversation(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID)
 
-        verify(arrangement.conversationApi)
-            .suspendFunction(arrangement.conversationApi::fetchSubconversationDetails)
-            .with(eq(Arrangement.CONVERSATION_ID.toApi()), eq(Arrangement.SUBCONVERSATION_ID.toApi()))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationApi.fetchSubconversationDetails(
+                eq(Arrangement.CONVERSATION_ID.toApi()),
+                eq(Arrangement.SUBCONVERSATION_ID.toApi())
+            )
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -105,87 +110,76 @@ class LeaveSubconversationUseCaseTest {
 
         leaveSubconversation(Arrangement.CONVERSATION_ID, Arrangement.SUBCONVERSATION_ID)
 
-        verify(arrangement.mlsClient)
-            .function(arrangement.mlsClient::wipeConversation)
-            .with(eq(Arrangement.SUBCONVERSATION_GROUP_ID.toCrypto()))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.mlsClient.wipeConversation(eq(Arrangement.SUBCONVERSATION_GROUP_ID.toCrypto()))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.subconversationRepository)
-            .function(arrangement.subconversationRepository::deleteSubconversation)
-            .with(eq(Arrangement.CONVERSATION_ID), eq(Arrangement.SUBCONVERSATION_ID))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.subconversationRepository.deleteSubconversation(eq(Arrangement.CONVERSATION_ID), eq(Arrangement.SUBCONVERSATION_ID))
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
 
         @Mock
-        val conversationApi = mock(classOf<ConversationApi>())
+        val conversationApi = mock(ConversationApi::class)
 
         @Mock
-        val mlsClientProvider = mock(classOf<MLSClientProvider>())
+        val mlsClientProvider = mock(MLSClientProvider::class)
 
         @Mock
-        val mlsClient = mock(classOf<MLSClient>())
+        val mlsClient = mock(MLSClient::class)
 
         @Mock
-        val subconversationRepository = mock(classOf<SubconversationRepository>())
+        val subconversationRepository = mock(SubconversationRepository::class)
 
         @Mock
-        val selfClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+        val selfClientIdProvider = mock(CurrentClientIdProvider::class)
 
-        init {
-            given(mlsClientProvider)
-                .suspendFunction(mlsClientProvider::getMLSClient)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(mlsClient))
-
-            given(selfClientIdProvider)
-                .suspendFunction(selfClientIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Right(TestClient.CLIENT_ID))
-        }
-
-        fun arrange() = this to LeaveSubconversationUseCaseImpl(
+        suspend fun arrange() = this to LeaveSubconversationUseCaseImpl(
             conversationApi,
             mlsClientProvider,
             subconversationRepository,
             TestUser.SELF.id,
             selfClientIdProvider
-        )
+        ).also {
+            coEvery {
+                mlsClientProvider.getMLSClient(any())
+            }.returns(Either.Right(mlsClient))
 
-        fun withFetchingSubconversationDetails(response: SubconversationResponse) = apply {
-            given(conversationApi)
-                .suspendFunction(conversationApi::fetchSubconversationDetails)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(NetworkResponse.Success(response, emptyMap(), 200))
+            coEvery {
+                selfClientIdProvider.invoke()
+            }.returns(Either.Right(TestClient.CLIENT_ID))
         }
 
-        fun withLeaveSubconversationSuccessful() = apply {
-            given(conversationApi)
-                .suspendFunction(conversationApi::leaveSubconversation)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(NetworkResponse.Success(Unit, emptyMap(), 200))
+        suspend fun withFetchingSubconversationDetails(response: SubconversationResponse) = apply {
+            coEvery {
+                conversationApi.fetchSubconversationDetails(any(), any())
+            }.returns(NetworkResponse.Success(response, emptyMap(), 200))
         }
 
-        fun withGetSubconversationInfoReturns(groupID: GroupID?) = apply {
-            given(subconversationRepository)
-                .suspendFunction(subconversationRepository::getSubconversationInfo)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(groupID)
+        suspend fun withLeaveSubconversationSuccessful() = apply {
+            coEvery {
+                conversationApi.leaveSubconversation(any(), any())
+            }.returns(NetworkResponse.Success(Unit, emptyMap(), 200))
         }
 
-        fun withDeleteSubconversationSuccessful() = apply {
-            given(subconversationRepository)
-                .suspendFunction(subconversationRepository::deleteSubconversation)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Unit)
+        suspend fun withGetSubconversationInfoReturns(groupID: GroupID?) = apply {
+            coEvery {
+                subconversationRepository.getSubconversationInfo(any(), any())
+            }.returns(groupID)
         }
 
-        fun withWipeMlsConversationSuccessful() = apply {
-            given(mlsClient)
-                .suspendFunction(mlsClient::wipeConversation)
-                .whenInvokedWith(anything())
-                .thenReturn(Unit)
+        suspend fun withDeleteSubconversationSuccessful() = apply {
+            coEvery {
+                subconversationRepository.deleteSubconversation(any(), any())
+            }.returns(Unit)
+        }
+
+        suspend fun withWipeMlsConversationSuccessful() = apply {
+            coEvery {
+                mlsClient.wipeConversation(any())
+            }.returns(Unit)
         }
 
         companion object {
