@@ -33,7 +33,7 @@ interface ObserveOutgoingCallUseCase {
     suspend operator fun invoke(): Flow<List<Call>>
 }
 
-internal class ObserveOutgoingCallUseCaseImpl internal constructor(
+class ObserveOutgoingCallUseCaseImpl internal constructor(
     private val callRepository: CallRepository
 ) : ObserveOutgoingCallUseCase {
 
