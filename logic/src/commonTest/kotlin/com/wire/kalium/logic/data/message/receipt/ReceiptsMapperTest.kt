@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.data.message.receipt
 
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.UserSummary
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
@@ -37,7 +36,7 @@ import com.wire.kalium.persistence.dao.receipt.ReceiptTypeEntity
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -48,8 +47,7 @@ class ReceiptsMapperTest {
     @Test
     fun givenREADReceiptType_whenMappingToEntity_thenReturnREADReceiptTypeEntity() = runTest {
         // given
-        val (_, receiptsMapper) = Arrangement()
-            .arrange()
+        val (_, receiptsMapper) = Arrangement().arrange()
 
         // when
         val result = receiptsMapper.toTypeEntity(type = ReceiptType.READ)
@@ -64,8 +62,7 @@ class ReceiptsMapperTest {
     @Test
     fun givenDELIVERYReceiptType_whenMappingToEntity_thenReturnDELIVERYReceiptTypeEntity() = runTest {
         // given
-        val (_, receiptsMapper) = Arrangement()
-            .arrange()
+        val (_, receiptsMapper) = Arrangement().arrange()
 
         // when
         val result = receiptsMapper.toTypeEntity(type = ReceiptType.DELIVERED)
@@ -80,8 +77,7 @@ class ReceiptsMapperTest {
     @Test
     fun givenREADReceiptTypeEntity_whenMappingFromEntity_thenReturnREADReceiptType() = runTest {
         // given
-        val (_, receiptsMapper) = Arrangement()
-            .arrange()
+        val (_, receiptsMapper) = Arrangement().arrange()
 
         // when
         val result = receiptsMapper.fromTypeEntity(type = ReceiptTypeEntity.READ)
@@ -96,8 +92,7 @@ class ReceiptsMapperTest {
     @Test
     fun givenDELIVERYReceiptTypeEntity_whenMappingFromEntity_thenReturnDELIVERYReceiptType() = runTest {
         // given
-        val (_, receiptsMapper) = Arrangement()
-            .arrange()
+        val (_, receiptsMapper) = Arrangement().arrange()
 
         // when
         val result = receiptsMapper.fromTypeEntity(type = ReceiptTypeEntity.DELIVERY)
@@ -141,10 +136,7 @@ class ReceiptsMapperTest {
             )
         )
 
-        val (_, receiptsMapper) = Arrangement()
-            .withDomainUserTypeStandard()
-            .withConnectionStateAccepted()
-            .withAvailabilityStatusNone()
+        val (_, receiptsMapper) = Arrangement().withDomainUserTypeStandard().withConnectionStateAccepted().withAvailabilityStatusNone()
             .arrange()
 
         // when
@@ -160,8 +152,7 @@ class ReceiptsMapperTest {
     @Test
     fun givenReadReceiptType_whenMappingToMessageEntityStatus_thenReturnReadStatus() = runTest {
         // given
-        val (_, receiptsMapper) = Arrangement()
-            .arrange()
+        val (_, receiptsMapper) = Arrangement().arrange()
 
         // when
         val result = receiptsMapper.fromTypeToMessageStatus(type = ReceiptType.READ)
@@ -176,8 +167,7 @@ class ReceiptsMapperTest {
     @Test
     fun givenDeliveryReceiptType_whenMappingToMessageEntityStatus_thenReturnDeliveryStatus() = runTest {
         // given
-        val (_, receiptsMapper) = Arrangement()
-            .arrange()
+        val (_, receiptsMapper) = Arrangement().arrange()
 
         // when
         val result = receiptsMapper.fromTypeEntity(type = ReceiptTypeEntity.DELIVERY)
@@ -201,24 +191,21 @@ class ReceiptsMapperTest {
         val domainUserTypeMapper = mock(DomainUserTypeMapper::class)
 
         fun withDomainUserTypeStandard() = apply {
-            given(domainUserTypeMapper)
-                .function(domainUserTypeMapper::fromUserTypeEntity)
-                .whenInvokedWith(eq(UserTypeEntity.STANDARD))
-                .then { UserType.INTERNAL }
+            every {
+                domainUserTypeMapper.fromUserTypeEntity(eq(UserTypeEntity.STANDARD))
+            }.returns(UserType.INTERNAL)
         }
 
         fun withConnectionStateAccepted() = apply {
-            given(connectionStateMapper)
-                .function(connectionStateMapper::fromDaoConnectionStateToUser)
-                .whenInvokedWith(eq(ConnectionEntity.State.ACCEPTED))
-                .then { ConnectionState.ACCEPTED }
+            every {
+                connectionStateMapper.fromDaoConnectionStateToUser(eq(ConnectionEntity.State.ACCEPTED))
+            }.returns(ConnectionState.ACCEPTED)
         }
 
         fun withAvailabilityStatusNone() = apply {
-            given(availabilityStatusMapper)
-                .function(availabilityStatusMapper::fromDaoAvailabilityStatusToModel)
-                .whenInvokedWith(eq(UserAvailabilityStatusEntity.NONE))
-                .then { UserAvailabilityStatus.NONE }
+            every {
+                availabilityStatusMapper.fromDaoAvailabilityStatusToModel(eq(UserAvailabilityStatusEntity.NONE))
+            }.returns(UserAvailabilityStatus.NONE)
         }
 
         fun arrange() = this to ReceiptsMapperImpl(

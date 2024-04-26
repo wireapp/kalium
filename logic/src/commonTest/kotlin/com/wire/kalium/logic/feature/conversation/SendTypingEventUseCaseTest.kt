@@ -22,12 +22,15 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.TypingIndicatorOutgoingRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -36,21 +39,20 @@ class SendTypingEventUseCaseTest {
 
     @Test
     fun givenATypingEvent_whenCallingSendSucceed_thenReturnSuccess() = runTest {
-        val (arrangement, useCase) = Arrangement()
+        val (arrangement, useCase) = Arrangement(testKaliumDispatcher)
             .withTypingIndicatorStatusAndResult(Conversation.TypingIndicatorMode.STOPPED)
             .arrange()
 
         useCase(TestConversation.ID, Conversation.TypingIndicatorMode.STOPPED)
 
-        verify(arrangement.typingIndicatorRepository)
-            .suspendFunction(arrangement.typingIndicatorRepository::sendTypingIndicatorStatus)
-            .with(eq(TestConversation.ID), eq(Conversation.TypingIndicatorMode.STOPPED))
-            .wasInvoked()
+        coVerify {
+            arrangement.typingIndicatorRepository.sendTypingIndicatorStatus(eq(TestConversation.ID), eq(Conversation.TypingIndicatorMode.STOPPED))
+        }.wasInvoked()
     }
 
     @Test
     fun givenATypingEvent_whenCallingSendFails_thenReturnIgnoringFailure() = runTest {
-        val (arrangement, useCase) = Arrangement()
+        val (arrangement, useCase) = Arrangement(testKaliumDispatcher)
             .withTypingIndicatorStatusAndResult(
                 Conversation.TypingIndicatorMode.STARTED,
                 Either.Left(CoreFailure.Unknown(RuntimeException("Some error")))
@@ -59,29 +61,28 @@ class SendTypingEventUseCaseTest {
 
         val result = useCase(TestConversation.ID, Conversation.TypingIndicatorMode.STARTED)
 
-        verify(arrangement.typingIndicatorRepository)
-            .suspendFunction(arrangement.typingIndicatorRepository::sendTypingIndicatorStatus)
-            .with(eq(TestConversation.ID), eq(Conversation.TypingIndicatorMode.STARTED))
-            .wasInvoked()
+        coVerify {
+            arrangement.typingIndicatorRepository.sendTypingIndicatorStatus(eq(TestConversation.ID), eq(Conversation.TypingIndicatorMode.STARTED))
+        }.wasInvoked()
         assertEquals(Unit, result)
     }
 
-    private class Arrangement {
+    private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
         @Mock
         val typingIndicatorRepository: TypingIndicatorOutgoingRepository = mock(TypingIndicatorOutgoingRepository::class)
 
-        fun withTypingIndicatorStatusAndResult(
+        suspend fun withTypingIndicatorStatusAndResult(
             typingMode: Conversation.TypingIndicatorMode,
             result: Either<CoreFailure, Unit> = Either.Right(Unit)
         ) = apply {
-            given(typingIndicatorRepository)
-                .suspendFunction(typingIndicatorRepository::sendTypingIndicatorStatus)
-                .whenInvokedWith(any(), eq(typingMode))
-                .thenReturn(result)
+            coEvery {
+                typingIndicatorRepository.sendTypingIndicatorStatus(any(), eq(typingMode))
+            }.returns(result)
         }
 
         fun arrange() = this to SendTypingEventUseCaseImpl(
-            typingIndicatorRepository
+            typingIndicatorRepository,
+            dispatcher
         )
     }
 }

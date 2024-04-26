@@ -30,11 +30,11 @@ import com.wire.kalium.network.api.base.authenticated.conversation.model.Convers
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.test.Test
@@ -68,15 +68,13 @@ class JoinConversationViaCodeUseCaseTest {
             )
         }
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::joinViaInviteCode)
-            .with(any(), any(), eq(null))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationGroupRepository.joinViaInviteCode(any(), any(), eq<String?>(null), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::fetchLimitedInfoViaInviteCode)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -103,15 +101,13 @@ class JoinConversationViaCodeUseCaseTest {
             assertEquals(ConversationId(limitedConversationInfo.nonQualifiedId, domain), it.conversationId)
         }
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::joinViaInviteCode)
-            .with(any(), any(), eq(null))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationGroupRepository.joinViaInviteCode(any(), any(), eq<String?>(null), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::fetchLimitedInfoViaInviteCode)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -138,15 +134,13 @@ class JoinConversationViaCodeUseCaseTest {
             assertEquals(ConversationId(limitedConversationInfo.nonQualifiedId, selfUserId.domain), it.conversationId)
         }
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::joinViaInviteCode)
-            .with(any(), any(), eq(null))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationGroupRepository.joinViaInviteCode(any(), any(), eq<String?>(null), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::fetchLimitedInfoViaInviteCode)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -176,15 +170,13 @@ class JoinConversationViaCodeUseCaseTest {
             assertEquals(null, it.conversationId)
         }
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::joinViaInviteCode)
-            .with(any(), any(), eq(null))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationGroupRepository.joinViaInviteCode(any(), any(), eq<String?>(null), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::fetchLimitedInfoViaInviteCode)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -210,15 +202,13 @@ class JoinConversationViaCodeUseCaseTest {
             assertIs<JoinConversationViaCodeUseCase.Result.Failure.IncorrectPassword>(it)
         }
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::joinViaInviteCode)
-            .with(any(), any(), eq(null))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationGroupRepository.joinViaInviteCode(any(), any(), eq<String?>(null), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::fetchLimitedInfoViaInviteCode)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.conversationGroupRepository.fetchLimitedInfoViaInviteCode(any(), any())
+        }.wasNotInvoked()
     }
 
     private companion object {
@@ -237,9 +227,9 @@ class JoinConversationViaCodeUseCaseTest {
             password: String?,
             result: Either<NetworkFailure, ConversationMemberAddedResponse>
         ): Arrangement = apply {
-            given(conversationGroupRepository)
-                .coroutine { conversationGroupRepository.joinViaInviteCode(code, key, uri, password) }
-                .thenReturn(result)
+            coEvery {
+                conversationGroupRepository.joinViaInviteCode(code, key, uri, password)
+            }.returns(result)
         }
 
         suspend fun withFetchLimitedInfoViaInviteCodeReturns(
@@ -247,9 +237,9 @@ class JoinConversationViaCodeUseCaseTest {
             key: String,
             result: Either<NetworkFailure, ConversationCodeInfo>
         ): Arrangement = apply {
-            given(conversationGroupRepository)
-                .coroutine { conversationGroupRepository.fetchLimitedInfoViaInviteCode(code, key) }
-                .thenReturn(result)
+            coEvery {
+                conversationGroupRepository.fetchLimitedInfoViaInviteCode(code, key)
+            }.returns(result)
         }
 
         fun arrange() = useCase to this

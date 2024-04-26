@@ -20,16 +20,17 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.doesNothing
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.thenDoNothing
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -44,9 +45,9 @@ class SyncConversationsUseCaseTest {
 
         useCase.invoke()
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::fetchConversations)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.fetchConversations()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -61,10 +62,9 @@ class SyncConversationsUseCaseTest {
 
         useCase.invoke()
 
-        verify(arrangement.systemMessageInserter)
-            .suspendFunction(arrangement.systemMessageInserter::insertHistoryLostProtocolChangedSystemMessage)
-            .with(eq(conversationId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.systemMessageInserter.insertHistoryLostProtocolChangedSystemMessage(eq(conversationId))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -79,10 +79,9 @@ class SyncConversationsUseCaseTest {
 
         useCase.invoke()
 
-        verify(arrangement.systemMessageInserter)
-            .suspendFunction(arrangement.systemMessageInserter::insertHistoryLostProtocolChangedSystemMessage)
-            .with(eq(conversationId))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.systemMessageInserter.insertHistoryLostProtocolChangedSystemMessage(eq(conversationId))
+        }.wasNotInvoked()
     }
 
     private class Arrangement {
@@ -90,28 +89,24 @@ class SyncConversationsUseCaseTest {
         val conversationRepository = mock(ConversationRepository::class)
         val systemMessageInserter = mock(SystemMessageInserter::class)
 
-        fun withFetchConversationsSuccessful() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::fetchConversations)
-                .whenInvoked()
-                .thenReturn(Either.Right(Unit))
+        suspend fun withFetchConversationsSuccessful() = apply {
+            coEvery {
+                conversationRepository.fetchConversations()
+            }.returns(Either.Right(Unit))
         }
 
-        fun withGetConversationsIdsReturning(
+        suspend fun withGetConversationsIdsReturning(
             conversationIds: List<ConversationId>,
             protocol: Conversation.Protocol? = null
         ) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationIds)
-                .whenInvokedWith(eq(Conversation.Type.GROUP), protocol?.let { eq(it) } ?: any(), eq(null))
-                .thenReturn(Either.Right(conversationIds))
+            coEvery {
+                conversationRepository.getConversationIds(eq(Conversation.Type.GROUP), protocol?.let { eq(it) } ?: any(), eq<TeamId?>(null))
+            }.returns(Either.Right(conversationIds))
         }
 
-        fun withInsertHistoryLostProtocolChangedSystemMessageSuccessful() = apply {
-            given(systemMessageInserter)
-                .suspendFunction(systemMessageInserter::insertHistoryLostProtocolChangedSystemMessage)
-                .whenInvokedWith()
-                .thenDoNothing()
+        suspend fun withInsertHistoryLostProtocolChangedSystemMessageSuccessful() = apply {
+            coEvery { systemMessageInserter.insertHistoryLostProtocolChangedSystemMessage(any()) }
+                .doesNothing()
         }
 
         fun arrange() = this to SyncConversationsUseCaseImpl(

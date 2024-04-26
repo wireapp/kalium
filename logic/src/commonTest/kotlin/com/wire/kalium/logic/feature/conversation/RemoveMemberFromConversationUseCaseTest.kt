@@ -25,18 +25,15 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class RemoveMemberFromConversationUseCaseTest {
 
     @Test
@@ -49,10 +46,9 @@ class RemoveMemberFromConversationUseCaseTest {
 
         assertIs<RemoveMemberFromConversationUseCase.Result.Success>(result)
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::deleteMember)
-            .with(eq(TestConversation.USER_1), eq(TestConversation.ID))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationGroupRepository.deleteMember(eq(TestConversation.USER_1), eq(TestConversation.ID))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -64,25 +60,23 @@ class RemoveMemberFromConversationUseCaseTest {
         val result = removeMemberUseCase(TestConversation.ID, TestConversation.USER_1)
         assertIs<RemoveMemberFromConversationUseCase.Result.Failure>(result)
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::deleteMember)
-            .with(eq(TestConversation.USER_1), eq(TestConversation.ID))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationGroupRepository.deleteMember(eq(TestConversation.USER_1), eq(TestConversation.ID))
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
         @Mock
-        val conversationGroupRepository = mock(classOf<ConversationGroupRepository>())
+        val conversationGroupRepository = mock(ConversationGroupRepository::class)
 
         private val removeMemberUseCase = RemoveMemberFromConversationUseCaseImpl(
             conversationGroupRepository
         )
 
-        fun withRemoveMemberGroupIs(either: Either<CoreFailure, Unit>) = apply {
-            given(conversationGroupRepository)
-                .suspendFunction(conversationGroupRepository::deleteMember)
-                .whenInvokedWith(any(), any())
-                .thenReturn(either)
+        suspend fun withRemoveMemberGroupIs(either: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                conversationGroupRepository.deleteMember(any(), any())
+            }.returns(either)
         }
 
         fun arrange() = this to removeMemberUseCase

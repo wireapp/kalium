@@ -25,18 +25,15 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class ImportClientUseCaseTest {
 
     @Test
@@ -50,15 +47,13 @@ class ImportClientUseCaseTest {
 
         assertIs<RegisterClientResult.Success>(result)
 
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::persistRetainedClientId)
-            .with(eq(TestClient.CLIENT_ID))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clientRepository.persistRetainedClientId(eq(TestClient.CLIENT_ID))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.getOrRegisterClientUseCase)
-            .suspendFunction(arrangement.getOrRegisterClientUseCase::invoke)
-            .with(eq(Arrangement.REGISTER_CLIENT_PARAM))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.getOrRegisterClientUseCase.invoke(eq(Arrangement.REGISTER_CLIENT_PARAM))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -75,23 +70,21 @@ class ImportClientUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
+        val clientRepository = mock(ClientRepository::class)
 
         @Mock
-        val getOrRegisterClientUseCase = mock(classOf<GetOrRegisterClientUseCase>())
+        val getOrRegisterClientUseCase = mock(GetOrRegisterClientUseCase::class)
 
-        fun withGetOrRegisterClientResult(result: RegisterClientResult): Arrangement = apply {
-            given(getOrRegisterClientUseCase)
-                .suspendFunction(getOrRegisterClientUseCase::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withGetOrRegisterClientResult(result: RegisterClientResult): Arrangement = apply {
+            coEvery {
+                getOrRegisterClientUseCase.invoke(any())
+            }.returns(result)
         }
 
-        fun withPersistRetainedClientResult(result: Either<CoreFailure, Unit>): Arrangement = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::persistRetainedClientId)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withPersistRetainedClientResult(result: Either<CoreFailure, Unit>): Arrangement = apply {
+            coEvery {
+                clientRepository.persistRetainedClientId(any())
+            }.returns(result)
         }
 
         fun arrange() = this to ImportClientUseCaseImpl(clientRepository, getOrRegisterClientUseCase)

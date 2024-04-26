@@ -37,9 +37,10 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -59,10 +60,9 @@ class OneOnOneMigratorTest {
         oneOneMigrator.migrateToProteus(user)
             .shouldSucceed()
 
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::updateActiveOneOnOneConversation)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.userRepository.updateActiveOneOnOneConversation(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -79,10 +79,9 @@ class OneOnOneMigratorTest {
         oneOneMigrator.migrateToProteus(user)
             .shouldSucceed()
 
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::updateActiveOneOnOneConversation)
-            .with(eq(user.id), eq(TestConversation.ID))
-            .wasInvoked()
+        coVerify {
+            arrangement.userRepository.updateActiveOneOnOneConversation(eq(user.id), eq(TestConversation.ID))
+        }.wasInvoked()
     }
 
     @Test
@@ -100,15 +99,17 @@ class OneOnOneMigratorTest {
         oneOneMigrator.migrateToProteus(user)
             .shouldSucceed()
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::createGroupConversation)
-            .with(eq(null), eq(listOf(TestUser.OTHER.id)), eq(ConversationOptions()))
-            .wasInvoked()
+        coVerify {
+            arrangement.conversationGroupRepository.createGroupConversation(
+                name = eq<String?>(null),
+                usersList = eq(listOf(TestUser.OTHER.id)),
+                options = eq(ConversationOptions())
+            )
+        }.wasInvoked()
 
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::updateActiveOneOnOneConversation)
-            .with(eq(TestUser.OTHER.id), eq(TestConversation.ONE_ON_ONE().id))
-            .wasInvoked()
+        coVerify {
+            arrangement.userRepository.updateActiveOneOnOneConversation(eq(TestUser.OTHER.id), eq(TestConversation.ONE_ON_ONE().id))
+        }.wasInvoked()
     }
 
     @Test
@@ -124,15 +125,13 @@ class OneOnOneMigratorTest {
         oneOneMigrator.migrateToMLS(user)
             .shouldSucceed()
 
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::updateActiveOneOnOneConversation)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.userRepository.updateActiveOneOnOneConversation(any(), any())
+        }.wasNotInvoked()
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::moveMessagesToAnotherConversation)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.messageRepository.moveMessagesToAnotherConversation(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -169,10 +168,9 @@ class OneOnOneMigratorTest {
                 assertEquals(failure, it)
             }
 
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::updateActiveOneOnOneConversation)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.userRepository.updateActiveOneOnOneConversation(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -211,10 +209,9 @@ class OneOnOneMigratorTest {
         oneOnOneMigrator.migrateToMLS(user)
             .shouldSucceed()
 
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::moveMessagesToAnotherConversation)
-            .with(eq(originalConversationId), eq(resolvedConversationId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.moveMessagesToAnotherConversation(eq(originalConversationId), eq(resolvedConversationId))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -234,21 +231,19 @@ class OneOnOneMigratorTest {
         oneOnOneMigrator.migrateToMLS(user)
             .shouldSucceed()
 
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::updateActiveOneOnOneConversation)
-            .with(eq(user.id), eq(resolvedConversationId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userRepository.updateActiveOneOnOneConversation(eq(user.id), eq(resolvedConversationId))
+        }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement(private val block: Arrangement.() -> Unit) :
+    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         MLSOneOnOneConversationResolverArrangement by MLSOneOnOneConversationResolverArrangementImpl(),
         MessageRepositoryArrangement by MessageRepositoryArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         ConversationGroupRepositoryArrangement by ConversationGroupRepositoryArrangementImpl(),
-        UserRepositoryArrangement by UserRepositoryArrangementImpl()
-    {
+        UserRepositoryArrangement by UserRepositoryArrangementImpl() {
         fun arrange() = run {
-            block()
+            runBlocking { block() }
             this@Arrangement to OneOnOneMigratorImpl(
                 getResolvedMLSOneOnOne = mlsOneOnOneConversationResolver,
                 conversationGroupRepository = conversationGroupRepository,
@@ -260,6 +255,6 @@ class OneOnOneMigratorTest {
     }
 
     private companion object {
-        fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+        fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
     }
 }

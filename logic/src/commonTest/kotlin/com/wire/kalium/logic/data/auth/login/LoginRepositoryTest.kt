@@ -27,12 +27,11 @@ import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -40,10 +39,9 @@ import kotlin.test.Test
 class LoginRepositoryTest {
 
     @Mock
-    val loginApi = mock(classOf<LoginApi>())
+    val loginApi = mock(LoginApi::class)
 
     private lateinit var loginRepository: LoginRepository
-
 
     @BeforeTest
     fun setup() {
@@ -68,10 +66,9 @@ class LoginRepositoryTest {
             label = TEST_LABEL,
             verificationCode = TEST_SECOND_FACTOR_CODE
         )
-        verify(arrangement.loginApi)
-            .suspendFunction(arrangement.loginApi::login)
-            .with(eq(expectedParam), eq(TEST_PERSIST_CLIENT))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.loginApi.login(eq(expectedParam), eq(TEST_PERSIST_CLIENT))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -90,31 +87,30 @@ class LoginRepositoryTest {
             password = TEST_PASSWORD,
             label = TEST_LABEL,
         )
-        verify(arrangement.loginApi)
-            .suspendFunction(arrangement.loginApi::login)
-            .with(eq(expectedParam), eq(TEST_PERSIST_CLIENT))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.loginApi.login(eq(expectedParam), eq(TEST_PERSIST_CLIENT))
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
 
         @Mock
-        val loginApi = mock(classOf<LoginApi>())
+        val loginApi = mock(LoginApi::class)
 
-        init {
+        suspend fun withLoginReturning(response: NetworkResponse<Pair<SessionDTO, SelfUserDTO>>) = apply {
+            coEvery {
+                loginApi.login(
+                    param = any(),
+                    persist = any()
+                )
+            }.returns(response)
+        }
+
+        suspend inline fun arrange(): Pair<Arrangement, LoginRepository> = this to LoginRepositoryImpl(loginApi).also {
             withLoginReturning(
                 NetworkResponse.Success(value = SESSION_DTO to TestUser.SELF_USER_DTO, mapOf(), HttpStatusCode.OK.value)
             )
         }
-
-        fun withLoginReturning(response: NetworkResponse<Pair<SessionDTO, SelfUserDTO>>) = apply {
-            given(loginApi)
-                .suspendFunction(loginApi::login)
-                .whenInvokedWith(any(), any())
-                .thenReturn(response)
-        }
-
-        fun arrange(): Pair<Arrangement, LoginRepository> = this to LoginRepositoryImpl(loginApi)
 
     }
 

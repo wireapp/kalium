@@ -186,4 +186,10 @@ class ConnectionDAOImpl(
     override suspend fun setAllConnectionsAsNotified() = withContext(queriesContext) {
         connectionsQueries.setAllConnectionsAsNotified()
     }
+
+    override suspend fun getConnectionByUser(userId: QualifiedIDEntity): ConnectionEntity? {
+        return withContext(queriesContext) {
+            connectionsQueries.selectConnectionRequestByUser(userId, connectionMapper::toModel).executeAsOneOrNull()
+        }
+    }
 }

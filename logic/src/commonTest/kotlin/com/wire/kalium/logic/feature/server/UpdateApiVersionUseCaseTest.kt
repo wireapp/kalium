@@ -33,11 +33,12 @@ import com.wire.kalium.persistence.client.ProxyCredentialsEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -49,22 +50,20 @@ import kotlin.test.assertEquals
 class UpdateApiVersionUseCaseTest {
 
     @Test
-    fun givenError_whenCallingValidSessionsWithServerConfig_thenDoNothingElse() {
+    fun givenError_whenCallingValidSessionsWithServerConfig_thenDoNothingElse() = runTest {
         val (arrangement, updateApiVersionsUseCase) = Arrangement()
             .arrange {
                 withValidSessionWithServerConfig(Either.Left(StorageFailure.Generic(IOException())))
             }
 
-        runTest {
-            updateApiVersionsUseCase()
-            advanceUntilIdle()
-        }
+        updateApiVersionsUseCase()
+        advanceUntilIdle()
 
         assertEquals(0, arrangement.serverConfigProviderCalledCount)
     }
 
     @Test
-    fun givenUsersWithServerConfigNoProxy_thenDoNotFetchProxyCredentials() {
+    fun givenUsersWithServerConfigNoProxy_thenDoNotFetchProxyCredentials() = runTest {
         val (arrangement, updateApiVersionsUseCase) = Arrangement()
             .arrange {
                 withValidSessionWithServerConfig(
@@ -81,25 +80,20 @@ class UpdateApiVersionUseCaseTest {
                 withUpdateConfigApiVersion(serverConfig1, Either.Right(Unit))
             }
 
-        runTest {
-            updateApiVersionsUseCase()
-            advanceUntilIdle()
-        }
+        updateApiVersionsUseCase()
+        advanceUntilIdle()
 
-        verify(arrangement.tokenStorage)
-            .suspendFunction(arrangement.tokenStorage::proxyCredentials)
-            .with(any<UserIDEntity>())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.tokenStorage.proxyCredentials(any<UserIDEntity>())
+        }.wasNotInvoked()
 
-
-        verify(arrangement.serverConfigRepository1)
-            .suspendFunction(arrangement.serverConfigRepository1::updateConfigApiVersion)
-            .with(eq(serverConfig1))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.serverConfigRepository1.updateConfigApiVersion(eq(serverConfig1))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenUserWithProxyButNoAuthentication_thenDoNotFetchProxyCredentials() {
+    fun givenUserWithProxyButNoAuthentication_thenDoNotFetchProxyCredentials() = runTest {
         val (arrangement, updateApiVersionsUseCase) = Arrangement()
             .arrange {
                 withValidSessionWithServerConfig(
@@ -120,25 +114,20 @@ class UpdateApiVersionUseCaseTest {
                 withUpdateConfigApiVersion(serverConfig1, Either.Right(Unit))
             }
 
-        runTest {
-            updateApiVersionsUseCase()
-            advanceUntilIdle()
-        }
+        updateApiVersionsUseCase()
+        advanceUntilIdle()
 
-        verify(arrangement.tokenStorage)
-            .suspendFunction(arrangement.tokenStorage::proxyCredentials)
-            .with(any<UserIDEntity>())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.tokenStorage.proxyCredentials(any<UserIDEntity>())
+        }.wasNotInvoked()
 
-
-        verify(arrangement.serverConfigRepository1)
-            .suspendFunction(arrangement.serverConfigRepository1::updateConfigApiVersion)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.serverConfigRepository1.updateConfigApiVersion(any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenUserWithProxyAndNeedAuthentication_thenFetchProxyCredentials() {
+    fun givenUserWithProxyAndNeedAuthentication_thenFetchProxyCredentials() = runTest {
         val (arrangement, updateApiVersionsUseCase) = Arrangement()
             .arrange {
                 withValidSessionWithServerConfig(
@@ -160,25 +149,21 @@ class UpdateApiVersionUseCaseTest {
                 withProxyCredForUser(userId1.toDao(), ProxyCredentialsEntity("user", "pass"))
             }
 
-        runTest {
-            updateApiVersionsUseCase()
-            advanceUntilIdle()
-        }
+        updateApiVersionsUseCase()
+        advanceUntilIdle()
 
         assertEquals(1, arrangement.serverConfigProviderCalledCount)
-        verify(arrangement.tokenStorage)
-            .suspendFunction(arrangement.tokenStorage::proxyCredentials)
-            .with(any<UserIDEntity>())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.tokenStorage.proxyCredentials(any<UserIDEntity>())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.serverConfigRepository1)
-            .suspendFunction(arrangement.serverConfigRepository1::updateConfigApiVersion)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.serverConfigRepository1.updateConfigApiVersion(any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
-    fun givenMultipleUsers_thenUpdateApiVersionForAll() {
+    fun givenMultipleUsers_thenUpdateApiVersionForAll() = runTest {
         val (arrangement, updateApiVersionsUseCase) = Arrangement()
             .arrange {
                 withValidSessionWithServerConfig(
@@ -210,33 +195,28 @@ class UpdateApiVersionUseCaseTest {
                 withProxyCredForUser(userId2.toDao(), ProxyCredentialsEntity("user", "pass"))
             }
 
-        runTest {
-            updateApiVersionsUseCase()
-            advanceUntilIdle()
-        }
+        updateApiVersionsUseCase()
+        advanceUntilIdle()
 
         assertEquals(2, arrangement.serverConfigProviderCalledCount)
-        verify(arrangement.tokenStorage)
-            .suspendFunction(arrangement.tokenStorage::proxyCredentials)
-            .with(eq(userId2.toDao()))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.tokenStorage.proxyCredentials(eq(userId2.toDao()))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.tokenStorage)
-            .suspendFunction(arrangement.tokenStorage::proxyCredentials)
-            .with(eq(userId1.toDao()))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.tokenStorage.proxyCredentials(eq(userId1.toDao()))
+        }.wasNotInvoked()
 
-        verify(arrangement.serverConfigRepository1)
-            .suspendFunction(arrangement.serverConfigRepository1::updateConfigApiVersion)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.serverConfigRepository1.updateConfigApiVersion(any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.serverConfigRepository2)
-            .suspendFunction(arrangement.serverConfigRepository2::updateConfigApiVersion)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.serverConfigRepository2.updateConfigApiVersion(any())
+        }.wasInvoked(exactly = once)
 
     }
+
     private companion object {
         val userId1: UserId = UserId("user1", "domnaion1")
         val userId2: UserId = UserId("user2", "domnaion2")
@@ -264,38 +244,33 @@ class UpdateApiVersionUseCaseTest {
             userId: UserIDEntity,
             result: ProxyCredentialsEntity?
         ) {
-            given(tokenStorage)
-                .function(tokenStorage::proxyCredentials)
-                .whenInvokedWith(eq(userId))
-                .then { result }
+            every {
+                tokenStorage.proxyCredentials(eq(userId))
+            }.returns(result)
         }
 
-        fun withUpdateConfigApiVersion(
+        suspend fun withUpdateConfigApiVersion(
             serverConfig: ServerConfig,
             result: Either<CoreFailure, Unit>
         ) {
             when (serverConfig.id) {
-                serverConfig1.id -> given(serverConfigRepository1)
-                    .suspendFunction(serverConfigRepository1::updateConfigApiVersion)
-                    .whenInvokedWith(any())
-                    .then { result }
+                serverConfig1.id ->
+                    coEvery { serverConfigRepository1.updateConfigApiVersion(any()) }
+                        .returns(result)
 
-                serverConfig2.id -> given(serverConfigRepository2)
-                    .suspendFunction(serverConfigRepository2::updateConfigApiVersion)
-                    .whenInvokedWith(any())
-                    .then { result }
+                serverConfig2.id -> coEvery { serverConfigRepository2.updateConfigApiVersion(any()) }
+                    .returns(result)
 
                 else -> throw IllegalArgumentException("Unexpected server config: $serverConfig")
             }
         }
 
-        fun withValidSessionWithServerConfig(
+        suspend fun withValidSessionWithServerConfig(
             result: Either<StorageFailure, Map<UserId, ServerConfig>>
         ) {
-            given(sessionRepository)
-                .suspendFunction(sessionRepository::validSessionsWithServerConfig)
-                .whenInvoked()
-                .then { result }
+            coEvery {
+                sessionRepository.validSessionsWithServerConfig()
+            }.returns(result)
         }
 
         private val updateApiVersionsUseCase = UpdateApiVersionsUseCaseImpl(
@@ -311,6 +286,9 @@ class UpdateApiVersionUseCaseTest {
             }
         )
 
-        fun arrange(block: Arrangement.() -> Unit) = apply(block).let { this to updateApiVersionsUseCase }
+        suspend fun arrange(block: suspend Arrangement.() -> Unit) = let {
+            block()
+            this to updateApiVersionsUseCase
+        }
     }
 }

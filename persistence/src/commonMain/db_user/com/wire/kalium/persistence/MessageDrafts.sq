@@ -29,3 +29,6 @@ mention_list = excluded.mention_list;
 
 getDraft:
 SELECT * FROM MessageDraft WHERE conversation_id = ?;
+
+getDrafts:
+SELECT * FROM MessageDraft;

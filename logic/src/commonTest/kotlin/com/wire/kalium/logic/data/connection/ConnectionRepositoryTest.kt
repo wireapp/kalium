@@ -21,12 +21,12 @@ package com.wire.kalium.logic.data.connection
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
-import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.framework.TestConnection
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -41,6 +41,7 @@ import com.wire.kalium.network.api.base.authenticated.connection.ConnectionRespo
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionStateDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.base.model.FederationUnreachableResponse
 import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.UserProfileDTO
@@ -51,21 +52,23 @@ import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.configure
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.fake.valueOf
+import io.mockative.matchers.AnyMatcher
+import io.mockative.matchers.PredicateMatcher
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
-import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -87,10 +90,9 @@ class ConnectionRepositoryTest {
         val result = connectionRepository.fetchSelfUserConnections()
 
         // then
-        verify(arrangement.memberDAO)
-            .suspendFunction(arrangement.memberDAO::updateOrInsertOneOnOneMember)
-            .with(any(), any())
-            .wasInvoked(exactly = twice)
+        coVerify {
+            arrangement.memberDAO.updateOrInsertOneOnOneMember(any(), any())
+        }.wasInvoked(exactly = twice)
 
         // Verifies that when fetching connections, it succeeded
         result.shouldSucceed()
@@ -109,10 +111,9 @@ class ConnectionRepositoryTest {
         val result = connectionRepository.fetchSelfUserConnections()
 
         // then
-        verify(arrangement.memberDAO)
-            .suspendFunction(arrangement.memberDAO::updateOrInsertOneOnOneMember)
-            .with(any(), any())
-            .wasInvoked(exactly = twice)
+        coVerify {
+            arrangement.memberDAO.updateOrInsertOneOnOneMember(any(), any())
+        }.wasInvoked(exactly = twice)
 
         // Verifies that when fetching connections, it succeeded
         result.shouldSucceed()
@@ -135,10 +136,9 @@ class ConnectionRepositoryTest {
 
         // then
         result.shouldSucceed()
-        verify(arrangement.connectionApi)
-            .suspendFunction(arrangement.connectionApi::createConnection)
-            .with(eq(userId))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.connectionApi.createConnection(eq(userId))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -156,17 +156,15 @@ class ConnectionRepositoryTest {
 
         // then
         result.shouldFail()
-        verify(arrangement.connectionApi)
-            .suspendFunction(arrangement.connectionApi::createConnection)
-            .with(eq(userId))
-            .wasInvoked(once)
-        verify(arrangement.memberDAO)
-            .suspendFunction(arrangement.memberDAO::updateOrInsertOneOnOneMember)
-            .with(any(), any())
-            .wasNotInvoked()
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::fetchConversations)
-            .wasNotInvoked()
+        coVerify {
+            arrangement.connectionApi.createConnection(eq(userId))
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.memberDAO.updateOrInsertOneOnOneMember(any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.conversationRepository.fetchConversations()
+        }.wasNotInvoked()
     }
 
     @Test
@@ -187,14 +185,12 @@ class ConnectionRepositoryTest {
         val result = connectionRepository.sendUserConnection(UserId(userId.value, userId.domain))
 
         // then
-        verify(arrangement.connectionApi)
-            .suspendFunction(arrangement.connectionApi::createConnection)
-            .with(eq(userId))
-            .wasInvoked(once)
-        verify(arrangement.connectionDAO)
-            .suspendFunction(arrangement.connectionDAO::insertConnection)
-            .with(any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.connectionApi.createConnection(eq(userId))
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.connectionDAO.insertConnection(any())
+        }.wasInvoked(once)
     }
 
     @Test
@@ -213,14 +209,12 @@ class ConnectionRepositoryTest {
         result.shouldSucceed { arrangement.stubConnectionOne }
 
         // then
-        verify(arrangement.connectionApi)
-            .suspendFunction(arrangement.connectionApi::updateConnection)
-            .with(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
-            .wasInvoked(once)
-        verify(arrangement.memberDAO)
-            .suspendFunction(arrangement.memberDAO::updateOrInsertOneOnOneMember)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.connectionApi.updateConnection(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.memberDAO.updateOrInsertOneOnOneMember(any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -235,14 +229,12 @@ class ConnectionRepositoryTest {
 
         // then
         result.shouldFail {}
-        verify(arrangement.connectionApi)
-            .suspendFunction(arrangement.connectionApi::updateConnection)
-            .with(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
-            .wasNotInvoked()
-        verify(arrangement.memberDAO)
-            .suspendFunction(arrangement.memberDAO::updateOrInsertOneOnOneMember)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.connectionApi.updateConnection(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.memberDAO.updateOrInsertOneOnOneMember(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -257,14 +249,12 @@ class ConnectionRepositoryTest {
 
         // then
         result.shouldFail {}
-        verify(arrangement.connectionApi)
-            .suspendFunction(arrangement.connectionApi::updateConnection)
-            .with(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
-            .wasInvoked(once)
-        verify(arrangement.memberDAO)
-            .suspendFunction(arrangement.memberDAO::updateOrInsertOneOnOneMember)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.connectionApi.updateConnection(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.memberDAO.updateOrInsertOneOnOneMember(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -279,14 +269,12 @@ class ConnectionRepositoryTest {
 
         // then
         result.shouldFail {}
-        verify(arrangement.connectionApi)
-            .suspendFunction(arrangement.connectionApi::updateConnection)
-            .with(eq(userId), eq(ConnectionStateDTO.PENDING))
-            .wasNotInvoked()
-        verify(arrangement.memberDAO)
-            .suspendFunction(arrangement.memberDAO::updateOrInsertOneOnOneMember)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.connectionApi.updateConnection(eq(userId), eq(ConnectionStateDTO.PENDING))
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.memberDAO.updateOrInsertOneOnOneMember(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -305,14 +293,12 @@ class ConnectionRepositoryTest {
 
         // then
         result.shouldSucceed()
-        verify(arrangement.connectionDAO)
-            .suspendFunction(arrangement.connectionDAO::deleteConnectionDataAndConversation)
-            .with(eq(conversationId.toDao()))
-            .wasInvoked(once)
-        verify(arrangement.userDAO)
-            .suspendFunction(arrangement.userDAO::upsertConnectionStatuses)
-            .with(eq(mapOf(connection.qualifiedToId.toDao() to ConnectionEntity.State.CANCELLED)))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.connectionDAO.deleteConnectionDataAndConversation(eq(conversationId.toDao()))
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.userDAO.upsertConnectionStatuses(eq(mapOf(connection.qualifiedToId.toDao() to ConnectionEntity.State.CANCELLED)))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -327,10 +313,28 @@ class ConnectionRepositoryTest {
         result.shouldSucceed {
             assertEquals(connection.qualifiedConversationId.toModel(), it.conversationId)
         }
-        verify(arrangement.connectionDAO)
-            .suspendFunction(arrangement.connectionDAO::getConnection)
-            .with(eq(connection.qualifiedConversationId))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.connectionDAO.getConnection(eq(connection.qualifiedConversationId))
+        }.wasInvoked(once)
+    }
+
+    @Test
+    fun givenAConnectionRequestIgnore_WhenSendingAConnectionStatusValid_thenTheConnectionShouldBePersisted() = runTest {
+        // given
+        val userId = NetworkUserId("user_id", "domain_id")
+        val (arrangement, connectionRepository) = Arrangement().arrange()
+        arrangement
+            .withSuccessfulUpdateConnectionStatusResponse(userId)
+            .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
+
+        // when
+        val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
+        result.shouldSucceed { arrangement.stubConnectionOne }
+
+        // then
+        coVerify {
+            arrangement.connectionApi.updateConnection(userId, ConnectionStateDTO.IGNORED)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -345,34 +349,76 @@ class ConnectionRepositoryTest {
         result.shouldFail {
             assertIs<StorageFailure.DataNotFound>(it)
         }
-        verify(arrangement.connectionDAO)
-            .suspendFunction(arrangement.connectionDAO::getConnection)
-            .with(eq(connection.qualifiedConversationId))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.connectionDAO.getConnection(eq(connection.qualifiedConversationId))
+        }.wasInvoked(once)
     }
+
+    @Test
+    fun givenAConnectionRequestIgnore_WhenApiUpdateFailedWithFederatedFailedDomains_thenTheConnectionShouldBePersisted() = runTest {
+        // given
+        val userId = NetworkUserId("user_id", "domain_id")
+        val (arrangement, connectionRepository) = Arrangement().arrange()
+        arrangement
+            .withErrorUpdatingConnectionStatusResponse(
+                userId,
+                KaliumException.FederationUnreachableException(FederationUnreachableResponse())
+            )
+            .withConnectionEntityByUser()
+            .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
+
+        // when
+        val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
+        result.shouldSucceed { arrangement.stubConnectionOne }
+
+        // then
+        coVerify {
+            arrangement.connectionApi.updateConnection(userId, ConnectionStateDTO.IGNORED)
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAConnectionRequestIgnore_WhenApiUpdateFailedWithNonFederatedFailedDomains_thenTheConnectionNotShouldBePersisted() =
+        runTest {
+            // given
+            val userId = NetworkUserId("user_id", "domain_id")
+            val (arrangement, connectionRepository) = Arrangement().arrange()
+            arrangement
+                .withErrorUpdatingConnectionStatusResponse(userId)
+                .withSuccessfulFetchSelfUserConnectionsResponse(arrangement.stubUserProfileDTO)
+
+            // when
+            val result = connectionRepository.ignoreConnectionRequest(UserId(userId.value, userId.domain))
+            result.shouldFail { arrangement.stubConnectionOne }
+
+            // then
+            coVerify {
+                arrangement.connectionApi.updateConnection(userId, ConnectionStateDTO.IGNORED)
+            }.wasInvoked(exactly = once)
+        }
 
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
         @Mock
-        val conversationDAO = configure(mock(classOf<ConversationDAO>())) { stubsUnitByDefault = true }
+        val conversationDAO = mock(ConversationDAO::class)
 
         @Mock
-        val conversationRepository = configure(mock(classOf<ConversationRepository>())) { stubsUnitByDefault = true }
+        val conversationRepository = mock(ConversationRepository::class)
 
         @Mock
-        val connectionDAO = configure(mock(classOf<ConnectionDAO>())) { stubsUnitByDefault = true }
+        val connectionDAO = mock(ConnectionDAO::class)
 
         @Mock
-        val connectionApi = mock(classOf<ConnectionApi>())
+        val connectionApi = mock(ConnectionApi::class)
 
         @Mock
-        val userDetailsApi = mock(classOf<UserDetailsApi>())
+        val userDetailsApi = mock(UserDetailsApi::class)
 
         @Mock
-        val userDAO = mock(classOf<UserDAO>())
+        val userDAO = mock(UserDAO::class)
 
         @Mock
-        val selfTeamIdProvider = mock(classOf<SelfTeamIdProvider>())
+        val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
         val connectionRepository = ConnectionDataSource(
             conversationDAO = conversationDAO,
@@ -434,138 +480,147 @@ class ConnectionRepositoryTest {
         val stubUserEntity = TestUser.DETAILS_ENTITY
         val stubConversationID1 = QualifiedIDEntity("conversationId1", "domain")
         val stubConversationID2 = QualifiedIDEntity("conversationId2", "domain")
+        val connectionEntity = ConnectionEntity(
+            conversationId = "conversationId1",
+            from = "fromId",
+            lastUpdateDate = Instant.DISTANT_PAST,
+            qualifiedConversationId = ConversationIDEntity("conversationId1", "domain"),
+            qualifiedToId = QualifiedIDEntity("connectionId1", "domain"),
+            status = ConnectionEntity.State.ACCEPTED,
+            toId = "connectionId1"
+        )
 
-        fun withSelfUserTeamId(either: Either<CoreFailure, TeamId?>): Arrangement {
-            given(selfTeamIdProvider)
-                .suspendFunction(selfTeamIdProvider::invoke)
-                .whenInvoked()
-                .then { either }
+        suspend fun withSelfUserTeamId(either: Either<CoreFailure, TeamId?>): Arrangement {
+            coEvery {
+                selfTeamIdProvider.invoke()
+            }.returns(either)
             return this
         }
 
-        fun withFetchSentConversationSucceed(): Arrangement {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::fetchSentConnectionConversation)
-                .whenInvokedWith(any())
-                .then { Either.Right(Unit) }
+        suspend fun withFetchSentConversationSucceed(): Arrangement {
+            coEvery {
+                conversationRepository.fetchSentConnectionConversation(any())
+            }.returns(Either.Right(Unit))
             return this
         }
 
-        fun withSuccessfulCreateConnectionResponse(userId: NetworkUserId): Arrangement {
-            given(connectionApi)
-                .suspendFunction(connectionApi::createConnection)
-                .whenInvokedWith(eq(userId))
-                .then { NetworkResponse.Success(stubConnectionOne, mapOf(), 200) }
-
-            return this
-        }
-
-        fun withSuccessfulGetConversationById(conversationId: QualifiedIDEntity): Arrangement {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::observeGetConversationByQualifiedID)
-                .whenInvokedWith(eq(conversationId))
-                .then { flowOf(TestConversation.VIEW_ENTITY) }
+        suspend fun withSuccessfulCreateConnectionResponse(userId: NetworkUserId): Arrangement {
+            coEvery {
+                connectionApi.createConnection(eq(userId))
+            }.returns(NetworkResponse.Success(stubConnectionOne, mapOf(), 200))
 
             return this
         }
 
-        fun withNotFoundGetConversationError(): Arrangement = apply {
+        suspend fun withSuccessfulGetConversationById(conversationId: QualifiedIDEntity): Arrangement {
+            coEvery {
+                conversationDAO.observeGetConversationByQualifiedID(eq(conversationId))
+            }.returns(flowOf(TestConversation.VIEW_ENTITY))
+
+            return this
+        }
+
+        suspend fun withNotFoundGetConversationError(): Arrangement = apply {
             // TODO: use withUpdateOrInsertOneOnOneMemberFailure directly in the test once it is fully refactored
             withUpdateOrInsertOneOnOneMemberFailure(
                 error = Exception("error"),
-                member = any(),
-                conversationId = any()
+                member = AnyMatcher(valueOf()),
+                conversationId = AnyMatcher(valueOf())
             )
         }
 
-        fun withErrorOnCreateConnectionResponse(userId: NetworkUserId): Arrangement {
-            given(connectionApi)
-                .suspendFunction(connectionApi::createConnection)
-                .whenInvokedWith(eq(userId))
-                .then { NetworkResponse.Error(KaliumException.GenericError(RuntimeException("An error the server threw!"))) }
+        suspend fun withErrorOnCreateConnectionResponse(userId: NetworkUserId): Arrangement {
+            coEvery {
+                connectionApi.createConnection(eq(userId))
+            }.returns(NetworkResponse.Error(KaliumException.GenericError(RuntimeException("An error the server threw!"))))
 
             return this
         }
 
-        fun withErrorOnPersistingConnectionResponse(userId: NetworkUserId): Arrangement = apply {
+        suspend fun withErrorOnPersistingConnectionResponse(userId: NetworkUserId): Arrangement = apply {
             // TODO: use withUpdateOrInsertOneOnOneMemberFailure directly in the test once it is fully refactored
             withUpdateOrInsertOneOnOneMemberFailure(
                 error = RuntimeException("An error occurred persisting the data"),
-                member = eq(UserIDEntity(userId.value, userId.domain)),
-                conversationId = any()
+                member = PredicateMatcher(
+                    MemberEntity::class,
+                    valueOf()
+                ) { it.user == QualifiedIDEntity(userId.value, userId.domain) },
+                conversationId = AnyMatcher(valueOf())
             )
         }
 
-        fun withSuccessfulUpdateConnectionStatusResponse(userId: NetworkUserId): Arrangement = apply {
-            given(connectionApi)
-                .suspendFunction(connectionApi::updateConnection)
-                .whenInvokedWith(eq(userId), eq(ConnectionStateDTO.ACCEPTED))
-                .then { _, _ -> NetworkResponse.Success(stubConnectionOne, mapOf(), 200) }
+        suspend fun withSuccessfulUpdateConnectionStatusResponse(userId: NetworkUserId): Arrangement = apply {
+            coEvery {
+                connectionApi.updateConnection(eq(userId), any())
+            }.returns(NetworkResponse.Success(stubConnectionOne, mapOf(), 200))
 
             withUpdateOrInsertOneOnOneMemberSuccess(
-                member = eq(UserIDEntity(userId.value, userId.domain)),
-                conversationId = any()
+                member = PredicateMatcher(
+                    MemberEntity::class,
+                    valueOf()
+                ) { it.user == QualifiedIDEntity(userId.value, userId.domain) },
+                conversationId = AnyMatcher(valueOf())
             )
         }
 
-        fun withErrorUpdatingConnectionStatusResponse(userId: NetworkUserId): Arrangement = apply {
-            given(connectionApi)
-                .suspendFunction(connectionApi::updateConnection)
-                .whenInvokedWith(eq(userId), any())
-                .then { _, _ -> NetworkResponse.Error(KaliumException.GenericError(RuntimeException("An error the server threw!"))) }
+        suspend fun withErrorUpdatingConnectionStatusResponse(
+            userId: NetworkUserId,
+            exception: KaliumException = KaliumException.GenericError(RuntimeException("An error the server threw!"))
+        ): Arrangement = apply {
+            coEvery {
+                connectionApi.updateConnection(eq(userId), any())
+            }.returns(NetworkResponse.Error(exception))
         }
 
-        fun withDeleteConnectionDataAndConversation(conversationId: QualifiedIDEntity): Arrangement = apply {
-            given(connectionDAO)
-                .suspendFunction(connectionDAO::deleteConnectionDataAndConversation)
-                .whenInvokedWith(eq(conversationId))
-                .thenReturn(Unit)
+        suspend fun withDeleteConnectionDataAndConversation(conversationId: QualifiedIDEntity): Arrangement = apply {
+            coEvery {
+                connectionDAO.deleteConnectionDataAndConversation(eq(conversationId))
+            }.returns(Unit)
         }
 
-        fun withSuccessfulFetchSelfUserConnectionsResponse(stubUserProfileDTO: UserProfileDTO): Arrangement {
-            given(connectionApi)
-                .suspendFunction(connectionApi::fetchSelfUserConnections)
-                .whenInvokedWith(eq(null))
-                .then {
+        suspend fun withConnectionEntityByUser(): Arrangement = apply {
+            coEvery { connectionDAO.getConnectionByUser(any()) }
+                .returns(connectionEntity)
+        }
+
+        suspend fun withSuccessfulFetchSelfUserConnectionsResponse(stubUserProfileDTO: UserProfileDTO): Arrangement {
+            coEvery { connectionApi.fetchSelfUserConnections(null) }
+                .returns(
                     NetworkResponse.Success(
                         stubConnectionResponse,
                         mapOf(),
                         200
                     )
-                }
-            given(userDetailsApi)
-                .suspendFunction(userDetailsApi::getUserInfo)
-                .whenInvokedWith(any())
-                .then { NetworkResponse.Success(stubUserProfileDTO, mapOf(), 200) }
+                )
+            coEvery {
+                userDetailsApi.getUserInfo(any())
+            }.returns(NetworkResponse.Success(stubUserProfileDTO, mapOf(), 200))
 
             withUpdateOrInsertOneOnOneMemberSuccess()
 
-            given(userDAO).suspendFunction(userDAO::observeUserDetailsByQualifiedID)
-                .whenInvokedWith(any())
-                .then { flowOf(stubUserEntity) }
+            coEvery {
+                userDAO.observeUserDetailsByQualifiedID(any())
+            }.returns(flowOf(stubUserEntity))
 
-            given(userDAO)
-                .suspendFunction(userDAO::upsertUser)
-                .whenInvokedWith(any())
-                .then { }
-
-            return this
-        }
-
-        fun withSuccessfulGetUserById(id: QualifiedIDEntity): Arrangement {
-            given(userDAO)
-                .suspendFunction(userDAO::observeUserDetailsByQualifiedID)
-                .whenInvokedWith(eq(id))
-                .then { flowOf(stubUserEntity) }
+            coEvery {
+                userDAO.upsertUser(any())
+            }.returns(Unit)
 
             return this
         }
 
-        fun withGetConnection(connection: ConnectionEntity?): Arrangement = apply {
-            given(connectionDAO)
-                .suspendFunction(connectionDAO::getConnection)
-                .whenInvokedWith(any())
-                .thenReturn(connection)
+        suspend fun withSuccessfulGetUserById(id: QualifiedIDEntity): Arrangement {
+            coEvery {
+                userDAO.observeUserDetailsByQualifiedID(eq(id))
+            }.returns(flowOf(stubUserEntity))
+
+            return this
+        }
+
+        suspend fun withGetConnection(connection: ConnectionEntity?): Arrangement = apply {
+            coEvery {
+                connectionDAO.getConnection(any())
+            }.returns(connection)
         }
 
         fun arrange() = this to connectionRepository

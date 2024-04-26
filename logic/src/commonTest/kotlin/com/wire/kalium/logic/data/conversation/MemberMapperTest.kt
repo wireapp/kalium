@@ -24,8 +24,8 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -38,7 +38,7 @@ import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 class MemberMapperTest {
 
     @Mock
-    val idMapper = mock(classOf<IdMapper>())
+    val idMapper = mock(IdMapper::class)
 
     @Mock
     private val roleMapper: ConversationRoleMapper = mock(ConversationRoleMapper::class)
@@ -47,13 +47,13 @@ class MemberMapperTest {
 
     @BeforeTest
     fun setup() {
-        given(roleMapper)
-            .invocation { fromApi("wire_admin") }
-            .then { Conversation.Member.Role.Admin }
+        every {
+            roleMapper.fromApi("wire_admin") 
+        }.returns(Conversation.Member.Role.Admin)
 
-        given(roleMapper)
-            .invocation { fromApi("wire_member") }
-            .then { Conversation.Member.Role.Member }
+        every {
+            roleMapper.fromApi("wire_member") 
+        }.returns(Conversation.Member.Role.Member)
 
         memberMapper = MemberMapperImpl(idMapper, roleMapper)
     }
@@ -63,9 +63,9 @@ class MemberMapperTest {
         val membersResponse = MEMBERS_RESPONSE
         memberMapper.fromApiModel(membersResponse)
 
-        verify(roleMapper)
-            .invocation { roleMapper.fromApi(OTHER_MEMBER_RESPONSE.conversationRole) }
-            .wasInvoked(exactly = once)
+        verify {
+            roleMapper.fromApi(OTHER_MEMBER_RESPONSE.conversationRole)
+        }.wasInvoked(exactly = once)
     }
 
     @Test

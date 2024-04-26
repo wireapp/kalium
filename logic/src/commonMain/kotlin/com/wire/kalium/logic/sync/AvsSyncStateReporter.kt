@@ -18,11 +18,10 @@
 package com.wire.kalium.logic.sync
 
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.data.sync.SyncState
+import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
+import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.call.CallManager
-import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
  * This class is responsible for reporting the current sync state to AVS.
@@ -35,7 +34,7 @@ internal interface AvsSyncStateReporter {
 
 internal class AvsSyncStateReporterImpl(
     val callManager: Lazy<CallManager>,
-    val observeSyncStateUseCase: ObserveSyncStateUseCase,
+    val incrementalSyncRepository: IncrementalSyncRepository,
     kaliumLogger: KaliumLogger
 ) : AvsSyncStateReporter {
 
@@ -43,21 +42,20 @@ internal class AvsSyncStateReporterImpl(
 
     override suspend fun execute() {
         logger.d("Starting to monitor")
-        observeSyncStateUseCase().distinctUntilChanged().collectLatest {
+        incrementalSyncRepository.incrementalSyncState.collectLatest {
             when (it) {
-                SyncState.GatheringPendingEvents -> {
-                    logger.d("Reporting that the app has started IncrementalSync to AVS")
+                is IncrementalSyncStatus.FetchingPendingEvents -> {
+                    logger.d("Incremental sync started - Reporting to AVS that the app is processing notifications")
                     callManager.value.reportProcessNotifications(true)
                 }
 
-                SyncState.Live -> {
-                    logger.d("Reporting that the app has finished IncrementalSync to AVS")
+                is IncrementalSyncStatus.Live,
+                is IncrementalSyncStatus.Failed,
+                is IncrementalSyncStatus.Pending -> {
+                    logger.d("Incremental sync started - Reporting to AVS that the app is not processing notifications")
                     callManager.value.reportProcessNotifications(false)
                 }
-
-                else -> {}
             }
         }
-
     }
 }

@@ -31,13 +31,11 @@ import com.wire.kalium.logic.util.arrangement.usecase.JoinExistingMLSConversatio
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Clock
 import kotlin.test.Test
-import kotlin.time.Duration.Companion.minutes
 
 class StaleEpochVerifierTest {
 
@@ -50,10 +48,9 @@ class StaleEpochVerifierTest {
 
         staleEpochHandler.verifyEpoch(CONVERSATION_ID).shouldFail()
 
-        verify(arrangement.systemMessageInserter)
-            .suspendFunction(arrangement.systemMessageInserter::insertLostCommitSystemMessage)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.systemMessageInserter.insertLostCommitSystemMessage(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -66,10 +63,9 @@ class StaleEpochVerifierTest {
 
         staleEpochHandler.verifyEpoch(CONVERSATION_ID).shouldSucceed()
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::fetchConversation)
-            .with(eq(CONVERSATION_ID))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.conversationRepository.fetchConversation(eq(CONVERSATION_ID))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -82,10 +78,9 @@ class StaleEpochVerifierTest {
 
         staleEpochHandler.verifyEpoch(CONVERSATION_ID).shouldSucceed()
 
-        verify(arrangement.joinExistingMLSConversationUseCase)
-            .suspendFunction(arrangement.joinExistingMLSConversationUseCase::invoke)
-            .with(eq(CONVERSATION_ID))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.joinExistingMLSConversationUseCase.invoke(eq(CONVERSATION_ID))
+        }.wasNotInvoked()
     }
 
     @Test
@@ -100,10 +95,9 @@ class StaleEpochVerifierTest {
 
         staleEpochHandler.verifyEpoch(CONVERSATION_ID).shouldSucceed()
 
-        verify(arrangement.joinExistingMLSConversationUseCase)
-            .suspendFunction(arrangement.joinExistingMLSConversationUseCase::invoke)
-            .with(eq(CONVERSATION_ID))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.joinExistingMLSConversationUseCase.invoke(eq(CONVERSATION_ID))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -117,10 +111,9 @@ class StaleEpochVerifierTest {
 
         staleEpochHandler.verifyEpoch(CONVERSATION_ID).shouldFail()
 
-        verify(arrangement.systemMessageInserter)
-            .suspendFunction(arrangement.systemMessageInserter::insertLostCommitSystemMessage)
-            .with(eq(CONVERSATION_ID), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.systemMessageInserter.insertLostCommitSystemMessage(eq(CONVERSATION_ID), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -135,20 +128,19 @@ class StaleEpochVerifierTest {
 
         staleEpochHandler.verifyEpoch(CONVERSATION_ID).shouldSucceed()
 
-        verify(arrangement.systemMessageInserter)
-            .suspendFunction(arrangement.systemMessageInserter::insertLostCommitSystemMessage)
-            .with(eq(CONVERSATION_ID), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.systemMessageInserter.insertLostCommitSystemMessage(eq(CONVERSATION_ID), any())
+        }.wasInvoked(once)
     }
 
 
-    private class Arrangement(private val block: Arrangement.() -> Unit) :
+    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         SystemMessageInserterArrangement by SystemMessageInserterArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
         JoinExistingMLSConversationUseCaseArrangement by JoinExistingMLSConversationUseCaseArrangementImpl()
     {
-        fun arrange() = run {
+        suspend fun arrange() = run {
             block()
             this@Arrangement to StaleEpochVerifierImpl(
                 systemMessageInserter = systemMessageInserter,
@@ -160,7 +152,7 @@ class StaleEpochVerifierTest {
     }
 
     private companion object {
-        fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+        suspend fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
         val CONVERSATION_ID = TestConversation.ID
     }
