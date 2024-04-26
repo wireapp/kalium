@@ -20,6 +20,7 @@ package com.wire.kalium.logic.util.arrangement.repository
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.User
@@ -30,6 +31,7 @@ import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
+import io.mockative.eq
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
@@ -84,12 +86,8 @@ internal interface UserRepositoryArrangement {
         userIdList: Matcher<List<UserId>> = AnyMatcher(valueOf())
     )
 
-<<<<<<< HEAD
     suspend fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: Matcher<List<UserId>>)
-=======
-    fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: Matcher<List<UserId>>)
-    fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>, userId: Matcher<UserId> = any())
->>>>>>> eb8eaddaf3 (fix: UseCase for getting if one on one conversation with user exist [WPB-6936] (#2713))
+    suspend fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>, userId: Matcher<UserId> = any())
 }
 
 @Suppress("INAPPLICABLE_JVM_NAME")
@@ -207,10 +205,8 @@ internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
         }.returns(result)
     }
 
-    override fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>, userId: Matcher<UserId>) {
-        given(userRepository)
-            .suspendFunction(userRepository::getOneOnOnConversationId)
-            .whenInvokedWith(userId)
-            .thenReturn(result)
+    override suspend fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>, userId: Matcher<QualifiedID>) {
+        coEvery { userRepository.getOneOnOnConversationId(matches { userId.matches(it) }) }
+            .returns(result)
     }
 }
