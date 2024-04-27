@@ -101,6 +101,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
             withObserveOneToOneConversationWithOtherUserReturning(Either.Left(StorageFailure.DataNotFound))
             withUserByIdReturning(OTHER_USER.right())
             withResolveOneOnOneConversationWithUserReturning(Either.Right(CONVERSATION.id))
+            withConversationDetailsByIdReturning(CONVERSATION.right())
         }
 
         // when
