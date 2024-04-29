@@ -4,7 +4,11 @@ plugins {
     kotlin("multiplatform")
     alias(libs.plugins.benchmark)
     alias(libs.plugins.allOpen)
+    alias(libs.plugins.jhmReport)
 }
+
+group = "com.wire.kalium.benchmarks"
+version = "0.0.1"
 
 allOpen {
     annotation("org.openjdk.jmh.annotations.State")
@@ -38,4 +42,11 @@ benchmark {
             jmhVersion = libs.versions.jmh.get()
         }
     }
+}
+
+jmhReport {
+    val baseFolder = project.file("build/reports/benchmarks/main").absolutePath
+    val lastFolder = project.file(baseFolder).list()?.sortedArray()?.lastOrNull() ?: ""
+    jmhResultPath = "$baseFolder/$lastFolder/jvm.json"
+    jmhReportOutput = "$baseFolder/$lastFolder"
 }

@@ -1,0 +1,40 @@
+name: Benchmark Checks
+on:
+#    schedule:
+#        -   cron: '00 8 * * 1' # every Monday at 8:00
+    workflow_dispatch:
+
+jobs:
+    benchmarks-check:
+        runs-on: ubuntu-22.04
+        container: wirebot/cryptobox:1.4.0
+        steps:
+            -   name: Checkout
+                uses: actions/checkout@v4
+                with:
+                    fetch-depth: 0
+            -   name: Set up JDK
+                uses: actions/setup-java@v4
+                with:
+                    java-version: '17'
+                    distribution: 'temurin'
+                    cache: gradle
+            -   name: Validate Gradle wrapper
+                uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
+            -   name: Run Benchmarks
+                run: ./gradlew benchmark
+            -   name: Generate HTML Report
+                run: ./gradlew jmhReport
+            -   name: Archive Reports
+                if: always()
+                uses: actions/upload-artifact@v4
+                with:
+                    name: benchmarks-reports
+                    path: ./benchmarks/build/reports/benchmarks/**
+
+            -   name: Cleanup Gradle Cache
+                # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
+                # Restoring these files from a GitHub Actions cache might cause problems for future builds.
+                run: |
+                    rm -f ~/.gradle/caches/modules-2/modules-2.lock
+                    rm -f ~/.gradle/caches/modules-2/gc.properties

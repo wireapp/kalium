@@ -64,6 +64,7 @@ slf4js = "2.0.13"
 dagCommand = "1.9.0"
 benchmark = "0.4.10"
 jmh = "1.37"
+jmhReport = "0.9.6"
 
 [plugins]
 # Home-made convention plugins
@@ -82,6 +83,7 @@ sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobufCodegen" }
 benchmark = { id = "org.jetbrains.kotlinx.benchmark", version.ref = "benchmark" }
 allOpen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "kotlin" }
+jhmReport = { id = "io.morethan.jmhreport", version.ref = "jmhReport" }
 
 [bundles]
 android = ["appCompat", "activityCompose", "work", "composeMaterial", "coroutinesAndroid", "ktor", "ktor-okHttp"]
