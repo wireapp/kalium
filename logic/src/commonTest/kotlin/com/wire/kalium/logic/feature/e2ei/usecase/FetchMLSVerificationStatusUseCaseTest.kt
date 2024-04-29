@@ -26,12 +26,13 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
-import com.wire.kalium.logic.data.e2ei.MLSConversationsVerificationStatusesHandlerImpl
+import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
+import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toCrypto
-import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseCaseImpl
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
@@ -56,25 +57,24 @@ import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
-class MLSConversationsVerificationStatusesHandlerTest {
+class FetchMLSVerificationStatusUseCaseTest {
 
     @Test
     fun givenNotVerifiedConversation_whenNotVerifiedStatusComes_thenNothingChanged() = runTest {
         val conversationDetails = TestConversationDetails.CONVERSATION_GROUP.copy(conversation = TestConversation.MLS_CONVERSATION)
         val (arrangement, handler) = arrange {
-            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
             withIsGroupVerified(E2EIConversationState.NOT_VERIFIED)
             withConversationDetailsByMLSGroupId(Either.Right(conversationDetails))
         }
 
-        handler()
+        handler(TestConversation.GROUP_ID)
         advanceUntilIdle()
 
         coVerify {
@@ -98,12 +98,11 @@ class MLSConversationsVerificationStatusesHandlerTest {
             )
         )
         val (arrangement, handler) = arrange {
-            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
             withIsGroupVerified(E2EIConversationState.NOT_VERIFIED)
             withConversationDetailsByMLSGroupId(Either.Right(conversationDetails))
         }
 
-        handler()
+        handler(TestConversation.GROUP_ID)
         advanceUntilIdle()
 
         coVerify {
@@ -129,12 +128,11 @@ class MLSConversationsVerificationStatusesHandlerTest {
                 .copy(mlsVerificationStatus = Conversation.VerificationStatus.DEGRADED)
         )
         val (arrangement, handler) = arrange {
-            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
             withIsGroupVerified(E2EIConversationState.NOT_VERIFIED)
             withConversationDetailsByMLSGroupId(Either.Right(conversationDetails))
         }
 
-        handler()
+        handler(TestConversation.GROUP_ID)
         advanceUntilIdle()
 
         coVerify {
@@ -153,21 +151,21 @@ class MLSConversationsVerificationStatusesHandlerTest {
     @Test
     fun givenDegradedConversation_whenVerifiedStatusComes_thenStatusUpdated() = runTest {
 
-        val user1 = UserIDEntity("user1", "domain1") to NameAndHandleEntity("name1", "device1")
-        val user2 = UserIDEntity("user2", "domain2") to NameAndHandleEntity("name2", "device2")
+        val user1 = QualifiedID("user1", "domain1") to NameAndHandle("name1", "device1")
+        val user2 = QualifiedID("user2", "domain2") to NameAndHandle("name2", "device2")
 
-        val epochChangedData = EpochChangesDataEntity(
-            conversationId = TestConversation.CONVERSATION.id.toDao(),
+        val epochChangedData = EpochChangesData(
+            conversationId = TestConversation.CONVERSATION.id,
             members = mapOf(user1, user2),
-            mlsVerificationStatus = ConversationEntity.VerificationStatus.DEGRADED
+            mlsVerificationStatus = Conversation.VerificationStatus.DEGRADED
         )
 
         val ccMembersIdentity: Map<UserId, List<WireIdentity>> = mapOf(
-            user1.first.toModel() to listOf(
+            user1.first to listOf(
                 WireIdentity(
                     CryptoQualifiedClientId(
                         value = "client_user_1",
-                        userId = user1.first.toModel().toCrypto()
+                        userId = user1.first.toCrypto()
                     ),
                     handle = user1.second.handle!!,
                     displayName = user1.second.name!!,
@@ -179,11 +177,11 @@ class MLSConversationsVerificationStatusesHandlerTest {
                     endTimestampSeconds = 1899105093
                 )
             ),
-            user2.first.toModel() to listOf(
+            user2.first to listOf(
                 WireIdentity(
                     CryptoQualifiedClientId(
                         value = "client_user_2",
-                        userId = user2.first.toModel().toCrypto()
+                        userId = user2.first.toCrypto()
                     ),
                     handle = user2.second.handle!!,
                     displayName = user2.second.name!!,
@@ -197,19 +195,18 @@ class MLSConversationsVerificationStatusesHandlerTest {
             )
         )
         val (arrangement, handler) = arrange {
-            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
             withIsGroupVerified(E2EIConversationState.VERIFIED)
             withSelectGroupStatusMembersNamesAndHandles(Either.Right(epochChangedData))
             withGetMembersIdentities(Either.Right(ccMembersIdentity))
         }
 
-        handler()
+        handler(TestConversation.GROUP_ID)
         advanceUntilIdle()
 
         coVerify {
             arrangement.conversationRepository.updateMlsVerificationStatus(
                 eq(Conversation.VerificationStatus.VERIFIED),
-                eq(epochChangedData.conversationId.toModel())
+                eq(epochChangedData.conversationId)
             )
         }.wasInvoked(once)
 
@@ -225,21 +222,21 @@ class MLSConversationsVerificationStatusesHandlerTest {
     @Test
     fun givenVerifiedConversation_whenVerifiedStatusComesAndUserNamesDivergeFromCC_thenStatusUpdatedToDegraded() = runTest {
 
-        val user1 = UserIDEntity("user1", "domain1") to NameAndHandleEntity("name1", "device1")
-        val user2 = UserIDEntity("user2", "domain2") to NameAndHandleEntity("name2", "device2")
+        val user1 = QualifiedID("user1", "domain1") to NameAndHandle("name1", "device1")
+        val user2 = QualifiedID("user2", "domain2") to NameAndHandle("name2", "device2")
 
-        val epochChangedData = EpochChangesDataEntity(
-            conversationId = TestConversation.CONVERSATION.id.toDao(),
+        val epochChangedData = EpochChangesData(
+            conversationId = TestConversation.CONVERSATION.id,
             members = mapOf(user1, user2),
-            mlsVerificationStatus = ConversationEntity.VerificationStatus.VERIFIED
+            mlsVerificationStatus = Conversation.VerificationStatus.VERIFIED
         )
 
         val ccMembersIdentity: Map<UserId, List<WireIdentity>> = mapOf(
-            user1.first.toModel() to listOf(
+            user1.first to listOf(
                 WireIdentity(
                     CryptoQualifiedClientId(
                         value = "client_user_1",
-                        userId = user1.first.toModel().toCrypto()
+                        userId = user1.first.toCrypto()
                     ),
                     handle = user1.second.handle!! + "1", // this user name changed
                     displayName = user1.second.name!! + "1",
@@ -251,11 +248,11 @@ class MLSConversationsVerificationStatusesHandlerTest {
                     endTimestampSeconds = 1899105093
                 )
             ),
-            user2.first.toModel() to listOf(
+            user2.first to listOf(
                 WireIdentity(
                     CryptoQualifiedClientId(
                         value = "client_user_2",
-                        userId = user2.first.toModel().toCrypto()
+                        userId = user2.first.toCrypto()
                     ),
                     handle = user2.second.handle!!,
                     displayName = user2.second.name!!,
@@ -269,19 +266,18 @@ class MLSConversationsVerificationStatusesHandlerTest {
             )
         )
         val (arrangement, handler) = arrange {
-            withObserveEpochChanges(flowOf(TestConversation.GROUP_ID))
             withIsGroupVerified(E2EIConversationState.VERIFIED)
             withSelectGroupStatusMembersNamesAndHandles(Either.Right(epochChangedData))
             withGetMembersIdentities(Either.Right(ccMembersIdentity))
         }
 
-        handler()
+        handler(TestConversation.GROUP_ID)
         advanceUntilIdle()
 
         coVerify {
             arrangement.conversationRepository.updateMlsVerificationStatus(
                 eq(Conversation.VerificationStatus.DEGRADED),
-                eq(epochChangedData.conversationId.toModel())
+                eq(epochChangedData.conversationId)
             )
         }.wasInvoked(once)
 
@@ -300,7 +296,6 @@ class MLSConversationsVerificationStatusesHandlerTest {
         private val block: suspend Arrangement.() -> Unit
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
-        MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl() {
 
         @Mock
@@ -324,7 +319,7 @@ class MLSConversationsVerificationStatusesHandlerTest {
             }.returns(result)
         }
 
-        suspend inline fun arrange() = run {
+        suspend inline fun arrange() = let {
             withUpdateVerificationStatus(Either.Right(Unit))
             withPersistingMessage(Either.Right(Unit))
             withSetDegradedConversationNotifiedFlag(Either.Right(Unit))
@@ -332,10 +327,9 @@ class MLSConversationsVerificationStatusesHandlerTest {
                 mlsClientProvider.getMLSClient(any())
             }.returns(Either.Right(mlsClient))
             block()
-            this to MLSConversationsVerificationStatusesHandlerImpl(
+            this to FetchMLSVerificationStatusUseCaseImpl(
                 conversationRepository = conversationRepository,
                 persistMessage = persistMessageUseCase,
-                epochChangesObserver = epochChangesObserver,
                 selfUserId = TestUser.USER_ID,
                 kaliumLogger = kaliumLogger,
                 userRepository = userRepository,

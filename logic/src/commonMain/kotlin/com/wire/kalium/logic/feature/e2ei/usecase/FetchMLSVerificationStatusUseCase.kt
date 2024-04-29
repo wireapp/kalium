@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.data.e2ei
+package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.cryptography.CryptoCertificateStatus
@@ -26,17 +26,15 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation.VerificationStatus
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
 import com.wire.kalium.logic.data.conversation.toModel
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.getOrElse
@@ -45,17 +43,16 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.wrapMLSRequest
-import com.wire.kalium.persistence.dao.conversation.EpochChangesDataEntity
 import com.wire.kalium.util.DateTimeUtil
 
 typealias UserToWireIdentity = Map<UserId, List<WireIdentity>>
 
 /**
- * Observes all the MLS Conversations Verification status.
+ * Check and update MLS Conversations Verification status.
  * Notify user (by adding System message in conversation) if needed about changes.
  */
-internal interface MLSConversationsVerificationStatusesHandler {
-    suspend operator fun invoke()
+internal interface FetchMLSVerificationStatusUseCase {
+    suspend operator fun invoke(groupId: GroupID)
 }
 
 data class VerificationStatusData(
@@ -65,45 +62,39 @@ data class VerificationStatusData(
 )
 
 @Suppress("LongParameterList")
-internal class MLSConversationsVerificationStatusesHandlerImpl(
+internal class FetchMLSVerificationStatusUseCaseImpl(
     private val conversationRepository: ConversationRepository,
     private val persistMessage: PersistMessageUseCase,
     private val mlsClientProvider: MLSClientProvider,
     private val mlsConversationRepository: MLSConversationRepository,
-    private val epochChangesObserver: EpochChangesObserver,
     private val selfUserId: UserId,
     private val userRepository: UserRepository,
     kaliumLogger: KaliumLogger
-) : MLSConversationsVerificationStatusesHandler {
+) : FetchMLSVerificationStatusUseCase {
 
-    private val logger = kaliumLogger.withTextTag("MLSConversationsVerificationStatusesHandler")
+    private val logger = kaliumLogger.withTextTag("FetchMLSVerificationStatusUseCaseImpl")
 
-    override suspend fun invoke() {
-        logger.d("Starting to monitor")
-        epochChangesObserver.observe()
-            .collect { groupId ->
-
-                mlsClientProvider.getMLSClient()
-                    .flatMap { mlsClient ->
-                        wrapMLSRequest { mlsClient.isGroupVerified(groupId.value) }.map {
-                            it.toModel()
-                        }
-                    }.flatMap { ccGroupStatus ->
-                        if (ccGroupStatus == VerificationStatus.VERIFIED) {
-                            verifyUsersStatus(groupId)
-                        } else {
-                            conversationRepository.getConversationDetailsByMLSGroupId(groupId).map {
-                                VerificationStatusData(
-                                    conversationId = it.conversation.id,
-                                    currentPersistedStatus = it.conversation.mlsVerificationStatus,
-                                    newStatus =
-                                    ccGroupStatus
-                                )
-                            }
-                        }
-                    }.onSuccess {
-                        updateStatusAndNotifyUserIfNeeded(it)
+    override suspend fun invoke(groupId: GroupID) {
+        mlsClientProvider.getMLSClient()
+            .flatMap { mlsClient ->
+                wrapMLSRequest { mlsClient.isGroupVerified(groupId.value) }.map {
+                    it.toModel()
+                }
+            }.flatMap { ccGroupStatus ->
+                if (ccGroupStatus == VerificationStatus.VERIFIED) {
+                    verifyUsersStatus(groupId)
+                } else {
+                    conversationRepository.getConversationDetailsByMLSGroupId(groupId).map {
+                        VerificationStatusData(
+                            conversationId = it.conversation.id,
+                            currentPersistedStatus = it.conversation.mlsVerificationStatus,
+                            newStatus =
+                            ccGroupStatus
+                        )
                     }
+                }
+            }.onSuccess {
+                updateStatusAndNotifyUserIfNeeded(it)
             }
     }
 
@@ -111,8 +102,9 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
         conversationRepository.getGroupStatusMembersNamesAndHandles(groupId)
             .flatMap { epochChangesData ->
                 mlsConversationRepository.getMembersIdentities(
-                    epochChangesData.conversationId.toModel(),
-                    epochChangesData.members.keys.map { it.toModel() })
+                    epochChangesData.conversationId,
+                    epochChangesData.members.keys.toList()
+                )
                     .flatMap { ccIdentities ->
                         updateKnownUsersIfNeeded(epochChangesData, ccIdentities, groupId)
                     }
@@ -120,11 +112,12 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
                 var newStatus: VerificationStatus = VerificationStatus.VERIFIED
                 // check that all identities are valid and name and handle are matching
                 for ((userId, wireIdentity) in ccIdentity) {
-                    val persistedMemberInfo = dbData.members[userId.toDao()]
+                    val persistedMemberInfo = dbData.members[userId]
                     val isUserVerified = wireIdentity.firstOrNull {
                         it.status != CryptoCertificateStatus.VALID ||
-                                it.displayName != persistedMemberInfo?.name ||
-                                it.handle.handle != persistedMemberInfo.handle
+                                it.certificate == null ||
+                                it.certificate?.displayName != persistedMemberInfo?.name ||
+                                it.certificate?.handle?.handle != persistedMemberInfo?.handle
                     } == null
                     if (!isUserVerified) {
                         newStatus = VerificationStatus.NOT_VERIFIED
@@ -132,21 +125,21 @@ internal class MLSConversationsVerificationStatusesHandlerImpl(
                     }
                 }
                 VerificationStatusData(
-                    conversationId = dbData.conversationId.toModel(),
-                    currentPersistedStatus = dbData.mlsVerificationStatus.toModel(),
+                    conversationId = dbData.conversationId,
+                    currentPersistedStatus = dbData.mlsVerificationStatus,
                     newStatus = newStatus
                 )
             }
 
     private suspend fun updateKnownUsersIfNeeded(
-        epochChangesData: EpochChangesDataEntity,
+        epochChangesData: EpochChangesData,
         ccIdentities: UserToWireIdentity,
         groupId: GroupID
-    ): Either<CoreFailure, Pair<EpochChangesDataEntity, UserToWireIdentity>> {
+    ): Either<CoreFailure, Pair<EpochChangesData, UserToWireIdentity>> {
         var dbData = epochChangesData
 
         val missingUsers = missingUsers(
-            usersFromDB = epochChangesData.members.keys.map { it.toModel() }.toSet(),
+            usersFromDB = epochChangesData.members.keys.map { it }.toSet(),
             usersFromCC = ccIdentities.keys
         )
 

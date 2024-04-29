@@ -453,4 +453,8 @@ class UserDAOImpl internal constructor(
     override suspend fun isAtLeastOneUserATeamMember(userId: List<UserIDEntity>, teamId: String): Boolean = withContext(queriesContext) {
         userQueries.isOneUserATeamMember(userId, teamId).executeAsOneOrNull() ?: false
     }
+
+    override suspend fun getOneOnOnConversationId(userId: UserIDEntity): QualifiedIDEntity? = withContext(queriesContext) {
+        userQueries.selectOneOnOnConversationId(userId).executeAsOneOrNull()?.active_one_on_one_conversation_id
+    }
 }
