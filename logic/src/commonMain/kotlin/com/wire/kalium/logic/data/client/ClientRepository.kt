@@ -211,7 +211,8 @@ class ClientDataSource(
             .wrapStorageRequest()
 
     override suspend fun registerMLSClient(
-        clientId: ClientId, publicKey: ByteArray,
+        clientId: ClientId,
+        publicKey: ByteArray,
         cipherSuite: CipherSuite
     ): Either<CoreFailure, Unit> =
         clientRemoteRepository.registerMLSClient(clientId, publicKey.encodeBase64(), cipherSuite)
