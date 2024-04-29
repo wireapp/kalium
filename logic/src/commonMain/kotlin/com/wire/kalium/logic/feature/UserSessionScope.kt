@@ -2047,10 +2047,6 @@ class UserSessionScope internal constructor(
         }
 
         launch {
-            avsSyncStateReporter.execute()
-        }
-
-        launch {
             observeE2EIConversationsVerificationStatuses.invoke()
         }
 
