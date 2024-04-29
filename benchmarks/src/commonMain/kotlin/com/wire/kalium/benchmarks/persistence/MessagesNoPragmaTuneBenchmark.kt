@@ -50,16 +50,16 @@ import kotlin.random.nextInt
 @Warmup(iterations = 1)
 @Fork(1)
 @Measurement(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
-class TestBenchmark {
+class MessagesNoPragmaTuneBenchmark {
 
     @Benchmark
-    fun messageInsertionWithoutTuningBenchmark(dbState: DBState, blackHole: Blackhole) = runBlocking {
+    fun messageInsertionBenchmark(dbState: DBState, blackHole: Blackhole) = runBlocking {
         val messagesToInsert = generateRandomMessages(5000)
         blackHole.consume(dbState.db.messageDAO.insertOrIgnoreMessages(messagesToInsert))
     }
 
     @Benchmark
-    fun queryMessagesWithoutTuningBenchmark(dbState: DBState, blackHole: Blackhole) = runBlocking {
+    fun queryMessagesBenchmark(dbState: DBState, blackHole: Blackhole) = runBlocking {
         val messages = dbState.db.messageDAO.getMessagesByConversationAndVisibility(
             conversationId,
             MESSAGES_COUNT,
