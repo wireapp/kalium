@@ -177,7 +177,7 @@ class RegisterMLSClientUseCaseTest {
 
         fun withIsMLSClientInitialisedReturns(result: Boolean = true) = apply {
             given(mlsClientProvider)
-                .function(mlsClientProvider::isMLSClientInitialised)
+                .suspendFunction(mlsClientProvider::isMLSClientInitialised)
                 .whenInvoked()
                 .thenReturn(result)
         }
