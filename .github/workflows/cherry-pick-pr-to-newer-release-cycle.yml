@@ -20,12 +20,12 @@
 # If needed, you can also set the `TARGET_BRANCH` environment variable to specify a different target branch for the cherry-pick.
 # By default, it's set to `develop`.
 
-name: "Cherry-pick from 4.6 to RC"
+name: "Cherry-pick from RC to develop"
 
 on:
     pull_request:
         branches:
-            - release/android-cycle-4.6
+            - release/candidate
         types:
             - closed
 
@@ -45,6 +45,6 @@ jobs:
             - name: Cherry pick to `develop`
               uses: wireapp/action-auto-cherry-pick@v1.0.0
               with:
-                  target-branch: release/candidate
+                  target-branch: develop
                   pr-title-suffix: '🍒'
                   labels: 'cherry-pick'
