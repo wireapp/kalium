@@ -149,6 +149,7 @@ interface UserRepository {
     suspend fun isAtLeastOneUserATeamMember(userId: List<UserId>, teamId: TeamId): Either<StorageFailure, Boolean>
 
     suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedID>): Either<StorageFailure, Unit>
+    suspend fun getOneOnOnConversationId(userId: QualifiedID): Either<StorageFailure, ConversationId>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -567,6 +568,10 @@ internal class UserDataSource internal constructor(
                 userMapper.fromEntityToUserSummary(it.toSimpleEntity())
             }
         }
+
+    override suspend fun getOneOnOnConversationId(userId: QualifiedID): Either<StorageFailure, ConversationId> = wrapStorageRequest {
+        userDAO.getOneOnOnConversationId(userId.toDao())?.toModel()
+    }
 
     companion object {
         internal const val SELF_USER_ID_KEY = "selfUserID"

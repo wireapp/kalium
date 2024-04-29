@@ -182,4 +182,39 @@ class ObserveConversationMembersUseCaseTest {
             awaitComplete()
         }
     }
+
+    @Test
+    fun givenAConversationID_whenObservingMembersAnDataDidNotChange_thenDoNotEmitTheSameValuesAgain() = runTest {
+        val conversationID = TestConversation.ID
+        val otherUser = TestUser.OTHER
+        val selfUser = TestUser.SELF
+        val membersListChannel = Channel<List<Member>>(Channel.UNLIMITED)
+
+        given(userRepository)
+            .suspendFunction(userRepository::observeUser)
+            .whenInvokedWith(eq(TestUser.SELF.id))
+            .thenReturn(flowOf(selfUser))
+
+        given(userRepository)
+            .suspendFunction(userRepository::observeUser)
+            .whenInvokedWith(eq(otherUser.id))
+            .thenReturn(flowOf(otherUser))
+
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::observeConversationMembers)
+            .whenInvokedWith(eq(conversationID))
+            .thenReturn(membersListChannel.consumeAsFlow())
+
+        observeConversationMembers(conversationID).test {
+
+            membersListChannel.send(listOf(Member(otherUser.id, Member.Role.Member)))
+            assertContentEquals(listOf(MemberDetails(otherUser, Member.Role.Member)), awaitItem())
+
+            membersListChannel.send(listOf(Member(otherUser.id, Member.Role.Member)))
+            expectNoEvents()
+
+            membersListChannel.close()
+            awaitComplete()
+        }
+    }
 }
