@@ -35,7 +35,7 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     private suspend fun createE2EIClient(user: SampleUser): E2EIClient {
-        return createMLSClient(user.qualifiedClientId).e2eiNewActivationEnrollment(
+        return createMLSClient(user.qualifiedClientId, listOf(1.toUShort()), 1.toUShort()).e2eiNewActivationEnrollment(
             user.name, user.handle, user.teamId,90.days
         )
     }
@@ -112,7 +112,7 @@ class E2EIClientTest : BaseMLSClientTest() {
 
     @Test
     fun givenClient_whenCallingCheckOrderRequest_ReturnNonEmptyResult() = runTest {
-        val coreCryptoCentral = createCoreCrypto(ALICE1.qualifiedClientId)
+        val coreCryptoCentral = createCoreCrypto(ALICE1.qualifiedClientId, listOf(1.toUShort()), 1.toUShort())
         val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
@@ -130,7 +130,7 @@ class E2EIClientTest : BaseMLSClientTest() {
 
     @Test
     fun givenClient_whenCallingFinalizeRequest_ReturnNonEmptyResult() = runTest {
-        val coreCryptoCentral = createCoreCrypto(ALICE1.qualifiedClientId)
+        val coreCryptoCentral = createCoreCrypto(ALICE1.qualifiedClientId, listOf(1.toUShort()), 1.toUShort())
         val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
@@ -149,7 +149,7 @@ class E2EIClientTest : BaseMLSClientTest() {
 
     @Test
     fun givenClient_whenCallingCertificateRequest_ReturnNonEmptyResult() = runTest {
-        val coreCryptoCentral = createCoreCrypto(ALICE1.qualifiedClientId)
+        val coreCryptoCentral = createCoreCrypto(ALICE1.qualifiedClientId, listOf(1.toUShort()), 1.toUShort())
         val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
