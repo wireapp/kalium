@@ -39,8 +39,8 @@ jobs:
                     benchmark-results: ./benchmarks/build/reports/benchmarks/main/**/jvm.json
             -   name: Post Results
                 run: |
-                    echo -e "## Benchmarks results ⏱️" >> $GITHUB_STEP_SUMMARY
-                    echo -e "${{steps.benchmark-table.outputs.benchmark-table}}️" >> $GITHUB_STEP_SUMMARY
+                    echo '## Benchmarks results ⏱️' >> $GITHUB_STEP_SUMMARY
+                    echo '${{steps.benchmark-table.outputs.benchmark-table}}️' >> $GITHUB_STEP_SUMMARY
 
             -   name: Cleanup Gradle Cache
                 # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
