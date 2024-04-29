@@ -37,11 +37,7 @@ jobs:
                 uses: boswelja/kotlinx-benchmark-table-action@0.0.2
                 with:
                     benchmark-results: ./benchmarks/build/reports/benchmarks/main/**/jvm.json
-
             -   name: Post Results
-                env:
-                    GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                    GH_HEAD_REF: ${{github.head_ref}}
                 run: |
                     echo '### Benchmarks results! ⏱️' >> $GITHUB_STEP_SUMMARY
                     echo '${{steps.benchmark-table.outputs.benchmark-table}}️' >> $GITHUB_STEP_SUMMARY
