@@ -20,5 +20,6 @@ package com.wire.kalium.cryptography
 actual suspend fun coreCryptoCentral(
     rootDir: String,
     databaseKey: String,
-    cipherSuite: List<UShort>
+    cipherSuite: List<UShort>,
+    defaultCipherSuite: UShort?
 ): CoreCryptoCentral = TODO("Not yet implemented")
