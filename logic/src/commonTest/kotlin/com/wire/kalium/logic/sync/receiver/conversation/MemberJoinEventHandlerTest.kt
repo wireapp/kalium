@@ -45,29 +45,6 @@ import kotlin.test.Test
 class MemberJoinEventHandlerTest {
 
     @Test
-    fun givenMemberJoinEventWithoutSelfUser_whenHandlingIt_thenShouldFetchConversationIfUnknown() = runTest {
-        val newMembers = listOf(Member(TestUser.OTHER_FEDERATED_USER_ID, Member.Role.Member))
-        val event = TestEvent.memberJoin(members = newMembers)
-
-        val (arrangement, eventHandler) = Arrangement()
-            .withPersistingMessageReturning(Either.Right(Unit))
-            .withFetchConversationIfUnknownSucceeding()
-            .withPersistMembersSucceeding()
-            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
-            .arrange()
-
-        eventHandler.handle(event)
-
-        coVerify {
-            arrangement.conversationRepository.fetchConversationIfUnknown(eq(event.conversationId))
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.conversationRepository.fetchConversation(eq(event.conversationId))
-        }.wasNotInvoked()
-    }
-
-    @Test
     fun givenMemberJoinEventWithSelfUser_whenHandlingIt_thenShouldFetchConversation() = runTest {
         val newMembers = listOf(Member(TestUser.SELF.id, Member.Role.Member))
         val event = TestEvent.memberJoin(members = newMembers)
@@ -210,8 +187,7 @@ class MemberJoinEventHandlerTest {
             conversationRepository = conversationRepository,
             userRepository = userRepository,
             persistMessage = persistMessage,
-            legalHoldHandler = legalHoldHandler,
-            selfUserId = TestUser.SELF.id
+            legalHoldHandler = legalHoldHandler
         )
 
         suspend fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
