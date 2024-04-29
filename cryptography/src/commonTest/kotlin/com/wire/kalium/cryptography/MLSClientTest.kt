@@ -33,13 +33,13 @@ class MLSClientTest : BaseMLSClientTest() {
     }
 
     private suspend fun createClient(user: SampleUser): MLSClient {
-        return createMLSClient(user.qualifiedClientId)
+        return createMLSClient(user.qualifiedClientId, listOf(1.toUShort()), 1.toUShort())
     }
 
     @Test
     fun givenClient_whenCallingGetPublicKey_ReturnNonEmptyResult() = runTest {
         val mlsClient = createClient(ALICE1)
-        assertTrue(mlsClient.getPublicKey().first.isNotEmpty())
+        assertTrue(mlsClient.getPublicKey().isNotEmpty())
     }
 
     @Test

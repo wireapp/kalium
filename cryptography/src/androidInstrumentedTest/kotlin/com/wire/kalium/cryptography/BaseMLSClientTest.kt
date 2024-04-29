@@ -22,14 +22,22 @@ import java.nio.file.Files
 
 actual open class BaseMLSClientTest {
 
-    actual suspend fun createMLSClient(clientId: CryptoQualifiedClientId): MLSClient {
-        return createCoreCrypto(clientId).mlsClient(clientId)
+    actual suspend fun createMLSClient(
+        clientId: CryptoQualifiedClientId,
+        cipherSuite: List<UShort>,
+        defaultCipherSuite: UShort
+    ): MLSClient {
+        return createCoreCrypto(clientId, cipherSuite, defaultCipherSuite).mlsClient(clientId)
     }
 
-    actual suspend fun createCoreCrypto(clientId: CryptoQualifiedClientId): CoreCryptoCentral {
+    actual suspend fun createCoreCrypto(
+        clientId: CryptoQualifiedClientId,
+        cipherSuite: List<UShort>,
+        defaultCipherSuite: UShort
+    ): CoreCryptoCentral {
         val root = Files.createTempDirectory("mls").toFile()
         val keyStore = root.resolve("keystore-$clientId")
-        return coreCryptoCentral(keyStore.absolutePath, "test")
+        return coreCryptoCentral(keyStore.absolutePath, "test", cipherSuite, defaultCipherSuite)
     }
 
 }
