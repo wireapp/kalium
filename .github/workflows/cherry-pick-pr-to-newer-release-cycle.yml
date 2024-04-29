@@ -47,4 +47,4 @@ jobs:
               with:
                   target-branch: develop
                   pr-title-suffix: '🍒'
-                  labels: 'cherry-pick'
+                  pr-labels: 'cherry-pick'
