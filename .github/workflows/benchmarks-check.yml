@@ -34,7 +34,7 @@ jobs:
                     path: ./benchmarks/build/reports/benchmarks/**
             -   name: Create Benchmark Table
                 id: benchmark-table
-                uses: yamilmedina/kotlinx-benchmark-table-action@36b40b5a68d808a82c197ae2402bf1f472be80fd
+                uses: yamilmedina/kotlinx-benchmark-table-action@d4bc6ec84a487d9f0d8a27ff60df520f7bfae022
                 with:
                     benchmark-results: ./benchmarks/build/reports/benchmarks/main/**/jvm.json
             -   name: Post Results
