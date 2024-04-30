@@ -15,6 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+@file:Suppress("MagicNumber")
+
 package com.wire.kalium.benchmarks.persistence
 
 import com.wire.kalium.benchmarks.persistence.DBTestSetup.conversationEntity
@@ -47,7 +49,7 @@ import kotlin.random.Random
 import kotlin.random.nextInt
 
 @State(Scope.Benchmark)
-@Warmup(iterations = 1)
+@Warmup(iterations = 3)
 @Fork(1)
 @Measurement(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
 class MessagesNoPragmaTuneBenchmark {
@@ -120,7 +122,6 @@ class MessagesNoPragmaTuneBenchmark {
             else -> MessageEntityContent.Knock(Random.nextBoolean())
         }
 
-
         @State(value = Scope.Benchmark)
         class DBState {
             private val selfUserId = UserIDEntity("selfValue", "selfDomain")
@@ -157,5 +158,3 @@ class MessagesNoPragmaTuneBenchmark {
         }
     }
 }
-
-
