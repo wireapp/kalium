@@ -1,19 +1,26 @@
 name: Benchmark Checks
 on:
-    #    schedule:
-    #        -   cron: '00 8 * * 1' # every Monday at 8:00
+    merge_group:
+    schedule:
+        -   cron: '00 8 * * 1' # every Monday at 8:00
     pull_request:
+        types: [ opened, synchronize ]
     workflow_dispatch:
 
+concurrency:
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+    cancel-in-progress: true
+
 jobs:
+    detekt:
+        uses: ./.github/workflows/codestyle.yml
     benchmarks-check:
-        runs-on: ubuntu-22.04
+        needs: [ detekt ]
+        runs-on: ubuntu-latest
         container: wirebot/cryptobox:1.4.0
         steps:
             -   name: Checkout
                 uses: actions/checkout@v4
-                with:
-                    fetch-depth: 0
             -   name: Set up JDK
                 uses: actions/setup-java@v4
                 with:
@@ -21,7 +28,7 @@ jobs:
                     distribution: 'temurin'
                     cache: gradle
             -   name: Validate Gradle wrapper
-                uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
+                uses: gradle/actions/wrapper-validation@v3
             -   name: Run Benchmarks
                 run: ./gradlew benchmark
             -   name: Generate HTML Report
