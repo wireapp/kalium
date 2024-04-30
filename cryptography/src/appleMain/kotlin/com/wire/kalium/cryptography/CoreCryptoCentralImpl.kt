@@ -34,7 +34,7 @@ actual suspend fun coreCryptoCentral(
     NSFileManager.defaultManager.createDirectoryAtPath(rootDir, withIntermediateDirectories = true, null, null)
     val coreCrypto = CoreCrypto.deferredInit(path, databaseKey, null)
     coreCrypto.setCallbacks(Callbacks())
-    return CoreCryptoCentralImpl(coreCrypto, rootDir)
+    return CoreCryptoCentralImpl(coreCrypto, rootDir, defaultCipherSuite)
 }
 
 private class Callbacks : CoreCryptoCallbacks {
@@ -59,11 +59,11 @@ private class Callbacks : CoreCryptoCallbacks {
     }
 }
 
-class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: String) : CoreCryptoCentral {
+class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: String, private val defaultCipherSuite: UShort?) : CoreCryptoCentral {
 
     override suspend fun mlsClient(clientId: CryptoQualifiedClientId): MLSClient {
         cc.mlsInit(MLSClientImpl.toUByteList(clientId.toString()))
-        return MLSClientImpl(cc)
+        return MLSClientImpl(cc, defaultCipherSuite = defaultCipherSuite!!)
     }
 
     override suspend fun mlsClient(
