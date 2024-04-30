@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.util.arrangement.repository
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
@@ -37,6 +36,7 @@ internal interface UserConfigRepositoryArrangement {
     fun withSetMLSEnabledSuccessful()
     fun withSetMigrationConfigurationSuccessful()
     fun withGetMigrationConfigurationReturning(result: Either<StorageFailure, MLSMigrationModel>)
+    fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>)
 }
 
 internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrangement {
@@ -82,6 +82,13 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
         given(userConfigRepository)
             .suspendFunction(userConfigRepository::getMigrationConfiguration)
             .whenInvoked()
+            .thenReturn(result)
+    }
+
+    override fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>) {
+        given(userConfigRepository)
+            .suspendFunction(userConfigRepository::setSupportedCipherSuite)
+            .whenInvokedWith(any())
             .thenReturn(result)
     }
 }

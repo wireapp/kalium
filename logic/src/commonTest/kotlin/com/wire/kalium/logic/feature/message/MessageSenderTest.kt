@@ -38,6 +38,7 @@ import com.wire.kalium.logic.data.message.MessageSent
 import com.wire.kalium.logic.data.message.MessageTarget
 import com.wire.kalium.logic.data.message.RecipientEntry
 import com.wire.kalium.logic.data.message.SessionEstablisher
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.prekey.UsersWithoutSessions
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -1286,7 +1287,7 @@ class MessageSenderTest {
                 Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
                 0UL,
                 Instant.DISTANT_PAST,
-                Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
             val MLS_STALE_MESSAGE_FAILURE = NetworkFailure.ServerMiscommunication(
                 KaliumException.InvalidRequestError(
