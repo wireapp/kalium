@@ -19,9 +19,12 @@ package com.wire.kalium.logic.feature.featureConfig.handler
 
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.Status
+import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.UpdateSupportedProtocolsAndResolveOneOnOnesArrangement
@@ -47,8 +50,12 @@ class MLSConfigHandlerTest {
             MLS_CONFIG.copy(
                 status = Status.ENABLED,
                 defaultProtocol = SupportedProtocol.MLS
+<<<<<<< HEAD
             ),
             duringSlowSync = false
+=======
+            ), duringSlowSync = false
+>>>>>>> 42db0701d9 (feat: support new MLS cipher suite [WPB-8592] (#2716))
         )
 
         coVerify {
@@ -69,8 +76,12 @@ class MLSConfigHandlerTest {
             MLS_CONFIG.copy(
                 status = Status.ENABLED,
                 defaultProtocol = SupportedProtocol.PROTEUS
+<<<<<<< HEAD
             ),
             duringSlowSync = false
+=======
+            ), duringSlowSync = false
+>>>>>>> 42db0701d9 (feat: support new MLS cipher suite [WPB-8592] (#2716))
         )
 
         coVerify {
@@ -91,8 +102,12 @@ class MLSConfigHandlerTest {
             MLS_CONFIG.copy(
                 status = Status.DISABLED,
                 defaultProtocol = SupportedProtocol.MLS
+<<<<<<< HEAD
             ),
             duringSlowSync = false
+=======
+            ), duringSlowSync = false
+>>>>>>> 42db0701d9 (feat: support new MLS cipher suite [WPB-8592] (#2716))
         )
 
         coVerify {
@@ -114,8 +129,12 @@ class MLSConfigHandlerTest {
             MLS_CONFIG.copy(
                 status = Status.ENABLED,
                 supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS)
+<<<<<<< HEAD
             ),
             duringSlowSync = false
+=======
+            ), duringSlowSync = false
+>>>>>>> 42db0701d9 (feat: support new MLS cipher suite [WPB-8592] (#2716))
         )
 
         coVerify {
@@ -135,8 +154,12 @@ class MLSConfigHandlerTest {
         handler.handle(
             MLS_CONFIG.copy(
                 status = Status.DISABLED
+<<<<<<< HEAD
             ),
             duringSlowSync = false
+=======
+            ), duringSlowSync = false
+>>>>>>> 42db0701d9 (feat: support new MLS cipher suite [WPB-8592] (#2716))
         )
 
         coVerify {
@@ -158,8 +181,12 @@ class MLSConfigHandlerTest {
             MLS_CONFIG.copy(
                 status = Status.ENABLED,
                 supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS)
+<<<<<<< HEAD
             ),
             duringSlowSync = false
+=======
+            ), duringSlowSync = false
+>>>>>>> 42db0701d9 (feat: support new MLS cipher suite [WPB-8592] (#2716))
         )
 
         coVerify {
@@ -181,8 +208,12 @@ class MLSConfigHandlerTest {
             MLS_CONFIG.copy(
                 status = Status.ENABLED,
                 supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS)
+<<<<<<< HEAD
             ),
             duringSlowSync = true
+=======
+            ), duringSlowSync = true
+>>>>>>> 42db0701d9 (feat: support new MLS cipher suite [WPB-8592] (#2716))
         )
 
         coVerify {
@@ -190,7 +221,48 @@ class MLSConfigHandlerTest {
         }.wasInvoked(exactly = once)
     }
 
+<<<<<<< HEAD
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
+=======
+    @Test
+    fun givenSupportedCipherSuiteIsNotNull_whenHandlling_thenStoreTheSupportedCipherSuite() = runTest {
+        val (arrangement, handler) = arrange {
+            withGetSupportedProtocolsReturning(setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS).right())
+            withSetMLSEnabledSuccessful()
+            withSetDefaultProtocolSuccessful()
+            withSetSupportedProtocolsSuccessful()
+            withSetSupportedCipherSuite(Unit.right())
+        }
+
+        handler.handle(
+            MLS_CONFIG.copy(
+                status = Status.ENABLED,
+                supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS),
+                supportedCipherSuite = SupportedCipherSuite(
+                    supported = listOf(
+                        CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+                        CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
+                    ),
+                    default = CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
+                )
+            ),
+            duringSlowSync = true,
+        )
+
+        verify(arrangement.userConfigRepository)
+            .suspendFunction(arrangement.userConfigRepository::setSupportedCipherSuite)
+            .with(eq(SupportedCipherSuite(
+                supported = listOf(
+                    CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+                    CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
+                ),
+                default = CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
+            )))
+            .wasInvoked(exactly = once)
+    }
+
+    private class Arrangement(private val block: Arrangement.() -> Unit) :
+>>>>>>> 42db0701d9 (feat: support new MLS cipher suite [WPB-8592] (#2716))
         UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(),
         UpdateSupportedProtocolsAndResolveOneOnOnesArrangement by UpdateSupportedProtocolsAndResolveOneOnOnesArrangementImpl() {
         fun arrange() = run {
@@ -209,7 +281,8 @@ class MLSConfigHandlerTest {
         val MLS_CONFIG = MLSModel(
             defaultProtocol = SupportedProtocol.MLS,
             supportedProtocols = setOf(SupportedProtocol.PROTEUS),
-            status = Status.ENABLED
+            status = Status.ENABLED,
+            supportedCipherSuite = null
         )
     }
 

@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.featureConfig
 
+import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.util.time.Second
 import kotlinx.datetime.Instant
@@ -78,6 +79,7 @@ data class SelfDeletingMessagesConfigModel(
 data class MLSModel(
     val defaultProtocol: SupportedProtocol,
     val supportedProtocols: Set<SupportedProtocol>,
+    val supportedCipherSuite: SupportedCipherSuite?,
     val status: Status
 )
 

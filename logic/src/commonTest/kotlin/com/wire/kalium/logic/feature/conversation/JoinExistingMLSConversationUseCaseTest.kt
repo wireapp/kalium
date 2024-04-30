@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
@@ -331,7 +332,7 @@ class JoinExistingMLSConversationUseCaseTest {
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 1UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
-                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                    cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("id1", "domain"))
 
@@ -341,7 +342,7 @@ class JoinExistingMLSConversationUseCaseTest {
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 1UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
-                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                    cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("id2", "domain"))
 
@@ -351,7 +352,7 @@ class JoinExistingMLSConversationUseCaseTest {
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 0UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
-                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                    cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("id3", "domain"))
 
@@ -361,7 +362,7 @@ class JoinExistingMLSConversationUseCaseTest {
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 0UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
-                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                    cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("self", "domain"))
 
@@ -371,7 +372,7 @@ class JoinExistingMLSConversationUseCaseTest {
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 0UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
-                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                    cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("one-on-one", "domain"))
         }

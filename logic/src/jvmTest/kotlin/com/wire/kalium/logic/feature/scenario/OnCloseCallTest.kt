@@ -27,6 +27,11 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
+<<<<<<< HEAD
+=======
+import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.logic.data.mls.CipherSuite
+>>>>>>> 42db0701d9 (feat: support new MLS cipher suite [WPB-8592] (#2716))
 import com.wire.kalium.logic.feature.call.scenario.OnCloseCall
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.NetworkState
@@ -235,7 +240,7 @@ class OnCloseCallTest {
                 groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
                 epoch = ULong.MAX_VALUE,
                 keyingMaterialLastUpdate = Instant.DISTANT_FUTURE,
-                cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
+                cipherSuite = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
             )
         )
 

@@ -28,6 +28,8 @@ import com.wire.kalium.logic.data.legalhold.LegalHoldRequest
 import com.wire.kalium.logic.data.message.SelfDeletionMapper.toSelfDeletionTimerEntity
 import com.wire.kalium.logic.data.message.SelfDeletionMapper.toTeamSelfDeleteTimer
 import com.wire.kalium.logic.data.message.TeamSettingsSelfDeletionStatus
+import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.toDao
 import com.wire.kalium.logic.data.user.toModel
@@ -44,6 +46,7 @@ import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
+import com.wire.kalium.persistence.model.SupportedCipherSuiteEntity
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -83,6 +86,8 @@ interface UserConfigRepository {
     fun setE2EISettings(setting: E2EISettings): Either<StorageFailure, Unit>
     fun snoozeE2EINotification(duration: Duration): Either<StorageFailure, Unit>
     fun setDefaultProtocol(protocol: SupportedProtocol): Either<StorageFailure, Unit>
+    suspend fun setSupportedCipherSuite(cipherSuite: SupportedCipherSuite): Either<StorageFailure, Unit>
+    suspend fun getSupportedCipherSuite(): Either<StorageFailure, SupportedCipherSuite>
     fun getDefaultProtocol(): Either<StorageFailure, SupportedProtocol>
     suspend fun setSupportedProtocols(protocols: Set<SupportedProtocol>): Either<StorageFailure, Unit>
     suspend fun getSupportedProtocols(): Either<StorageFailure, Set<SupportedProtocol>>
@@ -248,6 +253,25 @@ internal class UserConfigDataSource internal constructor(
 
     override fun setDefaultProtocol(protocol: SupportedProtocol): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.persistDefaultProtocol(protocol.toDao()) }
+
+    override suspend fun setSupportedCipherSuite(cipherSuite: SupportedCipherSuite): Either<StorageFailure, Unit> =
+        SupportedCipherSuiteEntity(
+            supported = cipherSuite.supported.map { it.tag },
+            default = cipherSuite.default.tag
+        ).let {
+            wrapStorageRequest {
+                userConfigDAO.setDefaultCipherSuite(it)
+            }
+        }
+
+    override suspend fun getSupportedCipherSuite(): Either<StorageFailure, SupportedCipherSuite> = wrapStorageRequest {
+        userConfigDAO.getDefaultCipherSuite()
+    }.map {
+        SupportedCipherSuite(
+            supported = it.supported.map { tag -> CipherSuite.fromTag(tag) },
+            default = CipherSuite.fromTag(it.default)
+        )
+    }
 
     override fun getDefaultProtocol(): Either<StorageFailure, SupportedProtocol> =
         wrapStorageRequest { userConfigStorage.defaultProtocol().toModel() }
