@@ -26,20 +26,20 @@ import platform.Foundation.URLByAppendingPathComponent
 actual open class BaseMLSClientTest actual constructor() {
     actual suspend fun createMLSClient(
         clientId: CryptoQualifiedClientId,
-        cipherSuite: List<UShort>,
+        allowedCipherSuites: List<UShort>,
         defaultCipherSuite: UShort
     ): MLSClient {
-        return createCoreCrypto(clientId, cipherSuite, defaultCipherSuite).mlsClient(clientId)
+        return createCoreCrypto(clientId, allowedCipherSuites, defaultCipherSuite).mlsClient(clientId)
     }
 
     actual suspend fun createCoreCrypto(
         clientId: CryptoQualifiedClientId,
-        cipherSuite: List<UShort>,
+        allowedCipherSuites: List<UShort>,
         defaultCipherSuite: UShort
     ): CoreCryptoCentral {
         val rootDir = NSURL.fileURLWithPath(NSTemporaryDirectory() + "/mls", isDirectory = true)
         NSFileManager.defaultManager.createDirectoryAtURL(rootDir, true, null, null)
         val keyStore = rootDir.URLByAppendingPathComponent("keystore-$clientId")!!
-        return coreCryptoCentral(keyStore.path!!, "test", cipherSuite, defaultCipherSuite)
+        return coreCryptoCentral(keyStore.path!!, "test", allowedCipherSuites, defaultCipherSuite)
     }
 }

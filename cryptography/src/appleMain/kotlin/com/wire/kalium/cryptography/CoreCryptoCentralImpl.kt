@@ -27,7 +27,7 @@ import kotlin.time.Duration
 actual suspend fun coreCryptoCentral(
     rootDir: String,
     databaseKey: String,
-    cipherSuite: List<UShort>,
+    allowedCipherSuites: List<UShort>,
     defaultCipherSuite: UShort?
 ): CoreCryptoCentral {
     val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"

@@ -29,17 +29,17 @@ import java.io.File
 actual suspend fun coreCryptoCentral(
     rootDir: String,
     databaseKey: String,
-    cipherSuite: Ciphersuites,
+    allowedCipherSuites: Ciphersuites,
     defaultCipherSuite: UShort?
 ): CoreCryptoCentral {
     val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
     File(rootDir).mkdirs()
-    val coreCrypto = coreCryptoDeferredInit(path, databaseKey, cipherSuite, null)
+    val coreCrypto = coreCryptoDeferredInit(path, databaseKey, allowedCipherSuites, null)
     coreCrypto.setCallbacks(Callbacks())
     return CoreCryptoCentralImpl(
         cc = coreCrypto,
         rootDir = rootDir,
-        cipherSuite = cipherSuite,
+        cipherSuite = allowedCipherSuites,
         defaultCipherSuite = defaultCipherSuite
     )
 }
@@ -74,6 +74,7 @@ private class Callbacks : CoreCryptoCallbacks {
 class CoreCryptoCentralImpl(
     private val cc: CoreCrypto,
     private val rootDir: String,
+    // TODO: remove one they are removed from the CC api
     private val cipherSuite: Ciphersuites,
     private val defaultCipherSuite: UShort?
 ) : CoreCryptoCentral {

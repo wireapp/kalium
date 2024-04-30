@@ -23,19 +23,19 @@ import java.nio.file.Files
 actual open class BaseMLSClientTest {
     actual suspend fun createMLSClient(
         clientId: CryptoQualifiedClientId,
-        cipherSuite: List<UShort>,
+        allowedCipherSuites: List<UShort>,
         defaultCipherSuite: UShort
     ): MLSClient {
-        return createCoreCrypto(clientId, cipherSuite, defaultCipherSuite).mlsClient(clientId)
+        return createCoreCrypto(clientId, allowedCipherSuites, defaultCipherSuite).mlsClient(clientId)
     }
 
     actual suspend fun createCoreCrypto(
         clientId: CryptoQualifiedClientId,
-        cipherSuite: List<UShort>,
+        allowedCipherSuites: List<UShort>,
         defaultCipherSuite: UShort
     ): CoreCryptoCentral {
         val root = Files.createTempDirectory("mls").toFile()
         val keyStore = root.resolve("keystore-$clientId")
-        return coreCryptoCentral(keyStore.absolutePath, "test", cipherSuite, defaultCipherSuite)
+        return coreCryptoCentral(keyStore.absolutePath, "test", allowedCipherSuites, defaultCipherSuite)
     }
 }

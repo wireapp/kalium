@@ -66,6 +66,6 @@ interface CoreCryptoCentral {
 expect suspend fun coreCryptoCentral(
     rootDir: String,
     databaseKey: String,
-    cipherSuite: List<UShort>,
+    allowedCipherSuites: List<UShort>,
     defaultCipherSuite: UShort?
 ): CoreCryptoCentral

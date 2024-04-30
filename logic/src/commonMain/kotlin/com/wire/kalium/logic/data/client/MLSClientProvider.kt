@@ -149,7 +149,7 @@ class MLSClientProviderImpl(
                     coreCryptoCentral(
                         rootDir = "$location/$KEYSTORE_NAME",
                         databaseKey = passphrase,
-                        cipherSuite = supportedCipherSuite.map { it.tag.toUShort() },
+                        allowedCipherSuites = supportedCipherSuite.map { it.tag.toUShort() },
                         defaultCipherSuite = defaultCipherSuite.tag.toUShort()
                     )
                 } catch (e: Exception) {
