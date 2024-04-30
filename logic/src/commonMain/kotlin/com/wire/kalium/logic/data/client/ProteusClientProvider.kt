@@ -107,7 +107,7 @@ class ProteusClientProviderImpl(
                 coreCryptoCentral(
                     rootDir = rootProteusPath,
                     databaseKey = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId).value,
-                    cipherSuite = emptyList(),
+                    allowedCipherSuites = emptyList(),
                     defaultCipherSuite = null
                 )
             } catch (e: Exception) {

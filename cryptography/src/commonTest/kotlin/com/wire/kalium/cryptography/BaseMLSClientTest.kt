@@ -22,13 +22,13 @@ expect open class BaseMLSClientTest() {
 
     suspend fun createMLSClient(
         clientId: CryptoQualifiedClientId,
-        cipherSuite: List<UShort>,
+        allowedCipherSuites: List<UShort>,
         defaultCipherSuite: UShort
     ): MLSClient
 
     suspend fun createCoreCrypto(
         clientId: CryptoQualifiedClientId,
-        cipherSuite: List<UShort>,
+        allowedCipherSuites: List<UShort>,
         defaultCipherSuite: UShort
     ): CoreCryptoCentral
 
