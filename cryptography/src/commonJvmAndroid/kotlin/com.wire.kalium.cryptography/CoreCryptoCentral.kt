@@ -74,6 +74,7 @@ private class Callbacks : CoreCryptoCallbacks {
 class CoreCryptoCentralImpl(
     private val cc: CoreCrypto,
     private val rootDir: String,
+    // TODO: remove one they are removed from the CC api
     private val cipherSuite: Ciphersuites,
     private val defaultCipherSuite: UShort?
 ) : CoreCryptoCentral {
