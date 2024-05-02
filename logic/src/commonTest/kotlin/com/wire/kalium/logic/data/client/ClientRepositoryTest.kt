@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.framework.TestClient
@@ -82,7 +83,7 @@ class ClientRepositoryTest {
             .withRegisterMLSClient(Either.Right(Unit))
             .arrange()
 
-        clientRepository.registerMLSClient(CLIENT_ID, MLS_PUBLIC_KEY)
+        clientRepository.registerMLSClient(CLIENT_ID, MLS_PUBLIC_KEY, MLS_CIPHER_SUITE)
 
         coVerify {
             arrangement.clientRemoteRepository.registerMLSClient(eq(CLIENT_ID), eq(MLS_PUBLIC_KEY.encodeBase64()))
@@ -471,6 +472,7 @@ class ClientRepositoryTest {
             secondFactorVerificationCode = SECOND_FACTOR_CODE,
         )
         val MLS_PUBLIC_KEY = "public_key".encodeToByteArray()
+        val MLS_CIPHER_SUITE =  CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         val CLIENT_ID = TestClient.CLIENT_ID
         val CLIENT_RESULT = TestClient.CLIENT
         val TEST_FAILURE = NetworkFailure.ServerMiscommunication(

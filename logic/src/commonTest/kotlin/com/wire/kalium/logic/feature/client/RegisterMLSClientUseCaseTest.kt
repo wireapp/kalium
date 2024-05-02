@@ -55,7 +55,7 @@ class RegisterMLSClientUseCaseTest {
                 .withIsMLSClientInitialisedReturns()
                 .withMLSClientE2EIIsEnabledReturns(e2eiIsEnrolled)
                 .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(isRequired = e2eiIsRequired)))
-                .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY)
+                .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY, Arrangement.MLS_CIPHER_SUITE)
                 .withRegisterMLSClient(Either.Right(Unit))
                 .withKeyPackageLimits(Arrangement.REFILL_AMOUNT)
                 .withUploadKeyPackagesSuccessful()
@@ -88,7 +88,7 @@ class RegisterMLSClientUseCaseTest {
                 .withIsMLSClientInitialisedReturns(false)
                 .withMLSClientE2EIIsEnabledReturns(e2eiIsEnrolled)
                 .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(isRequired = e2eiIsRequired)))
-                .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY)
+                .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY, Arrangement.MLS_CIPHER_SUITE)
                 .withRegisterMLSClient(Either.Right(Unit))
                 .withKeyPackageLimits(Arrangement.REFILL_AMOUNT)
                 .withUploadKeyPackagesSuccessful()
@@ -116,7 +116,7 @@ class RegisterMLSClientUseCaseTest {
             val (arrangement, registerMLSClient) = Arrangement()
                 .withGetMLSClientSuccessful()
                 .withGettingE2EISettingsReturns(Either.Right(E2EI_TEAM_SETTINGS.copy(isRequired = e2eiIsRequired)))
-                .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY)
+                .withGetPublicKey(Arrangement.MLS_PUBLIC_KEY, Arrangement.MLS_CIPHER_SUITE)
                 .withRegisterMLSClient(Either.Right(Unit))
                 .withKeyPackageLimits(Arrangement.REFILL_AMOUNT)
                 .withUploadKeyPackagesSuccessful()
@@ -195,10 +195,18 @@ class RegisterMLSClientUseCaseTest {
             }.returns(Either.Right(Unit))
         }
 
+<<<<<<< HEAD
         suspend fun withGetPublicKey(result: ByteArray) = apply {
             coEvery {
                 mlsClient.getPublicKey()
             }.returns(result)
+=======
+        fun withGetPublicKey(publicKey: ByteArray, cipherSuite: UShort) = apply {
+            given(mlsClient)
+                .suspendFunction(mlsClient::getPublicKey)
+                .whenInvoked()
+                .thenReturn(publicKey to cipherSuite)
+>>>>>>> 00d9937da6 (feat: pass the MLS public key signature algorithm when updating MLS p… (#2720))
         }
 
         suspend fun withGetMLSClientSuccessful() = apply {
@@ -217,6 +225,7 @@ class RegisterMLSClientUseCaseTest {
 
         companion object {
             val MLS_PUBLIC_KEY = "public_key".encodeToByteArray()
+            val MLS_CIPHER_SUITE = 0.toUShort()
             const val REFILL_AMOUNT = 100
             val RANDOM_URL = "https://random.rn"
             val E2EI_TEAM_SETTINGS = E2EISettings(

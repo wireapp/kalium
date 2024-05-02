@@ -39,7 +39,7 @@ class MLSClientTest : BaseMLSClientTest() {
     @Test
     fun givenClient_whenCallingGetPublicKey_ReturnNonEmptyResult() = runTest {
         val mlsClient = createClient(ALICE1)
-        assertTrue(mlsClient.getPublicKey().isNotEmpty())
+        assertTrue(mlsClient.getPublicKey().first.isNotEmpty())
     }
 
     @Test
@@ -207,5 +207,4 @@ class MLSClientTest : BaseMLSClientTest() {
             "Carol"
         )
     }
-
 }

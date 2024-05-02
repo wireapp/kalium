@@ -50,8 +50,13 @@ class MLSClientImpl(
         coreCrypto.close()
     }
 
+<<<<<<< HEAD
     override suspend fun getPublicKey(): ByteArray {
         return coreCrypto.clientPublicKey(defaultCiphersuite, toCredentialType(getMLSCredentials()))
+=======
+    override suspend fun getPublicKey(): Pair<ByteArray, Ciphersuite> {
+        return coreCrypto.clientPublicKey(defaultCipherSuite, toCredentialType(getMLSCredentials())) to defaultCipherSuite
+>>>>>>> 00d9937da6 (feat: pass the MLS public key signature algorithm when updating MLS p… (#2720))
     }
 
     override suspend fun generateKeyPackages(amount: Int): List<ByteArray> {
