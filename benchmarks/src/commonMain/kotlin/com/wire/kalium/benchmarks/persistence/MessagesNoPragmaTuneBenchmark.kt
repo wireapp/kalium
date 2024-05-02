@@ -31,8 +31,11 @@ import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.userDatabaseBuilder
 import kotlinx.benchmark.Benchmark
+import kotlinx.benchmark.BenchmarkMode
 import kotlinx.benchmark.Blackhole
 import kotlinx.benchmark.Measurement
+import kotlinx.benchmark.Mode
+import kotlinx.benchmark.OutputTimeUnit
 import kotlinx.benchmark.Scope
 import kotlinx.benchmark.Setup
 import kotlinx.benchmark.State
@@ -42,7 +45,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import kotlinx.datetime.Instant
-import org.openjdk.jmh.annotations.Fork
 import org.openjdk.jmh.annotations.Level
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
@@ -50,8 +52,9 @@ import kotlin.random.nextInt
 
 @State(Scope.Benchmark)
 @Warmup(iterations = 3)
-@Fork(1)
-@Measurement(iterations = 10, time = 1, timeUnit = TimeUnit.SECONDS)
+@BenchmarkMode(Mode.AverageTime)
+@OutputTimeUnit(TimeUnit.MILLISECONDS)
+@Measurement(iterations = 10)
 class MessagesNoPragmaTuneBenchmark {
 
     @Benchmark
