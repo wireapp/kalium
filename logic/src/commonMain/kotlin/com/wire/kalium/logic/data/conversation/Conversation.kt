@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.message.MessagePreview
 import com.wire.kalium.logic.data.message.UnreadEventType
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
@@ -195,23 +196,6 @@ data class Conversation(
     enum class VerificationStatus { VERIFIED, NOT_VERIFIED, DEGRADED }
     enum class LegalHoldStatus { ENABLED, DISABLED, DEGRADED, UNKNOWN }
 
-    @Suppress("MagicNumber")
-    enum class CipherSuite(val tag: Int) {
-        UNKNOWN(0),
-        MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519(1),
-        MLS_128_DHKEMP256_AES128GCM_SHA256_P256(2),
-        MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519(3),
-        MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448(4),
-        MLS_256_DHKEMP521_AES256GCM_SHA512_P521(5),
-        MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448(6),
-        MLS_256_DHKEMP384_AES256GCM_SHA384_P384(7),
-        MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_ED25519(61489);
-
-        companion object {
-            fun fromTag(tag: Int): CipherSuite = values().first { type -> type.tag == tag }
-        }
-    }
-
     val supportsUnreadMessageCount
         get() = type in setOf(Type.ONE_ON_ONE, Type.GROUP)
 
@@ -236,7 +220,7 @@ data class Conversation(
                 "groupState" to groupState.name,
                 "epoch" to "$epoch",
                 "keyingMaterialLastUpdate" to keyingMaterialLastUpdate.toString(),
-                "cipherSuite" to cipherSuite.name
+                "cipherSuite" to cipherSuite.toString()
             )
         }
 
@@ -254,7 +238,7 @@ data class Conversation(
                 "groupState" to groupState.name,
                 "epoch" to "$epoch",
                 "keyingMaterialLastUpdate" to keyingMaterialLastUpdate.toString(),
-                "cipherSuite" to cipherSuite.name
+                "cipherSuite" to cipherSuite.toString()
             )
         }
 

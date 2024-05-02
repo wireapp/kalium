@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.feature.call.scenario.OnCloseCall
 import com.wire.kalium.logic.framework.TestUser
 import io.mockative.Mock
@@ -255,7 +256,7 @@ class OnCloseCallTest {
                 groupState = Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
                 epoch = ULong.MAX_VALUE,
                 keyingMaterialLastUpdate = Instant.DISTANT_FUTURE,
-                cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
+                cipherSuite = CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256
             )
         )
 

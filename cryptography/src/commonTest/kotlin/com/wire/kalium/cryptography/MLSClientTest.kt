@@ -33,13 +33,13 @@ class MLSClientTest : BaseMLSClientTest() {
     }
 
     private suspend fun createClient(user: SampleUser): MLSClient {
-        return createMLSClient(user.qualifiedClientId)
+        return createMLSClient(user.qualifiedClientId, ALLOWED_CIPHER_SUITES, DEFAULT_CIPHER_SUITES)
     }
 
     @Test
     fun givenClient_whenCallingGetPublicKey_ReturnNonEmptyResult() = runTest {
         val mlsClient = createClient(ALICE1)
-        assertTrue(mlsClient.getPublicKey().isNotEmpty())
+        assertTrue(mlsClient.getPublicKey().first.isNotEmpty())
     }
 
     @Test
@@ -188,6 +188,8 @@ class MLSClientTest : BaseMLSClientTest() {
     }
 
     companion object {
+        val ALLOWED_CIPHER_SUITES = listOf(1.toUShort())
+        val DEFAULT_CIPHER_SUITES = 1.toUShort()
         const val MLS_CONVERSATION_ID = "JfflcPtUivbg+1U3Iyrzsh5D2ui/OGS5Rvf52ipH5KY="
         const val PLAIN_TEXT = "Hello World"
         val ALICE1 = SampleUser(
@@ -207,5 +209,4 @@ class MLSClientTest : BaseMLSClientTest() {
             "Carol"
         )
     }
-
 }
