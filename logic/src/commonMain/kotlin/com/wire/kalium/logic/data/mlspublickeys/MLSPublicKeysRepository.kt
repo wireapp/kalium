@@ -24,29 +24,32 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
 
+
+data class MLSPublicKeys(
+    val removal: Map<String, String>?
+)
+
+
 interface MLSPublicKeysRepository {
-    suspend fun fetchKeys(): Either<CoreFailure, List<MLSPublicKey>>
-    suspend fun getKeys(): Either<CoreFailure, List<MLSPublicKey>>
+    suspend fun fetchKeys(): Either<CoreFailure, MLSPublicKeys>
+    suspend fun getKeys(): Either<CoreFailure, MLSPublicKeys>
 }
 
 class MLSPublicKeysRepositoryImpl(
     private val mlsPublicKeyApi: MLSPublicKeyApi,
-    private val mapper: MLSPublicKeysMapper = MLSPublicKeysMapperImpl()
 ) : MLSPublicKeysRepository {
 
-    var publicKeys: List<MLSPublicKey>? = null
+    // TODO: make it thread safe
+    var publicKeys: MLSPublicKeys? = null
 
     override suspend fun fetchKeys() =
         wrapApiRequest {
             mlsPublicKeyApi.getMLSPublicKeys()
         }.map {
-            val keys = mapper.fromDTO(it)
-            publicKeys = keys
-            keys
+            MLSPublicKeys(removal = it.removal)
         }
 
-    override suspend fun getKeys(): Either<CoreFailure, List<MLSPublicKey>> {
+    override suspend fun getKeys(): Either<CoreFailure, MLSPublicKeys> {
         return publicKeys?.let { Either.Right(it) } ?: fetchKeys()
     }
-
 }

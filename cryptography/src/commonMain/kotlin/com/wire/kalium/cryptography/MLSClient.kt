@@ -153,6 +153,11 @@ data class CrlRegistration(
 
 @Suppress("TooManyFunctions")
 interface MLSClient {
+    /**
+     * Get the default ciphersuite for the client.
+     * the Default ciphersuite is set when creating the mls client.
+     */
+    fun getDefaultCipherSuite(): UShort
 
     /**
      * Free up any resources and shutdown the client.
@@ -253,7 +258,7 @@ interface MLSClient {
      */
     suspend fun createConversation(
         groupId: MLSGroupId,
-        externalSenders: List<Ed22519Key> = emptyList()
+        externalSenders: ByteArray
     )
 
     /**
