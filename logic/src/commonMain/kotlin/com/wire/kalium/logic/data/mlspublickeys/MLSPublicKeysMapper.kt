@@ -18,23 +18,13 @@
 
 package com.wire.kalium.logic.data.mlspublickeys
 
-import com.wire.kalium.cryptography.ExternalSenderKey
 import com.wire.kalium.logic.data.mls.CipherSuite
 
 interface MLSPublicKeysMapper {
-    fun toCrypto(publicKey: MLSPublicKey): com.wire.kalium.cryptography.Ed22519Key
-    fun toCrypto(externalSenderKey: ExternalSenderKey): com.wire.kalium.cryptography.Ed22519Key
     fun fromCipherSuite(cipherSuite: CipherSuite): MLSPublicKeyType
 }
 
 class MLSPublicKeysMapperImpl : MLSPublicKeysMapper {
-    override fun toCrypto(publicKey: MLSPublicKey) = with(publicKey) {
-        com.wire.kalium.cryptography.Ed22519Key(key.value)
-    }
-
-    override fun toCrypto(externalSenderKey: ExternalSenderKey) = with(externalSenderKey) {
-        com.wire.kalium.cryptography.Ed22519Key(this.value)
-    }
 
     override fun fromCipherSuite(cipherSuite: CipherSuite): MLSPublicKeyType {
         return when (cipherSuite) {

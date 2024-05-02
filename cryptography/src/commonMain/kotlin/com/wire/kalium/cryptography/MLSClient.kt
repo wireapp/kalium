@@ -128,11 +128,6 @@ data class DecryptedMessageBundle(
 }
 
 @JvmInline
-value class Ed22519Key(
-    val value: ByteArray
-)
-
-@JvmInline
 value class ExternalSenderKey(
     val value: ByteArray
 )

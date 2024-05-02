@@ -571,29 +571,18 @@ internal class MLSConversationDataSource(
         members: List<UserId>,
         allowSkippingUsersWithoutKeyPackages: Boolean,
     ): Either<CoreFailure, MLSAdditionResult> = withContext(serialDispatcher) {
-        mlsPublicKeysRepository.getKeys().flatMap { publicKeys ->
-            mlsClientProvider.getMLSClient().flatMap<MLSAdditionResult, CoreFailure, MLSClient> {
-                val keySignature = CipherSuite.fromTag(it.getDefaultCipherSuite()).let {
-                    mlsPublicKeysMapper.fromCipherSuite(it)
-                }
-                val key = publicKeys.removal?.let { removalKeys ->
-                    removalKeys[keySignature.value]
-                }
-
-                if (key == null) {
-                    return@flatMap MLSFailure
-                        .Generic(IllegalArgumentException("No key found for $keySignature, isNullOrEmpty= ${publicKeys.removal.isNullOrEmpty()}"))
-                        .left()
-                }
+        mlsClientProvider.getMLSClient().flatMap<MLSAdditionResult, CoreFailure, MLSClient> {
+            mlsPublicKeysRepository.keyForCipherSuite(
+                CipherSuite.fromTag(it.getDefaultCipherSuite())
+            ).flatMap { key ->
                 establishMLSGroup(
                     groupID = groupID,
                     members = members,
-                    externalSenders = key.decodeBase64Bytes(),
+                    externalSenders = key,
                     allowPartialMemberList = allowSkippingUsersWithoutKeyPackages
                 )
             }
         }
-
     }
 
     override suspend fun establishMLSSubConversationGroup(
