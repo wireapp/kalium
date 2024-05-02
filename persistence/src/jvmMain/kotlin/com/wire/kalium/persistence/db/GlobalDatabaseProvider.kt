@@ -26,10 +26,10 @@ import com.wire.kalium.persistence.Accounts
 import com.wire.kalium.persistence.CurrentAccount
 import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.ServerConfiguration
+import com.wire.kalium.persistence.adapter.LogoutReasonAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAOImpl
-import com.wire.kalium.persistence.adapter.LogoutReasonAdapter
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
@@ -40,23 +40,18 @@ import kotlin.coroutines.CoroutineContext
 // TODO(refactor): Unify creation just like it's done for UserDataBase
 actual class GlobalDatabaseProvider(
     private val storePath: File,
-    private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io
+    private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io,
+    private val useInMemoryDatabase: Boolean = false
 ) {
 
     private val dbName = FileNameUtil.globalDBName()
     private val database: GlobalDatabase
 
     init {
-        val databasePath = storePath.resolve(dbName)
-        val databaseExists = databasePath.exists()
-
-        // Make sure all intermediate directories exist
-        storePath.mkdirs()
-
-        val driver: SqlDriver = JdbcSqliteDriver("jdbc:sqlite:${databasePath.absolutePath}")
-
-        if (!databaseExists) {
-            GlobalDatabase.Schema.create(driver)
+        val driver = if (useInMemoryDatabase) {
+            buildInMemoryDb()
+        } else {
+            buildFileBackedDb()
         }
 
         database = GlobalDatabase(
@@ -76,6 +71,27 @@ actual class GlobalDatabaseProvider(
         )
 
         database.globalDatabasePropertiesQueries.enableForeignKeyContraints()
+    }
+
+    private fun buildFileBackedDb(): SqlDriver {
+        val databasePath = storePath.resolve(dbName)
+        val databaseExists = databasePath.exists()
+
+        // Make sure all intermediate directories exist
+        storePath.mkdirs()
+
+        val driver: SqlDriver = JdbcSqliteDriver("jdbc:sqlite:${databasePath.absolutePath}")
+
+        if (!databaseExists) {
+            GlobalDatabase.Schema.create(driver)
+        }
+        return driver
+    }
+
+    private fun buildInMemoryDb(): SqlDriver {
+        val driver = sqlDriver(JdbcSqliteDriver.IN_MEMORY, false)
+        GlobalDatabase.Schema.create(driver)
+        return driver
     }
 
     actual val serverConfigurationDAO: ServerConfigurationDAO

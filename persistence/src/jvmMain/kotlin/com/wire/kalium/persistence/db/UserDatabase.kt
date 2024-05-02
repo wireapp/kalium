@@ -90,7 +90,7 @@ internal actual fun getDatabaseAbsoluteFileLocation(
     return if (dbFile.exists()) dbFile.absolutePath else null
 }
 
-private fun sqlDriver(driverUri: String, enableWAL: Boolean): SqlDriver = JdbcSqliteDriver(
+internal fun sqlDriver(driverUri: String, enableWAL: Boolean): SqlDriver = JdbcSqliteDriver(
     driverUri,
     Properties(1).apply {
         put("foreign_keys", "true")

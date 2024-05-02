@@ -53,7 +53,10 @@ actual class CoreLogic(
         )
 
     override val globalDatabase: GlobalDatabaseProvider =
-        GlobalDatabaseProvider(File("$rootPath/global-storage"))
+        GlobalDatabaseProvider(
+            storePath = File("$rootPath/global-storage"),
+            useInMemoryDatabase = useInMemoryStorage
+        )
 
     override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
