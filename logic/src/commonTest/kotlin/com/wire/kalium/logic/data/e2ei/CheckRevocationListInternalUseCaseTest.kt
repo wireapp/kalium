@@ -15,20 +15,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.e2ei.usecase
+package com.wire.kalium.logic.data.e2ei
 
 import com.wire.kalium.cryptography.CoreCryptoCentral
 import com.wire.kalium.cryptography.CrlRegistration
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
+import com.wire.kalium.logic.configuration.E2EISettings
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseTest
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.util.DateTimeUtil
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.any
@@ -42,7 +48,7 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class CheckRevocationListUseCaseTest {
+class CheckRevocationListInternalUseCaseTest {
 
     @Test
     fun givenE2EIRepositoryReturnsFailure_whenRunningUseCase_thenDoNotRegisterCrlAndReturnFailure() =
@@ -196,21 +202,23 @@ class CheckRevocationListUseCaseTest {
         val coreCrypto = mock(CoreCryptoCentral::class)
 
         @Mock
-        val currentClientIdProvider =
-            mock(CurrentClientIdProvider::class)
+        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
         @Mock
-        val mlsClientProvider =
-            mock(MLSClientProvider::class)
+        val mlsClientProvider = mock(MLSClientProvider::class)
 
         @Mock
-        val isE2EIEnabledUseCase = mock(IsE2EIEnabledUseCase::class)
+        val featureSupport = mock(FeatureSupport::class)
 
-        fun arrange() = this to CheckRevocationListUseCaseImpl(
+        @Mock
+        val userConfigRepository = mock(UserConfigRepository::class)
+
+        fun arrange() = this to CheckRevocationListInternalUseCaseImpl(
             certificateRevocationListRepository = certificateRevocationListRepository,
             currentClientIdProvider = currentClientIdProvider,
             mlsClientProvider = mlsClientProvider,
-            isE2EIEnabledUseCase = isE2EIEnabledUseCase
+            featureSupport = featureSupport,
+            userConfigRepository = userConfigRepository
         )
 
         suspend fun withE2EIRepositoryFailure() = apply {
@@ -263,8 +271,16 @@ class CheckRevocationListUseCaseTest {
 
         fun withE2EIEnabledAndMLSEnabled(result: Boolean) = apply {
             every {
-                isE2EIEnabledUseCase.invoke()
+                featureSupport.isMLSSupported
             }.returns(result)
+
+            every {
+                userConfigRepository.isMLSEnabled()
+            }.returns(result.right())
+
+            every {
+                userConfigRepository.getE2EISettings()
+            }.returns(E2EISettings(true, DUMMY_URL, DateTimeUtil.currentInstant()).right())
         }
     }
 

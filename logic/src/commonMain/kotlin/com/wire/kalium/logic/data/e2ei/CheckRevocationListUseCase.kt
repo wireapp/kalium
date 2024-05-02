@@ -15,16 +15,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.e2ei.usecase
+package com.wire.kalium.logic.data.e2ei
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
-import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
+import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 
@@ -35,15 +36,18 @@ interface CheckRevocationListUseCase {
     suspend operator fun invoke(url: String): Either<CoreFailure, ULong?>
 }
 
-internal class CheckRevocationListUseCaseImpl(
+internal class CheckRevocationListInternalUseCaseImpl(
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val mlsClientProvider: MLSClientProvider,
-    private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase
+    private val featureSupport: FeatureSupport,
+    private val userConfigRepository: UserConfigRepository,
 ) : CheckRevocationListUseCase {
     private val logger = kaliumLogger.withTextTag("CheckRevocationListUseCase")
     override suspend fun invoke(url: String): Either<CoreFailure, ULong?> {
-        return if (isE2EIEnabledUseCase()) {
+        val isE2EIEnabled = getIsE2EIEnabled()
+
+        return if (isE2EIEnabled) {
             logger.i("checking crl url: $url")
             certificateRevocationListRepository.getClientDomainCRL(url).flatMap {
                 currentClientIdProvider().flatMap { clientId ->
@@ -57,4 +61,11 @@ internal class CheckRevocationListUseCaseImpl(
             }
         } else Either.Left(E2EIFailure.Disabled)
     }
+
+    private fun getIsE2EIEnabled() = userConfigRepository.getE2EISettings().flatMap { settings ->
+        userConfigRepository.isMLSEnabled()
+            .map {
+                it && settings.isRequired && featureSupport.isMLSSupported
+            }
+    }.getOrElse(false)
 }

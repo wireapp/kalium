@@ -80,6 +80,8 @@ import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProv
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProviderImpl
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepositoryDataSource
+import com.wire.kalium.logic.data.e2ei.CheckRevocationListUseCase
+import com.wire.kalium.logic.data.e2ei.CheckRevocationListInternalUseCaseImpl
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveE2EIConversationsVerificationStatusesUseCase
@@ -212,8 +214,6 @@ import com.wire.kalium.logic.feature.debug.DebugScope
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorker
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorkerImpl
 import com.wire.kalium.logic.feature.e2ei.CheckCrlRevocationListUseCase
-import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
-import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchConversationMLSVerificationStatusUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchConversationMLSVerificationStatusUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseCase
@@ -640,11 +640,12 @@ class UserSessionScope internal constructor(
         )
 
     private val checkRevocationList: CheckRevocationListUseCase
-        get() = CheckRevocationListUseCaseImpl(
+        get() = CheckRevocationListInternalUseCaseImpl(
             certificateRevocationListRepository = certificateRevocationListRepository,
             currentClientIdProvider = clientIdProvider,
             mlsClientProvider = mlsClientProvider,
-            isE2EIEnabledUseCase = isE2EIEnabled
+            featureSupport = featureSupport,
+            userConfigRepository = userConfigRepository
         )
 
     private val mlsConversationRepository: MLSConversationRepository

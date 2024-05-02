@@ -19,7 +19,7 @@ package com.wire.kalium.logic.feature.e2ei
 
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
-import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
+import com.wire.kalium.logic.data.e2ei.CheckRevocationListUseCase
 import com.wire.kalium.logic.functional.map
 import kotlinx.datetime.Clock
 
