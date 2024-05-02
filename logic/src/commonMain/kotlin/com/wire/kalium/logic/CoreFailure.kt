@@ -189,7 +189,7 @@ interface MLSFailure : CoreFailure {
     data object StaleProposal : MLSFailure
     data object StaleCommit : MLSFailure
 
-    class Generic(internal val exception: Exception) : MLSFailure {
+    data class Generic(internal val exception: Exception) : MLSFailure {
         val rootCause: Throwable get() = exception
     }
 }
