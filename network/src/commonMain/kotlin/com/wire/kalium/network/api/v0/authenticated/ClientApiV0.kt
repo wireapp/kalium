@@ -31,8 +31,11 @@ import com.wire.kalium.network.api.base.authenticated.client.UpdateClientMlsPubl
 import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
+import com.wire.kalium.network.utils.onFailure
+import com.wire.kalium.network.utils.onSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
@@ -85,10 +88,14 @@ internal open class ClientApiV0 internal constructor(
         updateClientMlsPublicKeysRequest: UpdateClientMlsPublicKeysRequest,
         clientID: String
     ): NetworkResponse<Unit> =
-        wrapKaliumResponse {
+        wrapKaliumResponse<Unit> {
             httpClient.put("$PATH_CLIENTS/$clientID") {
                 setBody(updateClientMlsPublicKeysRequest)
             }
+        }.onSuccess {
+            kaliumLogger.d("Updated MLS public keys for client ${it.value}")
+        }.onFailure {
+            kaliumLogger.e("Failed to update MLS public keys for client ${it.kException}")
         }
 
     override suspend fun updateClientCapabilities(

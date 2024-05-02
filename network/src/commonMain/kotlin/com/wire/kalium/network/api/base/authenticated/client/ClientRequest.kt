@@ -118,12 +118,12 @@ data class UpdateClientCapabilitiesRequest(
 
 @Serializable
 enum class MLSPublicKeyTypeDTO {
-    @SerialName("p256")
-    P256,
-    @SerialName("p384")
-    P384,
-    @SerialName("p521")
-    P521,
+    @SerialName("ecdsa_secp256r1_sha256")
+    ECDSA_SECP256R1_SHA256,
+    @SerialName("ecdsa_secp384r1_sha384")
+    ECDSA_SECP384R1_SHA384,
+    @SerialName("ecdsa_secp521r1_sha512")
+    ECDSA_SECP521R1_SHA512,
     @SerialName("ed448")
     ED448,
     @SerialName("ed25519")

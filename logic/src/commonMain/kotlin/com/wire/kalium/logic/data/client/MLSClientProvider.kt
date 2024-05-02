@@ -30,9 +30,12 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.left
@@ -70,6 +73,7 @@ class MLSClientProviderImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val passphraseStorage: PassphraseStorage,
     private val userConfigRepository: UserConfigRepository,
+    private val featureConfigRepository: FeatureConfigRepository,
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : MLSClientProvider {
 
@@ -83,7 +87,11 @@ class MLSClientProviderImpl(
 
     override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> = mlsClientMutex.withLock {
         withContext(dispatchers.io) {
-            val currentClientId = clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
+            val currentClientId = clientId ?: currentClientIdProvider().fold({
+                kaliumLogger.d("$TAG: Failed to get current client id: $it")
+                return@withContext Either.Left(it)
+            },
+                { it })
             val cryptoUserId = CryptoUserID(value = userId.value, domain = userId.domain)
             return@withContext mlsClient?.let {
                 Either.Right(it)
@@ -133,7 +141,14 @@ class MLSClientProviderImpl(
     override suspend fun getCoreCrypto(clientId: ClientId?): Either<CoreFailure, CoreCryptoCentral> = coreCryptoCentralMutex.withLock {
         withContext(dispatchers.io) {
             val (supportedCipherSuite, defaultCipherSuite) = userConfigRepository.getSupportedCipherSuite()
-                .getOrElse { return@withContext Either.Left(it) }
+                .flatMapLeft<CoreFailure, SupportedCipherSuite> {
+                    featureConfigRepository.getFeatureConfigs().map {
+                        it.mlsModel.supportedCipherSuite!!
+                    }
+                }.getOrElse {
+                    kaliumLogger.e("$TAG: Failed to get supported cipher suite")
+                    return@withContext Either.Left(CoreFailure.Unknown(IllegalStateException("Failed to get supported cipher suite")))
+                }
 
             val currentClientId = clientId ?: currentClientIdProvider().fold({ return@withContext Either.Left(it) }, { it })
 

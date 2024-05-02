@@ -333,10 +333,12 @@ internal class MLSConversationDataSource(
                 }
                 sendCommitBundleForExternalCommit(groupID, commitBundle)
             }.onSuccess {
-                conversationDAO.updateConversationGroupState(
-                    ConversationEntity.GroupState.ESTABLISHED,
-                    idMapper.toCryptoModel(groupID)
-                )
+                wrapStorageRequest {
+                    conversationDAO.updateConversationGroupState(
+                        ConversationEntity.GroupState.ESTABLISHED,
+                        idMapper.toCryptoModel(groupID)
+                    )
+                }
             }
         }
     }
