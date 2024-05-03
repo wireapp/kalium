@@ -1760,7 +1760,7 @@ class MLSConversationRepositoryTest {
 
         fun withKeyForCipherSuite() = apply {
             given(mlsPublicKeysRepository)
-                .suspendFunction(mlsPublicKeysRepository::keyForCipherSuite)
+                .suspendFunction(mlsPublicKeysRepository::getKeyForCipherSuite)
                 .whenInvokedWith(any())
                 .then { Either.Right(CRYPTO_MLS_PUBLIC_KEY) }
         }

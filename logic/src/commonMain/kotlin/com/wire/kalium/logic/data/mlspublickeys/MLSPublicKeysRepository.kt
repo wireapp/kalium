@@ -38,7 +38,7 @@ data class MLSPublicKeys(
 interface MLSPublicKeysRepository {
     suspend fun fetchKeys(): Either<CoreFailure, MLSPublicKeys>
     suspend fun getKeys(): Either<CoreFailure, MLSPublicKeys>
-    suspend fun keyForCipherSuite(cipherSuite: CipherSuite): Either<CoreFailure, ByteArray>
+    suspend fun getKeyForCipherSuite(cipherSuite: CipherSuite): Either<CoreFailure, ByteArray>
 }
 
 class MLSPublicKeysRepositoryImpl(
@@ -60,7 +60,7 @@ class MLSPublicKeysRepositoryImpl(
         return publicKeys?.let { Either.Right(it) } ?: fetchKeys()
     }
 
-    override suspend fun keyForCipherSuite(cipherSuite: CipherSuite): Either<CoreFailure, ByteArray> {
+    override suspend fun getKeyForCipherSuite(cipherSuite: CipherSuite): Either<CoreFailure, ByteArray> {
 
         return getKeys().flatMap { serverPublicKeys ->
             kaliumLogger.d("serverPublicKeys: $serverPublicKeys")

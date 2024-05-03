@@ -574,7 +574,7 @@ internal class MLSConversationDataSource(
         allowSkippingUsersWithoutKeyPackages: Boolean,
     ): Either<CoreFailure, MLSAdditionResult> = withContext(serialDispatcher) {
         mlsClientProvider.getMLSClient().flatMap<MLSAdditionResult, CoreFailure, MLSClient> {
-            mlsPublicKeysRepository.keyForCipherSuite(
+            mlsPublicKeysRepository.getKeyForCipherSuite(
                 CipherSuite.fromTag(it.getDefaultCipherSuite())
             ).flatMap { key ->
                 establishMLSGroup(
