@@ -32,7 +32,12 @@ actual suspend fun coreCryptoCentral(
 ): CoreCryptoCentral {
     val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
     File(rootDir).mkdirs()
-    val coreCrypto = coreCryptoDeferredInit(path, databaseKey)
+    val coreCrypto = coreCryptoDeferredInit(
+        path = path,
+        key = databaseKey,
+        ciphersuites = emptyList(),
+        nbKeyPackage = null
+    )
     coreCrypto.setCallbacks(Callbacks())
     return CoreCryptoCentralImpl(
         cc = coreCrypto,
@@ -42,12 +47,12 @@ actual suspend fun coreCryptoCentral(
 
 private class Callbacks : CoreCryptoCallbacks {
 
-    override suspend fun authorize(conversationId: ByteArray, clientId: ClientId): Boolean {
+    override fun authorize(conversationId: ByteArray, clientId: ClientId): Boolean {
         // We always return true because our BE is currently enforcing that this constraint is always true
         return true
     }
 
-    override suspend fun clientIsExistingGroupUser(
+    override fun clientIsExistingGroupUser(
         conversationId: ConversationId,
         clientId: ClientId,
         existingClients: List<ClientId>,
@@ -57,7 +62,7 @@ private class Callbacks : CoreCryptoCallbacks {
         return true
     }
 
-    override suspend fun userAuthorize(
+    override fun userAuthorize(
         conversationId: ConversationId,
         externalClientId: ClientId,
         existingClients: List<ClientId>
@@ -75,10 +80,10 @@ class CoreCryptoCentralImpl(
 
     override suspend fun mlsClient(
         clientId: CryptoQualifiedClientId,
-        cipherSuite: Ciphersuites,
+        allowedCipherSuites: Ciphersuites,
         defaultCipherSuite: UShort
     ): MLSClient {
-        cc.mlsInit(clientId.toString().encodeToByteArray(), cipherSuite, null)
+        cc.mlsInit(clientId.toString().encodeToByteArray(), allowedCipherSuites, null)
         return MLSClientImpl(cc, defaultCipherSuite)
     }
 
