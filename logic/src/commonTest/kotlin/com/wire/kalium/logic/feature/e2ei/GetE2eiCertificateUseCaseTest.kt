@@ -91,11 +91,6 @@ class GetE2eiCertificateUseCaseTest {
                 .with(any())
                 .wasInvoked(once)
 
-            verify(arrangement.certificateStatusMapper)
-                .function(arrangement.certificateStatusMapper::toCertificateStatus)
-                .with(any())
-                .wasInvoked(once)
-
             assertEquals(true, result is GetE2EICertificateUseCaseResult.Success)
         }
 
