@@ -92,10 +92,6 @@ internal open class ClientApiV0 internal constructor(
             httpClient.put("$PATH_CLIENTS/$clientID") {
                 setBody(updateClientMlsPublicKeysRequest)
             }
-        }.onSuccess {
-            kaliumLogger.d("Updated MLS public keys for client ${it.value}")
-        }.onFailure {
-            kaliumLogger.e("Failed to update MLS public keys for client ${it.kException}")
         }
 
     override suspend fun updateClientCapabilities(
