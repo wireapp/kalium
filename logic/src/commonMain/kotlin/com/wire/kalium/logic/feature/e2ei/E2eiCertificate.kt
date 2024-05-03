@@ -21,7 +21,8 @@ import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.di.MapperProvider
 import kotlinx.datetime.Instant
 
-data class E2eiCertificate(var userHandle: String,
+data class E2eiCertificate(
+    var userHandle: String,
     val status: CertificateStatus,
     val serialNumber: String,
     val certificateDetail: String,
