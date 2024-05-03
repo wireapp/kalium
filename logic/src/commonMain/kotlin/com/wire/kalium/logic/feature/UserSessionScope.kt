@@ -631,7 +631,7 @@ class UserSessionScope internal constructor(
             currentClientIdProvider = clientIdProvider,
             passphraseStorage = globalPreferences.passphraseStorage,
             userConfigRepository = userConfigRepository,
-            featureConfigRepository = featureConfigRepository,
+            featureConfigRepository = featureConfigRepository
         )
     }
 
