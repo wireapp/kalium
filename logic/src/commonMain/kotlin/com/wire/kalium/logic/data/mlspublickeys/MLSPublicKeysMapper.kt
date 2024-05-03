@@ -41,6 +41,7 @@ class MLSPublicKeysMapperImpl : MLSPublicKeysMapper {
     }
 }
 
+@Suppress("ClassNaming")
 sealed class MLSPublicKeyType {
     abstract val value: String?
 
