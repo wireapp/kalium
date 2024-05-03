@@ -64,10 +64,10 @@ internal object AccountMapper {
 
     fun fromPersistentWebSocketStatus(
         user_id: UserIDEntity,
-        isPersistentWebSocketEnabled: Boolean,
+        isPersistentWebSocketEnabled: Int,
     ): PersistentWebSocketStatusEntity = PersistentWebSocketStatusEntity(
         userIDEntity = user_id,
-        isPersistentWebSocketEnabled = isPersistentWebSocketEnabled
+        isPersistentWebSocketEnabled = isPersistentWebSocketEnabled == 1
     )
 
     fun fromFullAccountInfo(
@@ -77,7 +77,7 @@ internal object AccountMapper {
         tenant: String?,
         server_config_id: String,
         logout_reason: LogoutReason?,
-        isPersistentWebSocketEnabled: Boolean,
+        isPersistentWebSocketEnabled: Int,
         managedBy: ManagedByEntity?
     ): FullAccountEntity = FullAccountEntity(
         info = fromAccount(id, logout_reason),
@@ -106,18 +106,18 @@ internal object AccountMapper {
         blackListUrl: String,
         teamsUrl: String,
         websiteUrl: String,
-        isOnPremises: Boolean,
+        isOnPremises: Int,
         domain: String?,
         commonApiVersion: Int,
-        federation: Boolean,
+        federation: Int,
         apiProxyHost: String?,
         apiProxyPort: Int?,
-        apiProxyNeedsAuthentication: Boolean?,
+        apiProxyNeedsAuthentication: Int?,
         title: String
     ): Pair<UserIDEntity, ServerConfigEntity> {
         val apiProxy: ServerConfigEntity.ApiProxy? =
             if (apiProxyHost != null && apiProxyPort != null && apiProxyNeedsAuthentication != null) {
-                ServerConfigEntity.ApiProxy(apiProxyNeedsAuthentication, apiProxyHost, apiProxyPort)
+                ServerConfigEntity.ApiProxy(apiProxyNeedsAuthentication == 1, apiProxyHost, apiProxyPort)
             } else {
                 null
             }
@@ -131,14 +131,14 @@ internal object AccountMapper {
                 blackList = blackListUrl,
                 teams = teamsUrl,
                 website = websiteUrl,
-                isOnPremises = isOnPremises,
+                isOnPremises = isOnPremises == 1,
                 apiProxy = apiProxy,
                 title = title
             ),
             metaData = ServerConfigEntity.MetaData(
                 domain = domain,
                 apiVersion = commonApiVersion,
-                federation = federation,
+                federation = federation == 1,
             )
         )
 
@@ -210,7 +210,7 @@ internal class AccountsDAOImpl internal constructor(
             id = userIDEntity,
             serverConfigId = serverConfigId,
             logoutReason = null,
-            isPersistentWebSocketEnabled = isPersistentWebSocketEnabled
+            isPersistentWebSocketEnabled = isPersistentWebSocketEnabled.toInt()
         )
     }
 
@@ -242,7 +242,7 @@ internal class AccountsDAOImpl internal constructor(
 
     override suspend fun isFederated(userIDEntity: UserIDEntity): Boolean? =
         withContext(queriesContext) {
-            queries.isFederationEnabled(userIDEntity).executeAsOneOrNull()
+            queries.isFederationEnabled(userIDEntity).executeAsOneOrNull() == 1
         }
 
     override suspend fun doesValidAccountExists(userIDEntity: UserIDEntity): Boolean = withContext(queriesContext) {
@@ -289,11 +289,11 @@ internal class AccountsDAOImpl internal constructor(
 
     override suspend fun updatePersistentWebSocketStatus(userIDEntity: UserIDEntity, isPersistentWebSocketEnabled: Boolean) =
         withContext(queriesContext) {
-            queries.updatePersistentWebSocketStatus(isPersistentWebSocketEnabled, userIDEntity)
+            queries.updatePersistentWebSocketStatus(isPersistentWebSocketEnabled.toInt(), userIDEntity)
         }
 
     override suspend fun persistentWebSocketStatus(userIDEntity: UserIDEntity): Boolean = withContext(queriesContext) {
-        queries.persistentWebSocketStatus(userIDEntity).executeAsOne()
+        queries.persistentWebSocketStatus(userIDEntity).executeAsOne() == 1
     }
 
     override suspend fun getAllValidAccountPersistentWebSocketStatus(): Flow<List<PersistentWebSocketStatusEntity>> =

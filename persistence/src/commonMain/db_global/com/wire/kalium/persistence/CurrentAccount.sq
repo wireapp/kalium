@@ -7,7 +7,7 @@ CREATE TABLE CurrentAccount (
 );
 
 update:
-INSERT OR REPLACE INTO CurrentAccount (id, user_id) VALUES (1, :user_id);
+INSERT INTO CurrentAccount (id, user_id) VALUES (1, :user_id);
 
 currentAccountInfo:
 SELECT id, logout_reason FROM Accounts WHERE id = (SELECT user_id FROM CurrentAccount WHERE id = 1);

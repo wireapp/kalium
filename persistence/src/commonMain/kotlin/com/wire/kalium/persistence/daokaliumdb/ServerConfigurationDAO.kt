@@ -43,12 +43,12 @@ internal object ServerConfigMapper {
         blackListUrl: String,
         teamsUrl: String,
         websiteUrl: String,
-        isOnPremises: Boolean,
+        isOnPremises: Int,
         domain: String?,
         commonApiVersion: Int,
-        federation: Boolean,
+        federation: Int,
         apiProxyHost: String?,
-        apiProxyNeedsAuthentication: Boolean?,
+        apiProxyNeedsAuthentication: Int?,
         apiProxyPort: Int?,
         lastBlackListCheck: String?
     ): ServerConfigEntity = ServerConfigEntity(
@@ -61,17 +61,17 @@ internal object ServerConfigMapper {
             teams = teamsUrl,
             website = websiteUrl,
             title = title,
-            isOnPremises = isOnPremises,
+            isOnPremises = isOnPremises == 1,
             apiProxy = if (apiProxyHost != null && apiProxyNeedsAuthentication != null && apiProxyPort != null) {
                 ServerConfigEntity.ApiProxy(
-                    needsAuthentication = apiProxyNeedsAuthentication,
+                    needsAuthentication = apiProxyNeedsAuthentication == 1,
                     host = apiProxyHost,
                     port = apiProxyPort
                 )
             } else null
         ),
         ServerConfigEntity.MetaData(
-            federation = federation,
+            federation = federation == 1,
             apiVersion = commonApiVersion,
             domain = domain
         )
@@ -86,12 +86,12 @@ internal object ServerConfigMapper {
         blackListUrl: String?,
         teamsUrl: String?,
         websiteUrl: String?,
-        isOnPremises: Boolean?,
+        isOnPremises: Int?,
         domain: String?,
         commonApiVersion: Int?,
-        federation: Boolean?,
+        federation: Int?,
         apiProxyHost: String?,
-        apiProxyNeedsAuthentication: Boolean?,
+        apiProxyNeedsAuthentication: Int?,
         apiProxyPort: Int?,
         lastBlackListCheck: String?,
         id_: QualifiedIDEntity,
@@ -106,12 +106,12 @@ internal object ServerConfigMapper {
             blackListUrl = blackListUrl!!,
             teamsUrl = teamsUrl!!,
             websiteUrl = websiteUrl!!,
-            isOnPremises = isOnPremises!!,
+            isOnPremises = isOnPremises!!.toInt(),
             domain = domain,
             commonApiVersion = commonApiVersion!!,
-            federation = federation!!,
+            federation = federation!!.toInt(),
             apiProxyHost = apiProxyHost,
-            apiProxyNeedsAuthentication = apiProxyNeedsAuthentication,
+            apiProxyNeedsAuthentication = apiProxyNeedsAuthentication?.toInt(),
             apiProxyPort = apiProxyPort,
             lastBlackListCheck = lastBlackListCheck
         ),
@@ -175,19 +175,19 @@ internal class ServerConfigurationDAOImpl internal constructor(
                 teamsUrl,
                 websiteUrl,
                 title,
-                isOnPremises,
-                federation,
+                isOnPremises.toInt(),
+                federation.toInt(),
                 domain,
                 commonApiVersion,
                 apiProxyHost,
-                apiProxyNeedsAuthentication,
+                apiProxyNeedsAuthentication?.toInt(),
                 apiProxyPort
             )
         }
     }
 
     override suspend fun allConfigFlow(): Flow<List<ServerConfigEntity>> =
-        queries.storedConfig(mapper = mapper::fromServerConfiguration).asFlow().flowOn(queriesContext).mapToList()
+        queries.storedConfig(mapper = ServerConfigMapper::fromServerConfiguration).asFlow().flowOn(queriesContext).mapToList()
 
     override suspend fun allConfig(): List<ServerConfigEntity> = withContext(queriesContext) {
         queries.storedConfig(mapper = mapper::fromServerConfiguration).executeAsList()
@@ -232,5 +232,12 @@ internal class ServerConfigurationDAOImpl internal constructor(
 
     override suspend fun updateBlackListCheckDate(configIds: Set<String>, date: String) = withContext(queriesContext) {
         queries.updateLastBlackListCheckByIds(date, configIds)
+    }
+}
+
+fun Boolean.toInt(): Int {
+    return when (this) {
+        true -> 1
+        false -> 0
     }
 }

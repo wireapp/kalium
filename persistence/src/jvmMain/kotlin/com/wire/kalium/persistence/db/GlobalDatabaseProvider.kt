@@ -58,37 +58,41 @@ actual class GlobalDatabaseProvider(
 
         val driver: SqlDriver = createDataSource("jdbc:postgresql://localhost:5432/$dbName").asJdbcDriver()
 
-        if (!databaseExists) {
+//         if (!databaseExists) {
             GlobalDatabase.Schema.create(driver)
-        }
+//         }
 
         database = GlobalDatabase(
             driver,
             ServerConfigurationAdapter = ServerConfiguration.Adapter(
                 commonApiVersionAdapter = IntColumnAdapter,
-                apiProxyPortAdapter = IntColumnAdapter
+                isOnPremisesAdapter = IntColumnAdapter,
+                apiProxyPortAdapter = IntColumnAdapter,
+                federationAdapter = IntColumnAdapter,
+                apiProxyNeedsAuthenticationAdapter = IntColumnAdapter
             ),
             AccountsAdapter = Accounts.Adapter(
                 idAdapter = QualifiedIDAdapter,
                 logout_reasonAdapter = LogoutReasonAdapter,
-                managed_byAdapter = EnumColumnAdapter()
+                managed_byAdapter = EnumColumnAdapter(),
+                isPersistentWebSocketEnabledAdapter = IntColumnAdapter
             ),
             CurrentAccountAdapter = CurrentAccount.Adapter(
                 user_idAdapter = QualifiedIDAdapter
             )
         )
 
-        database.globalDatabasePropertiesQueries.enableForeignKeyContraints()
+        //database.globalDatabasePropertiesQueries.enableForeignKeyContraints()
     }
 
     private fun createDataSource(driverUri: String): DataSource {
         val dataSourceConfig = HikariConfig().apply {
             driverClassName = "org.postgresql.Driver" // todo. parameterize
             jdbcUrl = driverUri
-            username = "postgres"
-            password = ""
+            username = "global"
+            password = "global"
             maximumPoolSize = 3
-            isAutoCommit = false
+            isAutoCommit = true
             transactionIsolation = "TRANSACTION_REPEATABLE_READ"
             validate()
         }

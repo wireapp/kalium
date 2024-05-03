@@ -2,6 +2,7 @@ import com.wire.kalium.persistence.dao.ManagedByEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.model.LogoutReason;
 import kotlin.Boolean;
+import kotlin.Int;
 
 CREATE TABLE Accounts (
     id TEXT AS QualifiedIDEntity PRIMARY KEY NOT NULL,
@@ -10,12 +11,12 @@ CREATE TABLE Accounts (
     tenant TEXT,
     server_config_id TEXT NOT NULL,
     logout_reason TEXT AS LogoutReason,
-    isPersistentWebSocketEnabled INTEGER AS Boolean NOT NULL DEFAULT 0,
+    isPersistentWebSocketEnabled INTEGER AS Int NOT NULL DEFAULT 0,
     managed_by TEXT AS ManagedByEntity
 );
 
 insertOrReplace:
-INSERT OR REPLACE INTO Accounts (id, scim_external_id, subject, tenant, server_config_id, logout_reason, isPersistentWebSocketEnabled)
+INSERT INTO Accounts (id, scim_external_id, subject, tenant, server_config_id, logout_reason, isPersistentWebSocketEnabled)
 VALUES (:id, :scimExternalId, :subject, :tenant, :serverConfigId, :logoutReason,:isPersistentWebSocketEnabled);
 
 delete:

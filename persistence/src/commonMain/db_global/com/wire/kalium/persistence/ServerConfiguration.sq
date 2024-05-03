@@ -10,12 +10,12 @@ CREATE TABLE ServerConfiguration (
     blackListUrl TEXT NOT NULL,
     teamsUrl TEXT NOT NULL,
     websiteUrl TEXT NOT NULL,
-    isOnPremises INTEGER AS Boolean NOT NULL,
+    isOnPremises INTEGER AS Int NOT NULL,
     domain TEXT,
     commonApiVersion INTEGER AS Int NOT NULL,
-    federation INTEGER AS Boolean NOT NULL,
+    federation INTEGER AS Int NOT NULL,
     apiProxyHost TEXT,
-    apiProxyNeedsAuthentication INTEGER AS Boolean,
+    apiProxyNeedsAuthentication INTEGER AS Int,
     apiProxyPort INTEGER AS Int,
     lastBlackListCheck TEXT,
     CONSTRAINT server_config_unique UNIQUE (title, apiBaseUrl, webSocketBaseUrl, domain, apiProxyHost, apiProxyPort)
@@ -25,7 +25,7 @@ deleteById:
 DELETE FROM ServerConfiguration WHERE id = ?;
 
 insert:
-INSERT OR FAIL INTO ServerConfiguration(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, isOnPremises, federation, domain, commonApiVersion, apiProxyHost, apiProxyNeedsAuthentication, apiProxyPort)
+INSERT INTO ServerConfiguration(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, isOnPremises, federation, domain, commonApiVersion, apiProxyHost, apiProxyNeedsAuthentication, apiProxyPort)
 VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?);
 
 updateApiVersion:

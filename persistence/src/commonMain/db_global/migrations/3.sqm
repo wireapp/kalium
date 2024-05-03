@@ -1,4 +1,4 @@
-import kotlin.Boolean;
+import kotlin.Int;
 
 ALTER TABLE Accounts
-ADD COLUMN isPersistentWebSocketEnabled INTEGER AS Boolean NOT NULL DEFAULT(0);
+ADD COLUMN isPersistentWebSocketEnabled INTEGER AS Int NOT NULL DEFAULT(0);

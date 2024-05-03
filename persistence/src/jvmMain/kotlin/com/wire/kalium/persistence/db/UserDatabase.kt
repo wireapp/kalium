@@ -21,16 +21,12 @@
 package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.db.SqlDriver
-import app.cash.sqldelight.driver.jdbc.asJdbcDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.zaxxer.hikari.HikariConfig
-import com.zaxxer.hikari.HikariDataSource
 import kotlinx.coroutines.CoroutineDispatcher
 import java.io.File
 import java.util.Properties
-import javax.sql.DataSource
 
 private const val DATABASE_NAME = "main.db"
 
@@ -67,11 +63,11 @@ actual fun userDatabaseBuilder(
     // Make sure all intermediate directories exist
     storageData.file.mkdirs()
 
-    val driver: SqlDriver = sqlDriver(userId.toString(), false)
+    val driver: SqlDriver = sqlDriver("jdbc:sqlite:${databasePath.absolutePath}", enableWAL)
 
-//     if (!databaseExists) {
+    if (!databaseExists) {
         UserDatabase.Schema.create(driver)
-//     }
+    }
     return UserDatabaseBuilder(userId, driver, dispatcher, platformDatabaseData, !passphrase.isNullOrBlank())
 }
 
@@ -94,21 +90,17 @@ internal actual fun getDatabaseAbsoluteFileLocation(
     return if (dbFile.exists()) dbFile.absolutePath else null
 }
 
-private fun sqlDriver(userId: String, enableWAL: Boolean): SqlDriver = createDataSourceForUserDB(userId).asJdbcDriver()
-
-private fun createDataSourceForUserDB(userId: String): DataSource {
-    val dataSourceConfig = HikariConfig().apply {
-        driverClassName = "org.postgresql.Driver" //todo. parameterize
-        jdbcUrl = "jdbc:postgresql://localhost:5432/$userId"
-        username = "postgres"
-        password = ""
-        maximumPoolSize = 3
-        isAutoCommit = false
-        transactionIsolation = "TRANSACTION_REPEATABLE_READ"
-        validate()
+private fun sqlDriver(driverUri: String, enableWAL: Boolean): SqlDriver = JdbcSqliteDriver(
+    driverUri,
+    Properties(1).apply {
+        put("foreign_keys", "true")
+        if (enableWAL) {
+            put("journal_mode", "wal")
+        } else {
+            put("journal_mode", "delete")
+        }
     }
-    return HikariDataSource(dataSourceConfig)
-}
+)
 
 /**
  * Creates an in-memory user database,
