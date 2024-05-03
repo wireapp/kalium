@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@ import app.cash.turbine.test
 import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
 import com.wire.kalium.persistence.dao.MetadataDAO
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -87,10 +86,10 @@ class LogoutRepositoryTest {
     private class Arrangement {
 
         @Mock
-        private val logoutApi = mock(classOf<LogoutApi>())
+        private val logoutApi = mock(LogoutApi::class)
 
         @Mock
-        private val metadataDAO = mock(classOf<MetadataDAO>())
+        private val metadataDAO = mock(MetadataDAO::class)
 
         private val logoutDataSource = LogoutDataSource(logoutApi, metadataDAO)
 

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,6 @@ data class UserSearchResponse(
 data class ContactDTO(
     @SerialName("accent_id") val accentId: Int?,
     @SerialName("handle") val handle: String?,
-    @SerialName("id") val id: String?,
     @SerialName("name") val name: String,
     @SerialName("qualified_id") val qualifiedID: UserId,
     @SerialName("team") val team: String?

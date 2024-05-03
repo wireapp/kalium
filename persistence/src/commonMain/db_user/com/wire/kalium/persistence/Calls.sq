@@ -32,6 +32,9 @@ SELECT * FROM Call WHERE status = 'STILL_ONGOING';
 selectIncomingCalls:
 SELECT * FROM Call WHERE status = 'INCOMING';
 
+selectOutgoingCalls:
+SELECT * FROM Call WHERE status = 'STARTED';
+
 updateLastCallStatusByConversationId:
 UPDATE Call
 SET status = ?

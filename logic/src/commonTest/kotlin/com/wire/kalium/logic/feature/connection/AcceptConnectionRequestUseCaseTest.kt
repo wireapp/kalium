@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,9 +34,9 @@ import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArr
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import io.mockative.any
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -59,10 +59,9 @@ class AcceptConnectionRequestUseCaseTest {
 
         // then
         assertEquals(AcceptConnectionRequestUseCaseResult.Success, result)
-        verify(arrangement.connectionRepository)
-            .suspendFunction(arrangement.connectionRepository::updateConnectionStatus)
-            .with(eq(USER_ID), eq(ConnectionState.ACCEPTED))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.connectionRepository.updateConnectionStatus(eq(USER_ID), eq(ConnectionState.ACCEPTED))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -81,10 +80,9 @@ class AcceptConnectionRequestUseCaseTest {
 
         // then
         assertEquals(AcceptConnectionRequestUseCaseResult.Success, result)
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateConversationModifiedDate)
-            .with(eq(CONNECTION.qualifiedConversationId), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.conversationRepository.updateConversationModifiedDate(eq(CONNECTION.qualifiedConversationId), any())
+        }.wasInvoked(once)
     }
 
     @Test
@@ -103,10 +101,9 @@ class AcceptConnectionRequestUseCaseTest {
 
         // then
         assertEquals(AcceptConnectionRequestUseCaseResult.Success, result)
-        verify(arrangement.oneOnOneResolver)
-            .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUserId)
-            .with(eq(CONNECTION.qualifiedToId))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUserId(eq(CONNECTION.qualifiedToId), eq(true))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -122,18 +119,17 @@ class AcceptConnectionRequestUseCaseTest {
 
         // then
         assertEquals(AcceptConnectionRequestUseCaseResult.Failure::class, resultFailure::class)
-        verify(arrangement.connectionRepository)
-            .suspendFunction(arrangement.connectionRepository::updateConnectionStatus)
-            .with(eq(USER_ID), eq(ConnectionState.ACCEPTED))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.connectionRepository.updateConnectionStatus(eq(USER_ID), eq(ConnectionState.ACCEPTED))
+        }.wasInvoked(once)
     }
 
-    private class Arrangement(private val block: Arrangement.() -> Unit) :
+    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         ConnectionRepositoryArrangement by ConnectionRepositoryArrangementImpl(),
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl(),
         NewGroupConversationSystemMessageCreatorArrangement by NewGroupConversationSystemMessageCreatorArrangementImpl() {
-        fun arrange() = run {
+        suspend fun arrange() = run {
             block()
             this@Arrangement to AcceptConnectionRequestUseCaseImpl(
                 connectionRepository = connectionRepository,
@@ -145,7 +141,7 @@ class AcceptConnectionRequestUseCaseTest {
     }
 
     private companion object {
-        fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+        suspend fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
         val USER_ID = UserId("some_user", "some_domain")
         val CONVERSATION_ID = ConversationId("someId", "someDomain")

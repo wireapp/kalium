@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,11 +20,17 @@ package com.wire.kalium.plugins
 
 import com.android.build.gradle.LibraryExtension
 import org.gradle.api.JavaVersion
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
+import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSetTree
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinAndroidTarget
 
 private const val BASE_NAMESPACE = "com.wire.kalium"
 
 fun KotlinAndroidTarget.commmonKotlinAndroidTargetConfig() {
+    @OptIn(ExperimentalKotlinGradlePluginApi::class) // this is experimental API and will likely change in the future into more robust DSL
+    instrumentedTestVariant {
+        sourceSetTree.set(KotlinSourceSetTree.test)
+    }
     /** NO-OP. Nothing to do here for now **/
 }
 
@@ -52,6 +58,7 @@ fun LibraryExtension.commonAndroidLibConfig(
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true
     }
 
     packaging {

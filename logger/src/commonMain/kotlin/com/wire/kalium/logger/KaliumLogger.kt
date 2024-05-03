@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -112,10 +112,19 @@ class KaliumLogger(
      * In this case it will become "featureId:featureName[userId|clientId]".
      * When current type of tag is [Tag.Text], then it will just replace it with the new one: "featureId:featureName".
      */
-    @Suppress("unused")
-    fun withFeatureId(featureId: ApplicationFlow): KaliumLogger = KaliumLogger(
+    fun withFeatureId(featureId: ApplicationFlow): KaliumLogger = withTextTag(
+        featureId.name.lowercase()
+    )
+
+    /**
+     * Creates a new logger with a custom tag that replaces the old tag.
+     *
+     * @param textTag The text tag to be added to the logger.
+     * @return Returns a new instance of KaliumLogger with the updated tag.
+     */
+    fun withTextTag(textTag: String): KaliumLogger = KaliumLogger(
         config = config,
-        tag = "featureId:${featureId.name.lowercase()}".let {
+        tag = "featureId:$textTag".let {
             when (tag) {
                 is Tag.Text -> Tag.Text(it)
                 is Tag.UserClientText -> Tag.UserClientText(it, tag.data)
@@ -129,7 +138,6 @@ class KaliumLogger(
      * and if it contained already some text tag prefix part, then the same prefix will be also included in the new one,
      * to keep the standard pattern of the tag: "tag[userId|clientId]".
      */
-    @Suppress("unused")
     fun withUserDeviceData(data: () -> UserClientData): KaliumLogger = KaliumLogger(
         config = config,
         tag = when (tag) {
@@ -213,23 +221,31 @@ class KaliumLogger(
         }
     }
 
-    data class UserClientData(val userId: String, val clientId: String) {
-
+    data class LogAttributes(
+        val userClientData: UserClientData?,
+        val textTag: String
+    ) {
         companion object {
-            private val regex = Regex("^.*\\[.+\\|.+\\]\$")
+            private val regex = Regex("^.*\\[.+\\|.*\\]\$")
 
             /**
              * Parses the user-related data from the String tag in the standard pattern: "tag[userId|clientId]".
              * Returns null if the tag doesn't match the pattern, which means it does not contain user-related data.
              */
             @Suppress("unused")
-            fun getFromTag(tag: String): UserClientData? =
+            fun getInfoFromTagString(tag: String): LogAttributes =
                 if (tag.matches(regex)) {
-                    tag.substringAfterLast("[").substringBefore("]").split("|")
+                    val prefix = tag.substringBefore("[")
+                    val userClientData = tag.substringAfterLast("[").substringBefore("]").split("|")
                         .let { data -> UserClientData(data[0], data[1]) }
-                } else null
+                    LogAttributes(userClientData, prefix)
+                } else {
+                    LogAttributes(null, tag)
+                }
         }
     }
+
+    data class UserClientData(val userId: String, val clientId: String?)
 
     companion object {
         fun disabled(): KaliumLogger = KaliumLogger(

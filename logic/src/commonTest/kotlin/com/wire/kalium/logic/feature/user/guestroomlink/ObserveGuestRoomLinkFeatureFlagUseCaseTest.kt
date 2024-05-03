@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,9 +23,8 @@ import com.wire.kalium.logic.configuration.GuestRoomLinkStatus
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -46,11 +45,11 @@ class ObserveGuestRoomLinkFeatureFlagUseCaseTest {
         observeGuestRoomLinkFeatureFlag = ObserveGuestRoomLinkFeatureFlagUseCaseImpl(userConfigRepository)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenRepositoryEmitsFailure_whenRunningUseCase_thenEmitStatusWithNullValues() = runTest {
-        given(userConfigRepository).invocation { observeGuestRoomLinkFeatureFlag() }
-            .thenReturn(flowOf(Either.Left(StorageFailure.DataNotFound)))
+        every {
+            userConfigRepository.observeGuestRoomLinkFeatureFlag()
+        }.returns(flowOf(Either.Left(StorageFailure.DataNotFound)))
 
         val result = observeGuestRoomLinkFeatureFlag()
 
@@ -58,13 +57,13 @@ class ObserveGuestRoomLinkFeatureFlagUseCaseTest {
         assertNull(result.first().isStatusChanged)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenRepositoryEmitsValidValues_whenRunningUseCase_thenEmitThoseValidValues() = runTest {
         val expectedStatus = GuestRoomLinkStatus(isGuestRoomLinkEnabled = true, isStatusChanged = false)
 
-        given(userConfigRepository).invocation { observeGuestRoomLinkFeatureFlag() }
-            .thenReturn(flowOf(Either.Right(expectedStatus)))
+        every {
+            userConfigRepository.observeGuestRoomLinkFeatureFlag()
+        }.returns(flowOf(Either.Right(expectedStatus)))
 
         val result = observeGuestRoomLinkFeatureFlag()
 

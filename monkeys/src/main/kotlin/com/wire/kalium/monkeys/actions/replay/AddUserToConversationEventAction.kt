@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,8 +29,11 @@ import com.wire.kalium.monkeys.pool.MonkeyPool
 class AddUserToConversationEventAction(private val eventConfig: EventType.AddUsersToConversation) :
     AddUserToConversationAction(ActionType.AddUsersToConversation(1u, UserCount.fixed(eventConfig.newMembers.count().toUInt())), {}) {
 
-    override suspend fun pickConversations(monkeyPool: MonkeyPool): List<Pair<MonkeyConversation, List<Monkey>>> {
-        val target = ConversationPool.get(eventConfig.conversationId) ?: error("Could not find conversation")
+    override suspend fun pickConversations(
+        monkeyPool: MonkeyPool,
+        conversationPool: ConversationPool
+    ): List<Pair<MonkeyConversation, List<Monkey>>> {
+        val target = conversationPool.get(eventConfig.conversationId) ?: error("Could not find conversation")
         val members = eventConfig.newMembers.map {
             monkeyPool.getFromTeam(it.team, it.index)
         }

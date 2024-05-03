@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,27 +21,15 @@ package com.wire.kalium.logic.data.publicuser
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
-import com.wire.kalium.logic.data.user.SelfUser
-import com.wire.kalium.logic.data.user.UserDataSource
-import com.wire.kalium.logic.data.user.UserMapper
-import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchRequest
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchResponse
-import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.member.MemberDAO
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flatMapMerge
-import kotlinx.coroutines.flow.map
-import kotlinx.serialization.json.Json
 
 internal interface UserSearchApiWrapper {
     /*
@@ -58,11 +46,8 @@ internal interface UserSearchApiWrapper {
 
 internal class UserSearchApiWrapperImpl(
     private val userSearchApi: UserSearchApi,
-    private val conversationDAO: ConversationDAO,
     private val memberDAO: MemberDAO,
-    private val userDAO: UserDAO,
-    private val metadataDAO: MetadataDAO,
-    private val userMapper: UserMapper = MapperProvider.userMapper(),
+    private val selfUserId: UserId
 ) : UserSearchApiWrapper {
 
     override suspend fun search(
@@ -87,7 +72,6 @@ internal class UserSearchApiWrapperImpl(
         userSearchResponse: UserSearchResponse,
         searchUsersOptions: SearchUsersOptions
     ): UserSearchResponse {
-        val selfUser = getSelfUser()
 
         // if we do not exclude the conversation members, we just return empty list
         val conversationMembersId = if (searchUsersOptions.conversationExcluded is ConversationMemberExcludedOptions.ConversationExcluded) {
@@ -114,7 +98,7 @@ internal class UserSearchApiWrapperImpl(
             // care only about isConversationMember value, since it is going to be
             // !(isConversationMember || 0) making it a operation based only on negated isConversationMember value
             // since !(0 || 0) = 1 , !(1 || 0) = 0
-            val isSelfUser: Boolean = if (searchUsersOptions.selfUserIncluded) false else selfUser.id == domainId
+            val isSelfUser: Boolean = if (searchUsersOptions.selfUserIncluded) false else selfUserId == domainId
 
             // negate it because that is exactly what we do not want to have in filter results
             !(isConversationMember || isSelfUser)
@@ -125,21 +109,5 @@ internal class UserSearchApiWrapperImpl(
             found = filteredContactResponse.size,
             returned = filteredContactResponse.size
         )
-    }
-
-    // TODO: code duplication here for getting self user, the same is done inside
-    // UserRepository and SearchUserReopsitory what would be best ?
-    // creating SelfUserDao managing the UserEntity corresponding to SelfUser ?
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private suspend fun getSelfUser(): SelfUser {
-        return metadataDAO.valueByKeyFlow(UserDataSource.SELF_USER_ID_KEY)
-            .filterNotNull()
-            .flatMapMerge { encodedValue ->
-                val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
-
-                userDAO.observeUserDetailsByQualifiedID(selfUserID)
-                    .filterNotNull()
-                    .map(userMapper::fromUserDetailsEntityToSelfUser)
-            }.firstOrNull() ?: throw IllegalStateException()
     }
 }

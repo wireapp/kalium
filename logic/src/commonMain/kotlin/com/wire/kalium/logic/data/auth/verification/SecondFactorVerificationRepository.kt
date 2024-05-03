@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -77,14 +77,14 @@ internal class SecondFactorVerificationRepositoryImpl(
     }
 
     override fun storeVerificationCode(email: String, verificationCode: String) {
-        verificationCodeStorage[email] = verificationCode
+        verificationCodeStorage[email.lowercase()] = verificationCode
     }
 
     override fun getStoredVerificationCode(email: String): String? {
-        return verificationCodeStorage[email]
+        return verificationCodeStorage[email.lowercase()]
     }
 
     override suspend fun clearStoredVerificationCode(email: String) {
-        verificationCodeStorage.remove(email)
+        verificationCodeStorage.remove(email.lowercase())
     }
 }

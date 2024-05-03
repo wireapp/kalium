@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,17 +24,14 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.logic.data.message.Message
-import com.wire.kalium.logic.data.message.Message.DownloadStatus.SAVED_EXTERNALLY
-import com.wire.kalium.logic.data.message.Message.DownloadStatus.SAVED_INTERNALLY
-import com.wire.kalium.logic.data.message.Message.UploadStatus.NOT_UPLOADED
-import com.wire.kalium.logic.data.message.Message.UploadStatus.UPLOADED
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isNotFoundLabel
@@ -62,12 +59,11 @@ interface GetMessageAssetUseCase {
     ): Deferred<MessageAssetResult>
 }
 
-// TODO: refactor this use case or find a way to centralize [Message.DownloadStatus] management
 internal class GetMessageAssetUseCaseImpl(
-    private val assetDataSource: AssetRepository,
+    private val assetRepository: AssetRepository,
     private val messageRepository: MessageRepository,
     private val userRepository: UserRepository,
-    private val updateAssetMessageDownloadStatus: UpdateAssetMessageDownloadStatusUseCase,
+    private val updateAssetMessageTransferStatus: UpdateAssetMessageTransferStatusUseCase,
     private val scope: CoroutineScope,
     private val dispatcher: KaliumDispatcher
 ) : GetMessageAssetUseCase {
@@ -83,12 +79,7 @@ internal class GetMessageAssetUseCaseImpl(
         }, { message ->
             when (val content = message.content) {
                 is MessageContent.Asset -> {
-                    val assetDownloadStatus = content.value.downloadStatus
-                    val assetUploadStatus = content.value.uploadStatus
-                    val wasDownloaded: Boolean = assetDownloadStatus == SAVED_INTERNALLY || assetDownloadStatus == SAVED_EXTERNALLY
-                    // assets uploaded by other clients have upload status NOT_UPLOADED
-                    val alreadyUploaded: Boolean = (assetUploadStatus == NOT_UPLOADED && content.value.shouldBeDisplayed)
-                            || assetUploadStatus == UPLOADED
+                    // TODO isIncompleteImage should be used here for incomplete messages
                     val assetMetadata = with(content.value.remoteData) {
                         DownloadAssetMessageMetadata(
                             content.value.name ?: "",
@@ -101,52 +92,60 @@ internal class GetMessageAssetUseCaseImpl(
                         )
                     }
 
-                    // Start progress bar for generic assets
-                    if (!wasDownloaded && alreadyUploaded)
-                        updateAssetMessageDownloadStatus(Message.DownloadStatus.DOWNLOAD_IN_PROGRESS, conversationId, messageId)
-
                     scope.async(dispatcher.io) {
-                        assetDataSource.fetchPrivateDecodedAsset(
-                            assetId = assetMetadata.assetKey,
-                            assetDomain = assetMetadata.assetKeyDomain,
-                            assetName = assetMetadata.assetName,
-                            mimeType = content.value.mimeType,
-                            assetToken = assetMetadata.assetToken,
-                            encryptionKey = assetMetadata.encryptionKey,
-                            assetSHA256Key = assetMetadata.assetSHA256Key,
-                            downloadIfNeeded = alreadyUploaded
-                        ).fold({
-                            kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey.obfuscateId()}")
-                            // This should be called if there is an issue while downloading the asset
-                            if (it is NetworkFailure.ServerMiscommunication &&
-                                it.kaliumException is KaliumException.InvalidRequestError
-                                && it.kaliumException.isNotFoundLabel()
-                            ) {
-                                updateAssetMessageDownloadStatus(Message.DownloadStatus.NOT_FOUND, conversationId, messageId)
-                            } else {
-                                updateAssetMessageDownloadStatus(Message.DownloadStatus.FAILED_DOWNLOAD, conversationId, messageId)
-                            }
+                        // get the asset and check if exists
+                        val decodedAsset = assetRepository.fetchDecodedAsset(assetMetadata.assetKey).getOrNull()
+                        val assetExist = decodedAsset != null
 
-                            when {
-                                it.isInvalidRequestError -> {
-                                    assetMetadata.assetKeyDomain?.let { domain ->
-                                        userRepository.removeUserBrokenAsset(QualifiedID(assetMetadata.assetKey, domain))
-                                    }
-                                    MessageAssetResult.Failure(it, false)
+                        // Start progress bar for generic assets
+                        if (!assetExist) {
+                            updateAssetMessageTransferStatus(
+                                messageId = messageId,
+                                conversationId = conversationId,
+                                transferStatus = AssetTransferStatus.DOWNLOAD_IN_PROGRESS,
+                            )
+
+                            assetRepository.fetchPrivateDecodedAsset(
+                                assetId = assetMetadata.assetKey,
+                                assetDomain = assetMetadata.assetKeyDomain,
+                                assetName = assetMetadata.assetName,
+                                mimeType = content.value.mimeType,
+                                assetToken = assetMetadata.assetToken,
+                                encryptionKey = assetMetadata.encryptionKey,
+                                assetSHA256Key = assetMetadata.assetSHA256Key,
+                                downloadIfNeeded = true
+                            ).fold({
+                                kaliumLogger.e("There was an error downloading asset with id => ${assetMetadata.assetKey.obfuscateId()}")
+                                // This should be called if there is an issue while downloading the asset
+                                if (it is NetworkFailure.ServerMiscommunication &&
+                                    it.kaliumException is KaliumException.InvalidRequestError
+                                    && it.kaliumException.isNotFoundLabel()
+                                ) {
+                                    updateAssetMessageTransferStatus(AssetTransferStatus.NOT_FOUND, conversationId, messageId)
+                                } else {
+                                    updateAssetMessageTransferStatus(AssetTransferStatus.FAILED_DOWNLOAD, conversationId, messageId)
                                 }
 
-                                it is NetworkFailure.FederatedBackendFailure -> MessageAssetResult.Failure(it, false)
-                                it is NetworkFailure.NoNetworkConnection -> MessageAssetResult.Failure(it, true)
-                                else -> MessageAssetResult.Failure(it, true)
-                            }
-                        }, { decodedAssetPath ->
-                            // Only update the asset download status if it wasn't downloaded before, aka the asset was indeed downloaded
-                            // while running this specific use case. Otherwise, recursive loop as described above kicks in.
-                            if (!wasDownloaded)
-                                updateAssetMessageDownloadStatus(Message.DownloadStatus.SAVED_INTERNALLY, conversationId, messageId)
+                                when {
+                                    it.isInvalidRequestError -> {
+                                        assetMetadata.assetKeyDomain?.let { domain ->
+                                            userRepository.removeUserBrokenAsset(QualifiedID(assetMetadata.assetKey, domain))
+                                        }
+                                        MessageAssetResult.Failure(it, false)
+                                    }
 
-                            MessageAssetResult.Success(decodedAssetPath, assetMetadata.assetSize, assetMetadata.assetName)
-                        })
+                                    it is NetworkFailure.FederatedBackendFailure -> MessageAssetResult.Failure(it, false)
+                                    it is NetworkFailure.NoNetworkConnection -> MessageAssetResult.Failure(it, true)
+                                    else -> MessageAssetResult.Failure(it, true)
+                                }
+                            }, { decodedAssetPath ->
+                                // TODO Kubaz rethink should we store images asset status when they are already downloaded
+                                updateAssetMessageTransferStatus(AssetTransferStatus.SAVED_INTERNALLY, conversationId, messageId)
+                                MessageAssetResult.Success(decodedAssetPath, assetMetadata.assetSize, assetMetadata.assetName)
+                            })
+                        } else {
+                            MessageAssetResult.Success(decodedAsset!!, assetMetadata.assetSize, assetMetadata.assetName)
+                        }
                     }
                 }
                 // This should never happen

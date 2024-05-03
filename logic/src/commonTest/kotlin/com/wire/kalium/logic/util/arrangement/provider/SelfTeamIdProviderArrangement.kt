@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,24 +22,23 @@ import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
-
 
 internal interface SelfTeamIdProviderArrangement {
 
     val selfTeamIdProvider: SelfTeamIdProvider
 
-    fun withTeamId(teamId: Either<StorageFailure, TeamId?>)
+    suspend fun withTeamId(teamId: Either<StorageFailure, TeamId?>)
 }
 internal class SelfTeamIdProviderArrangementImpl : SelfTeamIdProviderArrangement {
 
     @Mock
     override val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
-    override fun withTeamId(teamId: Either<StorageFailure, TeamId?>) {
-        given(selfTeamIdProvider)
-            .suspendFunction(selfTeamIdProvider::invoke)
-            .whenInvoked().then { teamId }
+    override suspend fun withTeamId(teamId: Either<StorageFailure, TeamId?>) {
+        coEvery {
+            selfTeamIdProvider.invoke()
+        }.returns(teamId)
     }
 }

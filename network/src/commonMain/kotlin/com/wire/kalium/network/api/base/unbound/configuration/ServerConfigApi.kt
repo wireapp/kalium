@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.base.unbound.configuration
 
+import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.tools.KtxSerializer
@@ -27,22 +28,28 @@ import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.setUrl
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import io.ktor.client.HttpClient
 import io.ktor.client.request.accept
 import io.ktor.client.request.get
 import io.ktor.http.ContentType
 import io.ktor.http.Url
 import kotlinx.serialization.SerializationException
-import kotlinx.serialization.decodeFromString
 
 interface ServerConfigApi {
     suspend fun fetchServerConfig(serverConfigUrl: String): NetworkResponse<ServerConfigDTO.Links>
 }
 
 class ServerConfigApiImpl internal constructor(
-    private val unboundNetworkClient: UnboundNetworkClient
+    private val httpClient: HttpClient
 ) : ServerConfigApi {
 
-    private val httpClient get() = unboundNetworkClient.httpClient
+    internal constructor(unauthenticatedNetworkClient: UnauthenticatedNetworkClient) : this(
+        httpClient = unauthenticatedNetworkClient.httpClient
+    )
+
+    internal constructor(unboundNetworkClient: UnboundNetworkClient) : this(
+        httpClient = unboundNetworkClient.httpClient
+    )
 
     /**
      * Fetch remote configuration

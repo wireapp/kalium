@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,13 +17,12 @@
  */
 package com.wire.kalium.monkeys.storage
 
+import com.wire.kalium.monkeys.MonkeyApplication
 import com.wire.kalium.monkeys.logger
 import com.wire.kalium.monkeys.model.BackendConfig
 import com.wire.kalium.monkeys.model.Event
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.currentCoroutineContext
-import kotlinx.coroutines.isActive
 
 abstract class EventStorage {
     protected abstract suspend fun store(event: Event)
@@ -32,7 +31,7 @@ abstract class EventStorage {
     abstract suspend fun storeBackends(backends: List<BackendConfig>)
     abstract suspend fun releaseResources()
     suspend fun processEvents(channel: ReceiveChannel<Event>) {
-        while (currentCoroutineContext().isActive) {
+        while (MonkeyApplication.isActive.get()) {
             this.store(channel.receive())
         }
     }

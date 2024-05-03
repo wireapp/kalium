@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,8 +39,8 @@ data class AcmeChallenge(
 
 data class NewAcmeAuthz(
     var identifier: String,
-    var wireOidcChallenge: AcmeChallenge?,
-    var wireDpopChallenge: AcmeChallenge?
+    var keyAuth: String?,
+    var challenge: AcmeChallenge
 )
 
 @Suppress("TooManyFunctions")

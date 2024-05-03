@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,10 +32,10 @@ class SendMessageEventAction(private val monkeySender: MonkeyId, private val eve
     SendMessageAction(ActionType.SendMessage(
         UserCount.single(), 1u, 1u
     ), {}) {
-    override suspend fun sendersTargets(monkeyPool: MonkeyPool):
+    override suspend fun sendersTargets(monkeyPool: MonkeyPool, conversationPool: ConversationPool):
             List<Either<List<Pair<Monkey, Monkey>>, List<Pair<MonkeyConversation, List<Monkey>>>>> {
         val sender = monkeyPool.getFromTeam(this.monkeySender.team, this.monkeySender.index)
-        val receiver = ConversationPool.getFromOldId(this.eventConfig.conversationId)
+        val receiver = conversationPool.getFromOldId(this.eventConfig.conversationId)
         return listOf(Either.Right(listOf(Pair(receiver, listOf(sender)))))
     }
 }

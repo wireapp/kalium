@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,10 +23,12 @@ import com.wire.kalium.logic.sync.receiver.handler.CodeUpdateHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
 import com.wire.kalium.logic.util.arrangement.dao.ConversionDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.ConversionDAOArrangementImpl
+import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.persistence.dao.ConversationIDEntity
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -45,29 +47,65 @@ class CodeUpdateHandlerTest {
             code = "code",
             key = "key",
             id = "event-id",
-            transient = false,
-            live = false
         )
 
         handler.handle(event)
 
-        verify(arrangement.conversionDAO)
-            .suspendFunction(arrangement.conversionDAO::updateGuestRoomLink)
-            .with(
-                eq(ConversationIDEntity(
-                    event.conversationId.value,
-                    event.conversationId.domain
-                )),
-                eq(event.uri),
+        coVerify {
+            arrangement.conversionDAO.updateGuestRoomLink(
+                eq(
+                    ConversationIDEntity(
+                        event.conversationId.value,
+                        event.conversationId.domain
+                    )
+                ),
+                eq(event.uri!!),
                 eq(event.isPasswordProtected)
-            ).wasInvoked(exactly = once)
+            )
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenUriIsNull_whenUpdating_thenGenerateCodeFromKeyAndCode() = runTest {
+        val (arrangement, handler) = Arrangement().arrange {
+            withUpdatedGuestRoomLink()
+        }
+
+        val event = Event.Conversation.CodeUpdated(
+            conversationId = ConversationId("conversationId", "domain"),
+            uri = null,
+            isPasswordProtected = true,
+            code = "code",
+            key = "key",
+            id = "event-id",
+        )
+
+        val expected = "${arrangement.serverConfigLinks.accounts}?key=${event.key}&code=${event.code}"
+
+        handler.handle(event)
+
+        coVerify {
+            arrangement.conversionDAO.updateGuestRoomLink(
+                eq(
+                    ConversationIDEntity(
+                        event.conversationId.value,
+                        event.conversationId.domain
+                    )
+                ),
+                eq(expected),
+                eq(event.isPasswordProtected)
+            )
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement : ConversionDAOArrangement by ConversionDAOArrangementImpl() {
 
-        private val handler: CodeUpdatedHandler = CodeUpdateHandlerImpl(conversionDAO)
+        val serverConfigLinks = newServerConfig(1).links
 
-        fun arrange(block: Arrangement.() -> Unit) = apply(block).run {
+        private val handler: CodeUpdatedHandler = CodeUpdateHandlerImpl(conversionDAO, serverConfigLinks)
+
+        fun arrange(block: suspend Arrangement.() -> Unit) = run {
+            runBlocking { block() }
             this to handler
         }
     }

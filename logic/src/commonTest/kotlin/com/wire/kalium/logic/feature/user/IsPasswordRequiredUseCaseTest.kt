@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,10 +27,10 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.model.SsoIdEntity
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import okio.IOException
@@ -52,9 +52,9 @@ class IsPasswordRequiredUseCaseTest {
             assertTrue(it)
         }
 
-        verify(arrangement.sessionRepository)
-            .coroutine { arrangement.sessionRepository.ssoId(arrangement.selfUserId) }
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.sessionRepository.ssoId(arrangement.selfUserId)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -67,9 +67,9 @@ class IsPasswordRequiredUseCaseTest {
             assertFalse(it)
         }
 
-        verify(arrangement.sessionRepository)
-            .coroutine { arrangement.sessionRepository.ssoId(arrangement.selfUserId) }
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.sessionRepository.ssoId(arrangement.selfUserId)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -82,9 +82,9 @@ class IsPasswordRequiredUseCaseTest {
             assertTrue(it)
         }
 
-        verify(arrangement.sessionRepository)
-            .coroutine { arrangement.sessionRepository.ssoId(arrangement.selfUserId) }
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.sessionRepository.ssoId(arrangement.selfUserId)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -99,9 +99,9 @@ class IsPasswordRequiredUseCaseTest {
 
         }
 
-        verify(arrangement.sessionRepository)
-            .coroutine { arrangement.sessionRepository.ssoId(arrangement.selfUserId) }
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.sessionRepository.ssoId(arrangement.selfUserId)
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
@@ -113,8 +113,10 @@ class IsPasswordRequiredUseCaseTest {
 
         val isPasswordRequired = IsPasswordRequiredUseCase(selfUserId, sessionRepository)
 
-        fun withSelfSsoId(ssoId: Either<StorageFailure, SsoIdEntity?>) = apply {
-            given(sessionRepository).suspendFunction(sessionRepository::ssoId).whenInvokedWith(any()).then { ssoId }
+        suspend fun withSelfSsoId(ssoId: Either<StorageFailure, SsoIdEntity?>) = apply {
+            coEvery {
+                sessionRepository.ssoId(any())
+            }.returns(ssoId)
         }
 
         fun arrange(): Pair<Arrangement, IsPasswordRequiredUseCase> = this to isPasswordRequired

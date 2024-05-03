@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,8 +23,7 @@ import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
@@ -37,7 +36,7 @@ import kotlin.test.assertIs
 class SSOMetaDataUseCaseTest {
 
     @Mock
-    val ssoLoginRepository = mock(classOf<SSOLoginRepository>())
+    val ssoLoginRepository = mock(SSOLoginRepository::class)
     lateinit var ssoMetaDataUseCase: SSOMetaDataUseCase
 
     @BeforeTest
@@ -49,7 +48,9 @@ class SSOMetaDataUseCaseTest {
     fun givenApiReturnsGenericError_whenRequestingMetaData_thenReturnGenericFailure() =
         runTest {
             val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
-            given(ssoLoginRepository).coroutine { metaData() }.then { Either.Left(expected) }
+            coEvery {
+                ssoLoginRepository.metaData() 
+            }.returns(Either.Left(expected))
             val result = ssoMetaDataUseCase()
             assertIs<SSOMetaDataResult.Failure.Generic>(result)
             assertEquals(expected, result.genericFailure)
@@ -58,7 +59,9 @@ class SSOMetaDataUseCaseTest {
     @Test
     fun givenApiReturnsSuccess_whenRequestingMetaData_thenReturnSuccess() =
         runTest {
-            given(ssoLoginRepository).coroutine { metaData() }.then { Either.Right(TEST_RESPONSE) }
+            coEvery {
+                ssoLoginRepository.metaData() 
+            }.returns(Either.Right(TEST_RESPONSE))
             val result = ssoMetaDataUseCase()
             assertEquals(result, SSOMetaDataResult.Success(TEST_RESPONSE))
         }

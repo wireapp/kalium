@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,21 +19,21 @@
 package com.wire.kalium.logic.feature.server
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.functional.fold
 
 /**
  * Gets the [ServerConfig.Links] stored locally, using the url as a key.
  */
 class GetServerConfigUseCase internal constructor(
-    private val configRepository: ServerConfigRepository
+    private val customServerConfigRepository: CustomServerConfigRepository
 ) {
     /**
      * @param url the url to use as a key to get the [ServerConfig.Links]
      * @return the [Result] with the [ServerConfig.Links] if successful, otherwise a mapped failure.
      */
-    suspend operator fun invoke(url: String): GetServerConfigResult = configRepository.fetchRemoteConfig(url).fold({
+    suspend operator fun invoke(url: String): GetServerConfigResult = customServerConfigRepository.fetchRemoteConfig(url).fold({
         GetServerConfigResult.Failure.Generic(it)
     }, { GetServerConfigResult.Success(it) })
 }

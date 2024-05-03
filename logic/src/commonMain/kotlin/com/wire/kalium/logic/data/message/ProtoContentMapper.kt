@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@ import com.wire.kalium.protobuf.encodeToByteArray
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.Button
 import com.wire.kalium.protobuf.messages.ButtonAction
+import com.wire.kalium.protobuf.messages.ButtonActionConfirmation
 import com.wire.kalium.protobuf.messages.Calling
 import com.wire.kalium.protobuf.messages.Cleared
 import com.wire.kalium.protobuf.messages.ClientAction
@@ -132,9 +133,27 @@ class ProtoContentMapperImpl(
             is MessageContent.Composite -> packComposite(readableContent, expectsReadConfirmation, legalHoldStatus)
             is MessageContent.ButtonAction -> packButtonAction(readableContent)
 
-            is MessageContent.ButtonActionConfirmation -> TODO()
-            is MessageContent.Location -> TODO("todo, when implementing send location")
+            is MessageContent.ButtonActionConfirmation -> packButtonActionConfirmation(readableContent)
+            is MessageContent.Location -> packLocation(readableContent, expectsReadConfirmation, legalHoldStatus)
         }
+    }
+
+    private fun packLocation(
+        readableContent: MessageContent.Location,
+        expectsReadConfirmation: Boolean,
+        legalHoldStatus: Conversation.LegalHoldStatus
+    ): GenericMessage.Content.Location {
+        val protoLegalHoldStatus = toProtoLegalHoldStatus(legalHoldStatus)
+        return GenericMessage.Content.Location(
+            Location(
+                latitude = readableContent.latitude,
+                longitude = readableContent.longitude,
+                name = readableContent.name,
+                zoom = readableContent.zoom,
+                expectsReadConfirmation = expectsReadConfirmation,
+                legalHoldStatus = protoLegalHoldStatus
+            )
+        )
     }
 
     private fun packButtonAction(
@@ -142,6 +161,16 @@ class ProtoContentMapperImpl(
     ): GenericMessage.Content.ButtonAction =
         GenericMessage.Content.ButtonAction(
             ButtonAction(
+                buttonId = readableContent.buttonId,
+                referenceMessageId = readableContent.referencedMessageId
+            )
+        )
+
+    private fun packButtonActionConfirmation(
+        readableContent: MessageContent.ButtonActionConfirmation
+    ): GenericMessage.Content.ButtonActionConfirmation =
+        GenericMessage.Content.ButtonActionConfirmation(
+            ButtonActionConfirmation(
                 buttonId = readableContent.buttonId,
                 referenceMessageId = readableContent.referencedMessageId
             )
@@ -203,7 +232,10 @@ class ProtoContentMapperImpl(
             }
 
             is MessageContent.Location -> {
-                TODO("todo, when implementing send location")
+                val location = packLocation(readableContent, expectsReadConfirmation, legalHoldStatus)
+                Ephemeral.Content.Location(
+                    location.value
+                )
             }
 
             is MessageContent.FailedDecryption,

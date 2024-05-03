@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,24 +21,23 @@ import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 
 internal interface SelfConversationIdProviderArrangement {
     @Mock
     val selfConversationIdProvider: SelfConversationIdProvider
 
-    fun withSelfConversationIds(conversationIds: List<ConversationId>)
+    suspend fun withSelfConversationIds(conversationIds: List<ConversationId>)
 }
 
 internal open class SelfConversationIdProviderArrangementImpl : SelfConversationIdProviderArrangement {
     @Mock
     override val selfConversationIdProvider: SelfConversationIdProvider = mock(SelfConversationIdProvider::class)
 
-    override fun withSelfConversationIds(conversationIds: List<ConversationId>) {
-        given(selfConversationIdProvider)
-            .suspendFunction(selfConversationIdProvider::invoke)
-            .whenInvoked()
-            .then { Either.Right(conversationIds) }
+    override suspend fun withSelfConversationIds(conversationIds: List<ConversationId>) {
+        coEvery {
+            selfConversationIdProvider.invoke()
+        }.returns(Either.Right(conversationIds))
     }
 }

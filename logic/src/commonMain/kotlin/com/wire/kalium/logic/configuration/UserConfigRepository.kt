@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,6 +44,7 @@ import com.wire.kalium.persistence.config.IsFileSharingEnabledEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.config.UserConfigStorage
 import com.wire.kalium.persistence.dao.unread.UserConfigDAO
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
@@ -106,7 +107,7 @@ interface UserConfigRepository {
 
     suspend fun markTeamSettingsSelfDeletingMessagesStatusAsNotified(): Either<StorageFailure, Unit>
     suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<Either<StorageFailure, TeamSettingsSelfDeletionStatus>>
-    fun observeE2EINotificationTime(): Flow<Either<StorageFailure, Instant?>>
+    fun observeE2EINotificationTime(): Flow<Either<StorageFailure, Instant>>
     fun setE2EINotificationTime(instant: Instant): Either<StorageFailure, Unit>
     suspend fun getMigrationConfiguration(): Either<StorageFailure, MLSMigrationModel>
     suspend fun setMigrationConfiguration(configuration: MLSMigrationModel): Either<StorageFailure, Unit>
@@ -120,6 +121,16 @@ interface UserConfigRepository {
     suspend fun deleteLegalHoldRequest(): Either<StorageFailure, Unit>
     suspend fun setLegalHoldChangeNotified(isNotified: Boolean): Either<StorageFailure, Unit>
     suspend fun observeLegalHoldChangeNotified(): Flow<Either<StorageFailure, Boolean>>
+    suspend fun setShouldUpdateClientLegalHoldCapability(shouldUpdate: Boolean): Either<StorageFailure, Unit>
+    suspend fun shouldUpdateClientLegalHoldCapability(): Boolean
+    suspend fun setCRLExpirationTime(url: String, timestamp: ULong)
+    suspend fun getCRLExpirationTime(url: String): ULong?
+    suspend fun observeCertificateExpirationTime(url: String): Flow<Either<StorageFailure, ULong>>
+    suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean)
+    suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Either<StorageFailure, Boolean>>
+    suspend fun clearE2EISettings()
+    fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
+    fun getShouldFetchE2EITrustAnchor(): Boolean
 }
 
 @Suppress("TooManyFunctions")
@@ -211,21 +222,26 @@ internal class UserConfigDataSource internal constructor(
     override fun setE2EISettings(setting: E2EISettings): Either<StorageFailure, Unit> =
         wrapStorageRequest { userConfigStorage.setE2EISettings(setting.toEntity()) }
 
-    override fun observeE2EINotificationTime(): Flow<Either<StorageFailure, Instant?>> =
+    override fun observeE2EINotificationTime(): Flow<Either<StorageFailure, Instant>> =
         userConfigStorage.e2EINotificationTimeFlow()
             .wrapStorageRequest()
             .mapRight { Instant.fromEpochMilliseconds(it) }
 
     override fun setE2EINotificationTime(instant: Instant): Either<StorageFailure, Unit> =
-        wrapStorageRequest { userConfigStorage.setE2EINotificationTime(instant.toEpochMilliseconds()) }
+        wrapStorageRequest { userConfigStorage.setIfAbsentE2EINotificationTime(instant.toEpochMilliseconds()) }
 
     override fun snoozeE2EINotification(duration: Duration): Either<StorageFailure, Unit> =
         wrapStorageRequest {
-            getE2EINotificationTimeOrNull()?.let { current ->
-                val notifyUserAfterMs = current.plus(duration.inWholeMilliseconds)
-                userConfigStorage.setE2EINotificationTime(notifyUserAfterMs)
-            }
+            val notifyUserAfterMs = DateTimeUtil.currentInstant().toEpochMilliseconds().plus(duration.inWholeMilliseconds)
+            userConfigStorage.updateE2EINotificationTime(notifyUserAfterMs)
         }
+
+    override suspend fun clearE2EISettings() {
+        wrapStorageRequest {
+            userConfigStorage.setE2EISettings(null)
+            userConfigStorage.updateE2EINotificationTime(0)
+        }
+    }
 
     private fun getE2EINotificationTimeOrNull() =
         wrapStorageRequest { userConfigStorage.getE2EINotificationTime() }.getOrNull()
@@ -426,4 +442,33 @@ internal class UserConfigDataSource internal constructor(
 
     override suspend fun observeLegalHoldChangeNotified(): Flow<Either<StorageFailure, Boolean>> =
         userConfigDAO.observeLegalHoldChangeNotified().wrapStorageRequest()
+
+    override suspend fun setShouldUpdateClientLegalHoldCapability(shouldUpdate: Boolean): Either<StorageFailure, Unit> =
+        wrapStorageRequest { userConfigDAO.setShouldUpdateClientLegalHoldCapability(shouldUpdate) }
+
+    override suspend fun shouldUpdateClientLegalHoldCapability(): Boolean =
+        userConfigDAO.shouldUpdateClientLegalHoldCapability()
+
+    override suspend fun setCRLExpirationTime(url: String, timestamp: ULong) {
+        userConfigDAO.setCRLExpirationTime(url, timestamp)
+    }
+
+    override suspend fun getCRLExpirationTime(url: String): ULong? =
+        userConfigDAO.getCRLsPerDomain(url)
+
+    override suspend fun observeCertificateExpirationTime(url: String): Flow<Either<StorageFailure, ULong>> =
+        userConfigDAO.observeCertificateExpirationTime(url).wrapStorageRequest()
+
+    override suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean) {
+        userConfigDAO.setShouldNotifyForRevokedCertificate(shouldNotify)
+    }
+
+    override suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Either<StorageFailure, Boolean>> =
+        userConfigDAO.observeShouldNotifyForRevokedCertificate().wrapStorageRequest()
+
+    override fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean) {
+        userConfigStorage.setShouldFetchE2EITrustAnchors(shouldFetch = shouldFetch)
+    }
+
+    override fun getShouldFetchE2EITrustAnchor(): Boolean = userConfigStorage.getShouldFetchE2EITrustAnchorHasRun()
 }

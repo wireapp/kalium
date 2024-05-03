@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,20 +21,26 @@ package com.wire.kalium.testservice.api.v1
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.mention.MessageMention
+import com.wire.kalium.logic.data.message.receipt.DetailedReceipt
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.testservice.managed.ConversationRepository
 import com.wire.kalium.testservice.managed.InstanceService
 import com.wire.kalium.testservice.models.ClearConversationRequest
 import com.wire.kalium.testservice.models.DeleteMessageRequest
+import com.wire.kalium.testservice.models.GetMessageReceiptsRequest
 import com.wire.kalium.testservice.models.GetMessagesRequest
+import com.wire.kalium.testservice.models.SendButtonActionConfirmationRequest
+import com.wire.kalium.testservice.models.SendButtonActionRequest
 import com.wire.kalium.testservice.models.SendConfirmationReadRequest
 import com.wire.kalium.testservice.models.SendEphemeralConfirmationDeliveredRequest
 import com.wire.kalium.testservice.models.SendFileRequest
 import com.wire.kalium.testservice.models.SendImageRequest
+import com.wire.kalium.testservice.models.SendLocationRequest
 import com.wire.kalium.testservice.models.SendPingRequest
 import com.wire.kalium.testservice.models.SendReactionRequest
 import com.wire.kalium.testservice.models.SendTextRequest
+import com.wire.kalium.testservice.models.SendTypingRequest
 import com.wire.kalium.testservice.models.UpdateTextRequest
 import io.swagger.v3.oas.annotations.Operation
 import kotlinx.coroutines.runBlocking
@@ -125,6 +131,42 @@ class ConversationResources(private val instanceService: InstanceService) {
                 ConversationRepository.getMessages(
                     instance,
                     ConversationId(conversationId, conversationDomain)
+                )
+            }
+        }
+    }
+
+    @POST
+    @Path("/instance/{id}/getMessageReadReceipts")
+    @Operation(summary = "Get all read receipts of a specific message")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun getMessageReadReceipts(@PathParam("id") id: String, @Valid request: GetMessageReceiptsRequest): List<DetailedReceipt> {
+        val instance = instanceService.getInstanceOrThrow(id)
+        with(request) {
+            return runBlocking {
+                ConversationRepository.getMessageReceipts(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    messageId,
+                    ReceiptType.READ
+                )
+            }
+        }
+    }
+
+    @POST
+    @Path("/instance/{id}/getMessageDeliveryReceipts")
+    @Operation(summary = "Get all delivery receipts of a specific message")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun getMessageDeliveryReceipts(@PathParam("id") id: String, @Valid request: GetMessageReceiptsRequest): List<DetailedReceipt> {
+        val instance = instanceService.getInstanceOrThrow(id)
+        with(request) {
+            return runBlocking {
+                ConversationRepository.getMessageReceipts(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    messageId,
+                    ReceiptType.DELIVERED
                 )
             }
         }
@@ -249,16 +291,34 @@ class ConversationResources(private val instanceService: InstanceService) {
                     ConversationId(conversationId, conversationDomain),
                     data,
                     type,
-                    height,
                     width,
+                    height,
                     messageTimer
                 )
             }
         }
     }
 
-    // POST /api/v1/instance/{instanceId}/sendLocation
-    // Send a location to a conversation.
+    @POST
+    @Path("/instance/{id}/sendLocation")
+    @Operation(summary = "Send a location to a conversation")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun sendLocation(@PathParam("id") id: String, @Valid sendLocationRequest: SendLocationRequest): Response {
+        val instance = instanceService.getInstanceOrThrow(id)
+        return with(sendLocationRequest) {
+            runBlocking {
+                ConversationRepository.sendLocation(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    latitude,
+                    longitude,
+                    locationName,
+                    zoom,
+                    messageTimer
+                )
+            }
+        }
+    }
 
     @POST
     @Path("/instance/{id}/sendPing")
@@ -276,11 +336,42 @@ class ConversationResources(private val instanceService: InstanceService) {
         }
     }
 
-    // POST /api/v1/instance/{instanceId}/sendButtonAction
-    // Send a button action to a poll.
+    @POST
+    @Path("/instance/{id}/sendButtonAction")
+    @Operation(summary = "Send a button action to a poll.")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun sendButtonActionConfirmation(@PathParam("id") id: String, @Valid request: SendButtonActionRequest): Response {
+        val instance = instanceService.getInstanceOrThrow(id)
+        return with(request) {
+            runBlocking {
+                ConversationRepository.sendButtonAction(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    referenceMessageId,
+                    buttonId
+                )
+            }
+        }
+    }
 
-    // POST /api/v1/instance/{instanceId}/sendButtonActionConfirmation
-    // Send a confirmation to a button action.
+    @POST
+    @Path("/instance/{id}/sendButtonActionConfirmation")
+    @Operation(summary = "Send a confirmation to a button action.")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun sendButtonActionConfirmation(@PathParam("id") id: String, @Valid request: SendButtonActionConfirmationRequest): Response {
+        val instance = instanceService.getInstanceOrThrow(id)
+        return with(request) {
+            runBlocking {
+                ConversationRepository.sendButtonActionConfirmation(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    referenceMessageId,
+                    buttonId,
+                    userIds.map { UserId(it, conversationDomain) }
+                )
+            }
+        }
+    }
 
     @POST
     @Path("/instance/{id}/sendReaction")
@@ -309,7 +400,7 @@ class ConversationResources(private val instanceService: InstanceService) {
     @Consumes(MediaType.APPLICATION_JSON)
     fun sendText(@PathParam("id") id: String, @Valid sendTextRequest: SendTextRequest): Response {
         val instance = instanceService.getInstanceOrThrow(id)
-        // TODO Implement buttons and link previews here
+        // TODO Implement link previews here
         val quotedMessageId = sendTextRequest.quote?.quotedMessageId
         val mentions = when (sendTextRequest.mentions.size) {
             0 -> emptyList<MessageMention>()
@@ -332,7 +423,8 @@ class ConversationResources(private val instanceService: InstanceService) {
                     text,
                     mentions,
                     messageTimer,
-                    quotedMessageId
+                    quotedMessageId,
+                    buttons
                 )
             }
         }
@@ -372,6 +464,20 @@ class ConversationResources(private val instanceService: InstanceService) {
         }
     }
 
-    // POST /api/v1/instance/{instanceId}/sendTyping
-    // Send a typing indicator to a conversation.
+    @POST
+    @Path("/instance/{id}/sendTyping")
+    @Operation(summary = "Send a typing indicator to a conversation")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun sendTyping(@PathParam("id") id: String, @Valid request: SendTypingRequest): Response {
+        val instance = instanceService.getInstanceOrThrow(id)
+        return with(request) {
+            runBlocking {
+                ConversationRepository.sendTyping(
+                    instance,
+                    ConversationId(conversationId, conversationDomain),
+                    status
+                )
+            }
+        }
+    }
 }

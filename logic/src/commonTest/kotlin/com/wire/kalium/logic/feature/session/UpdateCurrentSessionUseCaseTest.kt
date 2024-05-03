@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,22 +22,18 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.configure
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class UpdateCurrentSessionUseCaseTest {
 
     @Mock
-    val sessionRepository: SessionRepository = configure(mock(classOf<SessionRepository>())) { stubsUnitByDefault = true }
+    val sessionRepository: SessionRepository = mock(SessionRepository::class)
 
     lateinit var updateCurrentSessionUseCase: UpdateCurrentSessionUseCase
 
@@ -49,10 +45,14 @@ class UpdateCurrentSessionUseCaseTest {
     @Test
     fun givenAUserId_whenUpdateCurrentSessionUseCaseIsInvoked_thenUpdateCurrentSessionIsCalled() = runTest {
         val userId = UserId("user_id", "domain.de")
-        given(sessionRepository).coroutine { updateCurrentSession(userId) }.then { Either.Right(Unit) }
+        coEvery {
+            sessionRepository.updateCurrentSession(userId)
+        }.returns(Either.Right(Unit))
 
         updateCurrentSessionUseCase(userId)
 
-        verify(sessionRepository).coroutine { updateCurrentSession(userId) }.wasInvoked(exactly = once)
+        coVerify {
+            sessionRepository.updateCurrentSession(userId)
+        }.wasInvoked(exactly = once)
     }
 }

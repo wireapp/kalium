@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,12 +19,12 @@
 package com.wire.kalium.logic.data.team
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.data.conversation.LegalHoldStatusMapper
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.service.ServiceMapper
+import com.wire.kalium.logic.data.user.LegalHoldStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
@@ -51,14 +51,23 @@ import kotlinx.coroutines.flow.map
 
 interface TeamRepository {
     suspend fun fetchTeamById(teamId: TeamId): Either<CoreFailure, Team>
-    suspend fun fetchMembersByTeamId(teamId: TeamId, userDomain: String): Either<CoreFailure, Unit>
+    suspend fun fetchMembersByTeamId(
+        teamId: TeamId,
+        userDomain: String,
+        fetchedUsersLimit: Int?,
+        pageSize: Int = FETCH_TEAM_MEMBER_PAGE_SIZE
+    ): Either<CoreFailure, Unit>
+
     suspend fun getTeam(teamId: TeamId): Flow<Team?>
     suspend fun deleteConversation(conversationId: ConversationId, teamId: TeamId): Either<CoreFailure, Unit>
-    suspend fun updateMemberRole(teamId: String, userId: String, permissionCode: Int?): Either<CoreFailure, Unit>
-    suspend fun updateTeam(team: Team): Either<CoreFailure, Unit>
+    suspend fun syncTeam(teamId: TeamId): Either<CoreFailure, Team>
     suspend fun syncServices(teamId: TeamId): Either<CoreFailure, Unit>
     suspend fun approveLegalHoldRequest(teamId: TeamId, password: String?): Either<CoreFailure, Unit>
     suspend fun fetchLegalHoldStatus(teamId: TeamId): Either<CoreFailure, LegalHoldStatus>
+
+    private companion object {
+        const val FETCH_TEAM_MEMBER_PAGE_SIZE = 200
+    }
 }
 
 @Suppress("LongParameterList")
@@ -90,17 +99,30 @@ internal class TeamDataSource(
         }
     }
 
-    override suspend fun fetchMembersByTeamId(teamId: TeamId, userDomain: String): Either<CoreFailure, Unit> {
+    override suspend fun fetchMembersByTeamId(
+        teamId: TeamId,
+        userDomain: String,
+        fetchedUsersLimit: Int?,
+        pageSize: Int
+    ): Either<CoreFailure, Unit> {
         var hasMore = true
         var error: CoreFailure? = null
-        while (hasMore && error == null) {
+        var pagesSynced = 0
+        var pagingState: String? = null
+        while (
+            hasMore &&
+            error == null &&
+            fetchedUsersLimit?.let { limit -> pagesSynced * pageSize >= limit } != true
+        ) {
             wrapApiRequest {
                 teamsApi.getTeamMembers(
                     teamId = teamId.value,
-                    limitTo = FETCH_TEAM_MEMBER_PAGE_SIZE
+                    limitTo = pageSize,
+                    pagingState = pagingState
                 )
             }.onSuccess {
                 hasMore = it.hasMore
+                pagingState = it.pagingState
             }.map {
                 it.members.map { teamMember ->
                     val userId = QualifiedIDEntity(teamMember.nonQualifiedUserId, userDomain)
@@ -114,6 +136,7 @@ internal class TeamDataSource(
             }.onFailure {
                 error = it
             }
+            pagesSynced++
         }
         return if (error != null) {
             Either.Left(error!!)
@@ -136,19 +159,15 @@ internal class TeamDataSource(
         }
     }
 
-    override suspend fun updateMemberRole(teamId: String, userId: String, permissionCode: Int?): Either<CoreFailure, Unit> {
-        return wrapStorageRequest {
-            userDAO.upsertTeamMemberUserTypes(
-                mapOf(
-                    QualifiedIDEntity(userId, selfUserId.domain) to userTypeEntityTypeMapper.teamRoleCodeToUserType(permissionCode)
-                )
-            )
-        }
-    }
-
-    override suspend fun updateTeam(team: Team): Either<CoreFailure, Unit> {
-        return wrapStorageRequest {
-            teamDAO.updateTeam(teamMapper.fromModelToEntity(team))
+    override suspend fun syncTeam(teamId: TeamId): Either<CoreFailure, Team> = wrapApiRequest {
+        teamsApi.getTeamInfo(teamId = teamId.value)
+    }.map { teamDTO ->
+        teamMapper.fromDtoToEntity(teamDTO)
+    }.flatMap { teamEntity ->
+        wrapStorageRequest {
+            teamDAO.updateTeam(teamEntity)
+        }.map {
+            teamMapper.fromDaoModelToTeam(teamEntity)
         }
     }
 
@@ -171,8 +190,6 @@ internal class TeamDataSource(
         legalHoldHandler.handleEnable(
             eventMapper.legalHoldEnabled(
                 id = LocalId.generate(),
-                transient = true,
-                live = false,
                 eventContentDTO = EventContentDTO.User.LegalHoldEnabledDTO(id = selfUserId.toString())
             )
         )
@@ -187,8 +204,6 @@ internal class TeamDataSource(
             LegalHoldStatusDTO.ENABLED -> legalHoldHandler.handleEnable(
                 eventMapper.legalHoldEnabled(
                     id = LocalId.generate(),
-                    transient = true,
-                    live = false,
                     eventContentDTO = EventContentDTO.User.LegalHoldEnabledDTO(id = selfUserId.toString())
                 )
             )
@@ -196,8 +211,6 @@ internal class TeamDataSource(
             LegalHoldStatusDTO.DISABLED -> legalHoldHandler.handleDisable(
                 eventMapper.legalHoldDisabled(
                     id = LocalId.generate(),
-                    transient = true,
-                    live = false,
                     eventContentDTO = EventContentDTO.User.LegalHoldDisabledDTO(id = selfUserId.toString())
                 )
             )
@@ -206,8 +219,6 @@ internal class TeamDataSource(
                 legalHoldRequestHandler.handle(
                     eventMapper.legalHoldRequest(
                         id = LocalId.generate(),
-                        transient = true,
-                        live = false,
                         eventContentDTO = EventContentDTO.User.NewLegalHoldRequestDTO(
                             clientId = response.clientId!!,
                             lastPreKey = response.lastPreKey!!,
@@ -220,7 +231,4 @@ internal class TeamDataSource(
         }.map { legalHoldStatusMapper.fromApiModel(response.legalHoldStatusDTO) }
     }
 
-    private companion object {
-        const val FETCH_TEAM_MEMBER_PAGE_SIZE = 200
-    }
 }

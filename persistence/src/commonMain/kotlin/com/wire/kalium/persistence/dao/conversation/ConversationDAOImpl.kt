@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -63,6 +63,19 @@ internal class ConversationDAOImpl internal constructor(
         withContext(coroutineContext) {
             conversationQueries.getMLSGroupIdAndUserIdByClientId(clientId, conversationMapper::toE2EIConversationClient)
                 .executeAsOneOrNull()
+        }
+
+    override suspend fun getMLSGroupIdByUserId(userId: UserIDEntity): String? =
+        withContext(coroutineContext) {
+            conversationQueries.getMLSGroupIdByUserId(userId)
+                .executeAsOneOrNull()
+        }
+
+    override suspend fun getMLSGroupIdByConversationId(conversationId: QualifiedIDEntity): String? =
+        withContext(coroutineContext) {
+            conversationQueries.getMLSGroupIdByConversationId(conversationId)
+                .executeAsOneOrNull()
+                ?.mls_group_id
         }
 
     override suspend fun insertConversation(conversationEntity: ConversationEntity) = withContext(coroutineContext) {
@@ -234,10 +247,10 @@ internal class ConversationDAOImpl internal constructor(
             .map { it?.let { conversationMapper.toModel(it) } }
     }
 
-    override suspend fun getConversationByGroupID(groupID: String): ConversationViewEntity {
+    override suspend fun getConversationByGroupID(groupID: String): ConversationViewEntity? {
         return conversationQueries.selectByGroupId(groupID)
-            .executeAsOne()
-            .let { it.let { conversationMapper.toModel(it) } }
+            .executeAsOneOrNull()
+            ?.let { it.let { conversationMapper.toModel(it) } }
     }
 
     override suspend fun getConversationIdByGroupID(groupID: String) = withContext(coroutineContext) {
@@ -347,10 +360,14 @@ internal class ConversationDAOImpl internal constructor(
 
     override suspend fun updateGuestRoomLink(
         conversationId: QualifiedIDEntity,
-        link: String?,
+        link: String,
         isPasswordProtected: Boolean
     ) = withContext(coroutineContext) {
         conversationQueries.updateGuestRoomLink(link, isPasswordProtected, conversationId)
+    }
+
+    override suspend fun deleteGuestRoomLink(conversationId: QualifiedIDEntity) = withContext(coroutineContext) {
+        conversationQueries.updateGuestRoomLink(null, false, conversationId)
     }
 
     override suspend fun observeGuestRoomLinkByConversationId(conversationId: QualifiedIDEntity): Flow<ConversationGuestLinkEntity?> =
@@ -399,12 +416,19 @@ internal class ConversationDAOImpl internal constructor(
         conversationId: QualifiedIDEntity,
         legalHoldStatus: ConversationEntity.LegalHoldStatus
     ) = withContext(coroutineContext) {
-        conversationQueries.updateLegalHoldStatus(legalHoldStatus, conversationId).executeAsOne() > 0
+        conversationQueries.transactionWithResult {
+            conversationQueries.updateLegalHoldStatus(legalHoldStatus, conversationId)
+            conversationQueries.selectChanges().executeAsOne() > 0
+        }
+
     }
 
     override suspend fun updateLegalHoldStatusChangeNotified(conversationId: QualifiedIDEntity, notified: Boolean) =
         withContext(coroutineContext) {
-            conversationQueries.upsertLegalHoldStatusChangeNotified(conversationId, notified).executeAsOne() > 0
+            conversationQueries.transactionWithResult {
+                conversationQueries.upsertLegalHoldStatusChangeNotified(conversationId, notified)
+                conversationQueries.selectChanges().executeAsOne() > 0
+            }
         }
 
     override suspend fun observeLegalHoldStatus(conversationId: QualifiedIDEntity) =
@@ -418,4 +442,28 @@ internal class ConversationDAOImpl internal constructor(
             .asFlow()
             .mapToOneOrDefault(true)
             .flowOn(coroutineContext)
+
+    override suspend fun getEstablishedSelfMLSGroupId(): String? =
+        withContext(coroutineContext) {
+            conversationQueries
+                .getEstablishedSelfMLSGroupId()
+                .executeAsOneOrNull()
+                ?.mls_group_id
+        }
+
+    override suspend fun selectGroupStatusMembersNamesAndHandles(groupID: String): EpochChangesDataEntity? = withContext(coroutineContext) {
+        conversationQueries.transactionWithResult {
+            val (conversationId, mlsVerificationStatus) = conversationQueries.conversationIDByGroupId(groupID).executeAsOneOrNull()
+                ?: return@transactionWithResult null
+            memberQueries.selectMembersNamesAndHandle(conversationId).executeAsList()
+                .let { members ->
+                    val membersMap = members.associate { it.user to NameAndHandleEntity(it.name, it.handle) }
+                    EpochChangesDataEntity(
+                        conversationId,
+                        mlsVerificationStatus,
+                        membersMap
+                    )
+                }
+        }
+    }
 }

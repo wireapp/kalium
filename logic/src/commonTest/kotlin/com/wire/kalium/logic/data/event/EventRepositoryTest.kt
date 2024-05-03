@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -40,13 +40,12 @@ import com.wire.kalium.persistence.dao.MetadataDAO
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.configure
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -72,7 +71,7 @@ class EventRepositoryTest {
 
         eventRepository.pendingEvents().test {
             awaitItem().shouldSucceed {
-                assertEquals(pendingEvent.id, it.id)
+                assertEquals(pendingEvent.id, it.event.id)
             }
             awaitComplete()
         }
@@ -100,10 +99,9 @@ class EventRepositoryTest {
 
         eventRepository.fetchOldestAvailableEventId()
 
-        verify(arrangement.notificationApi)
-            .suspendFunction(arrangement.notificationApi::oldestNotification)
-            .with(eq(currentClientId.value))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.notificationApi.oldestNotification(eq(currentClientId.value))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -142,10 +140,10 @@ class EventRepositoryTest {
 
     private class Arrangement {
         @Mock
-        val notificationApi: NotificationApi = mock(classOf<NotificationApi>())
+        val notificationApi: NotificationApi = mock(NotificationApi::class)
 
         @Mock
-        val metaDAO = configure(mock(classOf<MetadataDAO>())) { stubsUnitByDefault = true }
+        val metaDAO = mock(MetadataDAO::class)
 
         @Mock
         val clientIdProvider = mock(CurrentClientIdProvider::class)
@@ -153,57 +151,48 @@ class EventRepositoryTest {
         private val eventRepository: EventRepository = EventDataSource(notificationApi, metaDAO, clientIdProvider, TestUser.SELF.id)
 
         init {
-            withCurrentClientIdReturning(TestClient.CLIENT_ID)
+            runBlocking {
+                withCurrentClientIdReturning(TestClient.CLIENT_ID)
+            }
         }
 
-        fun withDeleteMetadataSucceeding() = apply {
-            given(metaDAO)
-                .suspendFunction(metaDAO::deleteValue)
-                .whenInvokedWith(any())
-                .thenReturn(Unit)
+        suspend fun withDeleteMetadataSucceeding() = apply {
+            coEvery {
+                metaDAO.deleteValue(any())
+            }.returns(Unit)
         }
 
         suspend fun withLastStoredEventId(value: String?) = apply {
-            given(metaDAO)
-                .coroutine { metaDAO.valueByKey(LAST_PROCESSED_EVENT_ID_KEY) }
-                .thenReturn(value)
+            coEvery {
+                metaDAO.valueByKey(LAST_PROCESSED_EVENT_ID_KEY)
+            }.returns(value)
         }
 
-        fun withNotificationsByBatch(result: NetworkResponse<NotificationResponse>) = apply {
-            given(notificationApi)
-                .suspendFunction(notificationApi::notificationsByBatch)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(result)
+        suspend fun withNotificationsByBatch(result: NetworkResponse<NotificationResponse>) = apply {
+            coEvery {
+                notificationApi.notificationsByBatch(any(), any(), any())
+            }.returns(result)
         }
 
-        fun withLastNotificationRemote(result: NetworkResponse<EventResponse>) = apply {
-            given(notificationApi)
-                .suspendFunction(notificationApi::mostRecentNotification)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withLastNotificationRemote(result: NetworkResponse<EventResponse>) = apply {
+            coEvery {
+                notificationApi.mostRecentNotification(any())
+            }.returns(result)
         }
 
-        fun withOldestNotificationReturning(result: NetworkResponse<EventResponse>) = apply {
-            given(notificationApi)
-                .suspendFunction(notificationApi::oldestNotification)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withOldestNotificationReturning(result: NetworkResponse<EventResponse>) = apply {
+            coEvery {
+                notificationApi.oldestNotification(any())
+            }.returns(result)
         }
 
-        fun withCurrentClientIdReturning(clientId: ClientId) = apply {
-            given(clientIdProvider)
-                .suspendFunction(clientIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Right(clientId))
+        suspend fun withCurrentClientIdReturning(clientId: ClientId) = apply {
+            coEvery {
+                clientIdProvider.invoke()
+            }.returns(Either.Right(clientId))
         }
 
-        fun withUpdateLastProcessedEventId() = apply {
-            given(metaDAO)
-                .suspendFunction(metaDAO::insertValue)
-                .whenInvokedWith(any(), any())
-        }
-
-        fun arrange(): Pair<Arrangement, EventRepository> {
+        inline fun arrange(): Pair<Arrangement, EventRepository> {
             return this to eventRepository
         }
     }

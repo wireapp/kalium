@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,12 +23,14 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCaseImpl
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -38,29 +40,28 @@ class RefreshUsersWithoutMetadataUseCaseTest {
 
     @Test
     fun givenUsersWithoutMetadata_whenRefreshing_thenShouldRefreshThoseUsersInformation() = runTest {
-        val (arrangement, refreshUsersWithoutMetadata) = Arrangement()
+        val (arrangement, refreshUsersWithoutMetadata) = Arrangement(testKaliumDispatcher)
             .withResponse()
             .arrange()
 
         refreshUsersWithoutMetadata()
 
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::syncUsersWithoutMetadata)
-            .wasInvoked(once)
+        coVerify {
+            arrangement.userRepository.syncUsersWithoutMetadata()
+        }.wasInvoked(once)
     }
 
-    private class Arrangement {
+    private class Arrangement(private var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
         @Mock
-        val userRepository = mock(classOf<UserRepository>())
+        val userRepository = mock(UserRepository::class)
 
-        fun withResponse(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::syncUsersWithoutMetadata)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withResponse(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
+            coEvery {
+                userRepository.syncUsersWithoutMetadata()
+            }.returns(result)
         }
 
         fun arrange(): Pair<Arrangement, RefreshUsersWithoutMetadataUseCase> =
-            this to RefreshUsersWithoutMetadataUseCaseImpl(userRepository)
+            this to RefreshUsersWithoutMetadataUseCaseImpl(userRepository, dispatcher)
     }
 }

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,20 +19,20 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
-import io.mockative.anything
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -48,10 +48,10 @@ class SessionResetSenderTest {
     private val slowSyncRepository: SlowSyncRepository = mock(SlowSyncRepository::class)
 
     @Mock
-    private val provideClientId = mock(classOf<CurrentClientIdProvider>())
+    private val provideClientId = mock(CurrentClientIdProvider::class)
 
     @Mock
-    private val messageSender = mock(classOf<MessageSender>())
+    private val messageSender = mock(MessageSender::class)
 
     private val testDispatchers: KaliumDispatcher = TestKaliumDispatcher
 
@@ -69,26 +69,26 @@ class SessionResetSenderTest {
             testDispatchers
         )
 
-        given(slowSyncRepository)
-            .getter(slowSyncRepository::slowSyncStatus)
-            .whenInvoked()
-            .thenReturn(completeStateFlow)
+        every {
+
+            slowSyncRepository.slowSyncStatus
+
+        }.returns(completeStateFlow)
 
     }
 
     @Test
     fun givenClientIdProvideAFailure_whenSendingSessionResetMessage_thenReturnFailure() = runTest(testDispatchers.io) {
 
-        given(provideClientId)
-            .suspendFunction(provideClientId::invoke)
-            .whenInvoked()
-            .thenReturn(Either.Left(failure))
+        coEvery {
+            provideClientId.invoke()
+        }.returns(Either.Left(failure))
 
         val result = sessionResetSender(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
 
-        verify(provideClientId)
-            .suspendFunction(provideClientId::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            provideClientId.invoke()
+        }.wasInvoked(exactly = once)
 
         assertEquals(Either.Left(failure), result)
 
@@ -97,26 +97,23 @@ class SessionResetSenderTest {
     @Test
     fun givenMessageSenderFailure_whenSendingSessionResetMessage_thenReturnFailure() = runTest(testDispatchers.io) {
 
-        given(provideClientId)
-            .suspendFunction(provideClientId::invoke)
-            .whenInvoked()
-            .thenReturn(Either.Right(TestClient.CLIENT_ID))
+        coEvery {
+            provideClientId.invoke()
+        }.returns(Either.Right(TestClient.CLIENT_ID))
 
-        given(messageSender)
-            .suspendFunction(messageSender::sendMessage)
-            .whenInvokedWith(anything(), anything())
-            .thenReturn(Either.Left(failure))
+        coEvery {
+            messageSender.sendMessage(any(), any())
+        }.returns(Either.Left(failure))
 
         val result = sessionResetSender(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
 
-        verify(provideClientId)
-            .suspendFunction(provideClientId::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            provideClientId.invoke()
+        }.wasInvoked(exactly = once)
 
-        verify(messageSender)
-            .suspendFunction(messageSender::sendMessage)
-            .with(anything(), anything())
-            .wasInvoked(exactly = once)
+        coVerify {
+            messageSender.sendMessage(any(), any())
+        }.wasInvoked(exactly = once)
 
         assertEquals(Either.Left(failure), result)
     }
@@ -124,26 +121,23 @@ class SessionResetSenderTest {
     @Test
     fun givenMessageSenderRanSuccessfully_whenSendingSessionResetMessage_thenReturnSuccess() = runTest(testDispatchers.io) {
 
-        given(provideClientId)
-            .suspendFunction(provideClientId::invoke)
-            .whenInvoked()
-            .thenReturn(Either.Right(TestClient.CLIENT_ID))
+        coEvery {
+            provideClientId.invoke()
+        }.returns(Either.Right(TestClient.CLIENT_ID))
 
-        given(messageSender)
-            .suspendFunction(messageSender::sendMessage)
-            .whenInvokedWith(anything(), anything())
-            .thenReturn(Either.Right(Unit))
+        coEvery {
+            messageSender.sendMessage(any(), any())
+        }.returns(Either.Right(Unit))
 
         val result = sessionResetSender(TestClient.CONVERSATION_ID, TestClient.USER_ID, TestClient.CLIENT_ID)
 
-        verify(provideClientId)
-            .suspendFunction(provideClientId::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            provideClientId.invoke()
+        }.wasInvoked(exactly = once)
 
-        verify(messageSender)
-            .suspendFunction(messageSender::sendMessage)
-            .with(anything(), anything())
-            .wasInvoked(exactly = once)
+        coVerify {
+            messageSender.sendMessage(any(), any())
+        }.wasInvoked(exactly = once)
 
         assertEquals(Either.Right(Unit), result)
     }

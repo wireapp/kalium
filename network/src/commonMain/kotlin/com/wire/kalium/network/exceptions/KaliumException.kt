@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,6 +41,7 @@ import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_EMAIL
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.INVALID_HANDLE
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.KEY_EXISTS
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_AUTH
+import com.wire.kalium.network.exceptions.NetworkErrorLabel.MISSING_LEGALHOLD_CONSENT
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_CLIENT_MISMATCH
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_COMMIT_MISSING_REFERENCES
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.MLS_MISSING_GROUP_INFO
@@ -208,7 +209,11 @@ fun KaliumException.InvalidRequestError.isNotTeamMember(): Boolean {
 }
 
 fun KaliumException.InvalidRequestError.isConversationNotFound(): Boolean {
-    return errorResponse.label == NO_CONVERSATION || errorResponse.label == NO_CONVERSATION_CODE
+    return errorResponse.label == NO_CONVERSATION
+}
+
+fun KaliumException.InvalidRequestError.isConversationHasNoCode(): Boolean {
+    return errorResponse.label == NO_CONVERSATION_CODE
 }
 
 fun KaliumException.InvalidRequestError.isGuestLinkDisabled(): Boolean {
@@ -225,9 +230,10 @@ fun KaliumException.InvalidRequestError.isWrongConversationPassword(): Boolean {
 }
 
 val KaliumException.InvalidRequestError.authenticationCodeFailure: AuthenticationCodeFailure?
-    get() = AuthenticationCodeFailure.values().firstOrNull {
+    get() = AuthenticationCodeFailure.entries.firstOrNull {
         errorResponse.label == it.responseLabel
     }
 
 fun KaliumException.FederationError.isFederationDenied() = errorResponse.label == FEDERATION_DENIED
 fun KaliumException.FederationError.isFederationNotEnabled() = errorResponse.label == FEDERATION_NOT_ENABLED
+fun KaliumException.InvalidRequestError.isMissingLegalHoldConsent(): Boolean = errorResponse.label == MISSING_LEGALHOLD_CONSENT

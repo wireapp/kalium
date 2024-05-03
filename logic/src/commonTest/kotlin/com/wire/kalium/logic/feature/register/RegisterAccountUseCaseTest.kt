@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.register
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.register.RegisterAccountRepository
 import com.wire.kalium.logic.data.user.ConnectionState
@@ -27,28 +28,25 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.auth.AccountTokens
+import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class RegisterAccountUseCaseTest {
     @Mock
-    private val registerAccountRepository = mock(classOf<RegisterAccountRepository>())
+    private val registerAccountRepository = mock(RegisterAccountRepository::class)
 
     private val serverConfig = TEST_SERVER_CONFIG
     private val proxyCredentials = PROXY_CREDENTIALS
@@ -68,9 +66,15 @@ class RegisterAccountUseCaseTest {
         val userServerConfig = TEST_SERVER_CONFIG
         val expected = Pair(ssoId, authTokens)
 
-        given(registerAccountRepository).coroutine {
-            registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, param.cookieLabel)
-        }.then { Either.Right(Pair(ssoId, authTokens)) }
+        coEvery {
+            registerAccountRepository.registerPersonalAccountWithEmail(
+                email = param.email,
+                code = param.emailActivationCode,
+                name = param.name,
+                password = param.password,
+                cookieLabel = param.cookieLabel
+            )
+        }.returns(Either.Right(Pair(ssoId, authTokens)))
 
         val actual = registerAccountUseCase(param)
 
@@ -79,8 +83,14 @@ class RegisterAccountUseCaseTest {
         assertEquals(expected.second, actual.authData)
         assertEquals(userServerConfig.id, actual.serverConfigId)
 
-        verify(registerAccountRepository).coroutine {
-            registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, param.cookieLabel)
+        coVerify {
+            registerAccountRepository.registerPersonalAccountWithEmail(
+                email = param.email,
+                code = param.emailActivationCode,
+                name = param.name,
+                password = param.password,
+                cookieLabel = param.cookieLabel
+            )
         }.wasInvoked(exactly = once)
     }
 
@@ -92,11 +102,17 @@ class RegisterAccountUseCaseTest {
         val userServerConfig = TEST_SERVER_CONFIG
         val expected = Pair(ssoId, authTokens)
 
-        given(registerAccountRepository).coroutine {
-            registerTeamWithEmail(
-                param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon, param.cookieLabel
+        coEvery {
+            registerAccountRepository.registerTeamWithEmail(
+                email = param.email,
+                code = param.emailActivationCode,
+                name = param.name,
+                password = param.password,
+                teamName = param.teamName,
+                teamIcon = param.teamIcon,
+                cookieLabel = param.cookieLabel
             )
-        }.then { Either.Right(Pair(ssoId, authTokens)) }
+        }.returns(Either.Right(Pair(ssoId, authTokens)))
 
         val actual = registerAccountUseCase(param)
 
@@ -105,9 +121,15 @@ class RegisterAccountUseCaseTest {
         assertEquals(expected.second, actual.authData)
         assertEquals(userServerConfig.id, actual.serverConfigId)
 
-        verify(registerAccountRepository).coroutine {
-            registerTeamWithEmail(
-                param.email, param.emailActivationCode, param.name, param.password, param.teamName, param.teamIcon, param.cookieLabel
+        coVerify {
+            registerAccountRepository.registerTeamWithEmail(
+                email = param.email,
+                code = param.emailActivationCode,
+                name = param.name,
+                password = param.password,
+                teamName = param.teamName,
+                teamIcon = param.teamIcon,
+                cookieLabel = param.cookieLabel
             )
         }.wasInvoked(exactly = once)
     }
@@ -117,9 +139,15 @@ class RegisterAccountUseCaseTest {
         val param = TEST_PRIVATE_ACCOUNT_PARAM
         val expected = NetworkFailure.ServerMiscommunication(TestNetworkException.generic)
 
-        given(registerAccountRepository).coroutine {
-            registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, param.cookieLabel)
-        }.then { Either.Left(expected) }
+        coEvery {
+            registerAccountRepository.registerPersonalAccountWithEmail(
+                email = param.email,
+                code = param.emailActivationCode,
+                name = param.name,
+                password = param.password,
+                cookieLabel = param.cookieLabel
+            )
+        }.returns(Either.Left(expected))
 
         val actual = registerAccountUseCase(param)
 
@@ -127,8 +155,8 @@ class RegisterAccountUseCaseTest {
         assertIs<NetworkFailure.ServerMiscommunication>(actual.failure)
         assertEquals(expected.kaliumException, (actual.failure as NetworkFailure.ServerMiscommunication).kaliumException)
 
-        verify(registerAccountRepository).coroutine {
-            registerPersonalAccountWithEmail(
+        coVerify {
+            registerAccountRepository.registerPersonalAccountWithEmail(
                 param.email,
                 param.emailActivationCode,
                 param.name,
@@ -166,17 +194,29 @@ class RegisterAccountUseCaseTest {
         val param = TEST_PRIVATE_ACCOUNT_PARAM
         val expected = NetworkFailure.ServerMiscommunication(kaliumException)
 
-        given(registerAccountRepository).coroutine {
-            registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, param.cookieLabel)
-        }.then { Either.Left(expected) }
+        coEvery {
+            registerAccountRepository.registerPersonalAccountWithEmail(
+                email = param.email,
+                code = param.emailActivationCode,
+                name = param.name,
+                password = param.password,
+                cookieLabel = param.cookieLabel
+            )
+        }.returns(Either.Left(expected))
 
         val actual = registerAccountUseCase(param)
 
         assertIs<RegisterResult.Failure>(actual)
         assertEquals(error, actual)
 
-        verify(registerAccountRepository).coroutine {
-            registerPersonalAccountWithEmail(param.email, param.emailActivationCode, param.name, param.password, param.cookieLabel)
+        coVerify {
+            registerAccountRepository.registerPersonalAccountWithEmail(
+                email = param.email,
+                code = param.emailActivationCode,
+                name = param.name,
+                password = param.password,
+                cookieLabel = param.cookieLabel
+            )
         }.wasInvoked(exactly = once)
     }
 
@@ -215,7 +255,8 @@ class RegisterAccountUseCaseTest {
             previewPicture = null,
             completePicture = null,
             availabilityStatus = UserAvailabilityStatus.NONE,
-            supportedProtocols = null
+            supportedProtocols = null,
+            userType = UserType.INTERNAL,
         )
         val TEST_AUTH_TOKENS = AccountTokens(
             accessToken = "access_token",

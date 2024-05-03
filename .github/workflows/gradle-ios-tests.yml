@@ -23,14 +23,14 @@ jobs:
           fetch-depth: 0
 
       - name: Set up JDK
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 #          cache: gradle # Cache disabled as we use Gradle Setup below
 
       - name: Set up Python 3.11
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: '3.11'
 
@@ -55,14 +55,14 @@ jobs:
 
       - name: Archive Test Reports
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
             name: test-reports
             path: ./**/build/reports/tests/**
 
       - name: Archive Test Results
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
             name: test-results
             path: |
@@ -91,7 +91,7 @@ jobs:
 
     steps:
       - name: Download tests results
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         continue-on-error: true
         with:
             name: test-results

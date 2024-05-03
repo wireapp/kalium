@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,12 +21,15 @@ package com.wire.kalium.logic.feature.call
 import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.EpochInfo
+import com.wire.kalium.logic.data.call.Participant
+import com.wire.kalium.logic.data.call.TestVideoType
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.kaliumLogger
 
+@Suppress("TooManyFunctions")
 class CallManagerImpl : CallManager {
     override suspend fun onCallingMessageReceived(message: Message.Signaling, content: MessageContent.Calling) {
         kaliumLogger.w("Ignoring call message since calling is not supported")
@@ -56,7 +59,7 @@ class CallManagerImpl : CallManager {
         TODO("Not yet implemented")
     }
 
-    override suspend fun updateVideoState(conversationId: ConversationId, videoState: VideoState) {
+    override suspend fun setVideoSendState(conversationId: ConversationId, videoState: VideoState) {
         TODO("Not yet implemented")
     }
 
@@ -73,6 +76,22 @@ class CallManagerImpl : CallManager {
     }
 
     override suspend fun reportProcessNotifications(isStarted: Boolean) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun setTestVideoType(testVideoType: TestVideoType) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun setTestPreviewActive(shouldEnable: Boolean) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun setTestRemoteVideoStates(conversationId: ConversationId, participants: List<Participant>) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun cancelJobs() {
         TODO("Not yet implemented")
     }
 }

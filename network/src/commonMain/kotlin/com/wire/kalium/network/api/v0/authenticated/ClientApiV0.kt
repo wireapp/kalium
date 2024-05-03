@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,8 @@ import com.wire.kalium.network.api.base.authenticated.client.ListClientsOfUsersR
 import com.wire.kalium.network.api.base.authenticated.client.PasswordRequest
 import com.wire.kalium.network.api.base.authenticated.client.RegisterClientRequest
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
-import com.wire.kalium.network.api.base.authenticated.client.UpdateClientRequest
+import com.wire.kalium.network.api.base.authenticated.client.UpdateClientCapabilitiesRequest
+import com.wire.kalium.network.api.base.authenticated.client.UpdateClientMlsPublicKeysRequest
 import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.UserId
@@ -80,18 +81,31 @@ internal open class ClientApiV0 internal constructor(
     override suspend fun fetchClientInfo(clientID: String): NetworkResponse<ClientDTO> =
         wrapKaliumResponse { httpClient.get("$PATH_CLIENTS/$clientID") }
 
-    override suspend fun updateClient(updateClientRequest: UpdateClientRequest, clientID: String): NetworkResponse<Unit> =
+    override suspend fun updateClientMlsPublicKeys(
+        updateClientMlsPublicKeysRequest: UpdateClientMlsPublicKeysRequest,
+        clientID: String
+    ): NetworkResponse<Unit> =
         wrapKaliumResponse {
             httpClient.put("$PATH_CLIENTS/$clientID") {
-                setBody(updateClientRequest)
+                setBody(updateClientMlsPublicKeysRequest)
             }
         }
 
-    override suspend fun registerToken(body: PushTokenBody): NetworkResponse<Unit> = wrapKaliumResponse {
-        httpClient.post(PUSH_TOKEN) {
-            setBody(body)
+    override suspend fun updateClientCapabilities(
+        updateClientCapabilitiesRequest: UpdateClientCapabilitiesRequest,
+        clientID: String
+    ): NetworkResponse<Unit> = wrapKaliumResponse {
+        httpClient.put("$PATH_CLIENTS/$clientID") {
+            setBody(updateClientCapabilitiesRequest)
         }
     }
+
+    override suspend fun registerToken(body: PushTokenBody): NetworkResponse<Unit> =
+        wrapKaliumResponse {
+            httpClient.post(PUSH_TOKEN) {
+                setBody(body)
+            }
+        }
 
     override suspend fun deregisterToken(pid: String): NetworkResponse<Unit> = wrapKaliumResponse {
         httpClient.delete("$PUSH_TOKEN/$pid")

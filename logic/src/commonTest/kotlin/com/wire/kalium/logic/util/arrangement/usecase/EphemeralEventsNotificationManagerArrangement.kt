@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,43 +21,25 @@ import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.feature.message.EphemeralEventsNotificationManager
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
-import io.mockative.thenDoNothing
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
 internal interface EphemeralEventsNotificationManagerArrangement {
 
     val ephemeralNotifications: EphemeralEventsNotificationManager
-    fun withEphemeralNotification(ephemeralsFlow: Flow<LocalNotification> = flowOf())
+    suspend fun withEphemeralNotification(ephemeralsFlow: Flow<LocalNotification> = flowOf())
 }
 
 internal open class EphemeralEventsNotificationManagerArrangementImpl : EphemeralEventsNotificationManagerArrangement {
 
     @Mock
-    override val ephemeralNotifications = mock(classOf<EphemeralEventsNotificationManager>())
+    override val ephemeralNotifications = mock(EphemeralEventsNotificationManager::class)
 
-    init {
-        given(ephemeralNotifications)
-            .suspendFunction(ephemeralNotifications::scheduleDeleteConversationNotification)
-            .whenInvokedWith(any())
-            .thenDoNothing()
-        given(ephemeralNotifications)
-            .suspendFunction(ephemeralNotifications::scheduleDeleteMessageNotification)
-            .whenInvokedWith(any())
-            .thenDoNothing()
-        given(ephemeralNotifications)
-            .suspendFunction(ephemeralNotifications::scheduleEditMessageNotification)
-            .whenInvokedWith(any())
-            .thenDoNothing()
-    }
-
-    override fun withEphemeralNotification(ephemeralsFlow: Flow<LocalNotification>) {
-        given(ephemeralNotifications)
-            .suspendFunction(ephemeralNotifications::observeEphemeralNotifications)
-            .whenInvoked()
-            .thenReturn(ephemeralsFlow)
+    override suspend fun withEphemeralNotification(ephemeralsFlow: Flow<LocalNotification>) {
+        coEvery {
+            ephemeralNotifications.observeEphemeralNotifications()
+        }.returns(ephemeralsFlow)
     }
 }

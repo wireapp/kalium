@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -68,7 +68,8 @@ class LoginCommand : CliktCommand(name = "login") {
     }
 
     private suspend fun provideVersionedAuthenticationScope(serverLinks: ServerConfig.Links): AuthenticationScope =
-        when (val result = coreLogic.versionedAuthenticationScope(serverLinks).invoke()) {
+        // CLI does not support proxy mode so we can pass null here
+        when (val result = coreLogic.versionedAuthenticationScope(serverLinks).invoke(null)) {
             is AutoVersionAuthScopeUseCase.Result.Failure.Generic ->
                 throw PrintMessage("failed to create authentication scope: ${result.genericFailure}")
 
@@ -127,6 +128,7 @@ class LoginCommand : CliktCommand(name = "login") {
             when (client.getOrRegister(RegisterClientUseCase.RegisterClientParam(password, emptyList()))) {
                 is RegisterClientResult.Failure -> throw PrintMessage("Client registration failed")
                 is RegisterClientResult.Success -> echo("Login successful")
+                is RegisterClientResult.E2EICertificateRequired -> echo("Login successful and e2ei is required")
             }
         }
 

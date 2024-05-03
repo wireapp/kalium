@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -51,10 +51,14 @@ val FEDERATION_REGEX = """[^@.]+@[^@.]+\.[^@]+""".toRegex()
 typealias ConversationId = QualifiedID
 
 @JvmInline
-value class GroupID(val value: String)
+value class GroupID(val value: String) {
+    fun toLogString() = value.obfuscateId()
+}
 
 @JvmInline
-value class SubconversationId(val value: String)
+value class SubconversationId(val value: String) {
+    fun toLogString() = value.obfuscateId()
+}
 
 data class QualifiedClientID(
     val clientId: ClientId,

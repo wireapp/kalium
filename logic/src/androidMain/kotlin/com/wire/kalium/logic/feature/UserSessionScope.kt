@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,11 +29,13 @@ import com.wire.kalium.logic.di.PlatformUserStorageProperties
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
+import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import com.wire.kalium.logic.util.SecurityHelperImpl
+import com.wire.kalium.network.NetworkStateObserver
+import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 @Suppress("LongParameterList")
@@ -42,6 +44,7 @@ internal fun UserSessionScope(
     userAgent: String,
     userId: UserId,
     globalScope: GlobalKaliumScope,
+    globalDatabaseProvider: GlobalDatabaseProvider,
     globalCallManager: GlobalCallManager,
     globalPreferences: GlobalPrefProvider,
     authenticationScopeProvider: AuthenticationScopeProvider,
@@ -52,6 +55,7 @@ internal fun UserSessionScope(
     userStorageProvider: UserStorageProvider,
     userSessionScopeProvider: UserSessionScopeProvider,
     networkStateObserver: NetworkStateObserver,
+    logoutCallback: LogoutCallback,
 ): UserSessionScope {
     val platformUserStorageProperties =
         PlatformUserStorageProperties(applicationContext, SecurityHelperImpl(globalPreferences.passphraseStorage))
@@ -63,6 +67,7 @@ internal fun UserSessionScope(
         userId,
         globalScope,
         globalCallManager,
+        globalDatabaseProvider,
         globalPreferences,
         authenticationScopeProvider,
         userSessionWorkScheduler,
@@ -73,6 +78,7 @@ internal fun UserSessionScope(
         userStorageProvider,
         clientConfig,
         platformUserStorageProperties,
-        networkStateObserver
+        networkStateObserver,
+        logoutCallback
     )
 }

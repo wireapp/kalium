@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -196,7 +196,7 @@ object NotificationEventsResponseJson {
     private val newMlsFeatureConfigUpdate = ValidJsonProvider(
         EventContentDTO.FeatureConfig.FeatureConfigUpdatedDTO(
             MLS(
-                MLSConfigDTO(emptyList(), SupportedProtocolDTO.MLS, listOf(SupportedProtocolDTO.PROTEUS), listOf(1), 1),
+                MLSConfigDTO(SupportedProtocolDTO.MLS, listOf(SupportedProtocolDTO.PROTEUS), listOf(1), 1),
                 FeatureFlagStatusDTO.ENABLED,
             )
         ),

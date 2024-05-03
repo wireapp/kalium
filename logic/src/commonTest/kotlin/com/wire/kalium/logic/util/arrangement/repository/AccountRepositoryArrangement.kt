@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,16 +23,19 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.fake.valueOf
+import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
+import io.mockative.matches
 import io.mockative.mock
 
 internal interface AccountRepositoryArrangement {
 
     val accountRepository: AccountRepository
-    fun withUpdateSelfUserAvailabilityStatus(
+    suspend fun withUpdateSelfUserAvailabilityStatus(
         result: Either<StorageFailure, Unit>,
-        newStatus: Matcher<UserAvailabilityStatus> = any()
+        newStatus: Matcher<UserAvailabilityStatus> = AnyMatcher(valueOf())
     )
 }
 
@@ -41,14 +44,13 @@ internal class AccountRepositoryArrangementImpl : AccountRepositoryArrangement {
     @Mock
     override val accountRepository: AccountRepository = mock(AccountRepository::class)
 
-    override fun withUpdateSelfUserAvailabilityStatus(
+    override suspend fun withUpdateSelfUserAvailabilityStatus(
         result: Either<StorageFailure, Unit>,
         newStatus: Matcher<UserAvailabilityStatus>
     ) {
-        given(accountRepository)
-            .suspendFunction(accountRepository::updateSelfUserAvailabilityStatus)
-            .whenInvokedWith(newStatus)
-            .then { result }
+        coEvery {
+            accountRepository.updateSelfUserAvailabilityStatus(matches { newStatus.matches(it) })
+        }.returns(result)
     }
 
 }

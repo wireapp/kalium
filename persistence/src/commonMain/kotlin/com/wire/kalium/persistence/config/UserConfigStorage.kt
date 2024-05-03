@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -123,7 +123,7 @@ interface UserConfigStorage {
     /**
      * Save MLSE2EISetting
      */
-    fun setE2EISettings(settingEntity: E2EISettingsEntity)
+    fun setE2EISettings(settingEntity: E2EISettingsEntity?)
 
     /**
      * Get MLSE2EISetting
@@ -170,9 +170,12 @@ interface UserConfigStorage {
     fun isGuestRoomLinkEnabledFlow(): Flow<IsGuestRoomLinkEnabledEntity?>
     fun isScreenshotCensoringEnabledFlow(): Flow<Boolean>
     fun persistScreenshotCensoring(enabled: Boolean)
-    fun setE2EINotificationTime(timeStamp: Long)
+    fun setIfAbsentE2EINotificationTime(timeStamp: Long)
     fun getE2EINotificationTime(): Long?
     fun e2EINotificationTimeFlow(): Flow<Long?>
+    fun updateE2EINotificationTime(timeStamp: Long)
+    fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
+    fun getShouldFetchE2EITrustAnchorHasRun(): Boolean
 }
 
 @Serializable
@@ -202,7 +205,7 @@ data class TeamSettingsSelfDeletionStatusEntity(
 @Serializable
 data class E2EISettingsEntity(
     @SerialName("status") val status: Boolean,
-    @SerialName("discoverUrl") val discoverUrl: String,
+    @SerialName("discoverUrl") val discoverUrl: String?,
     @SerialName("gracePeriodEndMs") val gracePeriodEndMs: Long?,
 )
 
@@ -223,6 +226,17 @@ data class LegalHoldRequestEntity(
 data class LastPreKey(
     @SerialName("id") val id: Int,
     @SerialName("key") val key: String,
+)
+
+@Serializable
+data class CRLUrlExpirationList(
+    @SerialName("crl_with_expiration_list") val cRLWithExpirationList: List<CRLWithExpiration>
+)
+
+@Serializable
+data class CRLWithExpiration(
+    @SerialName("url") val url: String,
+    @SerialName("expiration") val expiration: ULong
 )
 
 @Serializable
@@ -434,13 +448,17 @@ class UserConfigStorageImpl(
 
     override fun isMLSEnabled(): Boolean = kaliumPreferences.getBoolean(ENABLE_MLS, false)
 
-    override fun setE2EISettings(settingEntity: E2EISettingsEntity) {
-        kaliumPreferences.putSerializable(
-            E2EI_SETTINGS,
-            settingEntity,
-            E2EISettingsEntity.serializer()
-        ).also {
-            e2EIFlow.tryEmit(Unit)
+    override fun setE2EISettings(settingEntity: E2EISettingsEntity?) {
+        if (settingEntity == null) {
+            kaliumPreferences.remove(E2EI_SETTINGS)
+        } else {
+            kaliumPreferences.putSerializable(
+                E2EI_SETTINGS,
+                settingEntity,
+                E2EISettingsEntity.serializer()
+            ).also {
+                e2EIFlow.tryEmit(Unit)
+            }
         }
     }
 
@@ -453,13 +471,15 @@ class UserConfigStorageImpl(
         .onStart { emit(getE2EISettings()) }
         .distinctUntilChanged()
 
-    override fun setE2EINotificationTime(timeStamp: Long) {
-        kaliumPreferences.putLong(
-            E2EI_NOTIFICATION_TIME,
-            timeStamp
-        ).also {
-            e2EINotificationFlow.tryEmit(Unit)
+    override fun setIfAbsentE2EINotificationTime(timeStamp: Long) {
+        getE2EINotificationTime().let { current ->
+            if (current == null || current <= 0)
+                kaliumPreferences.putLong(E2EI_NOTIFICATION_TIME, timeStamp).also { e2EINotificationFlow.tryEmit(Unit) }
         }
+    }
+
+    override fun updateE2EINotificationTime(timeStamp: Long) {
+        kaliumPreferences.putLong(E2EI_NOTIFICATION_TIME, timeStamp).also { e2EINotificationFlow.tryEmit(Unit) }
     }
 
     override fun getE2EINotificationTime(): Long? {
@@ -540,6 +560,13 @@ class UserConfigStorageImpl(
         }
     }
 
+    override fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean) {
+        kaliumPreferences.putBoolean(SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS, shouldFetch)
+    }
+
+    override fun getShouldFetchE2EITrustAnchorHasRun(): Boolean =
+        kaliumPreferences.getBoolean(SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS, true)
+
     private companion object {
         const val FILE_SHARING = "file_sharing"
         const val GUEST_ROOM_LINK = "guest_room_link"
@@ -556,5 +583,6 @@ class UserConfigStorageImpl(
         const val ENABLE_TYPING_INDICATOR = "enable_typing_indicator"
         const val APP_LOCK = "app_lock"
         const val DEFAULT_PROTOCOL = "default_protocol"
+        const val SHOULD_FETCH_E2EI_GET_TRUST_ANCHORS = "should_fetch_e2ei_trust_anchors"
     }
 }

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ import kotlinx.datetime.Instant
 sealed class LocalNotification(open val conversationId: ConversationId) {
     data class Conversation(
         val id: ConversationId,
-        val conversationName: String,
+        val conversationName: String?,
         val messages: List<LocalNotificationMessage>,
         val isOneToOneConversation: Boolean
     ) : LocalNotification(id)
@@ -40,6 +40,8 @@ sealed class LocalNotification(open val conversationId: ConversationId) {
         val messageId: String,
         val action: LocalNotificationUpdateMessageAction
     ) : LocalNotification(conversationId)
+
+    data class ConversationSeen(override val conversationId: ConversationId) : LocalNotification(conversationId)
 }
 
 sealed class LocalNotificationUpdateMessageAction {
@@ -97,6 +99,7 @@ sealed class LocalNotificationMessage(
         override val author: LocalNotificationMessageAuthor,
         override val time: Instant
     ) : LocalNotificationMessage(messageId, author, time)
+
 }
 
 data class LocalNotificationMessageAuthor(val name: String, val imageUri: UserAssetId?)

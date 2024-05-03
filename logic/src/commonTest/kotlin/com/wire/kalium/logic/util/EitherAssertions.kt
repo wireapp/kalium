@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,14 +20,30 @@ package com.wire.kalium.logic.util
 
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.contract
 import kotlin.test.fail
 
-inline infix fun <L, R> Either<L, R>.shouldSucceed(crossinline successAssertion: (R) -> Unit) =
+@OptIn(ExperimentalContracts::class)
+inline infix fun <L, R> Either<L, R>.shouldSucceed(crossinline successAssertion: (R) -> Unit) {
+    contract { returns() implies (this@shouldSucceed is Either.Right<R>) }
     this.fold({ fail("Expected a Right value but got Left") }) { successAssertion(it) }
+}
 
-fun <L, R> Either<L, R>.shouldSucceed() = shouldSucceed { }
+@OptIn(ExperimentalContracts::class)
+fun <L, R> Either<L, R>.shouldSucceed() {
+    contract { returns() implies (this@shouldSucceed is Either.Right<R>) }
+    shouldSucceed { }
+}
 
-inline infix fun <L, R> Either<L, R>.shouldFail(crossinline failAssertion: (L) -> Unit): Unit =
+@OptIn(ExperimentalContracts::class)
+inline infix fun <L, R> Either<L, R>.shouldFail(crossinline failAssertion: (L) -> Unit) {
+    contract { returns() implies (this@shouldFail is Either.Left<L>) }
     this.fold({ failAssertion(it) }) { fail("Expected a Left value but got Right") }
+}
 
-fun <L, R> Either<L, R>.shouldFail(): Unit = shouldFail { }
+@OptIn(ExperimentalContracts::class)
+fun <L, R> Either<L, R>.shouldFail() {
+    contract { returns() implies (this@shouldFail is Either.Left<L>) }
+    shouldFail { }
+}

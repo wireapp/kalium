@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,11 +24,10 @@ import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.unauthenticated.SSOSettingsResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import okio.IOException
 import kotlin.test.Test
@@ -36,7 +35,6 @@ import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNull
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class FetchSSOSettingsUseCaseTest {
 
     @Test
@@ -50,9 +48,9 @@ class FetchSSOSettingsUseCaseTest {
             assertEquals("c2c2c2c2-c2c2-c2c2-c2c2-c2c2c2c2c2c2", result.defaultSSOCode)
         }
 
-        verify(arrangement.ssoLoginRepository)
-            .suspendFunction(arrangement.ssoLoginRepository::settings)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.ssoLoginRepository.settings()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -65,9 +63,9 @@ class FetchSSOSettingsUseCaseTest {
             assertIs<FetchSSOSettingsUseCase.Result.Failure>(result)
         }
 
-        verify(arrangement.ssoLoginRepository)
-            .suspendFunction(arrangement.ssoLoginRepository::settings)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.ssoLoginRepository.settings()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -89,11 +87,10 @@ class FetchSSOSettingsUseCaseTest {
             assertNull(result.defaultSSOCode)
         }
 
-        verify(arrangement.ssoLoginRepository)
-            .suspendFunction(arrangement.ssoLoginRepository::settings)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.ssoLoginRepository.settings()
+        }.wasInvoked(exactly = once)
     }
-
 
     private class Arrangement {
         @Mock
@@ -101,11 +98,10 @@ class FetchSSOSettingsUseCaseTest {
 
         private val useCase: FetchSSOSettingsUseCase = FetchSSOSettingsUseCase(ssoLoginRepository)
 
-        fun withSSOSettings(result: Either<NetworkFailure, SSOSettingsResponse>) = apply {
-            given(ssoLoginRepository)
-                .suspendFunction(ssoLoginRepository::settings)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withSSOSettings(result: Either<NetworkFailure, SSOSettingsResponse>) = apply {
+            coEvery {
+                ssoLoginRepository.settings()
+            }.returns(result)
         }
         fun arrange() = this to useCase
     }

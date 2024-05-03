@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.ConversationId
@@ -59,7 +60,7 @@ class FederationEventReceiverImpl internal constructor(
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : FederationEventReceiver {
 
-    override suspend fun onEvent(event: Event.Federation): Either<CoreFailure, Unit> {
+    override suspend fun onEvent(event: Event.Federation, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
         when (event) {
             is Event.Federation.Delete -> handleDeleteEvent(event)
             is Event.Federation.ConnectionRemoved -> handleConnectionRemovedEvent(event)
@@ -76,7 +77,7 @@ class FederationEventReceiverImpl internal constructor(
                     if (conversationDetails is ConversationDetails.Connection
                         && conversationDetails.otherUser?.id?.domain == event.domain
                     ) {
-                        connectionRepository.deleteConnection(conversationDetails.conversationId)
+                        connectionRepository.deleteConnection(conversationDetails.connection)
                     }
                 }
             }
@@ -190,7 +191,7 @@ class FederationEventReceiverImpl internal constructor(
                 userIDList.map { it.toDao() },
                 conversationID.toDao()
             )
-        }
+        }.map { }
 
     private suspend fun handleMemberRemovedEvent(conversationID: ConversationId, userIDList: List<UserId>) {
         val message = Message.System(

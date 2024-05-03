@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.Url
 import util.MockUnboundNetworkClient
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -53,7 +54,7 @@ object ACMEActions {
     /**
      * URL Paths
      */
-    private const val ACME_BASE_URL = "https://balderdash.hogwash.work:9000/acme/google-android/"
+    private val ACME_BASE_URL = "https://balderdash.hogwash.work:9000/acme/google-android/"
     private const val ACME_DIRECTORIES_PATH = "https://balderdash.hogwash.work:9000/acme/google-android/directory"
 
     /**

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@ actual open class BaseProteusClientTest {
         val keyStore = root.resolve("keystore-${userId.value}")
         return ProteusStoreRef(keyStore.absolutePath)
     }
+
 
     actual suspend fun createProteusClient(proteusStore: ProteusStoreRef, databaseKey: ProteusDBSecret?): ProteusClient {
         return databaseKey?.let {

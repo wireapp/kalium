@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,100 +30,102 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
-import io.mockative.anything
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.any
+import io.mockative.coEvery
 import io.mockative.mock
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MembersToMentionUseCaseTest {
 
     @Mock
     private val userRepository: UserRepository = mock(UserRepository::class)
 
     @Mock
-    private val observeConversationMembers = mock(classOf<ObserveConversationMembersUseCase>())
+    private val observeConversationMembers = mock(ObserveConversationMembersUseCase::class)
 
     private lateinit var membersToMention: MembersToMentionUseCase
 
     @BeforeTest
-    fun setup() {
-        membersToMention = MembersToMentionUseCase(observeConversationMembers, userRepository)
-        given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
-            .whenInvoked()
-            .thenReturn(SELF_USER)
-        given(observeConversationMembers)
-            .suspendFunction(observeConversationMembers::invoke)
-            .whenInvokedWith(anything())
-            .thenReturn(flowOf(members))
+    fun setup() = runBlocking {
+        membersToMention = MembersToMentionUseCase(observeConversationMembers, userRepository, TestKaliumDispatcher)
+        coEvery {
+            userRepository.getSelfUser()
+        }.returns(SELF_USER)
+        coEvery {
+            observeConversationMembers.invoke(any())
+        }.returns(flowOf(members))
     }
 
     @Test
-    fun givenAListOfMembers_whenRequestingMembersToMentionWithAnEmptySearchQuery_thenReturnAllConversationMembers() = runTest {
-        val searchQuery = ""
+    fun givenAListOfMembers_whenRequestingMembersToMentionWithAnEmptySearchQuery_thenReturnAllConversationMembers() =
+        runTest(TestKaliumDispatcher.main) {
+            val searchQuery = ""
 
-        val result = membersToMention(CONVERSATION_ID, searchQuery)
+            val result = membersToMention(CONVERSATION_ID, searchQuery)
 
-        assertEquals(members, result)
-    }
-
-    @Test
-    fun givenAListOfMembers_whenRequestingMembersToMentionWithWhiteSpaceSearchQuery_thenReturnAnEmptyList() = runTest {
-        val searchQuery = " "
-
-        val result = membersToMention(CONVERSATION_ID, searchQuery)
-
-        assertEquals(true, result.isEmpty())
-    }
+            assertEquals(members, result)
+        }
 
     @Test
-    fun givenAListOfMembers_whenRequestingMembersToMentionWithSearchQueryThatDoesNotExistInTheList_thenReturnAnEmptyList() = runTest {
-        val searchQuery = "randomName9-0("
+    fun givenAListOfMembers_whenRequestingMembersToMentionWithWhiteSpaceSearchQuery_thenReturnAnEmptyList() =
+        runTest(TestKaliumDispatcher.main) {
+            val searchQuery = " "
 
-        val result = membersToMention(CONVERSATION_ID, searchQuery)
+            val result = membersToMention(CONVERSATION_ID, searchQuery)
 
-        assertEquals(true, result.isEmpty())
-    }
+            assertEquals(true, result.isEmpty())
+        }
 
     @Test
-    fun givenAListOfMembers_whenRequestingMembersToMentionWithValidSearchQuery_thenReturnSortedMembersToMention() = runTest {
-        val searchQuery = "KillUa"
+    fun givenAListOfMembers_whenRequestingMembersToMentionWithSearchQueryThatDoesNotExistInTheList_thenReturnAnEmptyList() =
+        runTest(TestKaliumDispatcher.main) {
+            val searchQuery = "randomName9-0("
 
-        val result = membersToMention(CONVERSATION_ID, searchQuery)
+            val result = membersToMention(CONVERSATION_ID, searchQuery)
 
-        assertEquals(5, result.size)
-        assertEquals(members[3], result.first())
-        assertEquals(members.last(), result[1])
-        assertEquals(members[4], result[2])
-        assertEquals(members[1], result[3])
-        assertEquals(members.first(), result[4])
+            assertEquals(true, result.isEmpty())
+        }
 
-    }
+    @Test
+    fun givenAListOfMembers_whenRequestingMembersToMentionWithValidSearchQuery_thenReturnSortedMembersToMention() =
+        runTest(TestKaliumDispatcher.main) {
+            val searchQuery = "KillUa"
+
+            val result = membersToMention(CONVERSATION_ID, searchQuery)
+
+            assertEquals(5, result.size)
+            assertEquals(members[3], result.first())
+            assertEquals(members.last(), result[1])
+            assertEquals(members[4], result[2])
+            assertEquals(members[1], result[3])
+            assertEquals(members.first(), result[4])
+
+        }
 
     companion object {
         private const val DOMAIN = "some_domain"
         val CONVERSATION_ID = ConversationId("conversation-id", DOMAIN)
         val SELF_USER = SelfUser(
-            UserId("slef_id", DOMAIN),
-            "some_name",
-            "some_handle",
-            "some_email",
-            null,
-            1,
-            null,
-            ConnectionState.ACCEPTED,
-            UserAssetId("value1", DOMAIN),
-            UserAssetId("value2", DOMAIN),
-            UserAvailabilityStatus.NONE,
-            supportedProtocols = null
+            id = UserId("slef_id", DOMAIN),
+            name = "some_name",
+            handle = "some_handle",
+            email = "some_email",
+            phone = null,
+            accentId = 1,
+            teamId = null,
+            connectionStatus = ConnectionState.ACCEPTED,
+            previewPicture = UserAssetId("value1", DOMAIN),
+            completePicture = UserAssetId("value2", DOMAIN),
+            userType = UserType.INTERNAL,
+            availabilityStatus = UserAvailabilityStatus.NONE,
+            supportedProtocols = null,
         )
         private val OTHER_USER = OtherUser(
             UserId(value = "other-id", DOMAIN),

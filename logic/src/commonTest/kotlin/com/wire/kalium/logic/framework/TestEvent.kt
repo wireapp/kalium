@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,12 +24,15 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.Conversation.Member
 import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventDeliveryInfo
+import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.data.event.MemberLeaveReason
 import com.wire.kalium.logic.data.featureConfig.AppLockModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.ktor.util.encodeBase64
 import kotlinx.datetime.Instant
@@ -39,8 +42,6 @@ object TestEvent {
     fun memberJoin(eventId: String = "eventId", members: List<Member> = listOf()) = Event.Conversation.MemberJoin(
         eventId,
         TestConversation.ID,
-        false,
-        false,
         TestUser.USER_ID,
         members,
         "2022-03-30T15:36:00.000Z"
@@ -49,8 +50,6 @@ object TestEvent {
     fun memberLeave(eventId: String = "eventId", members: List<Member> = listOf()) = Event.Conversation.MemberLeave(
         eventId,
         TestConversation.ID,
-        false,
-        false,
         TestUser.USER_ID,
         listOf(),
         "2022-03-30T15:36:00.000Z",
@@ -61,8 +60,6 @@ object TestEvent {
         eventId,
         TestConversation.ID,
         "2022-03-30T15:36:00.000Z",
-        false,
-        false,
         member
     )
 
@@ -70,8 +67,6 @@ object TestEvent {
         eventId,
         TestConversation.ID,
         "2022-03-30T15:36:00.000Z",
-        false,
-        false,
         MutedConversationStatus.AllAllowed,
         "2022-03-30T15:36:00.000Zp"
     )
@@ -81,8 +76,6 @@ object TestEvent {
             eventId,
             TestConversation.ID,
             "2022-03-30T15:36:00.000Z",
-            false,
-            false,
             "2022-03-31T16:36:00.000Zp",
             isArchiving,
         )
@@ -90,24 +83,28 @@ object TestEvent {
     fun memberChangeIgnored(eventId: String = "eventId") = Event.Conversation.MemberChanged.IgnoredMemberChanged(
         eventId,
         TestConversation.ID,
-        false,
-        false
     )
 
-    fun clientRemove(eventId: String = "eventId", clientId: ClientId) = Event.User.ClientRemove(false, false, eventId, clientId)
-    fun userDelete(eventId: String = "eventId", userId: UserId) = Event.User.UserDelete(false, false, eventId, userId)
+    fun clientRemove(eventId: String = "eventId", clientId: ClientId) = Event.User.ClientRemove(eventId, clientId)
+    fun userDelete(eventId: String = "eventId", userId: UserId) = Event.User.UserDelete(eventId, userId)
     fun updateUser(eventId: String = "eventId", userId: UserId) = Event.User.Update(
-        eventId,
-        false, false, userId, null, false, "newName", null, null, null, null, null
+        id = eventId,
+        userId = userId,
+        accentId = null,
+        ssoIdDeleted = false,
+        name = "newName",
+        handle = null,
+        email = null,
+        previewAssetId = null,
+        completeAssetId = null,
+        supportedProtocols = null
     )
 
     fun newClient(eventId: String = "eventId", clientId: ClientId = ClientId("client")) = Event.User.NewClient(
-        false, false, eventId, TestClient.CLIENT
+        eventId, TestClient.CLIENT
     )
 
-    fun newConnection(eventId: String = "eventId", status:  ConnectionState = ConnectionState.PENDING) = Event.User.NewConnection(
-        false,
-        false,
+    fun newConnection(eventId: String = "eventId", status: ConnectionState = ConnectionState.PENDING) = Event.User.NewConnection(
         eventId,
         Connection(
             conversationId = "conversationId",
@@ -123,8 +120,6 @@ object TestEvent {
     fun deletedConversation(eventId: String = "eventId") = Event.Conversation.DeletedConversation(
         eventId,
         TestConversation.ID,
-        false,
-        false,
         TestUser.USER_ID,
         "2022-03-30T15:36:00.000Z"
     )
@@ -132,8 +127,6 @@ object TestEvent {
     fun renamedConversation(eventId: String = "eventId") = Event.Conversation.RenamedConversation(
         eventId,
         TestConversation.ID,
-        false,
-        false,
         "newName",
         TestUser.USER_ID,
         "2022-03-30T15:36:00.000Z"
@@ -142,35 +135,20 @@ object TestEvent {
     fun receiptModeUpdate(eventId: String = "eventId") = Event.Conversation.ConversationReceiptMode(
         eventId,
         TestConversation.ID,
-        false,
-        false,
         receiptMode = Conversation.ReceiptMode.ENABLED,
         senderUserId = TestUser.USER_ID
     )
 
-    fun teamUpdated(eventId: String = "eventId") = Event.Team.Update(
-        eventId,
-        teamId = "teamId",
-        name = "teamName",
-        transient = false,
-        live = false,
-        icon = "icon",
-    )
-
-    fun teamMemberUpdate(eventId: String = "eventId", permissionCode: Int) = Event.Team.MemberUpdate(
+    fun teamMemberLeave(eventId: String = "eventId") = Event.Team.MemberLeave(
         eventId,
         teamId = "teamId",
         memberId = "memberId",
-        permissionCode = permissionCode,
-        transient = false,
-        live = false
+        timestampIso = "2022-03-30T15:36:00.000Z",
     )
 
     fun timerChanged(eventId: String = "eventId") = Event.Conversation.ConversationMessageTimer(
         id = eventId,
         conversationId = TestConversation.ID,
-        transient = false,
-        live = false,
         messageTimer = 3000,
         senderUserId = TestUser.USER_ID,
         timestampIso = "2022-03-30T15:36:00.000Z"
@@ -178,8 +156,6 @@ object TestEvent {
 
     fun userPropertyReadReceiptMode(eventId: String = "eventId") = Event.UserProperty.ReadReceiptModeSet(
         id = eventId,
-        transient = false,
-        live = false,
         value = true
     )
 
@@ -190,8 +166,6 @@ object TestEvent {
     ) = Event.Conversation.NewMessage(
         "eventId",
         TestConversation.ID,
-        false,
-        false,
         senderUserId,
         TestClient.CLIENT_ID,
         "time",
@@ -204,8 +178,6 @@ object TestEvent {
     ) = Event.Conversation.NewMLSMessage(
         "eventId",
         TestConversation.ID,
-        false,
-        false,
         null,
         TestUser.USER_ID,
         timestamp.toIsoDateTimeString(),
@@ -215,8 +187,6 @@ object TestEvent {
     fun newConversationEvent() = Event.Conversation.NewConversation(
         id = "eventId",
         conversationId = TestConversation.ID,
-        transient = false,
-        live = false,
         timestampIso = "timestamp",
         conversation = TestConversation.CONVERSATION_RESPONSE,
         senderUserId = TestUser.SELF.id
@@ -225,8 +195,6 @@ object TestEvent {
     fun newMLSWelcomeEvent() = Event.Conversation.MLSWelcome(
         "eventId",
         TestConversation.ID,
-        false,
-        false,
         TestUser.USER_ID,
         "dummy-message",
         timestampIso = "2022-03-30T15:36:00.000Z"
@@ -237,15 +205,11 @@ object TestEvent {
         conversationId = TestConversation.ID,
         data = TestConversation.CONVERSATION_RESPONSE,
         qualifiedFrom = TestUser.USER_ID,
-        transient = false,
-        live = false
     )
 
     fun codeUpdated() = Event.Conversation.CodeUpdated(
         id = "eventId",
         conversationId = TestConversation.ID,
-        transient = false,
-        live = false,
         code = "code",
         key = "key",
         uri = "uri",
@@ -255,15 +219,11 @@ object TestEvent {
     fun codeDeleted() = Event.Conversation.CodeDeleted(
         id = "eventId",
         conversationId = TestConversation.ID,
-        transient = false,
-        live = false
     )
 
     fun typingIndicator(typingIndicatorMode: Conversation.TypingIndicatorMode) = Event.Conversation.TypingIndicator(
         id = "eventId",
         conversationId = TestConversation.ID,
-        transient = true,
-        live = false,
         senderUserId = TestUser.OTHER_USER_ID,
         timestampIso = "2022-03-30T15:36:00.000Z",
         typingIndicatorMode = typingIndicatorMode
@@ -272,16 +232,12 @@ object TestEvent {
     fun newConversationProtocolEvent() = Event.Conversation.ConversationProtocol(
         id = "eventId",
         conversationId = TestConversation.ID,
-        transient = false,
-        live = false,
         protocol = Conversation.Protocol.MIXED,
         senderUserId = TestUser.OTHER_USER_ID
     )
 
     fun newFeatureConfigEvent() = Event.FeatureConfig.AppLockUpdated(
         id = "eventId",
-        transient = false,
-        live = false,
         model = AppLockModel(
             inactivityTimeoutSecs = 60,
             status = Status.ENABLED
@@ -290,7 +246,12 @@ object TestEvent {
 
     fun newUnknownFeatureUpdate() = Event.FeatureConfig.UnknownFeatureUpdated(
         id = "eventId",
-        transient = false,
-        live = false
     )
+
+    fun Event.wrapInEnvelope(isTransient: Boolean = false, source: EventSource = EventSource.LIVE): EventEnvelope {
+        return EventEnvelope(this, EventDeliveryInfo(isTransient, source))
+    }
+
+    val liveDeliveryInfo = EventDeliveryInfo(false, EventSource.LIVE)
+    val nonLiveDeliveryInfo = EventDeliveryInfo(false, EventSource.PENDING)
 }

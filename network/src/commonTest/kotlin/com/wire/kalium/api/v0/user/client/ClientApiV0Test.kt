@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,8 @@ import com.wire.kalium.model.RegisterClientRequestJson
 import com.wire.kalium.model.RegisterTokenJson
 import com.wire.kalium.model.UpdateClientRequestJson
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
+import com.wire.kalium.network.api.base.authenticated.client.ClientCapabilityDTO
+import com.wire.kalium.network.api.base.authenticated.client.UpdateClientCapabilitiesRequest
 import com.wire.kalium.network.api.v0.authenticated.ClientApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -73,7 +75,7 @@ internal class ClientApiV0Test : ApiTest() {
     }
 
     @Test
-    fun givenAValidUpdateClientRequest_whenCallingTheUpdateClientEndpoint_theRequestShouldBeConfiguredCorrectly() =
+    fun givenAValidUpdateClientMlsPublicKeysRequest_whenCallingTheUpdateClientEndpoint_theRequestShouldBeConfiguredCorrectly() =
         runTest {
             val networkClient = mockAuthenticatedNetworkClient(
                 "",
@@ -86,7 +88,31 @@ internal class ClientApiV0Test : ApiTest() {
                 }
             )
             val clientApi: ClientApi = ClientApiV0(networkClient)
-            val response = clientApi.updateClient(UPDATE_CLIENT_REQUEST.serializableData, VALID_CLIENT_ID)
+
+            val response = clientApi.updateClientMlsPublicKeys(UPDATE_CLIENT_REQUEST.serializableData, VALID_CLIENT_ID)
+
+            assertTrue(response.isSuccessful())
+        }
+    @Test
+    fun givenAValidUpdateClientCapabilitiesRequest_whenCallingTheUpdateClientEndpoint_theRequestShouldBeConfiguredCorrectly() =
+        runTest {
+            val networkClient = mockAuthenticatedNetworkClient(
+                "",
+                statusCode = HttpStatusCode.OK,
+                assertion = {
+                    assertPut()
+                    assertJson()
+                    assertNoQueryParams()
+                    assertPathEqual("$PATH_CLIENTS/$VALID_CLIENT_ID")
+                }
+            )
+            val clientApi: ClientApi = ClientApiV0(networkClient)
+
+            val response = clientApi.updateClientCapabilities(
+                UpdateClientCapabilitiesRequest(listOf(ClientCapabilityDTO.LegalHoldImplicitConsent)),
+                VALID_CLIENT_ID
+            )
+
             assertTrue(response.isSuccessful())
         }
 

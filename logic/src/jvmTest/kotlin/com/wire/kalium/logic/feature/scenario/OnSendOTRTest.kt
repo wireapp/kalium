@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,9 +36,10 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.coEvery
+import io.mockative.matches
+import io.mockative.coVerify
+import io.mockative.coEvery
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -76,13 +77,12 @@ class OnSendOTRTest {
         )
         yield()
 
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(
-                matching { it.conversationId == Arrangement.selfConversationId },
-                matching { it is MessageTarget.Conversation },
+        coVerify {
+            arrangement.messageSender.sendMessage(
+                matches { it.conversationId == Arrangement.selfConversationId },
+                matches { it is MessageTarget.Conversation },
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -110,25 +110,24 @@ class OnSendOTRTest {
         )
         yield()
 
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(
-                matching { it.conversationId == Arrangement.conversationId },
-                matching { it is MessageTarget.Conversation },
+        coVerify {
+            arrangement.messageSender.sendMessage(
+                matches { it.conversationId == Arrangement.conversationId },
+                matches { it is MessageTarget.Conversation },
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
     }
 
     internal class Arrangement {
 
         @Mock
-        val calling = mock(classOf<Calling>())
+        val calling = mock(Calling::class)
 
         @Mock
-        val messageSender = mock(classOf<MessageSender>())
+        val messageSender = mock(MessageSender::class)
 
         @Mock
-        val selfConversationIdProvider = mock(classOf<SelfConversationIdProvider>())
+        val selfConversationIdProvider = mock(SelfConversationIdProvider::class)
 
         val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
 
@@ -153,18 +152,16 @@ class OnSendOTRTest {
             val selfUserClientId = ClientId("self_client")
         }
 
-        fun givenSelfConversationIdProviderReturns(result: Either<StorageFailure, List<ConversationId>>) = apply {
-            given(selfConversationIdProvider)
-                .suspendFunction(selfConversationIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun givenSelfConversationIdProviderReturns(result: Either<StorageFailure, List<ConversationId>>) = apply {
+            coEvery {
+                selfConversationIdProvider.invoke()
+            }.returns(result)
         }
 
-        fun givenSendMessageSuccessful() = apply {
-            given(messageSender)
-                .suspendFunction(messageSender::sendMessage)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun givenSendMessageSuccessful() = apply {
+            coEvery {
+                messageSender.sendMessage(any(), any())
+            }.returns(Either.Right(Unit))
         }
     }
 

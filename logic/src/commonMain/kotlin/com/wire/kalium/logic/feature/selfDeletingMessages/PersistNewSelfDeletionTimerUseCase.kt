@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,10 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import com.wire.kalium.util.serialization.toJsonElement
+import kotlinx.coroutines.withContext
 
 /**
  * Use case to persist the new self deletion timer for a given conversation to memory.
@@ -35,9 +38,10 @@ interface PersistNewSelfDeletionTimerUseCase {
 }
 
 class PersistNewSelfDeletionTimerUseCaseImpl internal constructor(
-    private val conversationRepository: ConversationRepository
+    private val conversationRepository: ConversationRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : PersistNewSelfDeletionTimerUseCase {
-    override suspend fun invoke(conversationId: ConversationId, newSelfDeletionTimer: SelfDeletionTimer) =
+    override suspend fun invoke(conversationId: ConversationId, newSelfDeletionTimer: SelfDeletionTimer) = withContext(dispatcher.io) {
         conversationRepository.updateUserSelfDeletionTimer(conversationId, newSelfDeletionTimer).fold({
             val logMap = mapOf(
                 "value" to newSelfDeletionTimer.toLogString(eventDescription = "Self Deletion User Update Failure"),
@@ -48,4 +52,5 @@ class PersistNewSelfDeletionTimerUseCaseImpl internal constructor(
             val logMap = newSelfDeletionTimer.toLogString(eventDescription = "Self Deletion User Update Success")
             kaliumLogger.d("${SelfDeletionTimer.SELF_DELETION_LOG_TAG}: $logMap")
         })
+    }
 }

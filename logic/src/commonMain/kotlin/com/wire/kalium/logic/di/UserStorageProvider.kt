@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@ package com.wire.kalium.logic.di
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.util.safeComputeIfAbsent
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.UserPrefBuilder
 
@@ -31,7 +30,7 @@ abstract class UserStorageProvider {
         userId: UserId,
         platformUserStorageProperties: PlatformUserStorageProperties,
         shouldEncryptData: Boolean = true
-    ): UserStorage = inMemoryUserStorage.safeComputeIfAbsent(userId) {
+    ): UserStorage = inMemoryUserStorage.computeIfAbsent(userId) {
         create(userId, shouldEncryptData, platformUserStorageProperties)
     }
 

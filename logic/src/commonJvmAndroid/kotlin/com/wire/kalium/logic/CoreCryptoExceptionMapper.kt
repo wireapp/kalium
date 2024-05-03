@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,10 @@ actual fun mapMLSException(exception: Exception): MLSFailure =
                 is CryptoError.BufferedFutureMessage -> MLSFailure.BufferedFutureMessage
                 is CryptoError.SelfCommitIgnored -> MLSFailure.SelfCommitIgnored
                 is CryptoError.UnmergedPendingGroup -> MLSFailure.UnmergedPendingGroup
+                is CryptoError.StaleProposal -> MLSFailure.StaleProposal
+                is CryptoError.StaleCommit -> MLSFailure.StaleCommit
                 is CryptoError.ConversationAlreadyExists -> MLSFailure.ConversationAlreadyExists
+                is CryptoError.MessageEpochTooOld -> MLSFailure.MessageEpochTooOld
                 else -> MLSFailure.Generic(exception)
             }
         } else {

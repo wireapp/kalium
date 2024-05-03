@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,9 +24,10 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -36,10 +37,10 @@ import kotlin.test.assertEquals
 class IsEligibleToStartCallUseCaseTest {
 
     @Mock
-    val userConfigRepository = mock(classOf<UserConfigRepository>())
+    val userConfigRepository = mock(UserConfigRepository::class)
 
     @Mock
-    val callRepository = mock(classOf<CallRepository>())
+    val callRepository = mock(CallRepository::class)
 
     private lateinit var isEligibleToStartCall: IsEligibleToStartCallUseCase
 
@@ -47,69 +48,66 @@ class IsEligibleToStartCallUseCaseTest {
     fun setUp() {
         isEligibleToStartCall = IsEligibleToStartCallUseCaseImpl(
             userConfigRepository = userConfigRepository,
-            callRepository = callRepository
+            callRepository = callRepository,
+            dispatcher = TestKaliumDispatcher
         )
     }
 
     @Test
-    fun givenAnStorageErrorOccurred_whenVerifyingIfUserIsEligibleToStartGroupCallWithNoEstablishedCall_thenReturnUnavailable() = runTest {
-        // given
-        given(callRepository)
-            .suspendFunction(callRepository::establishedCallConversationId)
-            .whenInvoked()
-            .thenReturn(null)
+    fun givenAnStorageErrorOccurred_whenVerifyingIfUserIsEligibleToStartGroupCallWithNoEstablishedCall_thenReturnUnavailable() =
+        runTest(TestKaliumDispatcher.main) {
+            // given
+            coEvery {
+                callRepository.establishedCallConversationId()
+            }.returns(null)
 
-        given(userConfigRepository)
-            .function(userConfigRepository::isConferenceCallingEnabled)
-            .whenInvoked()
-            .thenReturn(Either.Left(StorageFailure.Generic(Throwable("error"))))
+            every {
+                userConfigRepository.isConferenceCallingEnabled()
+            }.returns(Either.Left(StorageFailure.Generic(Throwable("error"))))
 
-        // when
-        val result = isEligibleToStartCall(
-            conversationId,
-            Conversation.Type.GROUP
-        )
+            // when
+            val result = isEligibleToStartCall(
+                conversationId,
+                Conversation.Type.GROUP
+            )
 
-        // then
-        assertEquals(result, ConferenceCallingResult.Disabled.Unavailable)
-    }
+            // then
+            assertEquals(result, ConferenceCallingResult.Disabled.Unavailable)
+        }
 
     @Test
-    fun givenAnStorageErrorOccurred_whenVerifyingIfUserIsEligibleToStartOneOnOneCallWithNoEstablishedCall_thenReturnEnabled() = runTest {
-        // given
-        given(callRepository)
-            .suspendFunction(callRepository::establishedCallConversationId)
-            .whenInvoked()
-            .thenReturn(null)
+    fun givenAnStorageErrorOccurred_whenVerifyingIfUserIsEligibleToStartOneOnOneCallWithNoEstablishedCall_thenReturnEnabled() =
+        runTest(TestKaliumDispatcher.main) {
+            // given
+            coEvery {
+                callRepository.establishedCallConversationId()
+            }.returns(null)
 
-        given(userConfigRepository)
-            .function(userConfigRepository::isConferenceCallingEnabled)
-            .whenInvoked()
-            .thenReturn(Either.Left(StorageFailure.Generic(Throwable("error"))))
+            every {
+                userConfigRepository.isConferenceCallingEnabled()
+            }.returns(Either.Left(StorageFailure.Generic(Throwable("error"))))
 
-        // when
-        val result = isEligibleToStartCall(
-            conversationId,
-            Conversation.Type.ONE_ON_ONE
-        )
+            // when
+            val result = isEligibleToStartCall(
+                conversationId,
+                Conversation.Type.ONE_ON_ONE
+            )
 
-        // then
-        assertEquals(result, ConferenceCallingResult.Enabled)
-    }
+            // then
+            assertEquals(result, ConferenceCallingResult.Enabled)
+        }
 
     @Test
     fun givenAnStorageErrorOccurred_whenVerifyingIfUserIsEligibleToStartGroupCallWithOtherEstablishedCall_thenReturnUnavailable() =
-        runTest {
+        runTest(TestKaliumDispatcher.main) {
             // given
-            given(callRepository)
-                .suspendFunction(callRepository::establishedCallConversationId)
-                .whenInvoked()
-                .thenReturn(establishedCallConversationId)
+            coEvery {
+                callRepository.establishedCallConversationId()
+            }.returns(establishedCallConversationId)
 
-            given(userConfigRepository)
-                .function(userConfigRepository::isConferenceCallingEnabled)
-                .whenInvoked()
-                .thenReturn(Either.Left(StorageFailure.Generic(Throwable("error"))))
+            every {
+                userConfigRepository.isConferenceCallingEnabled()
+            }.returns(Either.Left(StorageFailure.Generic(Throwable("error"))))
 
             // when
             val result = isEligibleToStartCall(
@@ -123,17 +121,15 @@ class IsEligibleToStartCallUseCaseTest {
 
     @Test
     fun givenUserIsEligibleToStartCall_whenVerifyingIfUserIsEligibleToStartGroupCallWithOtherEstablishedCall_thenReturnOngoingCall() =
-        runTest {
+        runTest(TestKaliumDispatcher.main) {
             // given
-            given(callRepository)
-                .suspendFunction(callRepository::establishedCallConversationId)
-                .whenInvoked()
-                .thenReturn(establishedCallConversationId)
+            coEvery {
+                callRepository.establishedCallConversationId()
+            }.returns(establishedCallConversationId)
 
-            given(userConfigRepository)
-                .function(userConfigRepository::isConferenceCallingEnabled)
-                .whenInvoked()
-                .thenReturn(Either.Right(true))
+            every {
+                userConfigRepository.isConferenceCallingEnabled()
+            }.returns(Either.Right(true))
 
             // when
             val result = isEligibleToStartCall(
@@ -147,17 +143,15 @@ class IsEligibleToStartCallUseCaseTest {
 
     @Test
     fun givenUserIsEligibleToStartCall_whenVerifyingIfUserIsEligibleToStartGroupCallWithSameEstablishedCall_thenReturnEstablished() =
-        runTest {
+        runTest(TestKaliumDispatcher.main) {
             // given
-            given(callRepository)
-                .suspendFunction(callRepository::establishedCallConversationId)
-                .whenInvoked()
-                .thenReturn(conversationId)
+            coEvery {
+                callRepository.establishedCallConversationId()
+            }.returns(conversationId)
 
-            given(userConfigRepository)
-                .function(userConfigRepository::isConferenceCallingEnabled)
-                .whenInvoked()
-                .thenReturn(Either.Right(true))
+            every {
+                userConfigRepository.isConferenceCallingEnabled()
+            }.returns(Either.Right(true))
 
             // when
             val result = isEligibleToStartCall(

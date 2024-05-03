@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,19 +17,34 @@
  */
 package com.wire.kalium.monkeys
 
+import io.ktor.server.application.Application
+import io.ktor.server.application.call
+import io.ktor.server.application.install
+import io.ktor.server.metrics.micrometer.MicrometerMetrics
+import io.ktor.server.response.respond
+import io.ktor.server.routing.get
+import io.ktor.server.routing.routing
 import io.micrometer.core.instrument.DistributionSummary
 import io.micrometer.core.instrument.Tag
 import io.micrometer.core.instrument.Timer
+import io.micrometer.prometheus.PrometheusConfig
 import io.micrometer.prometheus.PrometheusMeterRegistry
 import kotlin.time.measureTimedValue
 import kotlin.time.toJavaDuration
 
-object MetricsCollector {
-    private val registry = PrometheusMeterRegistry { null }
-
-    fun metrics(): String {
-        return this.registry.scrape()
+fun Application.configureMicrometer(route: String) {
+    install(MicrometerMetrics) {
+        registry = MetricsCollector.registry
     }
+    routing {
+        get(route) {
+            call.respond(MetricsCollector.registry.scrape())
+        }
+    }
+}
+
+object MetricsCollector {
+    internal val registry = PrometheusMeterRegistry(PrometheusConfig.DEFAULT)
 
     fun count(key: String, tags: List<Tag>) {
         this.registry.counter(key, tags).increment()

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -42,20 +42,17 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationR
 import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.eq
-import io.mockative.fun1
-import io.mockative.fun2
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.every
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class NewConversationEventHandlerTest {
 
     @Test
@@ -83,15 +80,13 @@ class NewConversationEventHandlerTest {
 
         eventHandler.handle(event)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::persistConversation)
-            .with(eq(event.conversation), eq(teamIdValue))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.persistConversation(eq(event.conversation), eq(teamIdValue), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::fetchUsersIfUnknownByIds)
-            .with(eq(members))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userRepository.fetchUsersIfUnknownByIds(eq(members))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -118,10 +113,9 @@ class NewConversationEventHandlerTest {
 
         eventHandler.handle(event)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateConversationModifiedDate)
-            .with(eq(event.conversationId), matching { it.wasInTheLastSecond })
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.updateConversationModifiedDate(eq(event.conversationId), matches { it.wasInTheLastSecond })
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -156,31 +150,24 @@ class NewConversationEventHandlerTest {
         eventHandler.handle(event)
 
         // then
-        verify(arrangement.newGroupConversationSystemMessagesCreator)
-            .suspendFunction(
-                arrangement.newGroupConversationSystemMessagesCreator::conversationStarted,
-                fun2<UserId, ConversationResponse>()
+        coVerify {
+            arrangement.newGroupConversationSystemMessagesCreator.conversationStarted(any<UserId>(), eq(event.conversation))
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(
+                eq(event.conversationId.toDao()),
+                eq(event.conversation.members.otherMembers.map { it.id.toModel() })
             )
-            .with(any(), eq(event.conversation))
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.newGroupConversationSystemMessagesCreator)
-            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
-            .with(eq(event.conversationId.toDao()), eq(event.conversation.members.otherMembers.map { it.id.toModel() }), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(eq(event.conversation))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.newGroupConversationSystemMessagesCreator)
-            .suspendFunction(
-                arrangement.newGroupConversationSystemMessagesCreator::conversationReadReceiptStatus,
-                fun1<ConversationResponse>()
-            )
-            .with(eq(event.conversation))
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.newGroupConversationSystemMessagesCreator)
-            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
-            .with(eq(event.conversation.id.toModel()))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(eq(event.conversation.id.toModel()))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -215,26 +202,20 @@ class NewConversationEventHandlerTest {
             eventHandler.handle(event)
 
             // then
-            verify(arrangement.newGroupConversationSystemMessagesCreator)
-                .suspendFunction(
-                    arrangement.newGroupConversationSystemMessagesCreator::conversationStarted,
-                    fun2<UserId, ConversationResponse>()
-                )
-                .with(any(), eq(event.conversation))
-                .wasNotInvoked()
+            coVerify {
+                arrangement.newGroupConversationSystemMessagesCreator.conversationStarted(any(), eq(event.conversation))
+            }.wasNotInvoked()
 
-            verify(arrangement.newGroupConversationSystemMessagesCreator)
-                .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
-                .with(eq(event.conversationId.toDao()), eq(event.conversation))
-                .wasNotInvoked()
-
-            verify(arrangement.newGroupConversationSystemMessagesCreator)
-                .suspendFunction(
-                    arrangement.newGroupConversationSystemMessagesCreator::conversationReadReceiptStatus,
-                    fun1<ConversationResponse>()
+            coVerify {
+                arrangement.newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(
+                    eq(event.conversationId.toDao()),
+                    eq(event.conversation.members.otherMembers.map { it.id.toModel() })
                 )
-                .with(eq(event.conversation))
-                .wasNotInvoked()
+            }.wasNotInvoked()
+
+            coVerify {
+                arrangement.newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(eq(event.conversation))
+            }.wasNotInvoked()
         }
 
     @Test
@@ -262,18 +243,15 @@ class NewConversationEventHandlerTest {
             eventHandler.handle(event)
 
             // then
-            verify(arrangement.oneOnOneResolver)
-                .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUserId)
-                .with(any())
-                .wasNotInvoked()
-            verify(arrangement.oneOnOneResolver)
-                .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUser)
-                .with(any())
-                .wasNotInvoked()
-            verify(arrangement.oneOnOneResolver)
-                .suspendFunction(arrangement.oneOnOneResolver::scheduleResolveOneOnOneConversationWithUserId)
-                .with(any())
-                .wasNotInvoked()
+            coVerify {
+                arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), eq(true))
+            }.wasNotInvoked()
+            coVerify {
+                arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any())
+            }.wasNotInvoked()
+            coVerify {
+                arrangement.oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), any())
+            }.wasNotInvoked()
         }
 
     @Test
@@ -303,30 +281,29 @@ class NewConversationEventHandlerTest {
             eventHandler.handle(event)
 
             // then
-            verify(arrangement.oneOnOneResolver)
-                .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUserId)
-                .with(eq(otherUserId))
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUserId(eq(otherUserId), eq(true))
+            }.wasInvoked(exactly = once)
         }
 
     private class Arrangement {
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
+        val conversationRepository = mock(ConversationRepository::class)
 
         @Mock
-        val userRepository = mock(classOf<UserRepository>())
+        val userRepository = mock(UserRepository::class)
 
         @Mock
-        val selfTeamIdProvider = mock(classOf<SelfTeamIdProvider>())
+        val selfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
         @Mock
-        val newGroupConversationSystemMessagesCreator = mock(classOf<NewGroupConversationSystemMessagesCreator>())
+        val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
 
         @Mock
-        private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
+        private val qualifiedIdMapper = mock(QualifiedIdMapper::class)
 
         @Mock
-        val oneOnOneResolver = mock(classOf<OneOnOneResolver>())
+        val oneOnOneResolver = mock(OneOnOneResolver::class)
 
 
         private val newConversationEventHandler: NewConversationEventHandler = NewConversationEventHandlerImpl(
@@ -337,79 +314,64 @@ class NewConversationEventHandlerTest {
             oneOnOneResolver
         )
 
-        fun withUpdateConversationModifiedDateReturning(result: Either<StorageFailure, Unit>) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateConversationModifiedDate)
-                .whenInvokedWith(any(), any())
-                .thenReturn(result)
+        suspend fun withUpdateConversationModifiedDateReturning(result: Either<StorageFailure, Unit>) = apply {
+            coEvery {
+                conversationRepository.updateConversationModifiedDate(any(), any())
+            }.returns(result)
         }
 
-        fun withPersistingConversations(result: Either<StorageFailure, Boolean>) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::persistConversation)
-                .whenInvokedWith(any(), any())
-                .thenReturn(result)
+        suspend fun withPersistingConversations(result: Either<StorageFailure, Boolean>) = apply {
+            coEvery {
+                conversationRepository.persistConversation(any(), any(), any())
+            }.returns(result)
         }
 
-        fun withConversationStartedSystemMessage() = apply {
-            given(newGroupConversationSystemMessagesCreator)
-                .suspendFunction(
-                    newGroupConversationSystemMessagesCreator::conversationStarted,
-                    fun2<UserId, ConversationResponse>()
-                )
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withConversationStartedSystemMessage() = apply {
+            coEvery {
+                newGroupConversationSystemMessagesCreator.conversationStarted(any(), any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withConversationResolvedMembersSystemMessage() = apply {
-            given(newGroupConversationSystemMessagesCreator)
-                .suspendFunction(
-                    newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed
-                )
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withConversationResolvedMembersSystemMessage() = apply {
+            coEvery {
+                newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(any(), any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withConversationUnverifiedWarningSystemMessage() = apply {
-            given(newGroupConversationSystemMessagesCreator)
-                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withConversationUnverifiedWarningSystemMessage() = apply {
+            coEvery {
+                newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withFetchUsersIfUnknownIds(members: Set<QualifiedID>) = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::fetchUsersIfUnknownByIds)
-                .whenInvokedWith(eq(members))
-                .thenReturn(Either.Right(Unit))
+        suspend fun withFetchUsersIfUnknownIds(members: Set<QualifiedID>) = apply {
+            coEvery {
+                userRepository.fetchUsersIfUnknownByIds(eq(members))
+            }.returns(Either.Right(Unit))
         }
 
-        fun withSelfUserTeamId(either: Either<CoreFailure, TeamId?>) = apply {
-            given(selfTeamIdProvider)
-                .suspendFunction(selfTeamIdProvider::invoke)
-                .whenInvoked()
-                .then { either }
+        suspend fun withSelfUserTeamId(either: Either<CoreFailure, TeamId?>) = apply {
+            coEvery {
+                selfTeamIdProvider.invoke()
+            }.returns(either)
         }
 
-        fun withReadReceiptsSystemMessage() = apply {
-            given(newGroupConversationSystemMessagesCreator)
-                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationReadReceiptStatus, fun1<ConversationResponse>())
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withReadReceiptsSystemMessage() = apply {
+            coEvery {
+                newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(any<ConversationResponse>())
+            }.returns(Either.Right(Unit))
         }
 
         fun withQualifiedId(qualifiedId: QualifiedID) = apply {
-            given(qualifiedIdMapper)
-                .function(qualifiedIdMapper::fromStringToQualifiedID)
-                .whenInvokedWith(any())
-                .thenReturn(qualifiedId)
+            every {
+                qualifiedIdMapper.fromStringToQualifiedID(any())
+            }.returns(qualifiedId)
         }
 
-        fun withResolveOneOnOneConversationWithUserId(result: Either<CoreFailure, ConversationId>) = apply {
-            given(oneOnOneResolver)
-                .suspendFunction(oneOnOneResolver::resolveOneOnOneConversationWithUserId)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withResolveOneOnOneConversationWithUserId(result: Either<CoreFailure, ConversationId>) = apply {
+            coEvery {
+                oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), eq(true))
+            }.returns(result)
         }
 
         fun arrange() = this to newConversationEventHandler
@@ -421,8 +383,6 @@ class NewConversationEventHandlerTest {
         ) = Event.Conversation.NewConversation(
             id = "eventId",
             conversationId = TestConversation.ID,
-            transient = false,
-            live = false,
             timestampIso = "timestamp",
             conversation = conversation,
             senderUserId = TestUser.SELF.id

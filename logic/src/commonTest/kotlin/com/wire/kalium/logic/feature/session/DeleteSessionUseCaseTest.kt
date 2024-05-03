@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,20 +26,17 @@ import com.wire.kalium.logic.functional.Either
 import io.ktor.utils.io.errors.IOException
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Ignore
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class DeleteSessionUseCaseTest {
 
     // TODO: re-enable when we have the ability to mock the UserSessionScopeProvider
@@ -56,15 +53,13 @@ class DeleteSessionUseCaseTest {
             assertEquals(DeleteSessionUseCase.Result.Success, result)
         }
 
-        verify(arrange.sessionRepository)
-            .suspendFunction(arrange.sessionRepository::deleteSession)
-            .with(eq(userId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrange.sessionRepository.deleteSession(eq(userId))
+        }.wasInvoked(exactly = once)
 
-        verify(arrange.userSessionScopeProvider)
-            .function(arrange.userSessionScopeProvider::delete)
-            .with(eq(userId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrange.userSessionScopeProvider.delete(eq(userId))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -81,43 +76,38 @@ class DeleteSessionUseCaseTest {
             assertEquals(error, result.cause)
         }
 
-        verify(arrange.sessionRepository)
-            .suspendFunction(arrange.sessionRepository::deleteSession)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrange.sessionRepository.deleteSession(any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrange.userSessionScopeProvider)
-            .function(arrange.userSessionScopeProvider::delete)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrange.userSessionScopeProvider.delete(any())
+        }.wasNotInvoked()
     }
 
     private class Arrangement {
         @Mock
-        val sessionRepository = mock(classOf<SessionRepository>())
+        val sessionRepository = mock(SessionRepository::class)
 
         @Mock
-        val userSessionScopeProvider = mock(classOf<UserSessionScopeProvider>())
+        val userSessionScopeProvider = mock(UserSessionScopeProvider::class)
 
         val deleteSessionUseCase = DeleteSessionUseCase(sessionRepository, userSessionScopeProvider)
 
-        fun withSessionDeleteSuccess(userId: UserId): Arrangement = apply {
-            given(sessionRepository)
-                .suspendFunction(sessionRepository::deleteSession)
-                .whenInvokedWith(eq(userId))
-                .thenReturn(Either.Right(Unit))
+        suspend fun withSessionDeleteSuccess(userId: UserId): Arrangement = apply {
+            coEvery {
+                sessionRepository.deleteSession(eq(userId))
+            }.returns(Either.Right(Unit))
 
-            given(userSessionScopeProvider)
-                .function(userSessionScopeProvider::delete)
-                .whenInvokedWith(eq(userId))
-                .thenReturn(Unit)
+            coEvery {
+                userSessionScopeProvider.delete(eq(userId))
+            }.returns(Unit)
         }
 
-        fun withSessionDeleteFailure(userId: UserId, error: StorageFailure): Arrangement = apply {
-            given(sessionRepository)
-                .suspendFunction(sessionRepository::deleteSession)
-                .whenInvokedWith(eq(userId))
-                .thenReturn(Either.Left(error))
+        suspend fun withSessionDeleteFailure(userId: UserId, error: StorageFailure): Arrangement = apply {
+            coEvery {
+                sessionRepository.deleteSession(eq(userId))
+            }.returns(Either.Left(error))
         }
 
         fun arrange() = this to deleteSessionUseCase

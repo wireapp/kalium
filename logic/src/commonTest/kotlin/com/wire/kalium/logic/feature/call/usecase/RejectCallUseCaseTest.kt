@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,18 +19,16 @@
 package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.feature.call.CallManager
-import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
-import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.thenDoNothing
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -38,44 +36,39 @@ import kotlin.test.Test
 class RejectCallUseCaseTest {
 
     @Mock
-    private val callManager = mock(classOf<CallManager>())
+    private val callManager = mock(CallManager::class)
 
     @Mock
-    private val callRepository = mock(classOf<CallRepository>())
+    private val callRepository = mock(CallRepository::class)
 
     private lateinit var rejectCallUseCase: RejectCallUseCase
 
     @BeforeTest
     fun setup() {
-        rejectCallUseCase = RejectCallUseCase(lazy{ callManager }, callRepository)
+        rejectCallUseCase = RejectCallUseCase(lazy { callManager }, callRepository, TestKaliumDispatcher)
     }
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
-    fun givenCallingParams_whenRunningUseCase_thenInvokeRejectCallOnce() = runTest {
+    fun givenCallingParams_whenRunningUseCase_thenInvokeRejectCallOnce() = runTest(TestKaliumDispatcher.main) {
         val conversationId = ConversationId("someone", "wire.com")
 
-        given(callManager)
-            .suspendFunction(callManager::rejectCall)
-            .whenInvokedWith(eq(conversationId))
-            .thenDoNothing()
+        coEvery {
+            callManager.rejectCall(eq(conversationId))
+        }.returns(Unit)
 
-        given(callRepository)
-            .suspendFunction(callRepository::updateCallStatusById)
-            .whenInvokedWith(eq(conversationId), eq(CallStatus.REJECTED))
-            .thenDoNothing()
+        coEvery {
+            callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.REJECTED))
+        }.returns(Unit)
 
         rejectCallUseCase.invoke(conversationId)
 
-        verify(callManager)
-            .suspendFunction(callManager::rejectCall)
-            .with(eq(conversationId))
-            .wasInvoked(once)
+        coVerify {
+            callManager.rejectCall(eq(conversationId))
+        }.wasInvoked(once)
 
-        verify(callRepository)
-            .suspendFunction(callRepository::updateCallStatusById)
-            .with(eq(conversationId), eq(CallStatus.REJECTED))
-            .wasInvoked(once)
+        coVerify {
+            callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.REJECTED))
+        }.wasInvoked(once)
     }
 
 }

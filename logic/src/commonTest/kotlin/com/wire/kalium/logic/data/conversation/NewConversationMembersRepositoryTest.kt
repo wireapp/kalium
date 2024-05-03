@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,10 +33,10 @@ import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -53,15 +53,13 @@ class NewConversationMembersRepositoryTest {
 
         result.shouldSucceed()
 
-        verify(arrangement.memberDAO)
-            .suspendFunction(arrangement.memberDAO::insertMembersWithQualifiedId)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.memberDAO.insertMembersWithQualifiedId(any(), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.newGroupConversationSystemMessagesCreator)
-            .suspendFunction(arrangement.newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
-            .with(any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(any(), any())
+        }.wasInvoked(once)
     }
 
     @Test
@@ -78,10 +76,9 @@ class NewConversationMembersRepositoryTest {
 
         result.shouldSucceed()
 
-        verify(arrangement.memberDAO)
-            .suspendFunction(arrangement.memberDAO::insertMembersWithQualifiedId)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.memberDAO.insertMembersWithQualifiedId(any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement :
@@ -90,11 +87,10 @@ class NewConversationMembersRepositoryTest {
         @Mock
         val newGroupConversationSystemMessagesCreator = mock(NewGroupConversationSystemMessagesCreator::class)
 
-        fun withPersistResolvedMembersSystemMessageSuccess() = apply {
-            given(newGroupConversationSystemMessagesCreator)
-                .suspendFunction(newGroupConversationSystemMessagesCreator::conversationResolvedMembersAddedAndFailed)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withPersistResolvedMembersSystemMessageSuccess() = apply {
+            coEvery {
+                newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(any(), any())
+            }.returns(Either.Right(Unit))
         }
 
         fun arrange() = this to NewConversationMembersRepositoryImpl(

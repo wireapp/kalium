@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,6 +30,7 @@ import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.RegisterClientRequest
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
+import com.wire.kalium.network.api.base.authenticated.client.UpdateClientCapabilitiesRequest
 import com.wire.kalium.persistence.dao.client.ClientTypeEntity
 import com.wire.kalium.persistence.dao.client.DeviceTypeEntity
 import com.wire.kalium.persistence.dao.client.InsertClientParam
@@ -54,10 +55,16 @@ class ClientMapper(
         deviceType = toDeviceTypeDTO(clientConfig.deviceType()),
         type = param.clientType?.let { toClientTypeDTO(param.clientType) } ?: toClientTypeDTO(clientConfig.clientType()),
         capabilities = param.capabilities?.let { capabilities -> capabilities.map { toClientCapabilityDTO(it) } },
-        model = param.model?.let { param.model } ?: clientConfig.deviceModelName(),
+        model = (param.model?.let { param.model } ?: clientConfig.deviceModelName()) + param.modelPostfix.orEmpty(),
         preKeys = param.preKeys.map { preyKeyMapper.toPreKeyDTO(it) },
         cookieLabel = param.cookieLabel,
         secondFactorVerificationCode = param.secondFactorVerificationCode,
+    )
+
+    fun toUpdateClientCapabilitiesRequest(
+        updateClientCapabilitiesParam: UpdateClientCapabilitiesParam,
+    ): UpdateClientCapabilitiesRequest = UpdateClientCapabilitiesRequest(
+        capabilities = updateClientCapabilitiesParam.capabilities.map { toClientCapabilityDTO(it) },
     )
 
     // TODO: mapping directly form DTO to domain object is not ideal since we lose verification information

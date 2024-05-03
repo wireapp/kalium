@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -83,16 +83,6 @@ fun Int?.isGreaterThan(other: Int?): Boolean {
         returns(true) implies (other != null)
     }
     return this is Int && other is Int && this > other
-}
-
-// Convenience method to compute a value if absent in a "Stately" concurrent map
-fun <K, V> ConcurrentMutableMap<K, V>.safeComputeIfAbsent(key: K, f: () -> V): V {
-    return this.block {
-        if (this.containsKey(key)) return@block this[key]!!
-        val value = f()
-        this[key] = value
-        return@block value
-    }
 }
 
 /**

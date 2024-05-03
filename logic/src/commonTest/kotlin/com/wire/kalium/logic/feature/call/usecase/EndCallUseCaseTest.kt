@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,22 +18,25 @@
 
 package com.wire.kalium.logic.feature.call.usecase
 
+import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.feature.call.CallManager
-import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.doesNothing
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.thenDoNothing
 import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -41,110 +44,96 @@ import kotlin.test.Test
 class EndCallUseCaseTest {
 
     @Mock
-    private val callManager = mock(classOf<CallManager>())
+    private val callManager = mock(CallManager::class)
 
     @Mock
-    private val callRepository = mock(classOf<CallRepository>())
+    private val callRepository = mock(CallRepository::class)
 
     private lateinit var endCall: EndCallUseCase
 
     @BeforeTest
-    fun setup() {
-        endCall = EndCallUseCaseImpl(lazy { callManager }, callRepository)
+    fun setup() = runBlocking {
+        endCall = EndCallUseCaseImpl(lazy { callManager }, callRepository, TestKaliumDispatcher)
 
-        given(callManager)
-            .suspendFunction(callManager::endCall)
-            .whenInvokedWith(eq(conversationId))
-            .thenDoNothing()
+        coEvery {
+            callManager.endCall(eq(conversationId))
+        }.returns(Unit)
 
-        given(callRepository)
-            .function(callRepository::updateIsCameraOnById)
-            .whenInvokedWith(eq(conversationId), eq(false))
-            .thenDoNothing()
+        every { callRepository.updateIsCameraOnById(eq(conversationId), eq(false)) }
+            .doesNothing()
     }
 
     @Test
-    fun givenAnEstablishedCall_whenEndCallIsInvoked_thenUpdateStatusAndInvokeEndCallOnce() = runTest {
-
-        given(callRepository)
-            .suspendFunction(callRepository::callsFlow)
-            .whenInvoked().then { flowOf(listOf(call)) }
-
+    fun givenAnEstablishedCall_whenEndCallIsInvoked_thenUpdateStatusAndInvokeEndCallOnce() = runTest(TestKaliumDispatcher.main) {
+        coEvery {
+            callRepository.callsFlow()
+        }.returns(flowOf(listOf(call)))
 
         endCall.invoke(conversationId)
 
-        verify(callManager)
-            .suspendFunction(callManager::endCall)
-            .with(eq(conversationId))
-            .wasInvoked(once)
+        coVerify {
+            callManager.endCall(eq(conversationId))
+        }.wasInvoked(once)
 
-        verify(callRepository)
-            .function(callRepository::updateIsCameraOnById)
-            .with(eq(conversationId), eq(false))
-            .wasInvoked(once)
+        verify {
+            callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
+        }.wasInvoked(once)
 
-        verify(callRepository)
-            .suspendFunction(callRepository::updateCallStatusById)
-            .with(eq(conversationId), eq(CallStatus.CLOSED))
-            .wasInvoked(once)
+        coVerify {
+            callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
+        }.wasInvoked(once)
     }
 
     @Test
-    fun givenStillOngoingCall_whenEndCallIsInvoked_thenUpdateStatusAndInvokeEndCallOnce() = runTest {
+    fun givenStillOngoingCall_whenEndCallIsInvoked_thenUpdateStatusAndInvokeEndCallOnce() = runTest(TestKaliumDispatcher.main) {
         val stillOngoingCall = call.copy(
             status = CallStatus.STILL_ONGOING,
             conversationType = Conversation.Type.GROUP
         )
 
-        given(callRepository)
-            .suspendFunction(callRepository::callsFlow)
-            .whenInvoked().then { flowOf(listOf(stillOngoingCall)) }
+        coEvery {
+            callRepository.callsFlow()
+        }.returns(flowOf(listOf(stillOngoingCall)))
 
         endCall.invoke(conversationId)
 
-        verify(callManager)
-            .suspendFunction(callManager::endCall)
-            .with(eq(conversationId))
-            .wasInvoked(once)
+        coVerify {
+            callManager.endCall(eq(conversationId))
+        }.wasInvoked(once)
 
-        verify(callRepository)
-            .function(callRepository::updateIsCameraOnById)
-            .with(eq(conversationId), eq(false))
-            .wasInvoked(once)
+        verify {
+            callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
+        }.wasInvoked(once)
 
-        verify(callRepository)
-            .suspendFunction(callRepository::updateCallStatusById)
-            .with(eq(conversationId), eq(CallStatus.CLOSED_INTERNALLY))
-            .wasInvoked(once)
+        coVerify {
+            callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED_INTERNALLY))
+        }.wasInvoked(once)
 
     }
 
     @Test
-    fun givenNoValidCalls_whenEndCallIsInvoked_thenDoNotUpdateStatus() = runTest {
+    fun givenNoValidCalls_whenEndCallIsInvoked_thenDoNotUpdateStatus() = runTest(TestKaliumDispatcher.main) {
         val closedCall = call.copy(
             status = CallStatus.CLOSED
         )
 
-        given(callRepository)
-            .suspendFunction(callRepository::callsFlow)
-            .whenInvoked().then { flowOf(listOf(closedCall)) }
+        coEvery {
+            callRepository.callsFlow()
+        }.returns(flowOf(listOf(closedCall)))
 
         endCall.invoke(conversationId)
 
-        verify(callManager)
-            .suspendFunction(callManager::endCall)
-            .with(eq(conversationId))
-            .wasInvoked(once)
+        coVerify {
+            callManager.endCall(eq(conversationId))
+        }.wasInvoked(once)
 
-        verify(callRepository)
-            .function(callRepository::updateIsCameraOnById)
-            .with(eq(conversationId), eq(false))
-            .wasInvoked(once)
+        verify {
+            callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
+        }.wasInvoked(once)
 
-        verify(callRepository)
-            .suspendFunction(callRepository::updateCallStatusById)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            callRepository.updateCallStatusById(any(), any())
+        }.wasNotInvoked()
     }
 
     companion object {

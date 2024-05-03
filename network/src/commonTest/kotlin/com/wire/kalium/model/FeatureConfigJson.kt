@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -129,7 +129,7 @@ object FeatureConfigJson {
             SSO(FeatureFlagStatusDTO.ENABLED),
             ValidateSAMLEmails(FeatureFlagStatusDTO.ENABLED),
             MLS(
-                MLSConfigDTO(emptyList(), SupportedProtocolDTO.PROTEUS, listOf(SupportedProtocolDTO.PROTEUS), listOf(1), 1),
+                MLSConfigDTO(SupportedProtocolDTO.PROTEUS, listOf(SupportedProtocolDTO.PROTEUS), listOf(1), 1),
                 FeatureFlagStatusDTO.ENABLED
             ),
             FeatureConfigData.E2EI(E2EIConfigDTO("url", 0L), FeatureFlagStatusDTO.ENABLED),

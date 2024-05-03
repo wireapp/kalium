@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,8 @@ import com.wire.kalium.persistence.dao.MigrationDAO
 import com.wire.kalium.persistence.dao.MigrationDAOImpl
 import com.wire.kalium.persistence.dao.PrekeyDAO
 import com.wire.kalium.persistence.dao.PrekeyDAOImpl
+import com.wire.kalium.persistence.dao.SearchDAO
+import com.wire.kalium.persistence.dao.SearchDAOImpl
 import com.wire.kalium.persistence.dao.ServiceDAO
 import com.wire.kalium.persistence.dao.ServiceDAOImpl
 import com.wire.kalium.persistence.dao.TeamDAO
@@ -61,6 +63,7 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageDAOImpl
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAO
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAOImpl
+import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAOImpl
 import com.wire.kalium.persistence.dao.newclient.NewClientDAO
 import com.wire.kalium.persistence.dao.newclient.NewClientDAOImpl
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
@@ -157,8 +160,10 @@ class UserDatabaseBuilder internal constructor(
         MessageConversationLocationContentAdapter = TableMapper.messageConversationLocationContentAdapter,
         MessageLegalHoldContentAdapter = TableMapper.messageLegalHoldContentAdapter,
         MessageConversationProtocolChangedDuringACallContentAdapter =
-            TableMapper.messageConversationProtocolChangedDuringACAllContentAdapter,
+        TableMapper.messageConversationProtocolChangedDuringACAllContentAdapter,
         ConversationLegalHoldStatusChangeNotifiedAdapter = TableMapper.conversationLegalHoldStatusChangeNotifiedAdapter,
+        MessageAssetTransferStatusAdapter = TableMapper.messageAssetTransferStatusAdapter,
+        MessageDraftAdapter = TableMapper.messageDraftsAdapter
     )
 
     init {
@@ -240,8 +245,14 @@ class UserDatabaseBuilder internal constructor(
             userId,
             database.reactionsQueries,
             queriesContext,
+            database.messageAssetTransferStatusQueries,
             database.buttonContentQueries
         )
+
+    val messageDraftDAO = MessageDraftDAOImpl(
+        database.messageDraftsQueries,
+        queriesContext
+    )
 
     val assetDAO: AssetDAO
         get() = AssetDAOImpl(database.assetsQueries, queriesContext)
@@ -273,6 +284,7 @@ class UserDatabaseBuilder internal constructor(
 
     val serviceDAO: ServiceDAO get() = ServiceDAOImpl(database.serviceQueries, queriesContext)
 
+    val searchDAO: SearchDAO get() = SearchDAOImpl(database.searchQueries, queriesContext)
     val conversationMetaDataDAO: ConversationMetaDataDAO
         get() = ConversationMetaDataDAOImpl(
             database.conversationsQueries,

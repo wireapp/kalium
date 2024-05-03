@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,6 @@ import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.configuration.server.ServerConfigMapperImpl
 import com.wire.kalium.logic.configuration.server.toCommonApiVersionType
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.logic.util.stubs.newServerConfigDTO
 import com.wire.kalium.logic.util.stubs.newServerConfigEntity
@@ -32,8 +31,7 @@ import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -45,12 +43,12 @@ class ServerConfigMapperTest {
     private lateinit var serverConfigMapper: ServerConfigMapper
 
     @Mock
-    private val versionMapper = mock(classOf<ApiVersionMapper>())
+    private val versionMapper = mock(ApiVersionMapper::class)
 
     @BeforeTest
     fun setup() {
-        serverConfigMapper = ServerConfigMapperImpl(versionMapper, MapperProvider.idMapper())
-        given(versionMapper).invocation { toDTO(SERVER_CONFIG_TEST.metaData.commonApiVersion) }.then { ApiVersionDTO.Valid(1) }
+        serverConfigMapper = ServerConfigMapperImpl(versionMapper)
+        every{versionMapper.toDTO(SERVER_CONFIG_TEST.metaData.commonApiVersion) }.returns(ApiVersionDTO.Valid(1))
     }
 
     @Test

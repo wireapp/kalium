@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,15 +23,22 @@ import com.wire.kalium.cryptography.AcmeChallenge
 import com.wire.kalium.cryptography.AcmeDirectory
 import com.wire.kalium.cryptography.NewAcmeAuthz
 import com.wire.kalium.cryptography.NewAcmeOrder
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.foldToEitherWhileRight
+import com.wire.kalium.logic.functional.getOrFail
+import com.wire.kalium.logic.functional.left
+import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapE2EIRequest
 import com.wire.kalium.network.api.base.authenticated.e2ei.AccessTokenResponse
@@ -43,33 +50,46 @@ import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
 interface E2EIRepository {
-    suspend fun loadACMEDirectories(): Either<CoreFailure, AcmeDirectory>
-    suspend fun getACMENonce(endpoint: String): Either<CoreFailure, String>
-    suspend fun createNewAccount(prevNonce: String, createAccountEndpoint: String): Either<CoreFailure, String>
-    suspend fun createNewOrder(prevNonce: String, createOrderEndpoint: String): Either<CoreFailure, Triple<NewAcmeOrder, String, String>>
-    suspend fun createAuthz(prevNonce: String, authzEndpoint: String): Either<CoreFailure, Triple<NewAcmeAuthz, String, String>>
-    suspend fun getWireNonce(): Either<CoreFailure, String>
-    suspend fun getWireAccessToken(wireNonce: String): Either<CoreFailure, AccessTokenResponse>
-    suspend fun getDPoPToken(wireNonce: String): Either<CoreFailure, String>
+    suspend fun initFreshE2EIClient(clientId: ClientId? = null, isNewClient: Boolean = false): Either<E2EIFailure, Unit>
+    suspend fun fetchAndSetTrustAnchors(): Either<E2EIFailure, Unit>
+    suspend fun loadACMEDirectories(): Either<E2EIFailure, AcmeDirectory>
+    suspend fun getACMENonce(endpoint: String): Either<E2EIFailure, Nonce>
+    suspend fun createNewAccount(prevNonce: Nonce, createAccountEndpoint: String): Either<E2EIFailure, Nonce>
+    suspend fun createNewOrder(prevNonce: Nonce, createOrderEndpoint: String): Either<E2EIFailure, Triple<NewAcmeOrder, Nonce, String>>
+    suspend fun createAuthorization(prevNonce: Nonce, endpoint: String): Either<E2EIFailure, AcmeAuthorization>
+
+    suspend fun getAuthorizations(
+        prevNonce: Nonce,
+        authorizationsEndpoints: List<String>
+    ): Either<E2EIFailure, AuthorizationResult>
+
+    suspend fun getWireNonce(): Either<E2EIFailure, Nonce>
+    suspend fun getWireAccessToken(dpopToken: String): Either<E2EIFailure, AccessTokenResponse>
+    suspend fun getDPoPToken(wireNonce: Nonce): Either<E2EIFailure, String>
     suspend fun validateDPoPChallenge(
         accessToken: String,
-        prevNonce: String,
+        prevNonce: Nonce,
         acmeChallenge: AcmeChallenge
-    ): Either<CoreFailure, ChallengeResponse>
+    ): Either<E2EIFailure, ChallengeResponse>
+
     suspend fun validateOIDCChallenge(
         idToken: String,
         refreshToken: String,
-        prevNonce: String,
+        prevNonce: Nonce,
         acmeChallenge: AcmeChallenge
-    ): Either<CoreFailure, ChallengeResponse>
-    suspend fun setDPoPChallengeResponse(challengeResponse: ChallengeResponse): Either<CoreFailure, Unit>
-    suspend fun setOIDCChallengeResponse(challengeResponse: ChallengeResponse): Either<CoreFailure, Unit>
-    suspend fun finalize(location: String, prevNonce: String): Either<CoreFailure, Pair<ACMEResponse, String>>
-    suspend fun checkOrderRequest(location: String, prevNonce: String): Either<CoreFailure, Pair<ACMEResponse, String>>
-    suspend fun certificateRequest(location: String, prevNonce: String): Either<CoreFailure, ACMEResponse>
-    suspend fun rotateKeysAndMigrateConversations(certificateChain: String): Either<CoreFailure, Unit>
-    suspend fun getOAuthRefreshToken(): Either<CoreFailure, String?>
+    ): Either<E2EIFailure, ChallengeResponse>
+
+    suspend fun setDPoPChallengeResponse(challengeResponse: ChallengeResponse): Either<E2EIFailure, Unit>
+    suspend fun setOIDCChallengeResponse(challengeResponse: ChallengeResponse): Either<E2EIFailure, Unit>
+    suspend fun finalize(location: String, prevNonce: Nonce): Either<E2EIFailure, Pair<ACMEResponse, String>>
+    suspend fun checkOrderRequest(location: String, prevNonce: Nonce): Either<E2EIFailure, Pair<ACMEResponse, String>>
+    suspend fun certificateRequest(location: String, prevNonce: Nonce): Either<E2EIFailure, ACMEResponse>
+    suspend fun rotateKeysAndMigrateConversations(certificateChain: String, isNewClient: Boolean = false): Either<E2EIFailure, Unit>
+    suspend fun initiateMLSClient(certificateChain: String): Either<E2EIFailure, Unit>
+    suspend fun getOAuthRefreshToken(): Either<E2EIFailure, String?>
     suspend fun nukeE2EIClient()
+    suspend fun fetchFederationCertificates(): Either<E2EIFailure, Unit>
+    fun discoveryUrl(): Either<E2EIFailure, String>
 }
 
 @Suppress("LongParameterList")
@@ -80,157 +100,286 @@ class E2EIRepositoryImpl(
     private val mlsClientProvider: MLSClientProvider,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val mlsConversationRepository: MLSConversationRepository,
-    private val userConfigRepository: UserConfigRepository
+    private val userConfigRepository: UserConfigRepository,
+    private val acmeMapper: AcmeMapper = MapperProvider.acmeMapper()
 ) : E2EIRepository {
 
-    override suspend fun loadACMEDirectories(): Either<CoreFailure, AcmeDirectory> = userConfigRepository.getE2EISettings().flatMap {
+    override suspend fun initFreshE2EIClient(clientId: ClientId?, isNewClient: Boolean): Either<E2EIFailure, Unit> {
+        nukeE2EIClient()
+        return e2EIClientProvider.getE2EIClient(clientId, isNewClient).fold({ it.left() }, { Unit.right() })
+    }
+
+    override suspend fun fetchAndSetTrustAnchors(): Either<E2EIFailure, Unit> = if (userConfigRepository.getShouldFetchE2EITrustAnchor()) {
+        discoveryUrl().flatMap {
+            wrapApiRequest {
+                acmeApi.getTrustAnchors(it)
+            }.fold({
+                E2EIFailure.TrustAnchors(it).left()
+            }, { trustAnchors ->
+                currentClientIdProvider().fold({
+                    E2EIFailure.TrustAnchors(it).left()
+                }, { clientId ->
+                    mlsClientProvider.getCoreCrypto(clientId).fold({
+                        E2EIFailure.MissingMLSClient(it).left()
+                    }, { coreCrypto ->
+                        wrapE2EIRequest {
+                            coreCrypto.registerTrustAnchors(trustAnchors.decodeToString())
+                        }.onSuccess {
+                            userConfigRepository.setShouldFetchE2EITrustAnchors(shouldFetch = false)
+                        }
+                    })
+                })
+            })
+        }
+    } else {
+        Either.Right(Unit)
+    }
+
+    override suspend fun loadACMEDirectories() = discoveryUrl().flatMap {
         wrapApiRequest {
-            acmeApi.getACMEDirectories(TEMP_ACME_DISCOVER_URL)
-        }.flatMap { directories ->
+            acmeApi.getACMEDirectories(it)
+        }.fold({
+            E2EIFailure.AcmeDirectories(it).left()
+        }, { directories ->
             e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
                 wrapE2EIRequest {
                     e2eiClient.directoryResponse(Json.encodeToString(directories).encodeToByteArray())
                 }
             }
-        }
+        })
     }
 
     override suspend fun getACMENonce(endpoint: String) = wrapApiRequest {
         acmeApi.getACMENonce(endpoint)
-    }
+    }.fold({
+        E2EIFailure.AcmeNonce(it).left()
+    }, {
+        Nonce(it).right()
+    })
 
-    override suspend fun createNewAccount(prevNonce: String, createAccountEndpoint: String) =
+    override suspend fun createNewAccount(prevNonce: Nonce, createAccountEndpoint: String) =
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
-            val accountRequest = e2eiClient.getNewAccountRequest(prevNonce)
+            val accountRequest = e2eiClient.getNewAccountRequest(prevNonce.value)
             wrapApiRequest {
                 acmeApi.sendACMERequest(createAccountEndpoint, accountRequest)
-            }.map { apiResponse ->
+            }.fold({
+                E2EIFailure.AcmeNewAccount(it).left()
+            }, { apiResponse ->
                 e2eiClient.setAccountResponse(apiResponse.response)
-                apiResponse.nonce
-            }
+                Nonce(apiResponse.nonce).right()
+            })
         }
 
-    override suspend fun createNewOrder(prevNonce: String, createOrderEndpoint: String) =
+    override suspend fun createNewOrder(prevNonce: Nonce, createOrderEndpoint: String) =
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
-            val orderRequest = e2eiClient.getNewOrderRequest(prevNonce)
+            val orderRequest = e2eiClient.getNewOrderRequest(prevNonce.value)
             wrapApiRequest {
                 acmeApi.sendACMERequest(createOrderEndpoint, orderRequest)
-            }.flatMap { apiResponse ->
-                val orderResponse = e2eiClient.setOrderResponse(apiResponse.response)
-                Either.Right(Triple(orderResponse, apiResponse.nonce, apiResponse.location))
-            }
+            }.fold({
+                E2EIFailure.AcmeNewOrder(it).left()
+            }, { apiResponse ->
+                wrapE2EIRequest {
+                    val orderResponse = e2eiClient.setOrderResponse(apiResponse.response)
+                    Triple(orderResponse, Nonce(apiResponse.nonce), apiResponse.location)
+                }
+            })
         }
 
-    override suspend fun createAuthz(prevNonce: String, authzEndpoint: String) =
+    override suspend fun createAuthorization(prevNonce: Nonce, endpoint: String) =
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
-            val authzRequest = e2eiClient.getNewAuthzRequest(authzEndpoint, prevNonce)
+            val request = e2eiClient.getNewAuthzRequest(endpoint, prevNonce.value)
             wrapApiRequest {
-                acmeApi.sendACMERequest(authzEndpoint, authzRequest)
-            }.flatMap { apiResponse ->
-                val authzResponse = e2eiClient.setAuthzResponse(apiResponse.response)
-                Either.Right(Triple(authzResponse, apiResponse.nonce, apiResponse.location))
-            }
+                acmeApi.sendAuthorizationRequest(endpoint, request)
+            }.fold({
+                E2EIFailure.AcmeNewAccount(it).left()
+            }, { apiResponse ->
+                val response = e2eiClient.setAuthzResponse(apiResponse.response)
+                Either.Right(acmeMapper.fromDto(apiResponse, response))
+            })
         }
 
-    override suspend fun getWireNonce() = currentClientIdProvider().flatMap { clientId ->
+    @Suppress("ReturnCount")
+    override suspend fun getAuthorizations(
+        prevNonce: Nonce,
+        authorizationsEndpoints: List<String>
+    ): Either<E2EIFailure, AuthorizationResult> {
+        var nonce = prevNonce
+        val challenges = mutableMapOf<AuthorizationChallengeType, NewAcmeAuthz>()
+
+        authorizationsEndpoints.forEach { endPoint ->
+            val authorizationResponse = createAuthorization(nonce, endPoint).getOrFail {
+                return it.left()
+            }
+            nonce = authorizationResponse.nonce
+            challenges[authorizationResponse.challengeType] = authorizationResponse.newAcmeAuthz
+        }
+
+        val oidcAuthorization: NewAcmeAuthz? = challenges[AuthorizationChallengeType.OIDC]
+        val dpopAuthorization: NewAcmeAuthz? = challenges[AuthorizationChallengeType.DPoP]
+
+        if (oidcAuthorization == null || dpopAuthorization == null)
+            return E2EIFailure.AcmeAuthorizations.left()
+
+        return AuthorizationResult(oidcAuthorization, dpopAuthorization, nonce).right()
+    }
+
+    override suspend fun getWireNonce() = currentClientIdProvider().fold({ E2EIFailure.WireNonce(it).left() }, { clientId ->
         wrapApiRequest {
             e2EIApi.getWireNonce(clientId.value)
-        }
-    }
+        }.fold({ E2EIFailure.WireNonce(it).left() }, { Nonce(it).right() })
+    })
 
-    override suspend fun getWireAccessToken(dpopToken: String) = currentClientIdProvider().flatMap { clientId ->
-        wrapApiRequest {
-            e2EIApi.getAccessToken(clientId.value, dpopToken)
-        }
-    }
+    override suspend fun getWireAccessToken(dpopToken: String) =
+        currentClientIdProvider().fold({ E2EIFailure.WireAccessToken(it).left() }, { clientId ->
+            wrapApiRequest {
+                e2EIApi.getAccessToken(clientId.value, dpopToken)
+            }.fold({ E2EIFailure.WireAccessToken(it).left() }, { it.right() })
+        })
 
-    override suspend fun getDPoPToken(wireNonce: String) = e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
-        Either.Right(e2eiClient.createDpopToken(wireNonce))
-    }
+    override suspend fun getDPoPToken(wireNonce: Nonce) =
+        e2EIClientProvider.getE2EIClient().flatMap { e2eiClient -> e2eiClient.createDpopToken(wireNonce.value).right() }
 
-    override suspend fun validateDPoPChallenge(accessToken: String, prevNonce: String, acmeChallenge: AcmeChallenge) =
+    override suspend fun validateDPoPChallenge(accessToken: String, prevNonce: Nonce, acmeChallenge: AcmeChallenge) =
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
-            val challengeRequest = e2eiClient.getNewDpopChallengeRequest(accessToken, prevNonce)
+            val challengeRequest = e2eiClient.getNewDpopChallengeRequest(accessToken, prevNonce.value)
             wrapApiRequest {
                 acmeApi.sendChallengeRequest(acmeChallenge.url, challengeRequest)
-            }.map { apiResponse ->
+            }.fold({
+                E2EIFailure.DPoPChallenge(it).left()
+            }, { apiResponse ->
                 setDPoPChallengeResponse(apiResponse)
-                apiResponse
-            }
+                apiResponse.right()
+            })
         }
 
-    override suspend fun validateOIDCChallenge(idToken: String, refreshToken: String, prevNonce: String, acmeChallenge: AcmeChallenge) =
+    override suspend fun validateOIDCChallenge(idToken: String, refreshToken: String, prevNonce: Nonce, acmeChallenge: AcmeChallenge) =
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
-            val challengeRequest = e2eiClient.getNewOidcChallengeRequest(idToken, refreshToken, prevNonce)
+            val challengeRequest = e2eiClient.getNewOidcChallengeRequest(idToken, refreshToken, prevNonce.value)
             wrapApiRequest {
                 acmeApi.sendChallengeRequest(acmeChallenge.url, challengeRequest)
-            }.map { apiResponse ->
-                setOIDCChallengeResponse(apiResponse)
-                apiResponse
-            }
+            }.fold({
+                E2EIFailure.OIDCChallenge(it).left()
+            }, { apiResponse ->
+                if (apiResponse.status == "invalid") {
+                    E2EIFailure.InvalidChallenge.left()
+                } else {
+                    setOIDCChallengeResponse(apiResponse)
+                    apiResponse.right()
+                }
+            })
         }
 
     override suspend fun setDPoPChallengeResponse(challengeResponse: ChallengeResponse) =
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
-            e2eiClient.setDPoPChallengeResponse(Json.encodeToString(challengeResponse).encodeToByteArray())
-            Either.Right(Unit)
-        }
-
-    override suspend fun setOIDCChallengeResponse(challengeResponse: ChallengeResponse) =
-        mlsClientProvider.getCoreCrypto().flatMap { coreCrypto ->
-            e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
-                e2eiClient.setOIDCChallengeResponse(coreCrypto, Json.encodeToString(challengeResponse).encodeToByteArray())
-                Either.Right(Unit)
+            wrapE2EIRequest {
+                e2eiClient.setDPoPChallengeResponse(Json.encodeToString(challengeResponse).encodeToByteArray())
             }
         }
 
-    override suspend fun checkOrderRequest(location: String, prevNonce: String) =
+    override suspend fun setOIDCChallengeResponse(challengeResponse: ChallengeResponse) = mlsClientProvider.getCoreCrypto().fold({
+        E2EIFailure.MissingMLSClient(it).left()
+    }, { coreCrypto ->
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
-            val checkOrderRequest = e2eiClient.checkOrderRequest(location, prevNonce)
+            wrapE2EIRequest {
+                e2eiClient.setOIDCChallengeResponse(coreCrypto, Json.encodeToString(challengeResponse).encodeToByteArray())
+            }
+        }
+    })
+
+    override suspend fun checkOrderRequest(location: String, prevNonce: Nonce) =
+        e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
+            val checkOrderRequest = e2eiClient.checkOrderRequest(location, prevNonce.value)
             wrapApiRequest {
                 acmeApi.sendACMERequest(location, checkOrderRequest)
-            }.map { apiResponse ->
+            }.fold({
+                E2EIFailure.CheckOrderRequest(it).left()
+            }, { apiResponse ->
                 val finalizeOrderUrl = e2eiClient.checkOrderResponse(apiResponse.response)
-                Pair(apiResponse, finalizeOrderUrl)
-            }
+                Pair(apiResponse, finalizeOrderUrl).right()
+            })
         }
 
-    override suspend fun finalize(location: String, prevNonce: String) =
+    override suspend fun finalize(location: String, prevNonce: Nonce) =
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
-            val finalizeRequest = e2eiClient.finalizeRequest(prevNonce)
+            val finalizeRequest = e2eiClient.finalizeRequest(prevNonce.value)
             wrapApiRequest {
                 acmeApi.sendACMERequest(location, finalizeRequest)
-            }.map { apiResponse ->
+            }.fold({
+                E2EIFailure.FinalizeRequest(it).left()
+            }, { apiResponse ->
                 val certificateChain = e2eiClient.finalizeResponse(apiResponse.response)
-                Pair(apiResponse, certificateChain)
-            }
+                Pair(apiResponse, certificateChain).right()
+            })
         }
 
-    override suspend fun certificateRequest(location: String, prevNonce: String) =
+    override suspend fun certificateRequest(location: String, prevNonce: Nonce) =
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
-            val certificateRequest = e2eiClient.certificateRequest(prevNonce)
+            val certificateRequest = e2eiClient.certificateRequest(prevNonce.value)
             wrapApiRequest {
                 acmeApi.sendACMERequest(location, certificateRequest)
-            }.map { it }
+            }.fold({ E2EIFailure.Certificate(it).left() }, { it.right() })
         }
 
-    override suspend fun rotateKeysAndMigrateConversations(certificateChain: String) =
+    override suspend fun rotateKeysAndMigrateConversations(certificateChain: String, isNewClient: Boolean) =
         e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
-            currentClientIdProvider().flatMap { clientId ->
-                mlsConversationRepository.rotateKeysAndMigrateConversations(clientId, e2eiClient, certificateChain)
-            }
+            currentClientIdProvider().fold({
+                E2EIFailure.RotationAndMigration(it).left()
+            }, { clientId ->
+                mlsConversationRepository.rotateKeysAndMigrateConversations(clientId, e2eiClient, certificateChain, isNewClient)
+            })
         }
+
+    override suspend fun initiateMLSClient(certificateChain: String): Either<E2EIFailure, Unit> {
+        return e2EIClientProvider.getE2EIClient().flatMap { e2eiClient ->
+            currentClientIdProvider().fold({
+                E2EIFailure.InitMLSClient(it).left()
+            }, { clientId ->
+                mlsClientProvider.initMLSClientWithCertificate(e2eiClient, certificateChain, clientId)
+            })
+        }
+    }
 
     override suspend fun getOAuthRefreshToken() = e2EIClientProvider.getE2EIClient().flatMap { e2EIClient ->
-        Either.Right(e2EIClient.getOAuthRefreshToken())
+        e2EIClient.getOAuthRefreshToken().right()
     }
+
+    override suspend fun fetchFederationCertificates() = discoveryUrl().flatMap {
+            wrapApiRequest {
+                acmeApi.getACMEFederationCertificateChain(it)
+            }.fold({
+                E2EIFailure.IntermediateCert(it).left()
+            }, { data ->
+                registerIntermediateCAs(data)
+            })
+        }
+
+    private suspend fun registerIntermediateCAs(data: List<String>) =
+        currentClientIdProvider().fold({
+            E2EIFailure.TrustAnchors(it).left()
+        }, { clientId ->
+            mlsClientProvider.getCoreCrypto(clientId).fold({
+                E2EIFailure.MissingMLSClient(it).left()
+            }, { coreCrypto ->
+                data.foldToEitherWhileRight(Unit) { item, _ ->
+                    wrapE2EIRequest {
+                        coreCrypto.registerIntermediateCa(item)
+                    }
+                }
+            })
+        })
+
+    override fun discoveryUrl() =
+        userConfigRepository.getE2EISettings().fold({
+            E2EIFailure.MissingTeamSettings.left()
+        }, { settings ->
+            when {
+                !settings.isRequired -> E2EIFailure.Disabled.left()
+                settings.discoverUrl.isNullOrBlank() -> E2EIFailure.MissingDiscoveryUrl.left()
+                else -> settings.discoverUrl.right()
+            }
+        })
 
     override suspend fun nukeE2EIClient() {
         e2EIClientProvider.nuke()
-    }
-
-    companion object {
-        // todo: remove after testing e2ei
-        const val TEMP_ACME_DISCOVER_URL = "https://acme.elna.wire.link/acme/defaultteams"
     }
 }

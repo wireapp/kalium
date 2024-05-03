@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,11 +21,11 @@ package com.wire.kalium.persistence.dao.message
 import com.wire.kalium.persistence.BaseDatabaseTest
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.UserIDEntity
+import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
 import com.wire.kalium.util.KaliumDispatcherImpl
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
@@ -35,7 +35,6 @@ import kotlin.random.nextInt
 import kotlin.test.BeforeTest
 import kotlin.test.Ignore
 import kotlin.test.Test
-import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
 // Ignore to avoid running unnecessarily on CI. Can be easily re-enabled by developers when needed.
@@ -60,18 +59,29 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
         userDAO = db.userDAO
     }
 
-    @OptIn(ExperimentalTime::class, ExperimentalCoroutinesApi::class)
     @Test
     fun insertRandomMessages() = runTest {
         setupData()
         val count = MESSAGE_COUNT
         val messagesToInsert = generateRandomMessages(count)
-        val duration = measureTime {
+        val messageDuration = measureTime {
             messageDAO.insertOrIgnoreMessages(messagesToInsert)
         }
 
-        println("Took $duration to insert $count random messages")
+        val assetMessages = messagesToInsert.filter { it.content is MessageEntityContent.Asset }
+        val assetMessagesCount = assetMessages.count()
+        assetMessages.forEach {
+            messageDAO.updateAssetTransferStatus(generateRandomAssetTransferStatus(), it.id, it.conversationId)
+        }
+
+        val assetStatusesDuration = measureTime {
+            messageDAO.observeAssetStatuses(conversationEntity1.id).first()
+        }
+
+        println("Took $messageDuration to insert $count random messages")
+        println("Took $assetStatusesDuration to get $assetMessagesCount asset transfer statuses")
     }
+
 
     private fun generateRandomMessages(count: Int): List<MessageEntity> {
         val conversations = listOf(conversationEntity1)
@@ -104,7 +114,6 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
             1000,
             assetName = "test name",
             assetMimeType = "MP4",
-            assetDownloadStatus = null,
             assetOtrKey = byteArrayOf(1),
             assetSha256Key = byteArrayOf(1),
             assetId = "assetId",
@@ -120,7 +129,8 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
         else -> MessageEntityContent.Knock(Random.nextBoolean())
     }
 
-    @OptIn(ExperimentalTime::class, ExperimentalCoroutinesApi::class)
+    private fun generateRandomAssetTransferStatus() = AssetTransferStatusEntity.entries[Random.nextInt(0..8)]
+
     @Test
     fun queryIncreasinglyBiggerAmountByConversationAndVisibility() = runTest {
         setupData()
@@ -142,7 +152,6 @@ class MessageDAOBenchmarkTest : BaseDatabaseTest() {
         }
     }
 
-    @OptIn(ExperimentalTime::class, ExperimentalCoroutinesApi::class)
     @Test
     fun concurrentInsertAndQuery() = runTest {
         setupData()

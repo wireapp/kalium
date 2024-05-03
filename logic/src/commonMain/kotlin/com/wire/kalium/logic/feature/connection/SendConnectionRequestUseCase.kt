@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,8 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isMissingLegalHoldConsent
 
 /**
  * Use Case that allows a user send a connection request to connect with another User
@@ -53,13 +55,26 @@ internal class SendConnectionRequestUseCaseImpl(
             when (coreFailure) {
                 is NetworkFailure.FederatedBackendFailure.FederationDenied ->
                     SendConnectionRequestResult.Failure.FederationDenied
-
+                is NetworkFailure.ServerMiscommunication -> handleServerMissCommunicationError(coreFailure)
                 else -> SendConnectionRequestResult.Failure.GenericFailure(coreFailure)
             }
         }, {
             SendConnectionRequestResult.Success
         })
     }
+
+    private fun handleServerMissCommunicationError(failure: NetworkFailure.ServerMiscommunication): SendConnectionRequestResult.Failure =
+        when (failure.kaliumException) {
+            is KaliumException.InvalidRequestError -> {
+                with(failure.kaliumException) {
+                    when {
+                        isMissingLegalHoldConsent() -> SendConnectionRequestResult.Failure.MissingLegalHoldConsent
+                        else -> SendConnectionRequestResult.Failure.GenericFailure(failure)
+                    }
+                }
+            }
+            else -> SendConnectionRequestResult.Failure.GenericFailure(failure)
+        }
 }
 
 sealed class SendConnectionRequestResult {
@@ -68,6 +83,7 @@ sealed class SendConnectionRequestResult {
     sealed class Failure : SendConnectionRequestResult() {
         class GenericFailure(val coreFailure: CoreFailure) : Failure()
         data object FederationDenied : Failure()
+        data object MissingLegalHoldConsent : Failure()
     }
 
 }

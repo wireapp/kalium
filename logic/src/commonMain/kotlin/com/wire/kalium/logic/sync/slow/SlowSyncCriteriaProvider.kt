@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,7 +44,7 @@ internal interface SyncCriteriaResolution {
     /**
      * At least a criterion is not satisfied
      */
-    class MissingRequirement(val cause: String) : SyncCriteriaResolution
+    data class MissingRequirement(val cause: String) : SyncCriteriaResolution
 }
 
 /**
@@ -75,9 +75,14 @@ internal class SlowSlowSyncCriteriaProviderImpl(
         .onStart { emit(null) }
 
     override suspend fun syncCriteriaFlow(): Flow<SyncCriteriaResolution> =
-        logoutReasonFlow().combine(clientRepository.observeCurrentClientId()) { logoutReason, clientId ->
+        combine(
+            logoutReasonFlow(),
+            clientRepository.observeCurrentClientId(),
+            clientRepository.observeIsClientRegistrationBlockedByE2EI()
+        ) { logoutReason, clientId, isE2ei ->
             handleLogoutReason(logoutReason)
                 ?: handleClientId(clientId)
+                ?: handleIsRegistrationClientBlockedByE2EI(isE2ei)
                 // All criteria are satisfied. We're ready to start sync!
                 ?: Ready
         }
@@ -89,6 +94,12 @@ internal class SlowSlowSyncCriteriaProviderImpl(
      */
     private fun handleClientId(clientId: ClientId?) = if (clientId == null) {
         MissingRequirement("Client is not registered")
+    } else {
+        null
+    }
+
+    private fun handleIsRegistrationClientBlockedByE2EI(isBlocked: Boolean?) = if (isBlocked == true) {
+        MissingRequirement("Client Registration Blocked: E2EI Enrollment Required")
     } else {
         null
     }

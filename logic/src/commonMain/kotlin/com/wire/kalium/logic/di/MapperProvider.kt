@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -49,6 +49,8 @@ import com.wire.kalium.logic.data.conversation.ProtocolInfoMapper
 import com.wire.kalium.logic.data.conversation.ProtocolInfoMapperImpl
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapperImpl
+import com.wire.kalium.logic.data.e2ei.AcmeMapper
+import com.wire.kalium.logic.data.e2ei.AcmeMapperImpl
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapperImpl
@@ -98,11 +100,12 @@ import com.wire.kalium.logic.data.user.type.DomainUserTypeMapperImpl
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapperImpl
 
+@Suppress("TooManyFunctions")
 internal object MapperProvider {
     fun apiVersionMapper(): ApiVersionMapper = ApiVersionMapperImpl()
     fun idMapper(): IdMapper = IdMapperImpl()
-    fun serverConfigMapper(): ServerConfigMapper = ServerConfigMapperImpl(apiVersionMapper(), idMapper())
-    fun sessionMapper(): SessionMapper = SessionMapperImpl(idMapper())
+    fun serverConfigMapper(): ServerConfigMapper = ServerConfigMapperImpl(apiVersionMapper())
+    fun sessionMapper(): SessionMapper = SessionMapperImpl()
     fun availabilityStatusMapper(): AvailabilityStatusMapper = AvailabilityStatusMapperImpl()
     fun connectionStateMapper(): ConnectionStateMapper = ConnectionStateMapperImpl()
     fun userMapper(): UserMapper = UserMapperImpl()
@@ -171,4 +174,5 @@ internal object MapperProvider {
     fun sendMessagePartialFailureMapper(): SendMessagePartialFailureMapper = SendMessagePartialFailureMapperImpl()
     fun serviceMapper(): ServiceMapper = ServiceMapper()
     fun legalHoldStatusMapper(): LegalHoldStatusMapper = LegalHoldStatusMapperImpl
+    fun acmeMapper(): AcmeMapper = AcmeMapperImpl()
 }

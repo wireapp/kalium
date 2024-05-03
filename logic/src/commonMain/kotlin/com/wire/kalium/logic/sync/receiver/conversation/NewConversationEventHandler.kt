@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -76,7 +76,10 @@ internal class NewConversationEventHandlerImpl(
     private suspend fun resolveConversationIfOneOnOne(selfUserTeamId: TeamId?, event: Event.Conversation.NewConversation) =
         if (event.conversation.toConversationType(selfUserTeamId) == ConversationEntity.Type.ONE_ON_ONE) {
             val otherUserId = event.conversation.members.otherMembers.first().id.toModel()
-            oneOnOneResolver.resolveOneOnOneConversationWithUserId(otherUserId).map { Unit }
+            oneOnOneResolver.resolveOneOnOneConversationWithUserId(
+                userId = otherUserId,
+                invalidateCurrentKnownProtocols = true
+            ).map { Unit }
         } else Either.Right(Unit)
 
     /**
@@ -92,7 +95,7 @@ internal class NewConversationEventHandlerImpl(
     ) {
         if (isNewUnhandledConversation) {
             newGroupConversationSystemMessagesCreator.conversationStarted(event.senderUserId, event.conversation)
-            newGroupConversationSystemMessagesCreator.conversationResolvedMembersAddedAndFailed(
+            newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(
                 event.conversationId.toDao(),
                 event.conversation.members.otherMembers.map { it.id.toModel() }
             )

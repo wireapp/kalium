@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,8 +25,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallStatus
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -37,7 +36,7 @@ import kotlin.test.assertEquals
 class ObserveOngoingCallsUseCaseTest {
 
     @Mock
-    val callRepository = mock(classOf<CallRepository>())
+    val callRepository = mock(CallRepository::class)
 
     private lateinit var observeOngoingCalls: ObserveOngoingCallsUseCase
 
@@ -50,10 +49,9 @@ class ObserveOngoingCallsUseCaseTest {
 
     @Test
     fun givenAnEmptyCallList_whenInvokingObserveOngoingCallsUseCase_thenEmitsAnEmptyListOfCalls() = runTest {
-        given(callRepository)
-            .suspendFunction(callRepository::ongoingCallsFlow)
-            .whenInvoked()
-            .thenReturn(flowOf(listOf()))
+        coEvery {
+            callRepository.ongoingCallsFlow()
+        }.returns(flowOf(listOf()))
 
         val result = observeOngoingCalls()
 
@@ -65,10 +63,9 @@ class ObserveOngoingCallsUseCaseTest {
 
     @Test
     fun givenAnOngoingCallList_whenInvokingObserveOngoingCallsUseCase_thenEmitsAnOngoingListOfCalls() = runTest {
-        given(callRepository)
-            .suspendFunction(callRepository::ongoingCallsFlow)
-            .whenInvoked()
-            .thenReturn(flowOf(listOf(DUMMY_CALL)))
+        coEvery {
+            callRepository.ongoingCallsFlow()
+        }.returns(flowOf(listOf(DUMMY_CALL)))
 
         val result = observeOngoingCalls()
 

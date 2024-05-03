@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -73,7 +73,7 @@ class MessageMentionMapperImpl(
     )
 }
 
-fun MessageEntity.Mention.toModel(selfUserId: UserId): MessageMention = MessageMention(
+fun MessageEntity.Mention.toModel(selfUserId: UserId?): MessageMention = MessageMention(
     start = start,
     length = length,
     userId = userId.toModel(),

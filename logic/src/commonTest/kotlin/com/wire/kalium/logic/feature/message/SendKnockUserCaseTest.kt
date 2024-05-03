@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,44 +21,46 @@ package com.wire.kalium.logic.feature.message
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.arrangement.ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangementImpl
+import com.wire.kalium.logic.util.shouldFail
+import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.configure
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.every
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
-import kotlin.test.assertTrue
 import kotlin.time.Duration
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class SendKnockUserCaseTest {
 
     @Test
     fun givenAValidSendKnockRequest_whenSendingKnock_thenShouldReturnASuccessResult() = runTest {
         // Given
         val conversationId = ConversationId("some-convo-id", "some-domain-id")
-        val (arrangement, sendKnockUseCase) = Arrangement()
+        val (arrangement, sendKnockUseCase) = Arrangement(testKaliumDispatcher)
             .withCurrentClientProviderSuccess()
             .withPersistMessageSuccess()
             .withSlowSyncStatusComplete()
@@ -71,22 +73,20 @@ class SendKnockUserCaseTest {
         val result = sendKnockUseCase.invoke(conversationId, false)
 
         // Then
-        assertTrue(result is Either.Right)
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(any(), any())
-            .wasInvoked(once)
-        verify(arrangement.messageSendFailureHandler)
-            .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-            .with(any(), any(), any(), any(), any())
-            .wasNotInvoked()
+        result.shouldSucceed()
+        coVerify {
+            arrangement.messageSender.sendMessage(any(), any())
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
     fun givenNoNetwork_whenSendingKnock_thenShouldReturnAFailure() = runTest {
         // Given
         val conversationId = ConversationId("some-convo-id", "some-domain-id")
-        val (arrangement, sendKnockUseCase) = Arrangement()
+        val (arrangement, sendKnockUseCase) = Arrangement(testKaliumDispatcher)
             .withCurrentClientProviderSuccess()
             .withPersistMessageSuccess()
             .withSlowSyncStatusComplete()
@@ -99,15 +99,13 @@ class SendKnockUserCaseTest {
         val result = sendKnockUseCase.invoke(conversationId, false)
 
         // Then
-        assertTrue(result is Either.Left)
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(any(), any())
-            .wasInvoked(once)
-        verify(arrangement.messageSendFailureHandler)
-            .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-            .with(any(), any(), any(), any(), any())
-            .wasInvoked(once)
+        result.shouldFail()
+        coVerify {
+            arrangement.messageSender.sendMessage(any(), any())
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+        }.wasInvoked(once)
     }
 
     @Test
@@ -115,7 +113,7 @@ class SendKnockUserCaseTest {
         // Given
         val expectedDuration = Duration.parse("PT1H")
         val conversationId = ConversationId("some-convo-id", "some-domain-id")
-        val (arrangement, sendKnockUseCase) = Arrangement()
+        val (arrangement, sendKnockUseCase) = Arrangement(testKaliumDispatcher)
             .withCurrentClientProviderSuccess()
             .withPersistMessageSuccess()
             .withSlowSyncStatusComplete()
@@ -128,78 +126,72 @@ class SendKnockUserCaseTest {
         val result = sendKnockUseCase.invoke(conversationId, false)
 
         // Then
-        assertTrue(result is Either.Right)
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(matching {
-                assertIs<Message.Regular>(it)
-                           it.expirationData?.expireAfter == expectedDuration
-            }, any())
-            .wasInvoked(once)
-        verify(arrangement.messageSendFailureHandler)
-            .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-            .with(any(), any(), any(), any(), any())
-            .wasNotInvoked()
+        result.shouldSucceed()
+        coVerify {
+            arrangement.messageSender.sendMessage(
+                message = matches {
+                    assertIs<Message.Regular>(it)
+                    it.expirationData?.expireAfter == expectedDuration
+                },
+                messageTarget = any()
+            )
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+        }.wasNotInvoked()
     }
 
-
-    private class Arrangement :
+    private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) :
         ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangement by ObserveSelfDeletionTimerSettingsForConversationUseCaseArrangementImpl() {
 
         @Mock
-        private val persistMessage = mock(classOf<PersistMessageUseCase>())
+        private val persistMessage = mock(PersistMessageUseCase::class)
 
         @Mock
-        val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
         @Mock
-        private val slowSyncRepository = mock(classOf<SlowSyncRepository>())
+        private val slowSyncRepository = mock(SlowSyncRepository::class)
 
         @Mock
-        val messageSender = mock(classOf<MessageSender>())
+        val messageSender = mock(MessageSender::class)
 
         @Mock
-        val messageSendFailureHandler = configure(mock(classOf<MessageSendFailureHandler>())) { stubsUnitByDefault = true }
+        val messageSendFailureHandler = mock(MessageSendFailureHandler::class)
 
-
-        fun withSendMessageSuccess() = apply {
-            given(messageSender)
-                .suspendFunction(messageSender::sendMessage)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withSendMessageSuccess() = apply {
+            coEvery {
+                messageSender.sendMessage(any(), any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withSendMessageFailure() = apply {
-            given(messageSender)
-                .suspendFunction(messageSender::sendMessage)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Left(NetworkFailure.NoNetworkConnection(null)))
+        suspend fun withSendMessageFailure() = apply {
+            coEvery {
+                messageSender.sendMessage(any(), any())
+            }.returns(Either.Left(NetworkFailure.NoNetworkConnection(null)))
         }
 
-        fun withCurrentClientProviderSuccess(clientId: ClientId = TestClient.CLIENT_ID) = apply {
-            given(currentClientIdProvider)
-                .suspendFunction(currentClientIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Right(clientId))
+        suspend fun withCurrentClientProviderSuccess(clientId: ClientId = TestClient.CLIENT_ID) = apply {
+            coEvery {
+                currentClientIdProvider.invoke()
+            }.returns(Either.Right(clientId))
         }
 
-        fun withPersistMessageSuccess() = apply {
-            given(persistMessage)
-                .suspendFunction(persistMessage::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withPersistMessageSuccess() = apply {
+            coEvery {
+                persistMessage.invoke(any())
+            }.returns(Either.Right(Unit))
         }
 
         fun withSlowSyncStatusComplete() = apply {
             val stateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
-            given(slowSyncRepository)
-                .getter(slowSyncRepository::slowSyncStatus)
-                .whenInvoked()
-                .thenReturn(stateFlow)
+            every {
+                slowSyncRepository.slowSyncStatus
+            }.returns(stateFlow)
         }
 
-        fun arrange(block: (Arrangement.() -> Unit) = {}): Pair<Arrangement, SendKnockUseCase> {
-            block()
+        fun arrange(block: suspend (Arrangement.() -> Unit) = {}): Pair<Arrangement, SendKnockUseCase> {
+            runBlocking { block() }
             return this to SendKnockUseCase(
                 persistMessage,
                 TestUser.SELF.id,
@@ -207,7 +199,8 @@ class SendKnockUserCaseTest {
                 slowSyncRepository,
                 messageSender,
                 messageSendFailureHandler,
-                observeSelfDeletionTimerSettingsForConversation
+                observeSelfDeletionTimerSettingsForConversation,
+                dispatcher
             )
         }
     }

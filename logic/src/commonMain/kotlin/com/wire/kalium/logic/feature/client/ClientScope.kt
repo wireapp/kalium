@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@ import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.CachedClientIdClearer
+import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCase
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseImpl
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
@@ -49,7 +50,7 @@ import com.wire.kalium.util.DelicateKaliumApi
 
 @Suppress("LongParameterList")
 class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
-    private val clientRepository: ClientRepository,
+    val clientRepository: ClientRepository,
     private val pushTokenRepository: PushTokenRepository,
     private val logoutRepository: LogoutRepository,
     private val preKeyRepository: PreKeyRepository,
@@ -68,7 +69,9 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
     private val secondFactorVerificationRepository: SecondFactorVerificationRepository,
     private val slowSyncRepository: SlowSyncRepository,
     private val cachedClientIdClearer: CachedClientIdClearer,
-    private val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
+    private val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase,
+    private val registerMLSClientUseCase: RegisterMLSClientUseCase,
+    private val syncFeatureConfigsUseCase: SyncFeatureConfigsUseCase
 ) {
     @OptIn(DelicateKaliumApi::class)
     val register: RegisterClientUseCase
@@ -76,13 +79,11 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
             isAllowedToRegisterMLSClient,
             clientRepository,
             preKeyRepository,
-            keyPackageRepository,
-            keyPackageLimitsProvider,
-            mlsClientProvider,
             sessionRepository,
             selfUserId,
             userRepository,
-            secondFactorVerificationRepository
+            secondFactorVerificationRepository,
+            registerMLSClientUseCase
         )
 
     val fetchSelfClients: FetchSelfClientsFromRemoteUseCase
@@ -138,7 +139,8 @@ class ClientScope @OptIn(DelicateKaliumApi::class) internal constructor(
             clearClientData,
             verifyExistingClientUseCase,
             upgradeCurrentSessionUseCase,
-            cachedClientIdClearer
+            cachedClientIdClearer,
+            syncFeatureConfigsUseCase
         )
 
     val remoteClientFingerPrint: ClientFingerprintUseCase get() = ClientFingerprintUseCaseImpl(proteusClientProvider, preKeyRepository)

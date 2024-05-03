@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,21 +19,36 @@ package com.wire.kalium.logic.util.arrangement.dao
 
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
-import io.mockative.*
+import io.mockative.Mock
+import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.fake.valueOf
+import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
+import io.mockative.matches
+import io.mockative.mock
 
 interface ConversionDAOArrangement {
     val conversionDAO: ConversationDAO
 
-    fun withUpdatedGuestRoomLink(
-        conversationId: Matcher<ConversationIDEntity> = any(),
-        uri: Matcher<String?> = any(),
-        isPasswordProtected: Matcher<Boolean> = any()
+    suspend fun withDeleteGustLink(conversationId: Matcher<ConversationIDEntity> = AnyMatcher(valueOf())) {
+        coEvery {
+            conversionDAO.deleteGuestRoomLink(matches { conversationId.matches(it) })
+        }.returns(Unit)
+    }
+
+    suspend fun withUpdatedGuestRoomLink(
+        conversationId: Matcher<ConversationIDEntity> = AnyMatcher(valueOf()),
+        uri: Matcher<String?> = AnyMatcher(valueOf()),
+        isPasswordProtected: Matcher<Boolean> = AnyMatcher(valueOf())
     ) {
-        given(conversionDAO)
-            .suspendFunction(conversionDAO::updateGuestRoomLink)
-            .whenInvokedWith(conversationId, uri, isPasswordProtected)
-            .thenReturn(Unit)
+        coEvery {
+            conversionDAO.updateGuestRoomLink(
+                matches { conversationId.matches(it) },
+                matches { uri.matches(it) },
+                matches { isPasswordProtected.matches(it) }
+            )
+        }.returns(Unit)
     }
 }
 

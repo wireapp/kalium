@@ -1,29 +1,57 @@
 getNotificationsMessages:
+WITH NumberedMessages AS (
+    SELECT
+        m.id,
+        m.conversation_id AS conversationId,
+        m.content_type AS contentType,
+        m.creation_date AS date,
+        m.sender_user_id AS senderUserId,
+        (m.expire_after_millis IS NOT NULL) AS isSelfDelete,
+        u.name AS senderName,
+        u.preview_asset_id AS senderPreviewAssetId,
+        c.name AS conversationName,
+        tc.text_body AS text,
+        tc.is_quoting_self AS isQuotingSelf,
+        ac.asset_mime_type AS assetMimeType,
+        c.muted_status AS mutedStatus,
+        c.type AS conversationType,
+        ROW_NUMBER() OVER (PARTITION BY m.conversation_id ORDER BY m.creation_date DESC) AS row_num
+    FROM
+        Message m
+    JOIN
+        User u ON m.sender_user_id = u.qualified_id
+    JOIN
+        Conversation c ON m.conversation_id = c.qualified_id
+    LEFT JOIN
+        MessageAssetContent ac ON m.id = ac.message_id AND m.conversation_id = ac.conversation_id
+    LEFT JOIN
+        MessageTextContent tc ON m.id = tc.message_id AND m.conversation_id = tc.conversation_id
+    WHERE
+        m.visibility = 'VISIBLE' AND
+        m.content_type IN ('TEXT', 'RESTRICTED_ASSET', 'ASSET', 'KNOCK', 'MISSED_CALL', 'LOCATION') AND
+        m.creation_date > COALESCE(c.last_notified_date, 0) AND
+        NOT EXISTS (SELECT 1 FROM SelfUser WHERE id = m.sender_user_id) AND
+        c.muted_status != 'ALL_MUTED' AND
+        c.archived = 0
+)
 SELECT
-    Message.id AS id,
-    Message.conversation_id AS conversationId,
-    Message.content_type AS contentType,
-    Message.creation_date AS date,
-    Message.sender_user_id AS senderUserId,
-    (Message.expire_after_millis IS NOT NULL) AS isSelfDelete,
-    User.name AS senderName,
-    User.preview_asset_id AS senderPreviewAssetId,
-    Conversation.name AS conversationName,
-    TextContent.text_body AS text,
-    TextContent.is_quoting_self AS isQuotingSelf,
-    AssetContent.asset_mime_type AS assetMimeType,
-    Conversation.muted_status AS mutedStatus,
-    Conversation.type AS conversationType
-FROM Message
-LEFT JOIN SelfUser
-JOIN User ON Message.sender_user_id = User.qualified_id AND Message.content_type IN  ('TEXT', 'RESTRICTED_ASSET', 'ASSET', 'KNOCK', 'MISSED_CALL', 'LOCATION')
-JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id AND (Message.creation_date > IFNULL(Conversation.last_notified_date, 0))
-LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
-LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
+    id,
+    conversationId,
+    contentType,
+    date,
+    senderUserId,
+    isSelfDelete,
+    senderName,
+    senderPreviewAssetId,
+    conversationName,
+    text,
+    isQuotingSelf,
+    assetMimeType,
+    mutedStatus,
+    conversationType
+FROM
+    NumberedMessages
 WHERE
-Message.visibility = 'VISIBLE' AND
-(Message.sender_user_id != SelfUser.id) AND
-(Message.creation_date > IFNULL(Conversation.last_notified_date, 0)) AND
-Conversation.muted_status != 'ALL_MUTED'
-ORDER BY Message.creation_date DESC;
-
+    row_num <= 10 -- there is a bug in sqldelight where you can't use a parameter here
+ORDER BY
+    date DESC;

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,16 +23,16 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneMigrator
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 
 interface OneOnOneMigratorArrangement {
 
     val oneOnOneMigrator: OneOnOneMigrator
 
-    fun withMigrateToMLSReturns(result: Either<CoreFailure, ConversationId>)
+    suspend fun withMigrateToMLSReturns(result: Either<CoreFailure, ConversationId>)
 
-    fun withMigrateToProteusReturns(result: Either<CoreFailure, ConversationId>)
+    suspend fun withMigrateToProteusReturns(result: Either<CoreFailure, ConversationId>)
 }
 
 class OneOnOneMigratorArrangementImpl : OneOnOneMigratorArrangement {
@@ -40,17 +40,15 @@ class OneOnOneMigratorArrangementImpl : OneOnOneMigratorArrangement {
     @Mock
     override val oneOnOneMigrator = mock(OneOnOneMigrator::class)
 
-    override fun withMigrateToMLSReturns(result: Either<CoreFailure, ConversationId>) {
-        given(oneOnOneMigrator)
-            .suspendFunction(oneOnOneMigrator::migrateToMLS)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withMigrateToMLSReturns(result: Either<CoreFailure, ConversationId>) {
+        coEvery {
+            oneOnOneMigrator.migrateToMLS(any())
+        }.returns(result)
     }
 
-    override fun withMigrateToProteusReturns(result: Either<CoreFailure, ConversationId>) {
-        given(oneOnOneMigrator)
-            .suspendFunction(oneOnOneMigrator::migrateToProteus)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withMigrateToProteusReturns(result: Either<CoreFailure, ConversationId>) {
+        coEvery {
+            oneOnOneMigrator.migrateToProteus(any())
+        }.returns(result)
     }
 }

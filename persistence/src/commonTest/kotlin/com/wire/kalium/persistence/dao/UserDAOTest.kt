@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,6 +54,42 @@ class UserDAOTest : BaseDatabaseTest() {
     fun setUp() {
         deleteDatabase(selfUserId)
         db = createDatabase(selfUserId, encryptedDBSecret, true)
+    }
+
+    @Test
+    fun givenUser_whenUpdatingProfileAvatar_thenChangesAreEmittedCorrectly() = runTest(dispatcher) {
+        //given
+        val updatedUser = PartialUserEntity(
+            id = user1.id,
+            name = "newName",
+            handle = user1.handle,
+            email = user1.email,
+            accentId = user1.accentId,
+            previewAssetId = UserAssetIdEntity(
+                value ="newAvatar",
+                domain = "newAvatarDomain"
+            ),
+            completeAssetId = UserAssetIdEntity(
+                value ="newAvatar",
+                domain = "newAvatarDomain"
+            ),
+            supportedProtocols = user1.supportedProtocols
+        )
+
+        db.userDAO.upsertUser(user1)
+
+        db.userDAO.observeUserDetailsByQualifiedID(user1.id).test {
+            assertEquals(user1, (awaitItem() as UserDetailsEntity).toSimpleEntity())
+
+            // when
+            db.userDAO.updateUser(updatedUser)
+
+            // then
+            val newItem = (awaitItem() as UserDetailsEntity)
+            assertEquals(updatedUser.previewAssetId, newItem.previewAssetId)
+            assertEquals(updatedUser.completeAssetId, newItem.completeAssetId)
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test
@@ -828,11 +864,11 @@ class UserDAOTest : BaseDatabaseTest() {
     fun givenAnExistingUser_whenPerformingPartialUpdate_thenChangedFieldIsUpdatedOthersAreUnchanged() = runTest(dispatcher) {
         // given
         val expectedName = "new name"
-        val update = PartialUserEntity(name = expectedName)
+        val update = PartialUserEntity(name = expectedName, id = user1.id)
         db.userDAO.upsertUser(user1)
 
         // when
-        db.userDAO.updateUser(user1.id, update)
+        db.userDAO.updateUser(update)
 
         // then
         val persistedUser = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()

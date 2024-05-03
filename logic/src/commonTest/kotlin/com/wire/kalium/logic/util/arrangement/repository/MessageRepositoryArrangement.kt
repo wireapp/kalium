@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,8 +26,11 @@ import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.fake.valueOf
+import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
+import io.mockative.matches
 import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
 
@@ -35,30 +38,30 @@ internal interface MessageRepositoryArrangement {
     @Mock
     val messageRepository: MessageRepository
 
-    fun withGetMessageById(
+    suspend fun withGetMessageById(
         result: Either<StorageFailure, Message>,
-        messageID: Matcher<String> = any(),
-        conversationId: Matcher<ConversationId> = any()
+        messageID: Matcher<String> = AnyMatcher(valueOf()),
+        conversationId: Matcher<ConversationId> = AnyMatcher(valueOf())
     )
 
-    fun withDeleteMessage(
+    suspend fun withDeleteMessage(
         result: Either<CoreFailure, Unit>,
-        messageID: Matcher<String> = any(),
-        conversationId: Matcher<ConversationId> = any()
+        messageID: Matcher<String> = AnyMatcher(valueOf()),
+        conversationId: Matcher<ConversationId> = AnyMatcher(valueOf())
     )
 
-    fun withMarkAsDeleted(
+    suspend fun withMarkAsDeleted(
         result: Either<StorageFailure, Unit>,
-        messageID: Matcher<String> = any(),
-        conversationId: Matcher<ConversationId> = any()
+        messageID: Matcher<String> = AnyMatcher(valueOf()),
+        conversationId: Matcher<ConversationId> = AnyMatcher(valueOf())
     )
 
-    fun withLocalNotifications(list: Either<CoreFailure, Flow<List<LocalNotification>>>)
+    suspend fun withLocalNotifications(list: Either<CoreFailure, Flow<List<LocalNotification>>>)
 
-    fun withMoveMessagesToAnotherConversation(
+    suspend fun withMoveMessagesToAnotherConversation(
         result: Either<StorageFailure, Unit>,
-        originalConversation: Matcher<ConversationId> = any(),
-        targetConversation: Matcher<ConversationId> = any()
+        originalConversation: Matcher<ConversationId> = AnyMatcher(valueOf()),
+        targetConversation: Matcher<ConversationId> = AnyMatcher(valueOf())
     )
 }
 
@@ -66,54 +69,61 @@ internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangem
     @Mock
     override val messageRepository: MessageRepository = mock(MessageRepository::class)
 
-    override fun withGetMessageById(
+    override suspend fun withGetMessageById(
         result: Either<StorageFailure, Message>,
         messageID: Matcher<String>,
         conversationId: Matcher<ConversationId>
     ) {
-        given(messageRepository)
-            .suspendFunction(messageRepository::getMessageById)
-            .whenInvokedWith(conversationId, messageID)
-            .thenReturn(result)
+        coEvery {
+            messageRepository.getMessageById(
+                matches { conversationId.matches(it) },
+                matches { messageID.matches(it) }
+            )
+        }.returns(result)
     }
 
-    override fun withDeleteMessage(
+    override suspend fun withDeleteMessage(
         result: Either<CoreFailure, Unit>,
         messageID: Matcher<String>,
         conversationId: Matcher<ConversationId>
     ) {
-        given(messageRepository)
-            .suspendFunction(messageRepository::deleteMessage)
-            .whenInvokedWith(messageID, conversationId)
-            .thenReturn(result)
+        coEvery {
+            messageRepository.deleteMessage(
+                matches { messageID.matches(it) },
+                matches { conversationId.matches(it) }
+            )
+        }.returns(result)
     }
 
-    override fun withMarkAsDeleted(
+    override suspend fun withMarkAsDeleted(
         result: Either<StorageFailure, Unit>,
         messageID: Matcher<String>,
         conversationId: Matcher<ConversationId>
     ) {
-        given(messageRepository)
-            .suspendFunction(messageRepository::markMessageAsDeleted)
-            .whenInvokedWith(messageID, conversationId)
-            .thenReturn(result)
+        coEvery {
+            messageRepository.markMessageAsDeleted(
+                matches { messageID.matches(it) },
+                matches { conversationId.matches(it) }
+            )
+        }.returns(result)
     }
 
-    override fun withLocalNotifications(list: Either<CoreFailure, Flow<List<LocalNotification>>>) {
-        given(messageRepository)
-            .suspendFunction(messageRepository::getNotificationMessage)
-            .whenInvokedWith(any())
-            .thenReturn(list)
+    override suspend fun withLocalNotifications(list: Either<CoreFailure, Flow<List<LocalNotification>>>) {
+        coEvery {
+            messageRepository.getNotificationMessage(any())
+        }.returns(list)
     }
 
-    override fun withMoveMessagesToAnotherConversation(
+    override suspend fun withMoveMessagesToAnotherConversation(
         result: Either<StorageFailure, Unit>,
         originalConversation: Matcher<ConversationId>,
         targetConversation: Matcher<ConversationId>
     ) {
-        given(messageRepository)
-            .suspendFunction(messageRepository::moveMessagesToAnotherConversation)
-            .whenInvokedWith(originalConversation, targetConversation)
-            .thenReturn(result)
+        coEvery {
+            messageRepository.moveMessagesToAnotherConversation(
+                matches { originalConversation.matches(it) },
+                matches { targetConversation.matches(it) }
+            )
+        }.returns(result)
     }
 }

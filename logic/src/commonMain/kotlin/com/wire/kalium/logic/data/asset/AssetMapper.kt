@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_CBC
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_GCM
@@ -35,7 +34,7 @@ import com.wire.kalium.network.api.base.authenticated.asset.AssetResponse
 import com.wire.kalium.network.api.base.model.AssetRetentionType
 import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
-import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.LegalHoldStatus
@@ -119,9 +118,7 @@ class AssetMapperImpl(
                         assetEncryptionAlgorithm?.contains("GCM") == true -> AES_GCM
                         else -> AES_CBC
                     }
-                ),
-                uploadStatus = assetUploadStatus.toModel(),
-                downloadStatus = assetDownloadStatus.toModel()
+                )
             )
         }
     }
@@ -194,9 +191,7 @@ class AssetMapperImpl(
 
                         is Asset.Status.NotUploaded -> defaultRemoteData
                     }
-                } ?: defaultRemoteData,
-                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED,
-                uploadStatus = Message.UploadStatus.NOT_UPLOADED
+                } ?: defaultRemoteData
             )
         }
     }
@@ -206,84 +201,70 @@ class AssetMapperImpl(
         expectsReadConfirmation: Boolean,
         legalHoldStatus: LegalHoldStatus
     ): Asset = with(messageContent.value) {
-            Asset(
-                original = Asset.Original(
-                    mimeType = mimeType,
-                    size = sizeInBytes,
-                    name = name,
-                    metaData = when (metadata) {
-                        is Image -> Asset.Original.MetaData.Image(
-                            Asset.ImageMetaData(
-                                width = metadata.width,
-                                height = metadata.height,
-                            )
+        Asset(
+            original = Asset.Original(
+                mimeType = mimeType,
+                size = sizeInBytes,
+                name = name,
+                metaData = when (metadata) {
+                    is Image -> Asset.Original.MetaData.Image(
+                        Asset.ImageMetaData(
+                            width = metadata.width,
+                            height = metadata.height,
                         )
-
-                        is Audio -> Asset.Original.MetaData.Audio(
-                            audio = Asset.AudioMetaData(
-                                durationInMillis = metadata.durationMs,
-                                normalizedLoudness = metadata.normalizedLoudness?.let { ByteArr(it) }
-                            )
-                        )
-
-                        else -> null
-                    }
-                ),
-                status = Asset.Status.Uploaded(
-                    uploaded = Asset.RemoteData(
-                        otrKey = ByteArr(remoteData.otrKey),
-                        sha256 = ByteArr(remoteData.sha256),
-                        assetId = remoteData.assetId,
-                        assetToken = remoteData.assetToken,
-                        assetDomain = remoteData.assetDomain,
-                        encryption = encryptionAlgorithmMapper.toProtoBufModel(remoteData.encryptionAlgorithm)
                     )
-                ),
-                expectsReadConfirmation = expectsReadConfirmation,
-                legalHoldStatus = legalHoldStatus
-            )
-        }
-}
 
-fun Message.UploadStatus.toDao(): MessageEntity.UploadStatus {
-    return when (this) {
-        Message.UploadStatus.NOT_UPLOADED -> MessageEntity.UploadStatus.NOT_UPLOADED
-        Message.UploadStatus.UPLOAD_IN_PROGRESS -> MessageEntity.UploadStatus.IN_PROGRESS
-        Message.UploadStatus.UPLOADED -> MessageEntity.UploadStatus.UPLOADED
-        Message.UploadStatus.FAILED_UPLOAD -> MessageEntity.UploadStatus.FAILED
+                    is Audio -> Asset.Original.MetaData.Audio(
+                        audio = Asset.AudioMetaData(
+                            durationInMillis = metadata.durationMs,
+                            normalizedLoudness = metadata.normalizedLoudness?.let { ByteArr(it) }
+                        )
+                    )
+
+                    else -> null
+                }
+            ),
+            status = Asset.Status.Uploaded(
+                uploaded = Asset.RemoteData(
+                    otrKey = ByteArr(remoteData.otrKey),
+                    sha256 = ByteArr(remoteData.sha256),
+                    assetId = remoteData.assetId,
+                    assetToken = remoteData.assetToken,
+                    assetDomain = remoteData.assetDomain,
+                    encryption = encryptionAlgorithmMapper.toProtoBufModel(remoteData.encryptionAlgorithm)
+                )
+            ),
+            expectsReadConfirmation = expectsReadConfirmation,
+            legalHoldStatus = legalHoldStatus
+        )
     }
 }
 
-fun MessageEntity.UploadStatus?.toModel(): Message.UploadStatus {
+fun AssetTransferStatus.toDao(): AssetTransferStatusEntity {
     return when (this) {
-        MessageEntity.UploadStatus.NOT_UPLOADED -> Message.UploadStatus.NOT_UPLOADED
-        MessageEntity.UploadStatus.IN_PROGRESS -> Message.UploadStatus.UPLOAD_IN_PROGRESS
-        MessageEntity.UploadStatus.UPLOADED -> Message.UploadStatus.UPLOADED
-        MessageEntity.UploadStatus.FAILED -> Message.UploadStatus.FAILED_UPLOAD
-        null -> Message.UploadStatus.NOT_UPLOADED
+        AssetTransferStatus.NOT_DOWNLOADED -> AssetTransferStatusEntity.NOT_DOWNLOADED
+        AssetTransferStatus.UPLOAD_IN_PROGRESS -> AssetTransferStatusEntity.UPLOAD_IN_PROGRESS
+        AssetTransferStatus.DOWNLOAD_IN_PROGRESS -> AssetTransferStatusEntity.DOWNLOAD_IN_PROGRESS
+        AssetTransferStatus.UPLOADED -> AssetTransferStatusEntity.UPLOADED
+        AssetTransferStatus.SAVED_INTERNALLY -> AssetTransferStatusEntity.SAVED_INTERNALLY
+        AssetTransferStatus.SAVED_EXTERNALLY -> AssetTransferStatusEntity.SAVED_EXTERNALLY
+        AssetTransferStatus.FAILED_UPLOAD -> AssetTransferStatusEntity.FAILED_UPLOAD
+        AssetTransferStatus.FAILED_DOWNLOAD -> AssetTransferStatusEntity.FAILED_DOWNLOAD
+        AssetTransferStatus.NOT_FOUND -> AssetTransferStatusEntity.NOT_FOUND
     }
 }
 
-fun Message.DownloadStatus.toDao(): MessageEntity.DownloadStatus {
+fun AssetTransferStatusEntity.toModel(): AssetTransferStatus {
     return when (this) {
-        Message.DownloadStatus.NOT_DOWNLOADED -> MessageEntity.DownloadStatus.NOT_DOWNLOADED
-        Message.DownloadStatus.DOWNLOAD_IN_PROGRESS -> MessageEntity.DownloadStatus.IN_PROGRESS
-        Message.DownloadStatus.SAVED_INTERNALLY -> MessageEntity.DownloadStatus.SAVED_INTERNALLY
-        Message.DownloadStatus.SAVED_EXTERNALLY -> MessageEntity.DownloadStatus.SAVED_EXTERNALLY
-        Message.DownloadStatus.FAILED_DOWNLOAD -> MessageEntity.DownloadStatus.FAILED
-        Message.DownloadStatus.NOT_FOUND -> MessageEntity.DownloadStatus.NOT_FOUND
-    }
-}
-
-fun MessageEntity.DownloadStatus?.toModel(): Message.DownloadStatus {
-    return when (this) {
-        MessageEntity.DownloadStatus.NOT_DOWNLOADED -> Message.DownloadStatus.NOT_DOWNLOADED
-        MessageEntity.DownloadStatus.IN_PROGRESS -> Message.DownloadStatus.DOWNLOAD_IN_PROGRESS
-        MessageEntity.DownloadStatus.SAVED_INTERNALLY -> Message.DownloadStatus.SAVED_INTERNALLY
-        MessageEntity.DownloadStatus.SAVED_EXTERNALLY -> Message.DownloadStatus.SAVED_EXTERNALLY
-        MessageEntity.DownloadStatus.FAILED -> Message.DownloadStatus.FAILED_DOWNLOAD
-        MessageEntity.DownloadStatus.NOT_FOUND -> Message.DownloadStatus.NOT_FOUND
-        null -> Message.DownloadStatus.NOT_DOWNLOADED
+        AssetTransferStatusEntity.NOT_DOWNLOADED -> AssetTransferStatus.NOT_DOWNLOADED
+        AssetTransferStatusEntity.UPLOAD_IN_PROGRESS -> AssetTransferStatus.UPLOAD_IN_PROGRESS
+        AssetTransferStatusEntity.DOWNLOAD_IN_PROGRESS -> AssetTransferStatus.DOWNLOAD_IN_PROGRESS
+        AssetTransferStatusEntity.UPLOADED -> AssetTransferStatus.UPLOADED
+        AssetTransferStatusEntity.SAVED_INTERNALLY -> AssetTransferStatus.SAVED_INTERNALLY
+        AssetTransferStatusEntity.SAVED_EXTERNALLY -> AssetTransferStatus.SAVED_EXTERNALLY
+        AssetTransferStatusEntity.FAILED_UPLOAD -> AssetTransferStatus.FAILED_UPLOAD
+        AssetTransferStatusEntity.FAILED_DOWNLOAD -> AssetTransferStatus.FAILED_DOWNLOAD
+        AssetTransferStatusEntity.NOT_FOUND -> AssetTransferStatus.NOT_FOUND
     }
 }
 
@@ -296,7 +277,6 @@ fun AssetMessageEntity.toModel(): AssetMessage {
         assetId,
         width,
         height,
-        downloadStatus.toModel(),
         assetPath = assetPath?.toPath(),
         isSelfAsset = isSelfAsset
     )

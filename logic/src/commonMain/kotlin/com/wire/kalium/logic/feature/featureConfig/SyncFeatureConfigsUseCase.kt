@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -61,7 +61,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
     private val appLockConfigHandler: AppLockConfigHandler
 ) : SyncFeatureConfigsUseCase {
     override suspend operator fun invoke(): Either<CoreFailure, Unit> =
-        featureConfigRepository.getFeatureConfigs().flatMap {
+        featureConfigRepository.getFeatureConfigs().flatMap { it ->
             // TODO handle other feature flags and after it bump version in [SlowSyncManager.CURRENT_VERSION]
             guestRoomConfigHandler.handle(it.guestRoomLinkModel)
             fileSharingConfigHandler.handle(it.fileSharingModel)
@@ -71,7 +71,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
             conferenceCallingConfigHandler.handle(it.conferenceCallingModel)
             passwordChallengeConfigHandler.handle(it.secondFactorPasswordChallengeModel)
             selfDeletingMessagesConfigHandler.handle(it.selfDeletingMessagesModel)
-            e2EIConfigHandler.handle(it.e2EIModel)
+            it.e2EIModel?.let { e2EIModel -> e2EIConfigHandler.handle(e2EIModel) }
             appLockConfigHandler.handle(it.appLockModel)
             Either.Right(Unit)
         }.onFailure { networkFailure ->

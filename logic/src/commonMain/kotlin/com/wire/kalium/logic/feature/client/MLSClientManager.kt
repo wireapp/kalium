@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -80,7 +80,8 @@ internal class MLSClientManagerImpl(
             if (!it) {
                 currentClientIdProvider().flatMap { clientId ->
                     kaliumLogger.i("No existing MLS Client, registering..")
-                    registerMLSClient.value(clientId).onSuccess {
+                    registerMLSClient.value(clientId).onSuccess { mlsClientRegistrationResult ->
+                        kaliumLogger.i("Registering mls client result: $mlsClientRegistrationResult")
                         kaliumLogger.i("Triggering slow sync after enabling MLS")
                         slowSyncRepository.value.clearLastSlowSyncCompletionInstant()
                     }

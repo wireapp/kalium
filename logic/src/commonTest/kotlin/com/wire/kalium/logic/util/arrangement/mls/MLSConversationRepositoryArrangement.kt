@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,26 +17,41 @@
  */
 package com.wire.kalium.logic.util.arrangement.mls
 
+import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 
 interface MLSConversationRepositoryArrangement {
     val mlsConversationRepository: MLSConversationRepository
 
-    fun withIsGroupOutOfSync(result: Either<CoreFailure, Boolean>)
+    suspend fun withIsGroupOutOfSync(result: Either<CoreFailure, Boolean>)
+    suspend fun withUserIdentity(result: Either<CoreFailure, List<WireIdentity>>)
+    suspend fun withMembersIdentities(result: Either<CoreFailure, Map<UserId, List<WireIdentity>>>)
 }
 
 class MLSConversationRepositoryArrangementImpl : MLSConversationRepositoryArrangement {
     override val mlsConversationRepository = mock(MLSConversationRepository::class)
 
-    override fun withIsGroupOutOfSync(result: Either<CoreFailure, Boolean>) {
-        given(mlsConversationRepository)
-            .suspendFunction(mlsConversationRepository::isGroupOutOfSync)
-            .whenInvokedWith(any(), any())
-            .thenReturn(result)
+    override suspend fun withIsGroupOutOfSync(result: Either<CoreFailure, Boolean>) {
+        coEvery {
+            mlsConversationRepository.isGroupOutOfSync(any(), any())
+        }.returns(result)
+    }
+
+    override suspend fun withUserIdentity(result: Either<CoreFailure, List<WireIdentity>>) {
+        coEvery {
+            mlsConversationRepository.getUserIdentity(any())
+        }.returns(result)
+    }
+
+    override suspend fun withMembersIdentities(result: Either<CoreFailure, Map<UserId, List<WireIdentity>>>) {
+        coEvery {
+            mlsConversationRepository.getMembersIdentities(any(), any())
+        }.returns(result)
     }
 }

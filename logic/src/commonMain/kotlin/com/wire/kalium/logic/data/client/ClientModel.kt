@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,6 +35,7 @@ data class RegisterClientParam(
     val model: String?,
     val cookieLabel: String?,
     val secondFactorVerificationCode: String? = null,
+    val modelPostfix: String? = null
 )
 
 data class DeleteClientParam(
@@ -94,6 +95,9 @@ data class OtherUserClient(
     val isProteusVerified: Boolean
 )
 
+data class UpdateClientCapabilitiesParam(
+    val capabilities: List<ClientCapability>
+)
 /**
  * True if the client is considered to be in active use.
  *
@@ -101,4 +105,4 @@ data class OtherUserClient(
  * the `INACTIVE_DURATION`.
  */
 val Client.isActive: Boolean
-    get() = lastActive?.let { (Clock.System.now() - it) < Client.INACTIVE_DURATION } ?: false
+    get() = (lastActive ?: registrationTime)?.let { (Clock.System.now() - it) < Client.INACTIVE_DURATION } ?: false

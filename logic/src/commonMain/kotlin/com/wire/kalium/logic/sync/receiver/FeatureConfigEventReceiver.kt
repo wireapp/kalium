@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
@@ -51,7 +52,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
     private val appLockConfigHandler: AppLockConfigHandler
 ) : FeatureConfigEventReceiver {
 
-    override suspend fun onEvent(event: Event.FeatureConfig): Either<CoreFailure, Unit> =
+    override suspend fun onEvent(event: Event.FeatureConfig, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> =
         handleFeatureConfigEvent(event)
             .onSuccess {
                 kaliumLogger.logEventProcessing(

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,20 +18,18 @@
 
 package com.wire.kalium.logic.data.session
 
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountInfoEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
+import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class SessionRepositoryTest {
 
     /*
@@ -78,7 +76,6 @@ class SessionRepositoryTest {
     private class Arrangement {
 
         val sessionMapper = MapperProvider.sessionMapper()
-        val idMapper = MapperProvider.idMapper()
 
         @Mock
         val accountsDAO: AccountsDAO = mock(AccountsDAO::class)
@@ -86,21 +83,22 @@ class SessionRepositoryTest {
         @Mock
         val authTokenStorage: AuthTokenStorage = mock(AuthTokenStorage::class)
 
-        @Mock
-        val kaliumConfigs: KaliumConfigs = mock(KaliumConfigs::class)
+        val kaliumConfigs: KaliumConfigs = KaliumConfigs()
 
         @Mock
-        val serverConfigRepository: ServerConfigRepository = mock(ServerConfigRepository::class)
+        val serverConfigurationDAO: ServerConfigurationDAO = mock(ServerConfigurationDAO::class)
 
         private val sessionRepository =
-            SessionDataSource(accountsDAO, authTokenStorage, serverConfigRepository, kaliumConfigs, sessionMapper, idMapper)
+            SessionDataSource(accountsDAO, authTokenStorage, serverConfigurationDAO, kaliumConfigs)
 
         val validAccountIndoEntity = AccountInfoEntity(userIDEntity = UserIDEntity("1", "domain"), null)
 
         val accountInfoValid = sessionMapper.fromAccountInfoEntity(validAccountIndoEntity)
 
         suspend fun withObserveAllAccountList(allSessionsFlow: Flow<List<AccountInfoEntity>>) = apply {
-            given(accountsDAO).coroutine { accountsDAO.observeAllAccountList() }.then { allSessionsFlow }
+            coEvery {
+                accountsDAO.observeAllAccountList()
+            }.returns(allSessionsFlow)
         }
 
         internal fun arrange() = this to sessionRepository

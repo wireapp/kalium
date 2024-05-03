@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -218,6 +218,7 @@ data class Conversation(
     sealed interface ProtocolInfo {
         data object Proteus : ProtocolInfo {
             override fun name() = "Proteus"
+            override fun toLogMap() = mapOf("name" to name())
         }
 
         data class MLS(
@@ -228,6 +229,15 @@ data class Conversation(
             override val cipherSuite: CipherSuite
         ) : MLSCapable {
             override fun name() = "MLS"
+
+            override fun toLogMap() = mapOf(
+                "name" to name(),
+                "groupId" to groupId.toLogString(),
+                "groupState" to groupState.name,
+                "epoch" to "$epoch",
+                "keyingMaterialLastUpdate" to keyingMaterialLastUpdate.toString(),
+                "cipherSuite" to cipherSuite.name
+            )
         }
 
         data class Mixed(
@@ -238,6 +248,14 @@ data class Conversation(
             override val cipherSuite: CipherSuite
         ) : MLSCapable {
             override fun name() = "Mixed"
+            override fun toLogMap() = mapOf(
+                "name" to name(),
+                "groupId" to groupId.toLogString(),
+                "groupState" to groupState.name,
+                "epoch" to "$epoch",
+                "keyingMaterialLastUpdate" to keyingMaterialLastUpdate.toString(),
+                "cipherSuite" to cipherSuite.name
+            )
         }
 
         sealed interface MLSCapable : ProtocolInfo {
@@ -251,6 +269,7 @@ data class Conversation(
         }
 
         fun name(): String
+        fun toLogMap(): Map<String, Any?>
     }
 
     data class Member(val id: UserId, val role: Role) {

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ package com.wire.kalium.logic.sync.receiver
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.functional.Either
@@ -34,7 +35,7 @@ internal class UserPropertiesEventReceiverImpl internal constructor(
     private val userConfigRepository: UserConfigRepository
 ) : UserPropertiesEventReceiver {
 
-    override suspend fun onEvent(event: Event.UserProperty): Either<CoreFailure, Unit> {
+    override suspend fun onEvent(event: Event.UserProperty, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
         return when (event) {
             is Event.UserProperty.ReadReceiptModeSet -> {
                 handleReadReceiptMode(event)

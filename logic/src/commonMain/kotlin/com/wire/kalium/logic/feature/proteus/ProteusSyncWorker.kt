@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,9 +18,13 @@
 package com.wire.kalium.logic.feature.proteus
 
 import com.wire.kalium.cryptography.ProteusClient
+import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
+import com.wire.kalium.logic.logStructuredJson
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filter
@@ -44,21 +48,34 @@ internal interface ProteusSyncWorker {
  * @param incrementalSyncRepository The incremental sync repository.
  * @param proteusPreKeyRefiller The proteus pre-key refiller.
  * @param preKeyRepository The pre-key repository.
- * @param minInterValBetweenRefills The minimum interval between prekey refills.
+ * @param minIntervalBetweenRefills The minimum interval between prekey refills.
  */
 internal class ProteusSyncWorkerImpl(
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val proteusPreKeyRefiller: ProteusPreKeyRefiller,
     private val preKeyRepository: PreKeyRepository,
-    private val minInterValBetweenRefills: Duration = MIN_INTEVAL_BETWEEN_REFILLS
+    private val minIntervalBetweenRefills: Duration = MIN_INTERVAL_BETWEEN_REFILLS,
+    kaliumLogger: KaliumLogger,
 ) : ProteusSyncWorker {
 
+    private val logger = kaliumLogger.withTextTag("ProteusSyncWorker")
+
     override suspend fun execute() {
+        logger.d("Starting to monitor")
         preKeyRepository.lastPreKeyRefillCheckInstantFlow()
             .collectLatest { lastRefill ->
                 val now = Clock.System.now()
-                val nextCheckTime = lastRefill?.plus(minInterValBetweenRefills) ?: now
+                val nextCheckTime = lastRefill?.plus(minIntervalBetweenRefills) ?: now
                 val delayUntilNextCheck = nextCheckTime - now
+                logger.logStructuredJson(
+                    level = KaliumLogLevel.DEBUG,
+                    leadingMessage = "Delaying until next check",
+                    jsonStringKeyValues = mapOf(
+                        "lastRefillPerformedAt" to lastRefill?.toIsoDateTimeString(),
+                        "nextCheckTimeAt" to nextCheckTime.toIsoDateTimeString(),
+                        "delayingFor" to delayUntilNextCheck
+                    )
+                )
                 delay(delayUntilNextCheck)
                 waitUntilLiveAndRefillPreKeysIfNeeded()
                 preKeyRepository.setLastPreKeyRefillCheckInstant(Clock.System.now())
@@ -66,14 +83,16 @@ internal class ProteusSyncWorkerImpl(
     }
 
     private suspend fun waitUntilLiveAndRefillPreKeysIfNeeded() {
+        logger.i("Waiting until live to refill prekeys if needed")
         incrementalSyncRepository.incrementalSyncState
             .filter { it is IncrementalSyncStatus.Live }
             .collect {
+                logger.i("Refilling prekeys if needed")
                 proteusPreKeyRefiller.refillIfNeeded()
             }
     }
 
     private companion object {
-        val MIN_INTEVAL_BETWEEN_REFILLS = 1.days
+        val MIN_INTERVAL_BETWEEN_REFILLS = 1.days
     }
 }

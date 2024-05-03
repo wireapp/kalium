@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,22 +17,25 @@
  */
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepository
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 
 internal class TypingIndicatorSyncManager(
     private val typingIndicatorIncomingRepository: Lazy<TypingIndicatorIncomingRepository>,
-    private val observeSyncStateUseCase: ObserveSyncStateUseCase
+    private val observeSyncStateUseCase: ObserveSyncStateUseCase,
+    kaliumLogger: KaliumLogger
 ) {
+    private val logger = kaliumLogger.withTextTag("TypingIndicatorSyncManager")
     /**
      * Periodically clears and drop orphaned typing indicators, so we don't keep them forever.
      */
     suspend fun execute() {
+        logger.d("Starting to monitor")
         observeSyncStateUseCase().distinctUntilChanged().collectLatest {
-            kaliumLogger.d("Starting clear of orphaned typing indicators...")
+            logger.d("Starting clear of orphaned typing indicators...")
             typingIndicatorIncomingRepository.value.clearExpiredTypingIndicators()
         }
     }

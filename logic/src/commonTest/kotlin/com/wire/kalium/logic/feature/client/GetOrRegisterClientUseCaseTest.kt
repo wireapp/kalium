@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,33 +21,29 @@ package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
-import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
-import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.feature.CachedClientIdClearer
+import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.session.UpgradeCurrentSessionUseCase
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.right
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.configure
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class GetOrRegisterClientUseCaseTest {
 
     @Test
@@ -55,6 +51,7 @@ class GetOrRegisterClientUseCaseTest {
         val clientId = ClientId("clientId")
         val client = TestClient.CLIENT.copy(id = clientId)
         val (arrangement, useCase) = Arrangement()
+            .withSyncFeatureConfigResult()
             .withRetainedClientIdResult(Either.Right(clientId))
             .withVerifyExistingClientResult(VerifyExistingClientResult.Success(client))
             .withUpgradeCurrentSessionResult(Either.Right(Unit))
@@ -65,18 +62,15 @@ class GetOrRegisterClientUseCaseTest {
 
         assertIs<RegisterClientResult.Success>(result)
         assertEquals(client, result.client)
-        verify(arrangement.registerClientUseCase)
-            .suspendFunction(arrangement.registerClientUseCase::invoke)
-            .with(any())
-            .wasNotInvoked()
-        verify(arrangement.upgradeCurrentSessionUseCase)
-            .suspendFunction(arrangement.upgradeCurrentSessionUseCase::invoke)
-            .with(eq(clientId))
-            .wasInvoked(exactly = once)
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::persistClientId)
-            .with(eq(clientId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.registerClientUseCase.invoke(any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.upgradeCurrentSessionUseCase.invoke(eq(clientId))
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clientRepository.persistClientId(eq(clientId))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -84,6 +78,7 @@ class GetOrRegisterClientUseCaseTest {
         val clientId = ClientId("clientId")
         val client = TestClient.CLIENT.copy(id = clientId)
         val (arrangement, useCase) = Arrangement()
+            .withSyncFeatureConfigResult()
             .withRetainedClientIdResult(Either.Right(clientId))
             .withVerifyExistingClientResult(VerifyExistingClientResult.Failure.ClientNotRegistered)
             .withRegisterClientResult(RegisterClientResult.Success(client))
@@ -97,34 +92,30 @@ class GetOrRegisterClientUseCaseTest {
 
         assertIs<RegisterClientResult.Success>(result)
         assertEquals(client, result.client)
-        verify(arrangement.cachedClientIdClearer)
-            .function(arrangement.cachedClientIdClearer::invoke)
-            .wasInvoked(exactly = once)
-        verify(arrangement.clearClientDataUseCase)
-            .suspendFunction(arrangement.clearClientDataUseCase::invoke)
-            .wasInvoked(exactly = once)
-        verify(arrangement.logoutRepository)
-            .suspendFunction(arrangement.logoutRepository::clearClientRelatedLocalMetadata)
-            .wasInvoked(exactly = once)
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::clearRetainedClientId)
-            .wasInvoked(exactly = once)
-        verify(arrangement.pushTokenRepository)
-            .suspendFunction(arrangement.pushTokenRepository::setUpdateFirebaseTokenFlag)
-            .with(eq(true))
-            .wasInvoked(exactly = once)
-        verify(arrangement.registerClientUseCase)
-            .suspendFunction(arrangement.registerClientUseCase::invoke)
-            .with(any())
-            .wasInvoked(exactly = once)
-        verify(arrangement.upgradeCurrentSessionUseCase)
-            .suspendFunction(arrangement.upgradeCurrentSessionUseCase::invoke)
-            .with(eq(clientId))
-            .wasInvoked(exactly = once)
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::persistClientId)
-            .with(eq(clientId))
-            .wasInvoked(exactly = once)
+        verify {
+            arrangement.cachedClientIdClearer.invoke()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clearClientDataUseCase.invoke()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.logoutRepository.clearClientRelatedLocalMetadata()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clientRepository.clearRetainedClientId()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(true))
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.registerClientUseCase.invoke(any())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.upgradeCurrentSessionUseCase.invoke(eq(clientId))
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clientRepository.persistClientId(eq(clientId))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -132,6 +123,7 @@ class GetOrRegisterClientUseCaseTest {
         val clientId = ClientId("clientId")
         val client = TestClient.CLIENT.copy(id = clientId)
         val (arrangement, useCase) = Arrangement()
+            .withSyncFeatureConfigResult()
             .withRetainedClientIdResult(Either.Left(CoreFailure.MissingClientRegistration))
             .withRegisterClientResult(RegisterClientResult.Success(client))
             .withUpgradeCurrentSessionResult(Either.Right(Unit))
@@ -142,45 +134,77 @@ class GetOrRegisterClientUseCaseTest {
 
         assertIs<RegisterClientResult.Success>(result)
         assertEquals(client, result.client)
-        verify(arrangement.registerClientUseCase)
-            .suspendFunction(arrangement.registerClientUseCase::invoke)
-            .with(any())
-            .wasInvoked(exactly = once)
-        verify(arrangement.upgradeCurrentSessionUseCase)
-            .suspendFunction(arrangement.upgradeCurrentSessionUseCase::invoke)
-            .with(eq(clientId))
-            .wasInvoked(exactly = once)
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::persistClientId)
-            .with(eq(clientId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.registerClientUseCase.invoke(any())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.upgradeCurrentSessionUseCase.invoke(eq(clientId))
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clientRepository.persistClientId(eq(clientId))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenE2EIIsEnabledAndClientNotRetained_whenRegisteringAClient_thenRegisterClientAndReturnE2EIIsRequired() = runTest {
+        val clientId = ClientId("clientId")
+        val client = TestClient.CLIENT.copy(id = clientId)
+        val userId = TestClient.USER_ID
+        val (arrangement, useCase) = Arrangement()
+            .withSyncFeatureConfigResult()
+            .withRetainedClientIdResult(Either.Left(CoreFailure.MissingClientRegistration))
+            .withRegisterClientResult(RegisterClientResult.E2EICertificateRequired(client, userId))
+            .withUpgradeCurrentSessionResult(Either.Right(Unit))
+            .withPersistClientIdResult(Either.Right(Unit))
+            .withSetClientRegistrationBlockedByE2EISucceed()
+            .arrange()
+
+        val result = useCase.invoke(RegisterClientUseCase.RegisterClientParam("", listOf()))
+
+        assertIs<RegisterClientResult.E2EICertificateRequired>(result)
+        assertEquals(client, result.client)
+        coVerify {
+            arrangement.clientRepository.setClientRegistrationBlockedByE2EI()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.registerClientUseCase.invoke(any())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.upgradeCurrentSessionUseCase.invoke(eq(clientId))
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clientRepository.persistClientId(eq(clientId))
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
 
         @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
+        val clientRepository = mock(ClientRepository::class)
 
         @Mock
-        val pushTokenRepository = mock(classOf<PushTokenRepository>())
+        val pushTokenRepository = mock(PushTokenRepository::class)
 
         @Mock
-        val logoutRepository = configure(mock(classOf<LogoutRepository>())) { stubsUnitByDefault = true }
+        val logoutRepository = mock(LogoutRepository::class)
 
         @Mock
-        val registerClientUseCase = mock(classOf<RegisterClientUseCase>())
+        val registerClientUseCase = mock(RegisterClientUseCase::class)
 
         @Mock
-        val clearClientDataUseCase = configure(mock(classOf<ClearClientDataUseCase>())) { stubsUnitByDefault = true }
+        val clearClientDataUseCase = mock(ClearClientDataUseCase::class)
 
         @Mock
-        val upgradeCurrentSessionUseCase = mock(classOf<UpgradeCurrentSessionUseCase>())
+        val upgradeCurrentSessionUseCase = mock(UpgradeCurrentSessionUseCase::class)
 
         @Mock
-        val verifyExistingClientUseCase = mock(classOf<VerifyExistingClientUseCase>())
+        val syncFeatureConfigsUseCase = mock(SyncFeatureConfigsUseCase::class)
 
         @Mock
-        val cachedClientIdClearer = configure(mock(classOf<CachedClientIdClearer>())) { stubsUnitByDefault = true }
+        val verifyExistingClientUseCase = mock(VerifyExistingClientUseCase::class)
+
+        @Mock
+        val cachedClientIdClearer = mock(CachedClientIdClearer::class)
 
         val getOrRegisterClientUseCase: GetOrRegisterClientUseCase = GetOrRegisterClientUseCaseImpl(
             clientRepository,
@@ -190,56 +214,62 @@ class GetOrRegisterClientUseCaseTest {
             clearClientDataUseCase,
             verifyExistingClientUseCase,
             upgradeCurrentSessionUseCase,
-            cachedClientIdClearer
+            cachedClientIdClearer,
+            syncFeatureConfigsUseCase
         )
 
-        fun withRetainedClientIdResult(result: Either<CoreFailure, ClientId>) = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::retainedClientId)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withSyncFeatureConfigResult(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
+            coEvery {
+                syncFeatureConfigsUseCase.invoke()
+            }.returns(Either.Right(Unit))
         }
 
-        fun withRegisterClientResult(result: RegisterClientResult) = apply {
-            given(registerClientUseCase)
-                .suspendFunction(registerClientUseCase::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withRetainedClientIdResult(result: Either<CoreFailure, ClientId>) = apply {
+            coEvery {
+                clientRepository.retainedClientId()
+            }.returns(result)
         }
 
-        fun withClearRetainedClientIdResult(result: Either<CoreFailure, Unit>) = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::clearRetainedClientId)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withRegisterClientResult(result: RegisterClientResult) = apply {
+            coEvery {
+                registerClientUseCase.invoke(any())
+            }.returns(result)
         }
 
-        fun withPersistClientIdResult(result: Either<CoreFailure, Unit>) = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::persistClientId)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withClearRetainedClientIdResult(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                clientRepository.clearRetainedClientId()
+            }.returns(result)
         }
 
-        fun withVerifyExistingClientResult(result: VerifyExistingClientResult) = apply {
-            given(verifyExistingClientUseCase)
-                .suspendFunction(verifyExistingClientUseCase::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withPersistClientIdResult(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                clientRepository.persistClientId(any())
+            }.returns(result)
         }
 
-        fun withUpgradeCurrentSessionResult(result: Either<CoreFailure, Unit>) = apply {
-            given(upgradeCurrentSessionUseCase)
-                .suspendFunction(upgradeCurrentSessionUseCase::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withSetClientRegistrationBlockedByE2EISucceed() = apply {
+            coEvery {
+                clientRepository::setClientRegistrationBlockedByE2EI.invoke()
+            }.returns(Unit.right())
         }
 
-        fun withSetUpdateFirebaseTokenFlagResult(result: Either<StorageFailure, Unit>) = apply {
-            given(pushTokenRepository)
-                .suspendFunction(pushTokenRepository::setUpdateFirebaseTokenFlag)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withVerifyExistingClientResult(result: VerifyExistingClientResult) = apply {
+            coEvery {
+                verifyExistingClientUseCase.invoke(any())
+            }.returns(result)
+        }
+
+        suspend fun withUpgradeCurrentSessionResult(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                upgradeCurrentSessionUseCase.invoke(any())
+            }.returns(result)
+        }
+
+        suspend fun withSetUpdateFirebaseTokenFlagResult(result: Either<StorageFailure, Unit>) = apply {
+            coEvery {
+                pushTokenRepository.setUpdateFirebaseTokenFlag(any())
+            }.returns(result)
         }
 
         fun arrange() = this to getOrRegisterClientUseCase

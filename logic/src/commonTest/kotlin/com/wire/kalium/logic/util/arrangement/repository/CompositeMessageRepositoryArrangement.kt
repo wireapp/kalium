@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,53 +25,61 @@ import com.wire.kalium.logic.data.message.CompositeMessageRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.fake.valueOf
+import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
+import io.mockative.matches
 import io.mockative.mock
 
 interface CompositeMessageRepositoryArrangement {
     @Mock
     val compositeMessageRepository: CompositeMessageRepository
 
-    fun withMarkSelected(
+    suspend fun withMarkSelected(
         result: Either<StorageFailure, Unit>,
-        messageId: Matcher<MessageId> = any(),
-        conversationId: Matcher<ConversationId> = any(),
-        buttonId: Matcher<MessageButtonId> = any()
+        messageId: Matcher<MessageId> = AnyMatcher(valueOf()),
+        conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()),
+        buttonId: Matcher<MessageButtonId> = AnyMatcher(valueOf())
     )
 
-    fun withClearSelection(
+    suspend fun withClearSelection(
         result: Either<StorageFailure, Unit>,
-        messageId: Matcher<MessageId> = any(),
-        conversationId: Matcher<ConversationId> = any()
+        messageId: Matcher<MessageId> = AnyMatcher(valueOf()),
+        conversationId: Matcher<ConversationId> = AnyMatcher(valueOf())
     )
 }
 
-class CompositeMessageRepositoryArrangementImpl: CompositeMessageRepositoryArrangement {
+class CompositeMessageRepositoryArrangementImpl : CompositeMessageRepositoryArrangement {
     @Mock
     override val compositeMessageRepository: CompositeMessageRepository = mock(CompositeMessageRepository::class)
 
-    override fun withMarkSelected(
+    override suspend fun withMarkSelected(
         result: Either<StorageFailure, Unit>,
         messageId: Matcher<MessageId>,
         conversationId: Matcher<ConversationId>,
         buttonId: Matcher<MessageButtonId>
     ) {
-        given(compositeMessageRepository)
-            .suspendFunction(compositeMessageRepository::markSelected)
-            .whenInvokedWith(messageId, conversationId, buttonId)
-            .thenReturn(result)
+        coEvery {
+            compositeMessageRepository.markSelected(
+                matches { messageId.matches(it) },
+                matches { conversationId.matches(it) },
+                matches { buttonId.matches(it) }
+            )
+        }.returns(result)
     }
 
-    override fun withClearSelection(
+    override suspend fun withClearSelection(
         result: Either<StorageFailure, Unit>,
         messageId: Matcher<MessageId>,
         conversationId: Matcher<ConversationId>
     ) {
-        given(compositeMessageRepository)
-            .suspendFunction(compositeMessageRepository::resetSelection)
-            .whenInvokedWith(messageId, conversationId)
-            .thenReturn(result)
+        coEvery {
+            compositeMessageRepository.resetSelection(
+                matches { messageId.matches(it) },
+                matches { conversationId.matches(it) }
+            )
+        }.returns(result)
     }
 
 }

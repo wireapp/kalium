@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,10 +21,14 @@ package com.wire.kalium.logic.feature
 
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.network.session.SessionManager
 
-internal fun SessionManager.getProxyCredentials(): ProxyCredentials? =
-    MapperProvider.sessionMapper().fromDTOToProxyCredentialsModel(proxyCredentials())
+internal fun SessionManager.getProxyCredentials(): ProxyCredentials? {
+    val cred = proxyCredentials()
+    kaliumLogger.d("getProxyCredentials: Proxy has username: ${cred?.username?.isNotBlank()}; has password ${cred?.password?.isNotBlank()}")
+    return MapperProvider.sessionMapper().fromDTOToProxyCredentialsModel(cred)
+}
 
 internal fun SessionManager.getServerConfig() =
     MapperProvider.serverConfigMapper().fromDTO(serverConfig())

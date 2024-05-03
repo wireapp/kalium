@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -67,12 +67,13 @@ internal class GetOrCreateOneToOneConversationUseCaseImpl(
     }
 
     private suspend fun resolveOneOnOneConversationWithUser(otherUserId: UserId): Either<CoreFailure, Conversation> =
-        (userRepository.getKnownUser(otherUserId).first()?.let { otherUser ->
+        userRepository.userById(otherUserId).flatMap { otherUser ->
             // TODO support lazily establishing mls group for team 1-1
-            oneOnOneResolver.resolveOneOnOneConversationWithUser(otherUser).flatMap {
-                conversationRepository.getConversationById(it)?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
-            }
-        } ?: Either.Left(StorageFailure.DataNotFound))
+            oneOnOneResolver.resolveOneOnOneConversationWithUser(
+                user = otherUser,
+                invalidateCurrentKnownProtocols = true
+            )
+        }.flatMap { conversationId -> conversationRepository.detailsById(conversationId) }
 
 }
 

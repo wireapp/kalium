@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,8 +29,9 @@ import com.wire.kalium.logic.functional.mapToRightOr
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 /**
@@ -38,6 +39,7 @@ import kotlinx.coroutines.flow.map
  * returns [NewClientResult] which may be:
  * [NewClientResult.InCurrentAccount] if new Clients appears for the user that is currently used.
  * [NewClientResult.InOtherAccount] if new Clients appears for the user that is logged in on device, but not currently used.
+ * [NewClientResult.Empty] if there are no new Clients for any of the logged-in Users.
  * [NewClientResult.Error] in case of error, in most cases it means that the user for which new Client appeared
  * is no longer logged it on the device.
  *
@@ -59,6 +61,7 @@ class ObserveNewClientsUseCaseImpl internal constructor(
         .flatMapLatest { validAccs ->
             val users = validAccs.map { it.first }
             observeAllNewClients(users)
+                .map { it.filter { (_, clients) -> clients.isNotEmpty() } }
                 .map { groupByUser ->
                     if (groupByUser.isEmpty()) return@map NewClientResult.Empty
 
@@ -82,12 +85,14 @@ class ObserveNewClientsUseCaseImpl internal constructor(
                     }.getOrElse(NewClientResult.Error)
                 }
         }
-        .filter {
-            // if newClients list is empty mean no NewClients - do not emit anything
-            (it is NewClientResult.InCurrentAccount && it.newClients.isNotEmpty()) ||
-                    (it is NewClientResult.InOtherAccount && it.newClients.isNotEmpty()) ||
-                    it is NewClientResult.Error
+        .map {
+            when {
+                it is NewClientResult.InCurrentAccount && it.newClients.isEmpty() -> NewClientResult.Empty
+                it is NewClientResult.InOtherAccount && it.newClients.isEmpty() -> NewClientResult.Empty
+                else -> it
+            }
         }
+        .distinctUntilChanged()
 
     private suspend fun observeNewClientsForUser(userId: UserId) = clientRepositoryProvider.provide(userId)
         .observeNewClients()
@@ -95,6 +100,8 @@ class ObserveNewClientsUseCaseImpl internal constructor(
         .map { it to userId }
 
     private suspend fun observeAllNewClients(validAccs: List<SelfUser>): Flow<Map<UserId, List<Client>>> {
+        if (validAccs.isEmpty()) return flowOf(emptyMap())
+
         val observeNewClientsFlows = validAccs.map { selfUser -> observeNewClientsForUser(selfUser.id) }
 
         return combine(observeNewClientsFlows) { newClientsListWithUserId ->

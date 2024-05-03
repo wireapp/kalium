@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,13 +25,14 @@ import com.wire.kalium.monkeys.model.ActionType
 import com.wire.kalium.monkeys.model.EventType
 import com.wire.kalium.monkeys.model.MonkeyId
 import com.wire.kalium.monkeys.model.UserCount
+import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 
 class SendDirectMessageEventAction(private val monkeySender: MonkeyId, private val eventConfig: EventType.SendDirectMessage) :
     SendMessageAction(ActionType.SendMessage(
         UserCount.single(), 1u, 1u
     ), {}) {
-    override suspend fun sendersTargets(monkeyPool: MonkeyPool):
+    override suspend fun sendersTargets(monkeyPool: MonkeyPool, conversationPool: ConversationPool):
             List<Either<List<Pair<Monkey, Monkey>>, List<Pair<MonkeyConversation, List<Monkey>>>>> {
         val sender = monkeyPool.getFromTeam(this.monkeySender.team, this.monkeySender.index)
         val receiver = monkeyPool.getFromTeam(this.eventConfig.targetMonkey.team, this.eventConfig.targetMonkey.index)

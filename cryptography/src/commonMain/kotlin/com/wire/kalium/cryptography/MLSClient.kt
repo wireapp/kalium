@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,7 @@
 package com.wire.kalium.cryptography
 
 import kotlin.jvm.JvmInline
+import kotlin.time.Duration
 
 typealias WelcomeMessage = ByteArray
 typealias HandshakeMessage = ByteArray
@@ -48,28 +49,91 @@ open class GroupInfoBundle(
     var payload: ByteArray
 )
 
-open class CommitBundle(
+data class CommitBundle(
     val commit: ByteArray,
     val welcome: ByteArray?,
-    val groupInfoBundle: GroupInfoBundle
+    val groupInfoBundle: GroupInfoBundle,
+    val crlNewDistributionPoints: List<String>?
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as CommitBundle
+
+        if (!commit.contentEquals(other.commit)) return false
+        if (welcome != null) {
+            if (other.welcome == null) return false
+            if (!welcome.contentEquals(other.welcome)) return false
+        } else if (other.welcome != null) return false
+        if (groupInfoBundle != other.groupInfoBundle) return false
+        return crlNewDistributionPoints == other.crlNewDistributionPoints
+    }
+
+    override fun hashCode(): Int {
+        var result = commit.contentHashCode()
+        result = 31 * result + (welcome?.contentHashCode() ?: 0)
+        result = 31 * result + groupInfoBundle.hashCode()
+        result = 31 * result + (crlNewDistributionPoints?.hashCode() ?: 0)
+        return result
+    }
+}
+
+data class WelcomeBundle(
+    val groupId: MLSGroupId,
+    val crlNewDistributionPoints: List<String>?
 )
 
-open class RotateBundle(
+data class RotateBundle(
     var commits: Map<MLSGroupId, CommitBundle>,
     var newKeyPackages: List<ByteArray>,
-    var keyPackageRefsToRemove: List<ByteArray>
+    var keyPackageRefsToRemove: List<ByteArray>,
+    val crlNewDistributionPoints: List<String>?
 )
 
-class DecryptedMessageBundle(
+data class DecryptedMessageBundle(
     val message: ByteArray?,
     val commitDelay: Long?,
     val senderClientId: CryptoQualifiedClientId?,
     val hasEpochChanged: Boolean,
-    val identity: WireIdentity?
-)
+    val identity: WireIdentity?,
+    val crlNewDistributionPoints: List<String>?
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other == null || this::class != other::class) return false
+
+        other as DecryptedMessageBundle
+
+        if (message != null) {
+            if (other.message == null) return false
+            if (!message.contentEquals(other.message)) return false
+        } else if (other.message != null) return false
+        if (commitDelay != other.commitDelay) return false
+        if (senderClientId != other.senderClientId) return false
+        if (hasEpochChanged != other.hasEpochChanged) return false
+        if (identity != other.identity) return false
+        return crlNewDistributionPoints == other.crlNewDistributionPoints
+    }
+
+    override fun hashCode(): Int {
+        var result = message?.contentHashCode() ?: 0
+        result = 31 * result + (commitDelay?.hashCode() ?: 0)
+        result = 31 * result + (senderClientId?.hashCode() ?: 0)
+        result = 31 * result + hasEpochChanged.hashCode()
+        result = 31 * result + (identity?.hashCode() ?: 0)
+        result = 31 * result + (crlNewDistributionPoints?.hashCode() ?: 0)
+        return result
+    }
+}
 
 @JvmInline
 value class Ed22519Key(
+    val value: ByteArray
+)
+
+@JvmInline
+value class ExternalSenderKey(
     val value: ByteArray
 )
 
@@ -81,6 +145,11 @@ enum class CredentialType {
         val DEFAULT = Basic
     }
 }
+
+data class CrlRegistration(
+    var dirty: Boolean,
+    var expiration: ULong?
+)
 
 @Suppress("TooManyFunctions")
 interface MLSClient {
@@ -186,6 +255,15 @@ interface MLSClient {
         externalSenders: List<Ed22519Key> = emptyList()
     )
 
+    /**
+     * Get External Senders of an MLS conversation
+     *
+     * @param groupId MLS group ID provided by BE
+     */
+    suspend fun getExternalSenders(
+        groupId: MLSGroupId
+    ): ExternalSenderKey
+
     suspend fun wipeConversation(groupId: MLSGroupId)
 
     /**
@@ -194,7 +272,7 @@ interface MLSClient {
      * @param message the incoming welcome message
      * @return MLS group ID
      */
-    suspend fun processWelcomeMessage(message: WelcomeMessage): MLSGroupId
+    suspend fun processWelcomeMessage(message: WelcomeMessage): WelcomeBundle
 
     /**
      * Signal that last sent commit was accepted by the distribution service
@@ -288,18 +366,6 @@ interface MLSClient {
     suspend fun deriveSecret(groupId: MLSGroupId, keyLength: UInt): ByteArray
 
     /**
-     * Enroll Wire E2EIdentity Client for E2EI before MLSClient Initialization
-     *
-     * @return wire end to end identity client
-     */
-    suspend fun newAcmeEnrollment(
-        clientId: CryptoQualifiedClientId,
-        displayName: String,
-        handle: String,
-        teamId: String?
-    ): E2EIClient
-
-    /**
      * Enroll Wire E2EIdentity Client for E2EI when MLSClient already initialized
      *
      * @return wire end to end identity client
@@ -307,7 +373,8 @@ interface MLSClient {
     suspend fun e2eiNewActivationEnrollment(
         displayName: String,
         handle: String,
-        teamId: String?
+        teamId: String?,
+        expiry: Duration
     ): E2EIClient
 
     /**
@@ -318,13 +385,14 @@ interface MLSClient {
     suspend fun e2eiNewRotateEnrollment(
         displayName: String?,
         handle: String?,
-        teamId: String?
+        teamId: String?,
+        expiry: Duration
     ): E2EIClient
 
     /**
      * Init MLSClient after enrollment
      */
-    suspend fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain)
+    suspend fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain): List<String>?
 
     /**
      * The E2EI State for the current MLS Client
@@ -343,7 +411,11 @@ interface MLSClient {
     /**
      * Generate new keypackages after E2EI certificate issued
      */
-    suspend fun e2eiRotateAll(enrollment: E2EIClient, certificateChain: CertificateChain, newMLSKeyPackageCount: UInt): RotateBundle
+    suspend fun e2eiRotateAll(
+        enrollment: E2EIClient,
+        certificateChain: CertificateChain,
+        newMLSKeyPackageCount: UInt
+    ): RotateBundle
 
     /**
      * Conversation E2EI Verification Status
@@ -360,7 +432,10 @@ interface MLSClient {
      *
      * @return the exist identities for requested clients
      */
-    suspend fun getDeviceIdentities(groupId: MLSGroupId, clients: List<CryptoQualifiedClientId>): List<WireIdentity>
+    suspend fun getDeviceIdentities(
+        groupId: MLSGroupId,
+        clients: List<CryptoQualifiedClientId>
+    ): List<WireIdentity>
 
     /**
      * Get the identity of given users in the given conversation
@@ -370,5 +445,8 @@ interface MLSClient {
      *
      * @return the exist identities for requested clients
      */
-    suspend fun getUserIdentities(groupId: MLSGroupId, users: List<CryptoQualifiedID>): Map<String, List<WireIdentity>>
+    suspend fun getUserIdentities(
+        groupId: MLSGroupId,
+        users: List<CryptoQualifiedID>
+    ): Map<String, List<WireIdentity>>
 }

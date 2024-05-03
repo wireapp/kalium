@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,23 +23,24 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
-import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.framework.TestAsset.dummyUploadedAssetId
 import com.wire.kalium.logic.framework.TestAsset.mockedLongAssetData
 import com.wire.kalium.logic.functional.Either
@@ -50,14 +51,14 @@ import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.every
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
-import io.mockative.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -174,14 +175,12 @@ class ScheduleNewAssetMessageUseCaseTest {
             advanceUntilIdle()
 
             // Then
-            verify(arrangement.assetDataSource)
-                .suspendFunction(arrangement.assetDataSource::persistAsset)
-                .with(any(), any(), eq(dataPath), any(), any())
-                .wasInvoked(exactly = once)
-            verify(arrangement.updateUploadStatus)
-                .suspendFunction(arrangement.updateUploadStatus::invoke)
-                .with(matching { it == Message.UploadStatus.FAILED_UPLOAD }, any(), any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.assetDataSource.persistAsset(any(), any(), eq(dataPath), any(), any())
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.updateTransferStatus.invoke(matches { it == AssetTransferStatus.FAILED_UPLOAD }, any(), any())
+            }.wasInvoked(exactly = once)
         }
 
     @Test
@@ -215,22 +214,18 @@ class ScheduleNewAssetMessageUseCaseTest {
         advanceUntilIdle()
 
         // Then
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(any())
-            .wasInvoked(exactly = twice)
-        verify(arrangement.assetDataSource)
-            .suspendFunction(arrangement.assetDataSource::uploadAndPersistPrivateAsset)
-            .with(any(), any(), any(), any())
-            .wasInvoked(exactly = once)
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(any())
-            .wasInvoked(exactly = once)
-        verify(arrangement.messageSendFailureHandler)
-            .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-            .with(any(), any(), any(), any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.persistMessage.invoke(any())
+        }.wasInvoked(exactly = twice)
+        coVerify {
+            arrangement.assetDataSource.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageSender.sendMessage(any(), any())
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -248,6 +243,7 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
                 .withObserveMessageVisibility()
                 .withDeleteAssetLocally()
+                .withUpdateMessageAssetTransferStatus(UpdateTransferStatusResult.Success)
                 .arrange()
 
             // When
@@ -265,64 +261,18 @@ class ScheduleNewAssetMessageUseCaseTest {
             advanceUntilIdle()
 
             // Then
-            verify(arrangement.persistMessage)
-                .suspendFunction(arrangement.persistMessage::invoke)
-                .with(any())
-                .wasInvoked(exactly = twice)
-            verify(arrangement.assetDataSource)
-                .suspendFunction(arrangement.assetDataSource::uploadAndPersistPrivateAsset)
-                .with(any(), any(), any(), any())
-                .wasInvoked(exactly = once)
-            verify(arrangement.messageSender)
-                .suspendFunction(arrangement.messageSender::sendMessage)
-                .with(any())
-                .wasInvoked(exactly = once)
-            verify(arrangement.messageSendFailureHandler)
-                .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-                .with(any(), any(), any(), any(), any())
-                .wasInvoked(exactly = once)
-        }
-
-    @Test
-    fun givenASuccessfulSendAssetMessageRequest_whenCheckingTheMessageRepository_thenTheAssetIsMarkedAsSavedInternally() =
-        runTest(testDispatcher.default) {
-            // Given
-            val assetToSend = mockedLongAssetData()
-            val assetName = "some-asset.txt"
-            val conversationId = ConversationId("some-convo-id", "some-domain-id")
-            val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
-            val expectedAssetId = dummyUploadedAssetId
-            val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
-            val (arrangement, sendAssetUseCase) = Arrangement(this)
-                .withSuccessfulResponse(expectedAssetId, expectedAssetSha256)
-                .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
-                .withObserveMessageVisibility()
-                .withDeleteAssetLocally()
-                .arrange()
-
-            // When
-            sendAssetUseCase.invoke(
-                conversationId = conversationId,
-                assetDataPath = dataPath,
-                assetDataSize = assetToSend.size.toLong(),
-                assetName = assetName,
-                assetMimeType = "text/plain",
-                assetWidth = null,
-                assetHeight = null,
-                audioLengthInMs = 0
-            )
-            advanceUntilIdle()
-
-            // Then
-            verify(arrangement.persistMessage)
-                .suspendFunction(arrangement.persistMessage::invoke)
-                .with(
-                    matching {
-                        val content = it.content
-                        content is MessageContent.Asset && content.value.downloadStatus == Message.DownloadStatus.SAVED_INTERNALLY
-                    }
-                )
-                .wasInvoked(exactly = twice)
+            coVerify {
+                arrangement.persistMessage.invoke(any())
+            }.wasInvoked(exactly = twice)
+            coVerify {
+                arrangement.assetDataSource.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageSender.sendMessage(any(), any())
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+            }.wasInvoked(exactly = once)
         }
 
     @Test
@@ -354,23 +304,21 @@ class ScheduleNewAssetMessageUseCaseTest {
             advanceUntilIdle()
 
             // Then
-            verify(arrangement.assetDataSource)
-                .suspendFunction(arrangement.assetDataSource::persistAsset)
-                .with(any(), any(), eq(dataPath), any(), any())
-                .wasInvoked(once)
-            verify(arrangement.persistMessage)
-                .suspendFunction(arrangement.persistMessage::invoke)
-                .with(any())
-                .wasNotInvoked()
-            verify(arrangement.updateUploadStatus)
-                .suspendFunction(arrangement.updateUploadStatus::invoke)
-                .with(
-                    matching {
-                        it == Message.UploadStatus.FAILED_UPLOAD
+            coVerify {
+                arrangement.assetDataSource.persistAsset(any(), any(), eq(dataPath), any(), any())
+            }.wasInvoked(once)
+            coVerify {
+                arrangement.persistMessage.invoke(any())
+            }.wasNotInvoked()
+            coVerify {
+                arrangement.updateTransferStatus.invoke(
+                    matches {
+                        it == AssetTransferStatus.FAILED_UPLOAD
                     },
-                    any(), any()
+                    any(),
+                    any()
                 )
-                .wasInvoked(exactly = once)
+            }.wasInvoked(exactly = once)
         }
 
     @Test
@@ -386,6 +334,7 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
                 .withObserveMessageVisibility()
                 .withDeleteAssetLocally()
+                .withUpdateMessageAssetTransferStatus(UpdateTransferStatusResult.Success)
                 .arrange()
 
             // When
@@ -402,28 +351,26 @@ class ScheduleNewAssetMessageUseCaseTest {
             advanceUntilIdle()
 
             // Then
-            verify(arrangement.assetDataSource)
-                .suspendFunction(arrangement.assetDataSource::persistAsset)
-                .with(any(), any(), eq(dataPath), any(), any())
-                .wasInvoked(once)
-            verify(arrangement.persistMessage)
-                .suspendFunction(arrangement.persistMessage::invoke)
-                .with(
-                    matching {
+            coVerify {
+                arrangement.assetDataSource.persistAsset(any(), any(), eq(dataPath), any(), any())
+            }.wasInvoked(once)
+            coVerify {
+                arrangement.persistMessage.invoke(
+                    matches {
                         val content = it.content
-                        content is MessageContent.Asset && content.value.uploadStatus == Message.UploadStatus.UPLOAD_IN_PROGRESS
+                        content is MessageContent.Asset
                     }
                 )
-                .wasInvoked(exactly = once)
-            verify(arrangement.updateUploadStatus)
-                .suspendFunction(arrangement.updateUploadStatus::invoke)
-                .with(
-                    matching {
-                        it == Message.UploadStatus.FAILED_UPLOAD
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.updateTransferStatus.invoke(
+                    matches {
+                        it == AssetTransferStatus.FAILED_UPLOAD
                     },
-                    any(), any()
+                    any(),
+                    any()
                 )
-                .wasInvoked(exactly = once)
+            }.wasInvoked(exactly = once)
         }
 
     @Test
@@ -457,18 +404,24 @@ class ScheduleNewAssetMessageUseCaseTest {
             advanceUntilIdle()
 
             // Then
-            verify(arrangement.persistMessage)
-                .suspendFunction(arrangement.persistMessage::invoke)
-                .with(
-                    matching {
+            coVerify {
+                arrangement.persistMessage.invoke(
+                    matches {
                         val content = it.content
-                        content is MessageContent.Asset && content.value.uploadStatus == Message.UploadStatus.UPLOADED
+                        content is MessageContent.Asset
                     }
                 )
-            verify(arrangement.persistMessage)
-                .suspendFunction(arrangement.persistMessage::invoke)
-                .with(any())
-                .wasInvoked(exactly = twice)
+            }.wasInvoked(exactly = twice)
+
+            coVerify {
+                arrangement.updateTransferStatus.invoke(
+                    matches {
+                        it == AssetTransferStatus.UPLOADED
+                    },
+                    any(),
+                    any()
+                )
+            }.wasInvoked(exactly = once)
         }
 
     @Test
@@ -504,12 +457,14 @@ class ScheduleNewAssetMessageUseCaseTest {
         // Then
         assertTrue(result is ScheduleNewAssetMessageResult.Success)
 
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
-                assertIs<Message.Regular>(it)
-                it.expirationData == null
-            })
+        coVerify {
+            arrangement.persistMessage.invoke(
+                matches {
+                    assertIs<Message.Regular>(it)
+                    it.expirationData == null
+                }
+            )
+        }.wasInvoked(exactly = twice)
     }
 
     @Test
@@ -547,42 +502,44 @@ class ScheduleNewAssetMessageUseCaseTest {
         // Then
         assertTrue(result is ScheduleNewAssetMessageResult.Success)
 
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
-                assertIs<Message.Regular>(it)
-                it.expirationData == Message.ExpirationData(expectedDuration)
-            })
+        coVerify {
+            arrangement.persistMessage.invoke(
+                matches {
+                    assertIs<Message.Regular>(it)
+                    it.expirationData == Message.ExpirationData(expectedDuration)
+                }
+            )
+        }
     }
 
     private class Arrangement(val coroutineScope: CoroutineScope) {
 
         @Mock
-        val persistMessage = mock(classOf<PersistMessageUseCase>())
+        val persistMessage = mock(PersistMessageUseCase::class)
 
         @Mock
-        val messageSender = mock(classOf<MessageSender>())
+        val messageSender = mock(MessageSender::class)
 
         @Mock
-        private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+        private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
         @Mock
-        val assetDataSource = mock(classOf<AssetRepository>())
+        val assetDataSource = mock(AssetRepository::class)
 
         @Mock
-        private val slowSyncRepository = mock(classOf<SlowSyncRepository>())
+        private val slowSyncRepository = mock(SlowSyncRepository::class)
 
         @Mock
-        val updateUploadStatus = mock(classOf<UpdateAssetMessageUploadStatusUseCase>())
+        val updateTransferStatus = mock(UpdateAssetMessageTransferStatusUseCase::class)
 
         @Mock
-        private val userPropertyRepository = mock(classOf<UserPropertyRepository>())
+        private val userPropertyRepository = mock(UserPropertyRepository::class)
 
         @Mock
         val messageSendFailureHandler: MessageSendFailureHandler = mock(MessageSendFailureHandler::class)
 
         @Mock
-        val observeSelfDeletionTimerSettingsForConversation = mock(classOf<ObserveSelfDeletionTimerSettingsForConversationUseCase>())
+        val observeSelfDeletionTimerSettingsForConversation = mock(ObserveSelfDeletionTimerSettingsForConversationUseCase::class)
 
         @Mock
         private val messageRepository: MessageRepository = mock(MessageRepository::class)
@@ -591,16 +548,10 @@ class ScheduleNewAssetMessageUseCaseTest {
 
         val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
 
-
-        init {
-            withToggleReadReceiptsStatus()
-        }
-
-        fun withToggleReadReceiptsStatus(enabled: Boolean = false) = apply {
-            given(userPropertyRepository)
-                .suspendFunction(userPropertyRepository::getReadReceiptsStatus)
-                .whenInvoked()
-                .thenReturn(enabled)
+        suspend fun withToggleReadReceiptsStatus(enabled: Boolean = false) = apply {
+            coEvery {
+                userPropertyRepository.getReadReceiptsStatus()
+            }.returns(enabled)
         }
 
         fun withStoredData(data: ByteArray, dataPath: Path): Arrangement {
@@ -611,170 +562,138 @@ class ScheduleNewAssetMessageUseCaseTest {
             return this
         }
 
-        fun withSuccessfulResponse(
+        suspend fun withSuccessfulResponse(
             expectedAssetId: UploadedAssetId,
             assetSHA256Key: SHA256Key,
             temporaryAssetId: String = "temporary_id"
         ): Arrangement = apply {
-            given(assetDataSource)
-                .suspendFunction(assetDataSource::persistAsset)
-                .whenInvokedWith(any(), any(), any(), any(), any())
-                .thenReturn(Either.Right(fakeKaliumFileSystem.providePersistentAssetPath(temporaryAssetId)))
-            given(assetDataSource)
-                .suspendFunction(assetDataSource::uploadAndPersistPrivateAsset)
-                .whenInvokedWith(any(), any(), any(), any())
-                .thenReturn(Either.Right(expectedAssetId to assetSHA256Key))
-            given(currentClientIdProvider)
-                .suspendFunction(currentClientIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Right(someClientId))
-            given(slowSyncRepository)
-                .getter(slowSyncRepository::slowSyncStatus)
-                .whenInvoked()
-                .thenReturn(completeStateFlow)
-            given(persistMessage)
-                .suspendFunction(persistMessage::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
-            given(messageSender)
-                .suspendFunction(messageSender::sendMessage)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
-            given(updateUploadStatus)
-                .suspendFunction(updateUploadStatus::invoke)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(UpdateUploadStatusResult.Success)
+            coEvery {
+                assetDataSource.persistAsset(any(), any(), any(), any(), any())
+            }.returns(Either.Right(fakeKaliumFileSystem.providePersistentAssetPath(temporaryAssetId)))
+            coEvery {
+                assetDataSource.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+            }.returns(Either.Right(expectedAssetId to assetSHA256Key))
+            coEvery {
+                currentClientIdProvider.invoke()
+            }.returns(Either.Right(someClientId))
+            every { slowSyncRepository.slowSyncStatus }
+                .returns(completeStateFlow)
+            coEvery {
+                persistMessage.invoke(any())
+            }.returns(Either.Right(Unit))
+            coEvery {
+                messageSender.sendMessage(any(), any())
+            }.returns(Either.Right(Unit))
+            coEvery {
+                updateTransferStatus.invoke(any(), any(), any())
+            }.returns(UpdateTransferStatusResult.Success)
         }
 
-        fun withUnsuccessfulSendMessageResponse(
+        suspend fun withUnsuccessfulSendMessageResponse(
             expectedAssetId: UploadedAssetId,
             assetSHA256Key: SHA256Key,
             temporaryAssetId: String = "temporary_id"
         ): Arrangement = apply {
-            given(assetDataSource)
-                .suspendFunction(assetDataSource::persistAsset)
-                .whenInvokedWith(any(), any(), any(), any(), any())
-                .thenReturn(Either.Right(fakeKaliumFileSystem.providePersistentAssetPath(temporaryAssetId)))
-            given(assetDataSource)
-                .suspendFunction(assetDataSource::uploadAndPersistPrivateAsset)
-                .whenInvokedWith(any(), any(), any(), any())
-                .thenReturn(Either.Right(expectedAssetId to assetSHA256Key))
-            given(currentClientIdProvider)
-                .suspendFunction(currentClientIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Right(someClientId))
-            given(slowSyncRepository)
-                .getter(slowSyncRepository::slowSyncStatus)
-                .whenInvoked()
-                .thenReturn(completeStateFlow)
-            given(persistMessage)
-                .suspendFunction(persistMessage::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
-            given(messageSender)
-                .suspendFunction(messageSender::sendMessage)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
-            given(messageSendFailureHandler)
-                .suspendFunction(messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-                .whenInvokedWith(any(), any(), any(), any(), any())
-                .thenReturn(Unit)
+            coEvery {
+                assetDataSource.persistAsset(any(), any(), any(), any(), any())
+            }.returns(Either.Right(fakeKaliumFileSystem.providePersistentAssetPath(temporaryAssetId)))
+            coEvery {
+                assetDataSource.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+            }.returns(Either.Right(expectedAssetId to assetSHA256Key))
+            coEvery {
+                currentClientIdProvider.invoke()
+            }.returns(Either.Right(someClientId))
+            every { slowSyncRepository.slowSyncStatus }
+                .returns(completeStateFlow)
+            coEvery {
+                persistMessage.invoke(any())
+            }.returns(Either.Right(Unit))
+            coEvery {
+                messageSender.sendMessage(any(), any())
+            }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
+            coEvery {
+                messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+            }.returns(Unit)
         }
 
-        fun withUploadAssetErrorResponse(exception: KaliumException): Arrangement = apply {
-            given(slowSyncRepository)
-                .getter(slowSyncRepository::slowSyncStatus)
-                .whenInvoked()
-                .thenReturn(completeStateFlow)
-            given(currentClientIdProvider)
-                .suspendFunction(currentClientIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Right(someClientId))
-            given(persistMessage)
-                .suspendFunction(persistMessage::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
-            given(assetDataSource)
-                .suspendFunction(assetDataSource::persistAsset)
-                .whenInvokedWith(any(), any(), any(), any(), any())
-                .thenReturn(Either.Right(fakeKaliumFileSystem.providePersistentAssetPath("temporary_id")))
-            given(assetDataSource)
-                .suspendFunction(assetDataSource::uploadAndPersistPrivateAsset)
-                .whenInvokedWith(any(), any(), any(), any())
-                .thenReturn(Either.Left(NetworkFailure.ServerMiscommunication(exception)))
-            given(updateUploadStatus)
-                .suspendFunction(updateUploadStatus::invoke)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(UpdateUploadStatusResult.Failure(CoreFailure.Unknown(RuntimeException("some error"))))
+        suspend fun withUploadAssetErrorResponse(exception: KaliumException): Arrangement = apply {
+            every { slowSyncRepository.slowSyncStatus }
+                .returns(completeStateFlow)
+            coEvery {
+                currentClientIdProvider.invoke()
+            }.returns(Either.Right(someClientId))
+            coEvery {
+                persistMessage.invoke(any())
+            }.returns(Either.Right(Unit))
+            coEvery {
+                assetDataSource.persistAsset(any(), any(), any(), any(), any())
+            }.returns(Either.Right(fakeKaliumFileSystem.providePersistentAssetPath("temporary_id")))
+            coEvery {
+                assetDataSource.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+            }.returns(Either.Left(NetworkFailure.ServerMiscommunication(exception)))
+            coEvery {
+                updateTransferStatus.invoke(any(), any(), any())
+            }.returns(UpdateTransferStatusResult.Failure(CoreFailure.Unknown(RuntimeException("some error"))))
         }
 
-        fun withPersistMessageErrorResponse() = apply {
-            given(currentClientIdProvider)
-                .suspendFunction(currentClientIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Right(someClientId))
-            given(slowSyncRepository)
-                .getter(slowSyncRepository::slowSyncStatus)
-                .whenInvoked()
-                .thenReturn(completeStateFlow)
-            given(assetDataSource)
-                .suspendFunction(assetDataSource::persistAsset)
-                .whenInvokedWith(any(), any(), any(), any(), any())
-                .thenReturn(Either.Right(fakeKaliumFileSystem.providePersistentAssetPath("temporary_id")))
-            given(persistMessage)
-                .suspendFunction(persistMessage::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Left(StorageFailure.Generic(IOException("Some error"))))
-            given(updateUploadStatus)
-                .suspendFunction(updateUploadStatus::invoke)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(UpdateUploadStatusResult.Failure(CoreFailure.Unknown(RuntimeException("some error"))))
+        suspend fun withPersistMessageErrorResponse() = apply {
+            coEvery {
+                currentClientIdProvider.invoke()
+            }.returns(Either.Right(someClientId))
+            every { slowSyncRepository.slowSyncStatus }
+                .returns(completeStateFlow)
+            coEvery {
+                assetDataSource.persistAsset(any(), any(), any(), any(), any())
+            }.returns(Either.Right(fakeKaliumFileSystem.providePersistentAssetPath("temporary_id")))
+            coEvery {
+                persistMessage.invoke(any())
+            }.returns(Either.Left(StorageFailure.Generic(IOException("Some error"))))
+            coEvery {
+                updateTransferStatus.invoke(any(), any(), any())
+            }.returns(UpdateTransferStatusResult.Failure(CoreFailure.Unknown(RuntimeException("some error"))))
         }
 
-        fun withPersistAssetErrorResponse() = apply {
-            given(currentClientIdProvider)
-                .suspendFunction(currentClientIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Right(someClientId))
-            given(slowSyncRepository)
-                .getter(slowSyncRepository::slowSyncStatus)
-                .whenInvoked()
-                .thenReturn(completeStateFlow)
-            given(assetDataSource)
-                .suspendFunction(assetDataSource::persistAsset)
-                .whenInvokedWith(any(), any(), any(), any(), any())
-                .thenReturn(Either.Left(StorageFailure.Generic(IOException("Some error"))))
-            given(updateUploadStatus)
-                .suspendFunction(updateUploadStatus::invoke)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(UpdateUploadStatusResult.Failure(CoreFailure.Unknown(RuntimeException("some error"))))
+        suspend fun withPersistAssetErrorResponse() = apply {
+            coEvery {
+                currentClientIdProvider.invoke()
+            }.returns(Either.Right(someClientId))
+            every { slowSyncRepository.slowSyncStatus }
+                .returns(completeStateFlow)
+            coEvery {
+                assetDataSource.persistAsset(any(), any(), any(), any(), any())
+            }.returns(Either.Left(StorageFailure.Generic(IOException("Some error"))))
+            coEvery {
+                updateTransferStatus.invoke(any(), any(), any())
+            }.returns(UpdateTransferStatusResult.Failure(CoreFailure.Unknown(RuntimeException("some error"))))
         }
 
-        fun withSelfDeleteTimer(result: SelfDeletionTimer) = apply {
-            given(observeSelfDeletionTimerSettingsForConversation)
-                .suspendFunction(observeSelfDeletionTimerSettingsForConversation::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(flowOf(result))
+        suspend fun withSelfDeleteTimer(result: SelfDeletionTimer) = apply {
+            coEvery {
+                observeSelfDeletionTimerSettingsForConversation.invoke(any(), any())
+            }.returns(flowOf(result))
         }
 
-        fun withObserveMessageVisibility() = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::observeMessageVisibility)
-                .whenInvokedWith(any())
-                .thenReturn(flowOf(Either.Right(MessageEntity.Visibility.VISIBLE)))
+        suspend fun withObserveMessageVisibility() = apply {
+            coEvery {
+                messageRepository.observeMessageVisibility(any(), any())
+            }.returns(flowOf(Either.Right(MessageEntity.Visibility.VISIBLE)))
         }
 
-        fun withDeleteAssetLocally() = apply {
-            given(assetDataSource)
-                .suspendFunction(assetDataSource::deleteAssetLocally)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withDeleteAssetLocally() = apply {
+            coEvery {
+                assetDataSource.deleteAssetLocally(any())
+            }.returns(Either.Right(Unit))
         }
 
+        suspend fun withUpdateMessageAssetTransferStatus(result: UpdateTransferStatusResult) = apply {
+            coEvery {
+                updateTransferStatus.invoke(any(), any(), any())
+            }.returns(result)
+        }
 
-        fun arrange() = this to ScheduleNewAssetMessageUseCaseImpl(
+        suspend fun arrange() = this to ScheduleNewAssetMessageUseCaseImpl(
             persistMessage,
-            updateUploadStatus,
+            updateTransferStatus,
             currentClientIdProvider,
             assetDataSource,
             QualifiedID("some-id", "some-domain"),
@@ -786,7 +705,9 @@ class ScheduleNewAssetMessageUseCaseTest {
             observeSelfDeletionTimerSettingsForConversation,
             coroutineScope,
             testDispatcher
-        )
+        ).also {
+            withToggleReadReceiptsStatus()
+        }
     }
 
     companion object {

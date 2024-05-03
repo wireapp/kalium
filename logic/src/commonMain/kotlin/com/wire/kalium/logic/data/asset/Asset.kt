@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -66,6 +66,6 @@ fun isVideoMimeType(mimeType: String): Boolean = mimeType in SUPPORTED_VIDEO_ASS
 
 val SUPPORTED_IMAGE_ASSET_MIME_TYPES = setOf("image/jpg", "image/jpeg", "image/png", "image/gif", "image/webp")
 val SUPPORTED_AUDIO_ASSET_MIME_TYPES = setOf(
-    "audio/mp3", "audio/mp4", "audio/mpeg", "audio/ogg", "audio/wav", "audio/x-wav", "audio/x-pn-wav"
+    "audio/mp3", "audio/mp4", "audio/mpeg", "audio/ogg", "audio/wav", "audio/x-wav", "audio/x-pn-wav", "audio/x-m4a"
 )
 val SUPPORTED_VIDEO_ASSET_MIME_TYPES = setOf("video/mp4", "video/webm", "video/3gpp", "video/mkv")

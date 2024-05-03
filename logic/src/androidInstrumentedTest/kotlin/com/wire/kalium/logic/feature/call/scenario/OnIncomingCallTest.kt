@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import io.mockative.Mock
-import io.mockative.configure
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
@@ -60,9 +60,8 @@ class OnIncomingCallTest {
         )
         advanceUntilIdle()
 
-        verify(arrangement.callRepository)
-            .suspendFunction(arrangement.callRepository::createCall)
-            .with(
+        coVerify {
+            arrangement.callRepository.createCall(
                 eq(TestConversation.CONVERSATION.id),
                 eq(ConversationType.Conference),
                 eq(CallStatus.INCOMING),
@@ -71,7 +70,7 @@ class OnIncomingCallTest {
                 eq(false),
                 eq(false)
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -91,9 +90,8 @@ class OnIncomingCallTest {
         )
         advanceUntilIdle()
 
-        verify(arrangement.callRepository)
-            .suspendFunction(arrangement.callRepository::createCall)
-            .with(
+        coVerify {
+            arrangement.callRepository.createCall(
                 eq(TestConversation.CONVERSATION.id),
                 eq(ConversationType.Conference),
                 eq(CallStatus.STILL_ONGOING),
@@ -102,15 +100,13 @@ class OnIncomingCallTest {
                 eq(false),
                 eq(false)
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement(val testScope: TestScope) {
 
         @Mock
-        val callRepository: CallRepository = configure(mock(CallRepository::class)) {
-            stubsUnitByDefault = true
-        }
+        val callRepository: CallRepository = mock(CallRepository::class)
 
         val kaliumConfigs = KaliumConfigs()
 

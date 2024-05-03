@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,27 +15,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+@file:Suppress("konsist.useCasesShouldNotAccessDaoLayerDirectly")
 
 package com.wire.kalium.logic.feature.server
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.configuration.server.ServerConfigMapper
+import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 
 /**
  * Gets the server configuration for the given user.
  */
 class ServerConfigForAccountUseCase internal constructor(
-    private val serverConfigRepository: ServerConfigRepository
+    private val dao: ServerConfigurationDAO,
+    private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper()
 ) {
     /**
      * @param userId the id of the user
      * @return the [ServerConfig] for the given user if successful, otherwise a [StorageFailure]
      */
-    suspend operator fun invoke(userId: UserId) =
-        serverConfigRepository.configForUser(userId)
+    suspend operator fun invoke(userId: UserId): Result =
+        wrapStorageRequest { dao.configForUser(userId.toDao()) }
+            .map { serverConfigMapper.fromEntity(it) }
             .fold(Result::Failure, Result::Success)
 
     sealed class Result {

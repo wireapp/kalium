@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -45,7 +45,9 @@ actual fun defaultHttpEngine(
     ignoreSSLCertificates: Boolean,
     certificatePinning: CertificatePinning
 ): HttpClientEngine = OkHttp.create {
-    OkhttpClientFactory {
+    buildOkhttpClient {
+        connectionSpecs(supportedConnectionSpecs())
+
         if (certificatePinning.isNotEmpty() && !ignoreSSLCertificates) {
             val certPinner = CertificatePinner.Builder().apply {
                 certificatePinning.forEach { (cert, hosts) ->
@@ -103,5 +105,9 @@ private fun OkHttpClient.Builder.ignoreAllSSLErrors() {
 
 fun supportedConnectionSpecs(): List<ConnectionSpec> {
     val wireSpec = ConnectionSpec.Builder(ConnectionSpec.RESTRICTED_TLS).build()
-    return listOf(wireSpec, ConnectionSpec.CLEARTEXT)
+    return listOf(wireSpec)
+}
+
+actual fun clearTextTrafficEngine(): HttpClientEngine = OkHttp.create {
+    buildClearTextTrafficOkhttpClient()
 }

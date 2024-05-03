@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.data.conversation
 
+import com.wire.kalium.logic.data.user.SupportedProtocol
+
 // TODO(qol): rename to CreateConversationParam
 data class ConversationOptions(
     val access: Set<Conversation.Access>? = null,
@@ -27,6 +29,14 @@ data class ConversationOptions(
     val creatorClientId: ClientId? = null
 ) {
     enum class Protocol {
-        PROTEUS, MLS
+        PROTEUS, MLS;
+
+        companion object {
+            fun fromSupportedProtocolToConversationOptionsProtocol(supportedProtocol: SupportedProtocol): Protocol =
+                when (supportedProtocol) {
+                    SupportedProtocol.MLS -> MLS
+                    SupportedProtocol.PROTEUS -> PROTEUS
+                }
+        }
     }
 }

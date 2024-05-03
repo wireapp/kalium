@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -565,4 +565,10 @@ internal fun E2EIConversationState.toModel(): Conversation.VerificationStatus = 
     E2EIConversationState.VERIFIED -> Conversation.VerificationStatus.VERIFIED
     E2EIConversationState.NOT_VERIFIED -> Conversation.VerificationStatus.NOT_VERIFIED
     E2EIConversationState.NOT_ENABLED -> Conversation.VerificationStatus.NOT_VERIFIED
+}
+
+internal fun ConversationEntity.VerificationStatus.toModel(): Conversation.VerificationStatus = when (this) {
+    ConversationEntity.VerificationStatus.VERIFIED -> Conversation.VerificationStatus.VERIFIED
+    ConversationEntity.VerificationStatus.NOT_VERIFIED -> Conversation.VerificationStatus.NOT_VERIFIED
+    ConversationEntity.VerificationStatus.DEGRADED -> Conversation.VerificationStatus.DEGRADED
 }

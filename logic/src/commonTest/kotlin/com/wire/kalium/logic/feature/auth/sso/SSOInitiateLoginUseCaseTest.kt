@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,18 +24,17 @@ import com.wire.kalium.logic.test_util.serverMiscommunicationFailure
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class SSOInitiateLoginUseCaseTest {
 
     @Mock
@@ -57,19 +56,25 @@ class SSOInitiateLoginUseCaseTest {
     @Test
     fun givenCodeFormatIsInvalid_whenInitiating_thenReturnInvalidCodeFormat() =
         runTest {
-            given(validateUUIDUseCase).invocation { invoke(TEST_CODE) }.then { ValidateSSOCodeResult.Invalid }
+            every {
+                validateUUIDUseCase.invoke(TEST_CODE)
+            }.returns(ValidateSSOCodeResult.Invalid)
             val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.WithoutRedirect(TEST_CODE))
             assertEquals(result, SSOInitiateLoginResult.Failure.InvalidCodeFormat)
-            verify(validateUUIDUseCase).invocation { invoke(TEST_CODE) }.wasInvoked(exactly = once)
+            verify {
+                validateUUIDUseCase.invoke(TEST_CODE)
+            }.wasInvoked(exactly = once)
         }
 
     @Test
     fun givenApiReturnsInvalidCode_whenInitiating_thenReturnInvalidCode() =
         runTest {
-            given(validateUUIDUseCase).invocation { invoke(TEST_CODE) }
-                .then { ValidateSSOCodeResult.Valid(TEST_UUID) }
-            given(ssoLoginRepository).coroutine { initiate(TEST_UUID) }
-                .then { Either.Left(serverMiscommunicationFailure(code = HttpStatusCode.NotFound.value)) }
+            every {
+                validateUUIDUseCase.invoke(TEST_CODE)
+            }.returns(ValidateSSOCodeResult.Valid(TEST_UUID))
+            coEvery {
+                ssoLoginRepository.initiate(TEST_UUID)
+            }.returns(Either.Left(serverMiscommunicationFailure(code = HttpStatusCode.NotFound.value)))
             val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.WithoutRedirect(TEST_CODE))
             assertEquals(result, SSOInitiateLoginResult.Failure.InvalidCode)
         }
@@ -77,10 +82,12 @@ class SSOInitiateLoginUseCaseTest {
     @Test
     fun givenApiReturnsInvalidRedirect_whenInitiating_thenReturnInvalidRedirect() =
         runTest {
-            given(validateUUIDUseCase).invocation { invoke(TEST_CODE) }
-                .then { ValidateSSOCodeResult.Valid(TEST_UUID) }
-            given(ssoLoginRepository).coroutine { initiate(TEST_UUID) }
-                .then { Either.Left(serverMiscommunicationFailure(code = HttpStatusCode.BadRequest.value)) }
+            every {
+                validateUUIDUseCase.invoke(TEST_CODE)
+            }.returns(ValidateSSOCodeResult.Valid(TEST_UUID))
+            coEvery {
+                ssoLoginRepository.initiate(TEST_UUID)
+            }.returns(Either.Left(serverMiscommunicationFailure(code = HttpStatusCode.BadRequest.value)))
             val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.WithoutRedirect(TEST_CODE))
             assertEquals(result, SSOInitiateLoginResult.Failure.InvalidRedirect)
         }
@@ -89,9 +96,12 @@ class SSOInitiateLoginUseCaseTest {
     fun givenApiReturnsOtherError_whenInitiating_thenReturnGenericFailure() =
         runTest {
             val expected = serverMiscommunicationFailure(code = HttpStatusCode.Forbidden.value)
-            given(validateUUIDUseCase).invocation { invoke(TEST_CODE) }
-                .then { ValidateSSOCodeResult.Valid(TEST_UUID) }
-            given(ssoLoginRepository).coroutine { initiate(TEST_UUID) }.then { Either.Left(expected) }
+            every {
+                validateUUIDUseCase.invoke(TEST_CODE)
+            }.returns(ValidateSSOCodeResult.Valid(TEST_UUID))
+            coEvery {
+                ssoLoginRepository.initiate(TEST_UUID)
+            }.returns(Either.Left(expected))
             val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.WithoutRedirect(TEST_CODE))
             assertIs<SSOInitiateLoginResult.Failure.Generic>(result)
             assertEquals(expected, result.genericFailure)
@@ -100,9 +110,12 @@ class SSOInitiateLoginUseCaseTest {
     @Test
     fun givenApiReturnsSuccess_whenInitiatingWithoutRedirect_thenReturnSuccess() =
         runTest {
-            given(validateUUIDUseCase).invocation { invoke(TEST_CODE) }
-                .then { ValidateSSOCodeResult.Valid(TEST_UUID) }
-            given(ssoLoginRepository).coroutine { initiate(TEST_UUID) }.then { Either.Right(TEST_RESPONSE) }
+            every {
+                validateUUIDUseCase.invoke(TEST_CODE)
+            }.returns(ValidateSSOCodeResult.Valid(TEST_UUID))
+            coEvery {
+                ssoLoginRepository.initiate(TEST_UUID)
+            }.returns(Either.Right(TEST_RESPONSE))
             val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.WithoutRedirect(TEST_CODE))
             assertEquals(result, SSOInitiateLoginResult.Success(TEST_RESPONSE))
         }
@@ -111,10 +124,12 @@ class SSOInitiateLoginUseCaseTest {
     fun givenApiReturnsSuccess_whenInitiatingWitRedirect_thenReturnSuccess() =
         runTest {
             val expectedRedirects = SSORedirects(serverConfig.id)
-            given(validateUUIDUseCase).invocation { invoke(TEST_CODE) }
-                .then { ValidateSSOCodeResult.Valid(TEST_UUID) }
-            given(ssoLoginRepository).coroutine { initiate(TEST_UUID, expectedRedirects.success, expectedRedirects.error) }
-                .then { Either.Right(TEST_RESPONSE) }
+            every {
+                validateUUIDUseCase.invoke(TEST_CODE)
+            }.returns(ValidateSSOCodeResult.Valid(TEST_UUID))
+            coEvery {
+                ssoLoginRepository.initiate(TEST_UUID, expectedRedirects.success, expectedRedirects.error)
+            }.returns(Either.Right(TEST_RESPONSE))
 
             val result = ssoInitiateLoginUseCase(SSOInitiateLoginUseCase.Param.WithRedirect(TEST_CODE))
 

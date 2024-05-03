@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,9 +22,9 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestUser.OTHER
 import io.mockative.any
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -49,15 +49,13 @@ class GetUserInfoUseCaseTest {
         assertEquals(OTHER, (result as GetUserInfoResult.Success).otherUser)
 
         with(arrangement) {
-            verify(userRepository)
-                .suspendFunction(userRepository::getKnownUser)
-                .with(eq(userId))
-                .wasInvoked(once)
+            coVerify {
+                userRepository.getKnownUser(eq(userId))
+            }.wasInvoked(once)
 
-            verify(userRepository)
-                .suspendFunction(userRepository::userById)
-                .with(eq(userId))
-                .wasInvoked(once)
+            coVerify {
+                userRepository.userById(eq(userId))
+            }.wasInvoked(once)
         }
     }
 
@@ -76,15 +74,13 @@ class GetUserInfoUseCaseTest {
         assertEquals(OTHER, (result as GetUserInfoResult.Success).otherUser)
 
         with(arrangement) {
-            verify(userRepository)
-                .suspendFunction(userRepository::getKnownUser)
-                .with(eq(userId))
-                .wasInvoked(once)
+            coVerify {
+                userRepository.getKnownUser(eq(userId))
+            }.wasInvoked(once)
 
-            verify(userRepository)
-                .suspendFunction(userRepository::userById)
-                .with(eq(userId))
-                .wasNotInvoked()
+            coVerify {
+                userRepository.userById(eq(userId))
+            }.wasNotInvoked()
         }
     }
 
@@ -103,15 +99,13 @@ class GetUserInfoUseCaseTest {
         assertEquals(GetUserInfoResult.Failure, result)
 
         with(arrangement) {
-            verify(userRepository)
-                .suspendFunction(userRepository::getKnownUser)
-                .with(eq(userId))
-                .wasInvoked(once)
+            coVerify {
+                userRepository.getKnownUser(eq(userId))
+            }.wasInvoked(once)
 
-            verify(userRepository)
-                .suspendFunction(userRepository::userById)
-                .with(eq(userId))
-                .wasInvoked(once)
+            coVerify {
+                userRepository.userById(eq(userId))
+            }.wasInvoked(once)
         }
     }
 
@@ -129,15 +123,13 @@ class GetUserInfoUseCaseTest {
         assertEquals(OTHER.copy(teamId = null), (result as GetUserInfoResult.Success).otherUser)
 
         with(arrangement) {
-            verify(userRepository)
-                .suspendFunction(userRepository::getKnownUser)
-                .with(eq(userId))
-                .wasInvoked(once)
+            coVerify {
+                userRepository.getKnownUser(eq(userId))
+            }.wasInvoked(once)
 
-            verify(teamRepository)
-                .suspendFunction(teamRepository::getTeam)
-                .with(any())
-                .wasNotInvoked()
+            coVerify {
+                teamRepository.getTeam(any())
+            }.wasNotInvoked()
         }
     }
 
@@ -156,20 +148,17 @@ class GetUserInfoUseCaseTest {
         assertEquals(OTHER.copy(userType = UserType.INTERNAL), (result as GetUserInfoResult.Success).otherUser)
 
         with(arrangement) {
-            verify(userRepository)
-                .suspendFunction(userRepository::getKnownUser)
-                .with(eq(userId))
-                .wasInvoked(once)
+            coVerify {
+                userRepository.getKnownUser(eq(userId))
+            }.wasInvoked(once)
 
-            verify(teamRepository)
-                .suspendFunction(teamRepository::getTeam)
-                .with(any())
-                .wasInvoked(once)
+            coVerify {
+                teamRepository.getTeam(any())
+            }.wasInvoked(once)
 
-            verify(teamRepository)
-                .suspendFunction(teamRepository::fetchTeamById)
-                .with(any())
-                .wasInvoked(once)
+            coVerify {
+                teamRepository.fetchTeamById(any())
+            }.wasInvoked(once)
         }
     }
 
@@ -188,25 +177,21 @@ class GetUserInfoUseCaseTest {
             assertIs<GetUserInfoResult.Failure>(result)
 
             with(arrangement) {
-                verify(userRepository)
-                    .suspendFunction(userRepository::getKnownUser)
-                    .with(eq(userId))
-                    .wasInvoked(once)
+                coVerify {
+                    userRepository.getKnownUser(eq(userId))
+                }.wasInvoked(once)
 
-                verify(userRepository)
-                    .suspendFunction(userRepository::userById)
-                    .with(any())
-                    .wasInvoked(once)
+                coVerify {
+                    userRepository.userById(any())
+                }.wasInvoked(once)
 
-                verify(teamRepository)
-                    .suspendFunction(teamRepository::getTeam)
-                    .with(any())
-                    .wasNotInvoked()
+                coVerify {
+                    teamRepository.getTeam(any())
+                }.wasNotInvoked()
 
-                verify(teamRepository)
-                    .suspendFunction(teamRepository::fetchTeamById)
-                    .with(any())
-                    .wasNotInvoked()
+                coVerify {
+                    teamRepository.fetchTeamById(any())
+                }.wasNotInvoked()
             }
         }
 
@@ -226,28 +211,21 @@ class GetUserInfoUseCaseTest {
         assertIs<GetUserInfoResult.Failure>(result)
 
         with(arrangement) {
-            verify(userRepository)
-                .suspendFunction(userRepository::getKnownUser)
-                .with(eq(userId))
-                .wasInvoked(once)
+            coVerify {
+                userRepository.getKnownUser(eq(userId))
+            }.wasInvoked(once)
 
-            verify(teamRepository)
-                .suspendFunction(teamRepository::getTeam)
-                .with(any())
-                .wasInvoked(once)
+            coVerify {
+                teamRepository.getTeam(any())
+            }.wasInvoked(once)
 
-            verify(teamRepository)
-                .suspendFunction(teamRepository::fetchTeamById)
-                .with(any())
-                .wasInvoked(once)
+            coVerify {
+                teamRepository.fetchTeamById(any())
+            }.wasInvoked(once)
         }
     }
 
     private companion object {
         val userId = UserId("some_user", "some_domain")
     }
-
 }
-
-
-

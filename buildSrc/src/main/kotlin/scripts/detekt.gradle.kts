@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,8 @@ dependencies {
     val detektVersion = libs.findVersion("detekt").get()
     detekt("io.gitlab.arturbosch.detekt:detekt-cli:$detektVersion")
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:$detektVersion")
-    detektPlugins("com.wire:detekt-rules:1.0.0-SNAPSHOT") {
+    detektPlugins("io.gitlab.arturbosch.detekt:detekt-rules-libraries:$detektVersion")
+    detektPlugins("com.wire:detekt-rules:1.0.0-1.23.6") {
         isChanging = true
     }
 }
@@ -39,8 +40,8 @@ detekt {
     buildUponDefaultConfig = true
     // activate all available (even unstable) rules.
     // allRules = false
-    config = files("$rootDir/detekt/detekt.yml")
-    source = files("$rootDir")
+    config.setFrom(files("$rootDir/detekt/detekt.yml"))
+    source.setFrom(files("$rootDir"))
     // a way of suppressing issues before introducing detekt
     baseline = file("$rootDir/detekt/baseline.xml")
 

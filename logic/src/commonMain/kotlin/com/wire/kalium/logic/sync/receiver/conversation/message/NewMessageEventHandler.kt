@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ import com.wire.kalium.logic.ProteusFailure
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.ConversationId
@@ -33,13 +34,14 @@ import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.toInstant
 
 internal interface NewMessageEventHandler {
-    suspend fun handleNewProteusMessage(event: Event.Conversation.NewMessage)
-    suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage)
+    suspend fun handleNewProteusMessage(event: Event.Conversation.NewMessage, deliveryInfo: EventDeliveryInfo)
+    suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage, deliveryInfo: EventDeliveryInfo)
 }
 
 @Suppress("LongParameterList")
@@ -55,7 +57,7 @@ internal class NewMessageEventHandlerImpl(
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
-    override suspend fun handleNewProteusMessage(event: Event.Conversation.NewMessage) {
+    override suspend fun handleNewProteusMessage(event: Event.Conversation.NewMessage, deliveryInfo: EventDeliveryInfo) {
         proteusMessageUnpacker.unpackProteusMessage(event)
             .onFailure {
                 val logMap = mapOf(
@@ -87,7 +89,7 @@ internal class NewMessageEventHandlerImpl(
             }.onSuccess {
                 if (it is MessageUnpackResult.ApplicationMessage) {
                     if (it.content.legalHoldStatus != Conversation.LegalHoldStatus.UNKNOWN) {
-                        legalHoldHandler.handleNewMessage(it, event.live)
+                        legalHoldHandler.handleNewMessage(it, isLive = deliveryInfo.source == EventSource.LIVE)
                     }
                     handleSuccessfulResult(it)
                     onMessageInserted(it)
@@ -100,7 +102,7 @@ internal class NewMessageEventHandlerImpl(
             }
     }
 
-    override suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage) {
+    override suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage, deliveryInfo: EventDeliveryInfo) {
         mlsMessageUnpacker.unpackMlsMessage(event)
             .onFailure {
                 val logMap = mapOf(
@@ -141,7 +143,7 @@ internal class NewMessageEventHandlerImpl(
                 it.forEach {
                     if (it is MessageUnpackResult.ApplicationMessage) {
                         if (it.content.legalHoldStatus != Conversation.LegalHoldStatus.UNKNOWN) {
-                            legalHoldHandler.handleNewMessage(it, event.live)
+                            legalHoldHandler.handleNewMessage(it, isLive = deliveryInfo.source == EventSource.LIVE)
                         }
                         handleSuccessfulResult(it)
                         onMessageInserted(it)

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,9 +25,7 @@ data class AssetContent(
     val name: String? = null,
     val mimeType: String,
     val metadata: AssetMetadata? = null,
-    val remoteData: RemoteData,
-    val uploadStatus: Message.UploadStatus = Message.UploadStatus.NOT_UPLOADED,
-    val downloadStatus: Message.DownloadStatus
+    val remoteData: RemoteData
 ) {
 
     private val isPreviewMessage = sizeInBytes > 0 && !hasValidRemoteData()

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -80,6 +80,7 @@ class PostgresStorage(pgConfig: EventConfig, private val executionId: Int? = nul
                 execution_id = execution.id,
                 monkey_index = event.monkeyOrigin.index,
                 team = event.monkeyOrigin.team,
+                client_id = event.monkeyOrigin.clientId,
                 event_data = event.eventType
             )
         }
@@ -99,7 +100,7 @@ class PostgresStorage(pgConfig: EventConfig, private val executionId: Int? = nul
     override fun CoroutineScope.readEvents() = produce {
         withDatabase { database, execution ->
             for (event in database.executionEventQueries.selectByExecutionId(execution.id).awaitAsList()) {
-                send(Event(MonkeyId(event.monkey_index, event.team), Json.decodeFromString(event.event_data)))
+                send(Event(MonkeyId(event.monkey_index, event.team, event.client_id), Json.decodeFromString(event.event_data)))
             }
         }
     }

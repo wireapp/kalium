@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -48,6 +48,33 @@ class ClientTest {
             lastActive = Clock.System.now() - (Client.INACTIVE_DURATION - 1.days)
         )
         assertTrue(client.isActive)
+    }
+
+    @Test
+    fun givenLastActiveIsNull_whenRegistrationTRimeIsNotOld_thenIsActiveIsTrue() {
+        val client = TestClient.CLIENT.copy(
+            lastActive = null,
+            registrationTime = Clock.System.now() - (Client.INACTIVE_DURATION - 1.days)
+        )
+        assertTrue(client.isActive)
+    }
+
+    @Test
+    fun givenLastActiveIsNull_whenRegistrationTRimeIsOld_thenIsActiveIsFalse() {
+        val client = TestClient.CLIENT.copy(
+            lastActive = null,
+            registrationTime = Clock.System.now() - (Client.INACTIVE_DURATION + 1.days)
+        )
+        assertFalse(client.isActive)
+    }
+
+    @Test
+    fun givenLastActiveIsNull_whenRegistrationTRimeIsNull_thenIsActiveIsFalse() {
+        val client = TestClient.CLIENT.copy(
+            lastActive = null,
+            registrationTime = null
+        )
+        assertFalse(client.isActive)
     }
 
 }

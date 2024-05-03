@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.EventReceiver
@@ -33,7 +34,7 @@ internal class CommitBundleEventReceiverImpl(
     private val memberJoinEventHandler: MemberJoinEventHandler,
     private val memberLeaveEventHandler: MemberLeaveEventHandler
 ) : CommitBundleEventReceiver {
-    override suspend fun onEvent(event: Event.Conversation): Either<CoreFailure, Unit> {
+    override suspend fun onEvent(event: Event.Conversation, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
         return when (event) {
             is Event.Conversation.MemberJoin -> memberJoinEventHandler.handle(event)
             is Event.Conversation.MemberLeave -> memberLeaveEventHandler.handle(event)

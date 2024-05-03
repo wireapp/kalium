@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
-import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -76,32 +75,6 @@ internal class UpdateConversationArchivedStatusUseCaseImpl(
                             "status to archived = ($shouldArchiveConversation)"
                 )
 
-                // Now we should make sure the conversation gets muted if it's archived or un-muted if it's unarchived
-                val updatedMutedStatus = if (shouldArchiveConversation) {
-                    MutedConversationStatus.AllMuted
-                } else {
-                    MutedConversationStatus.AllAllowed
-                }
-
-                if (!onlyLocally) {
-                    updateMutedStatusRemotely(conversationId, updatedMutedStatus, archivedStatusTimestamp)
-                } else {
-                    Either.Right(Unit)
-                }
-                    .flatMap {
-                        conversationRepository.updateMutedStatusLocally(conversationId, updatedMutedStatus, archivedStatusTimestamp)
-                    }.fold({
-                        kaliumLogger.e(
-                            "Something went wrong when updating locally the muting status of the convId: " +
-                                    "(${conversationId.toLogString()}) to (${updatedMutedStatus.status}"
-                        )
-                    }, {
-                        kaliumLogger.d(
-                            "Successfully updated locally the muting status of the convId: " +
-                                    "(${conversationId.toLogString()}) to (${updatedMutedStatus.status}"
-                        )
-                    })
-                // Even if the muting status update fails, we should still return success as the archived status update was successful
                 ArchiveStatusUpdateResult.Success
             })
 
@@ -120,24 +93,6 @@ internal class UpdateConversationArchivedStatusUseCaseImpl(
             kaliumLogger.d(
                 "Successfully updated remotely convId (${conversationId.toLogString()}) archiving " +
                         "status to archived = ($shouldArchiveConversation)"
-            )
-        }
-
-    private suspend fun updateMutedStatusRemotely(
-        conversationId: ConversationId,
-        updatedMutedStatus: MutedConversationStatus,
-        archivedStatusTimestamp: Long
-    ) = conversationRepository.updateMutedStatusRemotely(conversationId, updatedMutedStatus, archivedStatusTimestamp)
-        .onFailure {
-            kaliumLogger.e(
-                "Something went wrong when updating remotely the muting status of the convId: " +
-                        "(${conversationId.toLogString()}) to (${updatedMutedStatus.status}"
-            )
-        }
-        .onSuccess {
-            kaliumLogger.d(
-                "Successfully updated remotely the muting status of the convId: " +
-                        "(${conversationId.toLogString()}) to (${updatedMutedStatus.status}"
             )
         }
 }

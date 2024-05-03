@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,10 +21,10 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
-import io.mockative.anything
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.any
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -33,22 +33,24 @@ import kotlin.test.assertEquals
 
 class GetConversationUnreadEventsCountUseCaseTest {
     @Mock
-    private val conversationRepository = mock(classOf<ConversationRepository>())
+    private val conversationRepository = mock(ConversationRepository::class)
 
     private lateinit var getConversationUnreadEventsCountUseCase: GetConversationUnreadEventsCountUseCase
 
     @BeforeTest
     fun setUp() {
-        getConversationUnreadEventsCountUseCase = GetConversationUnreadEventsCountUseCaseImpl(conversationRepository)
+        getConversationUnreadEventsCountUseCase = GetConversationUnreadEventsCountUseCaseImpl(
+            conversationRepository,
+            TestKaliumDispatcher
+        )
     }
 
     @Test
-    fun givenGettingUnreadEventsCountSucceed_whenItIsRequested_thenSuccessResultReturned() = runTest {
+    fun givenGettingUnreadEventsCountSucceed_whenItIsRequested_thenSuccessResultReturned() = runTest(TestKaliumDispatcher.main) {
         // given
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationUnreadEventsCount)
-            .whenInvokedWith(anything())
-            .thenReturn(Either.Right(1))
+        coEvery {
+            conversationRepository.getConversationUnreadEventsCount(any())
+        }.returns(Either.Right(1))
 
         // when
         val result = getConversationUnreadEventsCountUseCase(ConversationId(value = "convId", domain = "domainId"))
@@ -58,12 +60,11 @@ class GetConversationUnreadEventsCountUseCaseTest {
     }
 
     @Test
-    fun givenGettingUnreadEventsCountFailed_whenItIsRequested_thenFailureResultReturned() = runTest {
+    fun givenGettingUnreadEventsCountFailed_whenItIsRequested_thenFailureResultReturned() = runTest(TestKaliumDispatcher.main) {
         // given
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationUnreadEventsCount)
-            .whenInvokedWith(anything())
-            .thenReturn(Either.Left(StorageFailure.DataNotFound))
+        coEvery {
+            conversationRepository.getConversationUnreadEventsCount(any())
+        }.returns(Either.Left(StorageFailure.DataNotFound))
 
         // when
         val result = getConversationUnreadEventsCountUseCase(ConversationId(value = "convId", domain = "domainId"))

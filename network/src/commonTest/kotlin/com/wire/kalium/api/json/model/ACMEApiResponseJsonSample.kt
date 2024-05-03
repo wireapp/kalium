@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -69,7 +69,8 @@ object ACMEApiResponseJsonSample {
         url = "https://example.com/acme/chall/prV_B7yEyA4",
         status = "valid",
         token = "LoqXcYV8q5ONbJQxbmR7SCTNo3tiAXDfowyjxAjEuX0",
-        nonce = "random-nonce"
+        nonce = "random-nonce",
+        target = "random-url"
     )
 
     private val jsonProviderAcmeChallenge = { serializable: ChallengeResponse ->
@@ -78,8 +79,9 @@ object ACMEApiResponseJsonSample {
         |  "type": "${serializable.type}",
         |  "url": "${serializable.url}",
         |  "status": "${serializable.status}",
-        |  "token": "${serializable.token}"
-        |  "nonce": "${serializable.nonce}"
+        |  "token": "${serializable.token}",
+        |  "nonce": "${serializable.nonce}",
+        |  "target":"${serializable.target}
         |}
         """.trimMargin()
     }

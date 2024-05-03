@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,7 +29,7 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import okio.IOException
@@ -50,6 +50,7 @@ class MembersHavingLegalHoldClientUseCaseTest {
         // then
         result.shouldSucceed { assertContentEquals(listOf(userId), it) }
     }
+
     @Test
     fun givenConversationMemberDoesNotHaveLegalHoldClient_whenCheckingMembersHavingLegalHoldClient_thenReturnEmptyList() = runTest {
         // given
@@ -63,6 +64,7 @@ class MembersHavingLegalHoldClientUseCaseTest {
         // then
         result.shouldSucceed { assertContentEquals(emptyList(), it) }
     }
+
     @Test
     fun givenFailure_whenCheckingMembersHavingLegalHoldClient_thenReturnFailure() = runTest {
         // given
@@ -75,16 +77,15 @@ class MembersHavingLegalHoldClientUseCaseTest {
         result.shouldFail()
     }
 
-    internal class Arrangement() {
+    internal class Arrangement {
         @Mock
         private val clientRepository = mock(ClientRepository::class)
         private val useCase by lazy { MembersHavingLegalHoldClientUseCaseImpl(clientRepository) }
         fun arrange() = this to useCase
-        fun withGetClientsOfConversation(result: Either<StorageFailure, Map<UserId, List<Client>>>) = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::getClientsByConversationId)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withGetClientsOfConversation(result: Either<StorageFailure, Map<UserId, List<Client>>>) = apply {
+            coEvery {
+                clientRepository.getClientsByConversationId(any())
+            }.returns(result)
         }
     }
 }

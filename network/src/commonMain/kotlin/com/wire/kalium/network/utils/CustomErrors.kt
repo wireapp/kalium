@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,6 +26,7 @@ object CustomErrors {
 
     private const val MISSING_REFRESH_TOKEN_CODE = -1
     private const val MISSING_NONCE_CODE = -2
+    private const val MISSING_CHALLENGE_TYPE = -3
 
     val MISSING_REFRESH_TOKEN =
         NetworkResponse.Error(
@@ -45,6 +46,17 @@ object CustomErrors {
                     MISSING_NONCE_CODE,
                     "no nonce found",
                     NetworkErrorLabel.KaliumCustom.MISSING_NONCE
+                )
+            )
+        )
+
+    val MISSING_CHALLENGE =
+        NetworkResponse.Error(
+            KaliumException.ServerError(
+                ErrorResponse(
+                    MISSING_CHALLENGE_TYPE,
+                    "no challenge type found",
+                    NetworkErrorLabel.KaliumCustom.MISSING_CHALLENGE_TYPE
                 )
             )
         )

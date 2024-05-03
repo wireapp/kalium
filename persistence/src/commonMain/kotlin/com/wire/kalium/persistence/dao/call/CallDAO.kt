@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -54,6 +54,7 @@ interface CallDAO {
     suspend fun insertCall(call: CallEntity)
     suspend fun observeCalls(): Flow<List<CallEntity>>
     suspend fun observeIncomingCalls(): Flow<List<CallEntity>>
+    suspend fun observeOutgoingCalls(): Flow<List<CallEntity>>
     suspend fun observeEstablishedCalls(): Flow<List<CallEntity>>
     fun getEstablishedCall(): CallEntity
     suspend fun observeOngoingCalls(): Flow<List<CallEntity>>

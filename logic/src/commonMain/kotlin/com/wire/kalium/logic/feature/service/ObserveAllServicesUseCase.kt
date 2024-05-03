@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,10 +17,10 @@
  */
 package com.wire.kalium.logic.feature.service
 
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.service.ServiceDetails
 import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.logic.data.team.TeamRepository
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrNull
 import kotlinx.coroutines.CoroutineScope
@@ -49,6 +49,9 @@ class ObserveAllServicesUseCaseImpl internal constructor(
 ) : ObserveAllServicesUseCase {
 
     override suspend fun invoke(): Flow<List<ServiceDetails>> = flow {
+        // TODO: This should be called only one time preferably by the view model to
+        //  avoid unnecessary updates each time the use case is invoked
+        //  or have a in memory timer to avoid calling it too often
         val scope = CoroutineScope(currentCoroutineContext())
         scope.launch {
             selfTeamIdProvider().getOrNull()?.let { teamId ->

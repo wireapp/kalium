@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,9 +29,10 @@ import com.wire.kalium.logic.util.arrangement.repository.AccountRepositoryArrang
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -48,14 +49,13 @@ class SyncMigrationStep_6_7_Test {
 
         migration.invoke().shouldSucceed()
 
-        verify(arrangement.accountRepository)
-            .suspendFunction(arrangement.accountRepository::updateSelfUserAvailabilityStatus)
-            .with(eq(UserAvailabilityStatus.NONE))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.accountRepository.updateSelfUserAvailabilityStatus(eq(UserAvailabilityStatus.NONE))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.selfTeamIdProvider)
-            .suspendFunction(arrangement.selfTeamIdProvider::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.selfTeamIdProvider.invoke()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -67,14 +67,13 @@ class SyncMigrationStep_6_7_Test {
 
         migration.invoke().shouldSucceed()
 
-        verify(arrangement.accountRepository)
-            .suspendFunction(arrangement.accountRepository::updateSelfUserAvailabilityStatus)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.accountRepository.updateSelfUserAvailabilityStatus(any())
+        }.wasNotInvoked()
 
-        verify(arrangement.selfTeamIdProvider)
-            .suspendFunction(arrangement.selfTeamIdProvider::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.selfTeamIdProvider.invoke()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -88,14 +87,13 @@ class SyncMigrationStep_6_7_Test {
             assertIs<StorageFailure.DataNotFound>(it)
         }
 
-        verify(arrangement.accountRepository)
-            .suspendFunction(arrangement.accountRepository::updateSelfUserAvailabilityStatus)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.accountRepository.updateSelfUserAvailabilityStatus(any())
+        }.wasNotInvoked()
 
-        verify(arrangement.selfTeamIdProvider)
-            .suspendFunction(arrangement.selfTeamIdProvider::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.selfTeamIdProvider.invoke()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -109,14 +107,13 @@ class SyncMigrationStep_6_7_Test {
             assertIs<StorageFailure.DataNotFound>(it)
         }
 
-        verify(arrangement.accountRepository)
-            .suspendFunction(arrangement.accountRepository::updateSelfUserAvailabilityStatus)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.accountRepository.updateSelfUserAvailabilityStatus(any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.selfTeamIdProvider)
-            .suspendFunction(arrangement.selfTeamIdProvider::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.selfTeamIdProvider.invoke()
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement : AccountRepositoryArrangement by AccountRepositoryArrangementImpl(),
@@ -127,7 +124,8 @@ class SyncMigrationStep_6_7_Test {
             selfTeamIdProvider
         )
 
-        fun arrange(block: Arrangement.() -> Unit) = apply(block).let {
+        fun arrange(block: suspend Arrangement.() -> Unit) = let {
+            runBlocking { block() }
             this to migration
         }
     }

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ package com.wire.kalium.logic.sync.receiver
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.DeletedConversationEventHandler
@@ -57,19 +58,19 @@ internal class ConversationEventReceiverImpl(
     private val typingIndicatorHandler: TypingIndicatorHandler,
     private val protocolUpdateEventHandler: ProtocolUpdateEventHandler
 ) : ConversationEventReceiver {
-    override suspend fun onEvent(event: Event.Conversation): Either<CoreFailure, Unit> {
+    override suspend fun onEvent(event: Event.Conversation, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
         // TODO: Make sure errors are accounted for by each handler.
         //       onEvent now requires Either, so we can propagate errors,
         //       but not all handlers are using it yet.
         //       Returning Either.Right is the equivalent of how it was originally working.
         return when (event) {
             is Event.Conversation.NewMessage -> {
-                newMessageHandler.handleNewProteusMessage(event)
+                newMessageHandler.handleNewProteusMessage(event, deliveryInfo)
                 Either.Right(Unit)
             }
 
             is Event.Conversation.NewMLSMessage -> {
-                newMessageHandler.handleNewMLSMessage(event)
+                newMessageHandler.handleNewMLSMessage(event, deliveryInfo)
                 Either.Right(Unit)
             }
 

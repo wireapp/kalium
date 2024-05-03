@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -64,6 +64,10 @@ interface ClientRepository {
     suspend fun clearRetainedClientId(): Either<CoreFailure, Unit>
     suspend fun clearHasRegisteredMLSClient(): Either<CoreFailure, Unit>
     suspend fun observeCurrentClientId(): Flow<ClientId?>
+    suspend fun setClientRegistrationBlockedByE2EI(): Either<CoreFailure, Unit>
+    suspend fun clearClientRegistrationBlockedByE2EI(): Either<CoreFailure, Unit>
+    suspend fun observeIsClientRegistrationBlockedByE2EI(): Flow<Boolean?>
+    suspend fun isClientRegistrationBlockedByE2EI(): Either<CoreFailure, Boolean>
     suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
     suspend fun selfListOfClients(): Either<NetworkFailure, List<Client>>
     suspend fun observeClientsByUserIdAndClientId(userId: UserId, clientId: ClientId): Flow<Either<StorageFailure, Client>>
@@ -150,6 +154,24 @@ class ClientDataSource(
     override suspend fun observeCurrentClientId(): Flow<ClientId?> =
         clientRegistrationStorage.observeRegisteredClientId().map { rawClientId ->
             rawClientId?.let { ClientId(it) }
+        }
+
+    override suspend fun setClientRegistrationBlockedByE2EI(): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            clientRegistrationStorage.setClientRegistrationBlockedByE2EI()
+        }
+
+    override suspend fun clearClientRegistrationBlockedByE2EI(): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            clientRegistrationStorage.clearClientRegistrationBlockedByE2EI()
+        }
+
+    override suspend fun observeIsClientRegistrationBlockedByE2EI(): Flow<Boolean> =
+        clientRegistrationStorage.observeIsClientRegistrationBlockedByE2EI()
+
+    override suspend fun isClientRegistrationBlockedByE2EI(): Either<CoreFailure, Boolean> =
+        wrapStorageRequest {
+            clientRegistrationStorage.isBlockedByE2EI()
         }
 
     override suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit> {

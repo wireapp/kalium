@@ -1,8 +1,6 @@
-import org.jetbrains.kotlin.util.suffixIfNot
-
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,6 +15,7 @@ import org.jetbrains.kotlin.util.suffixIfNot
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+import org.jetbrains.kotlin.util.suffixIfNot
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
@@ -69,7 +68,6 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                implementation(kotlin("test"))
                 implementation(project(":persistence-test"))
                 // coroutines
                 implementation(libs.coroutines.test)
@@ -97,7 +95,6 @@ kotlin {
             dependencies {
                 implementation(libs.jna)
                 implementation(libs.coreCryptoJvm)
-                implementation(libs.bouncy.castle)
             }
         }
         val jvmTest by getting {
@@ -134,10 +131,6 @@ dependencies {
         .forEach {
             add(it.name, libs.mockative.processor)
         }
-}
-
-ksp {
-    arg("mockative.stubsUnitByDefault", "true")
 }
 
 android {

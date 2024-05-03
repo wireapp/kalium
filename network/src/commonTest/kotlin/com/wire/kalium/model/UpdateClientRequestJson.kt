@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,13 +20,13 @@ package com.wire.kalium.model
 
 import com.wire.kalium.api.json.ValidJsonProvider
 import com.wire.kalium.network.api.base.authenticated.client.MLSPublicKeyTypeDTO
-import com.wire.kalium.network.api.base.authenticated.client.UpdateClientRequest
+import com.wire.kalium.network.api.base.authenticated.client.UpdateClientMlsPublicKeysRequest
 import io.ktor.util.encodeBase64
 
 object UpdateClientRequestJson {
 
     val valid = ValidJsonProvider(
-        UpdateClientRequest(
+        UpdateClientMlsPublicKeysRequest(
             mapOf(Pair(MLSPublicKeyTypeDTO.ED25519, "publickey"))
         )
     ) {

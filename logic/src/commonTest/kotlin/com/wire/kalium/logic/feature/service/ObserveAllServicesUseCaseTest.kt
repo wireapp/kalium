@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,19 +19,18 @@ package com.wire.kalium.logic.feature.service
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.service.ServiceDetails
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.logic.data.team.TeamRepository
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -39,7 +38,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class ObserveAllServicesUseCaseTest {
 
     @Test
@@ -71,10 +69,9 @@ class ObserveAllServicesUseCaseTest {
             .arrange()
 
         observeAllServicesUseCase().first().also {
-            assertEquals(emptyList<ServiceDetails>(), it)
+            assertEquals(emptyList(), it)
         }
     }
-
 
     private companion object {
         val serviceId = ServiceId("serviceId", "providerId")
@@ -108,25 +105,22 @@ class ObserveAllServicesUseCaseTest {
             selfTeamIdProvider
         )
 
-        fun withObserveAllServices(result: Flow<Either<StorageFailure, List<ServiceDetails>>>) = apply {
-            given(serviceRepository)
-                .suspendFunction(serviceRepository::observeAllServices)
-                .whenInvoked()
-                .then { result }
+        suspend fun withObserveAllServices(result: Flow<Either<StorageFailure, List<ServiceDetails>>>) = apply {
+            coEvery {
+                serviceRepository.observeAllServices()
+            }.returns(result)
         }
 
-        fun withSelfUserTeamId(either: Either<CoreFailure, TeamId?>) = apply {
-            given(selfTeamIdProvider)
-                .suspendFunction(selfTeamIdProvider::invoke)
-                .whenInvoked()
-                .then { either }
+        suspend fun withSelfUserTeamId(either: Either<CoreFailure, TeamId?>) = apply {
+            coEvery {
+                selfTeamIdProvider.invoke()
+            }.returns(either)
         }
 
-        fun withSyncingServices() = apply {
-            given(teamRepository)
-                .suspendFunction(teamRepository::syncServices)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withSyncingServices() = apply {
+            coEvery {
+                teamRepository.syncServices(any())
+            }.returns(Either.Right(Unit))
         }
 
         fun arrange() = this to useCase

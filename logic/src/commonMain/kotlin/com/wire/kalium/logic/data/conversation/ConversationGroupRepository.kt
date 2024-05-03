@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,14 +25,18 @@ import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.message.MessageContent.MemberChange.FailedToAdd
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
@@ -46,9 +50,12 @@ import com.wire.kalium.network.api.base.authenticated.conversation.AddServiceReq
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
+import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ServiceAddedResponse
+import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.network.exceptions.isConversationHasNoCode
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.LocalId
@@ -60,7 +67,6 @@ interface ConversationGroupRepository {
         name: String? = null,
         usersList: List<UserId>,
         options: ConversationOptions = ConversationOptions(),
-        failedUsersList: List<UserId> = emptyList()
     ): Either<CoreFailure, Conversation>
 
     suspend fun addMembers(userIdList: List<UserId>, conversationId: ConversationId): Either<CoreFailure, Unit>
@@ -82,6 +88,7 @@ interface ConversationGroupRepository {
     suspend fun revokeGuestRoomLink(conversationId: ConversationId): Either<NetworkFailure, Unit>
     suspend fun observeGuestRoomLink(conversationId: ConversationId): Flow<Either<CoreFailure, ConversationGuestLink?>>
     suspend fun updateMessageTimer(conversationId: ConversationId, messageTimer: Long?): Either<CoreFailure, Unit>
+    suspend fun updateGuestRoomLink(conversationId: ConversationId, accountUrl: String): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -94,6 +101,7 @@ internal class ConversationGroupRepositoryImpl(
     private val conversationDAO: ConversationDAO,
     private val conversationApi: ConversationApi,
     private val newConversationMembersRepository: NewConversationMembersRepository,
+    private val userRepository: UserRepository,
     private val newGroupConversationSystemMessagesCreator: Lazy<NewGroupConversationSystemMessagesCreator>,
     private val selfUserId: UserId,
     private val teamIdProvider: SelfTeamIdProvider,
@@ -106,7 +114,13 @@ internal class ConversationGroupRepositoryImpl(
         name: String?,
         usersList: List<UserId>,
         options: ConversationOptions,
-        failedUsersList: List<UserId>
+    ): Either<CoreFailure, Conversation> = createGroupConversation(name, usersList, options, LastUsersAttempt.None)
+
+    private suspend fun createGroupConversation(
+        name: String?,
+        usersList: List<UserId>,
+        options: ConversationOptions,
+        lastUsersAttempt: LastUsersAttempt,
     ): Either<CoreFailure, Conversation> =
         teamIdProvider().flatMap { selfTeamId ->
             val apiResult = wrapApiRequest {
@@ -117,60 +131,82 @@ internal class ConversationGroupRepositoryImpl(
 
             when (apiResult) {
                 is Either.Left -> {
-                    val canRetryOnce = apiResult.value.hasUnreachableDomainsError && failedUsersList.isEmpty()
+                    val canRetryOnce = apiResult.value.hasUnreachableDomainsError && lastUsersAttempt is LastUsersAttempt.None
                     if (canRetryOnce) {
-                        val (validUsers, failedUsers) = extractValidUsersForRetryableFederationError(
-                            usersList,
-                            apiResult.value as NetworkFailure.FederatedBackendFailure.FailedDomains
-                        )
-                        // edge case, in case backend goes 🍌 and returns non-matching domains
-                        if (failedUsers.isEmpty()) Either.Left(apiResult.value)
+                        extractValidUsersForRetryableError(apiResult.value, usersList)
+                            .flatMap { (validUsers, failedUsers, failType) ->
+                                // edge case, in case backend goes 🍌 and returns non-matching domains
+                                if (failedUsers.isEmpty()) Either.Left(apiResult.value)
 
-                        createGroupConversation(name, validUsers, options, failedUsers)
+                                createGroupConversation(name, validUsers, options, LastUsersAttempt.Failed(failedUsers, failType))
+                            }
                     } else {
                         Either.Left(apiResult.value)
                     }
                 }
 
-                is Either.Right -> {
-                    val conversationResponse = apiResult.value
-                    val conversationEntity = conversationMapper.fromApiModelToDaoModel(
-                        conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION, selfTeamId
-                    )
-                    val protocol = protocolInfoMapper.fromEntity(conversationEntity.protocolInfo)
+                is Either.Right -> handleGroupConversationCreated(apiResult.value, selfTeamId, usersList, lastUsersAttempt)
+            }
+        }
 
-                    wrapStorageRequest {
-                        conversationDAO.insertConversation(conversationEntity)
-                    }.flatMap {
-                        newGroupConversationSystemMessagesCreator.value.conversationStarted(conversationEntity)
-                    }.flatMap {
-                        newConversationMembersRepository.persistMembersAdditionToTheConversation(
-                            conversationEntity.id, conversationResponse, failedUsersList
-                        ).flatMap {
-                            when (protocol) {
-                                is Conversation.ProtocolInfo.Proteus -> Either.Right(Unit)
-                                is Conversation.ProtocolInfo.MLSCapable -> mlsConversationRepository.establishMLSGroup(
-                                    groupID = protocol.groupId,
-                                    members = usersList + selfUserId
-                                )
-                            }
-                        }
-                    }.flatMap {
-                        wrapStorageRequest {
-                            newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
-                                conversationEntity.id.toModel()
-                            )
-                        }
-                    }.flatMap {
-                        wrapStorageRequest {
-                            conversationDAO.getConversationByQualifiedID(conversationEntity.id)?.let {
-                                conversationMapper.fromDaoModel(it)
-                            }
-                        }
-                    }
+    private suspend fun handleGroupConversationCreated(
+        conversationResponse: ConversationResponse,
+        selfTeamId: TeamId?,
+        usersList: List<UserId>,
+        lastUsersAttempt: LastUsersAttempt,
+    ): Either<CoreFailure, Conversation> {
+        val conversationEntity = conversationMapper.fromApiModelToDaoModel(
+            conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION, selfTeamId
+        )
+        val protocol = protocolInfoMapper.fromEntity(conversationEntity.protocolInfo)
+
+        return wrapStorageRequest {
+            conversationDAO.insertConversation(conversationEntity)
+        }.flatMap {
+            newGroupConversationSystemMessagesCreator.value.conversationStarted(conversationEntity)
+        }.flatMap {
+            when (protocol) {
+                is Conversation.ProtocolInfo.Proteus -> Either.Right(setOf())
+                is Conversation.ProtocolInfo.MLSCapable -> mlsConversationRepository.establishMLSGroup(
+                    groupID = protocol.groupId,
+                    members = usersList + selfUserId,
+                    allowSkippingUsersWithoutKeyPackages = true
+                ).map { it.notAddedUsers }
+            }
+        }.flatMap { protocolSpecificAdditionFailures ->
+            newConversationMembersRepository.persistMembersAdditionToTheConversation(
+                conversationEntity.id, conversationResponse
+            ).flatMap {
+                if (protocolSpecificAdditionFailures.isEmpty()) {
+                    Either.Right(Unit)
+                } else {
+                    newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
+                        conversationEntity.id.toModel(), protocolSpecificAdditionFailures.toList(), FailedToAdd.Type.Unknown
+                    )
+                }
+            }.flatMap {
+                when (lastUsersAttempt) {
+                    is LastUsersAttempt.None -> Either.Right(Unit)
+                    is LastUsersAttempt.Failed ->
+                        newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
+                            conversationEntity.id.toModel(), lastUsersAttempt.failedUsers, lastUsersAttempt.failType
+                        )
+                }
+            }
+        }.flatMap {
+            wrapStorageRequest {
+                newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
+                    conversationEntity.id.toModel()
+                )
+            }
+        }.flatMap {
+            wrapStorageRequest {
+                conversationDAO.getConversationByQualifiedID(conversationEntity.id)?.let {
+                    conversationMapper.fromDaoModel(it)
                 }
             }
         }
+    }
 
     override suspend fun addMembers(
         userIdList: List<UserId>,
@@ -180,40 +216,40 @@ internal class ConversationGroupRepositoryImpl(
             .flatMap { protocol ->
                 when (protocol) {
                     is ConversationEntity.ProtocolInfo.Proteus ->
-                        tryAddMembersToCloudAndStorage(userIdList, conversationId)
+                        tryAddMembersToCloudAndStorage(userIdList, conversationId, LastUsersAttempt.None)
 
                     is ConversationEntity.ProtocolInfo.Mixed ->
-                        tryAddMembersToCloudAndStorage(userIdList, conversationId)
+                        tryAddMembersToCloudAndStorage(userIdList, conversationId, LastUsersAttempt.None)
                             .flatMap {
                                 // best effort approach for migrated conversations, no retries
                                 mlsConversationRepository.addMemberToMLSGroup(GroupID(protocol.groupId), userIdList)
                             }
 
                     is ConversationEntity.ProtocolInfo.MLS -> {
-                        tryAddMembersToMLSGroup(conversationId, protocol.groupId, userIdList)
+                        tryAddMembersToMLSGroup(conversationId, protocol.groupId, userIdList, LastUsersAttempt.None)
                     }
                 }
             }
 
     /**
      * Handle the error cases and retry for claimPackages offline and out of packages.
-     * Handle error case and retry for sendingCommit unreachable.
+     * Handle error case and retry for sendingCommit unreachable or missing legal hold consent.
      */
     private suspend fun tryAddMembersToMLSGroup(
         conversationId: ConversationId,
         groupId: String,
         userIdList: List<UserId>,
-        failedUsersList: Set<UserId> = emptySet(),
+        lastUsersAttempt: LastUsersAttempt,
         remainingAttempts: Int = 2
     ): Either<CoreFailure, Unit> {
         return when (val addingMemberResult = mlsConversationRepository.addMemberToMLSGroup(GroupID(groupId), userIdList)) {
-            is Either.Right -> handleMLSMembersAdded(conversationId, userIdList, failedUsersList)
+            is Either.Right -> handleMLSMembersNotAdded(conversationId, lastUsersAttempt)
             is Either.Left -> {
                 addingMemberResult.value.handleMLSMembersFailed(
                     conversationId = conversationId,
                     groupId = groupId,
                     userIdList = userIdList,
-                    failedUsersList = failedUsersList,
+                    lastUsersAttempt = lastUsersAttempt,
                     remainingAttempts = remainingAttempts,
                 )
             }
@@ -224,18 +260,21 @@ internal class ConversationGroupRepositoryImpl(
         conversationId: ConversationId,
         groupId: String,
         userIdList: List<UserId>,
-        failedUsersList: Set<UserId>,
+        lastUsersAttempt: LastUsersAttempt,
         remainingAttempts: Int,
     ): Either<CoreFailure, Unit> {
         return when {
             // claiming key packages offline or out of packages
-            this is CoreFailure.NoKeyPackagesAvailable && remainingAttempts > 0 -> {
+            this is CoreFailure.MissingKeyPackages && remainingAttempts > 0 -> {
                 val (validUsers, failedUsers) = userIdList.partition { !this.failedUserIds.contains(it) }
                 tryAddMembersToMLSGroup(
                     conversationId = conversationId,
                     groupId = groupId,
                     userIdList = validUsers,
-                    failedUsersList = (failedUsersList + failedUsers).toSet(),
+                    lastUsersAttempt = LastUsersAttempt.Failed(
+                        failedUsers = lastUsersAttempt.failedUsers + failedUsers,
+                        failType = FailedToAdd.Type.Federation,
+                    ),
                     remainingAttempts = remainingAttempts - 1
                 )
             }
@@ -247,14 +286,39 @@ internal class ConversationGroupRepositoryImpl(
                     conversationId = conversationId,
                     groupId = groupId,
                     userIdList = validUsers,
-                    failedUsersList = (failedUsersList + failedUsers).toSet(),
+                    lastUsersAttempt = LastUsersAttempt.Failed(
+                        failedUsers = lastUsersAttempt.failedUsers + failedUsers,
+                        failType = FailedToAdd.Type.Federation,
+                    ),
                     remainingAttempts = remainingAttempts - 1
                 )
             }
 
+            // missing legal hold consent
+            this.isMissingLegalHoldConsentError && remainingAttempts > 0 -> {
+                fetchAndExtractValidUsersForRetryableLegalHoldError(userIdList)
+                    .flatMap { (validUsers, failedUsers) ->
+                        tryAddMembersToMLSGroup(
+                            conversationId = conversationId,
+                            groupId = groupId,
+                            userIdList = validUsers,
+                            lastUsersAttempt = LastUsersAttempt.Failed(
+                                failedUsers = lastUsersAttempt.failedUsers + failedUsers,
+                                failType = FailedToAdd.Type.LegalHold,
+                            ),
+                            remainingAttempts = remainingAttempts - 1
+                        )
+                    }
+            }
+
             else -> {
                 newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
-                    conversationId, (failedUsersList + userIdList)
+                    conversationId = conversationId,
+                    userIdList = (lastUsersAttempt.failedUsers + userIdList),
+                    type = when {
+                        this.isMissingLegalHoldConsentError -> FailedToAdd.Type.LegalHold
+                        else -> FailedToAdd.Type.Federation
+                    }
                 ).flatMap {
                     Either.Left(this)
                 }
@@ -262,17 +326,17 @@ internal class ConversationGroupRepositoryImpl(
         }
     }
 
-    private suspend fun handleMLSMembersAdded(
+    private suspend fun handleMLSMembersNotAdded(
         conversationId: ConversationId,
-        userIdList: List<UserId>,
-        failedUsersList: Set<UserId>
-    ): Either<CoreFailure, Unit> {
-        return newGroupConversationSystemMessagesCreator.value.conversationResolvedMembersAddedAndFailed(
-            conversationId.toDao(), userIdList, failedUsersList.toList()
-        ).flatMap {
-            Either.Right(Unit)
+        lastUsersAttempt: LastUsersAttempt,
+    ): Either<CoreFailure, Unit> =
+        when (lastUsersAttempt) {
+            is LastUsersAttempt.Failed -> newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
+                conversationId, lastUsersAttempt.failedUsers, lastUsersAttempt.failType
+            )
+
+            is LastUsersAttempt.None -> Either.Right(Unit)
         }
-    }
 
     override suspend fun addService(serviceId: ServiceId, conversationId: ConversationId): Either<CoreFailure, Unit> =
         wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationId.toDao()) }
@@ -290,8 +354,6 @@ internal class ConversationGroupRepositoryImpl(
                                     eventMapper.conversationMemberJoin(
                                         LocalId.generate(),
                                         response.event,
-                                        true,
-                                        false
                                     )
                                 )
                             }
@@ -310,7 +372,7 @@ internal class ConversationGroupRepositoryImpl(
     private suspend fun tryAddMembersToCloudAndStorage(
         userIdList: List<UserId>,
         conversationId: ConversationId,
-        failedUsersList: Set<UserId> = emptySet(),
+        lastUsersAttempt: LastUsersAttempt,
     ): Either<CoreFailure, Unit> {
         val apiResult = wrapApiRequest {
             val users = userIdList.map { it.toApi() }
@@ -319,21 +381,23 @@ internal class ConversationGroupRepositoryImpl(
         }
 
         return when (apiResult) {
-            is Either.Left -> handleAddingMembersFailure(apiResult, failedUsersList, userIdList, conversationId)
-            is Either.Right -> handleAddingMembersSuccess(apiResult, failedUsersList, conversationId)
+            is Either.Left -> handleAddingMembersFailure(apiResult, lastUsersAttempt, userIdList, conversationId)
+            is Either.Right -> handleAddingMembersSuccess(apiResult, lastUsersAttempt, conversationId)
         }
     }
 
     private suspend fun handleAddingMembersSuccess(
         apiResult: Either.Right<ConversationMemberAddedResponse>,
-        failedUsersList: Set<UserId>,
+        lastUsersAttempt: LastUsersAttempt,
         conversationId: ConversationId
     ) = if (apiResult.value is ConversationMemberAddedResponse.Changed) {
         memberJoinEventHandler.handle(
-            eventMapper.conversationMemberJoin(LocalId.generate(), apiResult.value.event, true, false)
+            eventMapper.conversationMemberJoin(LocalId.generate(), apiResult.value.event)
         ).flatMap {
-            if (failedUsersList.isNotEmpty()) {
-                newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(conversationId, failedUsersList)
+            if (lastUsersAttempt is LastUsersAttempt.Failed && lastUsersAttempt.failedUsers.isNotEmpty()) {
+                newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
+                    conversationId, lastUsersAttempt.failedUsers, lastUsersAttempt.failType
+                )
             }
             Either.Right(Unit)
         }
@@ -343,31 +407,29 @@ internal class ConversationGroupRepositoryImpl(
 
     private suspend fun handleAddingMembersFailure(
         apiResult: Either.Left<NetworkFailure>,
-        failedUsersList: Set<UserId>,
+        lastUsersAttempt: LastUsersAttempt,
         userIdList: List<UserId>,
         conversationId: ConversationId
     ): Either<CoreFailure, Unit> {
-        val canRetryOnce = apiResult.value.isRetryable && failedUsersList.isEmpty()
+        val canRetryOnce = apiResult.value.isRetryable && lastUsersAttempt is LastUsersAttempt.None
         return if (canRetryOnce) {
-            val (validUsers, failedUsers) = extractValidUsersForRetryableFederationError(
-                userIdList,
-                apiResult.value as NetworkFailure.FederatedBackendFailure.RetryableFailure
-            )
-            when (failedUsers.isNotEmpty()) {
-                true -> tryAddMembersToCloudAndStorage(validUsers, conversationId, failedUsers.toSet())
-                false -> {
-                    newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
-                        conversationId,
-                        (validUsers + failedUsers).toSet()
-                    ).flatMap {
-                        Either.Left(apiResult.value)
+            extractValidUsersForRetryableError(apiResult.value, userIdList)
+                .flatMap { (validUsers, failedUsers, failType) ->
+                    when (failedUsers.isNotEmpty()) {
+                        true -> tryAddMembersToCloudAndStorage(validUsers, conversationId, LastUsersAttempt.Failed(failedUsers, failType))
+                        false -> {
+                            newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
+                                conversationId, (validUsers + failedUsers), failType
+                            ).flatMap {
+                                Either.Left(apiResult.value)
+                            }
+                        }
                     }
                 }
-            }
         } else {
+            val failType = (lastUsersAttempt as? LastUsersAttempt.Failed)?.failType ?: FailedToAdd.Type.Unknown
             newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
-                conversationId,
-                failedUsersList + userIdList
+                conversationId, userIdList + lastUsersAttempt.failedUsers, failType
             ).flatMap {
                 Either.Left(apiResult.value)
             }
@@ -405,7 +467,7 @@ internal class ConversationGroupRepositoryImpl(
         if (response is ConversationMemberAddedResponse.Changed) {
             val conversationId = response.event.qualifiedConversation.toModel()
 
-            memberJoinEventHandler.handle(eventMapper.conversationMemberJoin(LocalId.generate(), response.event, true, false))
+            memberJoinEventHandler.handle(eventMapper.conversationMemberJoin(LocalId.generate(), response.event))
                 .flatMap {
                     wrapStorageRequest { conversationDAO.getConversationProtocolInfo(conversationId.toDao()) }
                         .flatMap { protocol ->
@@ -453,8 +515,6 @@ internal class ConversationGroupRepositoryImpl(
                     eventMapper.conversationMemberLeave(
                         LocalId.generate(),
                         response.event,
-                        false,
-                        false
                     )
                 )
             }
@@ -473,7 +533,7 @@ internal class ConversationGroupRepositoryImpl(
             conversationApi.revokeGuestRoomLink(conversationId.toApi())
         }.onSuccess {
             wrapStorageRequest {
-                conversationDAO.updateGuestRoomLink(conversationId.toDao(), null, false)
+                conversationDAO.deleteGuestRoomLink(conversationId.toDao())
             }
         }
 
@@ -493,12 +553,59 @@ internal class ConversationGroupRepositoryImpl(
                     eventMapper.conversationMessageTimerUpdate(
                         LocalId.generate(),
                         it,
-                        true,
-                        false
                     )
                 )
             }
             .map { }
+
+    override suspend fun updateGuestRoomLink(conversationId: ConversationId, accountUrl: String): Either<CoreFailure, Unit> =
+        wrapApiRequest {
+            conversationApi.guestLinkInfo(conversationId.toApi())
+        }.fold({
+            if (it is NetworkFailure.ServerMiscommunication &&
+                it.kaliumException is KaliumException.InvalidRequestError &&
+                it.kaliumException.isConversationHasNoCode()
+            ) {
+                wrapStorageRequest {
+                    conversationDAO.deleteGuestRoomLink(conversationId.toDao())
+                }
+            } else {
+                Either.Left(it)
+            }
+        }, {
+            wrapStorageRequest {
+                conversationDAO.updateGuestRoomLink(conversationId.toDao(), it.link(accountUrl), it.hasPassword)
+            }
+        })
+
+    /**
+     * Extract valid and invalid users lists from the given userIdList and a [FailedToAdd.Type] depending on a given [CoreFailure].
+     * If the given [CoreFailure] is not retryable, the original userIdList is returned as valid users, invalid users list is empty
+     * and the type is [FailedToAdd.Type.Unknown].
+     */
+    private suspend fun extractValidUsersForRetryableError(
+        failure: CoreFailure,
+        userIdList: List<UserId>,
+    ): Either<CoreFailure, ValidToInvalidUsers> = when {
+        failure is NetworkFailure.FederatedBackendFailure.RetryableFailure ->
+            Either.Right(extractValidUsersForRetryableFederationError(userIdList, failure))
+
+        failure.isMissingLegalHoldConsentError ->
+            fetchAndExtractValidUsersForRetryableLegalHoldError(userIdList)
+
+        else ->
+            Either.Right(ValidToInvalidUsers(userIdList, emptyList(), FailedToAdd.Type.Unknown))
+    }
+
+    /**
+     * Filter the initial [userIdList] into valid and invalid users where valid users are only team members.
+     */
+    private suspend fun fetchAndExtractValidUsersForRetryableLegalHoldError(
+        userIdList: List<UserId>
+    ): Either<CoreFailure, ValidToInvalidUsers> =
+        userRepository.fetchUsersLegalHoldConsent(userIdList.toSet()).map {
+            ValidToInvalidUsers(it.usersWithConsent, it.usersWithoutConsent + it.usersFailed, FailedToAdd.Type.LegalHold)
+        }
 
     /**
      * Extract from a [NetworkFailure.FederatedBackendFailure.RetryableFailure] the domains
@@ -509,8 +616,15 @@ internal class ConversationGroupRepositoryImpl(
         federatedDomainFailure: NetworkFailure.FederatedBackendFailure.RetryableFailure
     ): ValidToInvalidUsers {
         val (validUsers, failedUsers) = userIdList.partition { !federatedDomainFailure.domains.contains(it.domain) }
-        return ValidToInvalidUsers(validUsers, failedUsers)
+        return ValidToInvalidUsers(validUsers, failedUsers, FailedToAdd.Type.Federation)
     }
 
-    private data class ValidToInvalidUsers(val validUsers: List<UserId>, val failedUsers: List<UserId>)
+    private data class ValidToInvalidUsers(val validUsers: List<UserId>, val failedUsers: List<UserId>, val failType: FailedToAdd.Type)
+
+    private sealed class LastUsersAttempt {
+        open val failedUsers: List<UserId> = emptyList()
+
+        data object None : LastUsersAttempt()
+        data class Failed(override val failedUsers: List<UserId>, val failType: FailedToAdd.Type) : LastUsersAttempt()
+    }
 }

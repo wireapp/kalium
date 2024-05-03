@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,10 +32,11 @@ import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
-import io.mockative.anything
-import io.mockative.classOf
+import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -58,7 +59,6 @@ class MLSMessageCreatorTest {
     @Mock
     private val legalHoldStatusMapper = mock(LegalHoldStatusMapper::class)
 
-
     private lateinit var mlsMessageCreator: MLSMessageCreator
 
     @BeforeTest
@@ -75,55 +75,49 @@ class MLSMessageCreatorTest {
     @Test
     fun givenMessage_whenCreatingMLSMessage_thenMLSClientShouldBeUsedToEncryptProtobufContent() = runTest {
         val encryptedData = byteArrayOf()
-        given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
-            .whenInvokedWith(anything())
-            .then { Either.Right(MLS_CLIENT) }
+        coEvery {
+            mlsClientProvider.getMLSClient(any())
+        }.returns(Either.Right(MLS_CLIENT))
 
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeLegalHoldStatus)
-            .whenInvokedWith(anything())
-            .then { flowOf(Either.Right(Conversation.LegalHoldStatus.DISABLED)) }
+        coEvery {
+            conversationRepository.observeLegalHoldStatus(any())
+        }.returns(flowOf(Either.Right(Conversation.LegalHoldStatus.DISABLED)))
 
-        given(legalHoldStatusMapper)
-            .function(legalHoldStatusMapper::mapLegalHoldConversationStatus)
-            .whenInvokedWith(anything(), anything())
-            .thenReturn(Conversation.LegalHoldStatus.DISABLED)
+        every {
 
-        given(MLS_CLIENT)
-            .suspendFunction(MLS_CLIENT::encryptMessage)
-            .whenInvokedWith(anything(), anything())
-            .thenReturn(encryptedData)
+            legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
+
+        }.returns(Conversation.LegalHoldStatus.DISABLED)
+
+        coEvery {
+            MLS_CLIENT.encryptMessage(any(), any())
+        }.returns(encryptedData)
 
         val plainData = byteArrayOf(0x42, 0x73)
-        given(protoContentMapper)
-            .function(protoContentMapper::encodeToProtobuf)
-            .whenInvokedWith(anything())
-            .thenReturn(PlainMessageBlob(plainData))
+        every {
+            protoContentMapper.encodeToProtobuf(any())
+        }.returns(PlainMessageBlob(plainData))
 
         mlsMessageCreator.createOutgoingMLSMessage(GROUP_ID, TestMessage.TEXT_MESSAGE).shouldSucceed {}
 
-        verify(MLS_CLIENT)
-            .function(MLS_CLIENT::encryptMessage)
-            .with(eq(CRYPTO_GROUP_ID), eq(plainData))
-            .wasInvoked(once)
+        coVerify {
+            MLS_CLIENT.encryptMessage(eq(CRYPTO_GROUP_ID), eq(plainData))
+        }.wasInvoked(once)
 
-        verify(conversationRepository)
-            .suspendFunction(conversationRepository::observeLegalHoldStatus)
-            .with(anything())
-            .wasInvoked(once)
+        coVerify {
+            conversationRepository.observeLegalHoldStatus(any())
+        }.wasInvoked(once)
 
-        verify(legalHoldStatusMapper)
-            .function(legalHoldStatusMapper::mapLegalHoldConversationStatus)
-            .with(anything(), anything())
-            .wasInvoked(once)
+        verify {
+            legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
+        }.wasInvoked(once)
     }
 
     private companion object {
         val SELF_USER_ID = UserId("user-id", "domain")
         val GROUP_ID = GroupID("groupId")
         val CRYPTO_GROUP_ID = MapperProvider.idMapper().toCryptoModel(GroupID("groupId"))
-        val MLS_CLIENT = mock(classOf<MLSClient>())
+        val MLS_CLIENT = mock(MLSClient::class)
     }
 
 }

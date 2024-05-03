@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,25 +21,22 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 
 interface SyncManagerArrangement {
     @Mock
     val syncManager: SyncManager
 
-    fun withWaitUntilLiveOrFailure(result: Either<CoreFailure, Unit>)
+    suspend fun withWaitUntilLiveOrFailure(result: Either<CoreFailure, Unit>)
 }
 
 class SyncManagerArrangementImpl : SyncManagerArrangement {
     @Mock
     override val syncManager: SyncManager = mock(SyncManager::class)
-    override fun withWaitUntilLiveOrFailure(result: Either<CoreFailure, Unit>) {
-        given(syncManager)
-            .suspendFunction(syncManager::waitUntilLiveOrFailure)
-            .whenInvoked()
-            .thenReturn(result)
+    override suspend fun withWaitUntilLiveOrFailure(result: Either<CoreFailure, Unit>) {
+        coEvery {
+            syncManager.waitUntilLiveOrFailure()
+        }.returns(result)
     }
-
-
 }

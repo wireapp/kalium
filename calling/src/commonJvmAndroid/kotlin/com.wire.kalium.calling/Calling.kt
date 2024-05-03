@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -189,6 +189,28 @@ interface Calling : Library {
     fun wcall_process_notifications(
         inst: Handle,
         isStarted: Boolean,
+    )
+
+    fun kcall_init(env: Int)
+    fun kcall_close()
+
+    fun kcall_set_local_user(
+        userid: String,
+        clientid: String
+    )
+
+    fun kcall_set_wuser(
+        inst: Handle
+    )
+
+    fun kcall_preview_start()
+    fun kcall_preview_stop()
+
+    fun kcall_set_user_vidstate(
+        convid: String,
+        userid: String,
+        clientid: String,
+        state: Int
     )
 
     companion object {

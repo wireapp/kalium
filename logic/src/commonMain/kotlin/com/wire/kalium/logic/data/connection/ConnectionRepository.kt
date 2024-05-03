@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -43,7 +43,9 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.InvalidMappingFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.isRight
+import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
@@ -54,6 +56,7 @@ import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionStateDTO
 import com.wire.kalium.persistence.dao.ConnectionDAO
+import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.UserDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -74,7 +77,9 @@ interface ConnectionRepository {
     suspend fun observeConnectionRequestsForNotification(): Flow<List<ConversationDetails>>
     suspend fun setConnectionAsNotified(userId: UserId)
     suspend fun setAllConnectionsAsNotified()
-    suspend fun deleteConnection(conversationId: ConversationId): Either<StorageFailure, Unit>
+    suspend fun deleteConnection(connection: Connection): Either<StorageFailure, Unit>
+    suspend fun getConnection(conversationId: ConversationId): Either<StorageFailure, ConversationDetails.Connection>
+    suspend fun ignoreConnectionRequest(userId: UserId): Either<CoreFailure, Unit>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -125,22 +130,36 @@ internal class ConnectionDataSource(
         }.map { }
     }
 
-    override suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Connection> {
+    private suspend fun updateRemoteConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, ConnectionDTO> {
         val isValidConnectionState = isValidConnectionState(connectionState)
         val newConnectionStatus = connectionStatusMapper.toApiModel(connectionState)
         if (!isValidConnectionState || newConnectionStatus == null) {
             return Either.Left(InvalidMappingFailure)
         }
 
-        return wrapApiRequest {
-            connectionApi.updateConnection(userId.toApi(), newConnectionStatus)
-        }.map { connectionDTO ->
-            val connectionStatus = connectionDTO.copy(status = newConnectionStatus)
+        return wrapApiRequest { connectionApi.updateConnection(userId.toApi(), newConnectionStatus) }
+    }
+
+    override suspend fun updateConnectionStatus(userId: UserId, connectionState: ConnectionState): Either<CoreFailure, Connection> =
+        updateRemoteConnectionStatus(userId, connectionState).map { connectionDTO ->
+            val connectionStatus = connectionDTO.copy(status = connectionStatusMapper.toApiModel(connectionState)!!)
             val connectionModel = connectionMapper.fromApiToModel(connectionDTO)
             handleUserConnectionStatusPersistence(connectionMapper.fromApiToModel(connectionStatus))
             connectionModel
         }
-    }
+
+    override suspend fun ignoreConnectionRequest(userId: UserId): Either<CoreFailure, Unit> =
+        updateRemoteConnectionStatus(userId, IGNORED)
+            .flatMapLeft {
+                if (it is NetworkFailure.FederatedBackendFailure.FailedDomains)
+                    wrapStorageRequest { connectionDAO.getConnectionByUser(userId.toDao()) }
+                        .map { connectionEntity ->
+                            val updatedConnection = connectionMapper.fromDaoToModel(connectionEntity).copy(status = IGNORED)
+                            handleUserConnectionStatusPersistence(updatedConnection)
+                        }
+                else it.left()
+            }
+            .map { Unit }
 
     /**
      * Check if we can transition to the correct connection status
@@ -249,8 +268,13 @@ internal class ConnectionDataSource(
         }
     }
 
-    override suspend fun deleteConnection(conversationId: ConversationId) = wrapStorageRequest {
-        connectionDAO.deleteConnectionDataAndConversation(conversationId.toDao())
+    override suspend fun deleteConnection(connection: Connection) = wrapStorageRequest {
+        connectionDAO.deleteConnectionDataAndConversation(connection.qualifiedConversationId.toDao())
+        userDAO.upsertConnectionStatuses(mapOf(connection.qualifiedToId.toDao() to ConnectionEntity.State.CANCELLED))
+    }
+
+    override suspend fun getConnection(conversationId: ConversationId) = wrapStorageRequest {
+            connectionDAO.getConnection(conversationId.toDao())?.let { connectionMapper.fromDaoToConversationDetails(it) }
     }
 
     /**
@@ -260,6 +284,6 @@ internal class ConnectionDataSource(
     private suspend fun handleUserConnectionStatusPersistence(connection: Connection): Either<CoreFailure, Unit> =
         when (connection.status) {
             ACCEPTED, MISSING_LEGALHOLD_CONSENT, NOT_CONNECTED, PENDING, SENT, BLOCKED, IGNORED -> persistConnection(connection)
-            CANCELLED -> deleteConnection(connection.qualifiedConversationId)
+            CANCELLED -> deleteConnection(connection)
         }
 }

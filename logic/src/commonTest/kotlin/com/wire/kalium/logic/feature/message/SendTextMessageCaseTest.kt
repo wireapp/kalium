@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,35 +20,36 @@ package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
-import com.wire.kalium.logic.data.message.SelfDeletionTimer
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.logic.util.shouldFail
+import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.configure
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.every
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
-import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class SendTextMessageCaseTest {
 
     @Test
@@ -67,23 +68,23 @@ class SendTextMessageCaseTest {
         val result = sendTextMessage(TestConversation.ID, "some-text")
 
         // Then
-        assertTrue(result is Either.Right)
+        result.shouldSucceed()
 
-        verify(arrangement.userPropertyRepository)
-            .suspendFunction(arrangement.userPropertyRepository::getReadReceiptsStatus)
-            .wasInvoked(once)
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(any())
-            .wasInvoked(once)
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(any(), any())
-            .wasInvoked(once)
-        verify(arrangement.messageSendFailureHandler)
-            .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-            .with(any(), any(), any(), any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.userPropertyRepository.getReadReceiptsStatus()
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.persistMessage.invoke(matches { message -> message.content is MessageContent.Text })
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.messageSender.sendMessage(
+                matches { message -> message.content is MessageContent.Text },
+                any()
+            )
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -102,91 +103,86 @@ class SendTextMessageCaseTest {
         val result = sendTextMessage(TestConversation.ID, "some-text")
 
         // Then
-        assertTrue(result is Either.Left)
+        result.shouldFail()
 
-        verify(arrangement.userPropertyRepository)
-            .suspendFunction(arrangement.userPropertyRepository::getReadReceiptsStatus)
-            .wasInvoked(once)
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(any())
-            .wasInvoked(once)
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(any(), any())
-            .wasInvoked(once)
-        verify(arrangement.messageSendFailureHandler)
-            .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
-            .with(any(), any(), any(), any(), any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.userPropertyRepository.getReadReceiptsStatus()
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.persistMessage.invoke(any())
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.messageSender.sendMessage(any(), any())
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
+        }.wasInvoked(once)
     }
 
     private class Arrangement(private val coroutineScope: CoroutineScope) {
 
         @Mock
-        val persistMessage = mock(classOf<PersistMessageUseCase>())
+        val persistMessage = mock(PersistMessageUseCase::class)
 
         @Mock
-        val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
         @Mock
-        val slowSyncRepository = mock(classOf<SlowSyncRepository>())
+        val slowSyncRepository = mock(SlowSyncRepository::class)
 
         @Mock
-        val messageSender = mock(classOf<MessageSender>())
+        val messageSender = mock(MessageSender::class)
 
         @Mock
-        val userPropertyRepository = mock(classOf<UserPropertyRepository>())
+        val userPropertyRepository = mock(UserPropertyRepository::class)
 
         @Mock
-        val messageSendFailureHandler = configure(mock(classOf<MessageSendFailureHandler>())) { stubsUnitByDefault = true }
+        val messageSendFailureHandler = mock(MessageSendFailureHandler::class)
 
         @Mock
         val observeSelfDeletionTimerSettingsForConversation = mock(ObserveSelfDeletionTimerSettingsForConversationUseCase::class)
 
-        fun withSendMessageSuccess() = apply {
-            given(messageSender)
-                .suspendFunction(messageSender::sendMessage)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
-        }
-        fun withSendMessageFailure() = apply {
-            given(messageSender)
-                .suspendFunction(messageSender::sendMessage)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Left(NetworkFailure.NoNetworkConnection(null)))
-        }
-        fun withCurrentClientProviderSuccess(clientId: ClientId = TestClient.CLIENT_ID) = apply {
-            given(currentClientIdProvider)
-                .suspendFunction(currentClientIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(Either.Right(clientId))
-        }
-        fun withPersistMessageSuccess() = apply {
-            given(persistMessage)
-                .suspendFunction(persistMessage::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
-        }
-        fun withSlowSyncStatusComplete() = apply {
-            val stateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
-            given(slowSyncRepository)
-                .getter(slowSyncRepository::slowSyncStatus)
-                .whenInvoked()
-                .thenReturn(stateFlow)
-        }
-        fun withToggleReadReceiptsStatus(enabled: Boolean = false) = apply {
-            given(userPropertyRepository)
-                .suspendFunction(userPropertyRepository::getReadReceiptsStatus)
-                .whenInvoked()
-                .thenReturn(enabled)
+        suspend fun withSendMessageSuccess() = apply {
+            coEvery {
+                messageSender.sendMessage(any(), any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun  withMessageTimer(result: SelfDeletionTimer) = apply {
-            given(observeSelfDeletionTimerSettingsForConversation)
-                .suspendFunction(observeSelfDeletionTimerSettingsForConversation::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(flowOf(result))
+        suspend fun withSendMessageFailure() = apply {
+            coEvery {
+                messageSender.sendMessage(any(), any())
+            }.returns(Either.Left(NetworkFailure.NoNetworkConnection(null)))
+        }
+
+        suspend fun withCurrentClientProviderSuccess(clientId: ClientId = TestClient.CLIENT_ID) = apply {
+            coEvery {
+                currentClientIdProvider.invoke()
+            }.returns(Either.Right(clientId))
+        }
+
+        suspend fun withPersistMessageSuccess() = apply {
+            coEvery {
+                persistMessage.invoke(any())
+            }.returns(Either.Right(Unit))
+        }
+
+        fun withSlowSyncStatusComplete() = apply {
+            val stateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
+            every {
+                slowSyncRepository.slowSyncStatus
+            }.returns(stateFlow)
+        }
+
+        suspend fun withToggleReadReceiptsStatus(enabled: Boolean = false) = apply {
+            coEvery {
+                userPropertyRepository.getReadReceiptsStatus()
+            }.returns(enabled)
+        }
+
+        suspend fun withMessageTimer(result: SelfDeletionTimer) = apply {
+            coEvery {
+                observeSelfDeletionTimerSettingsForConversation.invoke(any(), any())
+            }.returns(flowOf(result))
         }
 
         fun arrange() = this to SendTextMessageUseCase(
@@ -198,7 +194,8 @@ class SendTextMessageCaseTest {
             messageSendFailureHandler,
             userPropertyRepository,
             observeSelfDeletionTimerSettingsForConversation,
-            scope = coroutineScope
+            scope = coroutineScope,
+            dispatchers = coroutineScope.testKaliumDispatcher
         )
     }
 

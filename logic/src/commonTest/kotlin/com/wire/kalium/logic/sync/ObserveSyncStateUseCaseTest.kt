@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,8 @@ import com.wire.kalium.logic.data.sync.SlowSyncStep
 import com.wire.kalium.logic.data.sync.SyncState
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -147,59 +148,51 @@ class ObserveSyncStateUseCaseTest {
         )
 
         fun withSlowSyncFailureState() = apply {
-            given(slowSyncRepository)
-                .getter(slowSyncRepository::slowSyncStatus)
-                .whenInvoked()
-                .thenReturn(slowSyncFailureFlow)
+            every {
+                slowSyncRepository.slowSyncStatus
+            }.returns(slowSyncFailureFlow)
         }
 
         fun withSlowSyncOngoingState() = apply {
-            given(slowSyncRepository)
-                .getter(slowSyncRepository::slowSyncStatus)
-                .whenInvoked()
-                .thenReturn(MutableStateFlow(SlowSyncStatus.Ongoing(SlowSyncStep.CONTACTS)).asStateFlow())
+            every {
+                slowSyncRepository.slowSyncStatus
+            }.returns(MutableStateFlow(SlowSyncStatus.Ongoing(SlowSyncStep.CONTACTS)).asStateFlow())
         }
 
         fun withSlowSyncPendingState() = apply {
-            given(slowSyncRepository)
-                .getter(slowSyncRepository::slowSyncStatus)
-                .whenInvoked()
-                .thenReturn(MutableStateFlow(SlowSyncStatus.Pending).asStateFlow())
+            every {
+                slowSyncRepository.slowSyncStatus
+            }.returns(MutableStateFlow(SlowSyncStatus.Pending).asStateFlow())
         }
 
         fun withSlowSyncCompletedState() = apply {
-            given(slowSyncRepository)
-                .getter(slowSyncRepository::slowSyncStatus)
-                .whenInvoked()
-                .thenReturn(MutableStateFlow(SlowSyncStatus.Complete).asStateFlow())
+            every {
+                slowSyncRepository.slowSyncStatus
+            }.returns(MutableStateFlow(SlowSyncStatus.Complete).asStateFlow())
         }
 
         fun withIncrementalSyncLiveState() = apply {
-            given(incrementalSyncRepository)
-                .getter(incrementalSyncRepository::incrementalSyncState)
-                .whenInvoked()
-                .thenReturn(flowOf(IncrementalSyncStatus.Live))
+            every {
+                incrementalSyncRepository.incrementalSyncState
+            }.returns(flowOf(IncrementalSyncStatus.Live))
         }
 
         fun withIncrementalSyncFailedState() = apply {
-            given(incrementalSyncRepository)
-                .getter(incrementalSyncRepository::incrementalSyncState)
-                .whenInvoked()
-                .thenReturn(incrementalSyncFailureFlow)
+            every {
+                incrementalSyncRepository.incrementalSyncState
+            }.returns(incrementalSyncFailureFlow)
         }
 
         fun withIncrementalSyncFetchingPendingEventsState() = apply {
-            given(incrementalSyncRepository)
-                .getter(incrementalSyncRepository::incrementalSyncState)
-                .whenInvoked()
-                .thenReturn(flowOf(IncrementalSyncStatus.FetchingPendingEvents))
+            every {
+                incrementalSyncRepository.incrementalSyncState
+            }.returns(flowOf(IncrementalSyncStatus.FetchingPendingEvents))
         }
 
         fun withIncrementalSyncPendingState() = apply {
-            given(incrementalSyncRepository)
-                .getter(incrementalSyncRepository::incrementalSyncState)
-                .whenInvoked()
-                .thenReturn(flowOf(IncrementalSyncStatus.Pending))
+            every {
+                incrementalSyncRepository.incrementalSyncState
+            }.returns(flowOf(IncrementalSyncStatus.Pending))
         }
     }
 

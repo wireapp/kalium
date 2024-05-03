@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -44,15 +44,12 @@ internal interface NewGroupConversationSystemMessagesCreator {
     suspend fun conversationStarted(creatorId: UserId, conversation: ConversationResponse): Either<CoreFailure, Unit>
     suspend fun conversationReadReceiptStatus(conversation: Conversation): Either<CoreFailure, Unit>
     suspend fun conversationReadReceiptStatus(conversation: ConversationResponse): Either<CoreFailure, Unit>
-    suspend fun conversationResolvedMembersAddedAndFailed(
-        conversationId: ConversationIDEntity,
-        validUsers: List<UserId>,
-        failedUsersList: List<UserId> = emptyList()
-    ): Either<CoreFailure, Unit>
+    suspend fun conversationResolvedMembersAdded(conversationId: ConversationIDEntity, validUsers: List<UserId>): Either<CoreFailure, Unit>
 
     suspend fun conversationFailedToAddMembers(
         conversationId: ConversationId,
-        userIdList: Set<UserId>
+        userIdList: List<UserId>,
+        type: MessageContent.MemberChange.FailedToAdd.Type,
     ): Either<CoreFailure, Unit>
 
     suspend fun conversationStartedUnverifiedWarning(conversationId: ConversationId): Either<CoreFailure, Unit>
@@ -139,10 +136,9 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         )
     )
 
-    override suspend fun conversationResolvedMembersAddedAndFailed(
+    override suspend fun conversationResolvedMembersAdded(
         conversationId: ConversationIDEntity,
         validUsers: List<UserId>,
-        failedUsersList: List<UserId>
     ): Either<CoreFailure, Unit> = run {
         if (validUsers.isNotEmpty()) {
             persistMessage(
@@ -158,19 +154,19 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
                 )
             )
         }
-        createFailedToAddSystemMessage(conversationId, failedUsersList)
         Either.Right(Unit)
     }
 
     override suspend fun conversationFailedToAddMembers(
         conversationId: ConversationId,
-        userIdList: Set<UserId>
+        userIdList: List<UserId>,
+        type: MessageContent.MemberChange.FailedToAdd.Type,
     ): Either<CoreFailure, Unit> = run {
         if (userIdList.isNotEmpty()) {
             persistMessage(
                 Message.System(
                     uuid4().toString(),
-                    MessageContent.MemberChange.FailedToAdd(userIdList.toList()),
+                    MessageContent.MemberChange.FailedToAdd(userIdList, type),
                     conversationId,
                     DateTimeUtil.currentIsoDateTimeString(),
                     selfUserId,
@@ -181,23 +177,6 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
             )
         }
         Either.Right(Unit)
-    }
-
-    private suspend fun createFailedToAddSystemMessage(conversationId: ConversationIDEntity, failedUsersList: List<UserId>) {
-        if (failedUsersList.isNotEmpty()) {
-            val messageStartedWithFailedMembers = Message.System(
-                uuid4().toString(),
-                MessageContent.MemberChange.FailedToAdd(failedUsersList),
-                conversationId.toModel(),
-                DateTimeUtil.currentIsoDateTimeString(),
-                selfUserId,
-                Message.Status.Sent,
-                Message.Visibility.VISIBLE,
-                expirationData = null
-            )
-            persistMessage(messageStartedWithFailedMembers)
-        }
-
     }
 
     override suspend fun conversationStartedUnverifiedWarning(conversationId: ConversationId): Either<CoreFailure, Unit> =

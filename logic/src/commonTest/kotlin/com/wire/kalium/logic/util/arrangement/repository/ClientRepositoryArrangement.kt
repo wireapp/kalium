@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,31 +26,37 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.fake.valueOf
+import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
+import io.mockative.matches
 import io.mockative.mock
 
 internal interface ClientRepositoryArrangement {
     val clientRepository: ClientRepository
 
-    fun withUpdateClientProteusVerificationStatus(result: Either<StorageFailure, Unit>): ClientRepositoryArrangementImpl
-    fun withClientsByUserId(result: Either<StorageFailure, List<OtherUserClient>>): ClientRepositoryArrangementImpl
-    fun withRemoveClientsAndReturnUsersWithNoClients(
+    suspend fun withUpdateClientProteusVerificationStatus(result: Either<StorageFailure, Unit>): ClientRepositoryArrangementImpl
+    suspend fun withClientsByUserId(result: Either<StorageFailure, List<OtherUserClient>>): ClientRepositoryArrangementImpl
+    suspend fun withRemoveClientsAndReturnUsersWithNoClients(
         result: Either<StorageFailure, List<UserId>>,
-        redundantClientsOfUsers: Matcher<Map<UserId, List<ClientId>>> = any()
+        redundantClientsOfUsers: Matcher<Map<UserId, List<ClientId>>> = AnyMatcher(valueOf())
     )
-    fun withStoreUserClientIdList(
+
+    suspend fun withStoreUserClientIdList(
         result: Either<StorageFailure, Unit>,
-        userId: Matcher<UserId> = any(),
-        clientIds: Matcher<List<ClientId>> = any()
+        userId: Matcher<UserId> = AnyMatcher(valueOf()),
+        clientIds: Matcher<List<ClientId>> = AnyMatcher(valueOf())
     )
-    fun withStoreMapOfUserToClientId(
+
+    suspend fun withStoreMapOfUserToClientId(
         result: Either<StorageFailure, Unit>,
-        mapUserToClientId: Matcher<Map<UserId, List<ClientId>>> = any()
+        mapUserToClientId: Matcher<Map<UserId, List<ClientId>>> = AnyMatcher(valueOf())
     )
-    fun withStoreUserClientListAndRemoveRedundantClients(
+
+    suspend fun withStoreUserClientListAndRemoveRedundantClients(
         result: Either<StorageFailure, Unit>,
-        clients: Matcher<List<InsertClientParam>> = any()
+        clients: Matcher<List<InsertClientParam>> = AnyMatcher(valueOf())
     )
 }
 
@@ -58,58 +64,52 @@ internal open class ClientRepositoryArrangementImpl : ClientRepositoryArrangemen
     @Mock
     override val clientRepository: ClientRepository = mock(ClientRepository::class)
 
-    override fun withUpdateClientProteusVerificationStatus(result: Either<StorageFailure, Unit>) = apply {
-        given(clientRepository)
-            .suspendFunction(clientRepository::updateClientProteusVerificationStatus)
-            .whenInvokedWith(any(), any(), any())
-            .thenReturn(result)
+    override suspend fun withUpdateClientProteusVerificationStatus(result: Either<StorageFailure, Unit>) = apply {
+        coEvery {
+            clientRepository.updateClientProteusVerificationStatus(any(), any(), any())
+        }.returns(result)
     }
 
-    override fun withClientsByUserId(result: Either<StorageFailure, List<OtherUserClient>>) = apply {
-        given(clientRepository)
-            .suspendFunction(clientRepository::getClientsByUserId)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withClientsByUserId(result: Either<StorageFailure, List<OtherUserClient>>) = apply {
+        coEvery {
+            clientRepository.getClientsByUserId(any())
+        }.returns(result)
     }
 
-    override fun withRemoveClientsAndReturnUsersWithNoClients(
+    override suspend fun withRemoveClientsAndReturnUsersWithNoClients(
         result: Either<StorageFailure, List<UserId>>,
         redundantClientsOfUsers: Matcher<Map<UserId, List<ClientId>>>
-        ) {
-        given(clientRepository)
-            .suspendFunction(clientRepository::removeClientsAndReturnUsersWithNoClients)
-            .whenInvokedWith(redundantClientsOfUsers)
-            .thenReturn(result)
+    ) {
+        coEvery {
+            clientRepository.removeClientsAndReturnUsersWithNoClients(matches { redundantClientsOfUsers.matches(it) })
+        }.returns(result)
     }
 
-    override fun withStoreUserClientIdList(
+    override suspend fun withStoreUserClientIdList(
         result: Either<StorageFailure, Unit>,
         userId: Matcher<UserId>,
         clientIds: Matcher<List<ClientId>>
     ) {
-        given(clientRepository)
-            .suspendFunction(clientRepository::storeUserClientIdList)
-            .whenInvokedWith(any(), any())
-            .thenReturn(result)
+        coEvery {
+            clientRepository.storeUserClientIdList(any(), any())
+        }.returns(result)
     }
 
-    override fun withStoreMapOfUserToClientId(
+    override suspend fun withStoreMapOfUserToClientId(
         result: Either<StorageFailure, Unit>,
         mapUserToClientId: Matcher<Map<UserId, List<ClientId>>>
     ) {
-        given(clientRepository)
-            .suspendFunction(clientRepository::storeMapOfUserToClientId)
-            .whenInvokedWith(mapUserToClientId)
-            .thenReturn(result)
+        coEvery {
+            clientRepository.storeMapOfUserToClientId(matches { mapUserToClientId.matches(it) })
+        }.returns(result)
     }
 
-    override fun withStoreUserClientListAndRemoveRedundantClients(
+    override suspend fun withStoreUserClientListAndRemoveRedundantClients(
         result: Either<StorageFailure, Unit>,
         clients: Matcher<List<InsertClientParam>>
     ) {
-        given(clientRepository)
-            .suspendFunction(clientRepository::storeUserClientListAndRemoveRedundantClients)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+        coEvery {
+            clientRepository.storeUserClientListAndRemoveRedundantClients(any())
+        }.returns(result)
     }
 }

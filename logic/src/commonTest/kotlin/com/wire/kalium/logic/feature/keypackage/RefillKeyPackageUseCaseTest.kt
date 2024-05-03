@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,20 +19,20 @@
 package com.wire.kalium.logic.feature.keypackage
 
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageCountDTO
 import io.mockative.Mock
-import io.mockative.anything
-import io.mockative.classOf
+import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -55,8 +55,8 @@ class RefillKeyPackageUseCaseTest {
 
         val actual = refillKeyPackagesUseCase()
 
-        verify(arrangement.keyPackageRepository).coroutine {
-            uploadNewKeyPackages(TestClient.CLIENT_ID, Arrangement.KEY_PACKAGE_LIMIT - keyPackageCount)
+        coVerify {
+            arrangement.keyPackageRepository.uploadNewKeyPackages(TestClient.CLIENT_ID, Arrangement.KEY_PACKAGE_LIMIT - keyPackageCount)
         }.wasInvoked(once)
 
         assertIs<RefillKeyPackagesResult.Success>(actual)
@@ -95,13 +95,13 @@ class RefillKeyPackageUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val keyPackageRepository = mock(classOf<KeyPackageRepository>())
+        val keyPackageRepository = mock(KeyPackageRepository::class)
 
         @Mock
-        val keyPackageLimitsProvider = mock(classOf<KeyPackageLimitsProvider>())
+        val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
 
         @Mock
-        val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+        val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
         private var refillKeyPackageUseCase = RefillKeyPackagesUseCaseImpl(
             keyPackageRepository,
@@ -109,37 +109,37 @@ class RefillKeyPackageUseCaseTest {
             currentClientIdProvider
         )
 
-        fun withExistingSelfClientId() = apply {
-            given(currentClientIdProvider).suspendFunction(currentClientIdProvider::invoke)
-                .whenInvoked()
-                .then { Either.Right(TestClient.CLIENT_ID) }
+        suspend fun withExistingSelfClientId() = apply {
+            coEvery {
+                currentClientIdProvider.invoke()
+            }.returns(Either.Right(TestClient.CLIENT_ID))
         }
 
         fun withKeyPackageLimits(needRefill: Boolean, refillAmount: Int) = apply {
-            given(keyPackageLimitsProvider).function(keyPackageLimitsProvider::needsRefill)
-                .whenInvokedWith(anything())
-                .thenReturn(needRefill)
-            given(keyPackageLimitsProvider).function(keyPackageLimitsProvider::refillAmount)
-                .whenInvoked()
-                .thenReturn(refillAmount)
+            every {
+                keyPackageLimitsProvider.needsRefill(any())
+            }.returns(needRefill)
+            every {
+                keyPackageLimitsProvider.refillAmount()
+            }.returns(refillAmount)
         }
 
-        fun withKeyPackageCount(count: Int) = apply {
-            given(keyPackageRepository).suspendFunction(keyPackageRepository::getAvailableKeyPackageCount)
-                .whenInvokedWith(anything())
-                .then { Either.Right(KeyPackageCountDTO(count)) }
+        suspend fun withKeyPackageCount(count: Int) = apply {
+            coEvery {
+                keyPackageRepository.getAvailableKeyPackageCount(any())
+            }.returns(Either.Right(KeyPackageCountDTO(count)))
         }
 
-        fun withUploadKeyPackagesSuccessful() = apply {
-            given(keyPackageRepository).suspendFunction(keyPackageRepository::uploadNewKeyPackages)
-                .whenInvokedWith(eq(TestClient.CLIENT_ID), anything())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withUploadKeyPackagesSuccessful() = apply {
+            coEvery {
+                keyPackageRepository.uploadNewKeyPackages(eq(TestClient.CLIENT_ID), any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withGetAvailableKeyPackagesFailing(failure: NetworkFailure) = apply {
-            given(keyPackageRepository).suspendFunction(keyPackageRepository::getAvailableKeyPackageCount)
-                .whenInvokedWith(anything())
-                .then { Either.Left(failure) }
+        suspend fun withGetAvailableKeyPackagesFailing(failure: NetworkFailure) = apply {
+            coEvery {
+                keyPackageRepository.getAvailableKeyPackageCount(any())
+            }.returns(Either.Left(failure))
         }
 
         fun arrange() = this to refillKeyPackageUseCase

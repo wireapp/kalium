@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -35,7 +35,7 @@ internal interface SyncSelfTeamUseCase {
 internal class SyncSelfTeamUseCaseImpl(
     private val userRepository: UserRepository,
     private val teamRepository: TeamRepository,
-    private val fetchAllTeamMembersEagerly: Boolean
+    private val fetchedUsersLimit: Int?
 ) : SyncSelfTeamUseCase {
 
     override suspend fun invoke(): Either<CoreFailure, Unit> {
@@ -43,15 +43,11 @@ internal class SyncSelfTeamUseCaseImpl(
 
         return user.teamId?.let { teamId ->
             teamRepository.fetchTeamById(teamId = teamId).flatMap {
-                if (fetchAllTeamMembersEagerly) {
-                    kaliumLogger.withFeatureId(SYNC).i("Fetching all team members eagerly")
-                    teamRepository.fetchMembersByTeamId(
-                        teamId = teamId,
-                        userDomain = user.id.domain
-                    )
-                } else {
-                    Either.Right(Unit)
-                }
+                teamRepository.fetchMembersByTeamId(
+                    teamId = teamId,
+                    userDomain = user.id.domain,
+                    fetchedUsersLimit = fetchedUsersLimit
+                )
             }.onSuccess {
                 teamRepository.syncServices(teamId = teamId)
             }

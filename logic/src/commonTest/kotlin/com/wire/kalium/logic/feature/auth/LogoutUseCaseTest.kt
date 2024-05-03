@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,7 +21,9 @@ package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.auth.AccountInfo
+import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
@@ -29,9 +31,9 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.session.SessionRepository
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
-import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.ObserveEstablishedCallsUseCase
 import com.wire.kalium.logic.feature.client.ClearClientDataUseCase
@@ -42,10 +44,10 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.configure
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.time
@@ -79,34 +81,31 @@ class LogoutUseCaseTest {
             logoutUseCase.invoke(reason)
             arrangement.globalTestScope.advanceUntilIdle()
 
-            verify(arrangement.deregisterTokenUseCase)
-                .suspendFunction(arrangement.deregisterTokenUseCase::invoke)
-                .wasInvoked(exactly = once)
-
-            verify(arrangement.sessionRepository)
-                .suspendFunction(arrangement.sessionRepository::logout)
-                .with(any(), eq(reason))
-                .wasInvoked(exactly = once)
-            verify(arrangement.sessionRepository)
-                .suspendFunction(arrangement.sessionRepository::updateCurrentSession)
-                .with(any())
-                .wasNotInvoked()
-            verify(arrangement.userSessionScopeProvider)
-                .function(arrangement.userSessionScopeProvider::delete)
-                .with(any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.sessionRepository.logout(any(), eq(reason))
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.sessionRepository.updateCurrentSession(any())
+            }.wasNotInvoked()
+            coVerify {
+                arrangement.userSessionScopeProvider.delete(any())
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.userConfigRepository.clearE2EISettings()
+            }.wasInvoked(exactly = once)
 
             if (reason == LogoutReason.SELF_HARD_LOGOUT) {
-                verify(arrangement.pushTokenRepository)
-                    .suspendFunction(arrangement.pushTokenRepository::setUpdateFirebaseTokenFlag)
-                    .with(eq(true))
-                    .wasNotInvoked()
+                coVerify {
+                    arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(true))
+                }.wasNotInvoked()
             } else {
-                verify(arrangement.pushTokenRepository)
-                    .suspendFunction(arrangement.pushTokenRepository::setUpdateFirebaseTokenFlag)
-                    .with(eq(true))
-                    .wasInvoked(exactly = once)
+                coVerify {
+                    arrangement.pushTokenRepository.setUpdateFirebaseTokenFlag(eq(true))
+                }.wasInvoked(exactly = once)
             }
+            coVerify {
+                arrangement.logoutCallback(any<UserId>(), eq(reason))
+            }.wasInvoked()
         }
     }
 
@@ -128,12 +127,12 @@ class LogoutUseCaseTest {
         logoutUseCase.invoke(reason)
         arrangement.globalTestScope.advanceUntilIdle()
 
-        verify(arrangement.clearClientDataUseCase)
-            .suspendFunction(arrangement.clearClientDataUseCase::invoke)
-            .wasInvoked(exactly = once)
-        verify(arrangement.clearUserDataUseCase)
-            .suspendFunction(arrangement.clearUserDataUseCase::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clearClientDataUseCase.invoke()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clearUserDataUseCase.invoke()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -155,12 +154,12 @@ class LogoutUseCaseTest {
         logoutUseCase.invoke(reason)
         arrangement.globalTestScope.advanceUntilIdle()
 
-        verify(arrangement.clearClientDataUseCase)
-            .suspendFunction(arrangement.clearClientDataUseCase::invoke)
-            .wasInvoked(exactly = once)
-        verify(arrangement.clearUserDataUseCase)
-            .suspendFunction(arrangement.clearUserDataUseCase::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clearClientDataUseCase.invoke()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clearUserDataUseCase.invoke()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -182,12 +181,12 @@ class LogoutUseCaseTest {
         logoutUseCase.invoke(reason)
         arrangement.globalTestScope.advanceUntilIdle()
 
-        verify(arrangement.clearClientDataUseCase)
-            .suspendFunction(arrangement.clearClientDataUseCase::invoke)
-            .wasInvoked(exactly = once)
-        verify(arrangement.clearUserDataUseCase)
-            .suspendFunction(arrangement.clearUserDataUseCase::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clearClientDataUseCase.invoke()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clearUserDataUseCase.invoke()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -209,16 +208,19 @@ class LogoutUseCaseTest {
         logoutUseCase.invoke(reason)
         arrangement.globalTestScope.advanceUntilIdle()
 
-        verify(arrangement.logoutRepository)
-            .suspendFunction(arrangement.logoutRepository::logout)
-            .wasNotInvoked()
+        coVerify {
+            arrangement.deregisterTokenUseCase.invoke()
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.logoutRepository.logout()
+        }.wasNotInvoked()
 
-        verify(arrangement.clearClientDataUseCase)
-            .suspendFunction(arrangement.clearClientDataUseCase::invoke)
-            .wasInvoked(exactly = once)
-        verify(arrangement.clearUserDataUseCase)
-            .suspendFunction(arrangement.clearUserDataUseCase::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clearClientDataUseCase.invoke()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clearUserDataUseCase.invoke()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -240,23 +242,26 @@ class LogoutUseCaseTest {
             logoutUseCase.invoke(reason)
             arrangement.globalTestScope.advanceUntilIdle()
 
-            verify(arrangement.logoutRepository)
-                .suspendFunction(arrangement.logoutRepository::logout)
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.deregisterTokenUseCase.invoke()
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.logoutRepository.logout()
+            }.wasInvoked(exactly = once)
 
-            verify(arrangement.clearClientDataUseCase)
-                .suspendFunction(arrangement.clearClientDataUseCase::invoke)
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.clearClientDataUseCase.invoke()
+            }.wasInvoked(exactly = once)
 
-            verify(arrangement.clearUserDataUseCase)
-                .suspendFunction(arrangement.clearUserDataUseCase::invoke)
-                .wasNotInvoked()
-            verify(arrangement.clientRepository)
-                .suspendFunction(arrangement.clientRepository::clearCurrentClientId)
-                .wasInvoked(exactly = once)
-            verify(arrangement.clientRepository)
-                .suspendFunction(arrangement.clientRepository::clearHasRegisteredMLSClient)
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.clearUserDataUseCase.invoke()
+            }.wasNotInvoked()
+            coVerify {
+                arrangement.clientRepository.clearCurrentClientId()
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.clientRepository.clearHasRegisteredMLSClient()
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -278,22 +283,25 @@ class LogoutUseCaseTest {
         logoutUseCase.invoke(reason)
         arrangement.globalTestScope.advanceUntilIdle()
 
-        verify(arrangement.logoutRepository)
-            .suspendFunction(arrangement.logoutRepository::logout)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.deregisterTokenUseCase.invoke()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.logoutRepository.logout()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.clearClientDataUseCase)
-            .suspendFunction(arrangement.clearClientDataUseCase::invoke)
-            .wasNotInvoked()
-        verify(arrangement.clearUserDataUseCase)
-            .suspendFunction(arrangement.clearUserDataUseCase::invoke)
-            .wasNotInvoked()
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::clearCurrentClientId)
-            .wasInvoked(exactly = once)
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::clearHasRegisteredMLSClient)
-            .wasNotInvoked()
+        coVerify {
+            arrangement.clearClientDataUseCase.invoke()
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.clearUserDataUseCase.invoke()
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.clientRepository.clearCurrentClientId()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clientRepository.clearHasRegisteredMLSClient()
+        }.wasNotInvoked()
     }
 
     @Test
@@ -318,52 +326,61 @@ class LogoutUseCaseTest {
         logoutUseCase.invoke(reason)
         arrangement.globalTestScope.advanceUntilIdle()
 
-        verify(arrangement.logoutRepository)
-            .suspendFunction(arrangement.logoutRepository::logout)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.deregisterTokenUseCase.invoke()
+        }.wasInvoked(exactly = once)
+        coVerify {
+            arrangement.logoutRepository.logout()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.observeEstablishedCallsUseCase)
-            .suspendFunction(arrangement.observeEstablishedCallsUseCase::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.observeEstablishedCallsUseCase.invoke()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.endCall)
-            .suspendFunction(arrangement.endCall::invoke)
-            .with(any())
-            .wasInvoked(exactly = calls.size.time)
+        coVerify {
+            arrangement.endCall.invoke(any())
+        }.wasInvoked(exactly = calls.size.time)
     }
 
     private class Arrangement {
         @Mock
-        val logoutRepository = mock(classOf<LogoutRepository>())
+        val logoutRepository = mock(LogoutRepository::class)
 
         @Mock
-        val sessionRepository = mock(classOf<SessionRepository>())
+        val sessionRepository = mock(SessionRepository::class)
 
         @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
+        val clientRepository = mock(ClientRepository::class)
 
         @Mock
-        val deregisterTokenUseCase = mock(classOf<DeregisterTokenUseCase>())
+        val userConfigRepository = mock(UserConfigRepository::class)
 
         @Mock
-        val clearClientDataUseCase = configure(mock(ClearClientDataUseCase::class)) { stubsUnitByDefault = true }
+        val deregisterTokenUseCase = mock(DeregisterTokenUseCase::class)
 
         @Mock
-        val clearUserDataUseCase = configure(mock(ClearUserDataUseCase::class)) { stubsUnitByDefault = true }
+        val clearClientDataUseCase = mock(ClearClientDataUseCase::class)
 
         @Mock
-        val userSessionScopeProvider = configure(mock(classOf<UserSessionScopeProvider>())) { stubsUnitByDefault = true }
+        val clearUserDataUseCase = mock(ClearUserDataUseCase::class)
 
         @Mock
-        val pushTokenRepository = mock(classOf<PushTokenRepository>())
+        val userSessionScopeProvider = mock(UserSessionScopeProvider::class)
 
         @Mock
-        val userSessionWorkScheduler = configure(mock(classOf<UserSessionWorkScheduler>())) { stubsUnitByDefault = true }
-
-        @Mock val observeEstablishedCallsUseCase =  mock(classOf<ObserveEstablishedCallsUseCase>())
+        val pushTokenRepository = mock(PushTokenRepository::class)
 
         @Mock
-        val endCall = configure(mock(EndCallUseCase::class)) { stubsUnitByDefault = true }
+        val userSessionWorkScheduler = mock(UserSessionWorkScheduler::class)
+
+        @Mock
+        val observeEstablishedCallsUseCase = mock(ObserveEstablishedCallsUseCase::class)
+
+        @Mock
+        val endCall = mock(EndCallUseCase::class)
+
+        @Mock
+        val logoutCallback = mock(LogoutCallback::class)
 
         var kaliumConfigs = KaliumConfigs()
 
@@ -374,6 +391,7 @@ class LogoutUseCaseTest {
                 logoutRepository,
                 sessionRepository,
                 clientRepository,
+                userConfigRepository,
                 USER_ID,
                 deregisterTokenUseCase,
                 clearClientDataUseCase,
@@ -384,106 +402,97 @@ class LogoutUseCaseTest {
                 userSessionWorkScheduler,
                 observeEstablishedCallsUseCase,
                 endCall,
+                logoutCallback,
                 kaliumConfigs
             )
 
-        init {
-            given(endCall)
-                .suspendFunction(endCall::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(Unit)
-        }
-
-        fun withDeregisterTokenResult(result: DeregisterTokenUseCase.Result): Arrangement {
-            given(deregisterTokenUseCase)
-                .suspendFunction(deregisterTokenUseCase::invoke)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withDeregisterTokenResult(result: DeregisterTokenUseCase.Result): Arrangement {
+            coEvery {
+                deregisterTokenUseCase.invoke()
+            }.returns(result)
             return this
         }
 
-        fun withLogoutResult(result: Either<CoreFailure, Unit>): Arrangement {
-            given(logoutRepository)
-                .suspendFunction(logoutRepository::logout)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withLogoutResult(result: Either<CoreFailure, Unit>): Arrangement {
+            coEvery {
+                logoutRepository.logout()
+            }.returns(result)
             return this
         }
 
-        fun withSessionLogoutResult(result: Either<StorageFailure, Unit>): Arrangement {
-            given(sessionRepository)
-                .suspendFunction(sessionRepository::logout)
-                .whenInvokedWith(any(), any())
-                .thenReturn(result)
+        suspend fun withSessionLogoutResult(result: Either<StorageFailure, Unit>): Arrangement {
+            coEvery {
+                sessionRepository.logout(any(), any())
+            }.returns(result)
             return this
         }
 
-        fun withAllValidSessionsResult(result: Either<StorageFailure, List<AccountInfo.Valid>>): Arrangement {
-            given(sessionRepository)
-                .suspendFunction(sessionRepository::allValidSessions)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withAllValidSessionsResult(result: Either<StorageFailure, List<AccountInfo.Valid>>): Arrangement {
+            coEvery {
+                sessionRepository.allValidSessions()
+            }.returns(result)
             return this
         }
 
-        fun withClearCurrentClientIdResult(result: Either<StorageFailure, Unit>): Arrangement {
-            given(clientRepository)
-                .suspendFunction(clientRepository::clearCurrentClientId)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withClearCurrentClientIdResult(result: Either<StorageFailure, Unit>): Arrangement {
+            coEvery {
+                clientRepository.clearCurrentClientId()
+            }.returns(result)
             return this
         }
 
-        fun withClearRetainedClientIdResult(result: Either<StorageFailure, Unit>): Arrangement {
-            given(clientRepository)
-                .suspendFunction(clientRepository::clearRetainedClientId)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withClearRetainedClientIdResult(result: Either<StorageFailure, Unit>): Arrangement {
+            coEvery {
+                clientRepository.clearRetainedClientId()
+            }.returns(result)
             return this
         }
 
-        fun withClearHasRegisteredMLSClientResult(result: Either<StorageFailure, Unit>): Arrangement {
-            given(clientRepository)
-                .suspendFunction(clientRepository::clearHasRegisteredMLSClient)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withClearHasRegisteredMLSClientResult(result: Either<StorageFailure, Unit>): Arrangement {
+            coEvery {
+                clientRepository.clearHasRegisteredMLSClient()
+            }.returns(result)
             return this
         }
 
         fun withUserSessionScopeGetResult(result: UserSessionScope?): Arrangement {
-            given(userSessionScopeProvider)
-                .function(userSessionScopeProvider::get)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+            every {
+                userSessionScopeProvider.get(any())
+            }.returns(result)
             return this
         }
 
-        fun withFirebaseTokenUpdate() = apply {
-            given(pushTokenRepository)
-                .suspendFunction(pushTokenRepository::setUpdateFirebaseTokenFlag)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withFirebaseTokenUpdate() = apply {
+            coEvery {
+                pushTokenRepository.setUpdateFirebaseTokenFlag(any())
+            }.returns(Either.Right(Unit))
         }
 
         fun withKaliumConfigs(changeConfigs: (KaliumConfigs) -> KaliumConfigs) = apply {
             this.kaliumConfigs = changeConfigs(this.kaliumConfigs)
         }
 
-        fun withOngoingCalls(ongoingCalls: List<Call>) = apply {
-            given(observeEstablishedCallsUseCase)
-                .suspendFunction(observeEstablishedCallsUseCase::invoke)
-                .whenInvoked()
-                .thenReturn(flowOf(ongoingCalls))
+        suspend fun withOngoingCalls(ongoingCalls: List<Call>) = apply {
+            coEvery {
+                observeEstablishedCallsUseCase.invoke()
+            }.returns(flowOf(ongoingCalls))
         }
 
-        fun withNoOngoingCalls() = apply {
-            given(observeEstablishedCallsUseCase)
-                .suspendFunction(observeEstablishedCallsUseCase::invoke)
-                .whenInvoked()
-                .then { flowOf(emptyList()) }
+        suspend fun withNoOngoingCalls() = apply {
+            coEvery {
+                observeEstablishedCallsUseCase.invoke()
+            }.returns(flowOf(emptyList()))
         }
 
-        fun arrange() = this to logoutUseCase
+        suspend fun arrange() = this to logoutUseCase.also {
+            coEvery {
+                endCall.invoke(any())
+            }.returns(Unit)
+
+            coEvery {
+                userConfigRepository.clearE2EISettings()
+            }.returns(Unit)
+        }
 
         companion object {
             val USER_ID = QualifiedID("userId", "domain")

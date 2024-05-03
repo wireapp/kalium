@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,6 +39,9 @@ internal object MLSMessageFailureHandler {
             is MLSFailure.SelfCommitIgnored -> MLSMessageFailureResolution.Ignore
             // Message arrive in an unmerged group, it has been buffered and will be consumed later.
             is MLSFailure.UnmergedPendingGroup -> MLSMessageFailureResolution.Ignore
+            is MLSFailure.StaleProposal -> MLSMessageFailureResolution.Ignore
+            is MLSFailure.StaleCommit -> MLSMessageFailureResolution.Ignore
+            is MLSFailure.MessageEpochTooOld -> MLSMessageFailureResolution.Ignore
             else -> MLSMessageFailureResolution.InformUser
         }
     }

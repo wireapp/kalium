@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,18 +17,17 @@
  */
 package com.wire.kalium.logic.feature.scenario
 
+import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.call.Call
-import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.feature.call.scenario.OnMuteStateForSelfUserChanged
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
+import io.mockative.coEvery
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -48,10 +47,9 @@ class OnMuteStateForSelfUserChangedTest {
 
         onMuteStateForSelfUserChanged.onMuteStateChanged(1, null)
 
-        verify(arrangement.callRepository)
-            .function(arrangement.callRepository::updateIsMutedById)
-            .with(any(), any())
-            .wasNotInvoked()
+        verify {
+            arrangement.callRepository.updateIsMutedById(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -64,10 +62,9 @@ class OnMuteStateForSelfUserChangedTest {
 
         yield()
 
-        verify(arrangement.callRepository)
-            .function(arrangement.callRepository::updateIsMutedById)
-            .with(eq(conversationId), eq(true))
-            .wasInvoked(once)
+        verify {
+            arrangement.callRepository.updateIsMutedById(eq(conversationId), eq(true))
+        }.wasInvoked(once)
     }
 
     companion object {
@@ -78,25 +75,23 @@ class OnMuteStateForSelfUserChangedTest {
     internal class Arrangement {
 
         @Mock
-        val callRepository = mock(classOf<CallRepository>())
+        val callRepository = mock(CallRepository::class)
 
         fun arrange() = this to OnMuteStateForSelfUserChanged(
             CoroutineScope(testScope),
             callRepository,
         )
 
-        fun givenNoOngoingCall() = apply {
-            given(callRepository)
-                .suspendFunction(callRepository::establishedCallsFlow)
-                .whenInvoked()
-                .thenReturn(flowOf(listOf()))
+        suspend fun givenNoOngoingCall() = apply {
+            coEvery {
+                callRepository.establishedCallsFlow()
+            }.returns(flowOf(listOf()))
         }
 
-        fun givenAnOngoingCall() = apply {
-            given(callRepository)
-                .suspendFunction(callRepository::establishedCallsFlow)
-                .whenInvoked()
-                .thenReturn(flowOf(listOf(call)))
+        suspend fun givenAnOngoingCall() = apply {
+            coEvery {
+                callRepository.establishedCallsFlow()
+            }.returns(flowOf(listOf(call)))
         }
 
         companion object {

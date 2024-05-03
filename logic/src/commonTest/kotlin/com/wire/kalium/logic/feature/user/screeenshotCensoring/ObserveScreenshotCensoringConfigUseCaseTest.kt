@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,16 +28,14 @@ import com.wire.kalium.logic.feature.user.screenshotCensoring.ObserveScreenshotC
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
@@ -59,15 +57,13 @@ class ObserveScreenshotCensoringConfigUseCaseTest {
             val item = awaitItem()
             assertEquals(expectedResult, item)
 
-            verify(arrangement.userConfigRepository)
-                .function(arrangement.userConfigRepository::observeScreenshotCensoringConfig)
-                .with()
-                .wasInvoked(once)
+            coVerify {
+                arrangement.userConfigRepository.observeScreenshotCensoringConfig()
+            }.wasInvoked(once)
 
-            verify(arrangement.userConfigRepository)
-                .function(arrangement.userConfigRepository::observeTeamSettingsSelfDeletingStatus)
-                .with()
-                .wasInvoked(once)
+            coVerify {
+                arrangement.userConfigRepository.observeTeamSettingsSelfDeletingStatus()
+            }.wasInvoked(once)
 
             awaitComplete()
         }
@@ -147,22 +143,20 @@ class ObserveScreenshotCensoringConfigUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val userConfigRepository = mock(classOf<UserConfigRepository>())
+        val userConfigRepository = mock(UserConfigRepository::class)
 
         val observeScreenshotCensoringConfig = ObserveScreenshotCensoringConfigUseCaseImpl(userConfigRepository)
 
-        fun withObserveScreenshotCensoringConfigResult(result: Either<StorageFailure, Boolean>) = apply {
-            given(userConfigRepository)
-                .suspendFunction(userConfigRepository::observeScreenshotCensoringConfig)
-                .whenInvoked()
-                .thenReturn(flowOf(result))
+        suspend fun withObserveScreenshotCensoringConfigResult(result: Either<StorageFailure, Boolean>) = apply {
+            coEvery {
+                userConfigRepository.observeScreenshotCensoringConfig()
+            }.returns(flowOf(result))
         }
 
-        fun withSuccessfulObserveTeamSelfDeletingStatusResult(result: Either<StorageFailure, TeamSelfDeleteTimer>) = apply {
-            given(userConfigRepository)
-                .suspendFunction(userConfigRepository::observeTeamSettingsSelfDeletingStatus)
-                .whenInvoked()
-                .thenReturn(flowOf(result.map { TeamSettingsSelfDeletionStatus(false, it) }))
+        suspend fun withSuccessfulObserveTeamSelfDeletingStatusResult(result: Either<StorageFailure, TeamSelfDeleteTimer>) = apply {
+            coEvery {
+                userConfigRepository.observeTeamSettingsSelfDeletingStatus()
+            }.returns(flowOf(result.map { TeamSettingsSelfDeletionStatus(false, it) }))
         }
 
         fun arrange() = this to observeScreenshotCensoringConfig

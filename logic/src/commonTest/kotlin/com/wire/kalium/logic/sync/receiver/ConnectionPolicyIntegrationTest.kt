@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,8 +26,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SetConnectionPolicyUseCase
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -37,7 +36,7 @@ import kotlin.test.assertEquals
 class ConnectionPolicyIntegrationTest {
 
     @Mock
-    val sessionRepository = mock(classOf<SessionRepository>())
+    val sessionRepository = mock(SessionRepository::class)
 
     private val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
@@ -57,9 +56,9 @@ class ConnectionPolicyIntegrationTest {
     @Test
     fun givenSetConnectionPolicyIsCalled_whenObservingConnectionPolicy_thenTheValueIsUpdated() = runTest {
         // Given
-        given(sessionRepository)
-            .suspendFunction(sessionRepository::getAllValidAccountPersistentWebSocketStatus).whenInvoked()
-            .thenReturn(Either.Right(flowOf(listOf())))
+        coEvery {
+            sessionRepository.getAllValidAccountPersistentWebSocketStatus()
+        }.returns(Either.Right(flowOf(listOf())))
 
         setConnectionPolicyUseCase(ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS)
 

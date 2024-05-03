@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -91,40 +91,28 @@ class ObserveLegalHoldStateForUserUseCaseTest {
 
         fun arrange() = this to observeLegalHoldStateForUser
 
-        fun withClientRepositoryFailure() = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::observeClientsByUserId)
-                .whenInvokedWith(any())
-                .then {
-                    flowOf(Either.Left(StorageFailure.DataNotFound))
-                }
+        suspend fun withClientRepositoryFailure() = apply {
+            coEvery {
+                clientRepository.observeClientsByUserId(any())
+            }.returns(flowOf(Either.Left(StorageFailure.DataNotFound)))
         }
 
-        fun withEmptyClients() = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::observeClientsByUserId)
-                .whenInvokedWith(any())
-                .then {
-                    flowOf(Either.Right(listOf()))
-                }
+        suspend fun withEmptyClients() = apply {
+            coEvery {
+                clientRepository.observeClientsByUserId(any())
+            }.returns(flowOf(Either.Right(listOf())))
         }
 
-        fun withNoClientUnderLegalHold() = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::observeClientsByUserId)
-                .whenInvokedWith(any())
-                .then {
-                    flowOf(Either.Right(listOf(TestClient.CLIENT)))
-                }
+        suspend fun withNoClientUnderLegalHold() = apply {
+            coEvery {
+                clientRepository.observeClientsByUserId(any())
+            }.returns(flowOf(Either.Right(listOf(TestClient.CLIENT))))
         }
 
-        fun withClientUnderLegalHold() = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::observeClientsByUserId)
-                .whenInvokedWith(any())
-                .then {
-                    flowOf(Either.Right(listOf(legalHoldClient)))
-                }
+        suspend fun withClientUnderLegalHold() = apply {
+            coEvery {
+                clientRepository.observeClientsByUserId(any())
+            }.returns(flowOf(Either.Right(listOf(legalHoldClient))))
         }
     }
 

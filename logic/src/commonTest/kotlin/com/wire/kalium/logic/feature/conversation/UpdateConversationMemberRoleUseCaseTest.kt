@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,18 +19,18 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.Conversation.Member
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -53,18 +53,16 @@ class UpdateConversationMemberRoleUseCaseTest {
         val conversationId = TestConversation.ID
         val userId = TestUser.USER_ID
         val newRole = Member.Role.Admin
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::updateConversationMemberRole)
-            .whenInvokedWith(any(), any(), eq(newRole))
-            .thenReturn(Either.Right(Unit))
+        coEvery {
+            conversationRepository.updateConversationMemberRole(any(), any(), eq(newRole))
+        }.returns(Either.Right(Unit))
 
         val result = updateConversationMemberRoleUseCase(conversationId, userId, newRole)
         assertIs<UpdateConversationMemberRoleResult.Success>(result)
 
-        verify(conversationRepository)
-            .suspendFunction(conversationRepository::updateConversationMemberRole)
-            .with(any(), any(), eq(newRole))
-            .wasInvoked(exactly = once)
+        coVerify {
+            conversationRepository.updateConversationMemberRole(any(), any(), eq(newRole))
+        }.wasInvoked(exactly = once)
 
     }
 
@@ -73,18 +71,16 @@ class UpdateConversationMemberRoleUseCaseTest {
         val conversationId = TestConversation.ID
         val userId = TestUser.USER_ID
         val newRole = Member.Role.Admin
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::updateConversationMemberRole)
-            .whenInvokedWith(any(), any(), eq(newRole))
-            .thenReturn(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
+        coEvery {
+            conversationRepository.updateConversationMemberRole(any(), any(), eq(newRole))
+        }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
 
         val result = updateConversationMemberRoleUseCase(conversationId, userId, newRole)
         assertIs<UpdateConversationMemberRoleResult.Failure>(result)
 
-        verify(conversationRepository)
-            .suspendFunction(conversationRepository::updateConversationMemberRole)
-            .with(any(), any(), eq(newRole))
-            .wasInvoked(exactly = once)
+        coVerify {
+            conversationRepository.updateConversationMemberRole(any(), any(), eq(newRole))
+        }.wasInvoked(exactly = once)
 
     }
 

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,11 +29,10 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -45,10 +44,10 @@ import kotlin.test.assertIs
 class SSOLoginRepositoryTest {
 
     @Mock
-    val ssoLogin = mock(classOf<SSOLoginApi>())
+    val ssoLogin = mock(SSOLoginApi::class)
 
     @Mock
-    val domainLookup = mock(classOf<DomainLookupApi>())
+    val domainLookup = mock(DomainLookupApi::class)
 
     private lateinit var ssoLoginRepository: SSOLoginRepository
 
@@ -137,9 +136,9 @@ class SSOLoginRepositoryTest {
             webappWelcomeUrl = "https://test.com/welcome"
         )
 
-        given(domainLookup)
-            .coroutine { lookup(domain) }
-            .then { NetworkResponse.Success(networkResponse, mapOf(), 200) }
+        coEvery {
+            domainLookup.lookup(domain)
+        }.returns(NetworkResponse.Success(networkResponse, mapOf(), 200))
         val actual = ssoLoginRepository.domainLookup(domain)
 
         assertIs<Either.Right<DomainLookupResult>>(actual)
@@ -147,13 +146,13 @@ class SSOLoginRepositoryTest {
             DomainLookupResult(
                 networkResponse.configJsonUrl,
                 networkResponse.webappWelcomeUrl
-            ), actual.value
+            ),
+            actual.value
         )
 
-        verify(domainLookup)
-            .suspendFunction(domainLookup::lookup)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            domainLookup.lookup(any())
+        }.wasInvoked(exactly = once)
     }
 
     private fun <T : Any> givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
@@ -161,11 +160,15 @@ class SSOLoginRepositoryTest {
         expected: T,
         repositoryCoroutineBlock: suspend SSOLoginRepository.() -> Either<NetworkFailure, T>
     ) = runTest {
-        given(ssoLogin).coroutine { apiCoroutineBlock(this) }.then { NetworkResponse.Success(expected, mapOf(), 200) }
+        coEvery {
+            ssoLogin.apiCoroutineBlock()
+        }.returns(NetworkResponse.Success(expected, mapOf(), 200))
         val actual = repositoryCoroutineBlock(ssoLoginRepository)
         assertIs<Either.Right<T>>(actual)
         assertEquals(expected, actual.value)
-        verify(ssoLogin).coroutine { apiCoroutineBlock(this) }.wasInvoked(exactly = once)
+        coVerify {
+            ssoLogin.apiCoroutineBlock()
+        }.wasInvoked(exactly = once)
     }
 
     private fun <T : Any> givenApiRequestFail_whenMakingRequest_thenNetworkFailureIsPropagated(
@@ -173,11 +176,15 @@ class SSOLoginRepositoryTest {
         expected: KaliumException,
         repositoryCoroutineBlock: suspend SSOLoginRepository.() -> Either<NetworkFailure, T>
     ) = runTest {
-        given(ssoLogin).coroutine { apiCoroutineBlock(this) }.then { NetworkResponse.Error(expected) }
+        coEvery {
+            ssoLogin.apiCoroutineBlock()
+        }.returns(NetworkResponse.Error(expected))
         val actual = repositoryCoroutineBlock(ssoLoginRepository)
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
         assertEquals(expected, actual.value.kaliumException)
-        verify(ssoLogin).coroutine { apiCoroutineBlock(this) }.wasInvoked(exactly = once)
+        coVerify {
+            ssoLogin.apiCoroutineBlock()
+        }.wasInvoked(exactly = once)
     }
 
     private companion object {

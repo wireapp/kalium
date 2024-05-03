@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,11 +52,30 @@ internal class TeamsApiV0Test : ApiTest() {
                     assertGet()
                     assertQueryExist("maxResults")
                     assertQueryParameter("maxResults", hasValue = "10")
+                    assertQueryDoesNotExist("pagingState")
                     assertPathEqual("/$PATH_TEAMS/$DUMMY_TEAM_ID/$PATH_MEMBERS")
                 }
             )
             val teamsApi: TeamsApi = TeamsApiV0(networkClient)
             teamsApi.getTeamMembers(DUMMY_TEAM_ID, limitTo = 10)
+        }
+
+    @Test
+    fun givenAValidGetTeamsSecondPageRequest_whenGettingTeamsMembers_theRequestShouldBeConfiguredCorrectly() =
+        runTest {
+            val networkClient = mockAuthenticatedNetworkClient(
+                GET_TEAM_MEMBER_CLIENT_RESPONSE.rawJson,
+                statusCode = HttpStatusCode.OK,
+                assertion = {
+                    assertGet()
+                    assertQueryExist("maxResults")
+                    assertQueryParameter("maxResults", hasValue = "10")
+                    assertQueryParameter("pagingState", hasValue = "A==")
+                    assertPathEqual("/$PATH_TEAMS/$DUMMY_TEAM_ID/$PATH_MEMBERS")
+                }
+            )
+            val teamsApi: TeamsApi = TeamsApiV0(networkClient)
+            teamsApi.getTeamMembers(DUMMY_TEAM_ID, limitTo = 10, pagingState = "A==")
         }
 
     @Test

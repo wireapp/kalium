@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,17 +23,20 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.FeatureConfigEventReceiver
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.fake.valueOf
+import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
+import io.mockative.matches
 import io.mockative.mock
 
 internal interface FeatureConfigEventReceiverArrangement {
     @Mock
     val featureConfigEventReceiver: FeatureConfigEventReceiver
 
-    fun withFeatureConfigEventReceiverArrangement(
+    suspend fun withFeatureConfigEventReceiverArrangement(
         result: Either<CoreFailure, Unit>,
-        event: Matcher<Event.FeatureConfig> = any()
+        event: Matcher<Event.FeatureConfig> = AnyMatcher(valueOf())
     )
 }
 
@@ -41,13 +44,12 @@ internal class FeatureConfigEventReceiverArrangementImpl : FeatureConfigEventRec
     @Mock
     override val featureConfigEventReceiver: FeatureConfigEventReceiver = mock(FeatureConfigEventReceiver::class)
 
-    override fun withFeatureConfigEventReceiverArrangement(
+    override suspend fun withFeatureConfigEventReceiverArrangement(
         result: Either<CoreFailure, Unit>,
         event: Matcher<Event.FeatureConfig>
     ) {
-        given(featureConfigEventReceiver)
-            .suspendFunction(featureConfigEventReceiver::onEvent)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+        coEvery {
+            featureConfigEventReceiver.onEvent(matches { event.matches(it) }, any())
+        }.returns(result)
     }
 }

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,6 +21,9 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * UseCase for getting once the amount of unread events (all: messages, pings, missed calls, etc.) in a specific conversation.
@@ -36,12 +39,15 @@ interface GetConversationUnreadEventsCountUseCase {
 }
 
 internal class GetConversationUnreadEventsCountUseCaseImpl(
-    private val conversationRepository: ConversationRepository
+    private val conversationRepository: ConversationRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : GetConversationUnreadEventsCountUseCase {
 
     override suspend fun invoke(conversationId: ConversationId): GetConversationUnreadEventsCountUseCase.Result =
-        conversationRepository.getConversationUnreadEventsCount(conversationId).fold(
-            { GetConversationUnreadEventsCountUseCase.Result.Failure(it) },
-            { GetConversationUnreadEventsCountUseCase.Result.Success(it) }
-        )
+        withContext(dispatcher.io) {
+            conversationRepository.getConversationUnreadEventsCount(conversationId).fold(
+                { GetConversationUnreadEventsCountUseCase.Result.Failure(it) },
+                { GetConversationUnreadEventsCountUseCase.Result.Success(it) }
+            )
+        }
 }

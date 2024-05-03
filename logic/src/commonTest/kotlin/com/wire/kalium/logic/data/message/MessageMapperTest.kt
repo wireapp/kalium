@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.message.mention.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.message.DeliveryStatusEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -253,13 +254,14 @@ class MessageMapperTest {
             isSelfMessage: Boolean = false,
             readCount: Long = 0,
             expireAfterMs: Long? = null,
-            selfDeletionStartDate: Instant? = null,
+            selfDeletionEndDate: Instant? = null,
             senderName: String? = null,
             senderClientId: String = "someId",
             editStatus: MessageEntity.EditStatus = MessageEntity.EditStatus.NotEdited,
             reactions: ReactionsEntity = ReactionsEntity.EMPTY,
             expectsReadConfirmation: Boolean = false,
             deliveryStatus: DeliveryStatusEntity = DeliveryStatusEntity.CompleteDelivery,
+            sender : UserDetailsEntity? = null
         ): Message.Standalone {
             return messageMapper.fromEntityToMessage(
                 MessageEntity.Regular(
@@ -273,7 +275,8 @@ class MessageMapperTest {
                     isSelfMessage,
                     readCount,
                     expireAfterMs,
-                    selfDeletionStartDate,
+                    selfDeletionEndDate,
+                    sender,
                     senderName,
                     senderClientId,
                     editStatus,

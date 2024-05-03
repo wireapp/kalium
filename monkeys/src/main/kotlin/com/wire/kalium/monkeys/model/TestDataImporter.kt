@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -46,6 +46,7 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -87,7 +88,7 @@ object TestDataImporter {
 
     suspend fun generateUserData(backends: List<BackendConfig>): List<UserData> {
         return backends.flatMap { backendConfig ->
-            val httpClient = basicHttpClient(backendConfig)
+            val httpClient = httpClient(backendConfig)
             if (backendConfig.presetTeam != null) {
                 val backend = Backend.fromConfig(backendConfig)
                 val team = Team(
@@ -97,22 +98,22 @@ object TestDataImporter {
                     backendConfig.presetTeam.owner.email,
                     backendConfig.passwordForUsers,
                     UserId(backendConfig.presetTeam.owner.unqualifiedId, backendConfig.domain),
+                    null,
                     httpClient
                 )
                 backendConfig.presetTeam.users.map { user ->
                     UserData(
-                        user.email, backendConfig.passwordForUsers, UserId(user.unqualifiedId, backendConfig.domain), team
+                        user.email, backendConfig.passwordForUsers, UserId(user.unqualifiedId, backendConfig.domain), team, null
                     )
                 }
             } else {
                 val team = httpClient.createTeam(backendConfig)
                 val users = (1..backendConfig.userCount.toInt()).map { httpClient.createUser(it, team, backendConfig.passwordForUsers) }
-                    .plus(team.owner)
                 if (backendConfig.dumpUsers) {
-                    dumpUsers(team, users)
+                    dumpUsers(team, users.plus(team.owner))
                 }
                 users.forEach { setUserHandle(backendConfig, it) }
-                users
+                users.plus(team.owner)
             }
         }
     }
@@ -150,6 +151,16 @@ private suspend fun HttpClient.createTeam(backendConfig: BackendConfig): Team {
             ).toJsonObject()
         )
     }
+    if (backendConfig.forceDisable2fa) {
+        put("i/teams/$teamId/features/sndFactorPasswordChallenge/unlocked")
+        put("i/teams/$teamId/features/sndFactorPasswordChallenge") {
+            setBody(
+                mapOf(
+                    "status" to "disabled", "ttl" to "unlimited"
+                ).toJsonObject()
+            )
+        }
+    }
 
     val backend = Backend.fromConfig(backendConfig)
     val userId = user["id"]?.jsonPrimitive?.content ?: error("Could not register user")
@@ -160,9 +171,10 @@ private suspend fun HttpClient.createTeam(backendConfig: BackendConfig): Team {
         ownerEmail = email,
         ownerPassword = backendConfig.passwordForUsers,
         ownerId = UserId(userId, backend.domain),
+        ownerOldCode = null,
         client = this
     )
-    login(team.owner.email, team.owner.password)
+    login(team.owner.email, team.owner.password, team.owner.request2FA())
 
     put("self/handle") { setBody(mapOf("handle" to ownerId).toJsonObject()) }
     logger.i("Owner $email (id $userId) of team ${backendConfig.teamName} (id: $teamId) in backend ${backendConfig.domain}")
@@ -171,10 +183,12 @@ private suspend fun HttpClient.createTeam(backendConfig: BackendConfig): Team {
 
 private suspend fun setUserHandle(backendConfig: BackendConfig, userData: UserData) {
     lateinit var token: BearerTokens
-    val httpClient = basicHttpClient(backendConfig) { token }
-    httpClient.login(userData.email, userData.password) { accessToken ->
+    val httpClient = httpClient(backendConfig) { token }
+    val secondFactor = if (backendConfig.secondFactorAuth) httpClient.request2FA(userData.email, userData.userId) else null
+    httpClient.login(userData.email, userData.password, secondFactor) { accessToken ->
         token = BearerTokens(accessToken, "")
     }
+    userData.oldCode = secondFactor
     httpClient.put("self/handle") { setBody(mapOf("handle" to "monkey-${userData.userId.value}").toJsonObject()) }
 }
 
@@ -192,12 +206,13 @@ private suspend fun HttpClient.createUser(i: Int, team: Team, userPassword: Stri
     }.body<JsonObject>()
     val userId = response["id"]?.jsonPrimitive?.content ?: error("Could not register user in team")
     logger.d("Created user $email (id $userId) in team ${team.name}")
-    return UserData(email, userPassword, UserId(userId, team.backend.domain), team)
+    return UserData(email, userPassword, UserId(userId, team.backend.domain), team, null)
 }
 
 private suspend fun HttpClient.login(
     email: String,
     password: String,
+    secondFactor: String?,
     tokenProvider: (accessToken: String) -> Unit = { accessToken ->
         token = BearerTokens(accessToken, "")
     }
@@ -205,7 +220,7 @@ private suspend fun HttpClient.login(
     val response = post("login") {
         setBody(
             mapOf(
-                "email" to email, "password" to password, "label" to ""
+                "email" to email, "password" to password, "label" to "", "verification_code" to secondFactor
             ).toJsonObject()
         )
     }.body<JsonObject>()
@@ -214,11 +229,22 @@ private suspend fun HttpClient.login(
 }
 
 internal suspend fun HttpClient.teamParticipants(team: Team): List<UserId> {
-    this.login(team.owner.email, team.owner.password)
+    this.login(team.owner.email, team.owner.password, team.owner.request2FA())
     val members = get("teams/${team.id}/members").body<JsonObject>()
     return members["members"]!!.jsonArray.map { member ->
         UserId(member.jsonObject["user"]!!.jsonPrimitive.content, team.backend.domain)
     }
+}
+
+suspend fun HttpClient.request2FA(email: String, userId: UserId): String {
+    this.post("verification-code/send") {
+        setBody(
+            mapOf(
+                "action" to "login", "email" to email
+            ).toJsonObject()
+        )
+    }
+    return this.get("i/users/${userId.value}/verification-code/login").body<JsonPrimitive>().content
 }
 
 private suspend fun HttpClient.invite(teamId: String, email: String, name: String): String {
@@ -233,8 +259,8 @@ private suspend fun HttpClient.invite(teamId: String, email: String, name: Strin
         ?: error("Could not retrieve user invitation")
 }
 
-private fun basicHttpClient(backendConfig: BackendConfig, tokenProvider: () -> BearerTokens? = { token }) = HttpClient(OkHttp.create()) {
-    val excludedPaths = listOf("register", "login", "activate")
+internal fun httpClient(backendConfig: BackendConfig, tokenProvider: () -> BearerTokens? = { token }) = HttpClient(OkHttp.create()) {
+    val excludedPaths = listOf("verification-code", "register", "login", "activate")
     defaultRequest {
         url(backendConfig.api)
         contentType(ContentType.Application.Json)

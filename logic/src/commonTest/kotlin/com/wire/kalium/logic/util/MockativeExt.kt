@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ import io.mockative.AnySuspendResultBuilder
  */
 fun <R> AnyResultBuilder<R>.thenReturnSequentially(vararg results: R) {
     var index = -1
-    return thenInvoke {
+    return invokes {
         index += 1
         require(index <= results.lastIndex) {
             "Function called more times than expected. No result set for index $index"
@@ -43,7 +43,7 @@ fun <R> AnyResultBuilder<R>.thenReturnSequentially(vararg results: R) {
  */
 fun <R> AnySuspendResultBuilder<R>.thenReturnSequentially(vararg results: R) {
     var index = -1
-    return thenInvoke {
+    return invokes {
         index += 1
         require(index <= results.lastIndex) {
             "Function called more times than expected. No result set for index $index"

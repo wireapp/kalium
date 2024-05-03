@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,49 +18,50 @@
 
 package com.wire.kalium.logic.feature.call.usecase
 
+import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.call.Call
 import com.wire.kalium.logic.feature.call.CallManager
-import com.wire.kalium.logic.data.call.CallStatus
 import io.mockative.Mock
-import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.doesNothing
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.thenDoNothing
 import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MuteCallUseCaseTest {
 
     @Mock
-    private val callManager = mock(classOf<CallManager>())
+    private val callManager = mock(CallManager::class)
 
     @Mock
-    private val callRepository = mock(classOf<CallRepository>())
+    private val callRepository = mock(CallRepository::class)
 
     private lateinit var muteCall: MuteCallUseCase
 
     @BeforeTest
-    fun setup() {
+    fun setup() = runBlocking {
         muteCall = MuteCallUseCaseImpl(lazy { callManager }, callRepository)
 
-        given(callManager)
-            .suspendFunction(callManager::muteCall)
-            .whenInvokedWith(eq(isMuted))
-            .thenDoNothing()
+        coEvery {
+            callManager.muteCall(eq(isMuted))
+        }.returns(Unit)
 
-        given(callRepository)
-            .function(callRepository::updateIsMutedById)
-            .whenInvokedWith(eq(conversationId.toString()), eq(isMuted))
-            .thenDoNothing()
+        every {
+            callRepository.updateIsMutedById(
+                eq(conversationId),
+                eq(isMuted)
+            )
+        }.doesNothing()
     }
 
     @Test
@@ -69,15 +70,13 @@ class MuteCallUseCaseTest {
 
         muteCall(conversationId, shouldApplyOnDeviceMicrophone)
 
-        verify(callRepository)
-            .function(callRepository::updateIsMutedById)
-            .with(eq(conversationId), eq(isMuted))
-            .wasInvoked(once)
+        verify {
+            callRepository.updateIsMutedById(eq(conversationId), eq(isMuted))
+        }.wasInvoked(once)
 
-        verify(callManager)
-            .suspendFunction(callManager::muteCall)
-            .with(eq(isMuted))
-            .wasInvoked(once)
+        coVerify {
+            callManager.muteCall(eq(isMuted))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -86,15 +85,13 @@ class MuteCallUseCaseTest {
 
         muteCall(conversationId, shouldApplyOnDeviceMicrophone)
 
-        verify(callRepository)
-            .function(callRepository::updateIsMutedById)
-            .with(eq(conversationId), eq(isMuted))
-            .wasInvoked(once)
+        verify {
+            callRepository.updateIsMutedById(eq(conversationId), eq(isMuted))
+        }.wasInvoked(once)
 
-        verify(callManager)
-            .suspendFunction(callManager::muteCall)
-            .with(eq(isMuted))
-            .wasNotInvoked()
+        coVerify {
+            callManager.muteCall(eq(isMuted))
+        }.wasNotInvoked()
     }
 
     companion object {

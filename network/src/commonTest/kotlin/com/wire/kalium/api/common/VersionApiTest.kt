@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,7 +39,7 @@ internal class VersionApiTest : ApiTest() {
     @Test
     fun givenSuccessResponse_whenFetchingSupportedRemoteVersion_thenRequestIsConfigureCorrectly() = runTest {
         val expected = ServerConfigDTO.MetaData(true, ApiVersionDTO.Valid(1), "wire.com")
-        val httpClient = mockUnboundNetworkClient(
+        val httpClient = mockUnauthenticatedNetworkClient(
             responseBody = VersionInfoDTOJson.valid.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -60,7 +60,7 @@ internal class VersionApiTest : ApiTest() {
     @Test
     fun givenDevelopmentApiEnabled_whenFetchingSupportedRemoteVersion_thenResultIsApiVersion2() = runTest {
         val expected = ServerConfigDTO.MetaData(true, ApiVersionDTO.Valid(2), "wire.com")
-        val httpClient = mockUnboundNetworkClient(
+        val httpClient = mockUnauthenticatedNetworkClient(
             responseBody = VersionInfoDTOJson.valid.rawJson,
             statusCode = HttpStatusCode.OK,
             assertion = {
@@ -81,7 +81,7 @@ internal class VersionApiTest : ApiTest() {
     @Test
     fun given404Response_whenFetchingSupportedRemoteVersion_thenResultIsApiVersion0AndFederationFalse() = runTest {
         val expected = ServerConfigDTO.MetaData(false, ApiVersionDTO.Valid(0), null)
-        val httpClient = mockUnboundNetworkClient(
+        val httpClient = mockUnauthenticatedNetworkClient(
             responseBody = "",
             statusCode = HttpStatusCode.NotFound
         )

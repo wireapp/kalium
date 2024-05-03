@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,15 +27,12 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class BlockUserUseCaseTest {
 
     @Test
@@ -62,15 +59,14 @@ class BlockUserUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val connectionRepository: ConnectionRepository = mock(classOf<ConnectionRepository>())
+        val connectionRepository: ConnectionRepository = mock(ConnectionRepository::class)
 
         val blockUser = BlockUserUseCaseImpl(connectionRepository)
 
-        fun withBlockResult(result: Either<CoreFailure, Connection>) = apply {
-            given(connectionRepository)
-                .suspendFunction(connectionRepository::updateConnectionStatus)
-                .whenInvokedWith(any(), any())
-                .thenReturn(result)
+        suspend fun withBlockResult(result: Either<CoreFailure, Connection>) = apply {
+            coEvery {
+                connectionRepository.updateConnectionStatus(any(), any())
+            }.returns(result)
         }
 
         fun arrange() = this to blockUser

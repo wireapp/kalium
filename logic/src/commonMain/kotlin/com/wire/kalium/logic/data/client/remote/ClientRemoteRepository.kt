@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientMapper
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.client.RegisterClientParam
+import com.wire.kalium.logic.data.client.UpdateClientCapabilitiesParam
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.user.UserId
@@ -34,7 +35,7 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.client.MLSPublicKeyTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
-import com.wire.kalium.network.api.base.authenticated.client.UpdateClientRequest
+import com.wire.kalium.network.api.base.authenticated.client.UpdateClientMlsPublicKeysRequest
 import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
@@ -47,6 +48,10 @@ interface ClientRemoteRepository {
     suspend fun fetchOtherUserClients(
         userIdList: List<UserId>
     ): Either<NetworkFailure, Map<UserIdDTO, List<SimpleClientResponse>>>
+    suspend fun updateClientCapabilities(
+        updateClientCapabilitiesParam: UpdateClientCapabilitiesParam,
+        clientID: String
+    ): Either<NetworkFailure, Unit>
 }
 
 class ClientRemoteDataSource(
@@ -62,8 +67,8 @@ class ClientRemoteDataSource(
 
     override suspend fun registerMLSClient(clientId: ClientId, publicKey: String): Either<NetworkFailure, Unit> =
         wrapApiRequest {
-            clientApi.updateClient(
-                UpdateClientRequest(mapOf(Pair(MLSPublicKeyTypeDTO.ED25519, publicKey))),
+            clientApi.updateClientMlsPublicKeys(
+                UpdateClientMlsPublicKeysRequest(mapOf(Pair(MLSPublicKeyTypeDTO.ED25519, publicKey))),
                 clientId.value
             )
         }
@@ -84,5 +89,15 @@ class ClientRemoteDataSource(
     ): Either<NetworkFailure, Map<UserIdDTO, List<SimpleClientResponse>>> {
         val networkUserId = userIdList.map { idMapper.toNetworkUserId(it) }
         return wrapApiRequest { clientApi.listClientsOfUsers(networkUserId) }
+    }
+
+    override suspend fun updateClientCapabilities(
+        updateClientCapabilitiesParam: UpdateClientCapabilitiesParam,
+        clientID: String
+    ): Either<NetworkFailure, Unit> = wrapApiRequest {
+        clientApi.updateClientCapabilities(
+            clientMapper.toUpdateClientCapabilitiesRequest(updateClientCapabilitiesParam),
+            clientID
+        )
     }
 }

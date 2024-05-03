@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ data class ConnectionEntity(
     val status: State,
     val toId: String,
     val shouldNotify: Boolean? = null,
-    val otherUser: UserDetailsEntity? = null
+    val otherUser: UserEntity? = null
 ) {
 
     enum class State {
@@ -70,4 +70,6 @@ interface ConnectionDAO {
     suspend fun getConnectionRequestsForNotification(): Flow<List<ConnectionEntity>>
     suspend fun updateNotificationFlag(flag: Boolean, userId: QualifiedIDEntity)
     suspend fun setAllConnectionsAsNotified()
+    suspend fun getConnection(id: ConversationIDEntity): ConnectionEntity?
+    suspend fun getConnectionByUser(userId: QualifiedIDEntity): ConnectionEntity?
 }

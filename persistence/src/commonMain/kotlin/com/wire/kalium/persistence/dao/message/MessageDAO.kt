@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,6 +22,7 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
+import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventEntity
@@ -31,8 +32,7 @@ import kotlinx.datetime.Instant
 @Suppress("TooManyFunctions")
 interface MessageDAO {
     suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity)
-    suspend fun updateAssetUploadStatus(uploadStatus: MessageEntity.UploadStatus, id: String, conversationId: QualifiedIDEntity)
-    suspend fun updateAssetDownloadStatus(downloadStatus: MessageEntity.DownloadStatus, id: String, conversationId: QualifiedIDEntity)
+    suspend fun updateAssetTransferStatus(transferStatus: AssetTransferStatusEntity, id: String, conversationId: QualifiedIDEntity)
     suspend fun markMessageAsDeleted(id: String, conversationsId: QualifiedIDEntity)
     suspend fun deleteAllMessages()
 
@@ -70,17 +70,17 @@ interface MessageDAO {
         conversationId: QualifiedIDEntity,
         limit: Int,
         offset: Int,
-        visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
+        visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.entries
     ): Flow<List<MessageEntity>>
 
     suspend fun getLastMessagesByConversations(conversationIds: List<QualifiedIDEntity>): Map<QualifiedIDEntity, MessageEntity>
 
-    suspend fun getNotificationMessage(): Flow<List<NotificationMessageEntity>>
+    suspend fun getNotificationMessage(maxNumberOfMessagesPerConversation: Int = 10): Flow<List<NotificationMessageEntity>>
 
     suspend fun observeMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
         date: String,
-        visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
+        visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.entries
     ): Flow<List<MessageEntity>>
 
     suspend fun getAllPendingMessagesFromUser(userId: UserIDEntity): List<MessageEntity>
@@ -100,9 +100,7 @@ interface MessageDAO {
     suspend fun observeUnreadEvents(): Flow<Map<ConversationIDEntity, List<UnreadEventEntity>>>
     suspend fun observeUnreadMessageCounter(): Flow<Map<ConversationIDEntity, Int>>
 
-    suspend fun resetAssetUploadStatus()
-
-    suspend fun resetAssetDownloadStatus()
+    suspend fun resetAssetTransferStatus()
 
     suspend fun markMessagesAsDecryptionResolved(
         conversationId: QualifiedIDEntity,
@@ -112,7 +110,7 @@ interface MessageDAO {
 
     suspend fun getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
-        visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.values().toList()
+        visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.entries
     ): List<String>
 
     suspend fun getReceiptModeFromGroupConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity.ReceiptMode?
@@ -124,9 +122,11 @@ interface MessageDAO {
         millis: Long
     )
 
-    suspend fun getEphemeralMessagesMarkedForDeletion(): List<MessageEntity>
+    suspend fun getAllPendingEphemeralMessages(): List<MessageEntity>
 
-    suspend fun updateSelfDeletionStartDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionStartDate: Instant)
+    suspend fun getAllAlreadyEndedEphemeralMessages(): List<MessageEntity>
+
+    suspend fun updateSelfDeletionEndDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionEndDate: Instant)
 
     suspend fun getConversationUnreadEventsCount(conversationId: QualifiedIDEntity): Long
 
@@ -152,4 +152,7 @@ interface MessageDAO {
         limit: Int,
         offset: Int
     ): List<AssetMessageEntity>
+
+    suspend fun observeAssetStatuses(conversationId: QualifiedIDEntity): Flow<List<MessageAssetStatusEntity>>
+    suspend fun getMessageAssetTransferStatus(messageId: String, conversationId: QualifiedIDEntity): AssetTransferStatusEntity
 }

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,7 +41,13 @@ interface MemberDAO {
     suspend fun insertMembersWithQualifiedId(memberList: List<MemberEntity>, conversationID: QualifiedIDEntity)
     suspend fun insertMembers(memberList: List<MemberEntity>, groupId: String)
     suspend fun deleteMemberByQualifiedID(userID: QualifiedIDEntity, conversationID: QualifiedIDEntity)
-    suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity)
+
+    /**
+     * Deletes a list of user ids from the Conversation.
+     * return a list of the users that where actually deleted
+     * if the list is empty then no user was deleted
+     */
+    suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity): Long
     suspend fun observeConversationMembers(qualifiedID: QualifiedIDEntity): Flow<List<MemberEntity>>
     suspend fun updateConversationMemberRole(conversationId: QualifiedIDEntity, userId: UserIDEntity, role: MemberEntity.Role)
     suspend fun updateOrInsertOneOnOneMember(
@@ -123,15 +129,14 @@ internal class MemberDAOImpl internal constructor(
             memberQueries.deleteMember(conversationID, userID)
         }
 
-    override suspend fun deleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity) =
+    override suspend fun deleteMembersByQualifiedID(
+        userIDList: List<QualifiedIDEntity>,
+        conversationID: QualifiedIDEntity
+    ): Long =
         withContext(coroutineContext) {
-            nonSuspendDeleteMembersByQualifiedID(userIDList, conversationID)
-        }
-
-    private fun nonSuspendDeleteMembersByQualifiedID(userIDList: List<QualifiedIDEntity>, conversationID: QualifiedIDEntity) =
-        memberQueries.transaction {
-            userIDList.forEach {
-                memberQueries.deleteMember(conversationID, it)
+            memberQueries.transactionWithResult {
+                memberQueries.deleteMembers(conversationID, userIDList)
+                memberQueries.selectChanges().executeAsOne()
             }
         }
 

@@ -53,3 +53,9 @@ SELECT * FROM Connection LEFT JOIN User ON Connection.qualified_to == User.quali
 
 selectConnectionsForNotification:
 SELECT * FROM Connection LEFT JOIN User ON Connection.qualified_to == User.qualified_id WHERE status = 'PENDING' AND should_notify = 1;
+
+selectConnection:
+SELECT * FROM Connection WHERE qualified_conversation = ?;
+
+selectConnectionRequestByUser:
+SELECT * FROM Connection LEFT JOIN User ON Connection.qualified_to == User.qualified_id WHERE Connection.qualified_to = :user_id;

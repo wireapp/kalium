@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -36,8 +36,7 @@ import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConf
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
 import com.wire.kalium.network.api.base.authenticated.keypackage.LastPreKeyDTO
 import com.wire.kalium.network.api.base.authenticated.notification.conversation.MessageEventData
-import com.wire.kalium.network.api.base.authenticated.notification.team.PermissionsData
-import com.wire.kalium.network.api.base.authenticated.notification.team.TeamUpdateData
+import com.wire.kalium.network.api.base.authenticated.notification.team.TeamMemberIdData
 import com.wire.kalium.network.api.base.authenticated.notification.user.RemoveClientEventData
 import com.wire.kalium.network.api.base.authenticated.notification.user.UserUpdateEventData
 import com.wire.kalium.network.api.base.model.ConversationId
@@ -282,19 +281,11 @@ sealed class EventContentDTO {
     @Serializable
     sealed class Team : EventContentDTO() {
         @Serializable
-        @SerialName("team.update")
-        data class Update(
-            @SerialName("data") val teamUpdate: TeamUpdateData,
+        @SerialName("team.member-leave")
+        data class MemberLeave(
+            @SerialName("data") val teamMember: TeamMemberIdData,
             @SerialName("team") val teamId: TeamId,
-            @SerialName("time") val time: String,
-        ) : Team()
-
-        @Serializable
-        @SerialName("team.member-update")
-        data class MemberUpdate(
-            @SerialName("data") val permissionsResponse: PermissionsData,
-            @SerialName("team") val teamId: TeamId,
-            @SerialName("time") val time: String,
+            val time: String,
         ) : Team()
     }
 

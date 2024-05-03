@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,11 +17,13 @@
  */
 package com.wire.kalium.network
 
+import okhttp3.ConnectionSpec
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
-@Suppress("FunctionName")
-fun OkhttpClientFactory(block: OkHttpClient.Builder.() -> Unit): OkHttpClient = OkHttpClient.Builder()
+fun buildOkhttpClient(
+    block: OkHttpClient.Builder.() -> Unit
+): OkHttpClient = OkHttpClient.Builder()
     .apply(block)
     .apply {
 
@@ -33,3 +35,7 @@ fun OkhttpClientFactory(block: OkHttpClient.Builder.() -> Unit): OkHttpClient = 
             .readTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
             .writeTimeout(WEBSOCKET_TIMEOUT, TimeUnit.MILLISECONDS)
     }.connectionSpecs(supportedConnectionSpecs()).build()
+
+fun buildClearTextTrafficOkhttpClient(): OkHttpClient = OkHttpClient.Builder().apply {
+    connectionSpecs(listOf(ConnectionSpec.CLEARTEXT))
+}.build()

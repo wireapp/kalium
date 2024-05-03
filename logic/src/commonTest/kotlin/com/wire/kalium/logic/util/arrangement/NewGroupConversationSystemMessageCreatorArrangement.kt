@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,13 +22,13 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 
 internal interface NewGroupConversationSystemMessageCreatorArrangement {
     val newGroupConversationSystemMessagesCreator: NewGroupConversationSystemMessagesCreator
 
-    fun withPersistUnverifiedWarningMessageSuccess(): NewGroupConversationSystemMessageCreatorArrangement
+    suspend fun withPersistUnverifiedWarningMessageSuccess(): NewGroupConversationSystemMessageCreatorArrangement
 }
 
 internal class NewGroupConversationSystemMessageCreatorArrangementImpl : NewGroupConversationSystemMessageCreatorArrangement {
@@ -38,11 +38,10 @@ internal class NewGroupConversationSystemMessageCreatorArrangementImpl : NewGrou
     @Mock
     val persistMessage = mock(PersistMessageUseCase::class)
 
-    override fun withPersistUnverifiedWarningMessageSuccess() = apply {
-        given(newGroupConversationSystemMessagesCreator)
-            .suspendFunction(newGroupConversationSystemMessagesCreator::conversationStartedUnverifiedWarning)
-            .whenInvokedWith(any())
-            .then { Either.Right(Unit) }
+    override suspend fun withPersistUnverifiedWarningMessageSuccess() = apply {
+        coEvery {
+            newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any())
+        }.returns(Either.Right(Unit))
     }
 
 }

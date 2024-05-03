@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,8 +23,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -49,7 +48,7 @@ class IncrementalSyncRepositoryTest {
     private lateinit var incrementalSyncRepository: IncrementalSyncRepository
 
     @Mock
-    val sessionRepository = mock(classOf<SessionRepository>())
+    val sessionRepository = mock(SessionRepository::class)
 
     @BeforeTest
     fun setup() {
@@ -131,9 +130,9 @@ class IncrementalSyncRepositoryTest {
     @Test
     fun givenConnectionPolicyIsUpdatedWithRepeatedValue_whenCollectingPolicy_thenShouldNotCollectRepeatedValues() = runTest {
 
-        given(sessionRepository)
-            .suspendFunction(sessionRepository::getAllValidAccountPersistentWebSocketStatus).whenInvoked()
-            .thenReturn(Either.Right(flowOf(listOf())))
+        coEvery {
+            sessionRepository.getAllValidAccountPersistentWebSocketStatus()
+        }.returns(Either.Right(flowOf(listOf())))
 
         incrementalSyncRepository.connectionPolicyState.test {
             awaitItem() // Ignore initial value
@@ -152,9 +151,9 @@ class IncrementalSyncRepositoryTest {
 
     @Test
     fun givenConnectionPolicyUpdatedMultipleTimes_whenCollectingConnectionPolicy_thenAllUpdatesShouldBeCollected() = runTest {
-        given(sessionRepository)
-            .suspendFunction(sessionRepository::getAllValidAccountPersistentWebSocketStatus).whenInvoked()
-            .thenReturn(Either.Right(flowOf(listOf())))
+        coEvery {
+            sessionRepository.getAllValidAccountPersistentWebSocketStatus()
+        }.returns(Either.Right(flowOf(listOf())))
 
         val updates = listOf(
             ConnectionPolicy.DISCONNECT_AFTER_PENDING_EVENTS,

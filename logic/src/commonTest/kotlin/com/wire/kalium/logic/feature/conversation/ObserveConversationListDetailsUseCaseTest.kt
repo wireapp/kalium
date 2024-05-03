@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,11 +30,11 @@ import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.asFlow
 import kotlinx.coroutines.flow.collect
@@ -82,16 +82,17 @@ class ObserveConversationListDetailsUseCaseTest {
 
         // Then
         with(arrangement) {
-            verify(conversationRepository)
-                .suspendFunction(conversationRepository::observeConversationList)
-                .wasInvoked(exactly = once)
+            coVerify {
+                conversationRepository.observeConversationList()
+            }.wasInvoked(exactly = once)
         }
     }
+
     @Test
     fun givenSomeConversationsWithArchivedValues_whenFetchingOnlyNonArchived_thenTheseConversationsShouldNotBeReturned() = runTest {
         // Given
         val groupConversation1 = TestConversation.GROUP().copy(archived = true)
-        val group2Id = ConversationId("OtherId","someDomain")
+        val group2Id = ConversationId("OtherId", "someDomain")
         val groupConversation2 = TestConversation.GROUP().copy(id = group2Id, archived = false)
         val selfConversation = TestConversation.SELF()
         val conversations = listOf(selfConversation, groupConversation1, groupConversation2)
@@ -163,10 +164,9 @@ class ObserveConversationListDetailsUseCaseTest {
 
         with(arrangement) {
             conversations.forEach { conversation ->
-                verify(conversationRepository)
-                    .suspendFunction(conversationRepository::observeConversationDetailsById)
-                    .with(eq(conversation.id))
-                    .wasInvoked(exactly = once)
+                coVerify {
+                    conversationRepository.observeConversationDetailsById(eq(conversation.id))
+                }.wasInvoked(exactly = once)
             }
         }
     }
@@ -354,45 +354,40 @@ class ObserveConversationListDetailsUseCaseTest {
         @Mock
         val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
-        fun withConversationsDetailsChannelUpdates(
+        suspend fun withConversationsDetailsChannelUpdates(
             conversation: Conversation,
             expectedConversationDetails: Channel<ConversationDetails.OneOne>
         ) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::observeConversationDetailsById)
-                .whenInvokedWith(eq(conversation.id))
-                .thenReturn(expectedConversationDetails.consumeAsFlow().map { Either.Right(it) })
+            coEvery {
+                conversationRepository.observeConversationDetailsById(eq(conversation.id))
+            }.returns(expectedConversationDetails.consumeAsFlow().map { Either.Right(it) })
         }
 
-        fun withSuccessfulConversationsDetailsListUpdates(
+        suspend fun withSuccessfulConversationsDetailsListUpdates(
             conversation: Conversation,
             expectedConversationDetailsList: List<ConversationDetails>
         ) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::observeConversationDetailsById)
-                .whenInvokedWith(eq(conversation.id))
-                .thenReturn(expectedConversationDetailsList.asFlow().map { Either.Right(it) })
+            coEvery {
+                conversationRepository.observeConversationDetailsById(eq(conversation.id))
+            }.returns(expectedConversationDetailsList.asFlow().map { Either.Right(it) })
         }
 
-        fun withErrorConversationsDetailsListUpdates(conversation: Conversation) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::observeConversationDetailsById)
-                .whenInvokedWith(eq(conversation.id))
-                .thenReturn(flowOf(Either.Left(StorageFailure.DataNotFound)))
+        suspend fun withErrorConversationsDetailsListUpdates(conversation: Conversation) = apply {
+            coEvery {
+                conversationRepository.observeConversationDetailsById(eq(conversation.id))
+            }.returns(flowOf(Either.Left(StorageFailure.DataNotFound)))
         }
 
-        fun withConversationsList(conversations: List<Conversation>) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::observeConversationList)
-                .whenInvoked()
-                .thenReturn(flowOf(conversations))
+        suspend fun withConversationsList(conversations: List<Conversation>) = apply {
+            coEvery {
+                conversationRepository.observeConversationList()
+            }.returns(flowOf(conversations))
         }
 
-        fun withConversationsList(conversations: Channel<List<Conversation>>) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::observeConversationList)
-                .whenInvoked()
-                .thenReturn(conversations.consumeAsFlow())
+        suspend fun withConversationsList(conversations: Channel<List<Conversation>>) = apply {
+            coEvery {
+                conversationRepository.observeConversationList()
+            }.returns(conversations.consumeAsFlow())
         }
 
         fun arrange() = this to ObserveConversationListDetailsUseCaseImpl(conversationRepository)

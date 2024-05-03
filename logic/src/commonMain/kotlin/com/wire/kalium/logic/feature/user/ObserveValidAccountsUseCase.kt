@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,13 +22,14 @@ import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
+import com.wire.kalium.logic.functional.flatMapRight
+import com.wire.kalium.logic.functional.mapToRightOr
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 
@@ -51,16 +52,19 @@ internal class ObserveValidAccountsUseCaseImpl internal constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun invoke(): Flow<List<Pair<SelfUser, Team?>>> =
-        sessionRepository.allValidSessionsFlow().flatMapLatest { accountList ->
-            if (accountList.isEmpty()) {
-                flowOf(listOf())
-            } else {
-                val flowsOfSelfUsers = accountList.map { accountInfo ->
-                    userSessionScopeProvider.getOrCreate(accountInfo.userId).let {
-                        it.users.getSelfUserWithTeam()
+        sessionRepository.allValidSessionsFlow()
+            .flatMapRight { accountList ->
+                if (accountList.isEmpty()) {
+                    flowOf(listOf())
+                } else {
+                    val flowsOfSelfUsers = accountList.map { accountInfo ->
+                        userSessionScopeProvider.getOrCreate(accountInfo.userId).let {
+                            it.users.getSelfUserWithTeam()
+                        }
                     }
+                    combine(flowsOfSelfUsers) { it.asList() }
                 }
-                combine(flowsOfSelfUsers) { it.asList() }
             }
-        }.flowOn(ioDispatcher)
+            .mapToRightOr(emptyList())
+            .flowOn(ioDispatcher)
 }

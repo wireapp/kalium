@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ package com.wire.kalium.monkeys.actions
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.monkeys.conversation.Monkey
 import com.wire.kalium.monkeys.model.ActionType
+import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 
 private val DIRECT_MESSAGES = arrayOf(
@@ -49,17 +50,15 @@ private val DIRECT_MESSAGES = arrayOf(
 )
 
 class HandleExternalRequestAction(val config: ActionType.HandleExternalRequest) : Action({}) {
-    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
+    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool, conversationPool: ConversationPool) {
         val monkeys = monkeyPool.randomMonkeysWithConnectionRequests(config.userCount)
         monkeys.forEach { (monkey, pendingConnections) ->
             if (config.shouldAccept) {
-                val otherUser =
-                    Monkey.external(pendingConnections.random().otherUser?.id ?: error("Cannot get other user id from connection request"))
+                val otherUser = Monkey.external(pendingConnections.random())
                 monkey.acceptRequest(otherUser)
                 monkey.sendDirectMessageTo(otherUser, config.greetMessage.ifBlank { DIRECT_MESSAGES.random() })
-                // TODO: event send
             } else {
-                monkey.rejectRequest(Monkey.external(pendingConnections.random().connection.qualifiedToId))
+                monkey.rejectRequest(Monkey.external(pendingConnections.random()))
             }
         }
     }

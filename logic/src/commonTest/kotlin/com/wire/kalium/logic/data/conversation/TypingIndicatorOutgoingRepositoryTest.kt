@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,9 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
@@ -40,14 +42,13 @@ class TypingIndicatorOutgoingRepositoryTest {
 
             typingIndicatorRepository.sendTypingIndicatorStatus(conversationOne, Conversation.TypingIndicatorMode.STARTED)
 
-            verify(arrangement.userPropertyRepository)
-                .suspendFunction(arrangement.userPropertyRepository::getTypingIndicatorStatus)
-                .wasInvoked()
+            coVerify {
+                arrangement.userPropertyRepository.getTypingIndicatorStatus()
+            }.wasInvoked()
 
-            verify(arrangement.typingIndicatorSenderHandler)
-                .function(arrangement.typingIndicatorSenderHandler::sendStartedAndEnqueueStoppingEvent)
-                .with(any())
-                .wasNotInvoked()
+            verify {
+                arrangement.typingIndicatorSenderHandler.sendStartedAndEnqueueStoppingEvent(any())
+            }.wasNotInvoked()
         }
 
     @Test
@@ -60,14 +61,13 @@ class TypingIndicatorOutgoingRepositoryTest {
 
             typingIndicatorRepository.sendTypingIndicatorStatus(conversationOne, Conversation.TypingIndicatorMode.STARTED)
 
-            verify(arrangement.userPropertyRepository)
-                .suspendFunction(arrangement.userPropertyRepository::getTypingIndicatorStatus)
-                .wasInvoked()
+            coVerify {
+                arrangement.userPropertyRepository.getTypingIndicatorStatus()
+            }.wasInvoked()
 
-            verify(arrangement.typingIndicatorSenderHandler)
-                .function(arrangement.typingIndicatorSenderHandler::sendStartedAndEnqueueStoppingEvent)
-                .with(any())
-                .wasInvoked()
+            verify {
+                arrangement.typingIndicatorSenderHandler.sendStartedAndEnqueueStoppingEvent(any())
+            }.wasInvoked()
         }
 
     @Test
@@ -80,14 +80,13 @@ class TypingIndicatorOutgoingRepositoryTest {
 
             typingIndicatorRepository.sendTypingIndicatorStatus(conversationOne, Conversation.TypingIndicatorMode.STOPPED)
 
-            verify(arrangement.userPropertyRepository)
-                .suspendFunction(arrangement.userPropertyRepository::getTypingIndicatorStatus)
-                .wasInvoked()
+            coVerify {
+                arrangement.userPropertyRepository.getTypingIndicatorStatus()
+            }.wasInvoked()
 
-            verify(arrangement.typingIndicatorSenderHandler)
-                .function(arrangement.typingIndicatorSenderHandler::sendStoppingEvent)
-                .with(any())
-                .wasInvoked()
+            verify {
+                arrangement.typingIndicatorSenderHandler.sendStoppingEvent(any())
+            }.wasInvoked()
         }
 
     private class Arrangement {
@@ -97,25 +96,22 @@ class TypingIndicatorOutgoingRepositoryTest {
         @Mock
         val typingIndicatorSenderHandler: TypingIndicatorSenderHandler = mock(TypingIndicatorSenderHandler::class)
 
-        fun withTypingIndicatorStatus(enabled: Boolean = true) = apply {
-            given(userPropertyRepository)
-                .suspendFunction(userPropertyRepository::getTypingIndicatorStatus)
-                .whenInvoked()
-                .thenReturn(enabled)
+        suspend fun withTypingIndicatorStatus(enabled: Boolean = true) = apply {
+            coEvery {
+                userPropertyRepository.getTypingIndicatorStatus()
+            }.returns(enabled)
         }
 
         fun withSenderHandlerStoppedCall() = apply {
-            given(typingIndicatorSenderHandler)
-                .function(typingIndicatorSenderHandler::sendStoppingEvent)
-                .whenInvokedWith(any())
-                .thenReturn(Unit)
+            every {
+                typingIndicatorSenderHandler.sendStoppingEvent(any())
+            }.returns(Unit)
         }
 
         fun withSenderHandlerCall() = apply {
-            given(typingIndicatorSenderHandler)
-                .function(typingIndicatorSenderHandler::sendStartedAndEnqueueStoppingEvent)
-                .whenInvokedWith(any())
-                .thenReturn(Unit)
+            every {
+                typingIndicatorSenderHandler.sendStartedAndEnqueueStoppingEvent(any())
+            }.returns(Unit)
         }
 
         fun arrange() = this to TypingIndicatorOutgoingRepositoryImpl(

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,14 +19,12 @@ package com.wire.kalium.logic.data.asset
 
 import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.LegalHoldStatus
 import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -55,9 +53,7 @@ class AssetMapperTest {
                     assetToken = "token",
                     assetDomain = "domain",
                     encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
-                ),
-                uploadStatus = Message.UploadStatus.FAILED_UPLOAD,
-                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
+                )
             )
         )
         val (_, mapper) = Arrangement()
@@ -83,7 +79,7 @@ class AssetMapperTest {
     private class Arrangement {
 
         @Mock
-        val dispatcher = mock(classOf<KaliumDispatcher>())
+        val dispatcher = mock(KaliumDispatcher::class)
 
         val mapper = AssetMapperImpl(
             encryptionAlgorithmMapper = EncryptionAlgorithmMapper(),

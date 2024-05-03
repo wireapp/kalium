@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
@@ -91,9 +92,9 @@ internal class JoinSubconversationUseCaseImpl(
                         )
                     )
                 }.flatMap {
-                    mlsConversationRepository.establishMLSGroup(
+                    mlsConversationRepository.establishMLSSubConversationGroup(
                         GroupID(subconversationDetails.groupId),
-                        emptyList()
+                        subconversationDetails.parentId.toModel()
                     )
                 }
             } else {
@@ -117,7 +118,10 @@ internal class JoinSubconversationUseCaseImpl(
                 }
             }
         } else {
-            mlsConversationRepository.establishMLSGroup(GroupID(subconversationDetails.groupId), emptyList())
+            mlsConversationRepository.establishMLSSubConversationGroup(
+                GroupID(subconversationDetails.groupId),
+                subconversationDetails.parentId.toModel()
+            )
         }
 
     private suspend fun joinOrEstablishSubconversationAndRetry(

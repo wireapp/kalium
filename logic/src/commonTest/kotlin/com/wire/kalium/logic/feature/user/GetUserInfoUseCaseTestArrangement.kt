@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
 
@@ -39,15 +39,14 @@ internal class GetUserInfoUseCaseTestArrangement {
     @Mock
     val teamRepository: TeamRepository = mock(TeamRepository::class)
 
-    fun withSuccessfulUserRetrieve(
+    suspend fun withSuccessfulUserRetrieve(
         localUserPresent: Boolean = true,
         hasTeam: Boolean = true,
         userType: UserType = UserType.EXTERNAL
     ): GetUserInfoUseCaseTestArrangement {
-        given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
-            .whenInvokedWith(any())
-            .thenReturn(
+        coEvery {
+            userRepository.getKnownUser(any())
+        }.returns(
                 flowOf(
                     if (!localUserPresent) null
                     else if (hasTeam) TestUser.OTHER.copy(userType = userType)
@@ -56,38 +55,32 @@ internal class GetUserInfoUseCaseTestArrangement {
             )
 
         if (!localUserPresent) {
-            given(userRepository)
-                .suspendFunction(userRepository::userById)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(TestUser.OTHER))
+            coEvery {
+                userRepository.userById(any())
+            }.returns(Either.Right(TestUser.OTHER))
         }
 
         return this
     }
 
-    fun withFailingUserRetrieve(): GetUserInfoUseCaseTestArrangement {
-        given(userRepository)
-            .suspendFunction(userRepository::getKnownUser)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf(null))
+    suspend fun withFailingUserRetrieve(): GetUserInfoUseCaseTestArrangement {
+        coEvery {
+            userRepository.getKnownUser(any())
+        }.returns(flowOf(null))
 
-        given(userRepository)
-            .suspendFunction(userRepository::userById)
-            .whenInvokedWith(any())
-            .thenReturn(
-                Either.Left(CoreFailure.Unknown(RuntimeException("some error")))
-            )
+        coEvery {
+            userRepository.userById(any())
+        }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
 
         return this
     }
 
-    fun withSuccessfulTeamRetrieve(
+    suspend fun withSuccessfulTeamRetrieve(
         localTeamPresent: Boolean = true,
     ): GetUserInfoUseCaseTestArrangement {
-        given(teamRepository)
-            .suspendFunction(teamRepository::getTeam)
-            .whenInvokedWith(any())
-            .thenReturn(
+        coEvery {
+            teamRepository.getTeam(any())
+        }.returns(
                 flowOf(
                     if (!localTeamPresent) null
                     else TestTeam.TEAM
@@ -95,29 +88,22 @@ internal class GetUserInfoUseCaseTestArrangement {
             )
 
         if (!localTeamPresent) {
-            given(teamRepository)
-                .suspendFunction(teamRepository::fetchTeamById)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(TestTeam.TEAM))
+            coEvery {
+                teamRepository.fetchTeamById(any())
+            }.returns(Either.Right(TestTeam.TEAM))
         }
 
         return this
     }
 
-    fun withFailingTeamRetrieve(): GetUserInfoUseCaseTestArrangement {
-        given(teamRepository)
-            .suspendFunction(teamRepository::getTeam)
-            .whenInvokedWith(any())
-            .thenReturn(
-                flowOf(null)
-            )
+    suspend fun withFailingTeamRetrieve(): GetUserInfoUseCaseTestArrangement {
+        coEvery {
+            teamRepository.getTeam(any())
+        }.returns(flowOf(null))
 
-        given(teamRepository)
-            .suspendFunction(teamRepository::fetchTeamById)
-            .whenInvokedWith(any())
-            .thenReturn(
-                Either.Left(CoreFailure.Unknown(RuntimeException("some error")))
-            )
+        coEvery {
+            teamRepository.fetchTeamById(any())
+        }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
 
         return this
     }

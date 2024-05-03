@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,7 +39,6 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
@@ -49,41 +48,45 @@ import kotlin.test.BeforeTest
 import kotlin.test.Ignore
 import kotlin.test.Test
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
+import com.wire.kalium.network.NetworkStateObserver
 
 class CallManagerTest {
 
     @Mock
-    private val calling = mock(classOf<Calling>())
+    private val calling = mock(Calling::class)
 
     @Mock
-    private val callRepository = mock(classOf<CallRepository>())
+    private val callRepository = mock(CallRepository::class)
 
     @Mock
-    private val userRepository = mock(classOf<UserRepository>())
+    private val userRepository = mock(UserRepository::class)
 
     @Mock
-    private val messageSender = mock(classOf<MessageSender>())
+    private val messageSender = mock(MessageSender::class)
 
     @Mock
-    private val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
+    private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
     @Mock
-    private val selfConversationIdProvider = mock(classOf<SelfConversationIdProvider>())
+    private val selfConversationIdProvider = mock(SelfConversationIdProvider::class)
 
     @Mock
-    private val conversationRepository = mock(classOf<ConversationRepository>())
+    private val conversationRepository = mock(ConversationRepository::class)
 
     @Mock
-    private val federatedIdMapper = mock(classOf<FederatedIdMapper>())
+    private val federatedIdMapper = mock(FederatedIdMapper::class)
 
     @Mock
-    private val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
+    private val qualifiedIdMapper = mock(QualifiedIdMapper::class)
 
     @Mock
-    private val conversationClientsInCallUpdater = mock(classOf<ConversationClientsInCallUpdater>())
+    private val conversationClientsInCallUpdater = mock(ConversationClientsInCallUpdater::class)
 
     @Mock
-    private val videoStateChecker = mock(classOf<VideoStateChecker>())
+    private val videoStateChecker = mock(VideoStateChecker::class)
+
+    @Mock
+    private val networkStateObserver = mock(NetworkStateObserver::class)
 
     private val dispatcher = TestKaliumDispatcher
 
@@ -109,6 +112,7 @@ class CallManagerTest {
             videoStateChecker = videoStateChecker,
             callMapper = callMapper,
             conversationClientsInCallUpdater = conversationClientsInCallUpdater,
+            networkStateObserver = networkStateObserver,
             kaliumConfigs = kaliumConfigs
         )
     }
@@ -125,9 +129,8 @@ class CallManagerTest {
             message = CALL_MESSAGE,
         )
 
-        verify(calling)
-            .function(calling::wcall_recv_msg)
-            .with(
+        verify {
+            calling.wcall_recv_msg(
                 eq(baseHandle),
                 eq(CALL_CONTENT.value.toByteArray()),
                 eq(CALL_CONTENT.value.toByteArray().size),
@@ -138,7 +141,7 @@ class CallManagerTest {
                 eq(CLIENT_ID.value),
                 any()
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
     }
 
     private companion object {

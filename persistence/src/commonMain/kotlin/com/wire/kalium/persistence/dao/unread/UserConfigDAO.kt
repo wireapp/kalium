@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -15,6 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+
+@file:Suppress("TooManyFunctions")
+
 package com.wire.kalium.persistence.dao.unread
 
 import com.wire.kalium.persistence.config.LastPreKey
@@ -47,14 +50,25 @@ interface UserConfigDAO {
     fun observeLegalHoldRequest(): Flow<LegalHoldRequestEntity?>
     suspend fun setLegalHoldChangeNotified(isNotified: Boolean)
     suspend fun observeLegalHoldChangeNotified(): Flow<Boolean?>
+    suspend fun setShouldUpdateClientLegalHoldCapability(shouldUpdate: Boolean)
+    suspend fun shouldUpdateClientLegalHoldCapability(): Boolean
+    suspend fun setCRLExpirationTime(url: String, timestamp: ULong)
+    suspend fun getCRLsPerDomain(url: String): ULong?
+    suspend fun observeCertificateExpirationTime(url: String): Flow<ULong?>
+    suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean)
+    suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Boolean?>
 }
 
+@Suppress("TooManyFunctions")
 internal class UserConfigDAOImpl internal constructor(
     private val metadataDAO: MetadataDAO
 ) : UserConfigDAO {
 
     override suspend fun getTeamSettingsSelfDeletionStatus(): TeamSettingsSelfDeletionStatusEntity? =
-        metadataDAO.getSerializable(SELF_DELETING_MESSAGES_KEY, TeamSettingsSelfDeletionStatusEntity.serializer())
+        metadataDAO.getSerializable(
+            SELF_DELETING_MESSAGES_KEY,
+            TeamSettingsSelfDeletionStatusEntity.serializer()
+        )
 
     override suspend fun setTeamSettingsSelfDeletionStatus(
         teamSettingsSelfDeletionStatusEntity: TeamSettingsSelfDeletionStatusEntity
@@ -67,7 +81,10 @@ internal class UserConfigDAOImpl internal constructor(
     }
 
     override suspend fun markTeamSettingsSelfDeletingMessagesStatusAsNotified() {
-        metadataDAO.getSerializable(SELF_DELETING_MESSAGES_KEY, TeamSettingsSelfDeletionStatusEntity.serializer())
+        metadataDAO.getSerializable(
+            SELF_DELETING_MESSAGES_KEY,
+            TeamSettingsSelfDeletionStatusEntity.serializer()
+        )
             ?.copy(isStatusChanged = false)?.let { newValue ->
                 metadataDAO.putSerializable(
                     SELF_DELETING_MESSAGES_KEY,
@@ -78,21 +95,39 @@ internal class UserConfigDAOImpl internal constructor(
     }
 
     override suspend fun observeTeamSettingsSelfDeletingStatus(): Flow<TeamSettingsSelfDeletionStatusEntity?> =
-        metadataDAO.observeSerializable(SELF_DELETING_MESSAGES_KEY, TeamSettingsSelfDeletionStatusEntity.serializer())
+        metadataDAO.observeSerializable(
+            SELF_DELETING_MESSAGES_KEY,
+            TeamSettingsSelfDeletionStatusEntity.serializer()
+        )
 
     override suspend fun getMigrationConfiguration(): MLSMigrationEntity? =
         metadataDAO.getSerializable(MLS_MIGRATION_KEY, MLSMigrationEntity.serializer())
 
     override suspend fun setMigrationConfiguration(configuration: MLSMigrationEntity) =
-        metadataDAO.putSerializable(MLS_MIGRATION_KEY, configuration, MLSMigrationEntity.serializer())
+        metadataDAO.putSerializable(
+            MLS_MIGRATION_KEY,
+            configuration,
+            MLSMigrationEntity.serializer()
+        )
 
     override suspend fun getSupportedProtocols(): Set<SupportedProtocolEntity>? =
-        metadataDAO.getSerializable(SUPPORTED_PROTOCOLS_KEY, SetSerializer(SupportedProtocolEntity.serializer()))
+        metadataDAO.getSerializable(
+            SUPPORTED_PROTOCOLS_KEY,
+            SetSerializer(SupportedProtocolEntity.serializer())
+        )
 
     override suspend fun setSupportedProtocols(protocols: Set<SupportedProtocolEntity>) =
-        metadataDAO.putSerializable(SUPPORTED_PROTOCOLS_KEY, protocols, SetSerializer(SupportedProtocolEntity.serializer()))
+        metadataDAO.putSerializable(
+            SUPPORTED_PROTOCOLS_KEY,
+            protocols,
+            SetSerializer(SupportedProtocolEntity.serializer())
+        )
 
-    override suspend fun persistLegalHoldRequest(clientId: String, lastPreKeyId: Int, lastPreKey: String) {
+    override suspend fun persistLegalHoldRequest(
+        clientId: String,
+        lastPreKeyId: Int,
+        lastPreKey: String
+    ) {
         metadataDAO.putSerializable(
             LEGAL_HOLD_REQUEST,
             LegalHoldRequestEntity(clientId, LastPreKey(lastPreKeyId, lastPreKey)),
@@ -114,11 +149,41 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun observeLegalHoldChangeNotified(): Flow<Boolean?> =
         metadataDAO.valueByKeyFlow(LEGAL_HOLD_CHANGE_NOTIFIED).map { it?.toBoolean() }
 
+    override suspend fun setShouldUpdateClientLegalHoldCapability(shouldUpdate: Boolean) {
+        metadataDAO.insertValue(shouldUpdate.toString(), SHOULD_UPDATE_CLIENT_LEGAL_HOLD_CAPABILITY)
+    }
+
+    override suspend fun shouldUpdateClientLegalHoldCapability(): Boolean =
+        metadataDAO.valueByKey(SHOULD_UPDATE_CLIENT_LEGAL_HOLD_CAPABILITY)?.toBoolean() ?: true
+
+    override suspend fun setCRLExpirationTime(url: String, timestamp: ULong) {
+        metadataDAO.insertValue(
+            key = url,
+            value = timestamp.toString()
+        )
+    }
+
+    override suspend fun getCRLsPerDomain(url: String): ULong? =
+        metadataDAO.valueByKey(url)?.toULongOrNull()
+
+    override suspend fun observeCertificateExpirationTime(url: String): Flow<ULong?> =
+        metadataDAO.valueByKeyFlow(url).map { it?.toULongOrNull() }
+
+    override suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean) {
+        metadataDAO.insertValue(shouldNotify.toString(), SHOULD_NOTIFY_FOR_REVOKED_CERTIFICATE)
+    }
+
+    override suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Boolean?> =
+        metadataDAO.valueByKeyFlow(SHOULD_NOTIFY_FOR_REVOKED_CERTIFICATE).map { it?.toBoolean() }
+
     private companion object {
         private const val SELF_DELETING_MESSAGES_KEY = "SELF_DELETING_MESSAGES"
+        private const val SHOULD_NOTIFY_FOR_REVOKED_CERTIFICATE = "should_notify_for_revoked_certificate"
         private const val MLS_MIGRATION_KEY = "MLS_MIGRATION"
         private const val SUPPORTED_PROTOCOLS_KEY = "SUPPORTED_PROTOCOLS"
         const val LEGAL_HOLD_REQUEST = "legal_hold_request"
         const val LEGAL_HOLD_CHANGE_NOTIFIED = "legal_hold_change_notified"
+        const val SHOULD_UPDATE_CLIENT_LEGAL_HOLD_CAPABILITY =
+            "should_update_client_legal_hold_capability"
     }
 }

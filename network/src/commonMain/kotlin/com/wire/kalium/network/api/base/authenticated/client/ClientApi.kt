@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -34,7 +34,15 @@ interface ClientApi {
 
     suspend fun fetchClientInfo(clientID: String): NetworkResponse<ClientDTO>
 
-    suspend fun updateClient(updateClientRequest: UpdateClientRequest, clientID: String): NetworkResponse<Unit>
+    suspend fun updateClientMlsPublicKeys(
+        updateClientMlsPublicKeysRequest: UpdateClientMlsPublicKeysRequest,
+        clientID: String
+    ): NetworkResponse<Unit>
+
+    suspend fun updateClientCapabilities(
+        updateClientCapabilitiesRequest: UpdateClientCapabilitiesRequest,
+        clientID: String
+    ): NetworkResponse<Unit>
 
     suspend fun registerToken(body: PushTokenBody): NetworkResponse<Unit>
 

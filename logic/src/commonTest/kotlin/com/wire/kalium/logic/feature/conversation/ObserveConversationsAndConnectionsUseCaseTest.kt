@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -39,37 +39,34 @@ class ObserveConversationsAndConnectionsUseCaseTest {
     @Test
     fun givenSomeConversationsAndConnections_whenObservingDetailsListAndConnections_thenObserveConversationListShouldBeCalled() = runTest {
         // given
-        given(observeConversationListDetailsUseCase)
-            .suspendFunction(observeConversationListDetailsUseCase::invoke)
-            .whenInvoked()
-            .thenReturn(flowOf(ConversationListDetails(listOf(TestConversationDetails.CONVERSATION_ONE_ONE), 1)))
+        coEvery {
+            observeConversationListDetailsUseCase.invoke()
+        }.returns(flowOf(ConversationListDetails(listOf(TestConversationDetails.CONVERSATION_ONE_ONE), 1)))
 
-        given(observeConnectionListUseCase)
-            .suspendFunction(observeConnectionListUseCase::invoke)
-            .whenInvoked()
-            .thenReturn(flowOf(listOf(TestConversationDetails.CONNECTION)))
+        coEvery {
+            observeConnectionListUseCase.invoke()
+        }.returns(flowOf(listOf(TestConversationDetails.CONNECTION)))
 
         // when
         observeConversationsAndConnectionsUseCase().collect()
 
         // then
-        verify(observeConversationListDetailsUseCase)
-            .suspendFunction(observeConversationListDetailsUseCase::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            observeConversationListDetailsUseCase.invoke()
+        }.wasInvoked(exactly = once)
 
-        verify(observeConnectionListUseCase)
-            .suspendFunction(observeConnectionListUseCase::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            observeConnectionListUseCase.invoke()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenSomeConversationsAndConnections_whenObservingDetailsListAndConnectionsAndFails_thenObserveConversationListShouldThrowError() =
         runTest {
             // given
-            given(observeConversationListDetailsUseCase)
-                .suspendFunction(observeConversationListDetailsUseCase::invoke)
-                .whenInvoked()
-                .then { throw RuntimeException("Some error in my flow!") }
+            coEvery {
+                observeConversationListDetailsUseCase.invoke()
+            }.returns(throw RuntimeException("Some error in my flow!"))
 
             // then
             assertFailsWith<RuntimeException> { observeConversationsAndConnectionsUseCase().collect() }
@@ -101,14 +98,12 @@ class ObserveConversationsAndConnectionsUseCaseTest {
             conversations[1],
             connections[1]
         )
-        given(observeConversationListDetailsUseCase)
-            .suspendFunction(observeConversationListDetailsUseCase::invoke)
-            .whenInvoked()
-            .thenReturn(flowOf(ConversationListDetails(conversations, unreadConversationsCount = 0)))
-        given(observeConnectionListUseCase)
-            .suspendFunction(observeConnectionListUseCase::invoke)
-            .whenInvoked()
-            .thenReturn(flowOf(connections))
+        coEvery {
+            observeConversationListDetailsUseCase.invoke()
+        }.returns(flowOf(ConversationListDetails(conversations, unreadConversationsCount = 0)))
+        coEvery {
+            observeConnectionListUseCase.invoke()
+        }.returns(flowOf(connections))
         // when
         val result = observeConversationsAndConnectionsUseCase().first()
         // then

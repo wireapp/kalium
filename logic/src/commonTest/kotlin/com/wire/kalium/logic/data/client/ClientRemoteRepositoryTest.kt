@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,19 +33,32 @@ import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class ClientRemoteRepositoryTest {
+
+    @Test
+    fun givenClientCapabilitiesParam_whenUpdatingCapabilities_thenInvokeClientApiOnce() = runTest {
+        val (arrangement, clientRepository) = Arrangement()
+            .withClientUpdateClientCapabilities()
+            .arrange()
+
+        clientRepository.updateClientCapabilities(
+            UpdateClientCapabilitiesParam(listOf(ClientCapability.LegalHoldImplicitConsent)),
+            "client-id"
+        )
+
+        coVerify {
+            arrangement.clientApi.updateClientCapabilities(any(), any())
+        }.wasInvoked(exactly = once)
+    }
 
     @Test
     fun givenValidParams_whenRegisteringPushToken_thenShouldSucceed() = runTest {
@@ -59,55 +72,59 @@ class ClientRemoteRepositoryTest {
             assertEquals(Unit, it)
         }
 
-        verify(arrangement.clientApi)
-            .suspendFunction(arrangement.clientApi::registerToken)
-            .with(any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.clientApi.registerToken(any())
+        }.wasInvoked(once)
 
-    }
-
-
-    @Test
-    fun givenOtherUsersClientsSuccess_whenFetchingOtherUserClients_thenTheSuccessIsReturned() = runTest {
-        // Given
-        val userId = UserId("123", "wire.com")
-        val userIdDto = UserIdDTO("123", "wire.com")
-        val otherUsersClients = listOf(
-            SimpleClientResponse(deviceClass = DeviceTypeDTO.Phone, id = "1111"),
-            SimpleClientResponse(deviceClass = DeviceTypeDTO.Desktop, id = "2222")
-        )
-
-        val expectedSuccess = Either.Right(listOf(userId to otherUsersClients))
-        val (arrangement, clientRepository) = Arrangement().withSuccessfulResponse(mapOf(userIdDto to otherUsersClients)).arrange()
-
-        // When
-        val result = clientRepository.fetchOtherUserClients(listOf(userId))
-
-        // Then
-        result.shouldSucceed { expectedSuccess.value }
-        verify(arrangement.clientApi)
-            .suspendFunction(arrangement.clientApi::listClientsOfUsers).with(any())
-            .wasInvoked(once)
     }
 
     @Test
-    fun givenOtherUsersClientsError_whenFetchingOtherUserClients_thenTheErrorIsPropagated() = runTest {
-        // Given
-        val userId = UserId("123", "wire.com")
-        val notFound = TestNetworkException.noTeam
-        val (arrangement, clientRepository) = Arrangement()
-            .withErrorResponse(notFound).arrange()
+    fun givenOtherUsersClientsSuccess_whenFetchingOtherUserClients_thenTheSuccessIsReturned() =
+        runTest {
+            // Given
+            val userId = UserId("123", "wire.com")
+            val userIdDto = UserIdDTO("123", "wire.com")
+            val otherUsersClients = listOf(
+                SimpleClientResponse(deviceClass = DeviceTypeDTO.Phone, id = "1111"),
+                SimpleClientResponse(deviceClass = DeviceTypeDTO.Desktop, id = "2222")
+            )
 
-        // When
-        val result = clientRepository.fetchOtherUserClients(listOf(userId))
+            val expectedSuccess = Either.Right(listOf(userId to otherUsersClients))
+            val (arrangement, clientRepository) = Arrangement().withSuccessfulResponse(
+                mapOf(
+                    userIdDto to otherUsersClients
+                )
+            ).arrange()
 
-        // Then
-        result.shouldFail { Either.Left(notFound).value }
+            // When
+            val result = clientRepository.fetchOtherUserClients(listOf(userId))
 
-        verify(arrangement.clientApi)
-            .suspendFunction(arrangement.clientApi::listClientsOfUsers).with(any())
-            .wasInvoked(exactly = once)
-    }
+            // Then
+            result.shouldSucceed { expectedSuccess.value }
+            coVerify {
+                arrangement.clientApi.listClientsOfUsers(any())
+            }.wasInvoked(once)
+        }
+
+    @Test
+    fun givenOtherUsersClientsError_whenFetchingOtherUserClients_thenTheErrorIsPropagated() =
+        runTest {
+            // Given
+            val userId = UserId("123", "wire.com")
+            val notFound = TestNetworkException.noTeam
+            val (arrangement, clientRepository) = Arrangement()
+                .withErrorResponse(notFound).arrange()
+
+            // When
+            val result = clientRepository.fetchOtherUserClients(listOf(userId))
+
+            // Then
+            result.shouldFail { Either.Left(notFound).value }
+
+            coVerify {
+                arrangement.clientApi.listClientsOfUsers(any())
+            }.wasInvoked(exactly = once)
+        }
 
     private companion object {
         val pushTokenRequestBody = PushTokenBody(
@@ -119,37 +136,41 @@ class ClientRemoteRepositoryTest {
     private class Arrangement {
 
         @Mock
-        val clientApi = mock(classOf<ClientApi>())
+        val clientApi = mock(ClientApi::class)
 
         @Mock
-        val clientConfig: ClientConfig = mock(classOf<ClientConfig>())
+        val clientConfig: ClientConfig = mock(ClientConfig::class)
 
         var clientRepository: ClientRemoteRepository =
             ClientRemoteDataSource(clientApi, clientConfig)
 
-        fun withRegisterToken(result: NetworkResponse<Unit>) = apply {
-            given(clientApi)
-                .suspendFunction(clientApi::registerToken)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withRegisterToken(result: NetworkResponse<Unit>) = apply {
+            coEvery {
+                clientApi.registerToken(any())
+            }.returns(result)
         }
 
-        fun withSuccessfulResponse(expectedResponse: Map<UserIdDTO, List<SimpleClientResponse>>) = apply {
-            given(clientApi)
-                .suspendFunction(clientApi::listClientsOfUsers).whenInvokedWith(any()).then {
-                    NetworkResponse.Success(expectedResponse, mapOf(), 200)
-                }
+        suspend fun withClientUpdateClientCapabilities() = apply {
+            coEvery {
+                clientApi.updateClientCapabilities(any(), any())
+            }.returns(NetworkResponse.Success(Unit, mapOf(), 200))
         }
 
-        fun withErrorResponse(kaliumException: KaliumException) = apply {
-            given(clientApi)
-                .suspendFunction(clientApi::listClientsOfUsers)
-                .whenInvokedWith(any())
-                .then {
-                    NetworkResponse.Error(
-                        kaliumException
-                    )
-                }
+        suspend fun withSuccessfulResponse(expectedResponse: Map<UserIdDTO, List<SimpleClientResponse>>) =
+            apply {
+                coEvery {
+                    clientApi.listClientsOfUsers(any())
+                }.returns(NetworkResponse.Success(expectedResponse, mapOf(), 200))
+            }
+
+        suspend fun withErrorResponse(kaliumException: KaliumException) = apply {
+            coEvery {
+                clientApi.listClientsOfUsers(any())
+            }.returns(
+                NetworkResponse.Error(
+                    kaliumException
+                )
+            )
         }
 
         fun arrange() = this to clientRepository

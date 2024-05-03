@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toModel
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -34,10 +33,10 @@ import com.wire.kalium.persistence.dao.member.MemberDAO
  * Either all users are added or some of them could fail to be added.
  */
 internal interface NewConversationMembersRepository {
+    // TODO(refactor): Use Set<UserId> instead of List to avoid duplications
     suspend fun persistMembersAdditionToTheConversation(
         conversationId: ConversationIDEntity,
         conversationResponse: ConversationResponse,
-        failedUsersList: List<UserId> = emptyList()
     ): Either<CoreFailure, Unit>
 }
 
@@ -51,17 +50,15 @@ internal class NewConversationMembersRepositoryImpl(
     override suspend fun persistMembersAdditionToTheConversation(
         conversationId: ConversationIDEntity,
         conversationResponse: ConversationResponse,
-        failedUsersList: List<UserId>
     ) = wrapStorageRequest {
         memberDAO.insertMembersWithQualifiedId(
             memberMapper.fromApiModelToDaoModel(conversationResponse.members),
             idMapper.fromApiToDao(conversationResponse.id)
         )
     }.flatMap {
-        newGroupConversationSystemMessagesCreator.value.conversationResolvedMembersAddedAndFailed(
+        newGroupConversationSystemMessagesCreator.value.conversationResolvedMembersAdded(
             conversationId,
             conversationResponse.members.otherMembers.map { it.id.toModel() },
-            failedUsersList
         )
     }
 

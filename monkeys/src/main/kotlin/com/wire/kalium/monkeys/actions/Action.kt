@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -33,6 +33,7 @@ import com.wire.kalium.monkeys.model.ActionType
 import com.wire.kalium.monkeys.model.Event
 import com.wire.kalium.monkeys.model.EventType
 import com.wire.kalium.monkeys.model.MonkeyId
+import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 import kotlinx.coroutines.channels.SendChannel
 
@@ -72,5 +73,5 @@ abstract class Action(val sender: suspend (Event) -> Unit) {
         }
     }
 
-    abstract suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool)
+    abstract suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool, conversationPool: ConversationPool)
 }

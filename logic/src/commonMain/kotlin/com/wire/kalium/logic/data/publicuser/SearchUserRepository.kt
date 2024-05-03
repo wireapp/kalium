@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,56 +18,53 @@
 
 package com.wire.kalium.logic.data.publicuser
 
-import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.publicuser.model.UserSearchDetails
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
-import com.wire.kalium.logic.data.user.SelfUser
-import com.wire.kalium.logic.data.user.UserDataSource
+import com.wire.kalium.logic.data.user.ConnectionStateMapper
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserMapper
-import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
+import com.wire.kalium.logic.data.user.toDao
+import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
-import com.wire.kalium.network.api.base.model.isTeamMember
-import com.wire.kalium.persistence.dao.ConnectionEntity
-import com.wire.kalium.persistence.dao.MetadataDAO
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.network.api.base.model.UserProfileDTO
+import com.wire.kalium.persistence.dao.PartialUserEntity
+import com.wire.kalium.persistence.dao.SearchDAO
 import com.wire.kalium.persistence.dao.UserDAO
-import com.wire.kalium.persistence.dao.UserDetailsEntity
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.flatMapMerge
-import kotlinx.coroutines.flow.map
-import kotlinx.serialization.json.Json
 
 internal interface SearchUserRepository {
-
-    suspend fun searchKnownUsersByNameOrHandleOrEmail(
-        searchQuery: String,
-        searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default
-    ): Flow<UserSearchResult>
-
-    suspend fun searchKnownUsersByHandle(
-        handle: String,
-        searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default
-    ): Flow<UserSearchResult>
-
-    suspend fun searchUserDirectory(
+    suspend fun searchUserRemoteDirectory(
         searchQuery: String,
         domain: String,
-        maxResultSize: Int? = null,
-        searchUsersOptions: SearchUsersOptions = SearchUsersOptions.Default
-    ): Either<NetworkFailure, UserSearchResult>
+        maxResultSize: Int?,
+        searchUsersOptions: SearchUsersOptions
+    ): Either<CoreFailure, UserSearchResult>
+
+    suspend fun getKnownContacts(excludeConversation: ConversationId?): Either<StorageFailure, List<UserSearchDetails>>
+
+    suspend fun searchLocalByName(
+        name: String,
+        excludeMembersOfConversation: ConversationId?
+    ): Either<StorageFailure, List<UserSearchDetails>>
+
+    suspend fun searchLocalByHandle(
+        handle: String,
+        excludeMembersOfConversation: ConversationId?
+    ): Either<StorageFailure, List<UserSearchDetails>>
 
 }
 
@@ -91,143 +88,104 @@ sealed class ConversationMemberExcludedOptions {
 @Suppress("LongParameterList")
 internal class SearchUserRepositoryImpl(
     private val userDAO: UserDAO,
-    private val metadataDAO: MetadataDAO,
+    private val searchDAO: SearchDAO,
     private val userDetailsApi: UserDetailsApi,
-    private val teamsApi: TeamsApi,
     private val userSearchAPiWrapper: UserSearchApiWrapper,
+    private val selfUserId: UserId,
+    private val selfTeamIdProvider: SelfTeamIdProvider,
     private val userMapper: UserMapper = MapperProvider.userMapper(),
-    private val userEntityTypeMapper: UserEntityTypeMapper = MapperProvider.userTypeEntityMapper(),
+    private val userTypeMapper: DomainUserTypeMapper = MapperProvider.userTypeMapper(),
+    private val connectionStateMapper: ConnectionStateMapper = MapperProvider.connectionStateMapper()
 ) : SearchUserRepository {
-
-    override suspend fun searchKnownUsersByNameOrHandleOrEmail(
-        searchQuery: String,
-        searchUsersOptions: SearchUsersOptions
-    ): Flow<UserSearchResult> =
-        handleSearchUsersOptions(
-            searchUsersOptions,
-            excluded = { conversationId ->
-                userDAO.getUsersDetailsNotInConversationByNameOrHandleOrEmail(
-                    conversationId = conversationId.toDao(),
-                    searchQuery = searchQuery
-                )
-            },
-            default = {
-                userDAO.getUserDetailsByNameOrHandleOrEmailAndConnectionStates(
-                    searchQuery = searchQuery,
-                    connectionStates = listOf(ConnectionEntity.State.ACCEPTED, ConnectionEntity.State.BLOCKED)
-                )
-            }
-        )
-
-    override suspend fun searchKnownUsersByHandle(
-        handle: String,
-        searchUsersOptions: SearchUsersOptions
-    ): Flow<UserSearchResult> =
-        handleSearchUsersOptions(
-            searchUsersOptions,
-            excluded = { conversationId ->
-                userDAO.getUsersDetailsNotInConversationByHandle(
-                    conversationId = conversationId.toDao(),
-                    handle = handle
-                )
-            },
-            default = {
-                userDAO.getUserDetailsByHandleAndConnectionStates(
-                    handle = handle,
-                    connectionStates = listOf(ConnectionEntity.State.ACCEPTED, ConnectionEntity.State.BLOCKED)
-                )
-            }
-        )
-
-    override suspend fun searchUserDirectory(
+    override suspend fun searchUserRemoteDirectory(
         searchQuery: String,
         domain: String,
         maxResultSize: Int?,
         searchUsersOptions: SearchUsersOptions
-    ): Either<NetworkFailure, UserSearchResult> =
-        userSearchAPiWrapper.search(
-            searchQuery,
-            domain,
-            maxResultSize,
-            searchUsersOptions
-        ).flatMap {
-            val qualifiedIdList = it.documents.map { it.qualifiedID }
-            val usersResponse =
-                if (qualifiedIdList.isEmpty()) Either.Right(listOf())
-                else wrapApiRequest {
+    ): Either<CoreFailure, UserSearchResult> =
+        selfTeamIdProvider().flatMap { selfTeamId ->
+            userSearchAPiWrapper.search(
+                searchQuery,
+                domain,
+                maxResultSize,
+                searchUsersOptions
+            ).flatMap { userSearchResponse ->
+
+                if (userSearchResponse.documents.isEmpty()) return Either.Right(UserSearchResult(listOf()))
+
+                val qualifiedIdList = userSearchResponse.documents.map { it.qualifiedID }
+                wrapApiRequest {
                     userDetailsApi.getMultipleUsers(ListUserRequest.qualifiedIds(qualifiedIdList))
-                }.map { listUsersDTO -> listUsersDTO.usersFound }
-
-            usersResponse.flatMap { userProfileDTOList ->
-                if (userProfileDTOList.isEmpty())
-                    return Either.Right(UserSearchResult(emptyList()))
-
-                val selfUser = getSelfUser()
-                val (teamMembers, otherUsers) = userProfileDTOList
-                    .partition { it.isTeamMember(selfUser.teamId?.value, selfUser.id.domain) }
-
-                val teamMembersResponse =
-                    if (selfUser.teamId == null || teamMembers.isEmpty()) Either.Right(emptyMap())
-                    else wrapApiRequest {
-                        teamsApi.getTeamMembersByIds(selfUser.teamId.value, TeamsApi.TeamMemberIdList(teamMembers.map { it.id.value }))
-                    }.map { teamMemberList -> teamMemberList.members.associateBy { it.nonQualifiedUserId } }
-
-                teamMembersResponse.map { teamMemberMap ->
-                    // We need to store all found team members locally and not return them as they will be "known" users from now on.
-                    teamMembers.map { userProfileDTO ->
-                        userMapper.fromUserProfileDtoToUserEntity(
-                            userProfile = userProfileDTO,
-                            connectionState = ConnectionEntity.State.ACCEPTED,
-                            userTypeEntity = userEntityTypeMapper.teamRoleCodeToUserType(
-                                permissionCode = teamMemberMap[userProfileDTO.id.value]?.permissions?.own,
-                                isService = userProfileDTO.service != null
-                            )
-                        )
-                    }.let {
-                        if (it.isNotEmpty()) {
-                            userDAO.upsertUsers(it)
-                            userDAO.upsertConnectionStatuses(it.associate { it.id to it.connectionStatus })
-                        }
-                    }
-
+                }.onSuccess { userProfileDTOList ->
+                    updateLocalUsers(userProfileDTOList.usersFound)
+                }.map { userProfileDTOList ->
                     UserSearchResult(
-                        otherUsers.map { userProfileDTO ->
-                            userMapper.fromUserProfileDtoToOtherUser(userProfileDTO, selfUser)
+                        userProfileDTOList.usersFound.map { userProfileDTO ->
+                            userMapper.fromUserProfileDtoToOtherUser(userProfileDTO, selfUserId, selfTeamId)
                         }
                     )
                 }
             }
         }
 
-    // TODO: code duplication here for getting self user, the same is done inside
-    // UserRepository, what would be best ?
-    // creating SelfUserDao managing the UserEntity corresponding to SelfUser ?
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private suspend fun getSelfUser(): SelfUser {
-        return metadataDAO.valueByKeyFlow(UserDataSource.SELF_USER_ID_KEY)
-            .filterNotNull()
-            .flatMapMerge { encodedValue ->
-                val selfUserID: QualifiedIDEntity = Json.decodeFromString(string = encodedValue)
-
-                userDAO.observeUserDetailsByQualifiedID(selfUserID)
-                    .filterNotNull()
-                    .map(userMapper::fromUserDetailsEntityToSelfUser)
-            }.firstOrNull() ?: throw IllegalStateException()
-    }
-
-    private suspend fun handleSearchUsersOptions(
-        localSearchUserOptions: SearchUsersOptions,
-        excluded: suspend (conversationId: ConversationId) -> Flow<List<UserDetailsEntity>>,
-        default: suspend () -> Flow<List<UserDetailsEntity>>
-    ): Flow<UserSearchResult> {
-        val listFlow = when (val searchOptions = localSearchUserOptions.conversationExcluded) {
-            ConversationMemberExcludedOptions.None -> default()
-            is ConversationMemberExcludedOptions.ConversationExcluded -> excluded(searchOptions.conversationId)
+    override suspend fun getKnownContacts(excludeConversation: ConversationId?): Either<StorageFailure, List<UserSearchDetails>> =
+        wrapStorageRequest {
+            if (excludeConversation == null) {
+                searchDAO.getKnownContacts()
+            } else {
+                searchDAO.getKnownContactsExcludingAConversation(excludeConversation.toDao())
+            }
+        }.map {
+            it.map(userMapper::fromSearchEntityToUserSearchDetails)
         }
 
-        return listFlow.map {
-            UserSearchResult(it.map(userMapper::fromUserDetailsEntityToOtherUser))
+    override suspend fun searchLocalByName(
+        name: String,
+        excludeMembersOfConversation: ConversationId?
+    ): Either<StorageFailure, List<UserSearchDetails>> = wrapStorageRequest {
+        if (excludeMembersOfConversation == null) {
+            searchDAO.searchList(name)
+        } else {
+            searchDAO.searchListExcludingAConversation(excludeMembersOfConversation.toDao(), name)
+        }
+    }.map {
+        it.map(userMapper::fromSearchEntityToUserSearchDetails)
+    }
+
+    override suspend fun searchLocalByHandle(
+        handle: String,
+        excludeMembersOfConversation: ConversationId?
+    ): Either<StorageFailure, List<UserSearchDetails>> = if (excludeMembersOfConversation == null) {
+        wrapStorageRequest {
+            searchDAO.handleSearch(handle)
+        }.map {
+            it.map(userMapper::fromSearchEntityToUserSearchDetails)
+        }
+    } else {
+        wrapStorageRequest {
+            searchDAO.handleSearchExcludingAConversation(handle, excludeMembersOfConversation.toDao())
+        }.map {
+            it.map(userMapper::fromSearchEntityToUserSearchDetails)
         }
     }
 
+    private suspend fun updateLocalUsers(
+        userProfileDTOList: List<UserProfileDTO>,
+    ) {
+        userProfileDTOList
+            .map { user ->
+                PartialUserEntity(
+                    id = user.id.toDao(),
+                    name = user.name,
+                    handle = user.handle,
+                    email = user.email,
+                    accentId = user.accentId,
+                    supportedProtocols = user.supportedProtocols?.toDao()
+                )
+            }.also {
+                if (it.isNotEmpty()) {
+                    userDAO.updateUser(it)
+                }
+            }
+    }
 }

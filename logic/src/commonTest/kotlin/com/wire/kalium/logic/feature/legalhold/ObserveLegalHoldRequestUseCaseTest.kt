@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -28,7 +28,8 @@ import com.wire.kalium.logic.functional.Either
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -95,38 +96,33 @@ class ObserveLegalHoldRequestUseCaseTest {
         val preKeyRepository = mock(PreKeyRepository::class)
 
         fun withUserConfigRepositorySuccess() = apply {
-            given(userConfigRepository)
-                .function(userConfigRepository::observeLegalHoldRequest)
-                .whenInvoked()
-                .thenReturn(flowOf(Either.Right(legalHoldRequest)))
+            every {
+                userConfigRepository.observeLegalHoldRequest()
+            }.returns(flowOf(Either.Right(legalHoldRequest)))
         }
 
         fun withUserConfigRepositoryDataNotFound() = apply {
-            given(userConfigRepository)
-                .function(userConfigRepository::observeLegalHoldRequest)
-                .whenInvoked()
-                .thenReturn(flowOf(Either.Left(StorageFailure.DataNotFound)))
+            every {
+                userConfigRepository.observeLegalHoldRequest()
+            }.returns(flowOf(Either.Left(StorageFailure.DataNotFound)))
         }
 
         fun withUserConfigRepositoryFailure() = apply {
-            given(userConfigRepository)
-                .function(userConfigRepository::observeLegalHoldRequest)
-                .whenInvoked()
-                .thenReturn(flowOf(Either.Left(StorageFailure.Generic(IllegalStateException()))))
+            every {
+                userConfigRepository.observeLegalHoldRequest()
+            }.returns(flowOf(Either.Left(StorageFailure.Generic(IllegalStateException()))))
         }
 
-        fun withPreKeyRepositoryFailure() = apply {
-            given(preKeyRepository)
-                .suspendFunction(preKeyRepository::getFingerprintForPreKey)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Left(CoreFailure.SyncEventOrClientNotFound))
+        suspend fun withPreKeyRepositoryFailure() = apply {
+            coEvery {
+                preKeyRepository.getFingerprintForPreKey(any())
+            }.returns(Either.Left(CoreFailure.SyncEventOrClientNotFound))
         }
 
-        fun withPreKeyRepositorySuccess() = apply {
-            given(preKeyRepository)
-                .suspendFunction(preKeyRepository::getFingerprintForPreKey)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(fingerPrint))
+        suspend fun withPreKeyRepositorySuccess() = apply {
+            coEvery {
+                preKeyRepository.getFingerprintForPreKey(any())
+            }.returns(Either.Right(fingerPrint))
         }
 
         fun arrange() = this to ObserveLegalHoldRequestUseCaseImpl(

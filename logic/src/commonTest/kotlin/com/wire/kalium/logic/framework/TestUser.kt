@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -71,7 +71,8 @@ object TestUser {
         previewPicture = UserAssetId("value1", "domain"),
         completePicture = UserAssetId("value2", "domain"),
         availabilityStatus = UserAvailabilityStatus.NONE,
-        supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS)
+        supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS),
+        userType = UserType.INTERNAL,
     )
 
     val OTHER = OtherUser(
@@ -135,7 +136,8 @@ object TestUser {
         defederated = false,
         isProteusVerified = false,
         supportedProtocols = setOf(SupportedProtocolEntity.MLS),
-        activeOneOnOneConversationId = null
+        activeOneOnOneConversationId = null,
+        isUnderLegalHold = false,
     )
 
     val USER_PROFILE_DTO = UserProfileDTO(
@@ -166,9 +168,9 @@ object TestUser {
         email = null,
         handle = null,
         service = null,
-        teamId = null,
-        expiresAt = "",
-        nonQualifiedId = "",
+        teamId = "teamId",
+        expiresAt = null,
+        nonQualifiedId = NETWORK_ID.value,
         locale = "",
         managedByDTO = null,
         phone = null,

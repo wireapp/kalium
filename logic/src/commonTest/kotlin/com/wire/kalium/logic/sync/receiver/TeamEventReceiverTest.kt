@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,70 +18,65 @@
 
 package com.wire.kalium.logic.sync.receiver
 
-import com.wire.kalium.logic.data.team.TeamRepository
-import com.wire.kalium.logic.data.team.TeamRole
+import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
 class TeamEventReceiverTest {
 
     @Test
-    fun givenTeamUpdateEvent_repoIsInvoked() = runTest {
-        val event = TestEvent.teamUpdated()
+    fun givenMemberLeaveEvent_RepoAndPersisMessageAreInvoked() = runTest {
+        val event = TestEvent.teamMemberLeave()
         val (arrangement, eventReceiver) = Arrangement()
-            .withUpdateTeamSuccess()
-            .arrange()
+            .arrange {
+                withMarkUserAsDeletedAndRemoveFromGroupConversationsSuccess(
+                    listOf(TestConversation.ID)
+                )
+                withPersistMessageSuccess()
+            }
 
-        eventReceiver.onEvent(event)
+        eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
 
-        verify(arrangement.teamRepository)
-            .suspendFunction(arrangement.teamRepository::updateTeam)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.persistMessageUseCase.invoke(any())
+        }.wasInvoked(exactly = once)
+
     }
 
-    @Test
-    fun givenMemberUpdateEvent_RepoIsInvoked() = runTest {
-        val event = TestEvent.teamMemberUpdate(permissionCode = TeamRole.Member.value)
-        val (arrangement, eventReceiver) = Arrangement()
-            .withMemberUpdateSuccess()
-            .arrange()
+    private class Arrangement : UserRepositoryArrangement by UserRepositoryArrangementImpl() {
 
-        eventReceiver.onEvent(event)
-
-        verify(arrangement.teamRepository)
-            .suspendFunction(arrangement.teamRepository::updateMemberRole)
-            .with(any(), any(), any())
-            .wasInvoked(exactly = once)
-    }
-
-    private class Arrangement {
         @Mock
-        val teamRepository = mock(classOf<TeamRepository>())
+        val persistMessageUseCase = mock(PersistMessageUseCase::class)
 
         private val teamEventReceiver: TeamEventReceiver = TeamEventReceiverImpl(
-            teamRepository
+            userRepository,
+            persistMessageUseCase,
+            TestUser.USER_ID
         )
 
-        fun withUpdateTeamSuccess() = apply {
-            given(teamRepository).suspendFunction(teamRepository::updateTeam).whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withPersistMessageSuccess() = apply {
+            coEvery {
+                persistMessageUseCase.invoke(any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withMemberUpdateSuccess() = apply {
-            given(teamRepository).suspendFunction(teamRepository::updateMemberRole)
-                .whenInvokedWith(any(), any(), any()).thenReturn(Either.Right(Unit))
+        suspend fun arrange(block: suspend Arrangement.() -> Unit = { }) = run {
+            withGetKnownUserReturning(flowOf(TestUser.OTHER))
+            block()
+            this to teamEventReceiver
         }
-
-        fun arrange() = this to teamEventReceiver
     }
 }

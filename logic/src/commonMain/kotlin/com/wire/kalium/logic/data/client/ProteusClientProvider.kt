@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,10 +21,14 @@ package com.wire.kalium.logic.data.client
 import com.wire.kalium.cryptography.ProteusClient
 import com.wire.kalium.cryptography.coreCryptoCentral
 import com.wire.kalium.cryptography.cryptoboxProteusClient
+import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.logStructuredJson
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.logic.wrapProteusRequest
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
@@ -96,12 +100,25 @@ class ProteusClientProviderImpl(
         }
     }
 
+    @Suppress("TooGenericExceptionCaught")
     private suspend fun createProteusClient(): ProteusClient {
         return if (kaliumConfigs.encryptProteusStorage) {
-            val central = coreCryptoCentral(
-                rootDir = rootProteusPath,
-                databaseKey = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId).value
-            )
+            val central = try {
+                coreCryptoCentral(
+                    rootDir = rootProteusPath,
+                    databaseKey = SecurityHelperImpl(passphraseStorage).proteusDBSecret(userId).value
+                )
+            } catch (e: Exception) {
+
+                val logMap = mapOf(
+                    "userId" to userId.value.obfuscateId(),
+                    "exception" to e,
+                    "message" to e.message,
+                    "stackTrace" to e.stackTraceToString()
+                )
+                kaliumLogger.logStructuredJson(KaliumLogLevel.ERROR, TAG, logMap)
+                throw e
+            }
             central.proteusClient()
         } else {
             cryptoboxProteusClient(
@@ -110,5 +127,9 @@ class ProteusClientProviderImpl(
                 ioContext = dispatcher.io
             )
         }
+    }
+
+    private companion object {
+        const val TAG = "ProteusClientProvider"
     }
 }

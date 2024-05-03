@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,20 +20,20 @@ package com.wire.kalium.logic.util.arrangement.dao
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageMetadataDAO
+import io.mockative.Matchers
 import io.mockative.Mock
-import io.mockative.any
-import io.mockative.given
-import io.mockative.matchers.Matcher
+import io.mockative.coEvery
+import io.mockative.matches
 import io.mockative.mock
 
 interface MessageMetadataDAOArrangement {
     @Mock
     val messageMetaDataDAO: MessageMetadataDAO
 
-    fun withMessageOriginalSender(
+    suspend fun withMessageOriginalSender(
         result: UserIDEntity?,
-        conversationId: Matcher<ConversationIDEntity> = any(),
-        messageId: Matcher<String> = any()
+        conversationId: (ConversationIDEntity) -> Boolean = { true },
+        messageId: (String) -> Boolean = { true }
     )
 }
 
@@ -41,14 +41,16 @@ class MessageMetadataDAOArrangementImpl : MessageMetadataDAOArrangement {
     @Mock
     override val messageMetaDataDAO: MessageMetadataDAO = mock(MessageMetadataDAO::class)
 
-    override fun withMessageOriginalSender(
+    override suspend fun withMessageOriginalSender(
         result: UserIDEntity?,
-        conversationId: Matcher<ConversationIDEntity>,
-        messageId: Matcher<String>
+        conversationId: (ConversationIDEntity) -> Boolean,
+        messageId: (String) -> Boolean
     ) {
-        given(messageMetaDataDAO)
-            .suspendFunction(messageMetaDataDAO::originalSenderId)
-            .whenInvokedWith(conversationId, messageId)
-            .thenReturn(result)
+        coEvery {
+            messageMetaDataDAO.originalSenderId(
+                matches { conversationId(it) },
+                matches { messageId(it) }
+            )
+        }.returns(result)
     }
 }

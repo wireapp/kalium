@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,9 +23,9 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
-import io.mockative.verify
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -47,9 +47,9 @@ class TypingIndicatorIncomingRepositoryTest {
                 setOf(expectedUserTypingOne, expectedUserTypingTwo),
                 typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()?.map { it }?.toSet()
             )
-            verify(arrangement.userPropertyRepository)
-                .suspendFunction(arrangement.userPropertyRepository::getTypingIndicatorStatus)
-                .wasInvoked()
+            coVerify {
+                arrangement.userPropertyRepository.getTypingIndicatorStatus()
+            }.wasInvoked()
         }
 
     @Test
@@ -66,9 +66,9 @@ class TypingIndicatorIncomingRepositoryTest {
                 expectedUserTyping,
                 typingIndicatorRepository.observeUsersTyping(conversationOne).firstOrNull()?.map { it }?.toSet()
             )
-            verify(arrangement.userPropertyRepository)
-                .suspendFunction(arrangement.userPropertyRepository::getTypingIndicatorStatus)
-                .wasInvoked()
+            coVerify {
+                arrangement.userPropertyRepository.getTypingIndicatorStatus()
+            }.wasInvoked()
         }
 
     @Test
@@ -86,9 +86,9 @@ class TypingIndicatorIncomingRepositoryTest {
                 setOf(expectedUserTypingTwo),
                 typingIndicatorRepository.observeUsersTyping(conversationTwo).firstOrNull()?.map { it }?.toSet()
             )
-            verify(arrangement.userPropertyRepository)
-                .suspendFunction(arrangement.userPropertyRepository::getTypingIndicatorStatus)
-                .wasInvoked()
+            coVerify {
+                arrangement.userPropertyRepository.getTypingIndicatorStatus()
+            }.wasInvoked()
         }
 
     @Test
@@ -112,11 +112,10 @@ class TypingIndicatorIncomingRepositoryTest {
         @Mock
         val userPropertyRepository: UserPropertyRepository = mock(UserPropertyRepository::class)
 
-        fun withTypingIndicatorStatus(enabled: Boolean = true) = apply {
-            given(userPropertyRepository)
-                .suspendFunction(userPropertyRepository::getTypingIndicatorStatus)
-                .whenInvoked()
-                .thenReturn(enabled)
+        suspend fun withTypingIndicatorStatus(enabled: Boolean = true) = apply {
+            coEvery {
+                userPropertyRepository.getTypingIndicatorStatus()
+            }.returns(enabled)
         }
 
         fun arrange() = this to TypingIndicatorIncomingRepositoryImpl(

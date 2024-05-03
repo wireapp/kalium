@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.SubconversationId
+import io.ktor.util.collections.ConcurrentMap
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -35,7 +36,7 @@ interface SubconversationRepository {
 class SubconversationRepositoryImpl : SubconversationRepository {
 
     private val mutex = Mutex()
-    private val subconversations = mutableMapOf<Pair<ConversationId, SubconversationId>, GroupID>()
+    private val subconversations = ConcurrentMap<Pair<ConversationId, SubconversationId>, GroupID>()
 
     override suspend fun insertSubconversation(conversationId: ConversationId, subconversationId: SubconversationId, groupId: GroupID) {
         mutex.withLock {

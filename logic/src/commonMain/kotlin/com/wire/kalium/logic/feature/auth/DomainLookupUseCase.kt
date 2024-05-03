@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,8 +18,8 @@
 package com.wire.kalium.logic.feature.auth
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.configuration.server.CustomServerConfigRepository
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -31,7 +31,7 @@ import com.wire.kalium.logic.functional.fold
  * @param email the email to lookup
  */
 class DomainLookupUseCase internal constructor(
-    private val serverConfigRepository: ServerConfigRepository,
+    private val customServerConfigRepository: CustomServerConfigRepository,
     private val ssoLoginRepository: SSOLoginRepository
 ) {
     suspend operator fun invoke(email: String): Result {
@@ -41,7 +41,7 @@ class DomainLookupUseCase internal constructor(
         }
 
         return ssoLoginRepository.domainLookup(domain).flatMap {
-            serverConfigRepository.fetchRemoteConfig(it.configJsonUrl)
+            customServerConfigRepository.fetchRemoteConfig(it.configJsonUrl)
         }.fold(Result::Failure, Result::Success)
     }
 

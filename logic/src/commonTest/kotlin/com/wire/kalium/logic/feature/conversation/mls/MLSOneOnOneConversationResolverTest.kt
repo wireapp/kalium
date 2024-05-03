@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,9 +30,10 @@ import com.wire.kalium.logic.util.arrangement.usecase.JoinExistingMLSConversatio
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -47,10 +48,9 @@ class MLSOneOnOneConversationResolverTest {
 
         getOrEstablishMlsOneToOneUseCase(userId)
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::getConversationsByUserId)
-            .with(eq(userId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.getConversationsByUserId(eq(userId))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -67,15 +67,13 @@ class MLSOneOnOneConversationResolverTest {
             assertEquals(cause, it)
         }
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::fetchMlsOneToOneConversation)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.conversationRepository.fetchMlsOneToOneConversation(any())
+        }.wasNotInvoked()
 
-        verify(arrangement.joinExistingMLSConversationUseCase)
-            .suspendFunction(arrangement.joinExistingMLSConversationUseCase::invoke)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -128,20 +126,20 @@ class MLSOneOnOneConversationResolverTest {
             assertEquals(CONVERSATION_ONE_ON_ONE_MLS_ESTABLISHED.id, it)
         }
 
-        verify(arrangement.joinExistingMLSConversationUseCase)
-            .suspendFunction(arrangement.joinExistingMLSConversationUseCase::invoke)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+        }.wasInvoked(exactly = once)
     }
 
-    private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
+    private fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     private class Arrangement(
-        private val block: Arrangement.() -> Unit
+        private val block: suspend Arrangement.() -> Unit
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         JoinExistingMLSConversationUseCaseArrangement by JoinExistingMLSConversationUseCaseArrangementImpl() {
 
-        fun arrange() = block().let {
+        fun arrange() = run {
+            runBlocking { block() }
             this to MLSOneOnOneConversationResolverImpl(
                 conversationRepository = conversationRepository,
                 joinExistingMLSConversationUseCase = joinExistingMLSConversationUseCase,

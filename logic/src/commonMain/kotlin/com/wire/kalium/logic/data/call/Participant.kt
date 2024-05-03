@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.user.type.UserType
 data class Participant(
     val id: QualifiedID,
     val clientId: String,
-    val name: String = "",
+    val name: String? = null,
     val isMuted: Boolean,
     val isCameraOn: Boolean,
     val isSpeaking: Boolean = false,

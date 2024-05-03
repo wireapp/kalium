@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,6 @@ package com.wire.kalium.logic.data.message.reaction
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.UserReactions
 import com.wire.kalium.logic.data.user.UserId
@@ -69,8 +68,7 @@ interface ReactionRepository {
 class ReactionRepositoryImpl(
     private val selfUserId: UserId,
     private val reactionsDAO: ReactionDAO,
-    private val reactionsMapper: ReactionsMapper = MapperProvider.reactionsMapper(),
-    private val idMapper: IdMapper = MapperProvider.idMapper()
+    private val reactionsMapper: ReactionsMapper = MapperProvider.reactionsMapper()
 ) : ReactionRepository {
 
     override suspend fun persistReaction(

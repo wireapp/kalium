@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -77,7 +77,7 @@ internal class AuthTokenStorageImpl(
         val newToken = kaliumPreferences.getSerializable(key, AuthTokenEntity.serializer())
             ?.let {
                 it.copy(accessToken = accessToken, refreshToken = refreshToken ?: it.refreshToken, tokenType = tokenType)
-            } ?: error("No token found for user")
+            } ?: error("No token found for user ${userId.toLogString()}")
 
         kaliumPreferences.putSerializable(
             key,
@@ -102,10 +102,12 @@ internal class AuthTokenStorageImpl(
     override fun proxyCredentials(userId: UserIDEntity): ProxyCredentialsEntity? =
         kaliumPreferences.getSerializable(proxyCredentialsKey(userId), ProxyCredentialsEntity.serializer())
 
+    // DO NOT CHANE THE KEY FORMAT
     private fun tokenKey(userId: UserIDEntity): String {
         return "user_tokens_${userId.value}@${userId.domain}"
     }
 
+    // DO NOT CHANE THE KEY FORMAT
     private fun proxyCredentialsKey(userId: UserIDEntity): String {
         return "proxy_credentials_${userId.value}@${userId.domain}"
     }

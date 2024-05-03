@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,8 +16,8 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-import com.github.leandroborgesferreira.dagcommand.DagCommandPlugin
-import com.github.leandroborgesferreira.dagcommand.extension.CommandExtension
+import io.github.leandroborgesferreira.dagcommand.DagCommandPlugin
+import io.github.leandroborgesferreira.dagcommand.extension.CommandExtension
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnLockMismatchReport
 import org.jetbrains.kotlin.gradle.targets.js.yarn.YarnRootExtension
 
@@ -37,7 +37,7 @@ buildscript {
         classpath("com.google.protobuf:protobuf-gradle-plugin:${libs.versions.protobufCodegen.get()}")
         classpath("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:${libs.versions.detekt.get()}")
         classpath("io.gitlab.arturbosch.detekt:detekt-cli:${libs.versions.detekt.get()}")
-        classpath("com.github.leandroborgesferreira:dag-command:1.5.3")
+        classpath("io.github.leandroborgesferreira:dag-command:${libs.versions.dagCommand.get()}")
     }
 }
 
@@ -53,6 +53,7 @@ plugins {
     alias(libs.plugins.kover)
     id("scripts.testing")
     id("scripts.detekt")
+    alias(libs.plugins.moduleGraph)
     alias(libs.plugins.completeKotlin)
 }
 
@@ -141,3 +142,8 @@ rootProject.plugins.withType<org.jetbrains.kotlin.gradle.targets.js.nodejs.NodeJ
 }
 
 tasks.dokkaHtmlMultiModule.configure {}
+
+moduleGraphConfig {
+    readmePath.set("./README.md")
+    heading.set("#### Dependency Graph")
+}

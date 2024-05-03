@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,13 +22,12 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.Mock
-import io.mockative.anything
-import io.mockative.classOf
+import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -80,10 +79,9 @@ class TimestampKeyRepositoryTest {
 
         result.shouldSucceed()
 
-        verify(arrangement.metadataDAO)
-            .suspendFunction(arrangement.metadataDAO::insertValue)
-            .with(anything(), eq(key.name))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.metadataDAO.insertValue(any(), eq(key.name))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -99,26 +97,25 @@ class TimestampKeyRepositoryTest {
 
         result.shouldSucceed()
 
-        verify(arrangement.metadataDAO)
-            .suspendFunction(arrangement.metadataDAO::insertValue)
-            .with(eq(timestamp.toIsoDateTimeString()), eq(key.name))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.metadataDAO.insertValue(eq(timestamp.toIsoDateTimeString()), eq(key.name))
+        }.wasInvoked(once)
     }
 
     private class Arrangement {
         @Mock
-        val metadataDAO = mock(classOf<MetadataDAO>())
+        val metadataDAO = mock(MetadataDAO::class)
 
-        fun withMetaDataDaoValueReturns(timestamp: Instant?) = apply {
-            given(metadataDAO).suspendFunction(metadataDAO::valueByKeyFlow)
-                .whenInvokedWith(anything())
-                .thenReturn(flowOf(timestamp?.toIsoDateTimeString()))
+        suspend fun withMetaDataDaoValueReturns(timestamp: Instant?) = apply {
+            coEvery {
+                metadataDAO.valueByKeyFlow(any())
+            }.returns(flowOf(timestamp?.toIsoDateTimeString()))
         }
 
-        fun withMetaDataDaoInsertValue() = apply {
-            given(metadataDAO).suspendFunction(metadataDAO::insertValue)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Unit)
+        suspend fun withMetaDataDaoInsertValue() = apply {
+            coEvery {
+                metadataDAO.insertValue(any(), any())
+            }.returns(Unit)
         }
 
         fun arrange() = this to TimestampKeyRepositoryImpl(metadataDAO)

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,8 @@
 package com.wire.kalium.logic.test_util
 
 import com.wire.kalium.util.KaliumDispatcher
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 
@@ -39,3 +41,16 @@ object TestKaliumDispatcher : KaliumDispatcher {
         get() = testDispatcher
 
 }
+
+@OptIn(ExperimentalStdlibApi::class)
+val CoroutineScope.testKaliumDispatcher: KaliumDispatcher
+    get() = object : KaliumDispatcher {
+        override val default: CoroutineDispatcher
+            get() = coroutineContext[CoroutineDispatcher]!!
+        override val main: CoroutineDispatcher
+            get() = coroutineContext[CoroutineDispatcher]!!
+        override val unconfined: CoroutineDispatcher
+            get() = coroutineContext[CoroutineDispatcher]!!
+        override val io: CoroutineDispatcher
+            get() = coroutineContext[CoroutineDispatcher]!!
+    }

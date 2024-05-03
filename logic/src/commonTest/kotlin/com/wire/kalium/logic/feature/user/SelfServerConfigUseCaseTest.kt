@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,10 +26,10 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -49,10 +49,9 @@ class SelfServerConfigUseCaseTest {
             assertEquals(expected, result.serverLinks)
         }
 
-        verify(arrangement.serverConfigRepository)
-            .suspendFunction(arrangement.serverConfigRepository::configForUser)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.serverConfigRepository.configForUser(any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -66,10 +65,9 @@ class SelfServerConfigUseCaseTest {
             assertEquals(StorageFailure.DataNotFound, result.cause)
         }
 
-        verify(arrangement.serverConfigRepository)
-            .suspendFunction(arrangement.serverConfigRepository::configForUser)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.serverConfigRepository.configForUser(any())
+        }.wasInvoked(exactly = once)
     }
 
     private companion object {
@@ -85,15 +83,15 @@ class SelfServerConfigUseCaseTest {
 
         val selfServerConfigUseCase = SelfServerConfigUseCase(selfUserId, serverConfigRepository)
         suspend fun withServerConfigSuccessResponse(userId: UserId, serverConfig: ServerConfig): Arrangement = apply {
-            given(serverConfigRepository)
-                .coroutine { serverConfigRepository.configForUser(userId) }
-                .then { Either.Right(TEST_SERVER_CONFIG) }
+            coEvery {
+                serverConfigRepository.configForUser(userId)
+            }.returns(Either.Right(TEST_SERVER_CONFIG))
         }
 
         suspend fun withServerConfigErrorResponse(userId: UserId, storageFailure: StorageFailure): Arrangement = apply {
-            given(serverConfigRepository)
-                .coroutine { serverConfigRepository.configForUser(userId) }
-                .then { Either.Left(storageFailure) }
+            coEvery {
+                serverConfigRepository.configForUser(userId)
+            }.returns(Either.Left(storageFailure))
         }
 
         fun arrange() = this to selfServerConfigUseCase

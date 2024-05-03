@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,9 @@ import com.wire.kalium.cli.listConversations
 import com.wire.kalium.cli.selectConversation
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.feature.UserSessionScope
+import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.logic.data.call.TestVideoType
+import com.wire.kalium.logic.data.call.VideoState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -42,7 +45,8 @@ class ConsoleCommand : CliktCommand(name = "console") {
 
     class ConsoleContext(
         var currentConversation: Conversation?,
-        var isMuted: Boolean = false
+        var isMuted: Boolean = false,
+        var videoSend: Boolean = false
     )
 
     class KeyStroke(
@@ -62,8 +66,24 @@ class ConsoleCommand : CliktCommand(name = "console") {
         KeyStroke('e', ::endCallHandler),
         KeyStroke('m', ::muteCallHandler),
         KeyStroke('s', ::selectConversationHandler),
+        KeyStroke('V', ::toggleVideoHandler),
         KeyStroke('q', ::quitApplication)
     )
+
+    private fun startObservingVideoState() {
+        GlobalScope.launch {
+            userSession.calls.allCallsWithSortedParticipants().collect { sessionCalls ->
+                for (call in sessionCalls) {
+                    if (call.status == CallStatus.ESTABLISHED) {
+                        userSession.calls.setTestRemoteVideoStates(
+                            conversationId = call.conversationId,
+                            participants = call.participants
+                        )
+                    }
+                }
+            }
+        }
+    }
 
     override fun run() = runBlocking {
         val conversations = getConversations(userSession)
@@ -107,6 +127,9 @@ class ConsoleCommand : CliktCommand(name = "console") {
         if (avsNoise)
             avsFlags = AVS_FLAG_NOISE
 
+        var videoType = if (avsTest || avsNoise) TestVideoType.FAKE else TestVideoType.PLATFORM
+        userSession.calls.setTestVideoType(videoType)
+
         while (true) {
             val scanner = Scanner(System.`in`)
             val stroke = scanner.next().single()
@@ -143,6 +166,7 @@ class ConsoleCommand : CliktCommand(name = "console") {
     private suspend fun startCallHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
         val currentConversation = context.currentConversation ?: return -1
 
+        startObservingVideoState()
         userSession.calls.startCall.invoke(
             conversationId = currentConversation.id
         )
@@ -152,7 +176,10 @@ class ConsoleCommand : CliktCommand(name = "console") {
 
     private suspend fun answerCallHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
         val currentConversation = context.currentConversation ?: return -1
+
+        startObservingVideoState()
         userSession.calls.answerCall.invoke(conversationId = currentConversation.id)
+
         return 0
     }
 
@@ -171,6 +198,23 @@ class ConsoleCommand : CliktCommand(name = "console") {
             userSession.calls.muteCall(conversationId = currentConversation.id)
         else
             userSession.calls.unMuteCall(conversationId = currentConversation.id)
+
+        return 0
+    }
+
+    private suspend fun toggleVideoHandler(userSession: UserSessionScope, context: ConsoleContext): Int {
+        val currentConversation = context.currentConversation ?: return -1
+
+        context.videoSend = !context.videoSend
+
+        val videoState = if (context.videoSend) VideoState.STARTED else VideoState.STOPPED
+
+        userSession.calls.setTestPreviewActive(context.videoSend)
+
+        userSession.calls.updateVideoState(
+            conversationId = currentConversation.id,
+            videoState
+        )
 
         return 0
     }

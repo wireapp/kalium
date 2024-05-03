@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -317,6 +317,27 @@ class MessageNotificationsTest : BaseMessageTest() {
         messageDAO.getNotificationMessage().test {
             val notifications = awaitItem()
             assertFalse { notifications.first().isSelfDelete }
+        }
+    }
+
+    @Test
+    fun givenConversationIsArchived_whenMessageInserted_thenDoNotNotify() = runTest {
+        val message = OTHER_MESSAGE
+        userDAO.upsertUsers(listOf(SELF_USER, OTHER_USER, OTHER_USER_2))
+        conversationDAO.insertConversations(
+            listOf(
+                TEST_CONVERSATION_1.copy(
+                    archived = true
+                ),
+                TEST_CONVERSATION_2
+            )
+        )
+
+        messageDAO.insertOrIgnoreMessage(message)
+
+        messageDAO.getNotificationMessage().test {
+            val notifications = awaitItem()
+            assertTrue { notifications.isEmpty() }
         }
     }
 

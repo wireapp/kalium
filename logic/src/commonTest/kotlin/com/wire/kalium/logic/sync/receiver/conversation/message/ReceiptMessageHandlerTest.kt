@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,12 +41,11 @@ import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -59,7 +58,7 @@ class ReceiptMessageHandlerTest {
     private val receiptRepository: ReceiptRepository = ReceiptRepositoryImpl(userDatabase.builder.receiptDAO)
 
     @Mock
-    private val messageRepository: MessageRepository = mock(classOf<MessageRepository>())
+    private val messageRepository: MessageRepository = mock(MessageRepository::class)
 
     private val receiptMessageHandler = ReceiptMessageHandlerImpl(SELF_USER_ID, receiptRepository, messageRepository)
 
@@ -79,10 +78,9 @@ class ReceiptMessageHandlerTest {
         val senderUserId = OTHER_USER_ID
         val type = ReceiptType.READ
 
-        given(messageRepository)
-            .suspendFunction(messageRepository::updateMessagesStatus)
-            .whenInvokedWith(any(), any())
-            .thenReturn(Either.Right(Unit))
+        coEvery {
+            messageRepository.updateMessagesStatus(any(), any(), any())
+        }.returns(Either.Right(Unit))
         // when
         handleNewReceipt(type, date, senderUserId)
 
@@ -102,10 +100,9 @@ class ReceiptMessageHandlerTest {
         val senderUserId = OTHER_USER_ID
         val type = ReceiptType.READ
 
-        given(messageRepository)
-            .suspendFunction(messageRepository::updateMessagesStatus)
-            .whenInvokedWith(any(), any())
-            .thenReturn(Either.Right(Unit))
+        coEvery {
+            messageRepository.updateMessagesStatus(any(), any(), any())
+        }.returns(Either.Right(Unit))
         // when
         handleNewReceipt(type, date, senderUserId)
 
@@ -130,10 +127,9 @@ class ReceiptMessageHandlerTest {
         val senderUserId = SELF_USER_ID
         val type = ReceiptType.READ
 
-        given(messageRepository)
-            .suspendFunction(messageRepository::updateMessagesStatus)
-            .whenInvokedWith(any(), any())
-            .thenReturn(Either.Right(Unit))
+        coEvery {
+            messageRepository.updateMessagesStatus(any(), any(), any())
+        }.returns(Either.Right(Unit))
         // when
         handleNewReceipt(type, date, senderUserId)
 
@@ -154,10 +150,9 @@ class ReceiptMessageHandlerTest {
         // Delivery != Read
         val type = ReceiptType.DELIVERED
 
-        given(messageRepository)
-            .suspendFunction(messageRepository::updateMessagesStatus)
-            .whenInvokedWith(any(), any())
-            .thenReturn(Either.Right(Unit))
+        coEvery {
+            messageRepository.updateMessagesStatus(any(), any(), any())
+        }.returns(Either.Right(Unit))
         // when
         handleNewReceipt(type, date, senderUserId)
 
@@ -175,19 +170,17 @@ class ReceiptMessageHandlerTest {
         val type = ReceiptType.DELIVERED
         val messageUuids = listOf("1", "2", "3")
 
-        given(messageRepository)
-            .suspendFunction(messageRepository::updateMessagesStatus)
-            .whenInvokedWith(any(), any(), any())
-            .thenReturn(Either.Right(Unit))
+        coEvery {
+            messageRepository.updateMessagesStatus(any(), any(), any())
+        }.returns(Either.Right(Unit))
 
         // when
         handleNewReceipt(type, date, senderUserId, messageUuids)
 
         // then
-        verify(messageRepository)
-            .suspendFunction(messageRepository::updateMessagesStatus)
-            .with(eq(MessageEntity.Status.DELIVERED), any(), eq(messageUuids))
-            .wasInvoked(exactly = once)
+        coVerify {
+            messageRepository.updateMessagesStatus(eq(MessageEntity.Status.DELIVERED), any(), eq(messageUuids))
+        }.wasInvoked(exactly = once)
     }
 
     private suspend fun handleNewReceipt(

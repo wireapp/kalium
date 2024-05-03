@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,12 +26,11 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.configure
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -39,10 +38,10 @@ import kotlin.test.Test
 class PendingMessagesSenderWorkerTest {
 
     @Mock
-    private val messageRepository = configure(mock(MessageRepository::class)) { stubsUnitByDefault = true }
+    private val messageRepository = mock(MessageRepository::class)
 
     @Mock
-    private val messageSender = configure(mock(MessageSender::class)) { stubsUnitByDefault = true }
+    private val messageSender = mock(MessageSender::class)
 
     private lateinit var pendingMessagesSenderWorker: PendingMessagesSenderWorker
 
@@ -54,36 +53,31 @@ class PendingMessagesSenderWorkerTest {
     @Test
     fun givenPendingMessagesAreFetched_whenExecutingAWorker_thenScheduleSendingOfMessages() = runTest {
         val message = TestMessage.TEXT_MESSAGE
-        given(messageRepository)
-            .suspendFunction(messageRepository::getAllPendingMessagesFromUser)
-            .whenInvokedWith(eq(TestUser.USER_ID))
-            .thenReturn(Either.Right(listOf(message)))
-        given(messageSender)
-            .suspendFunction(messageSender::sendPendingMessage)
-            .whenInvokedWith(eq(message.conversationId), eq(message.id))
-            .thenReturn(Either.Right(Unit))
+        coEvery {
+            messageRepository.getAllPendingMessagesFromUser(eq(TestUser.USER_ID))
+        }.returns(Either.Right(listOf(message)))
+        coEvery {
+            messageSender.sendPendingMessage(eq(message.conversationId), eq(message.id))
+        }.returns(Either.Right(Unit))
 
         pendingMessagesSenderWorker.doWork()
 
-        verify(messageSender)
-            .suspendFunction(messageSender::sendPendingMessage)
-            .with(eq(message.conversationId), eq(message.id))
-            .wasInvoked(exactly = once)
+        coVerify {
+            messageSender.sendPendingMessage(eq(message.conversationId), eq(message.id))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenPendingMessagesReturnsFailure_whenExecutingAWorker_thenDoNothing() = runTest {
         val dataNotFoundFailure = StorageFailure.DataNotFound
-        given(messageRepository)
-            .suspendFunction(messageRepository::getAllPendingMessagesFromUser)
-            .whenInvokedWith(eq(TestUser.USER_ID))
-            .thenReturn(Either.Left(dataNotFoundFailure))
+        coEvery {
+            messageRepository.getAllPendingMessagesFromUser(eq(TestUser.USER_ID))
+        }.returns(Either.Left(dataNotFoundFailure))
 
         pendingMessagesSenderWorker.doWork()
 
-        verify(messageSender)
-            .suspendFunction(messageSender::sendPendingMessage)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            messageSender.sendPendingMessage(any(), any())
+        }.wasNotInvoked()
     }
 }

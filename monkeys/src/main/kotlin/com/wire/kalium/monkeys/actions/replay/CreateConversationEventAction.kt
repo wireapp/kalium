@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 
 class CreateConversationEventAction(private val config: EventType.CreateConversation) : Action({}) {
-    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
-        ConversationPool.createDynamicConversation(config.conversation, monkeyPool)
+    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool, conversationPool: ConversationPool) {
+        conversationPool.createDynamicConversation(config.conversation, monkeyPool)
     }
 }

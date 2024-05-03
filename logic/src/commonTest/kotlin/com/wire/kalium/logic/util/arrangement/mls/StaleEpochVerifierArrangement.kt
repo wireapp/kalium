@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,14 +22,14 @@ import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 
 interface StaleEpochVerifierArrangement {
 
     val staleEpochVerifier: StaleEpochVerifier
 
-    fun withVerifyEpoch(result: Either<CoreFailure, Unit>)
+    suspend fun withVerifyEpoch(result: Either<CoreFailure, Unit>)
 
 }
 
@@ -38,10 +38,9 @@ class StaleEpochVerifierArrangementImpl : StaleEpochVerifierArrangement {
     @Mock
     override val staleEpochVerifier = mock(StaleEpochVerifier::class)
 
-    override fun withVerifyEpoch(result: Either<CoreFailure, Unit>) {
-        given(staleEpochVerifier)
-            .suspendFunction(staleEpochVerifier::verifyEpoch)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withVerifyEpoch(result: Either<CoreFailure, Unit>) {
+        coEvery {
+            staleEpochVerifier.verifyEpoch(any(), any())
+        }.returns(result)
     }
 }

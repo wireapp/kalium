@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
@@ -31,15 +32,20 @@ internal class ConversationsRecoveryManagerImpl(
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val addSystemMessageToAllConversationsUseCase: AddSystemMessageToAllConversationsUseCase,
     private val slowSyncRepository: SlowSyncRepository,
+    kaliumLogger: KaliumLogger
 ) : ConversationsRecoveryManager {
+
+    private val logger = kaliumLogger.withTextTag("ConversationsRecoveryManager")
 
     @Suppress("ComplexCondition")
     override suspend fun invoke() {
+        logger.d("Starting to monitor")
         // wait until incremental sync is done
         incrementalSyncRepository.incrementalSyncState.collect { syncState ->
             if (syncState is IncrementalSyncStatus.Live &&
                 slowSyncRepository.needsToPersistHistoryLostMessage()
             ) {
+                logger.i("Persisting history lost message and marking it as no longer needed")
                 addSystemMessageToAllConversationsUseCase.invoke()
                 slowSyncRepository.setNeedsToPersistHistoryLostMessage(false)
             }

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,10 +30,12 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserStorageProvider
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
+import com.wire.kalium.logic.feature.auth.LogoutCallback
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
+import com.wire.kalium.network.NetworkStateObserver
+import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.persistence.util.FileNameUtil
 
@@ -43,11 +45,13 @@ internal actual class UserSessionScopeProviderImpl(
     private val rootPathsProvider: RootPathsProvider,
     private val appContext: Context,
     private val globalScope: GlobalKaliumScope,
+    private val globalDatabaseProvider: GlobalDatabaseProvider,
     private val kaliumConfigs: KaliumConfigs,
     private val globalPreferences: GlobalPrefProvider,
     private val globalCallManager: GlobalCallManager,
     private val userStorageProvider: UserStorageProvider,
     private val networkStateObserver: NetworkStateObserver,
+    private val logoutCallback: LogoutCallback,
     userAgent: String
 ) : UserSessionScopeProviderCommon(globalCallManager, userStorageProvider, userAgent) {
 
@@ -65,6 +69,7 @@ internal actual class UserSessionScopeProviderImpl(
             globalScope = globalScope,
             globalCallManager = globalCallManager,
             globalPreferences = globalPreferences,
+            globalDatabaseProvider = globalDatabaseProvider,
             authenticationScopeProvider = authenticationScopeProvider,
             userSessionWorkScheduler = userSessionWorkScheduler,
             rootPathsProvider = rootPathsProvider,
@@ -73,6 +78,7 @@ internal actual class UserSessionScopeProviderImpl(
             userStorageProvider = userStorageProvider,
             userSessionScopeProvider = this,
             networkStateObserver = networkStateObserver,
+            logoutCallback = logoutCallback,
         )
     }
 }

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,11 +22,11 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -42,13 +42,12 @@ class SetNotifiedAboutConversationUnderLegalHoldUseCaseTest {
         // when
         useCase.invoke(conversationId)
         // then
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::setLegalHoldStatusChangeNotified)
-            .with(eq(conversationId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.setLegalHoldStatusChangeNotified(eq(conversationId))
+        }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement() {
+    private class Arrangement {
         @Mock
         val conversationRepository = mock(ConversationRepository::class)
 
@@ -56,11 +55,10 @@ class SetNotifiedAboutConversationUnderLegalHoldUseCaseTest {
             SetNotifiedAboutConversationUnderLegalHoldUseCaseImpl(conversationRepository)
         }
         fun arrange() = this to useCase
-        fun withSetLegalHoldStatusChangeNotifiedSuccessful() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::setLegalHoldStatusChangeNotified)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(true))
+        suspend fun withSetLegalHoldStatusChangeNotifiedSuccessful() = apply {
+            coEvery {
+                conversationRepository.setLegalHoldStatusChangeNotified(any())
+            }.returns(Either.Right(true))
         }
     }
 }

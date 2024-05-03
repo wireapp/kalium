@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,17 +27,14 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class VerifyExistingClientUseCaseTest {
 
     @Test
@@ -60,24 +57,22 @@ class VerifyExistingClientUseCaseTest {
             .arrange()
         val result = useCase.invoke(clientId)
         assertIs<VerifyExistingClientResult.Failure.ClientNotRegistered>(result)
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::persistClientId)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.clientRepository.persistClientId(any())
+        }.wasNotInvoked()
     }
 
     private class Arrangement {
 
         @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
+        val clientRepository = mock(ClientRepository::class)
 
         val verifyExistingClientUseCase: VerifyExistingClientUseCase = VerifyExistingClientUseCaseImpl(clientRepository)
 
-        fun withSelfClientsResult(result: Either<NetworkFailure, List<Client>>): Arrangement {
-            given(clientRepository)
-                .suspendFunction(clientRepository::selfListOfClients)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withSelfClientsResult(result: Either<NetworkFailure, List<Client>>): Arrangement {
+            coEvery {
+                clientRepository.selfListOfClients()
+            }.returns(result)
             return this
         }
 

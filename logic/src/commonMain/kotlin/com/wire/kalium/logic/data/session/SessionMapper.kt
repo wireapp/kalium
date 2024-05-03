@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@
 package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.data.auth.login.ProxyCredentials
-import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
@@ -46,21 +45,22 @@ interface SessionMapper {
     fun toLogoutReasonEntity(reason: LogoutReason): LogoutReasonEntity
     fun toSsoIdEntity(ssoId: SsoId?): SsoIdEntity?
     fun toAuthTokensEntity(authSession: AccountTokens): AuthTokenEntity
+    fun toAccountTokens(authSession: AuthTokenEntity): AccountTokens
     fun fromSsoIdEntity(ssoIdEntity: SsoIdEntity?): SsoId?
     fun toLogoutReason(reason: LogoutReasonEntity): LogoutReason
     fun fromEntityToProxyCredentialsDTO(proxyCredentialsEntity: ProxyCredentialsEntity): ProxyCredentialsDTO
+    fun formEntityToProxyModel(proxyCredentialsEntity: ProxyCredentialsEntity): ProxyCredentials
     fun fromPersistentWebSocketStatusEntity(
         persistentWebSocketStatusEntity: PersistentWebSocketStatusEntity
     ): PersistentWebSocketStatus
+
     fun fromModelToProxyCredentialsEntity(proxyCredentialsModel: ProxyCredentials): ProxyCredentialsEntity
     fun fromModelToProxyCredentialsDTO(proxyCredentialsModel: ProxyCredentials): ProxyCredentialsDTO
     fun fromDTOToProxyCredentialsModel(proxyCredentialsDTO: ProxyCredentialsDTO?): ProxyCredentials?
 }
 
 @Suppress("TooManyFunctions")
-internal class SessionMapperImpl(
-    private val idMapper: IdMapper
-) : SessionMapper {
+internal class SessionMapperImpl : SessionMapper {
 
     override fun toSessionDTO(authSession: AccountTokens): SessionDTO = with(authSession) {
         SessionDTO(
@@ -122,6 +122,14 @@ internal class SessionMapperImpl(
         )
     }
 
+    override fun toAccountTokens(authSession: AuthTokenEntity): AccountTokens = AccountTokens(
+        userId = authSession.userId.toModel(),
+        accessToken = authSession.accessToken,
+        refreshToken = authSession.refreshToken,
+        tokenType = authSession.tokenType,
+        cookieLabel = authSession.cookieLabel
+    )
+
     override fun fromSsoIdEntity(ssoIdEntity: SsoIdEntity?): SsoId? =
         ssoIdEntity?.let { SsoId(scimExternalId = it.scimExternalId, subject = it.subject, tenant = it.tenant) }
 
@@ -137,12 +145,19 @@ internal class SessionMapperImpl(
     override fun fromEntityToProxyCredentialsDTO(proxyCredentialsEntity: ProxyCredentialsEntity): ProxyCredentialsDTO =
         ProxyCredentialsDTO(proxyCredentialsEntity.username, proxyCredentialsEntity.password)
 
+    override fun formEntityToProxyModel(proxyCredentialsEntity: ProxyCredentialsEntity): ProxyCredentials =
+        ProxyCredentials(
+            username = proxyCredentialsEntity.username,
+            password = proxyCredentialsEntity.password
+        )
+
     override fun fromPersistentWebSocketStatusEntity(
         persistentWebSocketStatusEntity: PersistentWebSocketStatusEntity
     ): PersistentWebSocketStatus = PersistentWebSocketStatus(
         persistentWebSocketStatusEntity.userIDEntity.toModel(),
         persistentWebSocketStatusEntity.isPersistentWebSocketEnabled
     )
+
     override fun fromModelToProxyCredentialsEntity(proxyCredentialsModel: ProxyCredentials): ProxyCredentialsEntity =
         ProxyCredentialsEntity(proxyCredentialsModel.username, proxyCredentialsModel.password)
 

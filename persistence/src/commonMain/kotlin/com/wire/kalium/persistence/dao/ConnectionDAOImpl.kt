@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -82,7 +82,7 @@ private class ConnectionMapper {
         status = status,
         toId = to_id,
         shouldNotify = should_notify,
-        otherUser = if (qualified_id != null) UserDetailsEntity(
+        otherUser = if (qualified_id != null) UserEntity(
             id = qualified_id,
             name = name,
             handle = handle,
@@ -100,7 +100,6 @@ private class ConnectionMapper {
             hasIncompleteMetadata = incomplete_metadata.requireField("incomplete_metadata"),
             expiresAt = expires_at,
             defederated = defederated.requireField("defederated"),
-            isProteusVerified = false,
             supportedProtocols = supportedProtocols,
             activeOneOnOneConversationId = oneToOneConversationId
         ) else null
@@ -121,6 +120,10 @@ class ConnectionDAOImpl(
             .flowOn(queriesContext)
             .mapToList()
             .map { it.map(connectionMapper::toModel) }
+    }
+
+    override suspend fun getConnection(conversationId: QualifiedIDEntity): ConnectionEntity? = withContext(queriesContext) {
+        connectionsQueries.selectConnection(conversationId).executeAsOneOrNull()?.let { connectionMapper.toModel(it) }
     }
 
     override suspend fun getConnectionRequests(): Flow<List<ConnectionEntity>> {
@@ -182,5 +185,11 @@ class ConnectionDAOImpl(
 
     override suspend fun setAllConnectionsAsNotified() = withContext(queriesContext) {
         connectionsQueries.setAllConnectionsAsNotified()
+    }
+
+    override suspend fun getConnectionByUser(userId: QualifiedIDEntity): ConnectionEntity? {
+        return withContext(queriesContext) {
+            connectionsQueries.selectConnectionRequestByUser(userId, connectionMapper::toModel).executeAsOneOrNull()
+        }
     }
 }

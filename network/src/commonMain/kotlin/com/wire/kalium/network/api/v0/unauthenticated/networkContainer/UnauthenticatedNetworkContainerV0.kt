@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,6 +27,10 @@ import com.wire.kalium.network.api.base.unauthenticated.VerificationCodeApi
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApi
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApiImpl
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApiImpl
+import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
+import com.wire.kalium.network.api.base.unbound.versioning.VersionApiImpl
 import com.wire.kalium.network.api.v0.unauthenticated.DomainLookupApiV0
 import com.wire.kalium.network.api.v0.unauthenticated.LoginApiV0
 import com.wire.kalium.network.api.v0.unauthenticated.RegisterApiV0
@@ -40,7 +44,9 @@ import com.wire.kalium.network.session.CertificatePinning
 import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.HttpClientEngine
 
+@Suppress("LongParameterList")
 class UnauthenticatedNetworkContainerV0 internal constructor(
+    private val developmentApiEnabled: Boolean,
     networkStateObserver: NetworkStateObserver,
     backendLinks: ServerConfigDTO,
     proxyCredentials: ProxyCredentialsDTO?,
@@ -62,5 +68,8 @@ class UnauthenticatedNetworkContainerV0 internal constructor(
     override val domainLookupApi: DomainLookupApi get() = DomainLookupApiV0(unauthenticatedNetworkClient)
     override val registerApi: RegisterApi get() = RegisterApiV0(unauthenticatedNetworkClient)
     override val sso: SSOLoginApi get() = SSOLoginApiV0(unauthenticatedNetworkClient)
+    override val remoteVersion: VersionApi get() = VersionApiImpl(unauthenticatedNetworkClient, developmentApiEnabled)
+    override val serverConfigApi: ServerConfigApi
+        get() = ServerConfigApiImpl(unauthenticatedNetworkClient)
     override val appVersioningApi: AppVersioningApi get() = AppVersioningApiImpl(unauthenticatedNetworkClient)
 }

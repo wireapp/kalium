@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -88,6 +88,12 @@ internal class CallDAOImpl(
 
     override suspend fun observeIncomingCalls(): Flow<List<CallEntity>> =
         callsQueries.selectIncomingCalls(mapper = mapper::fromCalls)
+            .asFlow()
+            .flowOn(queriesContext)
+            .mapToList()
+
+    override suspend fun observeOutgoingCalls(): Flow<List<CallEntity>> =
+        callsQueries.selectOutgoingCalls(mapper = mapper::fromCalls)
             .asFlow()
             .flowOn(queriesContext)
             .mapToList()

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,18 +29,16 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
-import io.mockative.anything
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class KeyPackageManagerTests {
 
     @Test
@@ -56,9 +54,9 @@ class KeyPackageManagerTests {
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
-            verify(arrangement.refillKeyPackagesUseCase)
-                .suspendFunction(arrangement.refillKeyPackagesUseCase::invoke)
-                .wasNotInvoked()
+            coVerify {
+                arrangement.refillKeyPackagesUseCase.invoke()
+            }.wasNotInvoked()
         }
 
     @Test
@@ -71,9 +69,9 @@ class KeyPackageManagerTests {
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
-            verify(arrangement.refillKeyPackagesUseCase)
-                .suspendFunction(arrangement.refillKeyPackagesUseCase::invoke)
-                .wasNotInvoked()
+            coVerify {
+                arrangement.refillKeyPackagesUseCase.invoke()
+            }.wasNotInvoked()
         }
 
     @Test
@@ -87,9 +85,9 @@ class KeyPackageManagerTests {
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
-            verify(arrangement.refillKeyPackagesUseCase)
-                .suspendFunction(arrangement.refillKeyPackagesUseCase::invoke)
-                .wasNotInvoked()
+            coVerify {
+                arrangement.refillKeyPackagesUseCase.invoke()
+            }.wasNotInvoked()
         }
 
     @Test
@@ -107,14 +105,13 @@ class KeyPackageManagerTests {
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
-            verify(arrangement.refillKeyPackagesUseCase)
-                .suspendFunction(arrangement.refillKeyPackagesUseCase::invoke)
-                .wasInvoked(once)
+            coVerify {
+                arrangement.refillKeyPackagesUseCase.invoke()
+            }.wasInvoked(once)
 
-            verify(arrangement.timestampKeyRepository)
-                .suspendFunction(arrangement.timestampKeyRepository::reset)
-                .with(anything())
-                .wasInvoked(once)
+            coVerify {
+                arrangement.timestampKeyRepository.reset(any())
+            }.wasInvoked(once)
         }
 
     @Test
@@ -132,14 +129,13 @@ class KeyPackageManagerTests {
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
-            verify(arrangement.refillKeyPackagesUseCase)
-                .suspendFunction(arrangement.refillKeyPackagesUseCase::invoke)
-                .wasInvoked(once)
+            coVerify {
+                arrangement.refillKeyPackagesUseCase.invoke()
+            }.wasInvoked(once)
 
-            verify(arrangement.timestampKeyRepository)
-                .suspendFunction(arrangement.timestampKeyRepository::reset)
-                .with(anything())
-                .wasInvoked(once)
+            coVerify {
+                arrangement.timestampKeyRepository.reset(any())
+            }.wasInvoked(once)
         }
 
     private class Arrangement {
@@ -147,71 +143,65 @@ class KeyPackageManagerTests {
         val incrementalSyncRepository: IncrementalSyncRepository = InMemoryIncrementalSyncRepository()
 
         @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
+        val clientRepository = mock(ClientRepository::class)
 
         @Mock
-        val featureSupport = mock(classOf<FeatureSupport>())
+        val featureSupport = mock(FeatureSupport::class)
 
         @Mock
-        val timestampKeyRepository = mock(classOf<TimestampKeyRepository>())
+        val timestampKeyRepository = mock(TimestampKeyRepository::class)
 
         @Mock
-        val refillKeyPackagesUseCase = mock(classOf<RefillKeyPackagesUseCase>())
+        val refillKeyPackagesUseCase = mock(RefillKeyPackagesUseCase::class)
 
         @Mock
-        val keyPackageCountUseCase = mock(classOf<MLSKeyPackageCountUseCase>())
+        val keyPackageCountUseCase = mock(MLSKeyPackageCountUseCase::class)
 
-        fun withLastKeyPackageCountCheck(hasPassed: Boolean) = apply {
-            given(timestampKeyRepository)
-                .suspendFunction(timestampKeyRepository::hasPassed)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(Either.Right(hasPassed))
+        suspend fun withLastKeyPackageCountCheck(hasPassed: Boolean) = apply {
+            coEvery {
+                timestampKeyRepository.hasPassed(any(), any())
+            }.returns(Either.Right(hasPassed))
         }
 
-        fun withRefillKeyPackagesUseCaseSuccessful() = apply {
-            given(refillKeyPackagesUseCase)
-                .suspendFunction(refillKeyPackagesUseCase::invoke)
-                .whenInvoked()
-                .thenReturn(RefillKeyPackagesResult.Success)
+        suspend fun withRefillKeyPackagesUseCaseSuccessful() = apply {
+            coEvery {
+                refillKeyPackagesUseCase.invoke()
+            }.returns(RefillKeyPackagesResult.Success)
         }
 
-        fun withUpdateLastKeyPackageCountCheckSuccessful() = apply {
-            given(timestampKeyRepository)
-                .suspendFunction(timestampKeyRepository::reset)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withUpdateLastKeyPackageCountCheckSuccessful() = apply {
+            coEvery {
+                timestampKeyRepository.reset(any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withKeyPackageCountReturnsRefillTrue() = apply {
-            given(keyPackageCountUseCase)
-                .suspendFunction(keyPackageCountUseCase::invoke)
-                .whenInvokedWith(anything())
-                .thenReturn(
-                    MLSKeyPackageCountResult.Success(
-                        TestClient.CLIENT_ID,
-                        0, true
-                    )
+        suspend fun withKeyPackageCountReturnsRefillTrue() = apply {
+            coEvery {
+                keyPackageCountUseCase.invoke(any())
+            }.returns(
+                MLSKeyPackageCountResult.Success(
+                    TestClient.CLIENT_ID,
+                    0, true
                 )
+            )
         }
 
-        fun withKeyPackageCountFailed() = apply {
-            given(keyPackageCountUseCase)
-                .suspendFunction(keyPackageCountUseCase::invoke)
-                .whenInvokedWith(anything())
-                .thenReturn(MLSKeyPackageCountResult.Failure.Generic(CoreFailure.MissingClientRegistration))
+        suspend fun withKeyPackageCountFailed() = apply {
+            coEvery {
+                keyPackageCountUseCase.invoke(any())
+            }.returns(MLSKeyPackageCountResult.Failure.Generic(CoreFailure.MissingClientRegistration))
         }
 
         fun withIsMLSSupported(supported: Boolean) = apply {
-            given(featureSupport)
-                .invocation { featureSupport.isMLSSupported }
-                .thenReturn(supported)
+            every {
+                featureSupport.isMLSSupported
+            }.returns(supported)
         }
 
-        fun withHasRegisteredMLSClient(result: Boolean) = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::hasRegisteredMLSClient)
-                .whenInvoked()
-                .thenReturn(Either.Right(result))
+        suspend fun withHasRegisteredMLSClient(result: Boolean) = apply {
+            coEvery {
+                clientRepository.hasRegisteredMLSClient()
+            }.returns(Either.Right(result))
         }
 
         fun arrange() = this to KeyPackageManagerImpl(

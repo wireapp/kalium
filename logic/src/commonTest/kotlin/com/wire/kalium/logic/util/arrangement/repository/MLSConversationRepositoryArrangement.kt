@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,39 +17,28 @@
  */
 package com.wire.kalium.logic.util.arrangement.repository
 
-import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.conversation.MLSConversationRepository
+import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.any
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
 
 internal interface MLSConversationRepositoryArrangement {
-    val mlsConversationRepository: MLSConversationRepository
+    val epochChangesObserver: EpochChangesObserver
 
     fun withObserveEpochChanges(result: Flow<GroupID>)
-    fun withMLSConversationVerificationStatus(result: Either<CoreFailure, Conversation.VerificationStatus>)
 }
 
-internal open class MLSConversationRepositoryArrangementImpl : MLSConversationRepositoryArrangement {
+internal open class MLSConversationRepositoryArrangementImpl :
+    MLSConversationRepositoryArrangement {
+
     @Mock
-    override val mlsConversationRepository: MLSConversationRepository = mock(MLSConversationRepository::class)
+    override val epochChangesObserver: EpochChangesObserver = mock(EpochChangesObserver::class)
 
     override fun withObserveEpochChanges(result: Flow<GroupID>) {
-        given(mlsConversationRepository)
-            .suspendFunction(mlsConversationRepository::observeEpochChanges)
-            .whenInvoked()
-            .thenReturn(result)
-    }
-
-    override fun withMLSConversationVerificationStatus(result: Either<CoreFailure, Conversation.VerificationStatus>) {
-        given(mlsConversationRepository)
-            .suspendFunction(mlsConversationRepository::getConversationVerificationStatus)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+        every {
+            epochChangesObserver.observe()
+        }.returns(result)
     }
 }

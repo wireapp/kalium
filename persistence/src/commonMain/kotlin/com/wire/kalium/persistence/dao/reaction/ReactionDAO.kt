@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -80,9 +80,11 @@ class ReactionDAOImpl(
         reactions: UserReactionsEntity
     ) = withContext(queriesContext) {
         reactionsQueries.transaction {
-            reactionsQueries.deleteAllReactionsOnMessageFromUser(originalMessageId, conversationId, senderUserId)
-            reactions.forEach {
-                reactionsQueries.insertReaction(originalMessageId, conversationId, senderUserId, it, date)
+            reactionsQueries.doesMessageExist(originalMessageId, conversationId).executeAsOneOrNull()?.let {
+                reactionsQueries.deleteAllReactionsOnMessageFromUser(originalMessageId, conversationId, senderUserId)
+                reactions.forEach {
+                    reactionsQueries.insertReaction(originalMessageId, conversationId, senderUserId, it, date)
+                }
             }
         }
     }

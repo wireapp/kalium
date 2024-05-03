@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,14 +18,15 @@
 
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.logger.KaliumLogLevel
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.kaliumLogger
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import com.wire.kalium.logic.logStructuredJson
 
 internal interface MLSConversationsRecoveryManager {
     suspend fun invoke()
@@ -37,18 +38,34 @@ internal class MLSConversationsRecoveryManagerImpl(
     private val clientRepository: ClientRepository,
     private val recoverMLSConversationsUseCase: RecoverMLSConversationsUseCase,
     private val slowSyncRepository: SlowSyncRepository,
+    kaliumLogger: KaliumLogger
 ) : MLSConversationsRecoveryManager {
 
+    private val logger = kaliumLogger.withTextTag("MLSConversationRecoveryManager")
+
     @Suppress("ComplexCondition")
-    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun invoke() {
         // wait until incremental sync is done
+        logger.v("Starting to observe for matching requirements")
         incrementalSyncRepository.incrementalSyncState.collect { syncState ->
+            val isMlsSupported = featureSupport.isMLSSupported
+            val hasRegisteredMLSClient = clientRepository.hasRegisteredMLSClient().getOrElse(false)
+            val needsToRecoverMLSGroups = slowSyncRepository.needsToRecoverMLSGroups()
+            logger.logStructuredJson(
+                level = KaliumLogLevel.DEBUG,
+                leadingMessage = "SyncState updated",
+                jsonStringKeyValues = mapOf(
+                    "isMlsSupported" to isMlsSupported,
+                    "hasRegisteredMLSClient" to hasRegisteredMLSClient,
+                    "needsToRecoverMLSGroups" to needsToRecoverMLSGroups
+                )
+            )
             if (syncState is IncrementalSyncStatus.Live &&
-                featureSupport.isMLSSupported &&
-                clientRepository.hasRegisteredMLSClient().getOrElse(false) &&
-                slowSyncRepository.needsToRecoverMLSGroups()
+                isMlsSupported &&
+                hasRegisteredMLSClient &&
+                needsToRecoverMLSGroups
             ) {
+                logger.i("Recovering MLS Conversations")
                 recoverMLSConversations()
             }
         }
@@ -58,9 +75,12 @@ internal class MLSConversationsRecoveryManagerImpl(
         recoverMLSConversationsUseCase.invoke().let { result ->
             when (result) {
                 is RecoverMLSConversationsResult.Failure ->
-                    kaliumLogger.w("Error while recovering MLS conversations: ${result.failure}")
-                is RecoverMLSConversationsResult.Success ->
+                    logger.w("Error while recovering MLS conversations: ${result.failure}")
+
+                is RecoverMLSConversationsResult.Success -> {
+                    logger.i("Successfully recovered MLS Conversations")
                     slowSyncRepository.setNeedsToRecoverMLSGroups(false)
+                }
             }
         }
 }

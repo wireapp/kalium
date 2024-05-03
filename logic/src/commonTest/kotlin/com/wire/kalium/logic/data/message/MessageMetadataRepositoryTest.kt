@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,9 +25,10 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -52,10 +53,9 @@ class MessageMetadataRepositoryTest {
             assertEquals("domain", it.domain)
         }
 
-        verify(arrangement.messageMetaDataDAO)
-            .suspendFunction(arrangement.messageMetaDataDAO::originalSenderId)
-            .with(eq(ConversationIDEntity("conversation_id", "domain")),  eq("message_id"))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageMetaDataDAO.originalSenderId(eq(ConversationIDEntity("conversation_id", "domain")), eq("message_id"))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -75,19 +75,16 @@ class MessageMetadataRepositoryTest {
             assertEquals(StorageFailure.DataNotFound, it)
         }
 
-        verify(arrangement.messageMetaDataDAO)
-            .suspendFunction(arrangement.messageMetaDataDAO::originalSenderId)
-            .with(eq(ConversationIDEntity("conversation_id", "domain")),  eq("message_id"))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageMetaDataDAO.originalSenderId(eq(ConversationIDEntity("conversation_id", "domain")), eq("message_id"))
+        }.wasInvoked(exactly = once)
     }
-
-
 
     private class Arrangement : MessageMetadataDAOArrangement by MessageMetadataDAOArrangementImpl() {
         private val repo: MessageMetadataRepository = MessageMetadataSource(messageMetaDataDAO)
 
-        fun arrange(block: Arrangement.() -> Unit): Pair<Arrangement, MessageMetadataRepository> {
-            block()
+        fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, MessageMetadataRepository> {
+            runBlocking { block() }
             return this to repo
         }
     }

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,11 +24,10 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.feature.user.readReceipts.ObserveReadReceiptsEnabledUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -48,10 +47,9 @@ class ObserveReadReceiptsEnabledUseCaseTest {
             val item = awaitItem()
             assertTrue(item)
 
-            verify(arrangement.userPropertyRepository)
-                .function(arrangement.userPropertyRepository::observeReadReceiptsStatus)
-                .with()
-                .wasInvoked(once)
+            coVerify {
+                arrangement.userPropertyRepository.observeReadReceiptsStatus()
+            }.wasInvoked(once)
 
             awaitComplete()
         }
@@ -69,10 +67,9 @@ class ObserveReadReceiptsEnabledUseCaseTest {
             val item = awaitItem()
             assertTrue(item)
 
-            verify(arrangement.userPropertyRepository)
-                .function(arrangement.userPropertyRepository::observeReadReceiptsStatus)
-                .with()
-                .wasInvoked(once)
+            coVerify {
+                arrangement.userPropertyRepository.observeReadReceiptsStatus()
+            }.wasInvoked(once)
 
             awaitComplete()
         }
@@ -80,24 +77,22 @@ class ObserveReadReceiptsEnabledUseCaseTest {
 
     private class Arrangement {
         @Mock
-        val userPropertyRepository = mock(classOf<UserPropertyRepository>())
+        val userPropertyRepository = mock(UserPropertyRepository::class)
 
         val observeReadReceiptsEnabled = ObserveReadReceiptsEnabledUseCaseImpl(userPropertyRepository)
 
-        fun withSuccessfulState() = apply {
-            given(userPropertyRepository)
-                .suspendFunction(userPropertyRepository::observeReadReceiptsStatus)
-                .whenInvoked()
-                .thenReturn(flowOf(Either.Right(true)))
+        suspend fun withSuccessfulState() = apply {
+            coEvery {
+                userPropertyRepository.observeReadReceiptsStatus()
+            }.returns(flowOf(Either.Right(true)))
 
             return this
         }
 
-        fun withFailureState() = apply {
-            given(userPropertyRepository)
-                .suspendFunction(userPropertyRepository::observeReadReceiptsStatus)
-                .whenInvoked()
-                .thenReturn(flowOf(Either.Left(StorageFailure.DataNotFound)))
+        suspend fun withFailureState() = apply {
+            coEvery {
+                userPropertyRepository.observeReadReceiptsStatus()
+            }.returns(flowOf(Either.Left(StorageFailure.DataNotFound)))
 
             return this
         }

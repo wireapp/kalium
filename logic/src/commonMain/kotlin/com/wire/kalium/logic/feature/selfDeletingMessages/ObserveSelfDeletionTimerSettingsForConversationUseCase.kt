@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,8 +27,11 @@ import com.wire.kalium.logic.data.message.TeamSelfDeleteTimer
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.util.isPositiveNotNull
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.withContext
 
 /**
  * When invoked, this use case will start observing on a given conversation, the currently applied [SelfDeletionTimer]
@@ -44,26 +47,29 @@ interface ObserveSelfDeletionTimerSettingsForConversationUseCase {
 
 class ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl internal constructor(
     private val userConfigRepository: UserConfigRepository,
-    private val conversationRepository: ConversationRepository
+    private val conversationRepository: ConversationRepository,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ObserveSelfDeletionTimerSettingsForConversationUseCase {
 
     override suspend fun invoke(conversationId: ConversationId, considerSelfUserSettings: Boolean): Flow<SelfDeletionTimer> =
-        userConfigRepository.observeTeamSettingsSelfDeletingStatus()
-            .combine(
-                conversationRepository.observeById(conversationId)
-            ) { teamSettings, conversationDetailsEither ->
-                teamSettings.fold({
-                    onTeamEnabled(conversationDetailsEither, considerSelfUserSettings)
-                }, {
-                    when (it.enforcedSelfDeletionTimer) {
-                        TeamSelfDeleteTimer.Disabled -> SelfDeletionTimer.Disabled
-                        TeamSelfDeleteTimer.Enabled -> onTeamEnabled(conversationDetailsEither, considerSelfUserSettings)
-                        is TeamSelfDeleteTimer.Enforced -> SelfDeletionTimer.Enforced.ByTeam(
-                            it.enforcedSelfDeletionTimer.enforcedDuration
-                        )
-                    }
-                })
-            }
+        withContext(dispatcher.io) {
+            userConfigRepository.observeTeamSettingsSelfDeletingStatus()
+                .combine(
+                    conversationRepository.observeById(conversationId)
+                ) { teamSettings, conversationDetailsEither ->
+                    teamSettings.fold({
+                        onTeamEnabled(conversationDetailsEither, considerSelfUserSettings)
+                    }, {
+                        when (it.enforcedSelfDeletionTimer) {
+                            TeamSelfDeleteTimer.Disabled -> SelfDeletionTimer.Disabled
+                            TeamSelfDeleteTimer.Enabled -> onTeamEnabled(conversationDetailsEither, considerSelfUserSettings)
+                            is TeamSelfDeleteTimer.Enforced -> SelfDeletionTimer.Enforced.ByTeam(
+                                it.enforcedSelfDeletionTimer.enforcedDuration
+                            )
+                        }
+                    })
+                }
+        }
 
     private fun onTeamEnabled(conversation: Either<StorageFailure, Conversation>, considerSelfUserSettings: Boolean): SelfDeletionTimer =
         conversation.fold({

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,15 +22,17 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.feature.asset.GetAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCaseTest
-import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
-import com.wire.kalium.logic.feature.asset.UpdateUploadStatusResult
+import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
+import com.wire.kalium.logic.feature.asset.UpdateTransferStatusResult
 import com.wire.kalium.logic.framework.TestAsset.mockedLongAssetData
 import com.wire.kalium.logic.framework.TestMessage.ASSET_CONTENT
 import com.wire.kalium.logic.framework.TestMessage.TEST_DATE_STRING
@@ -42,11 +44,16 @@ import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.Mock
-import io.mockative.anything
-import io.mockative.configure
+import io.mockative.any
+
+import io.mockative.coEvery
+import io.mockative.every
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.coEvery
+import io.mockative.matches
+import io.mockative.coVerify
+import io.mockative.coEvery
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -63,7 +70,10 @@ import kotlin.test.assertIs
 @OptIn(ExperimentalCoroutinesApi::class)
 class RetryFailedMessageUseCaseTest {
 
-    private fun testResendingWithGivenMessageStatus(status: Message.Status, shouldSucceed: Boolean) =
+    private fun testResendingWithGivenMessageStatus(
+        status: Message.Status,
+        shouldSucceed: Boolean
+    ) =
         runTest(testDispatcher.default) {
             // given
             val message = TEXT_MESSAGE.copy(status = status)
@@ -118,14 +128,12 @@ class RetryFailedMessageUseCaseTest {
             advanceUntilIdle()
 
             // then
-            verify(arrangement.messageRepository)
-                .suspendFunction(arrangement.messageRepository::updateMessageStatus)
-                .with(eq(MessageEntity.Status.PENDING), eq(message.conversationId), eq(message.id))
-                .wasInvoked(exactly = once)
-            verify(arrangement.messageSender)
-                .suspendFunction(arrangement.messageSender::sendMessage)
-                .with(eq(message), anything())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageRepository.updateMessageStatus(eq(MessageEntity.Status.PENDING), eq(message.conversationId), eq(message.id))
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageSender.sendMessage(eq(message), any())
+            }.wasInvoked(exactly = once)
         }
 
     @Test
@@ -144,17 +152,16 @@ class RetryFailedMessageUseCaseTest {
             advanceUntilIdle()
 
             // then
-            verify(arrangement.messageSender)
-                .suspendFunction(arrangement.messageSender::sendMessage)
-                .with(
-                    matching {
+            coVerify {
+                arrangement.messageSender.sendMessage(
+                    matches {
                         it is Message.Signaling // message edits are sent as signaling messages
                                 && it.id != message.id // when editing we need to generate and set a new id
                                 && it.content is MessageContent.TextEdited
                                 && (it.content as MessageContent.TextEdited).editMessageId == message.id // original id in edited content
-                    }, anything()
+                    }, any()
                 )
-                .wasInvoked(exactly = once)
+            }.wasInvoked(exactly = once)
         }
 
     @Test
@@ -162,7 +169,7 @@ class RetryFailedMessageUseCaseTest {
         runTest(testDispatcher.default) {
             // given
             val name = "some_asset.txt"
-            val content = MessageContent.Asset(ASSET_CONTENT.value.copy(name = name, uploadStatus = Message.UploadStatus.FAILED_UPLOAD))
+            val content = MessageContent.Asset(ASSET_CONTENT.value.copy(name = name))
             val path = fakeKaliumFileSystem.providePersistentAssetPath(name)
             val message = assetMessage().copy(content = content, status = Message.Status.Failed)
             val uploadedAssetId = UploadedAssetId("remote_key", "remote_domain", "remote_token")
@@ -170,9 +177,10 @@ class RetryFailedMessageUseCaseTest {
             val (arrangement, useCase) = Arrangement()
                 .withGetMessageById(Either.Right(message))
                 .withUpdateMessageStatus(Either.Right(Unit))
-                .withUpdateAssetMessageUploadStatus(UpdateUploadStatusResult.Success)
+                .withUpdateAssetMessageTransferStatus(UpdateTransferStatusResult.Success)
                 .withFetchPrivateDecodedAsset(Either.Right(path))
                 .withStoredData(mockedLongAssetData(), path)
+                .withGetAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD)
                 .withUploadAndPersistPrivateAsset(Either.Right(uploadedAssetId to uploadedAssetSha))
                 .withPersistMessage(Either.Right(Unit))
                 .withSendMessage(Either.Right(Unit))
@@ -183,19 +191,17 @@ class RetryFailedMessageUseCaseTest {
             advanceUntilIdle()
 
             // then
-            verify(arrangement.assetRepository)
-                .suspendFunction(arrangement.assetRepository::uploadAndPersistPrivateAsset)
-                .with(anything(), eq(path), anything(), eq(name.fileExtension()))
-                .wasInvoked(exactly = once)
-            verify(arrangement.messageSender)
-                .suspendFunction(arrangement.messageSender::sendMessage)
-                .with(matching {
+            coVerify {
+                arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), eq(path), any(), eq(name.fileExtension()))
+            }.wasInvoked(exactly = once)
+            coVerify {
+                arrangement.messageSender.sendMessage(matches {
                     it.id == message.id && it.content is MessageContent.Asset
                             && (it.content as MessageContent.Asset).value.remoteData.assetId == uploadedAssetId.key
                             && (it.content as MessageContent.Asset).value.remoteData.assetDomain == uploadedAssetId.domain
                             && (it.content as MessageContent.Asset).value.remoteData.assetToken == uploadedAssetId.assetToken
-                }, anything())
-                .wasInvoked(exactly = once)
+                }, any())
+            }.wasInvoked(exactly = once)
         }
 
     @Test
@@ -203,13 +209,14 @@ class RetryFailedMessageUseCaseTest {
         runTest(testDispatcher.default) {
             // given
             val name = "some_asset.txt"
-            val content = MessageContent.Asset(ASSET_CONTENT.value.copy(name = name, uploadStatus = Message.UploadStatus.UPLOADED))
+            val content = MessageContent.Asset(ASSET_CONTENT.value.copy(name = name))
             val path = fakeKaliumFileSystem.providePersistentAssetPath(name)
             val message = assetMessage().copy(content = content, status = Message.Status.Failed)
             val (arrangement, useCase) = Arrangement()
                 .withGetMessageById(Either.Right(message))
                 .withUpdateMessageStatus(Either.Right(Unit))
-                .withUpdateAssetMessageUploadStatus(UpdateUploadStatusResult.Success)
+                .withUpdateAssetMessageTransferStatus(UpdateTransferStatusResult.Success)
+                .withGetAssetMessageTransferStatus(AssetTransferStatus.UPLOADED)
                 .withFetchPrivateDecodedAsset(Either.Right(path))
                 .withStoredData(mockedLongAssetData(), path)
                 .withPersistMessage(Either.Right(Unit))
@@ -221,14 +228,12 @@ class RetryFailedMessageUseCaseTest {
             advanceUntilIdle()
 
             // then
-            verify(arrangement.assetRepository)
-                .suspendFunction(arrangement.assetRepository::uploadAndPersistPrivateAsset)
-                .with(anything(), anything(), anything(), anything())
-                .wasNotInvoked()
-            verify(arrangement.messageSender)
-                .suspendFunction(arrangement.messageSender::sendMessage)
-                .with(eq(message), anything())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+            }.wasNotInvoked()
+            coVerify {
+                arrangement.messageSender.sendMessage(eq(message), any())
+            }.wasInvoked(exactly = once)
         }
 
     @Test
@@ -274,13 +279,13 @@ class RetryFailedMessageUseCaseTest {
         runTest(testDispatcher.default) {
             // given
             val name = "some_asset.txt"
-            val content = MessageContent.Asset(ASSET_CONTENT.value.copy(name = name, uploadStatus = Message.UploadStatus.FAILED_UPLOAD))
+            val content = MessageContent.Asset(ASSET_CONTENT.value.copy(name = name))
             val path = fakeKaliumFileSystem.providePersistentAssetPath(name)
             val message = assetMessage().copy(content = content, status = Message.Status.Failed)
             val (_, useCase) = Arrangement()
                 .withGetMessageById(Either.Right(message))
                 .withUpdateMessageStatus(Either.Right(Unit))
-                .withUpdateAssetMessageUploadStatus(UpdateUploadStatusResult.Success)
+                .withUpdateAssetMessageTransferStatus(UpdateTransferStatusResult.Success)
                 .withFetchPrivateDecodedAsset(Either.Right(path))
                 .withStoredData(mockedLongAssetData(), path)
                 .withUploadAndPersistPrivateAsset(Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)))
@@ -299,7 +304,7 @@ class RetryFailedMessageUseCaseTest {
         runTest(testDispatcher.default) {
             // given
             val name = "some_asset.txt"
-            val content = MessageContent.Asset(ASSET_CONTENT.value.copy(name = name, uploadStatus = Message.UploadStatus.FAILED_UPLOAD))
+            val content = MessageContent.Asset(ASSET_CONTENT.value.copy(name = name))
             val path = fakeKaliumFileSystem.providePersistentAssetPath(name)
             val message = assetMessage().copy(content = content, status = Message.Status.Failed)
             val uploadedAssetId = UploadedAssetId("remote_key", "remote_domain", "remote_token")
@@ -307,9 +312,10 @@ class RetryFailedMessageUseCaseTest {
             val (arrangement, useCase) = Arrangement()
                 .withGetMessageById(Either.Right(message))
                 .withUpdateMessageStatus(Either.Right(Unit))
-                .withUpdateAssetMessageUploadStatus(UpdateUploadStatusResult.Success)
+                .withUpdateAssetMessageTransferStatus(UpdateTransferStatusResult.Success)
                 .withFetchPrivateDecodedAsset(Either.Right(path))
                 .withStoredData(mockedLongAssetData(), path)
+                .withGetAssetMessageTransferStatus(AssetTransferStatus.FAILED_UPLOAD)
                 .withUploadAndPersistPrivateAsset(Either.Right(uploadedAssetId to uploadedAssetSha))
                 .withPersistMessage(Either.Right(Unit))
                 .withSendMessage(Either.Left(NetworkFailure.ServerMiscommunication(TestNetworkException.missingAuth)))
@@ -320,17 +326,16 @@ class RetryFailedMessageUseCaseTest {
             advanceUntilIdle()
 
             // then
-            verify(arrangement.persistMessage)
-                .suspendFunction(arrangement.persistMessage::invoke)
-                .with(
-                    matching {
+            coVerify {
+                arrangement.persistMessage.invoke(
+                    matches {
                         it.id == message.id && it.content is MessageContent.Asset
                                 && (it.content as MessageContent.Asset).value.remoteData.assetId == uploadedAssetId.key
                                 && (it.content as MessageContent.Asset).value.remoteData.assetDomain == uploadedAssetId.domain
                                 && (it.content as MessageContent.Asset).value.remoteData.assetToken == uploadedAssetId.assetToken
                     }
                 )
-                .wasInvoked(exactly = once)
+            }.wasInvoked(exactly = once)
         }
 
     private class Arrangement {
@@ -348,60 +353,56 @@ class RetryFailedMessageUseCaseTest {
         val messageSender = mock(MessageSender::class)
 
         @Mock
-        val updateAssetMessageUploadStatus = mock(UpdateAssetMessageUploadStatusUseCase::class)
+        val updateAssetMessageTransferStatus = mock(UpdateAssetMessageTransferStatusUseCase::class)
 
         @Mock
-        val messageSendFailureHandler = configure(mock(MessageSendFailureHandler::class)) { stubsUnitByDefault = true }
+        val getAssetMessageTransferStatus = mock(GetAssetMessageTransferStatusUseCase::class)
+
+        @Mock
+        val messageSendFailureHandler = mock(MessageSendFailureHandler::class)
 
         private val testScope = TestScope(testDispatcher.default)
 
-        fun withGetMessageById(result: Either<StorageFailure, Message>): Arrangement = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::getMessageById)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(result)
+        suspend fun withGetMessageById(result: Either<StorageFailure, Message>): Arrangement = apply {
+            coEvery {
+                messageRepository.getMessageById(any(), any())
+            }.returns(result)
         }
 
-        fun withUpdateMessageStatus(result: Either<CoreFailure, Unit>): Arrangement = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::updateMessageStatus)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(result)
+        suspend fun withUpdateMessageStatus(result: Either<CoreFailure, Unit>): Arrangement = apply {
+            coEvery {
+                messageRepository.updateMessageStatus(any(), any(), any())
+            }.returns(result)
         }
 
-        fun withUpdateAssetMessageUploadStatus(result: UpdateUploadStatusResult): Arrangement = apply {
-            given(updateAssetMessageUploadStatus)
-                .suspendFunction(updateAssetMessageUploadStatus::invoke)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(result)
+        suspend fun withUpdateAssetMessageTransferStatus(result: UpdateTransferStatusResult): Arrangement = apply {
+            coEvery {
+                updateAssetMessageTransferStatus.invoke(any(), any(), any())
+            }.returns(result)
         }
 
-        fun withFetchPrivateDecodedAsset(result: Either<CoreFailure, Path>): Arrangement = apply {
-            given(assetRepository)
-                .suspendFunction(assetRepository::fetchPrivateDecodedAsset)
-                .whenInvokedWith(anything(), anything(), anything(), anything(), anything(), anything(), anything())
-                .thenReturn(result)
+        suspend fun withFetchPrivateDecodedAsset(result: Either<CoreFailure, Path>): Arrangement = apply {
+            coEvery {
+                assetRepository.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), any())
+            }.returns(result)
         }
 
-        fun withUploadAndPersistPrivateAsset(result: Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>>): Arrangement = apply {
-            given(assetRepository)
-                .suspendFunction(assetRepository::uploadAndPersistPrivateAsset)
-                .whenInvokedWith(anything(), anything(), anything(), anything())
-                .thenReturn(result)
+        suspend fun withUploadAndPersistPrivateAsset(result: Either<CoreFailure, Pair<UploadedAssetId, SHA256Key>>): Arrangement = apply {
+            coEvery {
+                assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+            }.returns(result)
         }
 
-        fun withPersistMessage(result: Either<CoreFailure, Unit>): Arrangement = apply {
-            given(persistMessage)
-                .suspendFunction(persistMessage::invoke)
-                .whenInvokedWith(anything())
-                .thenReturn(result)
+        suspend fun withPersistMessage(result: Either<CoreFailure, Unit>): Arrangement = apply {
+            coEvery {
+                persistMessage.invoke(any())
+            }.returns(result)
         }
 
-        fun withSendMessage(result: Either<CoreFailure, Unit>): Arrangement = apply {
-            given(messageSender)
-                .suspendFunction(messageSender::sendMessage)
-                .whenInvokedWith(anything(), anything())
-                .thenReturn(result)
+        suspend fun withSendMessage(result: Either<CoreFailure, Unit>): Arrangement = apply {
+            coEvery {
+                messageSender.sendMessage(any(), any())
+            }.returns(result)
         }
 
         fun withStoredData(data: ByteArray, dataPath: Path): Arrangement = apply {
@@ -411,6 +412,12 @@ class RetryFailedMessageUseCaseTest {
             }
         }
 
+        suspend fun withGetAssetMessageTransferStatus(result: AssetTransferStatus) = apply {
+            coEvery {
+                getAssetMessageTransferStatus.invoke(any(), any())
+            }.returns(result)
+        }
+
         fun arrange() = this to RetryFailedMessageUseCase(
             messageRepository,
             assetRepository,
@@ -418,7 +425,8 @@ class RetryFailedMessageUseCaseTest {
             testScope,
             testDispatcher,
             messageSender,
-            updateAssetMessageUploadStatus,
+            updateAssetMessageTransferStatus,
+            getAssetMessageTransferStatus,
             messageSendFailureHandler
         )
     }

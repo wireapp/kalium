@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,8 +29,9 @@ import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.QualifiedID
 import io.mockative.any
+import io.mockative.coVerify
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -61,15 +62,13 @@ class GenerateGuestRoomLinkUseCaseTest {
             assertIs<GenerateGuestRoomLinkResult.Success>(result)
         }
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::generateGuestRoomLink)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationGroupRepository.generateGuestRoomLink(any(), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.codeUpdatedHandler)
-            .suspendFunction(arrangement.codeUpdatedHandler::handle)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.codeUpdatedHandler.handle(any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -83,15 +82,13 @@ class GenerateGuestRoomLinkUseCaseTest {
             assertIs<GenerateGuestRoomLinkResult.Failure>(result)
         }
 
-        verify(arrangement.conversationGroupRepository)
-            .suspendFunction(arrangement.conversationGroupRepository::generateGuestRoomLink)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationGroupRepository.generateGuestRoomLink(any(), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.codeUpdatedHandler)
-            .suspendFunction(arrangement.codeUpdatedHandler::handle)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.codeUpdatedHandler.handle(any())
+        }.wasNotInvoked()
     }
 
     companion object {
@@ -107,7 +104,8 @@ class GenerateGuestRoomLinkUseCaseTest {
             codeUpdatedHandler
         )
 
-        fun arrange(block: Arrangement.() -> Unit) = apply(block).run {
+        fun arrange(block: suspend Arrangement.() -> Unit) = run {
+            runBlocking { block() }
             this to generateGuestRoomLink
         }
     }

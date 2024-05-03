@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -52,6 +52,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -77,6 +78,6 @@ dependencies {
     implementation(project(":network"))
     implementation(project(":cryptography"))
     implementation(project(":logic"))
-
     implementation(libs.bundles.android)
+    coreLibraryDesugaring(libs.desugarJdkLibs)
 }

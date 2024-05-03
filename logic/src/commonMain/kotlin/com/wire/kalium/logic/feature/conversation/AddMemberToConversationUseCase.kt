@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,15 +19,12 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.network.exceptions.KaliumException
-import io.ktor.http.HttpStatusCode
 
 /**
  * This use case will add a member(s) to a given conversation.
@@ -48,30 +45,18 @@ interface AddMemberToConversationUseCase {
 
 internal class AddMemberToConversationUseCaseImpl(
     private val conversationGroupRepository: ConversationGroupRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val refreshUsersWithoutMetadata: RefreshUsersWithoutMetadataUseCase
 ) : AddMemberToConversationUseCase {
     override suspend fun invoke(conversationId: ConversationId, userIdList: List<UserId>): AddMemberToConversationUseCase.Result {
+        userRepository.insertOrIgnoreIncompleteUsers(userIdList)
         return conversationGroupRepository.addMembers(userIdList, conversationId)
-            .onFailure {
-                when (it) {
-                    is NetworkFailure.ServerMiscommunication -> {
-                        if (it.kaliumException is KaliumException.InvalidRequestError &&
-                            it.kaliumException.errorResponse.code == HttpStatusCode.Forbidden.value) {
-                            handle403Error(userIdList)
-                        }
-                    }
-
-                    else -> { /* do nothing */ }
-                }
-            }
             .fold({
                 AddMemberToConversationUseCase.Result.Failure(it)
             }, {
                 AddMemberToConversationUseCase.Result.Success
-            })
-    }
-
-    private suspend fun handle403Error(userIdList: List<UserId>) {
-        userRepository.fetchUsersByIds(userIdList.toSet())
+            }).also {
+                refreshUsersWithoutMetadata()
+            }
     }
 }

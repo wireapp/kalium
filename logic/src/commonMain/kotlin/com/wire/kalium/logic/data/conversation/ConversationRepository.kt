@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,6 +24,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
+import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
@@ -73,6 +74,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.message.MessageDAO
+import com.wire.kalium.persistence.dao.message.draft.MessageDraftDAO
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.flow.Flow
@@ -154,7 +156,6 @@ interface ConversationRepository {
         conversationID: ConversationId
     ): Either<CoreFailure, Unit>
 
-    suspend fun deleteMembersFromEvent(userIDList: List<UserId>, conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun observeOneToOneConversationWithOtherUser(otherUserId: UserId): Flow<Either<CoreFailure, Conversation>>
 
     suspend fun getOneOnOneConversationsWithOtherUser(
@@ -295,6 +296,8 @@ interface ConversationRepository {
     suspend fun observeLegalHoldStatus(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation.LegalHoldStatus>>
 
     suspend fun observeLegalHoldStatusChangeNotified(conversationId: ConversationId): Flow<Either<StorageFailure, Boolean>>
+
+    suspend fun getGroupStatusMembersNamesAndHandles(groupID: GroupID): Either<StorageFailure, EpochChangesData>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -309,6 +312,7 @@ internal class ConversationDataSource internal constructor(
     private val clientDAO: ClientDAO,
     private val clientApi: ClientApi,
     private val conversationMetaDataDAO: ConversationMetaDataDAO,
+    private val messageDraftDAO: MessageDraftDAO,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
     private val memberMapper: MemberMapper = MapperProvider.memberMapper(),
@@ -473,12 +477,17 @@ internal class ConversationDataSource internal constructor(
             conversationDAO.getAllConversationDetails(fromArchive),
             if (fromArchive) flowOf(listOf()) else messageDAO.observeLastMessages(),
             messageDAO.observeConversationsUnreadEvents(),
-        ) { conversationList, lastMessageList, unreadEvents ->
+            messageDraftDAO.observeMessageDrafts()
+        ) { conversationList, lastMessageList, unreadEvents, drafts ->
             val lastMessageMap = lastMessageList.associateBy { it.conversationId }
+            val messageDraftMap = drafts.filter { it.text.isNotBlank() }.associateBy { it.conversationId }
+
             conversationList.map { conversation ->
-                conversationMapper.fromDaoModelToDetails(conversation,
-                    lastMessageMap[conversation.id]?.let { messageMapper.fromEntityToMessagePreview(it) },
-                    unreadEvents.firstOrNull { it.conversationId == conversation.id }?.unreadEvents?.mapKeys {
+                conversationMapper.fromDaoModelToDetails(
+                    conversation,
+                    lastMessage = messageDraftMap[conversation.id]?.let { messageMapper.fromDraftToMessagePreview(it) }
+                        ?: lastMessageMap[conversation.id]?.let { messageMapper.fromEntityToMessagePreview(it) },
+                    unreadEventCount = unreadEvents.firstOrNull { it.conversationId == conversation.id }?.unreadEvents?.mapKeys {
                         when (it.key) {
                             UnreadEventTypeEntity.KNOCK -> UnreadEventType.KNOCK
                             UnreadEventTypeEntity.MISSED_CALL -> UnreadEventType.MISSED_CALL
@@ -651,17 +660,6 @@ internal class ConversationDataSource internal constructor(
     override suspend fun updateMemberFromEvent(member: Conversation.Member, conversationID: ConversationId): Either<CoreFailure, Unit> =
         wrapStorageRequest {
             memberDAO.updateMemberRole(member.id.toDao(), conversationID.toDao(), conversationRoleMapper.toDAO(member.role))
-        }
-
-    override suspend fun deleteMembersFromEvent(
-        userIDList: List<UserId>,
-        conversationID: ConversationId
-    ): Either<CoreFailure, Unit> =
-        wrapStorageRequest {
-            memberDAO.deleteMembersByQualifiedID(
-                userIDList.map { it.toDao() },
-                conversationID.toDao()
-            )
         }
 
     override suspend fun getConversationsByGroupState(
@@ -1096,6 +1094,7 @@ internal class ConversationDataSource internal constructor(
             }
         }
     }
+
     override suspend fun setLegalHoldStatusChangeNotified(conversationId: ConversationId): Either<CoreFailure, Boolean> =
         wrapStorageRequest {
             conversationDAO.updateLegalHoldStatusChangeNotified(conversationId = conversationId.toDao(), notified = true)
@@ -1111,6 +1110,11 @@ internal class ConversationDataSource internal constructor(
         conversationDAO.observeLegalHoldStatusChangeNotified(conversationId.toDao())
             .wrapStorageRequest()
             .distinctUntilChanged()
+
+    override suspend fun getGroupStatusMembersNamesAndHandles(groupID: GroupID): Either<StorageFailure, EpochChangesData> =
+        wrapStorageRequest {
+            conversationDAO.selectGroupStatusMembersNamesAndHandles(groupID.value)
+        }.map { EpochChangesData.fromEntity(it) }
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"

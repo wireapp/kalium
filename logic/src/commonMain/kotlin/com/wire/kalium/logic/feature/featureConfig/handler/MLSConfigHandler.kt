@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,7 +22,6 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSModel
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.user.SupportedProtocol
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.user.UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -30,16 +29,15 @@ import com.wire.kalium.logic.functional.getOrElse
 
 class MLSConfigHandler(
     private val userConfigRepository: UserConfigRepository,
-    private val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase,
-    private val selfUserId: UserId
+    private val updateSupportedProtocolsAndResolveOneOnOnes: UpdateSupportedProtocolsAndResolveOneOnOnesUseCase
 ) {
     suspend fun handle(mlsConfig: MLSModel, duringSlowSync: Boolean): Either<CoreFailure, Unit> {
         val mlsEnabled = mlsConfig.status == Status.ENABLED
-        val selfUserIsWhitelisted = mlsConfig.allowedUsers.contains(selfUserId.toPlainID())
+        val isMLSSupported = mlsConfig.supportedProtocols.contains(SupportedProtocol.MLS)
         val previousSupportedProtocols = userConfigRepository.getSupportedProtocols().getOrElse(setOf(SupportedProtocol.PROTEUS))
         val supportedProtocolsHasChanged = !previousSupportedProtocols.equals(mlsConfig.supportedProtocols)
 
-        return userConfigRepository.setMLSEnabled(mlsEnabled && selfUserIsWhitelisted)
+        return userConfigRepository.setMLSEnabled(mlsEnabled && isMLSSupported)
             .flatMap {
                 userConfigRepository.setDefaultProtocol(if (mlsEnabled) mlsConfig.defaultProtocol else SupportedProtocol.PROTEUS)
             }.flatMap {

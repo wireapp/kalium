@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,7 @@ package com.wire.kalium.logic.util.arrangement
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
 
@@ -35,9 +35,8 @@ internal class IncrementalSyncRepositoryArrangementImpl: IncrementalSyncReposito
     override val incrementalSyncRepository = mock(IncrementalSyncRepository::class)
 
     override fun withIncrementalSyncState(flow: Flow<IncrementalSyncStatus>) {
-        given(incrementalSyncRepository)
-            .getter(incrementalSyncRepository::incrementalSyncState)
-            .whenInvoked()
-            .thenReturn(flow)
+        every {
+            incrementalSyncRepository.incrementalSyncState
+        }.returns(flow)
     }
 }

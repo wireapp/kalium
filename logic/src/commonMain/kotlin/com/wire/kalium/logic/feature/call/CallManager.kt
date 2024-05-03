@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,11 +21,14 @@ package com.wire.kalium.logic.feature.call
 import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.EpochInfo
+import com.wire.kalium.logic.data.call.Participant
+import com.wire.kalium.logic.data.call.TestVideoType
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 
+@Suppress("TooManyFunctions")
 interface CallManager {
     suspend fun onCallingMessageReceived(
         message: Message.Signaling,
@@ -41,9 +44,13 @@ interface CallManager {
     suspend fun endCall(conversationId: ConversationId)
     suspend fun rejectCall(conversationId: ConversationId)
     suspend fun muteCall(shouldMute: Boolean)
-    suspend fun updateVideoState(conversationId: ConversationId, videoState: VideoState)
+    suspend fun setVideoSendState(conversationId: ConversationId, videoState: VideoState)
     suspend fun requestVideoStreams(conversationId: ConversationId, callClients: CallClientList)
     suspend fun updateEpochInfo(conversationId: ConversationId, epochInfo: EpochInfo)
     suspend fun updateConversationClients(conversationId: ConversationId, clients: String)
     suspend fun reportProcessNotifications(isStarted: Boolean)
+    suspend fun setTestVideoType(testVideoType: TestVideoType)
+    suspend fun setTestPreviewActive(shouldEnable: Boolean)
+    suspend fun setTestRemoteVideoStates(conversationId: ConversationId, participants: List<Participant>)
+    suspend fun cancelJobs()
 }

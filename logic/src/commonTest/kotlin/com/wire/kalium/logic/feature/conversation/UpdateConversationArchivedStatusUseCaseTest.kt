@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,16 +24,15 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class UpdateConversationArchivedStatusUseCaseTest {
 
@@ -45,7 +44,6 @@ class UpdateConversationArchivedStatusUseCaseTest {
         val onlyLocally = false
 
         val (arrangement, updateConversationArchivedStatus) = Arrangement()
-            .withSuccessfulMutingUpdates()
             .withUpdateArchivedStatusFullSuccess()
             .arrange()
 
@@ -53,15 +51,21 @@ class UpdateConversationArchivedStatusUseCaseTest {
         assertEquals(ArchiveStatusUpdateResult.Success::class, result::class)
 
         with(arrangement) {
-            verify(conversationRepository)
-                .suspendFunction(conversationRepository::updateArchivedStatusRemotely)
-                .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp })
-                .wasInvoked(exactly = once)
+            coVerify {
+                conversationRepository.updateArchivedStatusRemotely(
+                    conversationId = any(),
+                    isArchived = eq(isConversationArchived),
+                    archivedStatusTimestamp = matches { it == archivedStatusTimestamp }
+                )
+            }.wasInvoked(exactly = once)
 
-            verify(conversationRepository)
-                .suspendFunction(conversationRepository::updateArchivedStatusLocally)
-                .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp })
-                .wasInvoked(exactly = once)
+            coVerify {
+                conversationRepository.updateArchivedStatusLocally(
+                    conversationId = any(),
+                    isArchived = eq(isConversationArchived),
+                    archivedStatusTimestamp = matches { it == archivedStatusTimestamp }
+                )
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -74,7 +78,6 @@ class UpdateConversationArchivedStatusUseCaseTest {
             val onlyLocally = true
 
             val (arrangement, updateConversationArchivedStatus) = Arrangement()
-                .withSuccessfulMutingUpdates()
                 .withUpdateArchivedStatusFullSuccess()
                 .arrange()
 
@@ -82,15 +85,17 @@ class UpdateConversationArchivedStatusUseCaseTest {
             assertEquals(ArchiveStatusUpdateResult.Success::class, result::class)
 
             with(arrangement) {
-                verify(conversationRepository)
-                    .suspendFunction(conversationRepository::updateArchivedStatusRemotely)
-                    .with(any(), any())
-                    .wasNotInvoked()
+                coVerify {
+                    conversationRepository.updateArchivedStatusRemotely(any(), any(), any())
+                }.wasNotInvoked()
 
-                verify(conversationRepository)
-                    .suspendFunction(conversationRepository::updateArchivedStatusLocally)
-                    .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp })
-                    .wasInvoked(exactly = once)
+                coVerify {
+                    conversationRepository.updateArchivedStatusLocally(
+                        conversationId = any(),
+                        isArchived = eq(isConversationArchived),
+                        archivedStatusTimestamp = matches { it == archivedStatusTimestamp }
+                    )
+                }.wasInvoked(exactly = once)
             }
         }
 
@@ -102,7 +107,6 @@ class UpdateConversationArchivedStatusUseCaseTest {
         val onlyLocally = false
 
         val (arrangement, updateConversationArchivedStatus) = Arrangement()
-            .withSuccessfulMutingUpdates()
             .withRemoteUpdateArchivedStatusFailure()
             .arrange()
 
@@ -110,15 +114,21 @@ class UpdateConversationArchivedStatusUseCaseTest {
         assertEquals(ArchiveStatusUpdateResult.Failure::class, result::class)
 
         with(arrangement) {
-            verify(conversationRepository)
-                .suspendFunction(conversationRepository::updateArchivedStatusRemotely)
-                .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp })
-                .wasInvoked(exactly = once)
+            coVerify {
+                conversationRepository.updateArchivedStatusRemotely(
+                    conversationId = any(),
+                    isArchived = eq(isConversationArchived),
+                    archivedStatusTimestamp = matches { it == archivedStatusTimestamp }
+                )
+            }.wasInvoked(exactly = once)
 
-            verify(conversationRepository)
-                .suspendFunction(conversationRepository::updateArchivedStatusLocally)
-                .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp })
-                .wasNotInvoked()
+            coVerify {
+                conversationRepository.updateArchivedStatusLocally(
+                    conversationId = any(),
+                    isArchived = eq(isConversationArchived),
+                    archivedStatusTimestamp = matches { it == archivedStatusTimestamp }
+                )
+            }.wasNotInvoked()
         }
     }
 
@@ -131,82 +141,29 @@ class UpdateConversationArchivedStatusUseCaseTest {
 
         val (arrangement, updateConversationArchivedStatus) = Arrangement()
             .withLocalUpdateArchivedStatusFailure()
-            .withSuccessfulMutingUpdates()
             .arrange()
 
         val result = updateConversationArchivedStatus(conversationId, isConversationArchived, onlyLocally, archivedStatusTimestamp)
         assertEquals(ArchiveStatusUpdateResult.Failure::class, result::class)
 
         with(arrangement) {
-            verify(conversationRepository)
-                .suspendFunction(conversationRepository::updateArchivedStatusRemotely)
-                .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp })
-                .wasInvoked(exactly = once)
+            coVerify {
+                conversationRepository.updateArchivedStatusRemotely(
+                    conversationId = any(),
+                    isArchived = eq(isConversationArchived),
+                    archivedStatusTimestamp = matches { it == archivedStatusTimestamp }
+                )
+            }.wasInvoked(exactly = once)
 
-            verify(conversationRepository)
-                .suspendFunction(conversationRepository::updateArchivedStatusLocally)
-                .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp })
-                .wasInvoked(exactly = once)
+            coVerify {
+                conversationRepository.updateArchivedStatusLocally(
+                    conversationId = any(),
+                    isArchived = eq(isConversationArchived),
+                    archivedStatusTimestamp = matches { it == archivedStatusTimestamp }
+                )
+            }.wasInvoked(exactly = once)
         }
     }
-
-    @Test
-    fun givenAConversationId_whenInvokingAnArchivedStatusChangeAndFailsUpdatingRemoteMutingStatus_thenItShouldStillReturnASuccessResult() =
-        runTest {
-            val conversationId = TestConversation.ID
-            val isConversationArchived = true
-            val archivedStatusTimestamp = 123456789L
-            val onlyLocally = false
-
-            val (arrangement, updateConversationArchivedStatus) = Arrangement()
-                .withUpdateArchivedStatusFullSuccess()
-                .withRemoteErrorMutingUpdates()
-                .arrange()
-
-            val result = updateConversationArchivedStatus(conversationId, isConversationArchived, onlyLocally, archivedStatusTimestamp)
-            assertTrue(result is ArchiveStatusUpdateResult.Success)
-
-            with(arrangement) {
-                verify(conversationRepository)
-                    .suspendFunction(conversationRepository::updateArchivedStatusRemotely)
-                    .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp })
-                    .wasInvoked(exactly = once)
-
-                verify(conversationRepository)
-                    .suspendFunction(conversationRepository::updateArchivedStatusLocally)
-                    .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp })
-                    .wasInvoked(exactly = once)
-            }
-        }
-
-    @Test
-    fun givenAConversationId_whenInvokingAnArchivedStatusChangeAndFailsUpdatingLocalMutingStatus_thenItShouldStillReturnASuccessResult() =
-        runTest {
-            val conversationId = TestConversation.ID
-            val isConversationArchived = true
-            val archivedStatusTimestamp = 123456789L
-            val onlyLocally = false
-
-            val (arrangement, updateConversationArchivedStatus) = Arrangement()
-                .withUpdateArchivedStatusFullSuccess()
-                .withLocalErrorMutingUpdates()
-                .arrange()
-
-            val result = updateConversationArchivedStatus(conversationId, isConversationArchived, onlyLocally, archivedStatusTimestamp)
-            assertTrue(result is ArchiveStatusUpdateResult.Success)
-
-            with(arrangement) {
-                verify(conversationRepository)
-                    .suspendFunction(conversationRepository::updateArchivedStatusRemotely)
-                    .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp })
-                    .wasInvoked(exactly = once)
-
-                verify(conversationRepository)
-                    .suspendFunction(conversationRepository::updateArchivedStatusLocally)
-                    .with(any(), eq(isConversationArchived), matching { it == archivedStatusTimestamp })
-                    .wasInvoked(exactly = once)
-            }
-        }
 
     private class Arrangement {
         @Mock
@@ -214,63 +171,29 @@ class UpdateConversationArchivedStatusUseCaseTest {
 
         private val updateArchivedStatus = UpdateConversationArchivedStatusUseCaseImpl(conversationRepository)
 
-        fun withUpdateArchivedStatusFullSuccess() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateArchivedStatusRemotely)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withUpdateArchivedStatusFullSuccess() = apply {
+            coEvery {
+                conversationRepository.updateArchivedStatusRemotely(any(), any(), any())
+            }.returns(Either.Right(Unit))
 
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateArchivedStatusLocally)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Either.Right(Unit))
+            coEvery {
+                conversationRepository.updateArchivedStatusLocally(any(), any(), any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withRemoteUpdateArchivedStatusFailure() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateArchivedStatusRemotely)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Either.Left(NetworkFailure.ServerMiscommunication(RuntimeException("some error"))))
+        suspend fun withRemoteUpdateArchivedStatusFailure() = apply {
+            coEvery {
+                conversationRepository.updateArchivedStatusRemotely(any(), any(), any())
+            }.returns(Either.Left(NetworkFailure.ServerMiscommunication(RuntimeException("some error"))))
         }
 
-        fun withLocalUpdateArchivedStatusFailure() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateArchivedStatusRemotely)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Either.Right(Unit))
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateArchivedStatusLocally)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Either.Left(StorageFailure.DataNotFound))
-        }
-
-        fun withSuccessfulMutingUpdates() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateMutedStatusRemotely)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Either.Right(Unit))
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateMutedStatusLocally)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Either.Right(Unit))
-        }
-
-        fun withRemoteErrorMutingUpdates() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateMutedStatusRemotely)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Either.Left(NetworkFailure.NoNetworkConnection(RuntimeException("some error"))))
-        }
-
-        fun withLocalErrorMutingUpdates() = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateMutedStatusRemotely)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Either.Right(Unit))
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateMutedStatusLocally)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Either.Left(StorageFailure.DataNotFound))
+        suspend fun withLocalUpdateArchivedStatusFailure() = apply {
+            coEvery {
+                conversationRepository.updateArchivedStatusRemotely(any(), any(), any())
+            }.returns(Either.Right(Unit))
+            coEvery {
+                conversationRepository.updateArchivedStatusLocally(any(), any(), any())
+            }.returns(Either.Left(StorageFailure.DataNotFound))
         }
 
         fun arrange() = this to updateArchivedStatus

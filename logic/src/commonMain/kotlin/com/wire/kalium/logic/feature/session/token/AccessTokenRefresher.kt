@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,11 +19,9 @@ package com.wire.kalium.logic.feature.session.token
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.session.token.AccessTokenRepository
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.map
 
 internal interface AccessTokenRefresher {
     /**
@@ -40,7 +38,6 @@ internal interface AccessTokenRefresher {
 }
 
 internal class AccessTokenRefresherImpl(
-    private val userId: UserId,
     private val repository: AccessTokenRepository,
 ) : AccessTokenRefresher {
     override suspend fun refreshTokenAndPersistSession(
@@ -51,14 +48,7 @@ internal class AccessTokenRefresherImpl(
             refreshToken = currentRefreshToken,
             clientId = clientId
         ).flatMap { result ->
-            repository.persistTokens(result.accessToken, result.refreshToken).map {
-                AccountTokens(
-                    userId = userId,
-                    accessToken = result.accessToken,
-                    refreshToken = result.refreshToken,
-                    cookieLabel = null
-                )
-            }
+            repository.persistTokens(result.accessToken, result.refreshToken)
         }
     }
 }

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -104,7 +104,8 @@ data class UserDetailsEntity(
     val defederated: Boolean,
     val isProteusVerified: Boolean,
     val supportedProtocols: Set<SupportedProtocolEntity>?,
-    val activeOneOnOneConversationId: QualifiedIDEntity?
+    val activeOneOnOneConversationId: QualifiedIDEntity?,
+    val isUnderLegalHold: Boolean,
 ) {
     fun toSimpleEntity() = UserEntity(
         id = id,
@@ -142,6 +143,7 @@ data class BotIdEntity(
 )
 
 data class PartialUserEntity(
+    val id: QualifiedIDEntity,
     val name: String? = null,
     val handle: String? = null,
     val email: String? = null,
@@ -213,7 +215,9 @@ interface UserDAO {
      *
      * @return true if the user was updated
      */
-    suspend fun updateUser(id: UserIDEntity, update: PartialUserEntity): Boolean
+    suspend fun updateUser(update: PartialUserEntity)
+
+    suspend fun updateUser(users: List<PartialUserEntity>)
 
     /**
      * This will update all columns (or insert a new record), except:
@@ -266,13 +270,13 @@ interface UserDAO {
     suspend fun getUsersWithOneOnOneConversation(): List<UserEntity>
 
     suspend fun deleteUserByQualifiedID(qualifiedID: QualifiedIDEntity)
-    suspend fun markUserAsDeletedAndRemoveFromGroupConv(qualifiedID: QualifiedIDEntity)
-    suspend fun markUserAsDeletedAndRemoveFromGroupConv(qualifiedID: List<QualifiedIDEntity>)
+    suspend fun markUserAsDeletedAndRemoveFromGroupConv(qualifiedID: QualifiedIDEntity): List<ConversationIDEntity>
+    suspend fun markAsDeleted(userId: List<UserIDEntity>)
     suspend fun markUserAsDefederated(qualifiedID: QualifiedIDEntity)
     suspend fun updateUserHandle(qualifiedID: QualifiedIDEntity, handle: String)
     suspend fun updateUserAvailabilityStatus(qualifiedID: QualifiedIDEntity, status: UserAvailabilityStatusEntity)
     fun observeUsersDetailsNotInConversation(conversationId: QualifiedIDEntity): Flow<List<UserDetailsEntity>>
-    suspend fun insertOrIgnoreUserWithConnectionStatus(qualifiedID: QualifiedIDEntity, connectionStatus: ConnectionEntity.State)
+    suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedIDEntity>)
     suspend fun getUsersDetailsNotInConversationByNameOrHandleOrEmail(
         conversationId: QualifiedIDEntity,
         searchQuery: String,
@@ -302,4 +306,5 @@ interface UserDAO {
 
     suspend fun upsertConnectionStatuses(userStatuses: Map<QualifiedIDEntity, ConnectionEntity.State>)
     suspend fun isAtLeastOneUserATeamMember(userId: List<UserIDEntity>, teamId: String): Boolean
+    suspend fun getOneOnOnConversationId(userId: UserIDEntity): QualifiedIDEntity?
 }

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,6 +19,12 @@
 @file:Suppress("StringTemplate")
 
 package com.wire.kalium.cryptography
+
+import io.ktor.http.URLBuilder
+import io.ktor.http.URLProtocol
+import io.ktor.http.decodeURLPart
+import io.ktor.http.encodedPath
+import io.ktor.http.takeFrom
 
 typealias MLSGroupId = String
 
@@ -71,13 +77,78 @@ data class CryptoQualifiedClientId(
 }
 
 data class WireIdentity(
-    val clientId: String,
-    val handle: String,
-    val displayName: String,
-    val domain: String,
-    val certificate: String,
-    val status: CryptoCertificateStatus
-)
+    val clientId: CryptoQualifiedClientId,
+    val certificate: Certificate?,
+    val status: CryptoCertificateStatus,
+) {
+    companion object {
+        @Suppress("LongParameterList")
+        operator fun invoke(
+            clientId: CryptoQualifiedClientId,
+            handle: String?,
+            displayName: String?,
+            domain: String?,
+            certificate: String?,
+            status: CryptoCertificateStatus,
+            thumbprint: String?,
+            serialNumber: String?,
+            endTimestampSeconds: Long?
+        ): WireIdentity {
+            @Suppress("ComplexCondition")
+            val certificateData = if (handle == null || displayName == null || domain == null || certificate == null
+                || thumbprint == null || serialNumber == null || endTimestampSeconds == null
+            ) {
+                null
+            } else {
+                Certificate(
+                    Handle.fromString(handle, domain),
+                    displayName,
+                    domain,
+                    certificate,
+                    thumbprint,
+                    serialNumber,
+                    endTimestampSeconds
+                )
+            }
+            return WireIdentity(
+                clientId = clientId,
+                certificate = certificateData,
+                status = status
+            )
+        }
+    }
+
+    data class Certificate(
+        val handle: Handle,
+        val displayName: String,
+        val domain: String,
+        val certificate: String,
+        val thumbprint: String,
+        val serialNumber: String,
+        val endTimestampSeconds: Long
+    )
+
+    // WireIdentity handle format is "{scheme}%40{username}@{domain}"
+    // Example: wireapp://%40hans.wurst@elna.wire.link
+    data class Handle(val scheme: String, val handle: String, val domain: String) {
+        companion object {
+            fun fromString(rawValue: String, domain: String): Handle = URLBuilder(
+                protocol = URLProtocol("", 0), // need to overwrite the protocol, otherwise it will use default HTTP
+            ).takeFrom(rawValue).let {
+                val handleWithOptionalAtSignAndDomain = when {
+                    it.user != null && it.user!!.isNotBlank() -> it.user!!
+                    it.encodedPath.isNotBlank() -> it.encodedPath.decodeURLPart()
+                    else -> it.host.decodeURLPart()
+                }
+                Handle(
+                    scheme = it.protocol.name,
+                    handle = handleWithOptionalAtSignAndDomain.removeSuffix(domain).trim('@'),
+                    domain = domain
+                )
+            }
+        }
+    }
+}
 
 enum class CryptoCertificateStatus {
     VALID, EXPIRED, REVOKED;

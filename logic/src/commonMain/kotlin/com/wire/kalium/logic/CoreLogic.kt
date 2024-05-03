@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -31,6 +31,7 @@ import com.wire.kalium.logic.feature.UserSessionScope
 import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.AuthenticationScopeProvider
+import com.wire.kalium.logic.feature.auth.LogoutCallbackManagerImpl
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -57,7 +58,7 @@ abstract class CoreLogicCommon internal constructor(
     protected val authenticationScopeProvider: AuthenticationScopeProvider =
         AuthenticationScopeProvider(userAgent)
 
-    fun getGlobalScope(): GlobalKaliumScope =
+    private val globalKaliumScope by lazy {
         GlobalKaliumScope(
             userAgent,
             globalDatabase,
@@ -65,33 +66,39 @@ abstract class CoreLogicCommon internal constructor(
             kaliumConfigs,
             userSessionScopeProvider,
             authenticationScopeProvider,
-            networkStateObserver
+            networkStateObserver,
+            logoutCallbackManager,
         )
+    }
+    fun getGlobalScope(): GlobalKaliumScope = globalKaliumScope
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     fun getAuthenticationScope(
         serverConfig: ServerConfig,
-        proxyCredentials: ProxyCredentials? = null
+        proxyCredentials: ProxyCredentials?
     ): AuthenticationScope =
         authenticationScopeProvider.provide(
             serverConfig,
             proxyCredentials,
-            getGlobalScope().serverConfigRepository,
             networkStateObserver,
-            kaliumConfigs::certPinningConfig,
-            kaliumConfigs.kaliumMockEngine?.mockEngine
+            globalDatabase,
+            kaliumConfigs
         )
 
     @Suppress("MemberVisibilityCanBePrivate") // Can be used by other targets like iOS and JS
     abstract fun getSessionScope(userId: UserId): UserSessionScope
 
-    abstract fun deleteSessionScope(userId: UserId) // TODO remove when proper use case is ready
+    abstract suspend fun deleteSessionScope(userId: UserId) // TODO remove when proper use case is ready
 
     // TODO: make globalScope a singleton
     inline fun <T> globalScope(action: GlobalKaliumScope.() -> T): T = getGlobalScope().action()
 
-    inline fun <T> authenticationScope(serverConfig: ServerConfig, action: AuthenticationScope.() -> T): T =
-        getAuthenticationScope(serverConfig).action()
+    inline fun <T> authenticationScope(
+        serverConfig: ServerConfig,
+        proxyCredentials: ProxyCredentials?,
+        action: AuthenticationScope.() -> T
+    ): T =
+        getAuthenticationScope(serverConfig, proxyCredentials).action()
 
     inline fun <T> sessionScope(
         userId: UserId,
@@ -108,6 +115,8 @@ abstract class CoreLogicCommon internal constructor(
         AutoVersionAuthScopeUseCase(kaliumConfigs, serverLinks, this)
 
     abstract val networkStateObserver: NetworkStateObserver
+
+    internal val logoutCallbackManager = LogoutCallbackManagerImpl()
 }
 
 expect val clientPlatform: String

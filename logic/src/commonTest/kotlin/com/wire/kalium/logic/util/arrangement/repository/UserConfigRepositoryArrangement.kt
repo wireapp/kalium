@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,63 +25,58 @@ import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.every
 import io.mockative.mock
 
 internal interface UserConfigRepositoryArrangement {
     val userConfigRepository: UserConfigRepository
 
-    fun withGetSupportedProtocolsReturning(result: Either<StorageFailure, Set<SupportedProtocol>>)
-    fun withSetSupportedProtocolsSuccessful()
+    suspend fun withGetSupportedProtocolsReturning(result: Either<StorageFailure, Set<SupportedProtocol>>)
+    suspend fun withSetSupportedProtocolsSuccessful()
     fun withSetDefaultProtocolSuccessful()
     fun withSetMLSEnabledSuccessful()
-    fun withSetMigrationConfigurationSuccessful()
-    fun withGetMigrationConfigurationReturning(result: Either<StorageFailure, MLSMigrationModel>)
+    suspend fun withSetMigrationConfigurationSuccessful()
+    suspend fun withGetMigrationConfigurationReturning(result: Either<StorageFailure, MLSMigrationModel>)
 }
 
 internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrangement {
     @Mock
     override val userConfigRepository: UserConfigRepository = mock(UserConfigRepository::class)
 
-    override fun withGetSupportedProtocolsReturning(result: Either<StorageFailure, Set<SupportedProtocol>>) {
-        given(userConfigRepository)
-            .suspendFunction(userConfigRepository::getSupportedProtocols)
-            .whenInvoked()
-            .thenReturn(result)
+    override suspend fun withGetSupportedProtocolsReturning(result: Either<StorageFailure, Set<SupportedProtocol>>) {
+        coEvery {
+            userConfigRepository.getSupportedProtocols()
+        }.returns(result)
     }
 
-    override fun withSetSupportedProtocolsSuccessful() {
-        given(userConfigRepository)
-            .suspendFunction(userConfigRepository::setSupportedProtocols)
-            .whenInvokedWith(any())
-            .thenReturn(Either.Right(Unit))
+    override suspend fun withSetSupportedProtocolsSuccessful() {
+        coEvery {
+            userConfigRepository.setSupportedProtocols(any())
+        }.returns(Either.Right(Unit))
     }
 
     override fun withSetDefaultProtocolSuccessful() {
-        given(userConfigRepository)
-            .function(userConfigRepository::setDefaultProtocol)
-            .whenInvokedWith(any())
-            .thenReturn(Either.Right(Unit))
+        every {
+            userConfigRepository.setDefaultProtocol(any())
+        }.returns(Either.Right(Unit))
     }
 
     override fun withSetMLSEnabledSuccessful() {
-        given(userConfigRepository)
-            .function(userConfigRepository::setMLSEnabled)
-            .whenInvokedWith(any())
-            .thenReturn(Either.Right(Unit))
+        every {
+            userConfigRepository.setMLSEnabled(any())
+        }.returns(Either.Right(Unit))
     }
 
-    override fun withSetMigrationConfigurationSuccessful() {
-        given(userConfigRepository)
-            .suspendFunction(userConfigRepository::setMigrationConfiguration)
-            .whenInvokedWith(any())
-            .thenReturn(Either.Right(Unit))
+    override suspend fun withSetMigrationConfigurationSuccessful() {
+        coEvery {
+            userConfigRepository.setMigrationConfiguration(any())
+        }.returns(Either.Right(Unit))
     }
 
-    override fun withGetMigrationConfigurationReturning(result: Either<StorageFailure, MLSMigrationModel>) {
-        given(userConfigRepository)
-            .suspendFunction(userConfigRepository::getMigrationConfiguration)
-            .whenInvoked()
-            .thenReturn(result)
+    override suspend fun withGetMigrationConfigurationReturning(result: Either<StorageFailure, MLSMigrationModel>) {
+        coEvery {
+            userConfigRepository.getMigrationConfiguration()
+        }.returns(result)
     }
 }

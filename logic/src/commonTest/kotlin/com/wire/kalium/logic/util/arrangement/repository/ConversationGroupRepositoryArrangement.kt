@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,29 +26,29 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.fake.valueOf
+import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
+import io.mockative.matches
 import io.mockative.mock
 
 interface ConversationGroupRepositoryArrangement {
     val conversationGroupRepository: ConversationGroupRepository
 
-    fun withGenerateGuestRoomLink(
+    suspend fun withGenerateGuestRoomLink(
         result: Either<NetworkFailure, EventContentDTO.Conversation.CodeUpdated>,
-        conversationId: Matcher<ConversationId> = any()
+        conversationId: Matcher<ConversationId> = AnyMatcher(valueOf())
     ) {
-        given(conversationGroupRepository)
-            .suspendFunction(conversationGroupRepository::generateGuestRoomLink)
-            .whenInvokedWith(conversationId)
-            .thenReturn(result)
+        coEvery {
+            conversationGroupRepository.generateGuestRoomLink(matches { conversationId.matches(it) }, any())
+        }.returns(result)
     }
 
-    fun withCreateGroupConversationReturning(result: Either<CoreFailure, Conversation>) {
-        given(conversationGroupRepository)
-            .suspendFunction(conversationGroupRepository::createGroupConversation)
-            .whenInvokedWith(anything(), anything(), anything())
-            .thenReturn(result)
+    suspend fun withCreateGroupConversationReturning(result: Either<CoreFailure, Conversation>) {
+        coEvery {
+            conversationGroupRepository.createGroupConversation(any(), any(), any())
+        }.returns(result)
     }
 }
 

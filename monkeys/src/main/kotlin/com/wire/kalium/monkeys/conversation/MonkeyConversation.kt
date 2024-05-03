@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,11 +17,10 @@
  */
 package com.wire.kalium.monkeys.conversation
 
-import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.monkeys.MetricsCollector
 import com.wire.kalium.monkeys.model.UserCount
-import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.resolveUserCount
 import io.micrometer.core.instrument.Tag
 
@@ -29,19 +28,24 @@ import io.micrometer.core.instrument.Tag
  * This is a shallow wrapper over the conversation (it contains only details), since the operations need to be done on the
  * user scope, they're done inside the [Monkey] class.
  */
-class MonkeyConversation(val creator: Monkey, val conversation: Conversation, val isDestroyable: Boolean = true, monkeyList: List<Monkey>) {
+class MonkeyConversation(
+    val creator: Monkey,
+    val conversationId: ConversationId,
+    val isDestroyable: Boolean = true,
+    monkeyList: List<Monkey>
+) {
     private var participants: MutableSet<Monkey>
 
     init {
         this.participants = mutableSetOf(creator).also { it.addAll(monkeyList) }
-        MetricsCollector.gaugeCollection("g_conversationMembers", listOf(Tag.of("id", conversation.id.toString())), this.participants)
+        MetricsCollector.gaugeCollection("g_conversationMembers", listOf(Tag.of("id", conversationId.toString())), this.participants)
     }
 
     /**
      * Return a [count] number of random [Monkey] from the conversation.
      * It returns only logged-in users, if there are none an empty list will be returned
      */
-    fun randomMonkeys(userCount: UserCount): List<Monkey> {
+    suspend fun randomMonkeys(userCount: UserCount): List<Monkey> {
         val count = resolveUserCount(userCount, this.participants.count().toUInt())
         val tempList = participants.toMutableList()
         tempList.shuffle()
@@ -50,17 +54,17 @@ class MonkeyConversation(val creator: Monkey, val conversation: Conversation, va
 
     suspend fun addMonkeys(monkeys: List<Monkey>) {
         this.participants.addAll(monkeys)
-        this.creator.addMonkeysToConversation(conversation.id, monkeys)
+        this.creator.addMonkeysToConversation(conversationId, monkeys)
     }
 
     suspend fun removeMonkey(monkey: Monkey) {
         this.participants.remove(monkey)
-        this.creator.removeMonkeyFromConversation(conversation.id, monkey)
+        this.creator.removeMonkeyFromConversation(conversationId, monkey)
     }
 
-    suspend fun destroy() {
-        this.creator.destroyConversation(this.conversation.id)
-        ConversationPool.conversationDestroyed(this.conversation.id)
+    suspend fun destroy(callback: (ConversationId) -> Unit) {
+        this.creator.destroyConversation(this.conversationId, this.creator.monkeyType.userId())
+        callback(this.conversationId)
     }
 
     fun membersIds(): List<UserId> {

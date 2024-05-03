@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class ConversationInviteLinkResponse(
-    @SerialName("uri") val uri: String,
+    @SerialName("uri") val uri: String?,
     @SerialName("key") val key: String,
     @SerialName("code") val code: String,
     // the initial value for has password because password protected invite links

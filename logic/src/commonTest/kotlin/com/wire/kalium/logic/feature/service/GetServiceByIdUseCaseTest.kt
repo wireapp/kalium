@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -22,18 +22,14 @@ import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.configure
+import io.mockative.coEvery
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class GetServiceByIdUseCaseTest {
 
     @Test
@@ -54,9 +50,7 @@ class GetServiceByIdUseCaseTest {
     private class Arrangement {
 
         @Mock
-        private val serviceRepository = configure(mock(classOf<ServiceRepository>())) {
-            stubsUnitByDefault = true
-        }
+        private val serviceRepository = mock(ServiceRepository::class)
 
         private val getServiceById = GetServiceByIdUseCaseImpl(
             serviceRepository = serviceRepository
@@ -64,13 +58,12 @@ class GetServiceByIdUseCaseTest {
 
         fun arrange() = this to getServiceById
 
-        fun withGetServiceByIdSuccess(
+        suspend fun withGetServiceByIdSuccess(
             serviceId: ServiceId
         ) = apply {
-            given(serviceRepository)
-                .suspendFunction(serviceRepository::getServiceById)
-                .whenInvokedWith(eq(serviceId))
-                .thenReturn(Either.Right(serviceDetails))
+            coEvery {
+                serviceRepository.getServiceById(eq(serviceId))
+            }.returns(Either.Right(serviceDetails))
         }
 
         companion object {

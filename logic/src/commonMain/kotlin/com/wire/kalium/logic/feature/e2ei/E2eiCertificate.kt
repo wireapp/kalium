@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -17,9 +17,24 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
+import com.wire.kalium.cryptography.WireIdentity
+import kotlinx.datetime.Instant
+
 data class E2eiCertificate(
-    val issuer: String = "",
-    val status: CertificateStatus = CertificateStatus.EXPIRED,
-    val serialNumber: String = "",
-    val certificateDetail: String = ""
-)
+    val status: CertificateStatus,
+    val serialNumber: String,
+    val certificateDetail: String,
+    val endAt: Instant
+) {
+    companion object {
+        fun fromWireIdentity(identity: WireIdentity, certificateStatusMapper: CertificateStatusMapper): E2eiCertificate? =
+            identity.certificate?.let {
+                E2eiCertificate(
+                    status = certificateStatusMapper.toCertificateStatus(identity.status),
+                    serialNumber = it.serialNumber,
+                    certificateDetail = it.certificate,
+                    endAt = Instant.fromEpochSeconds(it.endTimestampSeconds)
+                )
+            }
+    }
+}

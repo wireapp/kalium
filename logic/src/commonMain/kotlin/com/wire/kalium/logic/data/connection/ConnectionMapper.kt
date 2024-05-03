@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -68,7 +68,7 @@ internal class ConnectionMapperImpl(
             qualifiedToId = qualifiedToId.toModel(),
             status = statusMapper.fromDaoModel(status),
             toId = toId,
-            fromUser = otherUser?.let { userMapper.fromUserDetailsEntityToOtherUser(it) }
+            fromUser = otherUser?.let { userMapper.fromUserEntityToOtherUser(it) }
         )
     }
 
@@ -77,7 +77,7 @@ internal class ConnectionMapperImpl(
     ): ConversationDetails.Connection = with(connection) {
         ConversationDetails.Connection(
             conversationId = qualifiedConversationId.toModel(),
-            otherUser = otherUser?.let { userMapper.fromUserDetailsEntityToOtherUser(it) },
+            otherUser = otherUser?.let { userMapper.fromUserEntityToOtherUser(it) },
             userType = otherUser?.let { userTypeMapper.fromUserTypeEntity(it.userType) } ?: UserType.GUEST,
             lastModifiedDate = lastUpdateDate.toIsoDateTimeString(),
             connection = fromDaoToModel(this),

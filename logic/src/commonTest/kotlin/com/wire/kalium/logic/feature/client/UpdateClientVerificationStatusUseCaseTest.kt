@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,12 +25,10 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ClientRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
-import io.mockative.any
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import okio.FileNotFoundException
 import kotlin.test.Test
@@ -50,10 +48,9 @@ class UpdateClientVerificationStatusUseCaseTest {
 
         useCase(userId, clientID, true)
 
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::updateClientProteusVerificationStatus)
-            .with(eq(userId), eq(clientID), eq(true))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clientRepository.updateClientProteusVerificationStatus(eq(userId), eq(clientID), eq(true))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -69,10 +66,9 @@ class UpdateClientVerificationStatusUseCaseTest {
             assertIs<UpdateClientVerificationStatusUseCase.Result.Success>(it)
         }
 
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::updateClientProteusVerificationStatus)
-            .with(eq(userId), eq(clientID), eq(true))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clientRepository.updateClientProteusVerificationStatus(eq(userId), eq(clientID), eq(true))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -80,7 +76,7 @@ class UpdateClientVerificationStatusUseCaseTest {
         val userId = UserId("userId", "domain")
         val clientID = ClientId("clientId")
 
-        val expectedError = StorageFailure.Generic(FileNotFoundException())
+        val expectedError = StorageFailure.Generic(FileNotFoundException("Oopsie"))
 
         val (arrangement, useCase) = arrange {
             withUpdateClientProteusVerificationStatus(Either.Left(expectedError))
@@ -91,19 +87,19 @@ class UpdateClientVerificationStatusUseCaseTest {
             assertEquals(expectedError, it.error)
         }
 
-        verify(arrangement.clientRepository)
-            .suspendFunction(arrangement.clientRepository::updateClientProteusVerificationStatus)
-            .with(eq(userId), eq(clientID), eq(true))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.clientRepository.updateClientProteusVerificationStatus(eq(userId), eq(clientID), eq(true))
+        }.wasInvoked(exactly = once)
     }
 
-    private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
+    private fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     private class Arrangement(
-        private val block: Arrangement.() -> Unit
+        private val block: suspend Arrangement.() -> Unit
     ) : ClientRepositoryArrangement by ClientRepositoryArrangementImpl() {
 
-        fun arrange() = block().run {
+        fun arrange() = run {
+            runBlocking { block() }
             this@Arrangement to UpdateClientVerificationStatusUseCase(
                 clientRepository = clientRepository
             )

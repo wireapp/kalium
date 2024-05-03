@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.auth
 
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.logout.LogoutReason
@@ -53,6 +54,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private val logoutRepository: LogoutRepository,
     private val sessionRepository: SessionRepository,
     private val clientRepository: ClientRepository,
+    private val userConfigRepository: UserConfigRepository,
     private val userId: QualifiedID,
     private val deregisterTokenUseCase: DeregisterTokenUseCase,
     private val clearClientDataUseCase: ClearClientDataUseCase,
@@ -63,6 +65,7 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
     private val userSessionWorkScheduler: UserSessionWorkScheduler,
     private val getEstablishedCallsUseCase: ObserveEstablishedCallsUseCase,
     private val endCallUseCase: EndCallUseCase,
+    private val logoutCallback: LogoutCallback,
     private val kaliumConfigs: KaliumConfigs
 ) : LogoutUseCase {
     // TODO(refactor): Maybe we can simplify by taking some of the responsibility away from here.
@@ -71,13 +74,12 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
 
     override suspend operator fun invoke(reason: LogoutReason, waitUntilCompletes: Boolean) {
         globalCoroutineScope.launch {
-            deregisterTokenUseCase()
-
             getEstablishedCallsUseCase().firstOrNull()?.forEach {
                 endCallUseCase(it.conversationId)
             }
 
             if (reason != LogoutReason.SESSION_EXPIRED) {
+                deregisterTokenUseCase()
                 logoutRepository.logout()
             }
 
@@ -106,8 +108,10 @@ internal class LogoutUseCaseImpl @Suppress("LongParameterList") constructor(
                 LogoutReason.SELF_SOFT_LOGOUT -> clearCurrentClientIdAndFirebaseTokenFlag()
             }
 
+            userConfigRepository.clearE2EISettings()
             userSessionScopeProvider.get(userId)?.cancel()
             userSessionScopeProvider.delete(userId)
+            logoutCallback(userId, reason)
         }.let { if (waitUntilCompletes) it.join() else it }
     }
 

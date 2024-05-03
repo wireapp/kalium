@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,12 +18,14 @@
 
 package com.wire.kalium.logic.data.mlspublickeys
 
+import com.wire.kalium.cryptography.ExternalSenderKey
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeysDTO
 import io.ktor.util.decodeBase64Bytes
 
 interface MLSPublicKeysMapper {
     fun fromDTO(publicKeys: MLSPublicKeysDTO): List<MLSPublicKey>
     fun toCrypto(publicKey: MLSPublicKey): com.wire.kalium.cryptography.Ed22519Key
+    fun toCrypto(externalSenderKey: ExternalSenderKey): com.wire.kalium.cryptography.Ed22519Key
 }
 
 class MLSPublicKeysMapperImpl : MLSPublicKeysMapper {
@@ -38,6 +40,10 @@ class MLSPublicKeysMapperImpl : MLSPublicKeysMapper {
 
     override fun toCrypto(publicKey: MLSPublicKey) = with(publicKey) {
         com.wire.kalium.cryptography.Ed22519Key(key.value)
+    }
+
+    override fun toCrypto(externalSenderKey: ExternalSenderKey) = with(externalSenderKey) {
+        com.wire.kalium.cryptography.Ed22519Key(this.value)
     }
 
     companion object {

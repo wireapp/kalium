@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,13 +19,16 @@ package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.MLSGroupId
+import com.wire.kalium.cryptography.WelcomeBundle
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
 import com.wire.kalium.logic.framework.TestConversation
@@ -41,13 +44,11 @@ import com.wire.kalium.logic.util.shouldSucceed
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
-import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -59,38 +60,37 @@ class MLSWelcomeEventHandlerTest {
         val exception = RuntimeException()
 
         val (arrangement, mlsWelcomeEventHandler) = arrange {
+            withFetchConversationIfUnknownSucceeding()
             withMLSClientProcessingOfWelcomeMessageFailsWith(exception)
         }
 
         mlsWelcomeEventHandler.handle(WELCOME_EVENT).shouldFail()
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateConversationGroupState)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.conversationRepository.updateConversationGroupState(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
     fun givenConversationFetchFails_thenShouldNotMarkConversationAsEstablished() = runTest {
         val failure = CoreFailure.Unknown(null)
         val (arrangement, mlsWelcomeEventHandler) = arrange {
-            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully(MLS_GROUP_ID)
+            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownFailingWith(failure)
         }
 
         mlsWelcomeEventHandler.handle(WELCOME_EVENT).shouldFail()
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateConversationGroupState)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.conversationRepository.updateConversationGroupState(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
     fun givenProcessingOfWelcomeSucceeds_thenShouldFetchConversationIfUnknown() = runTest {
         val (arrangement, mlsWelcomeEventHandler) = arrange {
             withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
-            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully(MLS_GROUP_ID)
+            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
             withUpdateGroupStateReturning(Either.Right(Unit))
             withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_GROUP))
@@ -98,17 +98,16 @@ class MLSWelcomeEventHandlerTest {
 
         mlsWelcomeEventHandler.handle(WELCOME_EVENT).shouldSucceed()
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::fetchConversationIfUnknown)
-            .with(eq(CONVERSATION_ID))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.fetchConversationIfUnknown(eq(CONVERSATION_ID))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenProcessingOfWelcomeSucceeds_thenShouldMarkConversationAsEstablished() = runTest {
         val (arrangement, mlsWelcomeEventHandler) = arrange {
             withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
-            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully(MLS_GROUP_ID)
+            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
             withUpdateGroupStateReturning(Either.Right(Unit))
             withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_GROUP))
@@ -116,17 +115,19 @@ class MLSWelcomeEventHandlerTest {
 
         mlsWelcomeEventHandler.handle(WELCOME_EVENT).shouldSucceed()
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::updateConversationGroupState)
-            .with(eq(GroupID(MLS_GROUP_ID)), eq(Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.updateConversationGroupState(
+                eq(GroupID(MLS_GROUP_ID)),
+                eq(Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED)
+            )
+        }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenProcessingOfWelcomeForOneOnOneSucceeds_thenShouldResolveConversation() = runTest {
         val (arrangement, mlsWelcomeEventHandler) = arrange {
             withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
-            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully(MLS_GROUP_ID)
+            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
             withUpdateGroupStateReturning(Either.Right(Unit))
             withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_ONE_ONE))
@@ -135,17 +136,16 @@ class MLSWelcomeEventHandlerTest {
 
         mlsWelcomeEventHandler.handle(WELCOME_EVENT).shouldSucceed()
 
-        verify(arrangement.oneOnOneResolver)
-            .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUser)
-            .with(eq(CONVERSATION_ONE_ONE.otherUser))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(eq(CONVERSATION_ONE_ONE.otherUser), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenProcessingOfWelcomeForGroupSucceeds_thenShouldNotResolveConversation() = runTest {
         val (arrangement, mlsWelcomeEventHandler) = arrange {
             withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
-            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully(MLS_GROUP_ID)
+            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
             withUpdateGroupStateReturning(Either.Right(Unit))
             withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_GROUP))
@@ -153,10 +153,9 @@ class MLSWelcomeEventHandlerTest {
 
         mlsWelcomeEventHandler.handle(WELCOME_EVENT).shouldSucceed()
 
-        verify(arrangement.oneOnOneResolver)
-            .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUser)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -164,7 +163,7 @@ class MLSWelcomeEventHandlerTest {
 
         val failure = Either.Left(StorageFailure.DataNotFound)
         val (_, mlsWelcomeEventHandler) = arrange {
-            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully(MLS_GROUP_ID)
+            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
             withUpdateGroupStateReturning(failure)
         }
@@ -179,7 +178,7 @@ class MLSWelcomeEventHandlerTest {
 
         val failure = Either.Left(NetworkFailure.NoNetworkConnection(null))
         val (_, mlsWelcomeEventHandler) = arrange {
-            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully(MLS_GROUP_ID)
+            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
             withUpdateGroupStateReturning(Either.Right(Unit))
             withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_ONE_ONE))
@@ -195,7 +194,7 @@ class MLSWelcomeEventHandlerTest {
     fun givenResolveOneOnOneConversationFails_thenShouldNotAttemptToRefillKeyPackages() = runTest {
         val failure = Either.Left(NetworkFailure.NoNetworkConnection(null))
         val (arrangement, mlsWelcomeEventHandler) = arrange {
-            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully(MLS_GROUP_ID)
+            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
             withUpdateGroupStateReturning(Either.Right(Unit))
             withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_ONE_ONE))
@@ -204,16 +203,16 @@ class MLSWelcomeEventHandlerTest {
 
         mlsWelcomeEventHandler.handle(WELCOME_EVENT)
 
-        verify(arrangement.refillKeyPackagesUseCase)
-            .suspendFunction(arrangement.refillKeyPackagesUseCase::invoke)
-            .wasNotInvoked()
+        coVerify {
+            arrangement.refillKeyPackagesUseCase.invoke()
+        }.wasNotInvoked()
     }
 
     @Test
     fun givenAllSucceeds_whenHandlingEvent_thenShouldAttemptToRefillKeyPackages() = runTest {
         val (arrangement, mlsWelcomeEventHandler) = arrange {
             withRefillKeyPackagesReturning(RefillKeyPackagesResult.Success)
-            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully(MLS_GROUP_ID)
+            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully()
             withFetchConversationIfUnknownSucceeding()
             withUpdateGroupStateReturning(Either.Right(Unit))
             withObserveConversationDetailsByIdReturning(Either.Right(CONVERSATION_GROUP))
@@ -221,68 +220,102 @@ class MLSWelcomeEventHandlerTest {
 
         mlsWelcomeEventHandler.handle(WELCOME_EVENT)
 
-        verify(arrangement.refillKeyPackagesUseCase)
-            .suspendFunction(arrangement.refillKeyPackagesUseCase::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.refillKeyPackagesUseCase.invoke()
+        }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement(private val block: Arrangement.() -> Unit) :
+    @Test
+    fun givenWelcomeBundleWithNewDistributionsCRL_whenHandlingEvent_then_CheckRevocationList() = runTest {
+        val failure = Either.Left(StorageFailure.DataNotFound)
+        val (arrangement, mlsWelcomeEventHandler) = arrange {
+            withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully(
+                WELCOME_BUNDLE.copy(crlNewDistributionPoints = listOf("url"))
+            )
+            withFetchConversationIfUnknownSucceeding()
+            withCheckRevocationListResult()
+            withUpdateGroupStateReturning(failure)
+        }
+
+        mlsWelcomeEventHandler.handle(WELCOME_EVENT)
+
+        coVerify {
+            arrangement.conversationRepository.fetchConversationIfUnknown(eq(CONVERSATION_ID))
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.checkRevocationList.invoke(any())
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.certificateRevocationListRepository.addOrUpdateCRL(any(), any())
+        }.wasInvoked(exactly = once)
+    }
+
+    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl() {
         @Mock
-        val mlsClient: MLSClient = mock(classOf<MLSClient>())
+        val mlsClient: MLSClient = mock(MLSClient::class)
 
         @Mock
-        val mlsClientProvider: MLSClientProvider = mock(classOf<MLSClientProvider>())
+        val mlsClientProvider: MLSClientProvider = mock(MLSClientProvider::class)
 
         @Mock
-        val refillKeyPackagesUseCase: RefillKeyPackagesUseCase = mock(classOf<RefillKeyPackagesUseCase>())
+        val refillKeyPackagesUseCase: RefillKeyPackagesUseCase = mock(RefillKeyPackagesUseCase::class)
 
-        init {
+        @Mock
+        val checkRevocationList: CheckRevocationListUseCase = mock(CheckRevocationListUseCase::class)
+
+        @Mock
+        val certificateRevocationListRepository: CertificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
+
+        suspend fun withMLSClientProviderReturningMLSClient() = apply {
+            coEvery {
+                mlsClientProvider.getMLSClient(any())
+            }.returns(Either.Right(mlsClient))
+        }
+
+        suspend fun withMLSClientProcessingOfWelcomeMessageFailsWith(exception: Exception) = apply {
+            coEvery {
+                mlsClient.processWelcomeMessage(any())
+            }.throws(exception)
+        }
+
+        suspend fun withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully(welcomeBundle: WelcomeBundle = WELCOME_BUNDLE) = apply {
+            coEvery {
+                mlsClient.processWelcomeMessage(any())
+            }.returns(welcomeBundle)
+        }
+
+        suspend fun withCheckRevocationListResult() {
+            coEvery {
+                checkRevocationList.invoke(any())
+            }.returns(Either.Right(1uL))
+        }
+
+        suspend fun withRefillKeyPackagesReturning(result: RefillKeyPackagesResult) = apply {
+            coEvery {
+                refillKeyPackagesUseCase.invoke()
+            }.returns(result)
+        }
+
+        suspend fun arrange() = run {
             withMLSClientProviderReturningMLSClient()
-        }
-
-        fun withMLSClientProviderReturningMLSClient() = apply {
-            given(mlsClientProvider)
-                .suspendFunction(mlsClientProvider::getMLSClient)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(mlsClient))
-        }
-
-        fun withMLSClientProcessingOfWelcomeMessageFailsWith(exception: Exception) = apply {
-            given(mlsClient)
-                .suspendFunction(mlsClient::processWelcomeMessage)
-                .whenInvokedWith(any())
-                .thenThrow(exception)
-        }
-
-        fun withMLSClientProcessingOfWelcomeMessageReturnsSuccessfully(mlsGroupId: MLSGroupId) = apply {
-            given(mlsClient)
-                .suspendFunction(mlsClient::processWelcomeMessage)
-                .whenInvokedWith(any())
-                .thenReturn(mlsGroupId)
-        }
-
-        fun withRefillKeyPackagesReturning(result: RefillKeyPackagesResult) = apply {
-            given(refillKeyPackagesUseCase)
-                .suspendFunction(refillKeyPackagesUseCase::invoke)
-                .whenInvoked()
-                .thenReturn(result)
-        }
-
-        fun arrange() = run {
             block()
             this@Arrangement to MLSWelcomeEventHandlerImpl(
                 mlsClientProvider = mlsClientProvider,
                 conversationRepository = conversationRepository,
                 oneOnOneResolver = oneOnOneResolver,
-                refillKeyPackages = refillKeyPackagesUseCase
+                refillKeyPackages = refillKeyPackagesUseCase,
+                checkRevocationList = checkRevocationList,
+                certificateRevocationListRepository = certificateRevocationListRepository
             )
         }
     }
 
     private companion object {
-        fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+        suspend fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
         const val MLS_GROUP_ID: MLSGroupId = "test-mlsGroupId"
         val CONVERSATION_ONE_ONE = TestConversationDetails.CONVERSATION_ONE_ONE
@@ -292,11 +325,10 @@ class MLSWelcomeEventHandlerTest {
         val WELCOME_EVENT = Event.Conversation.MLSWelcome(
             "eventId",
             CONVERSATION_ID,
-            false,
-            false,
             TestUser.USER_ID,
             WELCOME.encodeBase64(),
             timestampIso = "2022-03-30T15:36:00.000Z"
         )
+        val WELCOME_BUNDLE = WelcomeBundle(MLS_GROUP_ID, null)
     }
 }

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,16 +25,13 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class RenamedConversationEventHandlerTest {
 
     @Test
@@ -48,15 +45,13 @@ class RenamedConversationEventHandlerTest {
         eventHandler.handle(event)
 
         with(arrangement) {
-            verify(conversationDao)
-                .suspendFunction(conversationDao::updateConversationName)
-                .with(any(), any(), any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                conversationDao.updateConversationName(any(), any(), any())
+            }.wasInvoked(exactly = once)
 
-            verify(persistMessage)
-                .suspendFunction(persistMessage::invoke)
-                .with(any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                persistMessage.invoke(any())
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -71,50 +66,45 @@ class RenamedConversationEventHandlerTest {
         eventHandler.handle(event)
 
         with(arrangement) {
-            verify(conversationDao)
-                .suspendFunction(conversationDao::updateConversationName)
-                .with(any(), any(), any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                conversationDao.updateConversationName(any(), any(), any())
+            }.wasInvoked(exactly = once)
 
-            verify(persistMessage)
-                .suspendFunction(persistMessage::invoke)
-                .with(any())
-                .wasNotInvoked()
+            coVerify {
+                persistMessage.invoke(any())
+            }.wasNotInvoked()
         }
     }
 
     private class Arrangement {
 
         @Mock
-        val persistMessage = mock(classOf<PersistMessageUseCase>())
+        val persistMessage = mock(PersistMessageUseCase::class)
 
         @Mock
-        val conversationDao = mock(classOf<ConversationDAO>())
+        val conversationDao = mock(ConversationDAO::class)
 
         private val renamedConversationEventHandler: RenamedConversationEventHandler = RenamedConversationEventHandlerImpl(
             conversationDao,
             persistMessage
         )
 
-        fun withRenamingConversationSuccess() = apply {
-            given(conversationDao)
-                .suspendFunction(conversationDao::updateConversationName)
-                .whenInvokedWith(any(), any(), any())
-                .thenReturn(Unit)
+        suspend fun withRenamingConversationSuccess() = apply {
+            coEvery {
+                conversationDao.updateConversationName(any(), any(), any())
+            }.returns(Unit)
         }
 
-        fun withRenamingConversationFailure() = apply {
-            given(conversationDao)
-                .suspendFunction(conversationDao::updateConversationName)
-                .whenInvokedWith(any(), any(), any())
-                .thenThrow(Exception("An error occurred persisting the data"))
+        suspend fun withRenamingConversationFailure() = apply {
+            coEvery {
+                conversationDao.updateConversationName(any(), any(), any())
+            }.throws(Exception("An error occurred persisting the data"))
         }
 
-        fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
-            given(persistMessage)
-                .suspendFunction(persistMessage::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                persistMessage.invoke(any())
+            }.returns(result)
         }
 
         fun arrange() = this to renamedConversationEventHandler

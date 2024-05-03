@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,19 +21,22 @@ package com.wire.kalium.logic.feature.message
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withContext
 import kotlin.time.Duration
 
 @Suppress("LongParameterList")
@@ -47,7 +50,8 @@ class SendKnockUseCase internal constructor(
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
     private val messageSendFailureHandler: MessageSendFailureHandler,
-    private val selfDeleteTimer: ObserveSelfDeletionTimerSettingsForConversationUseCase
+    private val selfDeleteTimer: ObserveSelfDeletionTimerSettingsForConversationUseCase,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
 
     /**
@@ -57,7 +61,7 @@ class SendKnockUseCase internal constructor(
      * @param hotKnock whether to send this as a hot knock or not @see [MessageContent.Knock]
      * @return [Either] [CoreFailure] or [Unit] //fixme: we should not return [Either]
      */
-    suspend operator fun invoke(conversationId: ConversationId, hotKnock: Boolean): Either<CoreFailure, Unit> {
+    suspend operator fun invoke(conversationId: ConversationId, hotKnock: Boolean): Either<CoreFailure, Unit> = withContext(dispatcher.io) {
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
@@ -67,7 +71,7 @@ class SendKnockUseCase internal constructor(
             .first()
             .duration
 
-        return currentClientIdProvider().flatMap { currentClientId ->
+        return@withContext currentClientIdProvider().flatMap { currentClientId ->
             val message = Message.Regular(
                 id = generatedMessageUuid,
                 content = MessageContent.Knock(hotKnock),

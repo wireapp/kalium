@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,22 +24,24 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.fake.valueOf
+import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
+import io.mockative.matches
 import io.mockative.mock
 
 internal interface ServerConfigRepositoryArrangement {
     @Mock
     val serverConfigRepository: ServerConfigRepository
 
-    fun withServerConfigForUser(
+    suspend fun withServerConfigForUser(
         result: Either<StorageFailure, ServerConfig>,
-        userId: Matcher<UserId> = any()
+        userId: Matcher<UserId> = AnyMatcher(valueOf())
     ) {
-        given(serverConfigRepository)
-            .suspendFunction(serverConfigRepository::configForUser)
-            .whenInvokedWith(userId)
-            .then { result }
+        coEvery {
+            serverConfigRepository.configForUser(matches { userId.matches(it) })
+        }.returns(result)
     }
 }
 

@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,10 +21,13 @@ package com.wire.kalium.persistence.dao.message
 import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.SupportedProtocolEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
+import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
+import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.reaction.ReactionMapper
 import com.wire.kalium.persistence.dao.reaction.ReactionsEntity
@@ -156,7 +159,9 @@ object MessageMapper {
                         }
                     }
 
-                    MessageEntity.MemberChangeType.FAILED_TO_ADD -> {
+                    MessageEntity.MemberChangeType.FAILED_TO_ADD_FEDERATION,
+                    MessageEntity.MemberChangeType.FAILED_TO_ADD_LEGAL_HOLD,
+                    MessageEntity.MemberChangeType.FAILED_TO_ADD_UNKNOWN -> {
                         MessagePreviewEntityContent.MembersFailedToAdded(
                             senderName = senderName,
                             isContainSelfUserId = userIdList.firstOrNull { it.value == selfUserId?.value }?.let { true } ?: false,
@@ -322,10 +327,11 @@ object MessageMapper {
         isSelfMessage: Boolean,
         expectsReadConfirmation: Boolean,
         expireAfterMillis: Long?,
-        selfDeletionStartDate: Instant?,
+        selfDeletionEndDate: Instant?,
         readCount: Long,
         recipientsFailedWithNoClientsList: List<QualifiedIDEntity>?,
-        recipientsFailedDeliveryList: List<QualifiedIDEntity>?
+        recipientsFailedDeliveryList: List<QualifiedIDEntity>?,
+        sender: UserDetailsEntity
     ): MessageEntity = when (content) {
         is MessageEntityContent.Regular -> {
             MessageEntity.Regular(
@@ -338,7 +344,7 @@ object MessageMapper {
                 status = status,
                 editStatus = mapEditStatus(lastEdit),
                 expireAfterMs = expireAfterMillis,
-                selfDeletionStartDate = selfDeletionStartDate,
+                selfDeletionEndDate = selfDeletionEndDate,
                 visibility = visibility,
                 reactions = ReactionsEntity(
                     totalReactions = ReactionMapper.reactionsCountFromJsonString(allReactionsJson),
@@ -351,7 +357,8 @@ object MessageMapper {
                 deliveryStatus = RecipientDeliveryFailureMapper.toEntity(
                     recipientsFailedWithNoClientsList = recipientsFailedWithNoClientsList,
                     recipientsFailedDeliveryList = recipientsFailedDeliveryList
-                )
+                ),
+                sender = sender
             )
         }
 
@@ -367,7 +374,8 @@ object MessageMapper {
             isSelfMessage = isSelfMessage,
             readCount = readCount,
             expireAfterMs = expireAfterMillis,
-            selfDeletionStartDate = selfDeletionStartDate
+            selfDeletionEndDate = selfDeletionEndDate,
+            sender = sender
         )
     }
 
@@ -390,7 +398,6 @@ object MessageMapper {
         assetMimeType: String?,
         assetHeight: Int?,
         assetWidth: Int?,
-        assetDownloadStatus: MessageEntity.DownloadStatus?,
         decodedAssetPath: String?
     ): AssetMessageEntity {
         return AssetMessageEntity(
@@ -401,7 +408,6 @@ object MessageMapper {
             assetId = assetId!!,
             width = assetWidth!!,
             height = assetHeight!!,
-            downloadStatus = assetDownloadStatus ?: MessageEntity.DownloadStatus.NOT_DOWNLOADED,
             assetPath = decodedAssetPath,
             isSelfAsset = isSelfMessage
         )
@@ -420,7 +426,7 @@ object MessageMapper {
         visibility: MessageEntity.Visibility,
         expectsReadConfirmation: Boolean,
         expireAfterMillis: Long?,
-        selfDeletionStartDate: Instant?,
+        selfDeletionEndDate: Instant?,
         readCount: Long,
         senderName: String?,
         senderHandle: String?,
@@ -435,14 +441,18 @@ object MessageMapper {
         senderUserType: UserTypeEntity,
         senderBotService: BotIdEntity?,
         senderIsDeleted: Boolean,
+        senderExpiresAt: Instant?,
+        senderDefederated: Boolean,
+        senderSupportedProtocols: Set<SupportedProtocolEntity>?,
+        senderActiveOneOnOneConversationId: QualifiedIDEntity?,
+        senderIsProteusVerified: Long,
+        senderIsUnderLegalHold: Long,
         isSelfMessage: Boolean,
         text: String?,
         isQuotingSelfUser: Boolean?,
         assetSize: Long?,
         assetName: String?,
         assetMimeType: String?,
-        assetUploadStatus: MessageEntity.UploadStatus?,
-        assetDownloadStatus: MessageEntity.DownloadStatus?,
         assetOtrKey: ByteArray?,
         assetSha256: ByteArray?,
         assetId: String?,
@@ -526,8 +536,6 @@ object MessageMapper {
                 assetSizeInBytes = assetSize.requireField("asset_size"),
                 assetName = assetName,
                 assetMimeType = assetMimeType.requireField("asset_mime_type"),
-                assetUploadStatus = assetUploadStatus,
-                assetDownloadStatus = assetDownloadStatus,
                 assetOtrKey = assetOtrKey.requireField("asset_otr_key"),
                 assetSha256Key = assetSha256.requireField("asset_sha256"),
                 assetId = assetId.requireField("asset_id"),
@@ -639,11 +647,35 @@ object MessageMapper {
                 locationName,
                 locationZoom
             )
+
             MessageEntity.ContentType.LEGAL_HOLD -> MessageEntityContent.LegalHold(
                 memberUserIdList = legalHoldMemberList.requireField("memberChangeList"),
                 type = legalHoldType.requireField("legalHoldType")
             )
         }
+
+        val sender = UserDetailsEntity(
+            id = senderUserId,
+            name = senderName,
+            handle = senderHandle,
+            email = senderEmail,
+            phone = senderPhone,
+            accentId = senderAccentId,
+            team = senderTeamId,
+            previewAssetId = senderPreviewAssetId,
+            completeAssetId = senderCompleteAssetId,
+            availabilityStatus = senderAvailabilityStatus,
+            userType = senderUserType,
+            botService = senderBotService,
+            deleted = senderIsDeleted,
+            expiresAt = senderExpiresAt,
+            defederated = senderDefederated,
+            supportedProtocols = senderSupportedProtocols,
+            activeOneOnOneConversationId = senderActiveOneOnOneConversationId,
+            connectionStatus = senderConnectionStatus,
+            isProteusVerified = senderIsProteusVerified == 1L,
+            isUnderLegalHold = senderIsUnderLegalHold == 1L,
+        )
 
         return createMessageEntity(
             id,
@@ -661,10 +693,23 @@ object MessageMapper {
             isSelfMessage,
             expectsReadConfirmation,
             expireAfterMillis,
-            selfDeletionStartDate,
+            selfDeletionEndDate,
             readCount,
             recipientsFailedWithNoClientsList,
-            recipientsFailedDeliveryList
+            recipientsFailedDeliveryList,
+            sender
+        )
+    }
+
+    fun fromAssetStatus(
+        id: String,
+        conversationId: QualifiedIDEntity,
+        transferStatusEntity: AssetTransferStatusEntity,
+    ): MessageAssetStatusEntity {
+        return MessageAssetStatusEntity(
+            id = id,
+            conversationId = conversationId,
+            transferStatusEntity
         )
     }
 

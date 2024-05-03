@@ -1,6 +1,6 @@
 /*
  * Wire
- * Copyright (C) 2023 Wire Swiss GmbH
+ * Copyright (C) 2024 Wire Swiss GmbH
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,14 +21,12 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.auth.verification.SecondFactorVerificationRepository
 import com.wire.kalium.logic.data.auth.verification.VerifiableAction
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -89,13 +87,12 @@ class RequestSecondFactorVerificationCodeUseCaseTest {
     private class Arrangement {
 
         @Mock
-        val secondFactorVerificationRepository = mock(classOf<SecondFactorVerificationRepository>())
+        val secondFactorVerificationRepository = mock(SecondFactorVerificationRepository::class)
 
-        fun withRepositoryReturning(result: Either<NetworkFailure, Unit>) = apply {
-            given(secondFactorVerificationRepository)
-                .suspendFunction(secondFactorVerificationRepository::requestVerificationCode)
-                .whenInvokedWith(any(), any())
-                .thenReturn(result)
+        suspend fun withRepositoryReturning(result: Either<NetworkFailure, Unit>) = apply {
+            coEvery {
+                secondFactorVerificationRepository.requestVerificationCode(any(), any())
+            }.returns(result)
         }
 
         fun arrange() = this to RequestSecondFactorVerificationCodeUseCase(
