@@ -55,28 +55,21 @@ internal class RegisterMLSClientUseCaseImpl(
 ) : RegisterMLSClientUseCase {
 
     override suspend operator fun invoke(clientId: ClientId): Either<CoreFailure, RegisterMLSClientResult> {
-        kaliumLogger.d("Registering MLS client with client ID: $clientId")
         return userConfigRepository.getE2EISettings().flatMap { e2eiSettings ->
-            kaliumLogger.d("Registering MLS client with E2EI settings")
             if (e2eiSettings.isRequired && !mlsClientProvider.isMLSClientInitialised()) {
-                kaliumLogger.d("E2EI settings are required but MLS client is not initialised")
                 return RegisterMLSClientResult.E2EICertificateRequired.right()
             } else {
                 mlsClientProvider.getMLSClient(clientId)
             }
         }.onFailure {
-            kaliumLogger.e("Failed to get MLS client: $it")
             mlsClientProvider.getMLSClient(clientId)
         }.flatMap { mlsClient ->
-            kaliumLogger.d("Getting public key from MLS client")
             wrapMLSRequest {
                 mlsClient.getPublicKey()
             }
         }.flatMap { (publicKey, cipherSuite) ->
-            kaliumLogger.d("Registering MLS client with public key: $publicKey")
             clientRepository.registerMLSClient(clientId, publicKey, CipherSuite.fromTag(cipherSuite))
         }.flatMap {
-            kaliumLogger.d("Uploading new key packages")
             keyPackageRepository.uploadNewKeyPackages(clientId, keyPackageLimitsProvider.refillAmount())
             Either.Right(RegisterMLSClientResult.Success)
         }.onFailure {
