@@ -171,17 +171,10 @@ class RegisterMLSClientUseCaseTest {
             }.returns(result)
         }
 
-        fun withIsMLSClientInitialisedReturns(result: Boolean = true) = apply {
-<<<<<<< HEAD
-            every {
+        suspend fun withIsMLSClientInitialisedReturns(result: Boolean = true) = apply {
+            coEvery {
                 mlsClientProvider.isMLSClientInitialised()
             }.returns(result)
-=======
-            given(mlsClientProvider)
-                .suspendFunction(mlsClientProvider::isMLSClientInitialised)
-                .whenInvoked()
-                .thenReturn(result)
->>>>>>> 42db0701d9 (feat: support new MLS cipher suite [WPB-8592] (#2716))
         }
 
         suspend fun withRegisterMLSClient(result: Either<CoreFailure, Unit>) = apply {
@@ -230,6 +223,5 @@ class RegisterMLSClientUseCaseTest {
                 true, RANDOM_URL, DateTimeUtil.currentInstant()
             )
         }
-
     }
 }

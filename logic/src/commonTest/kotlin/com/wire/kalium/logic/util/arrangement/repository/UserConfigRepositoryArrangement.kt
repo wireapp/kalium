@@ -35,14 +35,9 @@ internal interface UserConfigRepositoryArrangement {
     suspend fun withSetSupportedProtocolsSuccessful()
     fun withSetDefaultProtocolSuccessful()
     fun withSetMLSEnabledSuccessful()
-<<<<<<< HEAD
     suspend fun withSetMigrationConfigurationSuccessful()
     suspend fun withGetMigrationConfigurationReturning(result: Either<StorageFailure, MLSMigrationModel>)
-=======
-    fun withSetMigrationConfigurationSuccessful()
-    fun withGetMigrationConfigurationReturning(result: Either<StorageFailure, MLSMigrationModel>)
-    fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>)
->>>>>>> 42db0701d9 (feat: support new MLS cipher suite [WPB-8592] (#2716))
+    suspend fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>)
 }
 
 internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrangement {
@@ -85,10 +80,7 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
         }.returns(result)
     }
 
-    override fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>) {
-        given(userConfigRepository)
-            .suspendFunction(userConfigRepository::setSupportedCipherSuite)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>) {
+        coEvery { userConfigRepository.setSupportedCipherSuite(any()) }.returns(result)
     }
 }

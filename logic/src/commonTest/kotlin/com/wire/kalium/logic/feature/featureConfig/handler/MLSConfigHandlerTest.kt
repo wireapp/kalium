@@ -50,12 +50,7 @@ class MLSConfigHandlerTest {
             MLS_CONFIG.copy(
                 status = Status.ENABLED,
                 defaultProtocol = SupportedProtocol.MLS
-<<<<<<< HEAD
-            ),
-            duringSlowSync = false
-=======
             ), duringSlowSync = false
->>>>>>> 42db0701d9 (feat: support new MLS cipher suite [WPB-8592] (#2716))
         )
 
         coVerify {
@@ -76,12 +71,7 @@ class MLSConfigHandlerTest {
             MLS_CONFIG.copy(
                 status = Status.ENABLED,
                 defaultProtocol = SupportedProtocol.PROTEUS
-<<<<<<< HEAD
-            ),
-            duringSlowSync = false
-=======
             ), duringSlowSync = false
->>>>>>> 42db0701d9 (feat: support new MLS cipher suite [WPB-8592] (#2716))
         )
 
         coVerify {
@@ -102,12 +92,7 @@ class MLSConfigHandlerTest {
             MLS_CONFIG.copy(
                 status = Status.DISABLED,
                 defaultProtocol = SupportedProtocol.MLS
-<<<<<<< HEAD
-            ),
-            duringSlowSync = false
-=======
             ), duringSlowSync = false
->>>>>>> 42db0701d9 (feat: support new MLS cipher suite [WPB-8592] (#2716))
         )
 
         coVerify {
@@ -129,12 +114,7 @@ class MLSConfigHandlerTest {
             MLS_CONFIG.copy(
                 status = Status.ENABLED,
                 supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS)
-<<<<<<< HEAD
-            ),
-            duringSlowSync = false
-=======
             ), duringSlowSync = false
->>>>>>> 42db0701d9 (feat: support new MLS cipher suite [WPB-8592] (#2716))
         )
 
         coVerify {
@@ -154,12 +134,8 @@ class MLSConfigHandlerTest {
         handler.handle(
             MLS_CONFIG.copy(
                 status = Status.DISABLED
-<<<<<<< HEAD
-            ),
-            duringSlowSync = false
-=======
+
             ), duringSlowSync = false
->>>>>>> 42db0701d9 (feat: support new MLS cipher suite [WPB-8592] (#2716))
         )
 
         coVerify {
@@ -181,12 +157,7 @@ class MLSConfigHandlerTest {
             MLS_CONFIG.copy(
                 status = Status.ENABLED,
                 supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS)
-<<<<<<< HEAD
-            ),
-            duringSlowSync = false
-=======
             ), duringSlowSync = false
->>>>>>> 42db0701d9 (feat: support new MLS cipher suite [WPB-8592] (#2716))
         )
 
         coVerify {
@@ -208,12 +179,7 @@ class MLSConfigHandlerTest {
             MLS_CONFIG.copy(
                 status = Status.ENABLED,
                 supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS)
-<<<<<<< HEAD
-            ),
-            duringSlowSync = true
-=======
             ), duringSlowSync = true
->>>>>>> 42db0701d9 (feat: support new MLS cipher suite [WPB-8592] (#2716))
         )
 
         coVerify {
@@ -221,9 +187,7 @@ class MLSConfigHandlerTest {
         }.wasInvoked(exactly = once)
     }
 
-<<<<<<< HEAD
-    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
-=======
+
     @Test
     fun givenSupportedCipherSuiteIsNotNull_whenHandlling_thenStoreTheSupportedCipherSuite() = runTest {
         val (arrangement, handler) = arrange {
@@ -249,20 +213,22 @@ class MLSConfigHandlerTest {
             duringSlowSync = true,
         )
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::setSupportedCipherSuite)
-            .with(eq(SupportedCipherSuite(
-                supported = listOf(
-                    CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
-                    CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
-                ),
-                default = CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
-            )))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userConfigRepository.setSupportedCipherSuite(
+                eq(
+                    SupportedCipherSuite(
+                        supported = listOf(
+                            CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+                            CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
+                        ),
+                        default = CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
+                    )
+                )
+            )
+        }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement(private val block: Arrangement.() -> Unit) :
->>>>>>> 42db0701d9 (feat: support new MLS cipher suite [WPB-8592] (#2716))
+    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(),
         UpdateSupportedProtocolsAndResolveOneOnOnesArrangement by UpdateSupportedProtocolsAndResolveOneOnOnesArrangementImpl() {
         fun arrange() = run {
@@ -285,5 +251,4 @@ class MLSConfigHandlerTest {
             supportedCipherSuite = null
         )
     }
-
 }
