@@ -43,7 +43,7 @@ class GetUserE2eiCertificateStatusUseCaseImpl internal constructor(
                     GetUserE2eiCertificateStatusResult.Failure.NotActivated
                 },
                 { identities ->
-                    identities.getUserCertificateStatus(certificateStatusMapper)?.let {
+                    identities.getUserCertificateStatus()?.let {
                         GetUserE2eiCertificateStatusResult.Success(it)
                     } ?: GetUserE2eiCertificateStatusResult.Failure.NotActivated
                 }
