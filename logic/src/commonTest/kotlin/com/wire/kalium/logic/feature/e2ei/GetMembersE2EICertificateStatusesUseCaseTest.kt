@@ -127,8 +127,7 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
 
             runBlocking { block() }
             this@Arrangement to GetMembersE2EICertificateStatusesUseCaseImpl(
-                mlsConversationRepository = mlsConversationRepository,
-                certificateStatusMapper = certificateStatusMapper
+                mlsConversationRepository = mlsConversationRepository
             )
         }
     }

@@ -89,10 +89,13 @@ class GetE2eiCertificateUseCaseTest {
                 arrangement.mlsConversationRepository.getClientIdentity(any())
             }.wasInvoked(once)
 
+<<<<<<< HEAD
             verify {
                 arrangement.certificateStatusMapper.toCertificateStatus(any())
             }.wasInvoked(once)
 
+=======
+>>>>>>> a1fdb7faa6 (fix(e2ei): expose thumbprint and userhandle with e2ei cert (WPB-8606) (#2739))
             assertEquals(true, result is GetE2EICertificateUseCaseResult.Success)
         }
 
@@ -125,8 +128,7 @@ class GetE2eiCertificateUseCaseTest {
         val certificateStatusMapper = mock(CertificateStatusMapper::class)
 
         fun arrange() = this to GetE2eiCertificateUseCaseImpl(
-            mlsConversationRepository = mlsConversationRepository,
-            certificateStatusMapper = certificateStatusMapper
+            mlsConversationRepository = mlsConversationRepository
         )
 
         suspend fun withRepositoryFailure(failure: CoreFailure = E2EIFailure.Generic(Exception())) = apply {
