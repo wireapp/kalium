@@ -126,7 +126,7 @@ class E2EIClientProviderTest {
     }
 
     @Test
-    fun givenIsNewClientTrue_whenGettingE2EIClient_newAcmeEnrollmentCalled()= runTest {
+    fun givenIsNewClientTrue_whenGettingE2EIClient_newAcmeEnrollmentCalled() = runTest {
         val (arrangement, e2eiClientProvider) = Arrangement()
             .arrange {
                 withGettingCoreCryptoSuccessful()

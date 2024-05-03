@@ -28,9 +28,7 @@ import java.io.File
 
 actual suspend fun coreCryptoCentral(
     rootDir: String,
-    databaseKey: String,
-    allowedCipherSuites: Ciphersuites,
-    defaultCipherSuite: UShort?
+    databaseKey: String
 ): CoreCryptoCentral {
     val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
     File(rootDir).mkdirs()
@@ -38,9 +36,7 @@ actual suspend fun coreCryptoCentral(
     coreCrypto.setCallbacks(Callbacks())
     return CoreCryptoCentralImpl(
         cc = coreCrypto,
-        rootDir = rootDir,
-        cipherSuite = allowedCipherSuites,
-        defaultCipherSuite = defaultCipherSuite
+        rootDir = rootDir
     )
 }
 
@@ -73,29 +69,31 @@ private class Callbacks : CoreCryptoCallbacks {
 
 class CoreCryptoCentralImpl(
     private val cc: CoreCrypto,
-    private val rootDir: String,
-    // TODO: remove one they are removed from the CC api
-    private val cipherSuite: Ciphersuites,
-    private val defaultCipherSuite: UShort?
+    private val rootDir: String
 ) : CoreCryptoCentral {
     fun getCoreCrypto() = cc
 
-    override suspend fun mlsClient(clientId: CryptoQualifiedClientId): MLSClient {
+    override suspend fun mlsClient(
+        clientId: CryptoQualifiedClientId,
+        cipherSuite: Ciphersuites,
+        defaultCipherSuite: UShort
+    ): MLSClient {
         cc.mlsInit(clientId.toString().encodeToByteArray(), cipherSuite, null)
-        return MLSClientImpl(cc, defaultCipherSuite!!)
+        return MLSClientImpl(cc, defaultCipherSuite)
     }
 
     override suspend fun mlsClient(
         enrollment: E2EIClient,
         certificateChain: CertificateChain,
-        newMLSKeyPackageCount: UInt
+        newMLSKeyPackageCount: UInt,
+        defaultCipherSuite: UShort
     ): MLSClient {
         // todo: use DPs list from here, and return alongside with the mls client
         cc.e2eiMlsInitOnly(
             (enrollment as E2EIClientImpl).wireE2eIdentity,
             certificateChain, newMLSKeyPackageCount
         )
-        return MLSClientImpl(cc, defaultCipherSuite!!)
+        return MLSClientImpl(cc, defaultCipherSuite)
     }
 
     override suspend fun proteusClient(): ProteusClient {
@@ -107,7 +105,8 @@ class CoreCryptoCentralImpl(
         displayName: String,
         handle: String,
         teamId: String?,
-        expiry: kotlin.time.Duration
+        expiry: kotlin.time.Duration,
+        defaultCipherSuite: UShort
     ): E2EIClient {
         return E2EIClientImpl(
             cc.e2eiNewEnrollment(
@@ -116,7 +115,7 @@ class CoreCryptoCentralImpl(
                 handle,
                 teamId,
                 expiry.inWholeSeconds.toUInt(),
-                defaultCipherSuite!!
+                defaultCipherSuite
             )
 
         )
