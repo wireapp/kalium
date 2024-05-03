@@ -96,7 +96,8 @@ actual class GlobalDatabaseProvider(
         config.setOpenMode(SQLiteOpenMode.READWRITE)
         config.setOpenMode(SQLiteOpenMode.CREATE)
         config.setOpenMode(SQLiteOpenMode.NOMUTEX)
-        config.setJournalMode(SQLiteConfig.JournalMode.OFF)
+        config.setTransactionMode(SQLiteConfig.TransactionMode.EXCLUSIVE)
+        config.setJournalMode(SQLiteConfig.JournalMode.MEMORY)
         config.toProperties()
 
         val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY, config.toProperties())
