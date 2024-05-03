@@ -65,6 +65,7 @@ dagCommand = "1.9.0"
 benchmark = "0.4.10"
 jmh = "1.37"
 jmhReport = "0.9.6"
+xerialDriver = "3.45.3.0"
 
 [plugins]
 # Home-made convention plugins
@@ -187,6 +188,7 @@ sqldelight-r2dbc = { module = "app.cash.sqldelight:r2dbc-driver", version.ref = 
 sqldelight-async = { module = "app.cash.sqldelight:async-extensions", version.ref = "sqldelight" }
 r2dbc-postgres = { module = "org.postgresql:r2dbc-postgresql", version.ref = "postgres" }
 r2dbc-spi = { module = "io.r2dbc:r2dbc-spi", version.ref = "r2dbc" }
+sqlite-xerialDriver = { module = "org.xerial:sqlite-jdbc", version.ref = "xerialDriver" }
 
 # mocks and testing
 mockative-runtime = { module = "io.mockative:mockative", version.ref = "mockative" }

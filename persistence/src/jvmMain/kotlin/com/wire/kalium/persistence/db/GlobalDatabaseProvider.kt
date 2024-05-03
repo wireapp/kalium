@@ -34,8 +34,11 @@ import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
 import com.wire.kalium.util.KaliumDispatcherImpl
+import org.sqlite.SQLiteConfig
+import org.sqlite.SQLiteOpenMode
 import java.io.File
 import kotlin.coroutines.CoroutineContext
+
 
 // TODO(refactor): Unify creation just like it's done for UserDataBase
 actual class GlobalDatabaseProvider(
@@ -89,7 +92,14 @@ actual class GlobalDatabaseProvider(
     }
 
     private fun buildInMemoryDb(): SqlDriver {
-        val driver = sqlDriver(JdbcSqliteDriver.IN_MEMORY, false)
+        val config = SQLiteConfig()
+        config.setOpenMode(SQLiteOpenMode.READWRITE)
+        config.setOpenMode(SQLiteOpenMode.CREATE)
+        config.setOpenMode(SQLiteOpenMode.NOMUTEX)
+        config.setJournalMode(SQLiteConfig.JournalMode.OFF)
+        config.toProperties()
+
+        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY, config.toProperties())
         GlobalDatabase.Schema.create(driver)
         return driver
     }
