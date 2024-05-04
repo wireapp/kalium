@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence.db
 
+import app.cash.sqldelight.ColumnAdapter
 import app.cash.sqldelight.EnumColumnAdapter
 import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.db.SqlDriver
@@ -26,8 +27,10 @@ import com.wire.kalium.persistence.Accounts
 import com.wire.kalium.persistence.CurrentAccount
 import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.ServerConfiguration
+import com.wire.kalium.persistence.adapter.CrossCompatBooleanAdapter
 import com.wire.kalium.persistence.adapter.LogoutReasonAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
+import com.wire.kalium.persistence.dao.BooleanEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAOImpl
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
@@ -66,16 +69,16 @@ actual class GlobalDatabaseProvider(
             driver,
             ServerConfigurationAdapter = ServerConfiguration.Adapter(
                 commonApiVersionAdapter = IntColumnAdapter,
-                isOnPremisesAdapter = IntColumnAdapter,
+                isOnPremisesAdapter = CrossCompatBooleanAdapter as ColumnAdapter<BooleanEntity, Long>,
                 apiProxyPortAdapter = IntColumnAdapter,
-                federationAdapter = IntColumnAdapter,
-                apiProxyNeedsAuthenticationAdapter = IntColumnAdapter
+                federationAdapter = CrossCompatBooleanAdapter as ColumnAdapter<BooleanEntity, Long>,
+                apiProxyNeedsAuthenticationAdapter = CrossCompatBooleanAdapter as ColumnAdapter<BooleanEntity, Long>
             ),
             AccountsAdapter = Accounts.Adapter(
                 idAdapter = QualifiedIDAdapter,
                 logout_reasonAdapter = LogoutReasonAdapter,
                 managed_byAdapter = EnumColumnAdapter(),
-                isPersistentWebSocketEnabledAdapter = IntColumnAdapter
+                isPersistentWebSocketEnabledAdapter = CrossCompatBooleanAdapter as ColumnAdapter<BooleanEntity, Long>
             ),
             CurrentAccountAdapter = CurrentAccount.Adapter(
                 user_idAdapter = QualifiedIDAdapter

@@ -1,5 +1,6 @@
 import kotlin.Boolean;
 import kotlin.Int;
+import com.wire.kalium.persistence.dao.BooleanEntity;
 
 CREATE TABLE ServerConfiguration (
     id TEXT PRIMARY KEY NOT NULL,
@@ -10,12 +11,12 @@ CREATE TABLE ServerConfiguration (
     blackListUrl TEXT NOT NULL,
     teamsUrl TEXT NOT NULL,
     websiteUrl TEXT NOT NULL,
-    isOnPremises INTEGER AS Int NOT NULL,
+    isOnPremises INTEGER AS BooleanEntity NOT NULL,
     domain TEXT,
     commonApiVersion INTEGER AS Int NOT NULL,
-    federation INTEGER AS Int NOT NULL,
+    federation INTEGER AS BooleanEntity NOT NULL,
     apiProxyHost TEXT,
-    apiProxyNeedsAuthentication INTEGER AS Int,
+    apiProxyNeedsAuthentication INTEGER AS BooleanEntity,
     apiProxyPort INTEGER AS Int,
     lastBlackListCheck TEXT,
     CONSTRAINT server_config_unique UNIQUE (title, apiBaseUrl, webSocketBaseUrl, domain, apiProxyHost, apiProxyPort)

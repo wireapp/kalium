@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.daokaliumdb
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ServerConfigurationQueries
+import com.wire.kalium.persistence.dao.BooleanEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.model.ServerConfigEntity
@@ -43,12 +44,12 @@ internal object ServerConfigMapper {
         blackListUrl: String,
         teamsUrl: String,
         websiteUrl: String,
-        isOnPremises: Int,
+        isOnPremises: BooleanEntity,
         domain: String?,
         commonApiVersion: Int,
-        federation: Int,
+        federation: BooleanEntity,
         apiProxyHost: String?,
-        apiProxyNeedsAuthentication: Int?,
+        apiProxyNeedsAuthentication: BooleanEntity?,
         apiProxyPort: Int?,
         lastBlackListCheck: String?
     ): ServerConfigEntity = ServerConfigEntity(
@@ -61,17 +62,17 @@ internal object ServerConfigMapper {
             teams = teamsUrl,
             website = websiteUrl,
             title = title,
-            isOnPremises = isOnPremises == 1,
+            isOnPremises = isOnPremises,
             apiProxy = if (apiProxyHost != null && apiProxyNeedsAuthentication != null && apiProxyPort != null) {
                 ServerConfigEntity.ApiProxy(
-                    needsAuthentication = apiProxyNeedsAuthentication == 1,
+                    needsAuthentication = apiProxyNeedsAuthentication,
                     host = apiProxyHost,
                     port = apiProxyPort
                 )
             } else null
         ),
         ServerConfigEntity.MetaData(
-            federation = federation == 1,
+            federation = federation,
             apiVersion = commonApiVersion,
             domain = domain
         )
@@ -86,12 +87,12 @@ internal object ServerConfigMapper {
         blackListUrl: String?,
         teamsUrl: String?,
         websiteUrl: String?,
-        isOnPremises: Int?,
+        isOnPremises: BooleanEntity?,
         domain: String?,
         commonApiVersion: Int?,
-        federation: Int?,
+        federation: BooleanEntity?,
         apiProxyHost: String?,
-        apiProxyNeedsAuthentication: Int?,
+        apiProxyNeedsAuthentication: BooleanEntity?,
         apiProxyPort: Int?,
         lastBlackListCheck: String?,
         id_: QualifiedIDEntity,
@@ -106,12 +107,12 @@ internal object ServerConfigMapper {
             blackListUrl = blackListUrl!!,
             teamsUrl = teamsUrl!!,
             websiteUrl = websiteUrl!!,
-            isOnPremises = isOnPremises!!.toInt(),
+            isOnPremises = isOnPremises!!,
             domain = domain,
             commonApiVersion = commonApiVersion!!,
-            federation = federation!!.toInt(),
+            federation = federation!!,
             apiProxyHost = apiProxyHost,
-            apiProxyNeedsAuthentication = apiProxyNeedsAuthentication?.toInt(),
+            apiProxyNeedsAuthentication = apiProxyNeedsAuthentication,
             apiProxyPort = apiProxyPort,
             lastBlackListCheck = lastBlackListCheck
         ),
@@ -175,12 +176,12 @@ internal class ServerConfigurationDAOImpl internal constructor(
                 teamsUrl,
                 websiteUrl,
                 title,
-                isOnPremises.toInt(),
-                federation.toInt(),
+                isOnPremises,
+                federation,
                 domain,
                 commonApiVersion,
                 apiProxyHost,
-                apiProxyNeedsAuthentication?.toInt(),
+                apiProxyNeedsAuthentication,
                 apiProxyPort
             )
         }
@@ -232,12 +233,5 @@ internal class ServerConfigurationDAOImpl internal constructor(
 
     override suspend fun updateBlackListCheckDate(configIds: Set<String>, date: String) = withContext(queriesContext) {
         queries.updateLastBlackListCheckByIds(date, configIds)
-    }
-}
-
-fun Boolean.toInt(): Int {
-    return when (this) {
-        true -> 1
-        false -> 0
     }
 }

@@ -1,6 +1,7 @@
 import com.wire.kalium.persistence.dao.ManagedByEntity;
 import com.wire.kalium.persistence.dao.QualifiedIDEntity;
 import com.wire.kalium.persistence.model.LogoutReason;
+import com.wire.kalium.persistence.dao.BooleanEntity;
 import kotlin.Boolean;
 import kotlin.Int;
 
@@ -11,7 +12,7 @@ CREATE TABLE Accounts (
     tenant TEXT,
     server_config_id TEXT NOT NULL,
     logout_reason TEXT AS LogoutReason,
-    isPersistentWebSocketEnabled INTEGER AS Int NOT NULL DEFAULT 0,
+    isPersistentWebSocketEnabled INTEGER AS BooleanEntity NOT NULL DEFAULT 0,
     managed_by TEXT AS ManagedByEntity
 );
 
