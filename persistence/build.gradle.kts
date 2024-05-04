@@ -86,7 +86,7 @@ kotlin {
         }
         val jvmMain by getting {
             dependencies {
-                implementation(libs.sqldelight.jvmDriver) // rename to something else ? as jvm should be parametrized
+                implementation(libs.sqldelight.jvmDriver)
                 implementation(libs.sqldelight.jdbcDriver)
                 implementation(libs.hikaricp)
                 implementation(libs.postgres.driver)
