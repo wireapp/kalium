@@ -21,7 +21,6 @@ package com.wire.kalium.persistence.daokaliumdb
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.AccountsQueries
 import com.wire.kalium.persistence.CurrentAccountQueries
-import com.wire.kalium.persistence.dao.BooleanEntity
 import com.wire.kalium.persistence.dao.ManagedByEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -107,13 +106,13 @@ internal object AccountMapper {
         blackListUrl: String,
         teamsUrl: String,
         websiteUrl: String,
-        isOnPremises: BooleanEntity,
+        isOnPremises: Boolean,
         domain: String?,
         commonApiVersion: Int,
-        federation: BooleanEntity,
+        federation: Boolean,
         apiProxyHost: String?,
         apiProxyPort: Int?,
-        apiProxyNeedsAuthentication: BooleanEntity?,
+        apiProxyNeedsAuthentication: Boolean?,
         title: String
     ): Pair<UserIDEntity, ServerConfigEntity> {
         val apiProxy: ServerConfigEntity.ApiProxy? =

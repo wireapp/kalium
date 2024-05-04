@@ -20,7 +20,6 @@ package com.wire.kalium.persistence.daokaliumdb
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ServerConfigurationQueries
-import com.wire.kalium.persistence.dao.BooleanEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.model.ServerConfigEntity
@@ -44,12 +43,12 @@ internal object ServerConfigMapper {
         blackListUrl: String,
         teamsUrl: String,
         websiteUrl: String,
-        isOnPremises: BooleanEntity,
+        isOnPremises: Boolean,
         domain: String?,
         commonApiVersion: Int,
-        federation: BooleanEntity,
+        federation: Boolean,
         apiProxyHost: String?,
-        apiProxyNeedsAuthentication: BooleanEntity?,
+        apiProxyNeedsAuthentication: Boolean?,
         apiProxyPort: Int?,
         lastBlackListCheck: String?
     ): ServerConfigEntity = ServerConfigEntity(
@@ -87,12 +86,12 @@ internal object ServerConfigMapper {
         blackListUrl: String?,
         teamsUrl: String?,
         websiteUrl: String?,
-        isOnPremises: BooleanEntity?,
+        isOnPremises: Boolean?,
         domain: String?,
         commonApiVersion: Int?,
-        federation: BooleanEntity?,
+        federation: Boolean?,
         apiProxyHost: String?,
-        apiProxyNeedsAuthentication: BooleanEntity?,
+        apiProxyNeedsAuthentication: Boolean?,
         apiProxyPort: Int?,
         lastBlackListCheck: String?,
         id_: QualifiedIDEntity,
