@@ -1,4 +1,4 @@
-import kotlin.Int;
+import com.wire.kalium.persistence.dao.BooleanEntity;
 
 ALTER TABLE Accounts
-ADD COLUMN isPersistentWebSocketEnabled INTEGER AS Int NOT NULL DEFAULT(0);
+ADD COLUMN isPersistentWebSocketEnabled INTEGER AS BooleanEntity NOT NULL DEFAULT(0);
