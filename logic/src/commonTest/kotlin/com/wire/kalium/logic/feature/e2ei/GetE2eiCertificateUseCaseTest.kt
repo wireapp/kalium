@@ -38,6 +38,7 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -90,11 +91,6 @@ class GetE2eiCertificateUseCaseTest {
                 .with(any())
                 .wasInvoked(once)
 
-            verify(arrangement.certificateStatusMapper)
-                .function(arrangement.certificateStatusMapper::toCertificateStatus)
-                .with(any())
-                .wasInvoked(once)
-
             assertEquals(true, result is GetE2EICertificateUseCaseResult.Success)
         }
 
@@ -129,8 +125,7 @@ class GetE2eiCertificateUseCaseTest {
         val certificateStatusMapper = mock(classOf<CertificateStatusMapper>())
 
         fun arrange() = this to GetE2eiCertificateUseCaseImpl(
-            mlsConversationRepository = mlsConversationRepository,
-            certificateStatusMapper = certificateStatusMapper
+            mlsConversationRepository = mlsConversationRepository
         )
 
         fun withRepositoryFailure(failure: CoreFailure = E2EIFailure.Generic(Exception())) = apply {
