@@ -23,15 +23,15 @@ import uniffi.core_crypto.CryptoError
 actual fun mapMLSException(exception: Exception): MLSFailure =
     if (exception is CoreCryptoException.CryptoException) {
         when (exception.error) {
-            CryptoError.WRONG_EPOCH -> MLSFailure.WrongEpoch
-            CryptoError.DUPLICATE_MESSAGE -> MLSFailure.DuplicateMessage
-            CryptoError.BUFFERED_FUTURE_MESSAGE -> MLSFailure.BufferedFutureMessage
-            CryptoError.SELF_COMMIT_IGNORED -> MLSFailure.SelfCommitIgnored
-            CryptoError.UNMERGED_PENDING_GROUP -> MLSFailure.UnmergedPendingGroup
-            CryptoError.STALE_PROPOSAL -> MLSFailure.StaleProposal
-            CryptoError.STALE_COMMIT -> MLSFailure.StaleCommit
-            CryptoError.CONVERSATION_ALREADY_EXISTS -> MLSFailure.ConversationAlreadyExists
-            CryptoError.MESSAGE_EPOCH_TOO_OLD -> MLSFailure.MessageEpochTooOld
+            is CryptoError.WrongEpoch -> MLSFailure.WrongEpoch
+            is CryptoError.DuplicateMessage -> MLSFailure.DuplicateMessage
+            is CryptoError.BufferedFutureMessage -> MLSFailure.BufferedFutureMessage
+            is CryptoError.SelfCommitIgnored -> MLSFailure.SelfCommitIgnored
+            is CryptoError.UnmergedPendingGroup -> MLSFailure.UnmergedPendingGroup
+            is CryptoError.StaleProposal -> MLSFailure.StaleProposal
+            is CryptoError.StaleCommit -> MLSFailure.StaleCommit
+            is CryptoError.ConversationAlreadyExists -> MLSFailure.ConversationAlreadyExists
+            is CryptoError.MessageEpochTooOld -> MLSFailure.MessageEpochTooOld
             else -> MLSFailure.Generic(exception)
         }
     } else {
