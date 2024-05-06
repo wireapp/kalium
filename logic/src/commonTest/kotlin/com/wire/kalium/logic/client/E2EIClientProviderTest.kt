@@ -173,12 +173,5 @@ class E2EIClientProviderTest {
 
             return this to e2eiClientProvider
         }
-
-        fun withGetOrFetchMLSConfig(result: SupportedCipherSuite) {
-            given(mlsClientProvider)
-                .suspendFunction(mlsClientProvider::getOrFetchMLSConfig)
-                .whenInvoked()
-                .thenReturn(result.right())
-        }
     }
 }
