@@ -112,7 +112,7 @@ class E2EIClientTest : BaseMLSClientTest() {
 
     @Test
     fun givenClient_whenCallingCheckOrderRequest_ReturnNonEmptyResult() = runTest {
-        val coreCryptoCentral = createCoreCrypto(ALICE1.qualifiedClientId,  ALLOWED_CIPHER_SUITES, DEFAULT_CIPHER_SUITE)
+        val coreCryptoCentral = createCoreCrypto(ALICE1.qualifiedClientId)
         val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
@@ -130,7 +130,7 @@ class E2EIClientTest : BaseMLSClientTest() {
 
     @Test
     fun givenClient_whenCallingFinalizeRequest_ReturnNonEmptyResult() = runTest {
-        val coreCryptoCentral = createCoreCrypto(ALICE1.qualifiedClientId,  ALLOWED_CIPHER_SUITES, DEFAULT_CIPHER_SUITE)
+        val coreCryptoCentral = createCoreCrypto(ALICE1.qualifiedClientId)
         val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
@@ -149,7 +149,7 @@ class E2EIClientTest : BaseMLSClientTest() {
 
     @Test
     fun givenClient_whenCallingCertificateRequest_ReturnNonEmptyResult() = runTest {
-        val coreCryptoCentral = createCoreCrypto(ALICE1.qualifiedClientId,  ALLOWED_CIPHER_SUITES, DEFAULT_CIPHER_SUITE)
+        val coreCryptoCentral = createCoreCrypto(ALICE1.qualifiedClientId)
         val e2eiClient = createE2EIClient(ALICE1)
         e2eiClient.directoryResponse(ACME_DIRECTORY_API_RESPONSE)
         e2eiClient.setAccountResponse(NEW_ACCOUNT_API_RESPONSE)
