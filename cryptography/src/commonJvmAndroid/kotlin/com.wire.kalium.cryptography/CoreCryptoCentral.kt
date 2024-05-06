@@ -34,9 +34,7 @@ actual suspend fun coreCryptoCentral(
     File(rootDir).mkdirs()
     val coreCrypto = coreCryptoDeferredInit(
         path = path,
-        key = databaseKey,
-        ciphersuites = emptyList(),
-        nbKeyPackage = null
+        key = databaseKey
     )
     coreCrypto.setCallbacks(Callbacks())
     return CoreCryptoCentralImpl(
@@ -47,12 +45,12 @@ actual suspend fun coreCryptoCentral(
 
 private class Callbacks : CoreCryptoCallbacks {
 
-    override fun authorize(conversationId: ByteArray, clientId: ClientId): Boolean {
+    override suspend fun authorize(conversationId: ByteArray, clientId: ClientId): Boolean {
         // We always return true because our BE is currently enforcing that this constraint is always true
         return true
     }
 
-    override fun clientIsExistingGroupUser(
+    override suspend fun clientIsExistingGroupUser(
         conversationId: ConversationId,
         clientId: ClientId,
         existingClients: List<ClientId>,
@@ -62,7 +60,7 @@ private class Callbacks : CoreCryptoCallbacks {
         return true
     }
 
-    override fun userAuthorize(
+    override suspend fun userAuthorize(
         conversationId: ConversationId,
         externalClientId: ClientId,
         existingClients: List<ClientId>

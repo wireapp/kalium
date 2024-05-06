@@ -31,11 +31,8 @@ import com.wire.kalium.network.api.base.authenticated.client.UpdateClientMlsPubl
 import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.UserId
-import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
-import com.wire.kalium.network.utils.onFailure
-import com.wire.kalium.network.utils.onSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.delete
 import io.ktor.client.request.get
