@@ -22,7 +22,6 @@ import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ServerConfigurationQueries
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.kaliumLogger
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.persistence.model.ServerConfigWithUserIdEntity
 import com.wire.kalium.persistence.util.mapToList
@@ -198,7 +197,7 @@ internal class ServerConfigurationDAOImpl internal constructor(
         queries.getById(id, mapper = mapper::fromServerConfiguration).executeAsOneOrNull()
 
     override suspend fun configByLinks(links: ServerConfigEntity.Links): ServerConfigEntity? = withContext(queriesContext) {
-        val result = with(links) {
+        with(links) {
             queries.getByLinks(
                 apiBaseUrl = api,
                 webSocketBaseUrl = webSocket,
@@ -207,11 +206,7 @@ internal class ServerConfigurationDAOImpl internal constructor(
                 api_proxy_port = apiProxy?.port,
                 mapper = mapper::fromServerConfiguration
             )
-        }.executeAsList()
-
-        kaliumLogger.e("configByLinks: $result")
-
-        return@withContext result.firstOrNull()
+        }.executeAsOneOrNull()
     }
 
     override suspend fun updateApiVersion(id: String, commonApiVersion: Int) = withContext(queriesContext) {
