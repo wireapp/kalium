@@ -26,15 +26,13 @@ import kotlin.time.Duration
 
 actual suspend fun coreCryptoCentral(
     rootDir: String,
-    databaseKey: String,
-    allowedCipherSuites: List<UShort>,
-    defaultCipherSuite: UShort?
+    databaseKey: String
 ): CoreCryptoCentral {
     val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
     NSFileManager.defaultManager.createDirectoryAtPath(rootDir, withIntermediateDirectories = true, null, null)
     val coreCrypto = CoreCrypto.deferredInit(path, databaseKey, null)
     coreCrypto.setCallbacks(Callbacks())
-    return CoreCryptoCentralImpl(coreCrypto, rootDir, defaultCipherSuite)
+    return CoreCryptoCentralImpl(coreCrypto, rootDir, null)
 }
 
 private class Callbacks : CoreCryptoCallbacks {

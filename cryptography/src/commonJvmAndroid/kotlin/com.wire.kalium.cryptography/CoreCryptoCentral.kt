@@ -32,7 +32,12 @@ actual suspend fun coreCryptoCentral(
 ): CoreCryptoCentral {
     val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
     File(rootDir).mkdirs()
-    val coreCrypto = coreCryptoDeferredInit(path, databaseKey, allowedCipherSuites, null)
+    val coreCrypto = coreCryptoDeferredInit(
+        path = path,
+        key = databaseKey,
+        ciphersuites = emptyList(),
+        nbKeyPackage = null
+    )
     coreCrypto.setCallbacks(Callbacks())
     return CoreCryptoCentralImpl(
         cc = coreCrypto,
