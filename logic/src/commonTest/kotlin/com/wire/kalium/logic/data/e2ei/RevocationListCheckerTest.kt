@@ -24,10 +24,7 @@ import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
-import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseTest
-import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
@@ -48,17 +45,17 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class CheckRevocationListInternalUseCaseTest {
+class RevocationListCheckerTest {
 
     @Test
     fun givenE2EIRepositoryReturnsFailure_whenRunningUseCase_thenDoNotRegisterCrlAndReturnFailure() =
         runTest {
-            val (arrangement, checkRevocationList) = Arrangement()
+            val (arrangement, revocationListChecker) = Arrangement()
                 .withE2EIEnabledAndMLSEnabled(true)
                 .withE2EIRepositoryFailure()
                 .arrange()
 
-            val result = checkRevocationList.invoke(DUMMY_URL)
+            val result = revocationListChecker.check(DUMMY_URL)
 
             result.shouldFail()
             coVerify {
@@ -73,13 +70,13 @@ class CheckRevocationListInternalUseCaseTest {
     @Test
     fun givenCurrentClientIdProviderFailure_whenRunningUseCase_thenDoNotRegisterCrlAndReturnFailure() =
         runTest {
-            val (arrangement, checkRevocationList) = Arrangement()
+            val (arrangement, revocationListChecker) = Arrangement()
                 .withE2EIEnabledAndMLSEnabled(true)
                 .withE2EIRepositorySuccess()
                 .withCurrentClientIdProviderFailure()
                 .arrange()
 
-            val result = checkRevocationList.invoke(DUMMY_URL)
+            val result = revocationListChecker.check(DUMMY_URL)
 
             result.shouldFail()
             coVerify {
@@ -98,14 +95,14 @@ class CheckRevocationListInternalUseCaseTest {
     @Test
     fun givenMlsClientProviderFailure_whenRunningUseCase_thenDoNotRegisterCrlAndReturnFailure() =
         runTest {
-            val (arrangement, checkRevocationList) = Arrangement()
+            val (arrangement, revocationListChecker) = Arrangement()
                 .withE2EIEnabledAndMLSEnabled(true)
                 .withE2EIRepositorySuccess()
                 .withCurrentClientIdProviderSuccess()
                 .withMlsClientProviderFailure()
                 .arrange()
 
-            val result = checkRevocationList.invoke(DUMMY_URL)
+            val result = revocationListChecker.check(DUMMY_URL)
 
             result.shouldFail()
             coVerify {
@@ -124,7 +121,7 @@ class CheckRevocationListInternalUseCaseTest {
     @Test
     fun givenMlsClientProviderSuccess_whenRunningUseCase_thenDoNotRegisterCrlAndReturnExpiration() =
         runTest {
-            val (arrangement, checkRevocationList) = Arrangement()
+            val (arrangement, revocationListChecker) = Arrangement()
                 .withE2EIEnabledAndMLSEnabled(true)
                 .withE2EIRepositorySuccess()
                 .withCurrentClientIdProviderSuccess()
@@ -132,7 +129,7 @@ class CheckRevocationListInternalUseCaseTest {
                 .withRegisterCrl()
                 .arrange()
 
-            val result = checkRevocationList.invoke(DUMMY_URL)
+            val result = revocationListChecker.check(DUMMY_URL)
 
             result.shouldSucceed {
                 assertEquals(EXPIRATION, it)
@@ -153,7 +150,7 @@ class CheckRevocationListInternalUseCaseTest {
     @Test
     fun givenCertificatesRegistrationReturnsFlagIsChanged_whenRunningUseCase_thenUpdateConversationStates() =
         runTest {
-            val (arrangement, checkRevocationList) = Arrangement()
+            val (arrangement, revocationListChecker) = Arrangement()
                 .withE2EIEnabledAndMLSEnabled(true)
                 .withE2EIRepositorySuccess()
                 .withCurrentClientIdProviderSuccess()
@@ -162,7 +159,7 @@ class CheckRevocationListInternalUseCaseTest {
                 .withRegisterCrlFlagChanged()
                 .arrange()
 
-            val result = checkRevocationList.invoke(DUMMY_URL)
+            val result = revocationListChecker.check(DUMMY_URL)
 
             result.shouldSucceed {
                 assertEquals(EXPIRATION, it)
@@ -176,12 +173,12 @@ class CheckRevocationListInternalUseCaseTest {
     @Test
     fun givenE2EIAndMLSAreDisabled_whenRunningUseCase_thenE2EIFailureDisabledIsReturned() = runTest {
         // given
-        val (arrangement, checkRevocationList) = Arrangement()
+        val (arrangement, revocationListChecker) = Arrangement()
             .withE2EIEnabledAndMLSEnabled(false)
             .arrange()
 
         // when
-        val result = checkRevocationList.invoke(DUMMY_URL)
+        val result = revocationListChecker.check(DUMMY_URL)
 
         // then
         result.shouldFail {
@@ -213,7 +210,7 @@ class CheckRevocationListInternalUseCaseTest {
         @Mock
         val userConfigRepository = mock(UserConfigRepository::class)
 
-        fun arrange() = this to CheckRevocationListInternalUseCaseImpl(
+        fun arrange() = this to RevocationListCheckerImpl(
             certificateRevocationListRepository = certificateRevocationListRepository,
             currentClientIdProvider = currentClientIdProvider,
             mlsClientProvider = mlsClientProvider,

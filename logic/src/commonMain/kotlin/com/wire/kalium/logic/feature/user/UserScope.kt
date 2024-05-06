@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
-import com.wire.kalium.logic.data.e2ei.CheckRevocationListUseCase
+import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
@@ -109,7 +109,7 @@ class UserScope internal constructor(
     private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase,
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
-    private val checkRevocationList: CheckRevocationListUseCase,
+    private val checkRevocationList: RevocationListChecker,
     private val syncFeatureConfigs: SyncFeatureConfigsUseCase,
     private val userScopedLogger: KaliumLogger
 ) {
@@ -215,7 +215,7 @@ class UserScope internal constructor(
         CertificateRevocationListCheckWorkerImpl(
             certificateRevocationListRepository = certificateRevocationListRepository,
             incrementalSyncRepository = incrementalSyncRepository,
-            checkRevocationList = checkRevocationList,
+            revocationListChecker = checkRevocationList,
             kaliumLogger = userScopedLogger,
         )
     }

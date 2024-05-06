@@ -32,19 +32,19 @@ import com.wire.kalium.logic.kaliumLogger
 /**
  * Use case to check if the CRL is expired and if so, register CRL and update conversation statuses if there is a change.
  */
-interface CheckRevocationListUseCase {
-    suspend operator fun invoke(url: String): Either<CoreFailure, ULong?>
+interface RevocationListChecker {
+    suspend fun check(url: String): Either<CoreFailure, ULong?>
 }
 
-internal class CheckRevocationListInternalUseCaseImpl(
+internal class RevocationListCheckerImpl(
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val mlsClientProvider: MLSClientProvider,
     private val featureSupport: FeatureSupport,
     private val userConfigRepository: UserConfigRepository,
-) : CheckRevocationListUseCase {
+) : RevocationListChecker {
     private val logger = kaliumLogger.withTextTag("CheckRevocationListUseCase")
-    override suspend fun invoke(url: String): Either<CoreFailure, ULong?> {
+    override suspend fun check(url: String): Either<CoreFailure, ULong?> {
         val isE2EIEnabled = getIsE2EIEnabled()
 
         return if (isE2EIEnabled) {

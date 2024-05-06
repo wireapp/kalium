@@ -44,7 +44,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arr
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.WIRE_IDENTITY
 import com.wire.kalium.logic.data.conversation.mls.KeyPackageClaimResult
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
-import com.wire.kalium.logic.data.e2ei.CheckRevocationListUseCase
+import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedClientID
@@ -148,7 +148,7 @@ class MLSConversationRepositoryTest {
             mlsConversationRepository.decryptMessage(Arrangement.COMMIT, Arrangement.GROUP_ID)
 
             coVerify {
-                arrangement.checkRevocationList.invoke(any())
+                arrangement.checkRevocationList.check(any())
             }.wasInvoked(once)
 
             coVerify {
@@ -307,7 +307,7 @@ class MLSConversationRepositoryTest {
         mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1))
 
         coVerify {
-            arrangement.checkRevocationList.invoke(any())
+            arrangement.checkRevocationList.check(any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -619,7 +619,7 @@ class MLSConversationRepositoryTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.checkRevocationList.invoke(any())
+            arrangement.checkRevocationList.check(any())
         }.wasNotInvoked()
     }
 
@@ -639,7 +639,7 @@ class MLSConversationRepositoryTest {
         mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
 
         coVerify {
-            arrangement.checkRevocationList.invoke(any())
+            arrangement.checkRevocationList.check(any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -1178,7 +1178,7 @@ class MLSConversationRepositoryTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.checkRevocationList.invoke(any())
+            arrangement.checkRevocationList.check(any())
         }.wasNotInvoked()
     }
 
@@ -1199,7 +1199,7 @@ class MLSConversationRepositoryTest {
         )
 
         coVerify {
-            arrangement.checkRevocationList.invoke(any())
+            arrangement.checkRevocationList.check(any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -1538,7 +1538,7 @@ class MLSConversationRepositoryTest {
         val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
 
         @Mock
-        val checkRevocationList = mock(CheckRevocationListUseCase::class)
+        val checkRevocationList = mock(RevocationListChecker::class)
 
         @Mock
         val certificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
@@ -1710,7 +1710,7 @@ class MLSConversationRepositoryTest {
 
         suspend fun withCheckRevocationListResult() = apply {
             coEvery {
-                checkRevocationList.invoke(any())
+                checkRevocationList.check(any())
             }.returns(Either.Right(1uL))
         }
 

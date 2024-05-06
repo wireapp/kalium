@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.e2ei
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import com.wire.kalium.logic.data.e2ei.CheckRevocationListUseCase
+import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
@@ -55,7 +55,7 @@ class CertificateRevocationListCheckWorkerTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.checkRevocationList.invoke(eq(DUMMY_URL))
+            arrangement.checkRevocationList.check(eq(DUMMY_URL))
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -73,7 +73,7 @@ class CertificateRevocationListCheckWorkerTest {
         val incrementalSyncRepository = mock(IncrementalSyncRepository::class)
 
         @Mock
-        val checkRevocationList = mock(CheckRevocationListUseCase::class)
+        val checkRevocationList = mock(RevocationListChecker::class)
 
         fun arrange() = this to CertificateRevocationListCheckWorkerImpl(
             certificateRevocationListRepository, incrementalSyncRepository, checkRevocationList, kaliumLogger
@@ -98,7 +98,7 @@ class CertificateRevocationListCheckWorkerTest {
         }
         suspend fun withCheckRevocationListResult() = apply {
             coEvery {
-                checkRevocationList.invoke(any())
+                checkRevocationList.check(any())
             }.returns(Either.Right(FUTURE_TIMESTAMP))
         }
 
