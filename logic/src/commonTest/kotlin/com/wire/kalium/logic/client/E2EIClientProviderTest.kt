@@ -19,20 +19,16 @@ package com.wire.kalium.logic.client
 
 import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.EI2EIClientProviderImpl
-import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.util.arrangement.provider.E2EIClientProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.E2EIClientProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
 import io.mockative.eq
-import io.mockative.fun1
-import io.mockative.given
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
