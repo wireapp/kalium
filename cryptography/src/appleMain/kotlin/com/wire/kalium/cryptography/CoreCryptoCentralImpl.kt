@@ -32,7 +32,7 @@ actual suspend fun coreCryptoCentral(
     NSFileManager.defaultManager.createDirectoryAtPath(rootDir, withIntermediateDirectories = true, null, null)
     val coreCrypto = CoreCrypto.deferredInit(path, databaseKey, null)
     coreCrypto.setCallbacks(Callbacks())
-    return CoreCryptoCentralImpl(coreCrypto, rootDir, null)
+    return CoreCryptoCentralImpl(coreCrypto, rootDir)
 }
 
 private class Callbacks : CoreCryptoCallbacks {
@@ -59,11 +59,14 @@ private class Callbacks : CoreCryptoCallbacks {
 
 class CoreCryptoCentralImpl(
     private val cc: CoreCrypto,
-    private val rootDir: String,
-    private val defaultCipherSuite: UShort?
+    private val rootDir: String
 ) : CoreCryptoCentral {
 
-    override suspend fun mlsClient(clientId: CryptoQualifiedClientId): MLSClient {
+    override suspend fun mlsClient(
+        clientId: CryptoQualifiedClientId,
+        allowedCipherSuites: List<UShort>,
+        defaultCipherSuite: UShort
+    ): MLSClient {
         cc.mlsInit(MLSClientImpl.toUByteList(clientId.toString()))
         return MLSClientImpl(cc, defaultCipherSuite = defaultCipherSuite!!)
     }
@@ -71,7 +74,8 @@ class CoreCryptoCentralImpl(
     override suspend fun mlsClient(
         enrollment: E2EIClient,
         certificateChain: CertificateChain,
-        newMLSKeyPackageCount: UInt
+        newMLSKeyPackageCount: UInt,
+        defaultCipherSuite: UShort
     ): MLSClient {
         TODO("Not yet implemented")
     }
@@ -85,7 +89,8 @@ class CoreCryptoCentralImpl(
         displayName: String,
         handle: String,
         teamId: String?,
-        expiry: Duration
+        expiry: Duration,
+        defaultCipherSuite: UShort
     ): E2EIClient {
         TODO("Not yet implemented")
     }
