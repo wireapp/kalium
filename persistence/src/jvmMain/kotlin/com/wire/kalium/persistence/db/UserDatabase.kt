@@ -26,7 +26,6 @@ import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.CoroutineDispatcher
 import java.io.File
-import java.util.Properties
 
 private const val DATABASE_NAME = "main.db"
 
@@ -63,7 +62,8 @@ actual fun userDatabaseBuilder(
     // Make sure all intermediate directories exist
     storageData.file.mkdirs()
 
-    val driver: SqlDriver = sqlDriver("jdbc:sqlite:${databasePath.absolutePath}", enableWAL)
+    val driver: SqlDriver = DriverBuilder().withWALEnabled(enableWAL)
+        .build("jdbc:sqlite:${databasePath.absolutePath}")
 
     if (!databaseExists) {
         UserDatabase.Schema.create(driver)
@@ -76,7 +76,9 @@ actual fun userDatabaseDriverByPath(
     path: String,
     passphrase: UserDBSecret?,
     enableWAL: Boolean
-): SqlDriver = sqlDriver(path, false)
+): SqlDriver = DriverBuilder()
+    .withWALEnabled(enableWAL)
+    .build(path)
 
 internal actual fun getDatabaseAbsoluteFileLocation(
     platformDatabaseData: PlatformDatabaseData,
@@ -90,17 +92,6 @@ internal actual fun getDatabaseAbsoluteFileLocation(
     return if (dbFile.exists()) dbFile.absolutePath else null
 }
 
-internal fun sqlDriver(driverUri: String, enableWAL: Boolean): SqlDriver = JdbcSqliteDriver(
-    driverUri,
-    Properties(1).apply {
-        put("foreign_keys", "true")
-        if (enableWAL) {
-            put("journal_mode", "wal")
-        } else {
-            put("journal_mode", "delete")
-        }
-    }
-)
 
 /**
  * Creates an in-memory user database,
@@ -114,7 +105,7 @@ fun inMemoryDatabase(
     userId: UserIDEntity,
     dispatcher: CoroutineDispatcher
 ): UserDatabaseBuilder = InMemoryDatabaseCache.getOrCreate(userId) {
-    val driver = sqlDriver(JdbcSqliteDriver.IN_MEMORY, false)
+    val driver = DriverBuilder().withWALEnabled(false).build(JdbcSqliteDriver.IN_MEMORY)
     UserDatabase.Schema.create(driver)
     val storageData = StorageData.FileBacked(File("inMemory"))
     UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(storageData), false)
