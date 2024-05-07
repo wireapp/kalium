@@ -41,11 +41,10 @@ value class GlobalDatabaseSecret(val value: ByteArray)
 
 class GlobalDatabaseProvider internal constructor(
     private val sqlDriver: SqlDriver,
-    private val dispatcher: CoroutineDispatcher,
     private val platformDatabaseData: PlatformDatabaseData,
-    private val isEncrypted: Boolean,
     private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io
 ) {
+
     internal val database: GlobalDatabase = GlobalDatabase(
         sqlDriver,
         ServerConfigurationAdapter = ServerConfiguration.Adapter(

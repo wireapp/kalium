@@ -27,5 +27,3 @@ expect class DriverBuilder {
     fun build(driverUri: String): SqlDriver
     fun build(driverUri: String?, dbName: String, schema: SqlSchema<QueryResult.Value<Unit>>): SqlDriver
 }
-
-

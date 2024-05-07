@@ -50,7 +50,7 @@ actual fun globalDatabaseBuilder(
         GlobalDatabase.Schema.create(driver)
     }
 
-    return GlobalDatabaseProvider(driver, queriesContext, platformDatabaseData, false)
+    return GlobalDatabaseProvider(driver, platformDatabaseData, queriesContext)
 }
 
 actual fun nuke(platformDatabaseData: PlatformDatabaseData): Boolean {
@@ -60,5 +60,5 @@ actual fun nuke(platformDatabaseData: PlatformDatabaseData): Boolean {
 fun createGlobalInMemoryDatabase(dispatcher: CoroutineDispatcher): GlobalDatabaseProvider {
     val driver = DriverBuilder().withWALEnabled(false).build(JdbcSqliteDriver.IN_MEMORY)
     GlobalDatabase.Schema.create(driver)
-    return GlobalDatabaseProvider(driver, dispatcher, PlatformDatabaseData(StorageData.InMemory), false)
+    return GlobalDatabaseProvider(driver, PlatformDatabaseData(StorageData.InMemory), dispatcher)
 }

@@ -56,17 +56,16 @@ actual class CoreLogic(
             shouldEncryptData = kaliumConfigs.shouldEncryptData
         )
 
-    override val globalDatabase: GlobalDatabaseProvider = run {
-        globalDatabaseBuilder(
-            PlatformDatabaseData(
-                storageData = if (useInMemoryStorage) {
-                    StorageData.InMemory
-                } else {
-                    StorageData.FileBacked(File("$rootPath/global-storage"))
-                }
-            ), queriesContext = KaliumDispatcherImpl.io
-        )
-    }
+    override val globalDatabase: GlobalDatabaseProvider = globalDatabaseBuilder(
+        platformDatabaseData = PlatformDatabaseData(
+            storageData = if (useInMemoryStorage) {
+                StorageData.InMemory
+            } else {
+                StorageData.FileBacked(File("$rootPath/global-storage"))
+            }
+        ),
+        queriesContext = KaliumDispatcherImpl.io
+    )
 
     override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)

@@ -24,18 +24,23 @@ import com.wire.kalium.logic.feature.UserSessionScopeProvider
 import com.wire.kalium.logic.feature.UserSessionScopeProviderImpl
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.logic.network.NetworkStateObserverImpl
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.GlobalWorkSchedulerImpl
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.PlatformDatabaseData
+import com.wire.kalium.persistence.db.StorageData
+import com.wire.kalium.persistence.db.globalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.cancel
 
 actual class CoreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs,
-    userAgent: String
+    userAgent: String,
+    useInMemoryStorage: Boolean = false,
 ) : CoreLogicCommon(
     rootPath = rootPath, kaliumConfigs = kaliumConfigs, userAgent = userAgent
 ) {
@@ -45,8 +50,16 @@ actual class CoreLogic(
             shouldEncryptData = kaliumConfigs.shouldEncryptData
         )
 
-    override val globalDatabase: GlobalDatabaseProvider =
-        GlobalDatabaseProvider("$rootPath/global-storage")
+    override val globalDatabase: GlobalDatabaseProvider = globalDatabaseBuilder(
+        platformDatabaseData = PlatformDatabaseData(
+            storageData = if (useInMemoryStorage) {
+                StorageData.InMemory
+            } else {
+                StorageData.FileBacked("$rootPath/global-storage")
+            }
+        ),
+        queriesContext = KaliumDispatcherImpl.io
+    )
 
     override val networkStateObserver: NetworkStateObserver = NetworkStateObserverImpl()
     override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
@@ -73,10 +86,8 @@ actual class CoreLogic(
         userSessionScopeProvider.value.delete(userId)
     }
 
-    override val globalCallManager: GlobalCallManager
-            = GlobalCallManager()
-    override val globalWorkScheduler: GlobalWorkScheduler
-            = GlobalWorkSchedulerImpl(this)
+    override val globalCallManager: GlobalCallManager = GlobalCallManager()
+    override val globalWorkScheduler: GlobalWorkScheduler = GlobalWorkSchedulerImpl(this)
 
 }
 
