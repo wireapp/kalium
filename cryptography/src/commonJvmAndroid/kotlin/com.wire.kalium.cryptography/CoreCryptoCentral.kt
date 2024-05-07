@@ -80,10 +80,10 @@ class CoreCryptoCentralImpl(
 
     override suspend fun mlsClient(
         clientId: CryptoQualifiedClientId,
-        cipherSuite: Ciphersuites,
+        allowedCipherSuites: Ciphersuites,
         defaultCipherSuite: UShort
     ): MLSClient {
-        cc.mlsInit(clientId.toString().encodeToByteArray(), cipherSuite, null)
+        cc.mlsInit(clientId.toString().encodeToByteArray(), allowedCipherSuites, null)
         return MLSClientImpl(cc, defaultCipherSuite)
     }
 
