@@ -20,6 +20,7 @@ package com.wire.kalium.logic.util.arrangement.repository
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
+import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
@@ -37,6 +38,7 @@ internal interface UserConfigRepositoryArrangement {
     fun withSetMigrationConfigurationSuccessful()
     fun withGetMigrationConfigurationReturning(result: Either<StorageFailure, MLSMigrationModel>)
     fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>)
+    fun withGetSupportedCipherSuitesReturning(result: Either<StorageFailure, SupportedCipherSuite>)
 }
 
 internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrangement {
@@ -89,6 +91,13 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
         given(userConfigRepository)
             .suspendFunction(userConfigRepository::setSupportedCipherSuite)
             .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withGetSupportedCipherSuitesReturning(result: Either<StorageFailure, SupportedCipherSuite>) {
+        given(userConfigRepository)
+            .suspendFunction(userConfigRepository::getSupportedCipherSuite)
+            .whenInvoked()
             .thenReturn(result)
     }
 }

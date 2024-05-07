@@ -68,7 +68,7 @@ class CoreCryptoCentralImpl(
         defaultCipherSuite: UShort
     ): MLSClient {
         cc.mlsInit(MLSClientImpl.toUByteList(clientId.toString()))
-        return MLSClientImpl(cc, defaultCipherSuite = defaultCipherSuite!!)
+        return MLSClientImpl(cc, defaultCipherSuite = defaultCipherSuite)
     }
 
     override suspend fun mlsClient(
