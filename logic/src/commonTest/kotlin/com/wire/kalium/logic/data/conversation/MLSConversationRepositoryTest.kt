@@ -50,12 +50,10 @@ import com.wire.kalium.logic.data.id.QualifiedClientID
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
-import com.wire.kalium.logic.data.mlspublickeys.Ed25519Key
-import com.wire.kalium.logic.data.mlspublickeys.KeyType
-import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKey
+import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeys
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
@@ -160,11 +158,16 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenSuccessfulResponses_whenCallingEstablishMLSGroup_thenGroupIsCreatedAndCommitBundleIsSentAndAccepted() = runTest {
+<<<<<<< HEAD
         val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+=======
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
+>>>>>>> d726d685a9 (feat: set the correct external sender key when creating MLS conversation (#2735))
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
-            .withGetPublicKeysSuccessful()
+            .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful()
             .withSendCommitBundleSuccessful()
             .arrange()
@@ -172,9 +175,16 @@ class MLSConversationRepositoryTest {
         val result = mlsConversationRepository.establishMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_1))
         result.shouldSucceed()
 
+<<<<<<< HEAD
         coVerify {
             arrangement.mlsClient.createConversation(Arrangement.RAW_GROUP_ID, listOf(Arrangement.CRYPTO_MLS_PUBLIC_KEY))
         }.wasInvoked(once)
+=======
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::createConversation)
+            .with(eq(Arrangement.RAW_GROUP_ID), eq(Arrangement.CRYPTO_MLS_PUBLIC_KEY))
+            .wasInvoked(once)
+>>>>>>> d726d685a9 (feat: set the correct external sender key when creating MLS conversation (#2735))
 
         coVerify {
             arrangement.mlsClient.addMember(eq(Arrangement.RAW_GROUP_ID), any())
@@ -193,11 +203,16 @@ class MLSConversationRepositoryTest {
     fun givenPartialKeyClaimingResponses_whenCallingEstablishMLSGroup_thenMissingKeyPackagesFailureIsReturned() = runTest {
         val userMissingKeyPackage = TestUser.USER_ID.copy(value = "missingKP")
         val usersMissingKeyPackages = setOf(userMissingKeyPackage)
+<<<<<<< HEAD
         val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+=======
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
+>>>>>>> d726d685a9 (feat: set the correct external sender key when creating MLS conversation (#2735))
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful(usersWithoutKeyPackages = usersMissingKeyPackages)
             .withGetMLSClientSuccessful()
-            .withGetPublicKeysSuccessful()
+            .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful()
             .withSendCommitBundleSuccessful()
             .arrange()
@@ -211,9 +226,16 @@ class MLSConversationRepositoryTest {
             assertEquals(usersMissingKeyPackages, it.failedUserIds)
         }
 
+<<<<<<< HEAD
         coVerify {
             arrangement.mlsClient.createConversation(eq(Arrangement.RAW_GROUP_ID), eq(listOf(Arrangement.CRYPTO_MLS_PUBLIC_KEY)))
         }.wasInvoked(once)
+=======
+        verify(arrangement.mlsClient)
+            .suspendFunction(arrangement.mlsClient::createConversation)
+            .with(eq(Arrangement.RAW_GROUP_ID), eq(Arrangement.CRYPTO_MLS_PUBLIC_KEY))
+            .wasInvoked(once)
+>>>>>>> d726d685a9 (feat: set the correct external sender key when creating MLS conversation (#2735))
 
         coVerify {
             arrangement.mlsClient.addMember(eq(Arrangement.RAW_GROUP_ID), any())
@@ -239,11 +261,16 @@ class MLSConversationRepositoryTest {
         val usersMissingKeyPackages = setOf(userMissingKeyPackage)
         val usersWithKeyPackages = setOf(userWithKeyPackage)
         val keyPackageSuccess = KEY_PACKAGE.copy(userId = userWithKeyPackage.value, domain = userWithKeyPackage.domain)
+<<<<<<< HEAD
         val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+=======
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
+>>>>>>> d726d685a9 (feat: set the correct external sender key when creating MLS conversation (#2735))
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful(keyPackages = listOf(keyPackageSuccess), usersWithoutKeyPackages = usersMissingKeyPackages)
             .withGetMLSClientSuccessful()
-            .withGetPublicKeysSuccessful()
+            .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful()
             .withSendCommitBundleSuccessful()
             .arrange()
@@ -258,9 +285,16 @@ class MLSConversationRepositoryTest {
             assertEquals(usersWithKeyPackages, it.successfullyAddedUsers)
         }
 
+<<<<<<< HEAD
         coVerify {
             arrangement.mlsClient.createConversation(eq(Arrangement.RAW_GROUP_ID), eq(listOf(Arrangement.CRYPTO_MLS_PUBLIC_KEY)))
         }.wasInvoked(once)
+=======
+        verify(arrangement.mlsClient)
+            .function(arrangement.mlsClient::createConversation)
+            .with(eq(Arrangement.RAW_GROUP_ID), eq(Arrangement.CRYPTO_MLS_PUBLIC_KEY))
+            .wasInvoked(once)
+>>>>>>> d726d685a9 (feat: set the correct external sender key when creating MLS conversation (#2735))
 
         coVerify {
             arrangement.mlsClient.addMember(eq(Arrangement.RAW_GROUP_ID), matches { it.size == usersWithKeyPackages.size })
@@ -285,7 +319,7 @@ class MLSConversationRepositoryTest {
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
-            .withGetPublicKeysSuccessful()
+            .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful()
             .withSendCommitBundleSuccessful()
             .arrange()
@@ -298,7 +332,7 @@ class MLSConversationRepositoryTest {
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
-            .withGetPublicKeysSuccessful()
+            .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful(COMMIT_BUNDLE.copy(crlNewDistributionPoints = listOf("url")))
             .withCheckRevocationListResult()
             .withSendCommitBundleSuccessful()
@@ -317,11 +351,16 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenMlsClientMismatchError_whenCallingEstablishMLSGroup_thenClearCommitAndRetry() = runTest {
+<<<<<<< HEAD
         val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+=======
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
+>>>>>>> d726d685a9 (feat: set the correct external sender key when creating MLS conversation (#2735))
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
-            .withGetPublicKeysSuccessful()
+            .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful()
             .withSendCommitBundleFailing(Arrangement.MLS_CLIENT_MISMATCH_ERROR, times = 1)
             .withWaitUntilLiveSuccessful()
@@ -345,11 +384,16 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenMlsStaleMessageError_whenCallingEstablishMLSGroup_thenAbortCommitAndWipeData() = runTest {
+<<<<<<< HEAD
         val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+=======
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
+>>>>>>> d726d685a9 (feat: set the correct external sender key when creating MLS conversation (#2735))
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
-            .withGetPublicKeysSuccessful()
+            .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful()
             .withSendCommitBundleFailing(Arrangement.MLS_STALE_MESSAGE_ERROR)
             .arrange()
@@ -372,11 +416,16 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenSuccessfulResponses_whenCallingEstablishMLSGroup_thenKeyPackagesAreClaimedForMembers() = runTest {
+<<<<<<< HEAD
         val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+=======
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
+>>>>>>> d726d685a9 (feat: set the correct external sender key when creating MLS conversation (#2735))
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful()
             .withGetMLSClientSuccessful()
-            .withGetPublicKeysSuccessful()
+            .withKeyForCipherSuite()
             .withAddMLSMemberSuccessful()
             .withSendCommitBundleSuccessful()
             .arrange()
@@ -391,11 +440,16 @@ class MLSConversationRepositoryTest {
 
     @Test
     fun givenNoOtherClients_whenCallingEstablishMLSGroup_thenCommitIsCreatedByUpdatingKeyMaterial() = runTest {
+<<<<<<< HEAD
         val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
+=======
+        val (arrangement, mlsConversationRepository) = Arrangement()
+            .withGetDefaultCipherSuite(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
+>>>>>>> d726d685a9 (feat: set the correct external sender key when creating MLS conversation (#2735))
             .withCommitPendingProposalsReturningNothing()
             .withClaimKeyPackagesSuccessful(keyPackages = emptyList())
             .withGetMLSClientSuccessful()
-            .withGetPublicKeysSuccessful()
+            .withKeyForCipherSuite()
             .withUpdateKeyingMaterialSuccessful()
             .withSendCommitBundleSuccessful()
             .arrange()
@@ -1417,7 +1471,7 @@ class MLSConversationRepositoryTest {
                 .withGetMLSClientSuccessful()
                 .withGetMLSGroupIdByConversationIdReturns(Arrangement.GROUP_ID.value)
                 .withGetExternalSenderKeySuccessful()
-                .withGetPublicKeysSuccessful()
+                .withKeyForCipherSuite()
                 .withUpdateKeyingMaterialSuccessful()
                 .withSendCommitBundleSuccessful()
                 .arrange()
@@ -1425,9 +1479,16 @@ class MLSConversationRepositoryTest {
             val result = mlsConversationRepository.establishMLSSubConversationGroup(Arrangement.GROUP_ID, TestConversation.ID)
             result.shouldSucceed()
 
+<<<<<<< HEAD
             coVerify {
                 arrangement.mlsClient.createConversation(eq(Arrangement.RAW_GROUP_ID), eq(listOf(Arrangement.CRYPTO_MLS_EXTERNAL_KEY)))
             }.wasInvoked(once)
+=======
+            verify(arrangement.mlsClient)
+                .suspendFunction(arrangement.mlsClient::createConversation)
+                .with(eq(Arrangement.RAW_GROUP_ID), eq(Arrangement.EXTERNAL_SENDER_KEY.value))
+                .wasInvoked(once)
+>>>>>>> d726d685a9 (feat: set the correct external sender key when creating MLS conversation (#2735))
 
             coVerify {
                 arrangement.mlsMessageApi.sendCommitBundle(any<MLSMessageApi.CommitBundle>())
@@ -1602,10 +1663,18 @@ class MLSConversationRepositoryTest {
             }.returns(result)
         }
 
+<<<<<<< HEAD
         suspend fun withGetPublicKeysSuccessful() = apply {
             coEvery {
                 mlsPublicKeysRepository.getKeys()
             }.returns(Either.Right(listOf(MLS_PUBLIC_KEY)))
+=======
+        fun withKeyForCipherSuite() = apply {
+            given(mlsPublicKeysRepository)
+                .suspendFunction(mlsPublicKeysRepository::getKeyForCipherSuite)
+                .whenInvokedWith(any())
+                .then { Either.Right(CRYPTO_MLS_PUBLIC_KEY) }
+>>>>>>> d726d685a9 (feat: set the correct external sender key when creating MLS conversation (#2735))
         }
 
         suspend fun withGetMLSClientSuccessful() = apply {
@@ -1762,6 +1831,13 @@ class MLSConversationRepositoryTest {
             }.returns(identitiesMap)
         }
 
+        fun withGetDefaultCipherSuite(cipherSuite: CipherSuite) = apply {
+            given(mlsClient)
+                .function(mlsClient::getDefaultCipherSuite)
+                .whenInvoked()
+                .thenReturn(cipherSuite.tag.toUShort())
+        }
+
         companion object {
             val TEST_FAILURE = Either.Left(CoreFailure.Unknown(Throwable("an error")))
             const val EPOCH = 5UL
@@ -1772,11 +1848,13 @@ class MLSConversationRepositoryTest {
             val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(ErrorResponse(405, "", ""))
             val MLS_STALE_MESSAGE_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-stale-message"))
             val MLS_CLIENT_MISMATCH_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-client-mismatch"))
-            val MLS_PUBLIC_KEY = MLSPublicKey(
-                Ed25519Key("gRNvFYReriXbzsGu7zXiPtS8kaTvhU1gUJEV9rdFHVw=".decodeBase64Bytes()),
-                KeyType.REMOVAL
+            val MLS_PUBLIC_KEY = MLSPublicKeys(
+                removal = mapOf(
+                    "ed25519" to "gRNvFYReriXbzsGu7zXiPtS8kaTvhU1gUJEV9rdFHVw="
+                )
             )
-            val CRYPTO_MLS_PUBLIC_KEY = MapperProvider.mlsPublicKeyMapper().toCrypto(MLS_PUBLIC_KEY)
+
+            val CRYPTO_MLS_PUBLIC_KEY: ByteArray = MLS_PUBLIC_KEY.removal?.get("ed25519")!!.decodeBase64Bytes()
             val KEY_PACKAGE = KeyPackageDTO(
                 "client1",
                 "wire.com",
@@ -1786,7 +1864,6 @@ class MLSConversationRepositoryTest {
             )
             val WELCOME = "welcome".encodeToByteArray()
             val EXTERNAL_SENDER_KEY = ExternalSenderKey("externalSenderKey".encodeToByteArray())
-            val CRYPTO_MLS_EXTERNAL_KEY = MapperProvider.mlsPublicKeyMapper().toCrypto(EXTERNAL_SENDER_KEY)
             val COMMIT = "commit".encodeToByteArray()
             val PUBLIC_GROUP_STATE = "public_group_state".encodeToByteArray()
             val PUBLIC_GROUP_STATE_BUNDLE = GroupInfoBundle(

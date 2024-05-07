@@ -64,9 +64,19 @@ private class Callbacks : CoreCryptoCallbacks {
 class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: String) : CoreCryptoCentral {
     fun getCoreCrypto() = cc
 
+<<<<<<< HEAD
     override suspend fun mlsClient(clientId: CryptoQualifiedClientId): MLSClient {
         cc.mlsInit(clientId.toString().encodeToByteArray(), Ciphersuites.DEFAULT.lower(), null)
         return MLSClientImpl(cc)
+=======
+    override suspend fun mlsClient(
+        clientId: CryptoQualifiedClientId,
+        allowedCipherSuites: Ciphersuites,
+        defaultCipherSuite: UShort
+    ): MLSClient {
+        cc.mlsInit(clientId.toString().encodeToByteArray(), allowedCipherSuites, null)
+        return MLSClientImpl(cc, defaultCipherSuite)
+>>>>>>> d726d685a9 (feat: set the correct external sender key when creating MLS conversation (#2735))
     }
 
     override suspend fun mlsClient(
