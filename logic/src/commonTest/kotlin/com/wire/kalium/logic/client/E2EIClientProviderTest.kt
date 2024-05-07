@@ -28,7 +28,6 @@ import com.wire.kalium.logic.util.arrangement.provider.E2EIClientProviderArrange
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
@@ -151,7 +150,7 @@ class E2EIClientProviderTest {
 
         verify(arrangement.coreCryptoCentral)
             .suspendFunction(arrangement.coreCryptoCentral::newAcmeEnrollment)
-            .with(any(), any(), any(), any(), any(), eq(supportedCipherSuite.default.tag.toUShort()))
+            .with(any(), any(), any(), any(), any())
             .wasInvoked(exactly = once)
     }
 

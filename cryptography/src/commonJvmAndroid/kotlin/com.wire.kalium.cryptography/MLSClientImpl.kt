@@ -110,7 +110,7 @@ class MLSClientImpl(
         groupId: MLSGroupId,
         externalSenders: ByteArray
     ) {
-        kaliumLogger.d("createConversation: $defaultCipherSuite")
+        kaliumLogger.d("createConversation: using defaultCipherSuite=$defaultCipherSuite")
         val conf = ConversationConfiguration(
             defaultCipherSuite,
             listOf(externalSenders),
