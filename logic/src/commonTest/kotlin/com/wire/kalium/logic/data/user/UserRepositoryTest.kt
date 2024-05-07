@@ -36,7 +36,6 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.LIST_USERS_DTO
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.getOrNull
-import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.test_util.TestNetworkException.federationNotEnabled
 import com.wire.kalium.logic.test_util.TestNetworkException.generic
@@ -65,9 +64,9 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.eq
 import io.mockative.every
 import io.mockative.matches
 import io.mockative.mock
@@ -822,9 +821,6 @@ class UserRepositoryTest {
         @Mock
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
-        @Mock
-        val legalHoldHandler: LegalHoldHandler = mock(LegalHoldHandler::class)
-
         val selfUserId = TestUser.SELF.id
 
         val userRepository: UserRepository by lazy {
@@ -837,8 +833,7 @@ class UserRepositoryTest {
                 teamsApi,
                 sessionRepository,
                 selfUserId,
-                selfTeamIdProvider,
-                legalHoldHandler
+                selfTeamIdProvider
             )
         }
 
@@ -1038,9 +1033,6 @@ class UserRepositoryTest {
                 sessionRepository.updateSsoIdAndScimInfo(any(), any(), any())
             }.returns(Either.Right(Unit))
             withGetTeamMemberSuccess(TestTeam.memberDTO(selfUserId.value))
-            coEvery {
-                legalHoldHandler.handleUserFetch(any(), any())
-            }.returns(Either.Right(Unit))
             apply(block)
             return this to userRepository
         }
