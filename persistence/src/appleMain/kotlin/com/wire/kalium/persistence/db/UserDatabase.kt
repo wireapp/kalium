@@ -124,11 +124,22 @@ internal actual fun nuke(
     userId: UserIDEntity,
     platformDatabaseData: PlatformDatabaseData
 ): Boolean {
-    return NSFileManager.defaultManager.removeItemAtPath(platformDatabaseData.storageData, null)
+    return when (platformDatabaseData.storageData) {
+        is StorageData.FileBacked -> NSFileManager.defaultManager.removeItemAtPath(platformDatabaseData.storageData.storePath, null)
+        is StorageData.InMemory -> false
+    }
 }
 
 internal actual fun getDatabaseAbsoluteFileLocation(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity
-): String? = if (NSURL.fileURLWithPath(platformDatabaseData.storageData).checkResourceIsReachableAndReturnError(null) ?: false)
-    platformDatabaseData.storageData else null
+): String? {
+    return if (
+        platformDatabaseData.storageData is StorageData.FileBacked && NSURL.fileURLWithPath(platformDatabaseData.storageData.storePath)
+            .checkResourceIsReachableAndReturnError(null)
+    ) {
+        platformDatabaseData.storageData.storePath
+    } else {
+        null
+    }
+}
