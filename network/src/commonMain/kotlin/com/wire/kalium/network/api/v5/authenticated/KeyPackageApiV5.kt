@@ -47,9 +47,10 @@ internal open class KeyPackageApiV5 internal constructor(
         wrapFederationResponse(response, delegatedHandler = { handleUnsuccessfulResponse(response) })
     }) {
         httpClient.post("$PATH_KEY_PACKAGES/$PATH_CLAIM/${param.user.domain}/${param.user.value}") {
-            if (param is KeyPackageApi.Param.SkipOwnClient) {
-                parameter(QUERY_SKIP_OWN, param.selfClientId)
+            param.selfClientId?.let {
+                parameter(QUERY_SKIP_OWN, it)
             }
+            parameter(QUERY_CIPHER_SUITE, param.cipherSuite)
         }
     }
 
@@ -84,5 +85,6 @@ internal open class KeyPackageApiV5 internal constructor(
         const val PATH_SELF = "self"
         const val PATH_COUNT = "count"
         const val QUERY_SKIP_OWN = "skip_own"
+        const val QUERY_CIPHER_SUITE = "ciphersuite"
     }
 }

@@ -22,9 +22,11 @@ import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.right
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -61,7 +63,13 @@ interface E2EIClientProviderArrangement {
 
     suspend fun withE2EIEnabled(isEnabled: Boolean)
 
+<<<<<<< HEAD
     suspend fun withSelfUser(selfUser: SelfUser?)
+=======
+    fun withSelfUser(selfUser: SelfUser?)
+
+    fun withGetOrFetchMLSConfig(result: SupportedCipherSuite)
+>>>>>>> 2bcb2885ba (feat: set the correct cipher suite when claiming key packages (#2742))
 }
 
 class E2EIClientProviderArrangementImpl : E2EIClientProviderArrangement {
@@ -111,6 +119,13 @@ class E2EIClientProviderArrangementImpl : E2EIClientProviderArrangement {
         coEvery {
             userRepository.getSelfUser()
         }.returns(selfUser)
+    }
+
+    override fun withGetOrFetchMLSConfig(result: SupportedCipherSuite) {
+        given(mlsClientProvider)
+            .suspendFunction(mlsClientProvider::getOrFetchMLSConfig)
+            .whenInvoked()
+            .thenReturn(result.right())
     }
 
 }

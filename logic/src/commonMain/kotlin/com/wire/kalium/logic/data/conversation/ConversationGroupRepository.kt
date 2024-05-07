@@ -29,7 +29,11 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+<<<<<<< HEAD
 import com.wire.kalium.logic.data.message.MessageContent.MemberChange.FailedToAdd
+=======
+import com.wire.kalium.logic.data.mls.CipherSuite
+>>>>>>> 2bcb2885ba (feat: set the correct cipher suite when claiming key packages (#2742))
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
@@ -130,6 +134,7 @@ internal class ConversationGroupRepositoryImpl(
             }
 
             when (apiResult) {
+<<<<<<< HEAD
                 is Either.Left -> {
                     val canRetryOnce = apiResult.value.hasUnreachableDomainsError && lastUsersAttempt is LastUsersAttempt.None
                     if (canRetryOnce) {
@@ -203,8 +208,85 @@ internal class ConversationGroupRepositoryImpl(
             wrapStorageRequest {
                 conversationDAO.getConversationByQualifiedID(conversationEntity.id)?.let {
                     conversationMapper.fromDaoModel(it)
+=======
+                is Either.Left -> handleCreateConverstionFailure(apiResult, usersList, failedUsersList, name, options)
+
+                is Either.Right -> {
+                    handleCreateConversationSucess(
+                        apiResult,
+                        usersList,
+                        failedUsersList,
+                        selfTeamId
+                    )
+>>>>>>> 2bcb2885ba (feat: set the correct cipher suite when claiming key packages (#2742))
                 }
             }
+        }
+    }
+
+    private suspend fun handleCreateConversationSucess(
+        apiResult: Either.Right<ConversationResponse>,
+        usersList: List<UserId>,
+        failedUsersList: List<UserId>,
+        selfTeamId: TeamId?
+    ): Either<CoreFailure, Conversation> {
+        val conversationResponse = apiResult.value
+        val conversationEntity = conversationMapper.fromApiModelToDaoModel(
+            conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION, selfTeamId
+        )
+        val protocol = protocolInfoMapper.fromEntity(conversationEntity.protocolInfo)
+
+        return wrapStorageRequest {
+            conversationDAO.insertConversation(conversationEntity)
+        }.flatMap {
+            newGroupConversationSystemMessagesCreator.value.conversationStarted(conversationEntity)
+        }.flatMap {
+            when (protocol) {
+                is Conversation.ProtocolInfo.Proteus -> Either.Right(setOf())
+                is Conversation.ProtocolInfo.MLSCapable -> mlsConversationRepository.establishMLSGroup(
+                    groupID = protocol.groupId,
+                    members = usersList + selfUserId,
+                    allowSkippingUsersWithoutKeyPackages = true
+                ).map { it.notAddedUsers }
+            }
+        }.flatMap { additionalFailedUsers ->
+            newConversationMembersRepository.persistMembersAdditionToTheConversation(
+                conversationEntity.id, conversationResponse, failedUsersList + additionalFailedUsers
+            )
+        }.flatMap {
+            wrapStorageRequest {
+                newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
+                    conversationEntity.id.toModel()
+                )
+            }
+        }.flatMap {
+            wrapStorageRequest {
+                conversationDAO.getConversationByQualifiedID(conversationEntity.id)?.let {
+                    conversationMapper.fromDaoModel(it)
+                }
+            }
+        }
+    }
+
+    private suspend fun handleCreateConverstionFailure(
+        apiResult: Either.Left<NetworkFailure>,
+        usersList: List<UserId>,
+        failedUsersList: List<UserId>,
+        name: String?,
+        options: ConversationOptions
+    ): Either<CoreFailure, Conversation> {
+        val canRetryOnce = apiResult.value.hasUnreachableDomainsError && failedUsersList.isEmpty()
+        return if (canRetryOnce) {
+            val (validUsers, failedUsers) = extractValidUsersForRetryableFederationError(
+                usersList,
+                apiResult.value as NetworkFailure.FederatedBackendFailure.FailedDomains
+            )
+            // edge case, in case backend goes 🍌 and returns non-matching domains
+            if (failedUsers.isEmpty()) Either.Left(apiResult.value)
+
+            createGroupConversation(name, validUsers, options, failedUsers)
+        } else {
+            Either.Left(apiResult.value)
         }
     }
 
@@ -222,11 +304,24 @@ internal class ConversationGroupRepositoryImpl(
                         tryAddMembersToCloudAndStorage(userIdList, conversationId, LastUsersAttempt.None)
                             .flatMap {
                                 // best effort approach for migrated conversations, no retries
-                                mlsConversationRepository.addMemberToMLSGroup(GroupID(protocol.groupId), userIdList)
+                                mlsConversationRepository.addMemberToMLSGroup(
+                                    GroupID(protocol.groupId),
+                                    userIdList,
+                                    CipherSuite.fromTag(protocol.cipherSuite.cipherSuiteTag)
+                                )
                             }
 
                     is ConversationEntity.ProtocolInfo.MLS -> {
+<<<<<<< HEAD
                         tryAddMembersToMLSGroup(conversationId, protocol.groupId, userIdList, LastUsersAttempt.None)
+=======
+                        tryAddMembersToMLSGroup(
+                            conversationId = conversationId,
+                            groupId = protocol.groupId,
+                            userIdList = userIdList,
+                            cipherSuite = CipherSuite.fromTag(protocol.cipherSuite.cipherSuiteTag)
+                        )
+>>>>>>> 2bcb2885ba (feat: set the correct cipher suite when claiming key packages (#2742))
                     }
                 }
             }
@@ -239,11 +334,24 @@ internal class ConversationGroupRepositoryImpl(
         conversationId: ConversationId,
         groupId: String,
         userIdList: List<UserId>,
+<<<<<<< HEAD
         lastUsersAttempt: LastUsersAttempt,
         remainingAttempts: Int = 2
     ): Either<CoreFailure, Unit> {
         return when (val addingMemberResult = mlsConversationRepository.addMemberToMLSGroup(GroupID(groupId), userIdList)) {
             is Either.Right -> handleMLSMembersNotAdded(conversationId, lastUsersAttempt)
+=======
+        failedUsersList: Set<UserId> = emptySet(),
+        remainingAttempts: Int = 2,
+        cipherSuite: CipherSuite
+    ): Either<CoreFailure, Unit> {
+        return when (val addingMemberResult = mlsConversationRepository.addMemberToMLSGroup(
+            GroupID(groupId),
+            userIdList,
+            cipherSuite
+        )) {
+            is Either.Right -> handleMLSMembersNotAdded(conversationId, failedUsersList)
+>>>>>>> 2bcb2885ba (feat: set the correct cipher suite when claiming key packages (#2742))
             is Either.Left -> {
                 addingMemberResult.value.handleMLSMembersFailed(
                     conversationId = conversationId,
@@ -251,6 +359,7 @@ internal class ConversationGroupRepositoryImpl(
                     userIdList = userIdList,
                     lastUsersAttempt = lastUsersAttempt,
                     remainingAttempts = remainingAttempts,
+                    cipherSuite = cipherSuite
                 )
             }
         }
@@ -262,6 +371,7 @@ internal class ConversationGroupRepositoryImpl(
         userIdList: List<UserId>,
         lastUsersAttempt: LastUsersAttempt,
         remainingAttempts: Int,
+        cipherSuite: CipherSuite
     ): Either<CoreFailure, Unit> {
         return when {
             // claiming key packages offline or out of packages
@@ -271,11 +381,17 @@ internal class ConversationGroupRepositoryImpl(
                     conversationId = conversationId,
                     groupId = groupId,
                     userIdList = validUsers,
+<<<<<<< HEAD
                     lastUsersAttempt = LastUsersAttempt.Failed(
                         failedUsers = lastUsersAttempt.failedUsers + failedUsers,
                         failType = FailedToAdd.Type.Federation,
                     ),
                     remainingAttempts = remainingAttempts - 1
+=======
+                    failedUsersList = (failedUsersList + failedUsers).toSet(),
+                    remainingAttempts = remainingAttempts - 1,
+                    cipherSuite = cipherSuite
+>>>>>>> 2bcb2885ba (feat: set the correct cipher suite when claiming key packages (#2742))
                 )
             }
 
@@ -286,11 +402,17 @@ internal class ConversationGroupRepositoryImpl(
                     conversationId = conversationId,
                     groupId = groupId,
                     userIdList = validUsers,
+<<<<<<< HEAD
                     lastUsersAttempt = LastUsersAttempt.Failed(
                         failedUsers = lastUsersAttempt.failedUsers + failedUsers,
                         failType = FailedToAdd.Type.Federation,
                     ),
                     remainingAttempts = remainingAttempts - 1
+=======
+                    failedUsersList = (failedUsersList + failedUsers).toSet(),
+                    remainingAttempts = remainingAttempts - 1,
+                    cipherSuite = cipherSuite
+>>>>>>> 2bcb2885ba (feat: set the correct cipher suite when claiming key packages (#2742))
                 )
             }
 
@@ -477,7 +599,11 @@ internal class ConversationGroupRepositoryImpl(
 
                                 is ConversationEntity.ProtocolInfo.MLSCapable -> {
                                     joinExistingMLSConversation(conversationId).flatMap {
-                                        mlsConversationRepository.addMemberToMLSGroup(GroupID(protocol.groupId), listOf(selfUserId))
+                                        mlsConversationRepository.addMemberToMLSGroup(
+                                            GroupID(protocol.groupId),
+                                            listOf(selfUserId),
+                                            CipherSuite.fromTag(protocol.cipherSuite.cipherSuiteTag)
+                                        )
                                     }
                                 }
                             }

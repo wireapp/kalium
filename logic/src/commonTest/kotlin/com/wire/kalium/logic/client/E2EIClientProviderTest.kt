@@ -19,17 +19,27 @@ package com.wire.kalium.logic.client
 
 import com.wire.kalium.logic.data.client.E2EIClientProvider
 import com.wire.kalium.logic.data.client.EI2EIClientProviderImpl
+<<<<<<< HEAD
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
+=======
+import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.data.mls.SupportedCipherSuite
+import com.wire.kalium.logic.framework.TestClient
+import com.wire.kalium.logic.framework.TestUser
+>>>>>>> 2bcb2885ba (feat: set the correct cipher suite when claiming key packages (#2742))
 import com.wire.kalium.logic.util.arrangement.provider.E2EIClientProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.E2EIClientProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.any
+<<<<<<< HEAD
 import io.mockative.coVerify
+=======
+>>>>>>> 2bcb2885ba (feat: set the correct cipher suite when claiming key packages (#2742))
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
