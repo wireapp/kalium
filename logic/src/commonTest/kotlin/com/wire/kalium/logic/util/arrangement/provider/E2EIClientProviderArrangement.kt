@@ -22,9 +22,11 @@ import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.right
 import io.mockative.Mock
 import io.mockative.anything
 import io.mockative.classOf
@@ -63,6 +65,8 @@ interface E2EIClientProviderArrangement {
     fun withE2EIEnabled(isEnabled: Boolean)
 
     fun withSelfUser(selfUser: SelfUser?)
+
+    fun withGetOrFetchMLSConfig(result: SupportedCipherSuite)
 }
 
 class E2EIClientProviderArrangementImpl : E2EIClientProviderArrangement {
@@ -120,6 +124,13 @@ class E2EIClientProviderArrangementImpl : E2EIClientProviderArrangement {
             .suspendFunction(userRepository::getSelfUser)
             .whenInvoked()
             .thenReturn(selfUser)
+    }
+
+    override fun withGetOrFetchMLSConfig(result: SupportedCipherSuite) {
+        given(mlsClientProvider)
+            .suspendFunction(mlsClientProvider::getOrFetchMLSConfig)
+            .whenInvoked()
+            .thenReturn(result.right())
     }
 
 }

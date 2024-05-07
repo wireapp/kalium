@@ -25,6 +25,8 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.keypackage.KeyPackageRepositoryTest.Arrangement.Companion.CIPHER_SUITE
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
@@ -89,7 +91,7 @@ class KeyPackageRepositoryTest {
             .withClaimKeyPackagesSuccessful(Arrangement.USER_ID)
             .arrange()
 
-        val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.USER_ID))
+        val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.USER_ID), CIPHER_SUITE)
 
         result.shouldSucceed { keyPackageResult ->
             assertEquals(listOf(Arrangement.CLAIMED_KEY_PACKAGES.keyPackages[0]), keyPackageResult.successfullyFetchedKeyPackages)
@@ -106,7 +108,7 @@ class KeyPackageRepositoryTest {
             .withClaimKeyPackagesSuccessfulWithEmptyResponse(userWithout)
             .arrange()
 
-        val result = keyPackageRepository.claimKeyPackages(listOf(userWith, userWithout))
+        val result = keyPackageRepository.claimKeyPackages(listOf(userWith, userWithout), CIPHER_SUITE)
 
         result.shouldSucceed { keyPackageResult ->
             assertEquals(
@@ -134,7 +136,7 @@ class KeyPackageRepositoryTest {
             }
             .arrange()
 
-        val result = keyPackageRepository.claimKeyPackages(usersWithout.toList())
+        val result = keyPackageRepository.claimKeyPackages(usersWithout.toList(), CIPHER_SUITE)
 
         result.shouldFail { failure ->
             assertIs<CoreFailure.MissingKeyPackages>(failure)
@@ -149,7 +151,7 @@ class KeyPackageRepositoryTest {
             .withClaimKeyPackagesSuccessfulWithEmptyResponse(Arrangement.USER_ID)
             .arrange()
 
-        val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.USER_ID))
+        val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.USER_ID), CIPHER_SUITE)
 
         result.shouldFail { failure ->
             assertEquals(CoreFailure.MissingKeyPackages(setOf(Arrangement.USER_ID)), failure)
@@ -164,7 +166,7 @@ class KeyPackageRepositoryTest {
             .withClaimKeyPackagesSuccessfulWithEmptyResponse(Arrangement.SELF_USER_ID)
             .arrange()
 
-        val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.SELF_USER_ID))
+        val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.SELF_USER_ID), CIPHER_SUITE)
 
         result.shouldSucceed { keyPackages ->
             assertEquals(emptyList(), keyPackages.successfullyFetchedKeyPackages)
@@ -210,13 +212,13 @@ class KeyPackageRepositoryTest {
 
         fun withClaimKeyPackagesSuccessful(userId: UserId) = apply {
             given(keyPackageApi).suspendFunction(keyPackageApi::claimKeyPackages)
-                .whenInvokedWith(eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value)))
+                .whenInvokedWith(eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag)))
                 .thenReturn(NetworkResponse.Success(CLAIMED_KEY_PACKAGES, mapOf(), 200))
         }
 
         fun withClaimKeyPackagesSuccessfulWithEmptyResponse(userId: UserId) = apply {
             given(keyPackageApi).suspendFunction(keyPackageApi::claimKeyPackages)
-                .whenInvokedWith(eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value)))
+                .whenInvokedWith(eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag)))
                 .thenReturn(NetworkResponse.Success(EMPTY_CLAIMED_KEY_PACKAGES, mapOf(), 200))
         }
 
@@ -224,6 +226,7 @@ class KeyPackageRepositoryTest {
 
         internal companion object {
             const val KEY_PACKAGE_COUNT = 100
+            val CIPHER_SUITE = CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384
             val KEY_PACKAGE_COUNT_DTO = KeyPackageCountDTO(KEY_PACKAGE_COUNT)
             val SELF_CLIENT_ID: ClientId = PlainId("client_self")
             val OTHER_CLIENT_ID: ClientId = PlainId("client_other")
