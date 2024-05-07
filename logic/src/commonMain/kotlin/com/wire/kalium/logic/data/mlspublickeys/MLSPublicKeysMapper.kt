@@ -42,8 +42,8 @@ class MLSPublicKeysMapperImpl : MLSPublicKeysMapper {
 }
 
 @Suppress("ClassNaming")
-sealed class MLSPublicKeyType {
-    abstract val value: String?
+sealed interface MLSPublicKeyType {
+    val value: String?
 
     data object ECDSA_SECP256R1_SHA256 : MLSPublicKeyType() {
         override val value: String = "ecdsa_secp256r1_sha256"
