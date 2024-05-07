@@ -30,7 +30,11 @@ import com.wire.kalium.logic.sync.GlobalWorkSchedulerImpl
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.PlatformDatabaseData
+import com.wire.kalium.persistence.db.StorageData
+import com.wire.kalium.persistence.db.globalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.cancel
 import java.io.File
 
@@ -52,11 +56,17 @@ actual class CoreLogic(
             shouldEncryptData = kaliumConfigs.shouldEncryptData
         )
 
-    override val globalDatabase: GlobalDatabaseProvider =
-        GlobalDatabaseProvider(
-            storePath = File("$rootPath/global-storage"),
-            useInMemoryDatabase = useInMemoryStorage
+    override val globalDatabase: GlobalDatabaseProvider = run {
+        globalDatabaseBuilder(
+            PlatformDatabaseData(
+                storageData = if (useInMemoryStorage) {
+                    StorageData.InMemory
+                } else {
+                    StorageData.FileBacked(File("$rootPath/global-storage"))
+                }
+            ), queriesContext = KaliumDispatcherImpl.io
         )
+    }
 
     override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)

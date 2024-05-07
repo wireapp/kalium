@@ -63,9 +63,9 @@ actual class DriverBuilder {
                 }
             ).copy(
                 extendedConfig = if (inMemory) DatabaseConfiguration.Extended(
-                    basePath = driverUri,
                     foreignKeyConstraints = enforceForeignKeys
                 ) else DatabaseConfiguration.Extended(
+                    basePath = driverUri,
                     foreignKeyConstraints = enforceForeignKeys
                 )
             )

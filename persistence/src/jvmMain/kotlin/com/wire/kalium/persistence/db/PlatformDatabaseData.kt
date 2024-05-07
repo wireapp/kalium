@@ -17,5 +17,13 @@
  */
 package com.wire.kalium.persistence.db
 
-class GlobalDatabase {
+import java.io.File
+
+actual data class PlatformDatabaseData(
+    val storageData: StorageData
+)
+
+sealed interface StorageData {
+    data class FileBacked(val file: File) : StorageData
+    data object InMemory : StorageData
 }

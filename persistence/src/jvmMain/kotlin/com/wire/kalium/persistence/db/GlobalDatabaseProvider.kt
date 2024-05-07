@@ -18,100 +18,47 @@
 
 package com.wire.kalium.persistence.db
 
-import app.cash.sqldelight.EnumColumnAdapter
-import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
-import com.wire.kalium.persistence.Accounts
-import com.wire.kalium.persistence.CurrentAccount
 import com.wire.kalium.persistence.GlobalDatabase
-import com.wire.kalium.persistence.ServerConfiguration
-import com.wire.kalium.persistence.adapter.LogoutReasonAdapter
-import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
-import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
-import com.wire.kalium.persistence.daokaliumdb.AccountsDAOImpl
-import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
-import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOImpl
 import com.wire.kalium.persistence.util.FileNameUtil
-import com.wire.kalium.util.KaliumDispatcherImpl
-import org.sqlite.SQLiteConfig
-import org.sqlite.SQLiteOpenMode
-import java.io.File
-import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.CoroutineDispatcher
 
-
-// TODO(refactor): Unify creation just like it's done for UserDataBase
-actual class GlobalDatabaseProvider(
-    private val storePath: File,
-    private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io,
-    private val useInMemoryDatabase: Boolean = false
-) {
-
-    private val dbName = FileNameUtil.globalDBName()
-    private val database: GlobalDatabase
-
-    init {
-        val driver = if (useInMemoryDatabase) {
-            buildInMemoryDb()
-        } else {
-            buildFileBackedDb()
-        }
-
-        database = GlobalDatabase(
-            driver,
-            ServerConfigurationAdapter = ServerConfiguration.Adapter(
-                commonApiVersionAdapter = IntColumnAdapter,
-                apiProxyPortAdapter = IntColumnAdapter
-            ),
-            AccountsAdapter = Accounts.Adapter(
-                idAdapter = QualifiedIDAdapter,
-                logout_reasonAdapter = LogoutReasonAdapter,
-                managed_byAdapter = EnumColumnAdapter()
-            ),
-            CurrentAccountAdapter = CurrentAccount.Adapter(
-                user_idAdapter = QualifiedIDAdapter
-            )
-        )
-
-        database.globalDatabasePropertiesQueries.enableForeignKeyContraints()
+actual fun globalDatabaseBuilder(
+    platformDatabaseData: PlatformDatabaseData,
+    queriesContext: CoroutineDispatcher,
+    enableWAL: Boolean
+): GlobalDatabaseProvider {
+    val storageData = platformDatabaseData.storageData
+    if (storageData is StorageData.InMemory) {
+        return createGlobalInMemoryDatabase(queriesContext)
     }
 
-    private fun buildFileBackedDb(): SqlDriver {
-        val databasePath = storePath.resolve(dbName)
-        val databaseExists = databasePath.exists()
-
-        // Make sure all intermediate directories exist
-        storePath.mkdirs()
-
-        val driver: SqlDriver = JdbcSqliteDriver("jdbc:sqlite:${databasePath.absolutePath}")
-
-        if (!databaseExists) {
-            GlobalDatabase.Schema.create(driver)
-        }
-        return driver
+    if (storageData !is StorageData.FileBacked) {
+        throw IllegalStateException("Unsupported storage data type: $storageData")
     }
 
-    private fun buildInMemoryDb(): SqlDriver {
-        val config = SQLiteConfig()
-        config.setOpenMode(SQLiteOpenMode.READWRITE)
-        config.setOpenMode(SQLiteOpenMode.CREATE)
-        config.setOpenMode(SQLiteOpenMode.NOMUTEX)
-        config.setTransactionMode(SQLiteConfig.TransactionMode.EXCLUSIVE)
-        config.setJournalMode(SQLiteConfig.JournalMode.MEMORY)
-        config.toProperties()
+    val databasePath = storageData.file.resolve(FileNameUtil.globalDBName())
+    val databaseExists = databasePath.exists()
 
-        val driver = JdbcSqliteDriver(JdbcSqliteDriver.IN_MEMORY, config.toProperties())
+    // Make sure all intermediate directories exist
+    storageData.file.mkdirs()
+    val driver: SqlDriver = DriverBuilder().withWALEnabled(enableWAL)
+        .build("jdbc:sqlite:${databasePath.absolutePath}")
+
+    if (!databaseExists) {
         GlobalDatabase.Schema.create(driver)
-        return driver
     }
 
-    actual val serverConfigurationDAO: ServerConfigurationDAO
-        get() = ServerConfigurationDAOImpl(database.serverConfigurationQueries, queriesContext)
+    return GlobalDatabaseProvider(driver, queriesContext, platformDatabaseData, false)
+}
 
-    actual val accountsDAO: AccountsDAO
-        get() = AccountsDAOImpl(database.accountsQueries, database.currentAccountQueries, queriesContext)
+actual fun nuke(platformDatabaseData: PlatformDatabaseData): Boolean {
+    return (platformDatabaseData.storageData as? StorageData.FileBacked)?.file?.resolve(FileNameUtil.globalDBName())?.delete() ?: false
+}
 
-    actual fun nuke(): Boolean {
-        return storePath.resolve(dbName).delete()
-    }
+fun createGlobalInMemoryDatabase(dispatcher: CoroutineDispatcher): GlobalDatabaseProvider {
+    val driver = DriverBuilder().withWALEnabled(false).build(JdbcSqliteDriver.IN_MEMORY)
+    GlobalDatabase.Schema.create(driver)
+    return GlobalDatabaseProvider(driver, dispatcher, PlatformDatabaseData(StorageData.InMemory), false)
 }

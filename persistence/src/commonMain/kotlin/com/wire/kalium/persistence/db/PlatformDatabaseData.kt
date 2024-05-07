@@ -15,19 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.persistence.db
 
-import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
-import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
-import kotlin.jvm.JvmInline
-
-@JvmInline
-value class GlobalDatabaseSecret(val value: ByteArray)
-
-expect class GlobalDatabaseProvider {
-    val serverConfigurationDAO: ServerConfigurationDAO
-    val accountsDAO: AccountsDAO
-
-    fun nuke(): Boolean
-}
+/**
+ * Platform-specific data used to create the database
+ * that might be necessary for future operations
+ * in the future like [nuke]
+ */
+expect class PlatformDatabaseData

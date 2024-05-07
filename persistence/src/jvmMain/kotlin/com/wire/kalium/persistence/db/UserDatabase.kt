@@ -29,15 +29,6 @@ import java.io.File
 
 private const val DATABASE_NAME = "main.db"
 
-actual data class PlatformDatabaseData(
-    val storageData: StorageData
-)
-
-sealed interface StorageData {
-    data class FileBacked(val file: File) : StorageData
-    data object InMemory : StorageData
-}
-
 actual fun userDatabaseBuilder(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity,

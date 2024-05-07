@@ -34,16 +34,6 @@ sealed interface DatabaseCredentials {
     data object NotSet : DatabaseCredentials
 }
 
-// TODO encrypt database using sqlcipher
-actual data class PlatformDatabaseData(
-    val storageData: StorageData
-)
-
-sealed class StorageData {
-    data class FileBacked(val storePath: String) : StorageData()
-    data object InMemory : StorageData()
-}
-
 actual fun userDatabaseBuilder(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity,

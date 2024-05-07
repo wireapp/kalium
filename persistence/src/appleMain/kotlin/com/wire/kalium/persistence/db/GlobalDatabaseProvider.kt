@@ -18,58 +18,39 @@
 
 package com.wire.kalium.persistence.db
 
-import app.cash.sqldelight.EnumColumnAdapter
-import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
-import com.wire.kalium.persistence.Accounts
-import com.wire.kalium.persistence.CurrentAccount
 import com.wire.kalium.persistence.GlobalDatabase
-import com.wire.kalium.persistence.ServerConfiguration
-import com.wire.kalium.persistence.adapter.LogoutReasonAdapter
-import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
-import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
-import com.wire.kalium.persistence.daokaliumdb.AccountsDAOImpl
-import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
-import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAOImpl
+import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.util.FileNameUtil
-import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.CoroutineDispatcher
 import platform.Foundation.NSFileManager
-import kotlin.coroutines.CoroutineContext
 
-// TODO(refactor): Unify creation just like it's done for UserDataBase
-actual class GlobalDatabaseProvider(
-    private val storePath: String,
-    private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io
-) {
-    private val dbName = FileNameUtil.globalDBName()
-    private val database: GlobalDatabase
+actual fun globalDatabaseBuilder(
+    platformDatabaseData: PlatformDatabaseData,
+    queriesContext: CoroutineDispatcher,
+    enableWAL: Boolean
+): GlobalDatabaseProvider {
+    val driver = when (val data = platformDatabaseData.storageData) {
+        is StorageData.FileBacked -> {
+            NSFileManager.defaultManager.createDirectoryAtPath(data.storePath, true, null, null)
+            val schema = GlobalDatabase.Schema
+            DriverBuilder().withWALEnabled(false)
+                .build(driverUri = data.storePath, dbName = FileNameUtil.globalDBName(), schema = schema)
+        }
 
-    init {
-        NSFileManager.defaultManager.createDirectoryAtPath(storePath, true, null, null)
-        val schema = GlobalDatabase.Schema
-        val driver = DriverBuilder().withWALEnabled(false)
-            .build(driverUri = storePath, dbName = dbName, schema = schema)
-
-        database = GlobalDatabase(
-            driver,
-            AccountsAdapter = Accounts.Adapter(QualifiedIDAdapter, LogoutReasonAdapter, EnumColumnAdapter()),
-            CurrentAccountAdapter = CurrentAccount.Adapter(QualifiedIDAdapter),
-            ServerConfigurationAdapter = ServerConfiguration.Adapter(
-                commonApiVersionAdapter = IntColumnAdapter,
-                apiProxyPortAdapter = IntColumnAdapter
+        StorageData.InMemory -> DriverBuilder()
+            .withWALEnabled(false)
+            .build(
+                driverUri = null,
+                dbName = FileNameUtil.globalDBName(),
+                schema = UserDatabase.Schema
             )
-        )
-
-        database.globalDatabasePropertiesQueries.enableForeignKeyContraints()
     }
 
-    actual val serverConfigurationDAO: ServerConfigurationDAO
-        get() = ServerConfigurationDAOImpl(database.serverConfigurationQueries, queriesContext)
+    return GlobalDatabaseProvider(driver, queriesContext, platformDatabaseData, false)
+}
 
-    actual val accountsDAO: AccountsDAO
-        get() = AccountsDAOImpl(database.accountsQueries, database.currentAccountQueries, queriesContext)
-
-    actual fun nuke(): Boolean {
-        return NSFileManager.defaultManager.removeItemAtPath(storePath, null)
-    }
-
+actual fun nuke(platformDatabaseData: PlatformDatabaseData): Boolean {
+    return (platformDatabaseData.storageData as? StorageData.FileBacked)?.storePath?.let {
+        NSFileManager.defaultManager.removeItemAtPath(it, null)
+    } ?: false
 }

@@ -15,19 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.persistence.db
 
-import kotlinx.coroutines.CoroutineDispatcher
+// TODO encrypt database using sqlcipher
+actual data class PlatformDatabaseData(
+    val storageData: StorageData
+)
 
-actual fun globalDatabaseBuilder(
-    platformDatabaseData: PlatformDatabaseData,
-    queriesContext: CoroutineDispatcher,
-    enableWAL: Boolean
-): GlobalDatabaseProvider {
-    TODO("Not yet implemented")
-}
-
-actual fun nuke(platformDatabaseData: PlatformDatabaseData): Boolean {
-    TODO("Not yet implemented")
+sealed class StorageData {
+    data class FileBacked(val storePath: String) : StorageData()
+    data object InMemory : StorageData()
 }

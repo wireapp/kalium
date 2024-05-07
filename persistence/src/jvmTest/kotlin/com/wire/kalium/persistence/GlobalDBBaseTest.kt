@@ -19,16 +19,28 @@
 package com.wire.kalium.persistence
 
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.PlatformDatabaseData
+import com.wire.kalium.persistence.db.StorageData
+import com.wire.kalium.persistence.db.globalDatabaseBuilder
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.TestDispatcher
 import java.nio.file.Files
 
 actual abstract class GlobalDBBaseTest {
-    private val databaseFile  = Files.createTempDirectory("test-storage").toFile().resolve("test-kalium.db")
+    private val dispatcher: TestDispatcher = StandardTestDispatcher()
+    private val databaseFile = Files.createTempDirectory("test-storage").toFile().resolve("test-kalium.db")
 
     actual fun deleteDatabase() {
         databaseFile.delete()
     }
 
     actual fun createDatabase(): GlobalDatabaseProvider {
-        return GlobalDatabaseProvider(databaseFile)
+        return globalDatabaseBuilder(
+            platformDatabaseData = PlatformDatabaseData(
+                StorageData.FileBacked(databaseFile)
+            ),
+            queriesContext = dispatcher,
+            enableWAL = false
+        )
     }
 }
