@@ -23,7 +23,13 @@ actual open class BaseMLSClientTest actual constructor() {
         TODO("Not yet implemented")
     }
 
+<<<<<<< HEAD
     actual suspend fun createCoreCrypto(clientId: CryptoQualifiedClientId):CoreCryptoCentral {
+=======
+    actual suspend fun createCoreCrypto(
+        clientId: CryptoQualifiedClientId
+    ): CoreCryptoCentral {
+>>>>>>> d8ec03ef73 (feat: fetch MLS config when not available locally (#2740))
         TODO("Not yet implemented")
     }
 }

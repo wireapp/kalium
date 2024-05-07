@@ -22,6 +22,12 @@ expect open class BaseMLSClientTest() {
 
     suspend fun createMLSClient(clientId: CryptoQualifiedClientId): MLSClient
 
+<<<<<<< HEAD
     suspend fun createCoreCrypto(clientId: CryptoQualifiedClientId): CoreCryptoCentral
+=======
+    suspend fun createCoreCrypto(
+        clientId: CryptoQualifiedClientId
+    ): CoreCryptoCentral
+>>>>>>> d8ec03ef73 (feat: fetch MLS config when not available locally (#2740))
 
 }

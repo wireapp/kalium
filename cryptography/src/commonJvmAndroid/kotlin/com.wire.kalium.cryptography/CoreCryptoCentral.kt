@@ -26,12 +26,32 @@ import com.wire.kalium.cryptography.MLSClientImpl.Companion.toCrlRegistration
 import com.wire.kalium.cryptography.exceptions.CryptographyException
 import java.io.File
 
+<<<<<<< HEAD
 actual suspend fun coreCryptoCentral(rootDir: String, databaseKey: String): CoreCryptoCentral {
     val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
     File(rootDir).mkdirs()
     val coreCrypto = coreCryptoDeferredInit(path, databaseKey, Ciphersuites.DEFAULT.lower(), null)
     coreCrypto.setCallbacks(Callbacks())
     return CoreCryptoCentralImpl(coreCrypto, rootDir)
+=======
+actual suspend fun coreCryptoCentral(
+    rootDir: String,
+    databaseKey: String
+): CoreCryptoCentral {
+    val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
+    File(rootDir).mkdirs()
+    val coreCrypto = coreCryptoDeferredInit(
+        path = path,
+        key = databaseKey,
+        ciphersuites = emptyList(),
+        nbKeyPackage = null
+    )
+    coreCrypto.setCallbacks(Callbacks())
+    return CoreCryptoCentralImpl(
+        cc = coreCrypto,
+        rootDir = rootDir
+    )
+>>>>>>> d8ec03ef73 (feat: fetch MLS config when not available locally (#2740))
 }
 
 private class Callbacks : CoreCryptoCallbacks {
@@ -61,25 +81,46 @@ private class Callbacks : CoreCryptoCallbacks {
     }
 }
 
+<<<<<<< HEAD
 class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: String) : CoreCryptoCentral {
     fun getCoreCrypto() = cc
 
     override suspend fun mlsClient(clientId: CryptoQualifiedClientId): MLSClient {
         cc.mlsInit(clientId.toString().encodeToByteArray(), Ciphersuites.DEFAULT.lower(), null)
         return MLSClientImpl(cc)
+=======
+class CoreCryptoCentralImpl(
+    private val cc: CoreCrypto,
+    private val rootDir: String
+) : CoreCryptoCentral {
+    fun getCoreCrypto() = cc
+
+    override suspend fun mlsClient(
+        clientId: CryptoQualifiedClientId,
+        cipherSuite: Ciphersuites,
+        defaultCipherSuite: UShort
+    ): MLSClient {
+        cc.mlsInit(clientId.toString().encodeToByteArray(), cipherSuite, null)
+        return MLSClientImpl(cc, defaultCipherSuite)
+>>>>>>> d8ec03ef73 (feat: fetch MLS config when not available locally (#2740))
     }
 
     override suspend fun mlsClient(
         enrollment: E2EIClient,
         certificateChain: CertificateChain,
-        newMLSKeyPackageCount: UInt
+        newMLSKeyPackageCount: UInt,
+        defaultCipherSuite: UShort
     ): MLSClient {
         // todo: use DPs list from here, and return alongside with the mls client
         cc.e2eiMlsInitOnly(
             (enrollment as E2EIClientImpl).wireE2eIdentity,
             certificateChain, newMLSKeyPackageCount
         )
+<<<<<<< HEAD
         return MLSClientImpl(cc)
+=======
+        return MLSClientImpl(cc, defaultCipherSuite)
+>>>>>>> d8ec03ef73 (feat: fetch MLS config when not available locally (#2740))
     }
 
     override suspend fun proteusClient(): ProteusClient {
@@ -91,7 +132,8 @@ class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: Str
         displayName: String,
         handle: String,
         teamId: String?,
-        expiry: kotlin.time.Duration
+        expiry: kotlin.time.Duration,
+        defaultCipherSuite: UShort
     ): E2EIClient {
         return E2EIClientImpl(
             cc.e2eiNewEnrollment(
@@ -100,7 +142,11 @@ class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: Str
                 handle,
                 teamId,
                 expiry.inWholeSeconds.toUInt(),
+<<<<<<< HEAD
                 Ciphersuites.DEFAULT.lower().first()
+=======
+                defaultCipherSuite
+>>>>>>> d8ec03ef73 (feat: fetch MLS config when not available locally (#2740))
             )
 
         )
