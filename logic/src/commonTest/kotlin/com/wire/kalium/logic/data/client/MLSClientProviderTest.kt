@@ -68,7 +68,6 @@ class MLSClientProviderTest {
             assertEquals(expected.supportedCipherSuite, it)
         }
 
-
         verify(arrangement.userConfigRepository)
             .suspendFunction(arrangement.userConfigRepository::getSupportedCipherSuite)
             .wasInvoked(exactly = once)
