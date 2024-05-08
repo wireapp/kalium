@@ -28,6 +28,7 @@ import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.db.inMemoryDatabase
 import com.wire.kalium.persistence.util.FileNameUtil
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 
 internal actual fun createTestDatabase(userId: UserIDEntity, dispatcher: TestDispatcher): UserDatabaseBuilder {
@@ -47,7 +48,8 @@ internal actual fun createTestGlobalDatabase(): GlobalDatabaseBuilder {
     return globalDatabaseProvider(
         platformDatabaseData = PlatformDatabaseData(ApplicationProvider.getApplicationContext()),
         passphrase = GlobalDatabaseSecret("test_db_secret".toByteArray()),
-        enableWAL = true
+        enableWAL = true,
+        queriesContext = StandardTestDispatcher()
     )
 }
 

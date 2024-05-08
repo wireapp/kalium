@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.clearInMemoryDatabase
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.db.inMemoryDatabase
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import java.nio.file.Files
 
@@ -40,7 +41,8 @@ internal actual fun deleteTestDatabase(userId: UserIDEntity) {
 internal actual fun createTestGlobalDatabase(): GlobalDatabaseBuilder {
     return globalDatabaseProvider(
         platformDatabaseData = PlatformDatabaseData(StorageData.InMemory),
-        passphrase = null
+        passphrase = null,
+        queriesContext = StandardTestDispatcher()
     )
 }
 
