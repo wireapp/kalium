@@ -122,7 +122,7 @@ internal class ConversationGroupRepositoryImpl(
                 is Either.Left -> handleCreateConverstionFailure(apiResult, usersList, failedUsersList, name, options)
 
                 is Either.Right -> {
-                    handleCreateConversationSucess(
+                    handleCreateConversationSuccess(
                         apiResult,
                         usersList,
                         failedUsersList,
@@ -132,7 +132,7 @@ internal class ConversationGroupRepositoryImpl(
             }
         }
 
-    private suspend fun handleCreateConversationSucess(
+    private suspend fun handleCreateConversationSuccess(
         apiResult: Either.Right<ConversationResponse>,
         usersList: List<UserId>,
         failedUsersList: List<UserId>,
