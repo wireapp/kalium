@@ -20,7 +20,7 @@ package com.wire.kalium.persistence
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.GlobalDatabaseSecret
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
@@ -34,7 +34,7 @@ actual abstract class GlobalDBBaseTest {
         context.deleteDatabase(FileNameUtil.globalDBName())
     }
 
-    actual fun createDatabase(): GlobalDatabaseProvider = globalDatabaseProvider(
+    actual fun createDatabase(): GlobalDatabaseBuilder = globalDatabaseProvider(
         platformDatabaseData = PlatformDatabaseData(ApplicationProvider.getApplicationContext()),
         queriesContext = KaliumDispatcherImpl.unconfined,
         passphrase = GlobalDatabaseSecret("test_db_secret".toByteArray()),

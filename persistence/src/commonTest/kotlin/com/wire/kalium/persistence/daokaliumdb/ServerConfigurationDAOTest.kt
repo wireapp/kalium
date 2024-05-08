@@ -21,7 +21,7 @@
 package com.wire.kalium.persistence.daokaliumdb
 
 import com.wire.kalium.persistence.GlobalDBBaseTest
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.persistence.utils.stubs.newServerConfig
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -41,7 +41,7 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
     private val config2 = newServerConfig(id = 2)
     private val config3 = newServerConfig(id = 3)
 
-    lateinit var db: GlobalDatabaseProvider
+    lateinit var db: GlobalDatabaseBuilder
 
     @BeforeTest
     fun setup() {

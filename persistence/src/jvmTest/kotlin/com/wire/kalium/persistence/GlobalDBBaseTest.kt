@@ -18,7 +18,7 @@
 
 package com.wire.kalium.persistence
 
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
@@ -34,7 +34,7 @@ actual abstract class GlobalDBBaseTest {
         databaseFile.delete()
     }
 
-    actual fun createDatabase(): GlobalDatabaseProvider {
+    actual fun createDatabase(): GlobalDatabaseBuilder {
         return globalDatabaseProvider(
             platformDatabaseData = PlatformDatabaseData(
                 StorageData.FileBacked(databaseFile)

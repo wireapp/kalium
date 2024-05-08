@@ -21,7 +21,7 @@ package com.wire.kalium.persistence
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.GlobalDatabaseSecret
 import com.wire.kalium.persistence.db.inMemoryDatabase
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
@@ -41,8 +41,8 @@ internal actual fun deleteTestDatabase(userId: UserIDEntity) {
     context.deleteDatabase(getTempDatabaseFileNameForUser(userId))
 }
 
-internal actual fun createTestGlobalDatabase(): GlobalDatabaseProvider {
-    return GlobalDatabaseProvider(ApplicationProvider.getApplicationContext(), GlobalDatabaseSecret("test_db_secret".toByteArray()))
+internal actual fun createTestGlobalDatabase(): GlobalDatabaseBuilder {
+    return GlobalDatabaseBuilder(ApplicationProvider.getApplicationContext(), GlobalDatabaseSecret("test_db_secret".toByteArray()))
 }
 
 internal actual fun deleteTestGlobalDatabase() {

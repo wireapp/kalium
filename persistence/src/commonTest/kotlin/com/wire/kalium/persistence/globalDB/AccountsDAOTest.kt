@@ -25,7 +25,7 @@ import com.wire.kalium.persistence.daokaliumdb.AccountInfoEntity
 import com.wire.kalium.persistence.daokaliumdb.FullAccountEntity
 import com.wire.kalium.persistence.daokaliumdb.PersistentWebSocketStatusEntity
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.model.LogoutReason
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
@@ -39,7 +39,7 @@ import kotlin.test.assertNull
 @OptIn(ExperimentalCoroutinesApi::class)
 class AccountsDAOTest : GlobalDBBaseTest() {
 
-    lateinit var db: GlobalDatabaseProvider
+    lateinit var db: GlobalDatabaseBuilder
 
     @BeforeTest
     fun setUp() = runTest {

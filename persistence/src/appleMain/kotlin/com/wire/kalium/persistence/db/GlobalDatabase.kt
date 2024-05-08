@@ -30,7 +30,7 @@ actual fun globalDatabaseProvider(
     passphrase: GlobalDatabaseSecret?,
     enableWAL: Boolean,
     encryptionEnabled: Boolean
-): GlobalDatabaseProvider {
+): GlobalDatabaseBuilder {
     val driver = when (val data = platformDatabaseData.storageData) {
         is StorageData.FileBacked -> {
             NSFileManager.defaultManager.createDirectoryAtPath(data.storePath, true, null, null)
@@ -48,7 +48,7 @@ actual fun globalDatabaseProvider(
             )
     }
 
-    return GlobalDatabaseProvider(driver, platformDatabaseData, queriesContext)
+    return GlobalDatabaseBuilder(driver, platformDatabaseData, queriesContext)
 }
 
 actual fun nuke(platformDatabaseData: PlatformDatabaseData): Boolean {

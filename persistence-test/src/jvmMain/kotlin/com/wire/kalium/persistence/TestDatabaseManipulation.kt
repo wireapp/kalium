@@ -19,7 +19,7 @@
 package com.wire.kalium.persistence
 
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.inMemoryDatabase
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.clearInMemoryDatabase
@@ -34,8 +34,8 @@ internal actual fun deleteTestDatabase(userId: UserIDEntity) {
     clearInMemoryDatabase(userId)
 }
 
-internal actual fun createTestGlobalDatabase(): GlobalDatabaseProvider {
-    return GlobalDatabaseProvider(getGlobalDatabaseFile())
+internal actual fun createTestGlobalDatabase(): GlobalDatabaseBuilder {
+    return GlobalDatabaseBuilder(getGlobalDatabaseFile())
 }
 
 internal actual fun deleteTestGlobalDatabase() {

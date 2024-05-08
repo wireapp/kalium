@@ -19,7 +19,7 @@
 package com.wire.kalium.persistence
 
 import co.touchlab.sqliter.DatabaseFileContext.deleteDatabase
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.util.FileNameUtil
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSFileManager
@@ -33,7 +33,7 @@ actual abstract class GlobalDBBaseTest {
         deleteDatabase(FileNameUtil.globalDBName(), storePath)
     }
 
-    actual fun createDatabase(): GlobalDatabaseProvider {
-        return GlobalDatabaseProvider(storePath)
+    actual fun createDatabase(): GlobalDatabaseBuilder {
+        return GlobalDatabaseBuilder(storePath)
     }
 }

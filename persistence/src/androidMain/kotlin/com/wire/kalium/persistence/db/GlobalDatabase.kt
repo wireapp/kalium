@@ -31,7 +31,7 @@ actual fun globalDatabaseProvider(
     passphrase: GlobalDatabaseSecret?,
     enableWAL: Boolean,
     encryptionEnabled: Boolean
-): GlobalDatabaseProvider {
+): GlobalDatabaseBuilder {
     val schema = GlobalDatabase.Schema
     val dbName = FileNameUtil.globalDBName()
     val driver = if (encryptionEnabled) {
@@ -50,7 +50,7 @@ actual fun globalDatabaseProvider(
             callback = SqliteCallback(schema, enableWAL)
         )
     }
-    return GlobalDatabaseProvider(driver, platformDatabaseData, queriesContext)
+    return GlobalDatabaseBuilder(driver, platformDatabaseData, queriesContext)
 }
 
 actual fun nuke(platformDatabaseData: PlatformDatabaseData): Boolean {

@@ -20,7 +20,7 @@ package com.wire.kalium.persistence
 
 import co.touchlab.sqliter.DatabaseFileContext
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.inMemoryDatabase
 import com.wire.kalium.persistence.util.FileNameUtil
@@ -37,8 +37,8 @@ internal actual fun deleteTestDatabase(userId: UserIDEntity) {
     DatabaseFileContext.deleteDatabase(FileNameUtil.userDBName(userId))
 }
 
-internal actual fun createTestGlobalDatabase(): GlobalDatabaseProvider {
-    return GlobalDatabaseProvider(getTempDatabaseDirectory())
+internal actual fun createTestGlobalDatabase(): GlobalDatabaseBuilder {
+    return GlobalDatabaseBuilder(getTempDatabaseDirectory())
 }
 
 internal actual fun deleteTestGlobalDatabase() {

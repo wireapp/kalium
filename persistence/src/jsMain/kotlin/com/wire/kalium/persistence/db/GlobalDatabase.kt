@@ -26,7 +26,7 @@ actual fun globalDatabaseProvider(
     passphrase: GlobalDatabaseSecret?,
     enableWAL: Boolean,
     encryptionEnabled: Boolean
-): GlobalDatabaseProvider {
+): GlobalDatabaseBuilder {
     TODO("Not yet implemented")
 }
 

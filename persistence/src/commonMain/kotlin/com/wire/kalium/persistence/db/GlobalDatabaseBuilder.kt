@@ -39,7 +39,7 @@ import kotlin.jvm.JvmInline
 @JvmInline
 value class GlobalDatabaseSecret(val value: ByteArray)
 
-class GlobalDatabaseProvider internal constructor(
+class GlobalDatabaseBuilder internal constructor(
     private val sqlDriver: SqlDriver,
     private val platformDatabaseData: PlatformDatabaseData,
     private val queriesContext: CoroutineContext = KaliumDispatcherImpl.io
@@ -85,4 +85,4 @@ expect fun globalDatabaseProvider(
     passphrase: GlobalDatabaseSecret?,
     enableWAL: Boolean = false,
     encryptionEnabled: Boolean = false
-): GlobalDatabaseProvider
+): GlobalDatabaseBuilder

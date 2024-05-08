@@ -30,7 +30,7 @@ actual fun globalDatabaseProvider(
     passphrase: GlobalDatabaseSecret?,
     enableWAL: Boolean,
     encryptionEnabled: Boolean
-): GlobalDatabaseProvider {
+): GlobalDatabaseBuilder {
     val storageData = platformDatabaseData.storageData
     if (storageData is StorageData.InMemory) {
         return createGlobalInMemoryDatabase(queriesContext)
@@ -56,15 +56,15 @@ actual fun globalDatabaseProvider(
         GlobalDatabase.Schema.create(driver)
     }
 
-    return GlobalDatabaseProvider(driver, platformDatabaseData, queriesContext)
+    return GlobalDatabaseBuilder(driver, platformDatabaseData, queriesContext)
 }
 
 actual fun nuke(platformDatabaseData: PlatformDatabaseData): Boolean {
     return (platformDatabaseData.storageData as? StorageData.FileBacked)?.file?.resolve(FileNameUtil.globalDBName())?.delete() ?: false
 }
 
-fun createGlobalInMemoryDatabase(dispatcher: CoroutineDispatcher): GlobalDatabaseProvider {
+fun createGlobalInMemoryDatabase(dispatcher: CoroutineDispatcher): GlobalDatabaseBuilder {
     val driver = DriverBuilder().withWALEnabled(false).build(JdbcSqliteDriver.IN_MEMORY)
     GlobalDatabase.Schema.create(driver)
-    return GlobalDatabaseProvider(driver, PlatformDatabaseData(StorageData.InMemory), dispatcher)
+    return GlobalDatabaseBuilder(driver, PlatformDatabaseData(StorageData.InMemory), dispatcher)
 }
