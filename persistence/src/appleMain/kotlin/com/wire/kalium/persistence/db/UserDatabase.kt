@@ -49,21 +49,15 @@ actual fun userDatabaseBuilder(
                 null,
                 null
             )
-            DriverBuilder().withWALEnabled(enableWAL)
-                .build(
-                    driverUri = platformDatabaseData.storageData.storePath,
-                    dbName = FileNameUtil.userDBName(userId),
-                    schema = UserDatabase.Schema
-                )
+            databaseDriver(platformDatabaseData.storageData.storePath, FileNameUtil.userDBName(userId), UserDatabase.Schema) {
+                isWALEnabled = enableWAL
+            }
         }
 
-        StorageData.InMemory -> DriverBuilder()
-            .withWALEnabled(false)
-            .build(
-                driverUri = null,
-                dbName = FileNameUtil.userDBName(userId),
-                schema = UserDatabase.Schema
-            )
+        StorageData.InMemory ->
+            databaseDriver(null, FileNameUtil.userDBName(userId), UserDatabase.Schema) {
+                isWALEnabled = false
+            }
     }
 
     return UserDatabaseBuilder(
@@ -91,15 +85,9 @@ fun inMemoryDatabase(
     userId: UserIDEntity,
     dispatcher: CoroutineDispatcher
 ): UserDatabaseBuilder {
-    val schema = UserDatabase.Schema
-
-    val driver = DriverBuilder()
-        .withWALEnabled(false)
-        .build(
-            driverUri = null,
-            dbName = FileNameUtil.userDBName(userId),
-            schema = UserDatabase.Schema
-        )
+    val driver = databaseDriver(null, FileNameUtil.userDBName(userId), UserDatabase.Schema) {
+        isWALEnabled = false
+    }
 
     return UserDatabaseBuilder(
         userId,

@@ -22,6 +22,7 @@ import co.touchlab.sqliter.DatabaseFileContext.databasePath
 import co.touchlab.sqliter.DatabaseFileContext.deleteDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.PlatformDatabaseData
+import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.UserDBSecret
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.db.userDatabaseBuilder
@@ -61,5 +62,5 @@ actual open class BaseDatabaseTest actual constructor() {
         return userDatabaseBuilder(platformDBData(userId), userId, null, dispatcher, false)
     }
 
-    actual fun platformDBData(userId: UserIDEntity): PlatformDatabaseData = PlatformDatabaseData(storePath)
+    actual fun platformDBData(userId: UserIDEntity): PlatformDatabaseData = PlatformDatabaseData(StorageData.FileBacked(storePath))
 }

@@ -17,28 +17,12 @@
  */
 package com.wire.kalium.persistence.db
 
-import app.cash.sqldelight.db.QueryResult
-import app.cash.sqldelight.db.SqlDriver
-import app.cash.sqldelight.db.SqlSchema
-
-actual class DriverBuilder {
-    actual fun withWALEnabled(enableWAL: Boolean): DriverBuilder {
-        TODO("Not yet implemented")
-    }
-
-    actual fun withForeignKeys(enforceForeignKeys: Boolean): DriverBuilder {
-        TODO("Not yet implemented")
-    }
-
-    actual fun build(driverUri: String): SqlDriver {
-        TODO("Not yet implemented")
-    }
-
-    actual fun build(
-        driverUri: String?,
-        dbName: String,
-        schema: SqlSchema<QueryResult.Value<Unit>>
-    ): SqlDriver {
-        TODO("Not yet implemented")
-    }
+/**
+ * Fine tuning configuration for the driver.
+ * This is useful if we want to squeeze the last bit of performance out of the database.
+ * Or if we want to enable some SQLite specific features.
+ */
+class DriverConfigurationBuilder {
+    var isWALEnabled = false
+    var areForeignKeyConstraintsEnforced = true
 }

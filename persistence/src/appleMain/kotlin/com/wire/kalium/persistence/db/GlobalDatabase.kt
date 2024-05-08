@@ -19,7 +19,6 @@
 package com.wire.kalium.persistence.db
 
 import com.wire.kalium.persistence.GlobalDatabase
-import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
 import platform.Foundation.NSFileManager
@@ -35,17 +34,15 @@ actual fun globalDatabaseProvider(
         is StorageData.FileBacked -> {
             NSFileManager.defaultManager.createDirectoryAtPath(data.storePath, true, null, null)
             val schema = GlobalDatabase.Schema
-            DriverBuilder().withWALEnabled(false)
-                .build(driverUri = data.storePath, dbName = FileNameUtil.globalDBName(), schema = schema)
+            databaseDriver(data.storePath, FileNameUtil.globalDBName(), schema) {
+                isWALEnabled = false
+            }
         }
 
-        StorageData.InMemory -> DriverBuilder()
-            .withWALEnabled(false)
-            .build(
-                driverUri = null,
-                dbName = FileNameUtil.globalDBName(),
-                schema = UserDatabase.Schema
-            )
+        StorageData.InMemory ->
+            databaseDriver(null, FileNameUtil.globalDBName(), GlobalDatabase.Schema) {
+                isWALEnabled = false
+            }
     }
 
     return GlobalDatabaseBuilder(driver, platformDatabaseData, queriesContext)
