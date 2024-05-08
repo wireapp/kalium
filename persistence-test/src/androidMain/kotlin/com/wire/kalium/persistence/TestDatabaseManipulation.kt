@@ -23,8 +23,10 @@ import androidx.test.core.app.ApplicationProvider
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.GlobalDatabaseSecret
-import com.wire.kalium.persistence.db.inMemoryDatabase
+import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.db.globalDatabaseProvider
+import com.wire.kalium.persistence.db.inMemoryDatabase
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.test.TestDispatcher
 
@@ -42,7 +44,11 @@ internal actual fun deleteTestDatabase(userId: UserIDEntity) {
 }
 
 internal actual fun createTestGlobalDatabase(): GlobalDatabaseBuilder {
-    return GlobalDatabaseBuilder(ApplicationProvider.getApplicationContext(), GlobalDatabaseSecret("test_db_secret".toByteArray()))
+    return globalDatabaseProvider(
+        platformDatabaseData = PlatformDatabaseData(ApplicationProvider.getApplicationContext()),
+        passphrase = GlobalDatabaseSecret("test_db_secret".toByteArray()),
+        enableWAL = true
+    )
 }
 
 internal actual fun deleteTestGlobalDatabase() {
