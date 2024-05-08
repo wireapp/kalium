@@ -24,10 +24,12 @@ import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
 
-actual fun globalDatabaseBuilder(
+actual fun globalDatabaseProvider(
     platformDatabaseData: PlatformDatabaseData,
     queriesContext: CoroutineDispatcher,
-    enableWAL: Boolean
+    passphrase: GlobalDatabaseSecret?,
+    enableWAL: Boolean,
+    encryptionEnabled: Boolean
 ): GlobalDatabaseProvider {
     val storageData = platformDatabaseData.storageData
     if (storageData is StorageData.InMemory) {
@@ -36,6 +38,10 @@ actual fun globalDatabaseBuilder(
 
     if (storageData !is StorageData.FileBacked) {
         throw IllegalStateException("Unsupported storage data type: $storageData")
+    }
+
+    if (passphrase != null) {
+        throw NotImplementedError("Encrypted DB is not supported on JVM")
     }
 
     val databasePath = storageData.file.resolve(FileNameUtil.globalDBName())

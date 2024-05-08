@@ -79,8 +79,10 @@ class GlobalDatabaseProvider internal constructor(
 
 expect fun nuke(platformDatabaseData: PlatformDatabaseData): Boolean
 
-expect fun globalDatabaseBuilder(
+expect fun globalDatabaseProvider(
     platformDatabaseData: PlatformDatabaseData,
     queriesContext: CoroutineDispatcher = KaliumDispatcherImpl.io,
-    enableWAL: Boolean = false
+    passphrase: GlobalDatabaseSecret?,
+    enableWAL: Boolean = false,
+    encryptionEnabled: Boolean = false
 ): GlobalDatabaseProvider

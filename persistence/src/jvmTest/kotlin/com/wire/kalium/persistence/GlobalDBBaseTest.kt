@@ -21,7 +21,7 @@ package com.wire.kalium.persistence
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
-import com.wire.kalium.persistence.db.globalDatabaseBuilder
+import com.wire.kalium.persistence.db.globalDatabaseProvider
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import java.nio.file.Files
@@ -35,11 +35,12 @@ actual abstract class GlobalDBBaseTest {
     }
 
     actual fun createDatabase(): GlobalDatabaseProvider {
-        return globalDatabaseBuilder(
+        return globalDatabaseProvider(
             platformDatabaseData = PlatformDatabaseData(
                 StorageData.FileBacked(databaseFile)
             ),
             queriesContext = dispatcher,
+            passphrase = null,
             enableWAL = false
         )
     }

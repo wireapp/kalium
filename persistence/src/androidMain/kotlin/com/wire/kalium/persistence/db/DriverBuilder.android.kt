@@ -15,19 +15,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.persistence.db
 
-import kotlinx.coroutines.CoroutineDispatcher
+import app.cash.sqldelight.db.QueryResult
+import app.cash.sqldelight.db.SqlDriver
+import app.cash.sqldelight.db.SqlSchema
 
-actual fun globalDatabaseBuilder(
-    platformDatabaseData: PlatformDatabaseData,
-    queriesContext: CoroutineDispatcher,
-    enableWAL: Boolean
-): GlobalDatabaseProvider {
-    TODO("Not yet implemented")
-}
+actual class DriverBuilder {
+    actual fun withWALEnabled(enableWAL: Boolean): DriverBuilder {
+        TODO("Not yet implemented")
+    }
 
-actual fun nuke(platformDatabaseData: PlatformDatabaseData): Boolean {
-    TODO("Not yet implemented")
+    actual fun withForeignKeys(enforceForeignKeys: Boolean): DriverBuilder {
+        TODO("Not yet implemented")
+    }
+
+    actual fun build(driverUri: String): SqlDriver {
+        TODO("Not yet implemented")
+    }
+
+    actual fun build(
+        driverUri: String?,
+        dbName: String,
+        schema: SqlSchema<QueryResult.Value<Unit>>
+    ): SqlDriver {
+        TODO("Not yet implemented")
+    }
 }

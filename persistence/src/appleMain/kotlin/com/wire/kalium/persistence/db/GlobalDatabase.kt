@@ -24,10 +24,12 @@ import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
 import platform.Foundation.NSFileManager
 
-actual fun globalDatabaseBuilder(
+actual fun globalDatabaseProvider(
     platformDatabaseData: PlatformDatabaseData,
     queriesContext: CoroutineDispatcher,
-    enableWAL: Boolean
+    passphrase: GlobalDatabaseSecret?,
+    enableWAL: Boolean,
+    encryptionEnabled: Boolean
 ): GlobalDatabaseProvider {
     val driver = when (val data = platformDatabaseData.storageData) {
         is StorageData.FileBacked -> {
@@ -46,7 +48,7 @@ actual fun globalDatabaseBuilder(
             )
     }
 
-    return GlobalDatabaseProvider(driver, queriesContext, platformDatabaseData, false)
+    return GlobalDatabaseProvider(driver, platformDatabaseData, queriesContext)
 }
 
 actual fun nuke(platformDatabaseData: PlatformDatabaseData): Boolean {

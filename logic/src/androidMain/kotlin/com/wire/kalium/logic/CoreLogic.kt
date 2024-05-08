@@ -32,7 +32,10 @@ import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.PlatformDatabaseData
+import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.cancel
 
 /**
@@ -51,9 +54,11 @@ actual class CoreLogic(
         kaliumConfigs.shouldEncryptData
     )
 
-    override val globalDatabase: GlobalDatabaseProvider = GlobalDatabaseProvider(
-        appContext,
+    override val globalDatabase: GlobalDatabaseProvider = globalDatabaseProvider(
+        PlatformDatabaseData(appContext),
+        KaliumDispatcherImpl.io,
         SecurityHelperImpl(globalPreferences.passphraseStorage).globalDBSecret(),
+        true,
         kaliumConfigs.shouldEncryptData
     )
 

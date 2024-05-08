@@ -35,15 +35,6 @@ import java.io.File
 
 private const val DEFAULT_CACHE_SIZE = 20
 
-/**
- * Platform-specific data used to create the database
- * that might be necessary for future operations
- * in the future like [nuke]
- */
-actual class PlatformDatabaseData(
-    val context: Context
-)
-
 actual fun userDatabaseBuilder(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity,

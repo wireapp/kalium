@@ -411,6 +411,7 @@
     <ID>MatchingDeclarationName:ConversationStatus.kt$MutedConversationStatus</ID>
     <ID>MatchingDeclarationName:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore : PreKeyStore</ID>
     <ID>MatchingDeclarationName:CryptoboxSession.module_@wireapp_cryptobox.kt$CryptoboxSession</ID>
+    <ID>MatchingDeclarationName:DriverBuilder.android.kt$DriverBuilder</ID>
     <ID>MatchingDeclarationName:DriverBuilder.apple.kt$DriverBuilder</ID>
     <ID>MatchingDeclarationName:DriverBuilder.js.kt$DriverBuilder</ID>
     <ID>MatchingDeclarationName:DriverBuilder.jvm.kt$DriverBuilder</ID>
