@@ -138,20 +138,35 @@ internal class ConversationGroupRepositoryImpl(
                                 // edge case, in case backend goes 🍌 and returns non-matching domains
                                 if (failedUsers.isEmpty()) Either.Left(apiResult.value)
 
+<<<<<<< HEAD
                                 createGroupConversation(name, validUsers, options, LastUsersAttempt.Failed(failedUsers, failType))
                             }
                     } else {
                         Either.Left(apiResult.value)
                     }
+=======
+                is Either.Right -> {
+                    handleCreateConversationSuccess(
+                        apiResult,
+                        usersList,
+                        failedUsersList,
+                        selfTeamId
+                    )
+>>>>>>> 8d2325bd2d (fix(mls): set correct CipherSuite when establishing new created group (#2749))
                 }
 
                 is Either.Right -> handleGroupConversationCreated(apiResult.value, selfTeamId, usersList, lastUsersAttempt)
             }
         }
 
+<<<<<<< HEAD
     private suspend fun handleGroupConversationCreated(
         conversationResponse: ConversationResponse,
         selfTeamId: TeamId?,
+=======
+    private suspend fun handleCreateConversationSuccess(
+        apiResult: Either.Right<ConversationResponse>,
+>>>>>>> 8d2325bd2d (fix(mls): set correct CipherSuite when establishing new created group (#2749))
         usersList: List<UserId>,
         lastUsersAttempt: LastUsersAttempt,
     ): Either<CoreFailure, Conversation> {
