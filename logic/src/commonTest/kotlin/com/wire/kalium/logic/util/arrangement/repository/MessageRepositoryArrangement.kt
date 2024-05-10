@@ -32,7 +32,6 @@ import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
 import io.mockative.matches
 import io.mockative.mock
-import kotlinx.coroutines.flow.Flow
 
 internal interface MessageRepositoryArrangement {
     @Mock

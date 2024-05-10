@@ -86,7 +86,7 @@ internal class GetNotificationsUseCaseImpl internal constructor(
     }
 
     private suspend fun observeRegularNotifications(): Flow<List<LocalNotification>> =
-        notificationEventsManager.observeRegularNotificationsChecking().debounce(50L)
+        notificationEventsManager.observeRegularNotificationsChecking().debounce(NOTIFICATION_DEBOUNCE_MS)
             .map { messageRepository.getNotificationMessage() }
             .onStart { emit(messageRepository.getNotificationMessage()) }
             .onlyRight()
@@ -101,5 +101,9 @@ internal class GetNotificationsUseCaseImpl internal constructor(
                     .filterIsInstance<ConversationDetails.Connection>()
                     .map { localNotificationMessageMapper.fromConnectionToLocalNotificationConversation(it) }
             }
+    }
+
+    companion object {
+        private const val NOTIFICATION_DEBOUNCE_MS = 50L
     }
 }
