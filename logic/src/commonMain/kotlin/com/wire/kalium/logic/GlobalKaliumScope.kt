@@ -67,7 +67,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.UnboundNetworkContainer
 import com.wire.kalium.network.networkContainer.UnboundNetworkContainerCommon
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -85,7 +85,7 @@ import kotlin.coroutines.CoroutineContext
 @Suppress("LongParameterList")
 class GlobalKaliumScope internal constructor(
     userAgent: String,
-    private val globalDatabase: GlobalDatabaseProvider,
+    private val globalDatabase: GlobalDatabaseBuilder,
     private val globalPreferences: GlobalPrefProvider,
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>,

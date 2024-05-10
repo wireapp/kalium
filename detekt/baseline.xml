@@ -411,6 +411,10 @@
     <ID>MatchingDeclarationName:ConversationStatus.kt$MutedConversationStatus</ID>
     <ID>MatchingDeclarationName:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore : PreKeyStore</ID>
     <ID>MatchingDeclarationName:CryptoboxSession.module_@wireapp_cryptobox.kt$CryptoboxSession</ID>
+    <ID>MatchingDeclarationName:DriverBuilder.android.kt$DriverBuilder</ID>
+    <ID>MatchingDeclarationName:DriverBuilder.apple.kt$DriverBuilder</ID>
+    <ID>MatchingDeclarationName:DriverBuilder.js.kt$DriverBuilder</ID>
+    <ID>MatchingDeclarationName:DriverBuilder.jvm.kt$DriverBuilder</ID>
     <ID>MatchingDeclarationName:Encoder.module_@wireapp_cbor.kt$Encoder</ID>
     <ID>MatchingDeclarationName:FileUtilTest.kt$FileTestHelper</ID>
     <ID>MatchingDeclarationName:GetOtherUserClientsUseCaseTest.kt$ObserveClientsByUserIdUseCaseTest</ID>
@@ -487,6 +491,7 @@
     <ID>MaximumLineLength:TypingIndicatorHandlerTest.kt$TypingIndicatorHandlerTest$ </ID>
     <ID>MaximumLineLength:UserEventReceiverTest.kt$UserEventReceiverTest$ </ID>
     <ID>MayBeConst:ACMEActions.kt$ACMEActions$/** * URL Paths */ private val ACME_BASE_URL = "https://balderdash.hogwash.work:9000/acme/google-android/"</ID>
+    <ID>MayBeConst:CallDAOTest.kt$CallDAOTest.Companion$val callId = "callId"</ID>
     <ID>MayBeConst:CommonDokkaConfig.kt$private val DOKKA_CACHE_DIR = ".cache/dokka"</ID>
     <ID>MayBeConst:ConversationDAOTest.kt$ConversationDAOTest.Companion$val messageTimer = 5000L</ID>
     <ID>MayBeConst:E2EIClientTest.kt$E2EIClientTest.Companion$val ACCESS_TOKEN_RESPONSE = """ { "expires_in":"300", "token":"eyJhbGciOiJFZERTQSIsInR5cCI6ImF0K2p3dCIsImp3ayI6eyJrdHkiOiJPS1AiLCJjcnYiOiJFZDI1NTE5IiwieCI6ImdxTk8wZ1FzRndfUUNQNm5xeV9BUWxNVDFQSTAtZ3lRMWZTMGhJZklyTWcifX0.eyJpYXQiOjE2ODM0NjgwODIsImV4cCI6MTY5MTI0NDA4MiwibmJmIjoxNjgzNDY4MDgyLCJpc3MiOiJodHRwczovL3N0YWdpbmcuemluZnJhLmlvL2NsaWVudHMvNGVlZGJmZTE2ZDI1YmJmMy9hY2Nlc3MtdG9rZW4iLCJzdWIiOiJpbTp3aXJlYXBwPVpURTFNamMwTXpFeU5EUTBOR0poWTJFMU5XWm1OakEyWlRrMU1qSXlNek0vNGVlZGJmZTE2ZDI1YmJmM0BzdGFnaW5nLnppbmZyYS5pbyIsImF1ZCI6Imh0dHBzOi8vc3RhZ2luZy56aW5mcmEuaW8vY2xpZW50cy80ZWVkYmZlMTZkMjViYmYzL2FjY2Vzcy10b2tlbiIsImp0aSI6ImM3ZjRhODAxLTVhZTUtNDNlOC04ZGJiLWRiYjE1ZmEwODM1ZSIsIm5vbmNlIjoiaEJWWTdjRjNSWC1lSnF0cW9nbVl0dyIsImNoYWwiOiJMeGpJNVBUeVZ2UU56ZW9yUWNPUm44OURtR1BaZEc3SyIsImNuZiI6eyJraWQiOiI3YXR6MldkcGxwSzNhbmtKVmp6cm1telVEZmdhNkFTMjRCRm1VbEJ2V1lFIn0sInByb29mIjoiZXlKaGJHY2lPaUpGWkVSVFFTSXNJblI1Y0NJNkltUndiM0FyYW5kMElpd2lhbmRySWpwN0ltdDBlU0k2SWs5TFVDSXNJbU55ZGlJNklrVmtNalUxTVRraUxDSjRJam9pVVZkUldrTklRemxSVFhOaVFtWk5SbmRrTmpONlZtNTFVbFZNVVVKSU1sVnNaRGh5WDBWTFNtSXlTU0o5ZlEuZXlKcFlYUWlPakUyT0RNME5qZ3dOemtzSW1WNGNDSTZNVFk0TXpRMk9ERXdPU3dpYm1KbUlqb3hOamd6TkRZNE1EYzVMQ0p6ZFdJaU9pSnBiVHAzYVhKbFlYQndQVnBVUlRGTmFtTXdUWHBGZVU1RVVUQk9SMHBvV1RKRk1VNVhXbTFPYWtFeVdsUnJNVTFxU1hsTmVrMHZOR1ZsWkdKbVpURTJaREkxWW1KbU0wQnpkR0ZuYVc1bkxucHBibVp5WVM1cGJ5SXNJbXAwYVNJNkltSmlOek5qTVdJekxUZ3dNMlF0TkRVMFlTMDROakl5TFdNellqUXlORFpoTTJZME9TSXNJbTV2Ym1ObElqb2lhRUpXV1RkalJqTlNXQzFsU25GMGNXOW5iVmwwZHlJc0ltaDBiU0k2SWxCUFUxUWlMQ0pvZEhVaU9pSm9kSFJ3Y3pvdkwzTjBZV2RwYm1jdWVtbHVabkpoTG1sdkwyTnNhV1Z1ZEhNdk5HVmxaR0ptWlRFMlpESTFZbUptTXk5aFkyTmxjM010ZEc5clpXNGlMQ0pqYUdGc0lqb2lUSGhxU1RWUVZIbFdkbEZPZW1WdmNsRmpUMUp1T0RsRWJVZFFXbVJITjBzaWZRLkl1YjJqTkRXY1lKdTZ0V1liX181UlNSSEhQQWV1ZmwwRkRPQzc3STY4UDZtcG96QjMxeGtmUEZUb2p3ckJtSEhLZHFLOWdJTTQ5YWcxb2pTclNlZkNnIiwiY2xpZW50X2lkIjoiaW06d2lyZWFwcD1aVEUxTWpjME16RXlORFEwTkdKaFkyRTFOV1ptTmpBMlpUazFNakl5TXpNLzRlZWRiZmUxNmQyNWJiZjNAc3RhZ2luZy56aW5mcmEuaW8iLCJhcGlfdmVyc2lvbiI6Mywic2NvcGUiOiJ3aXJlX2NsaWVudF9pZCJ9.kFoRHJotAJQTgLXXrH4m9ySutFJb2cc4Raa1nbOyRxNTFZyQuwbJT1jGAlIbziQmVEIZ5vneOg0TqBAyEtw3BQ", "type":"DPoP" }"""</ID>
@@ -571,7 +576,6 @@
     <ID>NoConsecutiveBlankLines:VerifyExistingClientUseCaseTest.kt$ </ID>
     <ID>NoMultipleSpaces:CommonDokkaConfig.kt$ </ID>
     <ID>NoMultipleSpaces:ConversationGroupRepositoryTest.kt$ConversationGroupRepositoryTest$ </ID>
-    <ID>NoMultipleSpaces:GlobalDBBaseTest.kt$GlobalDBBaseTest$ </ID>
     <ID>NoMultipleSpaces:HttpClientConnectionSpecsTest.kt$HttpClientConnectionSpecsTest$ </ID>
     <ID>NoMultipleSpaces:IgnoreIOS.kt$IgnoreIOS$ </ID>
     <ID>NoMultipleSpaces:LegalHoldHandlerTest.kt$LegalHoldHandlerTest$ </ID>
@@ -935,7 +939,7 @@
     <ID>UnusedPrivateProperty:build.gradle.kts$val jvmMain by getting { dependencies { implementation(libs.apacheTika) } }</ID>
     <ID>UnusedPrivateProperty:build.gradle.kts$val jvmMain by getting { dependencies { implementation(libs.coroutines.core) } }</ID>
     <ID>UnusedPrivateProperty:build.gradle.kts$val jvmMain by getting { dependencies { implementation(libs.ktor.okHttp) implementation(libs.okhttp.loggingInterceptor) } }</ID>
-    <ID>UnusedPrivateProperty:build.gradle.kts$val jvmMain by getting { dependencies { implementation(libs.sqldelight.jvmDriver) } }</ID>
+    <ID>UnusedPrivateProperty:build.gradle.kts$val jvmMain by getting { dependencies { implementation(libs.sqldelight.jvmDriver) implementation(libs.sqlite.xerialDriver) } }</ID>
     <ID>UnusedPrivateProperty:build.gradle.kts$val jvmMain by getting { dependencies { implementation(project(":logic")) implementation(project(":calling")) } }</ID>
     <ID>UnusedPrivateProperty:build.gradle.kts$val jvmTest by getting</ID>
     <ID>UnusedPrivateProperty:build.gradle.kts$val jvmTest by getting { dependencies { implementation(libs.konsist) } }</ID>
