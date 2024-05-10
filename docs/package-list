@@ -385,6 +385,13 @@ $dokka.location:com.wire.kalium.network/KaliumWebSocketFactory.WrapperListener/o
 $dokka.location:com.wire.kalium.network/KaliumWebSocketFactory///PointingToDeclaration/network/com.wire.kalium.network/[jvm]-kalium-web-socket-factory/index.html
 $dokka.location:com.wire.kalium.network/KaliumWebSocketFactory/KaliumWebSocketFactory/#[Error type: Unresolved type for OkHttpClient]/PointingToDeclaration/network/com.wire.kalium.network/[jvm]-kalium-web-socket-factory/-kalium-web-socket-factory.html
 $dokka.location:com.wire.kalium.network/KaliumWebSocketFactory/newWebSocket/#[Error type: Unresolved type for Request]#[Error type: Unresolved type for WebSocketListener]/PointingToDeclaration/network/com.wire.kalium.network/[jvm]-kalium-web-socket-factory/new-web-socket.html
+$dokka.location:com.wire.kalium.persistence.db/StorageData.FileBacked///PointingToDeclaration/persistence/com.wire.kalium.persistence.db/[jvm]-storage-data/-file-backed/index.html
+$dokka.location:com.wire.kalium.persistence.db/StorageData.FileBacked/FileBacked/#java.io.File/PointingToDeclaration/persistence/com.wire.kalium.persistence.db/[jvm]-storage-data/-file-backed/-file-backed.html
+$dokka.location:com.wire.kalium.persistence.db/StorageData.FileBacked/FileBacked/#kotlin.String/PointingToDeclaration/persistence/com.wire.kalium.persistence.db/[apple]-storage-data/-file-backed/-file-backed.html
+$dokka.location:com.wire.kalium.persistence.db/StorageData.FileBacked/file/#/PointingToDeclaration/persistence/com.wire.kalium.persistence.db/[jvm]-storage-data/-file-backed/file.html
+$dokka.location:com.wire.kalium.persistence.db/StorageData.FileBacked/storePath/#/PointingToDeclaration/persistence/com.wire.kalium.persistence.db/[apple]-storage-data/-file-backed/store-path.html
+$dokka.location:com.wire.kalium.persistence.db/StorageData.InMemory///PointingToDeclaration/persistence/com.wire.kalium.persistence.db/[jvm]-storage-data/-in-memory/index.html
+$dokka.location:com.wire.kalium.persistence.db/StorageData///PointingToDeclaration/persistence/com.wire.kalium.persistence.db/[jvm]-storage-data/index.html
 module:calling
 com.wire.kalium.calling
 com.wire.kalium.calling.callbacks
