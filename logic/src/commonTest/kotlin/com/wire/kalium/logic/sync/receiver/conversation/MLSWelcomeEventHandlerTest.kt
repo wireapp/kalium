@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
-import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
+import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesResult
 import com.wire.kalium.logic.feature.keypackage.RefillKeyPackagesUseCase
 import com.wire.kalium.logic.framework.TestConversation
@@ -244,7 +244,7 @@ class MLSWelcomeEventHandlerTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.checkRevocationList.invoke(any())
+            arrangement.checkRevocationList.check(any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -265,7 +265,7 @@ class MLSWelcomeEventHandlerTest {
         val refillKeyPackagesUseCase: RefillKeyPackagesUseCase = mock(RefillKeyPackagesUseCase::class)
 
         @Mock
-        val checkRevocationList: CheckRevocationListUseCase = mock(CheckRevocationListUseCase::class)
+        val checkRevocationList: RevocationListChecker = mock(RevocationListChecker::class)
 
         @Mock
         val certificateRevocationListRepository: CertificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
@@ -290,7 +290,7 @@ class MLSWelcomeEventHandlerTest {
 
         suspend fun withCheckRevocationListResult() {
             coEvery {
-                checkRevocationList.invoke(any())
+                checkRevocationList.check(any())
             }.returns(Either.Right(1uL))
         }
 
@@ -308,7 +308,7 @@ class MLSWelcomeEventHandlerTest {
                 conversationRepository = conversationRepository,
                 oneOnOneResolver = oneOnOneResolver,
                 refillKeyPackages = refillKeyPackagesUseCase,
-                checkRevocationList = checkRevocationList,
+                revocationListChecker = checkRevocationList,
                 certificateRevocationListRepository = certificateRevocationListRepository
             )
         }
