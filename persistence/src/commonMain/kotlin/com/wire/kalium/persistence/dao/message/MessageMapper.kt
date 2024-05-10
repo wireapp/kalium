@@ -43,6 +43,7 @@ object MessageMapper {
     @Suppress("ComplexMethod", "LongMethod")
     private fun toMessagePreviewEntityContent(
         contentType: MessageEntity.ContentType,
+        visibility: MessageEntity.Visibility,
         senderName: String?,
         isSelfMessage: Boolean,
         memberChangeList: List<QualifiedIDEntity>?,
@@ -61,6 +62,7 @@ object MessageMapper {
         } else {
             mapContentType(
                 contentType,
+                visibility,
                 senderName,
                 isSelfMessage,
                 memberChangeList,
@@ -79,6 +81,7 @@ object MessageMapper {
     @Suppress("LongMethod", "ComplexMethod")
     private fun mapContentType(
         contentType: MessageEntity.ContentType,
+        visibility: MessageEntity.Visibility,
         senderName: String?,
         isSelfMessage: Boolean,
         memberChangeList: List<QualifiedIDEntity>?,
@@ -90,6 +93,10 @@ object MessageMapper {
         selfUserId: QualifiedIDEntity?,
         senderUserId: QualifiedIDEntity?
     ): MessagePreviewEntityContent {
+        if(visibility == MessageEntity.Visibility.DELETED) {
+            return MessagePreviewEntityContent.Deleted(senderName)
+        }
+
         return when (contentType) {
             MessageEntity.ContentType.COMPOSITE -> MessagePreviewEntityContent.Composite(
                 senderName = senderName,
@@ -253,6 +260,7 @@ object MessageMapper {
     ): MessagePreviewEntity {
         val content = toMessagePreviewEntityContent(
             contentType = contentType,
+            visibility = visibility,
             senderName = senderName,
             isSelfMessage = isSelfMessage,
             memberChangeList = memberChangeList,

@@ -500,6 +500,7 @@ sealed interface MessagePreviewContent {
 
         data class MissedCall(override val username: String?) : WithUser
 
+        data class Deleted(override val username: String?) : WithUser
     }
 
     data class Ephemeral(val isGroupConversation: Boolean) : MessagePreviewContent
