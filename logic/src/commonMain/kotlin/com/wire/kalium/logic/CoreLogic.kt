@@ -50,7 +50,7 @@ abstract class CoreLogicCommon internal constructor(
     protected val idMapper: IdMapper = MapperProvider.idMapper()
 ) {
     protected abstract val globalPreferences: GlobalPrefProvider
-    protected abstract val globalDatabase: GlobalDatabaseBuilder
+    protected abstract val globalDatabaseBuilder: GlobalDatabaseBuilder
     protected abstract val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
     protected val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
 
@@ -61,7 +61,7 @@ abstract class CoreLogicCommon internal constructor(
     private val globalKaliumScope by lazy {
         GlobalKaliumScope(
             userAgent,
-            globalDatabase,
+            globalDatabaseBuilder,
             globalPreferences,
             kaliumConfigs,
             userSessionScopeProvider,
@@ -81,7 +81,7 @@ abstract class CoreLogicCommon internal constructor(
             serverConfig,
             proxyCredentials,
             networkStateObserver,
-            globalDatabase,
+            globalDatabaseBuilder,
             kaliumConfigs
         )
 

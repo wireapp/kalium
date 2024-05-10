@@ -20,7 +20,11 @@ package com.wire.kalium.persistence
 
 import co.touchlab.sqliter.DatabaseFileContext.deleteDatabase
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
+import com.wire.kalium.persistence.db.PlatformDatabaseData
+import com.wire.kalium.persistence.db.StorageData
+import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.util.FileNameUtil
+import kotlinx.coroutines.test.StandardTestDispatcher
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSUserDomainMask
@@ -34,6 +38,8 @@ actual abstract class GlobalDBBaseTest {
     }
 
     actual fun createDatabase(): GlobalDatabaseBuilder {
-        return GlobalDatabaseBuilder(storePath)
+        return globalDatabaseProvider(
+            PlatformDatabaseData(StorageData.FileBacked(storePath)), StandardTestDispatcher(), null, false
+        )
     }
 }

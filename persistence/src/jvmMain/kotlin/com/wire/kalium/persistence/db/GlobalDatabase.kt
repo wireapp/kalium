@@ -18,7 +18,6 @@
 
 package com.wire.kalium.persistence.db
 
-import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.util.FileNameUtil
@@ -29,7 +28,6 @@ actual fun globalDatabaseProvider(
     queriesContext: CoroutineDispatcher,
     passphrase: GlobalDatabaseSecret?,
     enableWAL: Boolean,
-    encryptionEnabled: Boolean
 ): GlobalDatabaseBuilder {
     val storageData = platformDatabaseData.storageData
     if (storageData is StorageData.InMemory) {
@@ -49,8 +47,10 @@ actual fun globalDatabaseProvider(
 
     // Make sure all intermediate directories exist
     storageData.file.mkdirs()
-    val driver: SqlDriver = DriverBuilder().withWALEnabled(enableWAL)
-        .build("jdbc:sqlite:${databasePath.absolutePath}")
+    val driver = databaseDriver("jdbc:sqlite:${databasePath.absolutePath}") {
+        isWALEnabled = enableWAL
+        areForeignKeyConstraintsEnforced = true
+    }
 
     if (!databaseExists) {
         GlobalDatabase.Schema.create(driver)
@@ -64,7 +64,10 @@ actual fun nuke(platformDatabaseData: PlatformDatabaseData): Boolean {
 }
 
 fun createGlobalInMemoryDatabase(dispatcher: CoroutineDispatcher): GlobalDatabaseBuilder {
-    val driver = DriverBuilder().withWALEnabled(false).build(JdbcSqliteDriver.IN_MEMORY)
+    val driver = databaseDriver(JdbcSqliteDriver.IN_MEMORY) {
+        isWALEnabled = false
+        areForeignKeyConstraintsEnforced = true
+    }
     GlobalDatabase.Schema.create(driver)
     return GlobalDatabaseBuilder(driver, PlatformDatabaseData(StorageData.InMemory), dispatcher)
 }

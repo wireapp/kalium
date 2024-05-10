@@ -18,10 +18,7 @@
 
 package com.wire.kalium.persistence.db
 
-import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.GlobalDatabase
-import com.wire.kalium.persistence.db.support.SqliteCallback
-import com.wire.kalium.persistence.db.support.SupportOpenHelperFactory
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
 
@@ -29,26 +26,17 @@ actual fun globalDatabaseProvider(
     platformDatabaseData: PlatformDatabaseData,
     queriesContext: CoroutineDispatcher,
     passphrase: GlobalDatabaseSecret?,
-    enableWAL: Boolean,
-    encryptionEnabled: Boolean
+    enableWAL: Boolean
 ): GlobalDatabaseBuilder {
     val schema = GlobalDatabase.Schema
     val dbName = FileNameUtil.globalDBName()
-    val driver = if (encryptionEnabled) {
-        System.loadLibrary("sqlcipher")
-        AndroidSqliteDriver(
-            schema = schema,
-            context = platformDatabaseData.context,
-            name = dbName,
-            factory = SupportOpenHelperFactory(passphrase!!.value, enableWAL)
-        )
-    } else {
-        AndroidSqliteDriver(
-            schema = schema,
-            context = platformDatabaseData.context,
-            name = dbName,
-            callback = SqliteCallback(schema, enableWAL)
-        )
+    val driver = databaseDriver(
+        platformDatabaseData.context,
+        dbName,
+        passphrase?.value,
+        schema
+    ) {
+        isWALEnabled = enableWAL
     }
     return GlobalDatabaseBuilder(driver, platformDatabaseData, queriesContext)
 }

@@ -18,6 +18,12 @@
 package com.wire.kalium.persistence.db
 
 import android.content.Context
+import app.cash.sqldelight.db.QueryResult
+import app.cash.sqldelight.db.SqlDriver
+import app.cash.sqldelight.db.SqlSchema
+import app.cash.sqldelight.driver.android.AndroidSqliteDriver
+import com.wire.kalium.persistence.db.support.SqliteCallback
+import com.wire.kalium.persistence.db.support.SupportOpenHelperFactory
 
 /**
  * Platform-specific data used to create the database
@@ -27,3 +33,31 @@ import android.content.Context
 actual class PlatformDatabaseData(
     val context: Context
 )
+
+@Suppress("LongParameterList")
+fun databaseDriver(
+    context: Context,
+    dbName: String,
+    passphrase: ByteArray? = null,
+    schema: SqlSchema<QueryResult.Value<Unit>>,
+    config: DriverConfigurationBuilder.() -> Unit = {}
+): SqlDriver {
+    val driverConfiguration = DriverConfigurationBuilder().apply(config)
+    val enableWAL = driverConfiguration.isWALEnabled
+    return if (passphrase != null) {
+        System.loadLibrary("sqlcipher")
+        AndroidSqliteDriver(
+            schema = schema,
+            context = context,
+            name = dbName,
+            factory = SupportOpenHelperFactory(passphrase, enableWAL)
+        )
+    } else {
+        AndroidSqliteDriver(
+            schema = schema,
+            context = context,
+            name = dbName,
+            callback = SqliteCallback(schema, enableWAL)
+        )
+    }
+}

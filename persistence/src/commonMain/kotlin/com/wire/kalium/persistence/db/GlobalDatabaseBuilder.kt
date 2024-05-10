@@ -79,10 +79,19 @@ class GlobalDatabaseBuilder internal constructor(
 
 expect fun nuke(platformDatabaseData: PlatformDatabaseData): Boolean
 
+/**
+ * Creates a new instance of the [GlobalDatabaseBuilder].
+ * @param platformDatabaseData the platform specific database data.
+ * @param queriesContext the context in which the queries will be executed.
+ * @param passphrase the passphrase to use for the database encryption.
+ * @param enableWAL whether to enable Write-Ahead Logging.
+ * @param encryptionEnabled whether to enable encryption.
+ *
+ * @return a new instance of the [GlobalDatabaseBuilder].
+ */
 expect fun globalDatabaseProvider(
     platformDatabaseData: PlatformDatabaseData,
     queriesContext: CoroutineDispatcher = KaliumDispatcherImpl.io,
     passphrase: GlobalDatabaseSecret?,
     enableWAL: Boolean = false,
-    encryptionEnabled: Boolean = false
 ): GlobalDatabaseBuilder

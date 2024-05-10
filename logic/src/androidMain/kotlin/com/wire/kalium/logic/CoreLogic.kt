@@ -54,12 +54,15 @@ actual class CoreLogic(
         kaliumConfigs.shouldEncryptData
     )
 
-    override val globalDatabase: GlobalDatabaseBuilder = globalDatabaseProvider(
-        PlatformDatabaseData(appContext),
-        KaliumDispatcherImpl.io,
-        SecurityHelperImpl(globalPreferences.passphraseStorage).globalDBSecret(),
-        true,
-        kaliumConfigs.shouldEncryptData
+    override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
+        platformDatabaseData = PlatformDatabaseData(appContext),
+        queriesContext = KaliumDispatcherImpl.io,
+        passphrase = if (kaliumConfigs.shouldEncryptData) {
+            SecurityHelperImpl(globalPreferences.passphraseStorage).globalDBSecret()
+        } else {
+            null
+        },
+        enableWAL = true
     )
 
     override fun getSessionScope(userId: UserId): UserSessionScope =
@@ -88,7 +91,7 @@ actual class CoreLogic(
             rootPathsProvider,
             appContext,
             getGlobalScope(),
-            globalDatabase,
+            globalDatabaseBuilder,
             kaliumConfigs,
             globalPreferences,
             globalCallManager,

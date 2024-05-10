@@ -53,8 +53,10 @@ actual fun userDatabaseBuilder(
     // Make sure all intermediate directories exist
     storageData.file.mkdirs()
 
-    val driver: SqlDriver = DriverBuilder().withWALEnabled(enableWAL)
-        .build("jdbc:sqlite:${databasePath.absolutePath}")
+    val driver: SqlDriver = databaseDriver("jdbc:sqlite:${databasePath.absolutePath}") {
+        isWALEnabled = enableWAL
+        areForeignKeyConstraintsEnforced = true
+    }
 
     if (!databaseExists) {
         UserDatabase.Schema.create(driver)
@@ -67,9 +69,10 @@ actual fun userDatabaseDriverByPath(
     path: String,
     passphrase: UserDBSecret?,
     enableWAL: Boolean
-): SqlDriver = DriverBuilder()
-    .withWALEnabled(enableWAL)
-    .build(path)
+): SqlDriver = databaseDriver(path) {
+    isWALEnabled = enableWAL
+    areForeignKeyConstraintsEnforced = true
+}
 
 internal actual fun getDatabaseAbsoluteFileLocation(
     platformDatabaseData: PlatformDatabaseData,
@@ -95,7 +98,10 @@ fun inMemoryDatabase(
     userId: UserIDEntity,
     dispatcher: CoroutineDispatcher
 ): UserDatabaseBuilder = InMemoryDatabaseCache.getOrCreate(userId) {
-    val driver = DriverBuilder().withWALEnabled(false).build(JdbcSqliteDriver.IN_MEMORY)
+    val driver = databaseDriver(JdbcSqliteDriver.IN_MEMORY) {
+        isWALEnabled = false
+        areForeignKeyConstraintsEnforced = true
+    }
     UserDatabase.Schema.create(driver)
     val storageData = StorageData.FileBacked(File("inMemory"))
     UserDatabaseBuilder(userId, driver, dispatcher, PlatformDatabaseData(storageData), false)

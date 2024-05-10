@@ -38,7 +38,6 @@ actual abstract class GlobalDBBaseTest {
         platformDatabaseData = PlatformDatabaseData(ApplicationProvider.getApplicationContext()),
         queriesContext = KaliumDispatcherImpl.unconfined,
         passphrase = GlobalDatabaseSecret("test_db_secret".toByteArray()),
-        enableWAL = true,
-        encryptionEnabled = false,
+        enableWAL = true
     )
 }

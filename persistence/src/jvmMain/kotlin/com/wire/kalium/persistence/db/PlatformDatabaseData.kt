@@ -17,6 +17,9 @@
  */
 package com.wire.kalium.persistence.db
 
+import app.cash.sqldelight.db.SqlDriver
+import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
+import org.sqlite.SQLiteConfig
 import java.io.File
 
 actual data class PlatformDatabaseData(
@@ -26,4 +29,13 @@ actual data class PlatformDatabaseData(
 sealed interface StorageData {
     data class FileBacked(val file: File) : StorageData
     data object InMemory : StorageData
+}
+
+fun databaseDriver(uri: String, config: DriverConfigurationBuilder.() -> Unit = {}): SqlDriver {
+    val driverConfiguration = DriverConfigurationBuilder().apply(config)
+    val sqliteConfig = SQLiteConfig()
+    val journalMode = if (driverConfiguration.isWALEnabled) SQLiteConfig.JournalMode.WAL else SQLiteConfig.JournalMode.DELETE
+    sqliteConfig.setJournalMode(journalMode)
+    sqliteConfig.enforceForeignKeys(driverConfiguration.areForeignKeyConstraintsEnforced)
+    return JdbcSqliteDriver(uri, sqliteConfig.toProperties())
 }

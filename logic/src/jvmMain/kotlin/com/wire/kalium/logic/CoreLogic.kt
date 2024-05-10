@@ -56,7 +56,7 @@ actual class CoreLogic(
             shouldEncryptData = kaliumConfigs.shouldEncryptData
         )
 
-    override val globalDatabase: GlobalDatabaseBuilder = globalDatabaseProvider(
+    override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
         platformDatabaseData = PlatformDatabaseData(
             storageData = if (useInMemoryStorage) {
                 StorageData.InMemory
@@ -87,7 +87,7 @@ actual class CoreLogic(
             kaliumConfigs,
             globalPreferences,
             globalCallManager,
-            globalDatabase,
+            globalDatabaseBuilder,
             userStorageProvider,
             networkStateObserver,
             logoutCallbackManager,
