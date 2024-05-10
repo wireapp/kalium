@@ -93,7 +93,7 @@ object MessageMapper {
         selfUserId: QualifiedIDEntity?,
         senderUserId: QualifiedIDEntity?
     ): MessagePreviewEntityContent {
-        if(visibility == MessageEntity.Visibility.DELETED) {
+        if (visibility == MessageEntity.Visibility.DELETED) {
             return MessagePreviewEntityContent.Deleted(senderName)
         }
 
