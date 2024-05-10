@@ -26,7 +26,7 @@ import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryA
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.NotificationEventsManagerArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangementImpl
 import io.mockative.any
 import io.mockative.coVerify
@@ -77,7 +77,7 @@ class DeletedConversationEventHandlerTest {
             }.wasInvoked(exactly = once)
 
             coVerify {
-                ephemeralNotifications.scheduleDeleteConversationNotification(
+                notificationEventsManager.scheduleDeleteConversationNotification(
                     eq(
                         EphemeralConversationNotification(
                             event,
@@ -105,7 +105,7 @@ class DeletedConversationEventHandlerTest {
 
         with(arrangement) {
             coVerify {
-                ephemeralNotifications.scheduleDeleteConversationNotification(any())
+                notificationEventsManager.scheduleDeleteConversationNotification(any())
             }.wasNotInvoked()
         }
     }
@@ -116,14 +116,14 @@ class DeletedConversationEventHandlerTest {
         private val block: suspend Arrangement.() -> Unit
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
-        EphemeralEventsNotificationManagerArrangement by EphemeralEventsNotificationManagerArrangementImpl() {
+        NotificationEventsManagerArrangement by EphemeralEventsNotificationManagerArrangementImpl() {
 
         fun arrange() = run {
             runBlocking { block() }
             this@Arrangement to DeletedConversationEventHandlerImpl(
                 conversationRepository = conversationRepository,
                 userRepository = userRepository,
-                deleteConversationNotificationsManager = ephemeralNotifications
+                notificationEventsManager = notificationEventsManager
             )
         }
     }

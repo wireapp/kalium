@@ -56,7 +56,7 @@ internal interface MessageRepositoryArrangement {
         conversationId: Matcher<ConversationId> = AnyMatcher(valueOf())
     )
 
-    suspend fun withLocalNotifications(list: Either<CoreFailure, Flow<List<LocalNotification>>>)
+    suspend fun withLocalNotifications(list: Either<CoreFailure, List<LocalNotification>>)
 
     suspend fun withMoveMessagesToAnotherConversation(
         result: Either<StorageFailure, Unit>,
@@ -108,7 +108,7 @@ internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangem
         }.returns(result)
     }
 
-    override suspend fun withLocalNotifications(list: Either<CoreFailure, Flow<List<LocalNotification>>>) {
+    override suspend fun withLocalNotifications(list: Either<CoreFailure, List<LocalNotification>>) {
         coEvery {
             messageRepository.getNotificationMessage(any())
         }.returns(list)

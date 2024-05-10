@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.message.EphemeralEventsNotificationManager
+import com.wire.kalium.logic.feature.message.NotificationEventsManager
 import com.wire.kalium.logic.functional.onSuccess
 
 internal interface DeleteMessageHandler {
@@ -37,7 +37,7 @@ internal interface DeleteMessageHandler {
 internal class DeleteMessageHandlerImpl internal constructor(
     private val messageRepository: MessageRepository,
     private val assetRepository: AssetRepository,
-    private val deleteMessageNotificationsManager: EphemeralEventsNotificationManager,
+    private val notificationEventsManager: NotificationEventsManager,
     private val selfUserId: UserId
 ) : DeleteMessageHandler {
     override suspend fun invoke(
@@ -64,7 +64,7 @@ internal class DeleteMessageHandlerImpl internal constructor(
                         conversationId = messageToRemove.conversationId
                     )
                 } else {
-                    deleteMessageNotificationsManager.scheduleDeleteMessageNotification(messageToRemove)
+                    notificationEventsManager.scheduleDeleteMessageNotification(messageToRemove)
                     messageRepository.markMessageAsDeleted(
                         messageUuid = messageToRemove.id,
                         conversationId = messageToRemove.conversationId

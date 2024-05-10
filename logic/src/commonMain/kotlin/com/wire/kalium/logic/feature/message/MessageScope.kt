@@ -196,7 +196,7 @@ class MessageScope internal constructor(
         )
 
     val persistMessage: PersistMessageUseCase
-        get() = PersistMessageUseCaseImpl(messageRepository, selfUserId)
+        get() = PersistMessageUseCaseImpl(messageRepository, selfUserId, NotificationEventsManagerImpl)
 
     val sendTextMessage: SendTextMessageUseCase
         get() = SendTextMessageUseCase(
@@ -346,7 +346,7 @@ class MessageScope internal constructor(
             connectionRepository = connectionRepository,
             messageRepository = messageRepository,
             incrementalSyncRepository = incrementalSyncRepository,
-            deleteConversationNotificationsManager = EphemeralEventsNotificationManagerImpl
+            notificationEventsManager = NotificationEventsManagerImpl
         )
 
     internal val sendConfirmation: SendConfirmationUseCase

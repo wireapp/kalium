@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.message.EphemeralEventsNotificationManager
+import com.wire.kalium.logic.feature.message.NotificationEventsManager
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 
@@ -39,7 +39,7 @@ internal class LastReadContentHandlerImpl internal constructor(
     private val conversationRepository: ConversationRepository,
     private val selfUserId: UserId,
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase,
-    private val ephemeralEventsNotificationManager: EphemeralEventsNotificationManager
+    private val notificationEventsManager: NotificationEventsManager
 ) : LastReadContentHandler {
 
     override suspend fun handle(
@@ -59,7 +59,7 @@ internal class LastReadContentHandlerImpl internal constructor(
             ).flatMap { conversationRepository.getConversationUnreadEventsCount(messageContent.conversationId) }
                 .map {
                     if (it <= 0)
-                        ephemeralEventsNotificationManager.scheduleConversationSeenNotification(messageContent.conversationId)
+                        notificationEventsManager.scheduleConversationSeenNotification(messageContent.conversationId)
                 }
         }
     }
