@@ -39,7 +39,7 @@ actual abstract class GlobalDBBaseTest {
 
     actual fun createDatabase(): GlobalDatabaseBuilder {
         return globalDatabaseProvider(
-            PlatformDatabaseData(StorageData.FileBacked(storePath)), StandardTestDispatcher(), null, false, false
+            PlatformDatabaseData(StorageData.FileBacked(storePath)), StandardTestDispatcher(), null, false
         )
     }
 }
