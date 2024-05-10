@@ -22,12 +22,14 @@ import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
-import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestDispatcher
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import java.nio.file.Files
 
 actual abstract class GlobalDBBaseTest {
-    private val dispatcher: TestDispatcher = StandardTestDispatcher()
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private val dispatcher: TestDispatcher = UnconfinedTestDispatcher()
     private val databaseFile = Files.createTempDirectory("test-storage").toFile().resolve("test-kalium.db")
 
     actual fun deleteDatabase() {

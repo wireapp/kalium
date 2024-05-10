@@ -29,6 +29,7 @@ import com.wire.kalium.persistence.ServerConfiguration
 import com.wire.kalium.persistence.adapter.CrossCompatBooleanAdapter
 import com.wire.kalium.persistence.adapter.LogoutReasonAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
+import com.wire.kalium.persistence.dao.BooleanEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAOImpl
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
@@ -68,7 +69,7 @@ class GlobalDatabaseBuilder internal constructor(
     )
 
     init {
-        database.globalDatabasePropertiesQueries.enableForeignKeyContraints()
+        //database.globalDatabasePropertiesQueries.enableForeignKeyContraints()
     }
 
     val serverConfigurationDAO: ServerConfigurationDAO

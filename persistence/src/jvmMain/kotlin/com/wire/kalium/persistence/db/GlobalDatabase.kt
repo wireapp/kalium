@@ -48,7 +48,7 @@ actual fun globalDatabaseProvider(
     }
 
     // Make sure all intermediate directories exist
-    storageData.file.mkdirs()
+    // storageData.file.mkdirs()
     val driver = createDataSource("jdbc:postgresql://localhost:5432/${FileNameUtil.globalDBName()}").asJdbcDriver()
     val databaseExists = driver.databaseExists(FileNameUtil.globalDBName())
     if (!databaseExists) {
@@ -87,9 +87,18 @@ private fun createDataSource(driverUri: String): DataSource {
 
 fun JdbcDriver.databaseExists(dbName: String): Boolean {
     val result = executeQuery(
-        null, """SELECT EXISTS(SELECT datname FROM pg_catalog.pg_database WHERE datname = ?));""",
-        { app.cash.sqldelight.db.QueryResult.Value(it.getBoolean(0)) }, 0
-    ) { bindString(0, dbName) }
+        Int.MIN_VALUE, """SELECT datname FROM pg_catalog.pg_database WHERE datname = ?""",
+        {
+            if (it.next().value) {
+                val result = it.getString(0)
+                println("THE RESULT: ${result}")
+                app.cash.sqldelight.db.QueryResult.Value(result?.isNotEmpty())
+            } else {
+                app.cash.sqldelight.db.QueryResult.Value(false)
+            }
 
+        }, 0
+    ) { bindString(0, dbName) }
+    println("Exists: ${result.value}")
     return result.value ?: false
 }
