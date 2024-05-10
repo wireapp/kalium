@@ -24,8 +24,7 @@ actual fun globalDatabaseProvider(
     platformDatabaseData: PlatformDatabaseData,
     queriesContext: CoroutineDispatcher,
     passphrase: GlobalDatabaseSecret?,
-    enableWAL: Boolean,
-    encryptionEnabled: Boolean
+    enableWAL: Boolean
 ): GlobalDatabaseBuilder {
     TODO("Not yet implemented")
 }

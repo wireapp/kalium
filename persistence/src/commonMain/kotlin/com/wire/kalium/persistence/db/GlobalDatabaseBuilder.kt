@@ -94,5 +94,4 @@ expect fun globalDatabaseProvider(
     queriesContext: CoroutineDispatcher = KaliumDispatcherImpl.io,
     passphrase: GlobalDatabaseSecret?,
     enableWAL: Boolean = false,
-    encryptionEnabled: Boolean = false
 ): GlobalDatabaseBuilder

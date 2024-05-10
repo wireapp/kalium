@@ -26,15 +26,13 @@ actual fun globalDatabaseProvider(
     platformDatabaseData: PlatformDatabaseData,
     queriesContext: CoroutineDispatcher,
     passphrase: GlobalDatabaseSecret?,
-    enableWAL: Boolean,
-    encryptionEnabled: Boolean
+    enableWAL: Boolean
 ): GlobalDatabaseBuilder {
     val schema = GlobalDatabase.Schema
     val dbName = FileNameUtil.globalDBName()
     val driver = databaseDriver(
         platformDatabaseData.context,
         dbName,
-        encryptionEnabled,
         passphrase?.value,
         schema
     ) {

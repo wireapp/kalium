@@ -46,7 +46,6 @@ actual fun userDatabaseBuilder(
     val driver = databaseDriver(
         context = platformDatabaseData.context,
         dbName = dbName,
-        isEncryptionEnabled = isEncryptionEnabled,
         passphrase = passphrase?.value,
         schema = UserDatabase.Schema
     ) {

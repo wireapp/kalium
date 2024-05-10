@@ -38,20 +38,19 @@ actual class PlatformDatabaseData(
 fun databaseDriver(
     context: Context,
     dbName: String,
-    isEncryptionEnabled: Boolean,
     passphrase: ByteArray? = null,
     schema: SqlSchema<QueryResult.Value<Unit>>,
     config: DriverConfigurationBuilder.() -> Unit = {}
 ): SqlDriver {
     val driverConfiguration = DriverConfigurationBuilder().apply(config)
     val enableWAL = driverConfiguration.isWALEnabled
-    return if (isEncryptionEnabled) {
+    return if (passphrase != null) {
         System.loadLibrary("sqlcipher")
         AndroidSqliteDriver(
             schema = schema,
             context = context,
             name = dbName,
-            factory = SupportOpenHelperFactory(passphrase!!, enableWAL)
+            factory = SupportOpenHelperFactory(passphrase, enableWAL)
         )
     } else {
         AndroidSqliteDriver(

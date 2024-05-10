@@ -57,9 +57,8 @@ actual class CoreLogic(
     override val globalDatabase: GlobalDatabaseBuilder = globalDatabaseProvider(
         PlatformDatabaseData(appContext),
         KaliumDispatcherImpl.io,
-        SecurityHelperImpl(globalPreferences.passphraseStorage).globalDBSecret(),
-        true,
-        kaliumConfigs.shouldEncryptData
+        if (kaliumConfigs.shouldEncryptData) SecurityHelperImpl(globalPreferences.passphraseStorage).globalDBSecret() else null,
+        true
     )
 
     override fun getSessionScope(userId: UserId): UserSessionScope =

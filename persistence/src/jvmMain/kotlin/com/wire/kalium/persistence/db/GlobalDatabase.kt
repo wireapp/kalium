@@ -28,7 +28,6 @@ actual fun globalDatabaseProvider(
     queriesContext: CoroutineDispatcher,
     passphrase: GlobalDatabaseSecret?,
     enableWAL: Boolean,
-    encryptionEnabled: Boolean
 ): GlobalDatabaseBuilder {
     val storageData = platformDatabaseData.storageData
     if (storageData is StorageData.InMemory) {
