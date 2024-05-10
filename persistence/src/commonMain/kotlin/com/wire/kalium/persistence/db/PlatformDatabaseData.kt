@@ -15,29 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.persistence.db
 
-package com.wire.kalium.persistence
-
-import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
-import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestDispatcher
-
-class TestGlobalDatabase(
-    private val dispatcher: TestDispatcher = StandardTestDispatcher()
-) {
-
-    val provider: GlobalDatabaseBuilder
-
-    init {
-        deleteTestGlobalDatabase()
-        provider = createTestGlobalDatabase()
-    }
-
-    fun delete() {
-        deleteTestGlobalDatabase()
-    }
-}
-
-internal expect fun deleteTestGlobalDatabase()
-
-internal expect fun createTestGlobalDatabase(): GlobalDatabaseBuilder
+/**
+ * Platform-specific data used to create the database
+ * that might be necessary for future operations
+ * in the future like [nuke]
+ */
+expect class PlatformDatabaseData

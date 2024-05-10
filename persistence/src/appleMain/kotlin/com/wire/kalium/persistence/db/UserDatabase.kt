@@ -22,9 +22,6 @@ package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.native.NativeSqliteDriver
-import app.cash.sqldelight.driver.native.wrapConnection
-import co.touchlab.sqliter.DatabaseConfiguration
-import co.touchlab.sqliter.JournalMode
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.FileNameUtil
@@ -37,9 +34,6 @@ sealed interface DatabaseCredentials {
     data object NotSet : DatabaseCredentials
 }
 
-// TODO encrypt database using sqlcipher
-actual class PlatformDatabaseData(val storePath: String)
-
 actual fun userDatabaseBuilder(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity,
@@ -47,25 +41,24 @@ actual fun userDatabaseBuilder(
     dispatcher: CoroutineDispatcher,
     enableWAL: Boolean
 ): UserDatabaseBuilder {
-    NSFileManager.defaultManager.createDirectoryAtPath(platformDatabaseData.storePath, true, null, null)
-    val schema = UserDatabase.Schema
-
-    val driver = NativeSqliteDriver(
-        DatabaseConfiguration(
-            name = FileNameUtil.userDBName(userId),
-            version = schema.version.toInt(),
-            journalMode = if (enableWAL) JournalMode.WAL else JournalMode.DELETE,
-            create = { connection ->
-                wrapConnection(connection) { schema.create(it) }
-            },
-            upgrade = { connection, oldVersion, newVersion ->
-                wrapConnection(connection) { schema.migrate(it, oldVersion.toLong(), newVersion.toLong()) }
-            },
-            extendedConfig = DatabaseConfiguration.Extended(
-                basePath = platformDatabaseData.storePath
+    val driver = when (platformDatabaseData.storageData) {
+        is StorageData.FileBacked -> {
+            NSFileManager.defaultManager.createDirectoryAtPath(
+                platformDatabaseData.storageData.storePath,
+                true,
+                null,
+                null
             )
-        )
-    )
+            databaseDriver(platformDatabaseData.storageData.storePath, FileNameUtil.userDBName(userId), UserDatabase.Schema) {
+                isWALEnabled = enableWAL
+            }
+        }
+
+        StorageData.InMemory ->
+            databaseDriver(null, FileNameUtil.userDBName(userId), UserDatabase.Schema) {
+                isWALEnabled = false
+            }
+    }
 
     return UserDatabaseBuilder(
         userId,
@@ -92,25 +85,15 @@ fun inMemoryDatabase(
     userId: UserIDEntity,
     dispatcher: CoroutineDispatcher
 ): UserDatabaseBuilder {
-    val schema = UserDatabase.Schema
-    val driver = NativeSqliteDriver(
-        DatabaseConfiguration(
-            name = FileNameUtil.userDBName(userId),
-            version = schema.version.toInt(),
-            inMemory = true,
-            create = { connection ->
-                wrapConnection(connection) { schema.create(it) }
-            },
-            upgrade = { connection, oldVersion, newVersion ->
-                wrapConnection(connection) { schema.migrate(it, oldVersion.toLong(), newVersion.toLong()) }
-            }
-        )
-    )
+    val driver = databaseDriver(null, FileNameUtil.userDBName(userId), UserDatabase.Schema) {
+        isWALEnabled = false
+    }
+
     return UserDatabaseBuilder(
         userId,
         driver,
         dispatcher,
-        PlatformDatabaseData(""),
+        PlatformDatabaseData(StorageData.InMemory),
         false
     )
 }
@@ -119,11 +102,22 @@ internal actual fun nuke(
     userId: UserIDEntity,
     platformDatabaseData: PlatformDatabaseData
 ): Boolean {
-    return NSFileManager.defaultManager.removeItemAtPath(platformDatabaseData.storePath, null)
+    return when (platformDatabaseData.storageData) {
+        is StorageData.FileBacked -> NSFileManager.defaultManager.removeItemAtPath(platformDatabaseData.storageData.storePath, null)
+        is StorageData.InMemory -> false
+    }
 }
 
 internal actual fun getDatabaseAbsoluteFileLocation(
     platformDatabaseData: PlatformDatabaseData,
     userId: UserIDEntity
-): String? = if (NSURL.fileURLWithPath(platformDatabaseData.storePath).checkResourceIsReachableAndReturnError(null) ?: false)
-    platformDatabaseData.storePath else null
+): String? {
+    return if (
+        platformDatabaseData.storageData is StorageData.FileBacked && NSURL.fileURLWithPath(platformDatabaseData.storageData.storePath)
+            .checkResourceIsReachableAndReturnError(null)
+    ) {
+        platformDatabaseData.storageData.storePath
+    } else {
+        null
+    }
+}

@@ -88,6 +88,7 @@ kotlin {
             dependencies {
                 implementation(libs.sqldelight.jvmDriver)
                 implementation(libs.sqldelight.jdbcDriver)
+                implementation(libs.sqlite.xerialDriver)
                 implementation(libs.hikaricp)
                 implementation(libs.postgres.driver)
             }

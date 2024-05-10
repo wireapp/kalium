@@ -36,7 +36,7 @@ sqldelight = "2.0.1"
 sqlcipher-android = "4.5.6"
 pbandk = "0.14.2"
 turbine = "1.1.0"
-avs = "9.7.12"
+avs = "9.7.13"
 jna = "5.14.0"
 core-crypto = "1.0.0-rc.55"
 core-crypto-multiplatform = "0.6.0-rc.3-multiplatform-pre1"
@@ -65,6 +65,7 @@ dagCommand = "1.9.0"
 benchmark = "0.4.10"
 jmh = "1.37"
 jmhReport = "0.9.6"
+xerialDriver = "3.45.3.0"
 
 [plugins]
 # Home-made convention plugins
@@ -188,6 +189,7 @@ sqldelight-r2dbc = { module = "app.cash.sqldelight:r2dbc-driver", version.ref = 
 sqldelight-async = { module = "app.cash.sqldelight:async-extensions", version.ref = "sqldelight" }
 r2dbc-postgres = { module = "org.postgresql:r2dbc-postgresql", version.ref = "postgres" }
 r2dbc-spi = { module = "io.r2dbc:r2dbc-spi", version.ref = "r2dbc" }
+sqlite-xerialDriver = { module = "org.xerial:sqlite-jdbc", version.ref = "xerialDriver" }
 hikaricp = { module = "com.zaxxer:HikariCP", version = "5.0.1" }
 postgres-driver = { module = "org.postgresql:postgresql", version = "42.5.4" }
 

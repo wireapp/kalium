@@ -20,10 +20,14 @@ package com.wire.kalium.persistence
 
 import co.touchlab.sqliter.DatabaseFileContext
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
+import com.wire.kalium.persistence.db.PlatformDatabaseData
+import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
+import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.db.inMemoryDatabase
 import com.wire.kalium.persistence.util.FileNameUtil
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 import platform.Foundation.NSCachesDirectory
 import platform.Foundation.NSFileManager
@@ -37,8 +41,12 @@ internal actual fun deleteTestDatabase(userId: UserIDEntity) {
     DatabaseFileContext.deleteDatabase(FileNameUtil.userDBName(userId))
 }
 
-internal actual fun createTestGlobalDatabase(): GlobalDatabaseProvider {
-    return GlobalDatabaseProvider(getTempDatabaseDirectory())
+internal actual fun createTestGlobalDatabase(): GlobalDatabaseBuilder {
+    return globalDatabaseProvider(
+        platformDatabaseData = PlatformDatabaseData(StorageData.FileBacked(getTempDatabaseDirectory())),
+        passphrase = null,
+        queriesContext = StandardTestDispatcher()
+    )
 }
 
 internal actual fun deleteTestGlobalDatabase() {
