@@ -18,16 +18,17 @@
 
 package com.wire.kalium.persistence.db
 
-import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
-import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
-import kotlin.jvm.JvmInline
+import kotlinx.coroutines.CoroutineDispatcher
 
-@JvmInline
-value class GlobalDatabaseSecret(val value: ByteArray)
+actual fun globalDatabaseProvider(
+    platformDatabaseData: PlatformDatabaseData,
+    queriesContext: CoroutineDispatcher,
+    passphrase: GlobalDatabaseSecret?,
+    enableWAL: Boolean
+): GlobalDatabaseBuilder {
+    TODO("Not yet implemented")
+}
 
-expect class GlobalDatabaseProvider {
-    val serverConfigurationDAO: ServerConfigurationDAO
-    val accountsDAO: AccountsDAO
-
-    fun nuke(): Boolean
+actual fun nuke(platformDatabaseData: PlatformDatabaseData): Boolean {
+    TODO("Not yet implemented")
 }

@@ -15,21 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.persistence.db
 
-import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
-import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
-
-actual class GlobalDatabaseProvider {
-    actual val serverConfigurationDAO: ServerConfigurationDAO
-        get() = TODO("Not yet implemented")
-
-    actual fun nuke(): Boolean {
-        TODO("Not yet implemented")
-    }
-
-    actual val accountsDAO: AccountsDAO
-        get() = TODO("Not yet implemented")
-
+/**
+ * Fine tuning configuration for the driver.
+ * This is useful if we want to squeeze the last bit of performance out of the database.
+ * Or if we want to enable some SQLite specific features.
+ */
+class DriverConfigurationBuilder {
+    var isWALEnabled = false
+    var areForeignKeyConstraintsEnforced = true
 }

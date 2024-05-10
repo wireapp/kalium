@@ -21,7 +21,7 @@
 package com.wire.kalium.persistence.daokaliumdb
 
 import com.wire.kalium.persistence.GlobalDBBaseTest
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.persistence.utils.stubs.newServerConfig
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -41,11 +41,11 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
     private val config2 = newServerConfig(id = 2)
     private val config3 = newServerConfig(id = 3)
 
-    lateinit var db: GlobalDatabaseProvider
+    lateinit var globalDatabaseBuilder: GlobalDatabaseBuilder
 
     @BeforeTest
     fun setup() {
-        db = createDatabase()
+        globalDatabaseBuilder = createDatabase()
     }
 
     @AfterTest
@@ -57,7 +57,7 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
     fun givenServerConfig_ThenItCanBeInsertedAndRetrieved() = runTest {
         val expect = config1
         insertConfig(expect)
-        val actual = db.serverConfigurationDAO.configById(expect.id)
+        val actual = globalDatabaseBuilder.serverConfigurationDAO.configById(expect.id)
 
         assertEquals(expect, actual)
     }
@@ -70,7 +70,7 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         assertFails {
             insertConfig(duplicatedConfig)
         }
-        val actual = db.serverConfigurationDAO.configById(config1.id)
+        val actual = globalDatabaseBuilder.serverConfigurationDAO.configById(config1.id)
 
         assertEquals(config1, actual)
         assertNotEquals(duplicatedConfig, actual)
@@ -85,7 +85,7 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
             insertConfig(duplicatedConfig)
         }
 
-        val actual = db.serverConfigurationDAO.configById(config1.id)
+        val actual = globalDatabaseBuilder.serverConfigurationDAO.configById(config1.id)
 
         assertEquals(config1, actual)
         assertNotEquals(duplicatedConfig, actual)
@@ -100,7 +100,7 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
             insertConfig(duplicatedConfig)
         }
 
-        val actual = db.serverConfigurationDAO.configById(config1.id)
+        val actual = globalDatabaseBuilder.serverConfigurationDAO.configById(config1.id)
 
         assertEquals(config1, actual)
         assertNotEquals(duplicatedConfig, actual)
@@ -115,7 +115,7 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
             insertConfig(duplicatedConfig)
         }
 
-        val actual = db.serverConfigurationDAO.configById(config1.id)
+        val actual = globalDatabaseBuilder.serverConfigurationDAO.configById(config1.id)
 
         assertEquals(config1, actual)
         assertNotEquals(duplicatedConfig, actual)
@@ -124,9 +124,9 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
     @Test
     fun givenExistingConfig_thenItCanBeDeleted() = runTest {
         insertConfig(config1)
-        db.serverConfigurationDAO.deleteById(config1.id)
+        globalDatabaseBuilder.serverConfigurationDAO.deleteById(config1.id)
 
-        val result = db.serverConfigurationDAO.allConfig()
+        val result = globalDatabaseBuilder.serverConfigurationDAO.allConfig()
         assertEquals(0, result.size)
     }
 
@@ -135,7 +135,7 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         val expect = listOf(config1, config2, config3)
         expect.forEach { insertConfig(it) }
 
-        val actual = db.serverConfigurationDAO.allConfigFlow().first()
+        val actual = globalDatabaseBuilder.serverConfigurationDAO.allConfigFlow().first()
 
         assertEquals(expect, actual)
     }
@@ -146,8 +146,8 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         val newVersion = config1.metaData.copy(apiVersion = 2)
         val expected = config1.copy(metaData = newVersion)
 
-        db.serverConfigurationDAO.updateApiVersion(config1.id, newVersion.apiVersion)
-        val actual = db.serverConfigurationDAO.configById(config1.id)
+        globalDatabaseBuilder.serverConfigurationDAO.updateApiVersion(config1.id, newVersion.apiVersion)
+        val actual = globalDatabaseBuilder.serverConfigurationDAO.configById(config1.id)
         assertEquals(expected, actual)
     }
 
@@ -158,8 +158,8 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         val newDomain = "new.domain.de"
         val expected = config1.copy(metaData = config1.metaData.copy(apiVersion = newVersion, domain = newDomain))
 
-        db.serverConfigurationDAO.updateApiVersionAndDomain(config1.id, newDomain, newVersion)
-        val actual = db.serverConfigurationDAO.configById(config1.id)
+        globalDatabaseBuilder.serverConfigurationDAO.updateApiVersionAndDomain(config1.id, newDomain, newVersion)
+        val actual = globalDatabaseBuilder.serverConfigurationDAO.configById(config1.id)
         assertEquals(expected, actual)
     }
 
@@ -170,14 +170,14 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
         )
         val expected = config1.copy(metaData = config1.metaData.copy(federation = true))
 
-        db.serverConfigurationDAO.setFederationToTrue(config1.id)
-        val actual = db.serverConfigurationDAO.configById(config1.id)
+        globalDatabaseBuilder.serverConfigurationDAO.setFederationToTrue(config1.id)
+        val actual = globalDatabaseBuilder.serverConfigurationDAO.configById(config1.id)
         assertEquals(expected, actual)
     }
 
     private suspend fun insertConfig(serverConfigEntity: ServerConfigEntity) {
         with(serverConfigEntity) {
-            db.serverConfigurationDAO.insert(
+            globalDatabaseBuilder.serverConfigurationDAO.insert(
                 ServerConfigurationDAO.InsertData(
                     id = id,
                     apiBaseUrl = links.api,

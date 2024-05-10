@@ -44,6 +44,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arr
 import com.wire.kalium.logic.data.conversation.MLSConversationRepositoryTest.Arrangement.Companion.WIRE_IDENTITY
 import com.wire.kalium.logic.data.conversation.mls.KeyPackageClaimResult
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
+import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedClientID
@@ -56,7 +57,6 @@ import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKey
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -92,16 +92,14 @@ import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.every
-import io.mockative.matchers.EqualsMatcher
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.twice
-import io.mockative.verify
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
@@ -109,7 +107,6 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlinx.datetime.Instant
 import kotlin.test.Test
-import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
@@ -151,7 +148,7 @@ class MLSConversationRepositoryTest {
             mlsConversationRepository.decryptMessage(Arrangement.COMMIT, Arrangement.GROUP_ID)
 
             coVerify {
-                arrangement.checkRevocationList.invoke(any())
+                arrangement.checkRevocationList.check(any())
             }.wasInvoked(once)
 
             coVerify {
@@ -310,7 +307,7 @@ class MLSConversationRepositoryTest {
         mlsConversationRepository.addMemberToMLSGroup(Arrangement.GROUP_ID, listOf(TestConversation.USER_ID1))
 
         coVerify {
-            arrangement.checkRevocationList.invoke(any())
+            arrangement.checkRevocationList.check(any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -622,7 +619,7 @@ class MLSConversationRepositoryTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.checkRevocationList.invoke(any())
+            arrangement.checkRevocationList.check(any())
         }.wasNotInvoked()
     }
 
@@ -642,7 +639,7 @@ class MLSConversationRepositoryTest {
         mlsConversationRepository.joinGroupByExternalCommit(Arrangement.GROUP_ID, Arrangement.PUBLIC_GROUP_STATE)
 
         coVerify {
-            arrangement.checkRevocationList.invoke(any())
+            arrangement.checkRevocationList.check(any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -1181,7 +1178,7 @@ class MLSConversationRepositoryTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.checkRevocationList.invoke(any())
+            arrangement.checkRevocationList.check(any())
         }.wasNotInvoked()
     }
 
@@ -1202,7 +1199,7 @@ class MLSConversationRepositoryTest {
         )
 
         coVerify {
-            arrangement.checkRevocationList.invoke(any())
+            arrangement.checkRevocationList.check(any())
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -1449,7 +1446,11 @@ class MLSConversationRepositoryTest {
         val domain = "domain.com"
         val handleWithSchemeAndDomain = "$scheme://%40$handle@$domain"
         val groupId = Arrangement.GROUP_ID.value
-        val wireIdentity = WIRE_IDENTITY.copy(handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain))
+        val wireIdentity = WIRE_IDENTITY.copy(
+            certificate = WIRE_IDENTITY.certificate!!.copy(
+                handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain)
+            )
+        )
         val (_, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
             .withGetEstablishedSelfMLSGroupIdReturns(groupId)
             .withGetMLSClientSuccessful()
@@ -1460,9 +1461,9 @@ class MLSConversationRepositoryTest {
         // then
         result.shouldSucceed() {
             it.forEach {
-                assertEquals(scheme, it.handle.scheme)
-                assertEquals(handle, it.handle.handle)
-                assertEquals(domain, it.handle.domain)
+                assertEquals(scheme, it.certificate?.handle?.scheme)
+                assertEquals(handle, it.certificate?.handle?.handle)
+                assertEquals(domain, it.certificate?.handle?.domain)
             }
         }
     }
@@ -1475,7 +1476,11 @@ class MLSConversationRepositoryTest {
         val domain = "domain.com"
         val handleWithSchemeAndDomain = "$scheme://%40$handle@$domain"
         val groupId = Arrangement.GROUP_ID.value
-        val wireIdentity = WIRE_IDENTITY.copy(handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain))
+        val wireIdentity = WIRE_IDENTITY.copy(
+            certificate = WIRE_IDENTITY.certificate!!.copy(
+                handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain)
+            )
+        )
         val (_, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
             .withGetMLSGroupIdByConversationIdReturns(groupId)
             .withGetMLSClientSuccessful()
@@ -1487,9 +1492,9 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed() {
             it.values.forEach {
                 it.forEach {
-                    assertEquals(scheme, it.handle.scheme)
-                    assertEquals(handle, it.handle.handle)
-                    assertEquals(domain, it.handle.domain)
+                    assertEquals(scheme, it.certificate?.handle?.scheme)
+                    assertEquals(handle, it.certificate?.handle?.handle)
+                    assertEquals(domain, it.certificate?.handle?.domain)
                 }
             }
         }
@@ -1533,7 +1538,7 @@ class MLSConversationRepositoryTest {
         val keyPackageLimitsProvider = mock(KeyPackageLimitsProvider::class)
 
         @Mock
-        val checkRevocationList = mock(CheckRevocationListUseCase::class)
+        val checkRevocationList = mock(RevocationListChecker::class)
 
         @Mock
         val certificateRevocationListRepository = mock(CertificateRevocationListRepository::class)
@@ -1705,7 +1710,7 @@ class MLSConversationRepositoryTest {
 
         suspend fun withCheckRevocationListResult() = apply {
             coEvery {
-                checkRevocationList.invoke(any())
+                checkRevocationList.check(any())
             }.returns(Either.Right(1uL))
         }
 
