@@ -38,7 +38,7 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.periodic.UpdateApiVersionsScheduler
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 expect class CoreLogic : CoreLogicCommon
@@ -50,7 +50,7 @@ abstract class CoreLogicCommon internal constructor(
     protected val idMapper: IdMapper = MapperProvider.idMapper()
 ) {
     protected abstract val globalPreferences: GlobalPrefProvider
-    protected abstract val globalDatabase: GlobalDatabaseProvider
+    protected abstract val globalDatabaseBuilder: GlobalDatabaseBuilder
     protected abstract val userSessionScopeProvider: Lazy<UserSessionScopeProvider>
     protected val userStorageProvider: UserStorageProvider = PlatformUserStorageProvider()
 
@@ -61,7 +61,7 @@ abstract class CoreLogicCommon internal constructor(
     private val globalKaliumScope by lazy {
         GlobalKaliumScope(
             userAgent,
-            globalDatabase,
+            globalDatabaseBuilder,
             globalPreferences,
             kaliumConfigs,
             userSessionScopeProvider,
@@ -81,7 +81,7 @@ abstract class CoreLogicCommon internal constructor(
             serverConfig,
             proxyCredentials,
             networkStateObserver,
-            globalDatabase,
+            globalDatabaseBuilder,
             kaliumConfigs
         )
 

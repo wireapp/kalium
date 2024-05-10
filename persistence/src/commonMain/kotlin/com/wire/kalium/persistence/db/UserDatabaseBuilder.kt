@@ -88,13 +88,6 @@ internal const val METADATA_CACHE_SIZE = 30
 value class UserDBSecret(val value: ByteArray)
 
 /**
- * Platform-specific data used to create the database
- * that might be necessary for future operations
- * in the future like [nuke]
- */
-expect class PlatformDatabaseData
-
-/**
  * Creates a [UserDatabaseBuilder] for the given [userId] and [passphrase]
  * @param platformDatabaseData Platform-specific data used to create the database
  * @param userId The user id of the database
