@@ -29,17 +29,15 @@ actual open class BaseMLSClientTest actual constructor() {
         allowedCipherSuites: List<UShort>,
         defaultCipherSuite: UShort
     ): MLSClient {
-        return createCoreCrypto(clientId, allowedCipherSuites, defaultCipherSuite).mlsClient(clientId)
+        return createCoreCrypto(clientId).mlsClient(clientId, allowedCipherSuites, defaultCipherSuite)
     }
 
     actual suspend fun createCoreCrypto(
-        clientId: CryptoQualifiedClientId,
-        allowedCipherSuites: List<UShort>,
-        defaultCipherSuite: UShort
+        clientId: CryptoQualifiedClientId
     ): CoreCryptoCentral {
         val rootDir = NSURL.fileURLWithPath(NSTemporaryDirectory() + "/mls", isDirectory = true)
         NSFileManager.defaultManager.createDirectoryAtURL(rootDir, true, null, null)
         val keyStore = rootDir.URLByAppendingPathComponent("keystore-$clientId")!!
-        return coreCryptoCentral(keyStore.path!!, "test", allowedCipherSuites, defaultCipherSuite)
+        return coreCryptoCentral(keyStore.path!!, "test")
     }
 }
