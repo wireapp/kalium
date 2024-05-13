@@ -333,7 +333,7 @@ class ConversationGroupRepositoryTest {
                     arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                         any(),
                         matches { it.containsAll(missingMembersFromMLSGroup) },
-                        any()
+                        eq(MessageContent.MemberChange.FailedToAdd.Type.Federation)
                     )
                 }.wasInvoked(once)
             }
@@ -1163,6 +1163,43 @@ class ConversationGroupRepositoryTest {
         }
 
     @Test
+    fun givenAConversationFailsWithGeneralFederationError_whenAddingMembers_thenRetryIsNotExecutedAndCreateSysMessage() =
+        runTest {
+            // given
+            val (arrangement, conversationGroupRepository) = Arrangement()
+                .withConversationDetailsById(TestConversation.CONVERSATION)
+                .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
+                .withFetchUsersIfUnknownByIdsSuccessful()
+                .withAddMemberAPIFailsFirstWithUnreachableThenSucceed(arrayOf(FEDERATION_ERROR_GENERAL, FEDERATION_ERROR_GENERAL))
+                .withSuccessfulHandleMemberJoinEvent()
+                .withInsertFailedToAddSystemMessageSuccess()
+                .arrange()
+
+            // when
+            val expectedInitialUsersNotFromUnreachableInformed = listOf(TestConversation.USER_1)
+            conversationGroupRepository.addMembers(expectedInitialUsersNotFromUnreachableInformed, TestConversation.ID).shouldFail()
+
+            // then
+            coVerify {
+                arrangement.conversationApi.addMember(any(), any())
+            }.wasInvoked(exactly = once)
+
+            coVerify {
+                arrangement.memberJoinEventHandler.handle(any())
+            }.wasNotInvoked()
+
+            coVerify {
+                arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
+                    conversationId = any(),
+                    userIdList = matches {
+                        it.containsAll(expectedInitialUsersNotFromUnreachableInformed)
+                    },
+                    type = eq(MessageContent.MemberChange.FailedToAdd.Type.Federation)
+                )
+            }.wasInvoked(once)
+        }
+
+    @Test
     fun givenAValidConversation_whenCreating_thenConversationIsCreatedAndUnverifiedWarningSystemMessagePersisted() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
@@ -1885,6 +1922,10 @@ class ConversationGroupRepositoryTest {
                     )
                 )
             )
+        )
+
+        val FEDERATION_ERROR_GENERAL = NetworkResponse.Error(
+            KaliumException.FederationError(ErrorResponse(422, "", "federation-remote-error"))
         )
 
         val ERROR_MISSING_LEGALHOLD_CONSENT = NetworkResponse.Error(

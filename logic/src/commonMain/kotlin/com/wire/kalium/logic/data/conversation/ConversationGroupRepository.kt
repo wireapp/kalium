@@ -181,7 +181,7 @@ internal class ConversationGroupRepositoryImpl(
                     Either.Right(Unit)
                 } else {
                     newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
-                        conversationEntity.id.toModel(), protocolSpecificAdditionFailures.toList(), FailedToAdd.Type.Unknown
+                        conversationEntity.id.toModel(), protocolSpecificAdditionFailures.toList(), FailedToAdd.Type.Federation
                     )
                 }
             }.flatMap {
@@ -427,7 +427,7 @@ internal class ConversationGroupRepositoryImpl(
                     }
                 }
         } else {
-            val failType = (lastUsersAttempt as? LastUsersAttempt.Failed)?.failType ?: FailedToAdd.Type.Unknown
+            val failType = apiResult.value.toFailedToAddType()
             newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
                 conversationId, userIdList + lastUsersAttempt.failedUsers, failType
             ).flatMap {
@@ -595,6 +595,12 @@ internal class ConversationGroupRepositoryImpl(
 
         else ->
             Either.Right(ValidToInvalidUsers(userIdList, emptyList(), FailedToAdd.Type.Unknown))
+    }
+
+    private fun CoreFailure.toFailedToAddType() = when {
+        this is NetworkFailure.FederatedBackendFailure -> FailedToAdd.Type.Federation
+        this.isMissingLegalHoldConsentError -> FailedToAdd.Type.LegalHold
+        else -> FailedToAdd.Type.Unknown
     }
 
     /**
