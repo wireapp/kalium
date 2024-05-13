@@ -439,7 +439,7 @@ import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.CoroutineScope
@@ -459,7 +459,7 @@ class UserSessionScope internal constructor(
     private val userId: UserId,
     private val globalScope: GlobalKaliumScope,
     private val globalCallManager: GlobalCallManager,
-    private val globalDatabaseProvider: GlobalDatabaseProvider,
+    private val globalDatabaseBuilder: GlobalDatabaseBuilder,
     private val globalPreferences: GlobalPrefProvider,
     authenticationScopeProvider: AuthenticationScopeProvider,
     private val userSessionWorkScheduler: UserSessionWorkScheduler,
@@ -592,7 +592,7 @@ class UserSessionScope internal constructor(
             sessionManager.getServerConfig(),
             sessionManager.getProxyCredentials(),
             networkStateObserver,
-            globalDatabase = globalDatabaseProvider,
+            globalDatabase = globalDatabaseBuilder,
             kaliumConfigs = kaliumConfigs,
         )
     }

@@ -127,3 +127,6 @@ runner.
     configuration to finish the test run
 - Tests need to be implemented
 - Randomising times for action execution
+- When running monkeys from within the controller, you must pass the `-w` or `--sequential-warmup` flag,
+ there is an existing issue with global db in kalium, when multiple users login in parallel,
+ more details [here](https://wearezeta.atlassian.net/wiki/spaces/ENGINEERIN/pages/878182477/Infinite+Monkeys+IM#Known-Issues%2FLimitations).
