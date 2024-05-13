@@ -50,7 +50,7 @@ SELECT * FROM MessagePreview AS message
 WHERE id IN (
 	SELECT id FROM Message
 	WHERE
-		Message.visibility = 'VISIBLE' AND
+		Message.visibility IN ('VISIBLE', 'DELETED') AND
 		Message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL', 'CONVERSATION_RENAMED', 'MEMBER_CHANGE', 'COMPOSITE', 'CONVERSATION_DEGRADED_MLS', 'CONVERSATION_DEGRADED_PROTEUS', 'CONVERSATION_VERIFIED_MLS', 'CONVERSATION_VERIFIED_PROTEUS', 'LOCATION')
 	GROUP BY Message.conversation_id
 	HAVING Message.creation_date = MAX(Message.creation_date)
