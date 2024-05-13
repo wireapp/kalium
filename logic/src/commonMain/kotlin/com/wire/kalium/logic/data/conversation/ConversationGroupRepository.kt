@@ -181,7 +181,9 @@ internal class ConversationGroupRepositoryImpl(
                     Either.Right(Unit)
                 } else {
                     newGroupConversationSystemMessagesCreator.value.conversationFailedToAddMembers(
-                        conversationEntity.id.toModel(), protocolSpecificAdditionFailures.toList(), FailedToAdd.Type.Federation
+                        conversationId = conversationEntity.id.toModel(),
+                        userIdList = protocolSpecificAdditionFailures.toList(),
+                        type = FailedToAdd.Type.Federation
                     )
                 }
             }.flatMap {
