@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
-import com.wire.kalium.logic.feature.message.EphemeralConversationNotification
+import com.wire.kalium.logic.data.notification.EphemeralConversationNotification
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
