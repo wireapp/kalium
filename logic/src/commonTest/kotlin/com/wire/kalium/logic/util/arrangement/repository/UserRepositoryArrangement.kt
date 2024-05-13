@@ -20,6 +20,7 @@ package com.wire.kalium.logic.util.arrangement.repository
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.User
@@ -30,6 +31,7 @@ import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
+import io.mockative.eq
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
@@ -85,6 +87,7 @@ internal interface UserRepositoryArrangement {
     )
 
     suspend fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: Matcher<List<UserId>>)
+    suspend fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>, userId: Matcher<UserId> = AnyMatcher(valueOf()))
 }
 
 @Suppress("INAPPLICABLE_JVM_NAME")
@@ -200,5 +203,10 @@ internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
         coEvery {
             userRepository.markAsDeleted(matches { userId.matches(it) })
         }.returns(result)
+    }
+
+    override suspend fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>, userId: Matcher<QualifiedID>) {
+        coEvery { userRepository.getOneOnOnConversationId(matches { userId.matches(it) }) }
+            .returns(result)
     }
 }

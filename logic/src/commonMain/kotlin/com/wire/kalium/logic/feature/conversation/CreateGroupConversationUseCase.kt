@@ -25,8 +25,8 @@ import com.wire.kalium.logic.data.conversation.ConversationGroupRepository
 import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.conversation.CreateGroupConversationUseCase.Result
 import com.wire.kalium.logic.feature.publicuser.RefreshUsersWithoutMetadataUseCase
 import com.wire.kalium.logic.functional.flatMap
@@ -61,32 +61,30 @@ class CreateGroupConversationUseCase internal constructor(
             currentClientIdProvider()
         }.flatMap { clientId ->
             conversationGroupRepository.createGroupConversation(name, userIdList, options.copy(creatorClientId = clientId))
-        }
-            .onSuccess {
-                refreshUsersWithoutMetadata()
-            }
-            .flatMap { conversation ->
-                // TODO(qol): this can be done in one query, e.g. pass current time when inserting
-                conversationRepository.updateConversationModifiedDate(conversation.id, DateTimeUtil.currentInstant())
-                    .map { conversation }
-            }.fold({
-                when (it) {
-                    is NetworkFailure.NoNetworkConnection -> {
-                        Result.SyncFailure
-                    }
-
-                    is NetworkFailure.FederatedBackendFailure.ConflictingBackends -> {
-                        Result.BackendConflictFailure(it.domains)
-                    }
-
-                    else -> {
-                        Result.UnknownFailure(it)
-                    }
+        }.onSuccess {
+            refreshUsersWithoutMetadata()
+        }.flatMap { conversation ->
+            // TODO(qol): this can be done in one query, e.g. pass current time when inserting
+            conversationRepository.updateConversationModifiedDate(conversation.id, DateTimeUtil.currentInstant())
+                .map { conversation }
+        }.fold({
+            when (it) {
+                is NetworkFailure.NoNetworkConnection -> {
+                    Result.SyncFailure
                 }
-            }, {
-                newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(it)
-                Result.Success(it)
-            })
+
+                is NetworkFailure.FederatedBackendFailure.ConflictingBackends -> {
+                    Result.BackendConflictFailure(it.domains)
+                }
+
+                else -> {
+                    Result.UnknownFailure(it)
+                }
+            }
+        }, {
+            newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(it)
+            Result.Success(it)
+        })
 
     sealed interface Result {
         /**

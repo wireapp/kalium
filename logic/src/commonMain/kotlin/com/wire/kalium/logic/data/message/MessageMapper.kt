@@ -533,6 +533,7 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
     is MessagePreviewEntityContent.ConversationVerificationDegradedMls -> MessagePreviewContent.VerificationChanged.DegradedMls
     is MessagePreviewEntityContent.ConversationVerificationDegradedProteus -> MessagePreviewContent.VerificationChanged.DegradedProteus
     is MessagePreviewEntityContent.Location -> MessagePreviewContent.WithUser.Location(username = senderName)
+    is MessagePreviewEntityContent.Deleted -> MessagePreviewContent.WithUser.Deleted(username = senderName)
 }
 
 fun AssetTypeEntity.toModel(): AssetType = when (this) {

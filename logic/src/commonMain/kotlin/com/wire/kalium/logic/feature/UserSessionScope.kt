@@ -80,6 +80,8 @@ import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProv
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProviderImpl
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepositoryDataSource
+import com.wire.kalium.logic.data.e2ei.RevocationListChecker
+import com.wire.kalium.logic.data.e2ei.RevocationListCheckerImpl
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveE2EIConversationsVerificationStatusesUseCase
@@ -212,8 +214,6 @@ import com.wire.kalium.logic.feature.debug.DebugScope
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorker
 import com.wire.kalium.logic.feature.e2ei.ACMECertificatesSyncWorkerImpl
 import com.wire.kalium.logic.feature.e2ei.CheckCrlRevocationListUseCase
-import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
-import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchConversationMLSVerificationStatusUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchConversationMLSVerificationStatusUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseCase
@@ -439,7 +439,7 @@ import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.CoroutineScope
@@ -459,7 +459,7 @@ class UserSessionScope internal constructor(
     private val userId: UserId,
     private val globalScope: GlobalKaliumScope,
     private val globalCallManager: GlobalCallManager,
-    private val globalDatabaseProvider: GlobalDatabaseProvider,
+    private val globalDatabaseBuilder: GlobalDatabaseBuilder,
     private val globalPreferences: GlobalPrefProvider,
     authenticationScopeProvider: AuthenticationScopeProvider,
     private val userSessionWorkScheduler: UserSessionWorkScheduler,
@@ -592,7 +592,7 @@ class UserSessionScope internal constructor(
             sessionManager.getServerConfig(),
             sessionManager.getProxyCredentials(),
             networkStateObserver,
-            globalDatabase = globalDatabaseProvider,
+            globalDatabase = globalDatabaseBuilder,
             kaliumConfigs = kaliumConfigs,
         )
     }
@@ -639,12 +639,13 @@ class UserSessionScope internal constructor(
             memberJoinHandler, memberLeaveHandler
         )
 
-    private val checkRevocationList: CheckRevocationListUseCase
-        get() = CheckRevocationListUseCaseImpl(
+    private val checkRevocationList: RevocationListChecker
+        get() = RevocationListCheckerImpl(
             certificateRevocationListRepository = certificateRevocationListRepository,
             currentClientIdProvider = clientIdProvider,
             mlsClientProvider = mlsClientProvider,
-            isE2EIEnabledUseCase = isE2EIEnabled
+            featureSupport = featureSupport,
+            userConfigRepository = userConfigRepository
         )
 
     private val mlsConversationRepository: MLSConversationRepository
@@ -1377,7 +1378,7 @@ class UserSessionScope internal constructor(
             conversationRepository = conversationRepository,
             oneOnOneResolver = oneOnOneResolver,
             refillKeyPackages = client.refillKeyPackages,
-            checkRevocationList = checkRevocationList,
+            revocationListChecker = checkRevocationList,
             certificateRevocationListRepository = certificateRevocationListRepository
         )
 
@@ -2044,10 +2045,6 @@ class UserSessionScope internal constructor(
 
         launch {
             proteusSyncWorker.execute()
-        }
-
-        launch {
-            avsSyncStateReporter.execute()
         }
 
         launch {
