@@ -18,7 +18,7 @@
 
 package com.wire.kalium.persistence.db
 
-import app.cash.sqldelight.driver.jdbc.JdbcDriver
+import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.asJdbcDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import com.wire.kalium.persistence.GlobalDatabase
@@ -34,25 +34,34 @@ actual fun globalDatabaseProvider(
     passphrase: GlobalDatabaseSecret?,
     enableWAL: Boolean,
 ): GlobalDatabaseBuilder {
-    val storageData = platformDatabaseData.storageData
-    if (storageData is StorageData.InMemory) {
-        return createGlobalInMemoryDatabase(queriesContext)
-    }
-
-    if (storageData !is StorageData.FileBacked) {
-        throw IllegalStateException("Unsupported storage data type: $storageData")
-    }
-
     if (passphrase != null) {
         throw NotImplementedError("Encrypted DB is not supported on JVM")
     }
 
-    // Make sure all intermediate directories exist
-    // storageData.file.mkdirs()
-    val driver = createDataSource("jdbc:postgresql://localhost:5432/${FileNameUtil.globalDBName()}").asJdbcDriver()
-    val databaseExists = driver.databaseExists(FileNameUtil.globalDBName())
-    if (!databaseExists) {
-        GlobalDatabase.Schema.create(driver)
+    val driver = when (val storageData = platformDatabaseData.storageData) {
+        is StorageData.InMemory -> return createGlobalInMemoryDatabase(queriesContext)
+        is StorageData.FileBacked -> {
+            val databasePath = storageData.file.resolve(FileNameUtil.globalDBName())
+            val databaseExists = databasePath.exists()
+            storageData.file.mkdirs()
+            val driver = databaseDriver("jdbc:sqlite:${databasePath.absolutePath}") {
+                isWALEnabled = enableWAL
+                areForeignKeyConstraintsEnforced = true
+            }
+            if (!databaseExists) {
+                GlobalDatabase.Schema.create(driver)
+            }
+            driver
+        }
+
+        is StorageData.RDBMS -> {
+            val driver = createDataSource(storageData).asJdbcDriver()
+            val databaseExists = driver.databaseExists(FileNameUtil.globalDBName())
+            if (!databaseExists) {
+                GlobalDatabase.Schema.create(driver)
+            }
+            driver
+        }
     }
 
     return GlobalDatabaseBuilder(driver, platformDatabaseData, queriesContext)
@@ -71,12 +80,12 @@ fun createGlobalInMemoryDatabase(dispatcher: CoroutineDispatcher): GlobalDatabas
     return GlobalDatabaseBuilder(driver, PlatformDatabaseData(StorageData.InMemory), dispatcher)
 }
 
-private fun createDataSource(driverUri: String): DataSource {
+private fun createDataSource(storageData: StorageData.RDBMS): DataSource {
     val dataSourceConfig = HikariConfig().apply {
         driverClassName = "org.postgresql.Driver"
-        jdbcUrl = driverUri
-        username = "global"
-        password = "global"
+        jdbcUrl = storageData.uri
+        username = storageData.username
+        password = storageData.password
         maximumPoolSize = 3
         isAutoCommit = true
         transactionIsolation = "TRANSACTION_REPEATABLE_READ"
@@ -85,7 +94,7 @@ private fun createDataSource(driverUri: String): DataSource {
     return HikariDataSource(dataSourceConfig)
 }
 
-fun JdbcDriver.databaseExists(dbName: String): Boolean {
+fun SqlDriver.databaseExists(dbName: String): Boolean {
     val result = executeQuery(
         Int.MIN_VALUE, """SELECT table_name FROM information_schema.tables where table_name = 'accounts'""",
         {
@@ -98,7 +107,7 @@ fun JdbcDriver.databaseExists(dbName: String): Boolean {
             }
 
         }, 0
-    ) {  }
+    ) { }
     println("Exists: ${result.value}")
     return result.value ?: false
 }

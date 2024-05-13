@@ -91,6 +91,7 @@ kotlin {
                 implementation(libs.sqlite.xerialDriver)
                 implementation(libs.hikaricp)
                 implementation(libs.postgres.driver)
+                implementation(libs.testContainers.postgres)
             }
         }
         val jvmTest by getting

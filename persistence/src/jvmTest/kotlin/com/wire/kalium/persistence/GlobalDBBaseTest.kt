@@ -18,10 +18,8 @@
 
 package com.wire.kalium.persistence
 
-import app.cash.sqldelight.driver.jdbc.JdbcDriver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.PlatformDatabaseData
-import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestDispatcher
@@ -31,17 +29,15 @@ import java.nio.file.Files
 actual abstract class GlobalDBBaseTest {
     @OptIn(ExperimentalCoroutinesApi::class)
     private val dispatcher: TestDispatcher = UnconfinedTestDispatcher()
-    private val databaseFile = Files.createTempDirectory("test-storage").toFile().resolve("test-kalium.db")
+    val databaseFile = Files.createTempDirectory("test-storage").toFile().resolve("test-kalium.db")
 
     actual fun deleteDatabase() {
         databaseFile.delete()
     }
 
-    actual fun createDatabase(): GlobalDatabaseBuilder {
+    actual fun createDatabase(platformDatabaseData: PlatformDatabaseData): GlobalDatabaseBuilder {
         return globalDatabaseProvider(
-            platformDatabaseData = PlatformDatabaseData(
-                StorageData.FileBacked(databaseFile)
-            ),
+            platformDatabaseData = platformDatabaseData,
             queriesContext = dispatcher,
             passphrase = null,
             enableWAL = false

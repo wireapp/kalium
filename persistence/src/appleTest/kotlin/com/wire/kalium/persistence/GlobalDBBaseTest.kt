@@ -37,7 +37,7 @@ actual abstract class GlobalDBBaseTest {
         deleteDatabase(FileNameUtil.globalDBName(), storePath)
     }
 
-    actual fun createDatabase(): GlobalDatabaseBuilder {
+    actual fun createDatabase(platformDatabaseData: PlatformDatabaseData): GlobalDatabaseBuilder {
         return globalDatabaseProvider(
             PlatformDatabaseData(StorageData.FileBacked(storePath)), StandardTestDispatcher(), null, false
         )

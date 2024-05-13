@@ -199,6 +199,7 @@ mockative-processor = { module = "io.mockative:mockative-processor", version.ref
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 konsist = { module = "com.lemonappdev:konsist", version.ref = "konsist" }
+testContainers-postgres = { module = "org.testcontainers:postgresql", version = "1.19.6" }
 
 # detekt
 detekt-cli = { module = "io.gitlab.arturbosch.detekt:detekt-cli", version.ref = "detekt" }

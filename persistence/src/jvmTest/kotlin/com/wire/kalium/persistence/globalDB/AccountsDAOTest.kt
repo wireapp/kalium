@@ -26,12 +26,15 @@ import com.wire.kalium.persistence.daokaliumdb.FullAccountEntity
 import com.wire.kalium.persistence.daokaliumdb.PersistentWebSocketStatusEntity
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
+import com.wire.kalium.persistence.db.PlatformDatabaseData
+import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.model.LogoutReason
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
-import kotlin.test.AfterTest
+import org.junit.Rule
+import org.testcontainers.containers.PostgreSQLContainer
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -40,12 +43,23 @@ import kotlin.test.assertNull
 @OptIn(ExperimentalCoroutinesApi::class)
 class AccountsDAOTest : GlobalDBBaseTest() {
 
-    var globalDatabaseBuilder: GlobalDatabaseBuilder = createDatabase()
+    @JvmField
+    @Rule
+    var postgresContainer: PostgreSQLContainer<*> = PostgreSQLContainer("postgres:15-alpine")
+
+    lateinit var globalDatabaseBuilder: GlobalDatabaseBuilder
 
     @BeforeTest
     fun setUp() = runTest {
-        globalDatabaseBuilder.accountsDAO.truncateAllForTesting()
-        globalDatabaseBuilder = createDatabase()
+        globalDatabaseBuilder = createDatabase(
+            PlatformDatabaseData(
+                StorageData.RDBMS(
+                    postgresContainer.jdbcUrl,
+                    postgresContainer.username,
+                    postgresContainer.password,
+                )
+            )
+        )
 
         with(SERVER_CONFIG) {
             globalDatabaseBuilder.serverConfigurationDAO.insert(

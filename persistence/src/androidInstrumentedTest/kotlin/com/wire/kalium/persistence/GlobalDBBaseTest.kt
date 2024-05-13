@@ -34,7 +34,7 @@ actual abstract class GlobalDBBaseTest {
         context.deleteDatabase(FileNameUtil.globalDBName())
     }
 
-    actual fun createDatabase(): GlobalDatabaseBuilder = globalDatabaseProvider(
+    actual fun createDatabase(platformDatabaseData: PlatformDatabaseData): GlobalDatabaseBuilder = globalDatabaseProvider(
         platformDatabaseData = PlatformDatabaseData(ApplicationProvider.getApplicationContext()),
         queriesContext = KaliumDispatcherImpl.unconfined,
         passphrase = GlobalDatabaseSecret("test_db_secret".toByteArray()),

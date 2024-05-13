@@ -22,6 +22,8 @@ package com.wire.kalium.persistence.daokaliumdb
 
 import com.wire.kalium.persistence.GlobalDBBaseTest
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
+import com.wire.kalium.persistence.db.PlatformDatabaseData
+import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.persistence.utils.stubs.newServerConfig
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -45,7 +47,7 @@ class ServerConfigurationDAOTest : GlobalDBBaseTest() {
 
     @BeforeTest
     fun setup() {
-        globalDatabaseBuilder = createDatabase()
+        globalDatabaseBuilder = createDatabase(PlatformDatabaseData(StorageData.FileBacked(databaseFile)))
     }
 
     @AfterTest

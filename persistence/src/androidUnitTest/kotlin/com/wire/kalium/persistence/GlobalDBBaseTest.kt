@@ -19,13 +19,14 @@
 package com.wire.kalium.persistence
 
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
+import com.wire.kalium.persistence.db.PlatformDatabaseData
 
 actual abstract class GlobalDBBaseTest {
     actual fun deleteDatabase() {
         TODO("Not yet implemented")
     }
 
-    actual fun createDatabase(): GlobalDatabaseBuilder {
+    actual fun createDatabase(platformDatabaseData: PlatformDatabaseData): GlobalDatabaseBuilder {
         TODO("Not yet implemented")
     }
 }
