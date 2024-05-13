@@ -54,9 +54,9 @@ actual fun globalDatabaseProvider(
             driver
         }
 
-        is StorageData.RDBMS -> {
+        is StorageData.Postgres -> {
             val driver = createDataSource(storageData).asJdbcDriver()
-            val databaseExists = driver.databaseExists(FileNameUtil.globalDBName())
+            val databaseExists = driver.databaseExists()
             if (!databaseExists) {
                 GlobalDatabase.Schema.create(driver)
             }
@@ -80,13 +80,14 @@ fun createGlobalInMemoryDatabase(dispatcher: CoroutineDispatcher): GlobalDatabas
     return GlobalDatabaseBuilder(driver, PlatformDatabaseData(StorageData.InMemory), dispatcher)
 }
 
-private fun createDataSource(storageData: StorageData.RDBMS): DataSource {
+private fun createDataSource(storageData: StorageData.Postgres): DataSource {
     val dataSourceConfig = HikariConfig().apply {
+        val poolSize = 3
         driverClassName = "org.postgresql.Driver"
         jdbcUrl = storageData.uri
         username = storageData.username
         password = storageData.password
-        maximumPoolSize = 3
+        maximumPoolSize = poolSize
         isAutoCommit = true
         transactionIsolation = "TRANSACTION_REPEATABLE_READ"
         validate()
@@ -94,20 +95,21 @@ private fun createDataSource(storageData: StorageData.RDBMS): DataSource {
     return HikariDataSource(dataSourceConfig)
 }
 
-fun SqlDriver.databaseExists(dbName: String): Boolean {
+fun SqlDriver.databaseExists(): Boolean {
     val result = executeQuery(
-        Int.MIN_VALUE, """SELECT table_name FROM information_schema.tables where table_name = 'accounts'""",
-        {
+        identifier = Int.MIN_VALUE, sql = """SELECT table_name FROM information_schema.tables where table_name = 'accounts'""",
+        mapper = {
             if (it.next().value) {
                 val result = it.getString(0)
-                println("THE RESULT: ${result}")
+                println("THE RESULT: $result")
                 app.cash.sqldelight.db.QueryResult.Value(result?.isNotEmpty())
             } else {
                 app.cash.sqldelight.db.QueryResult.Value(false)
             }
 
-        }, 0
-    ) { }
+        },
+        parameters = 0
+    )
     println("Exists: ${result.value}")
     return result.value ?: false
 }

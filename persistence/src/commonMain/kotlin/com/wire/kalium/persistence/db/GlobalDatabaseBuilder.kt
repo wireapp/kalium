@@ -69,7 +69,7 @@ class GlobalDatabaseBuilder internal constructor(
     )
 
     init {
-        //database.globalDatabasePropertiesQueries.enableForeignKeyContraints()
+        // database.globalDatabasePropertiesQueries.enableForeignKeyContraints()
     }
 
     val serverConfigurationDAO: ServerConfigurationDAO

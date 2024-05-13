@@ -29,7 +29,7 @@ actual data class PlatformDatabaseData(
 sealed interface StorageData {
     data class FileBacked(val file: File) : StorageData
     data object InMemory : StorageData
-    data class RDBMS(val uri: String, val username: String, val password: String) : StorageData
+    data class Postgres(val uri: String, val username: String, val password: String) : StorageData
 }
 
 fun databaseDriver(uri: String, config: DriverConfigurationBuilder.() -> Unit = {}): SqlDriver {

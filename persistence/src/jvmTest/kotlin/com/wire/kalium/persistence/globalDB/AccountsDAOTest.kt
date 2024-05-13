@@ -53,7 +53,7 @@ class AccountsDAOTest : GlobalDBBaseTest() {
     fun setUp() = runTest {
         globalDatabaseBuilder = createDatabase(
             PlatformDatabaseData(
-                StorageData.RDBMS(
+                StorageData.Postgres(
                     postgresContainer.jdbcUrl,
                     postgresContainer.username,
                     postgresContainer.password,

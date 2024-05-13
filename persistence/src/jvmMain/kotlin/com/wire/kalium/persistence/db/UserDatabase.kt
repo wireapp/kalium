@@ -117,5 +117,5 @@ internal actual fun nuke(
 ): Boolean = when (val storageData = platformDatabaseData.storageData) {
     StorageData.InMemory -> clearInMemoryDatabase(userId)
     is StorageData.FileBacked -> storageData.file.resolve(DATABASE_NAME).delete()
-    is StorageData.RDBMS -> throw NotImplementedError("RDBMS nuke is not supported on JVM, truncate by query")
+    is StorageData.Postgres -> throw NotImplementedError("RDBMS nuke is not supported on JVM, truncate by query")
 }

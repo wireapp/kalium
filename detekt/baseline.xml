@@ -128,6 +128,8 @@
     <ID>ArgumentListWrapping:GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase.kt$GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase$( searchQuery, conversationId, pagingConfig, startingOffset )</ID>
     <ID>ArgumentListWrapping:GetSessionsUseCase.kt$GetSessionsUseCase$( { when (it) { StorageFailure.DataNotFound -> GetAllSessionsResult.Failure.NoSessionFound is StorageFailure.Generic -> GetAllSessionsResult.Failure.Generic(it) } }, { GetAllSessionsResult.Success(it) } )</ID>
     <ID>ArgumentListWrapping:GetUserInfoUseCase.kt$GetUserInfoUseCaseImpl$( { GetUserInfoResult.Failure }, { team -> GetUserInfoResult.Success(otherUser, team) })</ID>
+    <ID>ArgumentListWrapping:GlobalDBBaseTest.kt$GlobalDBBaseTest$( PlatformDatabaseData(StorageData.FileBacked(storePath)), StandardTestDispatcher(), null, false )</ID>
+    <ID>ArgumentListWrapping:GlobalDatabase.kt$( identifier = Int.MIN_VALUE, sql = """SELECT table_name FROM information_schema.tables where table_name = 'accounts'""", mapper = { if (it.next().value) { val result = it.getString(0) println("THE RESULT: $result") app.cash.sqldelight.db.QueryResult.Value(result?.isNotEmpty()) } else { app.cash.sqldelight.db.QueryResult.Value(false) } }, parameters = 0 )</ID>
     <ID>ArgumentListWrapping:GuestRoomConfigHandler.kt$GuestRoomConfigHandler$( { false }, { it.isGuestRoomLinkEnabled != status } )</ID>
     <ID>ArgumentListWrapping:HandleExternalRequestAction.kt$( """ Hey there, I hope you're doing well. I've got a bit of a craving for bananas, and I was wondering if you might be able to share a few with me? It would mean a lot. 😊 Thanks a bunch, A friendly monkey 🍌🐵 """.trimIndent(), """ Yo, I'm in need of some bananas, my friend. Can you hook me up? I'd appreciate it big time. Respect, A neutral monkey 🍌 """.trimIndent(), """ Listen up, I ain't messin' around. I want them bananas, and I want 'em now. You better deliver or there'll be consequences. No games, An evil monkey 🍌👿💀 """.trimIndent() )</ID>
     <ID>ArgumentListWrapping:InstanceService.kt$InstanceService$( instanceRequest.email, instanceRequest.password, true, secondFactorVerificationCode = instanceRequest.verificationCode )</ID>
@@ -307,6 +309,7 @@
     <ID>CommentSpacing:UserDAOTest.kt$UserDAOTest$//given</ID>
     <ID>EmptyFunctionBlock:FileTestHelper.kt$FileTestHelper${ }</ID>
     <ID>EmptyKtFile:FetchApiVersionUseCaseTest.kt$.FetchApiVersionUseCaseTest.kt</ID>
+    <ID>Filename:BooleanExt.kt$com.wire.kalium.persistence.dao.BooleanExt.kt</ID>
     <ID>Filename:ConversationStatus.kt$com.wire.kalium.logic.data.conversation.ConversationStatus.kt</ID>
     <ID>Filename:FileUtilTest.kt$com.wire.kalium.util.FileUtilTest.kt</ID>
     <ID>Filename:GetOtherUserClientsUseCaseTest.kt$com.wire.kalium.logic.feature.client.GetOtherUserClientsUseCaseTest.kt</ID>
@@ -401,6 +404,7 @@
     <ID>LongParameterList:ToggleReactionUseCase.kt$ToggleReactionUseCase$( clientId: ClientId, conversationId: ConversationId, date: String, messageId: String, removedReaction: String, currentReactions: UserReactions )</ID>
     <ID>MagicNumber:ConversationStatus.kt$MutedConversationStatus.AllMuted$3</ID>
     <ID>MagicNumber:GlobalCallManager.kt$LogHandlerImpl$3</ID>
+    <ID>MagicNumber:GlobalDatabase.kt$3</ID>
     <ID>MagicNumber:NetworkUtils.kt$300</ID>
     <ID>MagicNumber:NetworkUtils.kt$399</ID>
     <ID>MagicNumber:NetworkUtils.kt$400</ID>
@@ -411,10 +415,6 @@
     <ID>MatchingDeclarationName:ConversationStatus.kt$MutedConversationStatus</ID>
     <ID>MatchingDeclarationName:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore : PreKeyStore</ID>
     <ID>MatchingDeclarationName:CryptoboxSession.module_@wireapp_cryptobox.kt$CryptoboxSession</ID>
-    <ID>MatchingDeclarationName:DriverBuilder.android.kt$DriverBuilder</ID>
-    <ID>MatchingDeclarationName:DriverBuilder.apple.kt$DriverBuilder</ID>
-    <ID>MatchingDeclarationName:DriverBuilder.js.kt$DriverBuilder</ID>
-    <ID>MatchingDeclarationName:DriverBuilder.jvm.kt$DriverBuilder</ID>
     <ID>MatchingDeclarationName:Encoder.module_@wireapp_cbor.kt$Encoder</ID>
     <ID>MatchingDeclarationName:FileUtilTest.kt$FileTestHelper</ID>
     <ID>MatchingDeclarationName:GetOtherUserClientsUseCaseTest.kt$ObserveClientsByUserIdUseCaseTest</ID>
@@ -939,7 +939,7 @@
     <ID>UnusedPrivateProperty:build.gradle.kts$val jvmMain by getting { dependencies { implementation(libs.apacheTika) } }</ID>
     <ID>UnusedPrivateProperty:build.gradle.kts$val jvmMain by getting { dependencies { implementation(libs.coroutines.core) } }</ID>
     <ID>UnusedPrivateProperty:build.gradle.kts$val jvmMain by getting { dependencies { implementation(libs.ktor.okHttp) implementation(libs.okhttp.loggingInterceptor) } }</ID>
-    <ID>UnusedPrivateProperty:build.gradle.kts$val jvmMain by getting { dependencies { implementation(libs.sqldelight.jvmDriver) implementation(libs.sqlite.xerialDriver) } }</ID>
+    <ID>UnusedPrivateProperty:build.gradle.kts$val jvmMain by getting { dependencies { implementation(libs.sqldelight.jvmDriver) implementation(libs.sqldelight.jdbcDriver) implementation(libs.sqlite.xerialDriver) implementation(libs.hikaricp) implementation(libs.postgres.driver) implementation(libs.testContainers.postgres) } }</ID>
     <ID>UnusedPrivateProperty:build.gradle.kts$val jvmMain by getting { dependencies { implementation(project(":logic")) implementation(project(":calling")) } }</ID>
     <ID>UnusedPrivateProperty:build.gradle.kts$val jvmTest by getting</ID>
     <ID>UnusedPrivateProperty:build.gradle.kts$val jvmTest by getting { dependencies { implementation(libs.konsist) } }</ID>
