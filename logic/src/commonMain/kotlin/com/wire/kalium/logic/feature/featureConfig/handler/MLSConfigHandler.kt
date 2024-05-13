@@ -36,6 +36,7 @@ class MLSConfigHandler(
         val isMLSSupported = mlsConfig.supportedProtocols.contains(SupportedProtocol.MLS)
         val previousSupportedProtocols = userConfigRepository.getSupportedProtocols().getOrElse(setOf(SupportedProtocol.PROTEUS))
         val supportedProtocolsHasChanged = !previousSupportedProtocols.equals(mlsConfig.supportedProtocols)
+        val supportedCipherSuite = mlsConfig.supportedCipherSuite
 
         return userConfigRepository.setMLSEnabled(mlsEnabled && isMLSSupported)
             .flatMap {
@@ -50,6 +51,10 @@ class MLSConfigHandler(
                 } else {
                     Either.Right(Unit)
                 }
+            }.flatMap {
+                supportedCipherSuite?.let {
+                    userConfigRepository.setSupportedCipherSuite(it)
+                } ?: Either.Right(Unit)
             }
     }
 }
