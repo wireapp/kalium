@@ -87,7 +87,7 @@ private fun createDataSource(driverUri: String): DataSource {
 
 fun JdbcDriver.databaseExists(dbName: String): Boolean {
     val result = executeQuery(
-        Int.MIN_VALUE, """SELECT datname FROM pg_catalog.pg_database WHERE datname = ?""",
+        Int.MIN_VALUE, """SELECT table_name FROM information_schema.tables where table_name = 'accounts'""",
         {
             if (it.next().value) {
                 val result = it.getString(0)
@@ -98,7 +98,7 @@ fun JdbcDriver.databaseExists(dbName: String): Boolean {
             }
 
         }, 0
-    ) { bindString(0, dbName) }
+    ) {  }
     println("Exists: ${result.value}")
     return result.value ?: false
 }

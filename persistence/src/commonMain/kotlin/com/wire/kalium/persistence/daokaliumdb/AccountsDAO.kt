@@ -177,6 +177,7 @@ interface AccountsDAO {
     suspend fun getAllValidAccountPersistentWebSocketStatus(): Flow<List<PersistentWebSocketStatusEntity>>
     suspend fun getAccountManagedBy(userIDEntity: UserIDEntity): ManagedByEntity?
     suspend fun validAccountWithServerConfigId(): Map<UserIDEntity, ServerConfigEntity>
+    suspend fun truncateAllForTesting()
 }
 
 @Suppress("TooManyFunctions")
@@ -314,4 +315,8 @@ internal class AccountsDAOImpl internal constructor(
 
     override fun fullAccountInfo(userIDEntity: UserIDEntity): FullAccountEntity? =
         queries.fullAccountInfo(userIDEntity, mapper = mapper::fromFullAccountInfo).executeAsOneOrNull()
+
+    override suspend fun truncateAllForTesting() {
+        queries.truncateAllForTesting()
+    }
 }

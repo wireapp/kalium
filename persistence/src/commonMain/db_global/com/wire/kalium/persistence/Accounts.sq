@@ -92,3 +92,9 @@ FROM Accounts
 INNER JOIN ServerConfiguration
     ON Accounts.server_config_id = ServerConfiguration.id
 WHERE Accounts.logout_reason IS NULL;
+
+truncateAllForTesting {
+    DELETE FROM Accounts;
+    DELETE FROM CurrentAccount;
+    DELETE FROM ServerConfiguration;
+}

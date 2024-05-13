@@ -31,6 +31,7 @@ import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlin.test.AfterTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -39,11 +40,11 @@ import kotlin.test.assertNull
 @OptIn(ExperimentalCoroutinesApi::class)
 class AccountsDAOTest : GlobalDBBaseTest() {
 
-    lateinit var globalDatabaseBuilder: GlobalDatabaseBuilder
+    var globalDatabaseBuilder: GlobalDatabaseBuilder = createDatabase()
 
     @BeforeTest
     fun setUp() = runTest {
-        deleteDatabase()
+        globalDatabaseBuilder.accountsDAO.truncateAllForTesting()
         globalDatabaseBuilder = createDatabase()
 
         with(SERVER_CONFIG) {

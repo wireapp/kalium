@@ -18,6 +18,7 @@
 
 package com.wire.kalium.persistence
 
+import app.cash.sqldelight.driver.jdbc.JdbcDriver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.db.PlatformDatabaseData
 import com.wire.kalium.persistence.db.StorageData
