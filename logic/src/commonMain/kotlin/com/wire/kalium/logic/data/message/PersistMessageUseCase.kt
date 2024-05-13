@@ -21,7 +21,7 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.message.NotificationEventsManager
+import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map

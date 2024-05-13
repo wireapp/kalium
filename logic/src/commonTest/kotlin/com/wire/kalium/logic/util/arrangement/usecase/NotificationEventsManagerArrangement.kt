@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.util.arrangement.usecase
 
 import com.wire.kalium.logic.data.notification.LocalNotification
-import com.wire.kalium.logic.feature.message.NotificationEventsManager
+import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.mock

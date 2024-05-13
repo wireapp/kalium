@@ -24,7 +24,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.feature.message.NotificationEventsManager
+import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.kaliumLogger
