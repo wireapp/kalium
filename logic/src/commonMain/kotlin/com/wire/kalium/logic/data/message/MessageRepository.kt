@@ -54,6 +54,7 @@ import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -62,7 +63,6 @@ import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.mapLatest
 import kotlinx.datetime.Instant
 
 @Suppress("TooManyFunctions")
@@ -79,7 +79,7 @@ internal interface MessageRepository {
         message: Message.Standalone,
         updateConversationReadDate: Boolean = false,
         updateConversationModifiedDate: Boolean = false,
-    ): Either<CoreFailure, Unit>
+    ): Either<CoreFailure, InsertMessageResult>
 
     suspend fun persistSystemMessageToAllConversations(
         message: Message.System
@@ -118,7 +118,7 @@ internal interface MessageRepository {
         conversationIdList: List<ConversationId>
     ): Either<StorageFailure, Map<ConversationId, Message>>
 
-    suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Either<CoreFailure, Flow<List<LocalNotification>>>
+    suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Either<CoreFailure, List<LocalNotification>>
 
     suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
@@ -301,21 +301,20 @@ internal class MessageDataSource internal constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun getNotificationMessage(
         messageSizePerConversation: Int
-    ): Either<CoreFailure, Flow<List<LocalNotification>>> = wrapStorageRequest {
-        messageDAO.getNotificationMessage().mapLatest { notificationEntities ->
-            notificationEntities.groupBy { it.conversationId }
-                .map { (conversationId, messages) ->
-                    LocalNotification.Conversation(
-                        // todo: needs some clean up!
-                        id = conversationId.toModel(),
-                        conversationName = messages.first().conversationName,
-                        messages = messages.mapNotNull { message ->
-                            messageMapper.fromMessageToLocalNotificationMessage(message)
-                        },
-                        isOneToOneConversation = messages.first().conversationType == ConversationEntity.Type.ONE_ON_ONE
-                    )
-                }
-        }
+    ): Either<CoreFailure, List<LocalNotification>> = wrapStorageRequest {
+        val notificationEntities = messageDAO.getNotificationMessage()
+        notificationEntities.groupBy { it.conversationId }
+            .map { (conversationId, messages) ->
+                LocalNotification.Conversation(
+                    // todo: needs some clean up!
+                    id = conversationId.toModel(),
+                    conversationName = messages.first().conversationName,
+                    messages = messages.mapNotNull { message ->
+                        messageMapper.fromMessageToLocalNotificationMessage(message)
+                    },
+                    isOneToOneConversation = messages.first().conversationType == ConversationEntity.Type.ONE_ON_ONE
+                )
+            }
     }
 
     @DelicateKaliumApi(
@@ -326,7 +325,7 @@ internal class MessageDataSource internal constructor(
         message: Message.Standalone,
         updateConversationReadDate: Boolean,
         updateConversationModifiedDate: Boolean,
-    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+    ): Either<CoreFailure, InsertMessageResult> = wrapStorageRequest {
         messageDAO.insertOrIgnoreMessage(
             messageMapper.fromMessageToEntity(message),
             updateConversationReadDate,
