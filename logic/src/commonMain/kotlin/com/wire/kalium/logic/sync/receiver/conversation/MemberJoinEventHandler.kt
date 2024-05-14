@@ -73,24 +73,10 @@ internal class MemberJoinEventHandlerImpl(
                 userRepository.fetchUsersIfUnknownByIds(event.members.map { it.id }.toSet())
                 conversationRepository.persistMembers(event.members, event.conversationId)
             }.onSuccess {
-<<<<<<< HEAD
-                val message = Message.System(
-                    id = event.id.ifEmpty { uuid4().toString() },
-                    content = MessageContent.MemberChange.Added(members = event.members.map { it.id }),
-                    conversationId = event.conversationId,
-                    date = event.timestampIso,
-                    senderUserId = event.addedBy,
-                    status = Message.Status.Sent,
-                    visibility = Message.Visibility.VISIBLE,
-                    expirationData = null
-                )
-                persistMessage(message)
-                legalHoldHandler.handleConversationMembersChanged(event.conversationId)
-=======
                 conversationRepository.detailsById(event.conversationId).onSuccess { conversation ->
                     if (conversation.type == Conversation.Type.GROUP) addSystemMessage(event)
                 }
->>>>>>> 39f2aa35cd (fix: No SystemMessage on new 1o1 conversation (#2730))
+                legalHoldHandler.handleConversationMembersChanged(event.conversationId)
                 kaliumLogger
                     .logEventProcessing(
                         EventLoggingStatus.SUCCESS,

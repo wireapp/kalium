@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
-<<<<<<< HEAD
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import io.mockative.Mock
@@ -35,19 +34,16 @@ import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.matches
 import io.mockative.mock
-=======
 import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.right
+import com.wire.kalium.logic.util.arrangement.eventHandler.LegalHoldHandlerArrangement
+import com.wire.kalium.logic.util.arrangement.eventHandler.LegalHoldHandlerArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
-import io.mockative.any
-import io.mockative.eq
-import io.mockative.matching
->>>>>>> 39f2aa35cd (fix: No SystemMessage on new 1o1 conversation (#2730))
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -55,32 +51,6 @@ import kotlin.test.Test
 class MemberJoinEventHandlerTest {
 
     @Test
-<<<<<<< HEAD
-=======
-    fun givenMemberJoinEventWithoutSelfUser_whenHandlingIt_thenShouldFetchConversationIfUnknown() = runTest {
-        val newMembers = listOf(Member(TestUser.OTHER_FEDERATED_USER_ID, Member.Role.Member))
-        val event = TestEvent.memberJoin(members = newMembers)
-
-        val (arrangement, eventHandler) = arrange {
-            withFetchConversationSucceeding()
-            withConversationDetailsByIdReturning(TestConversation.CONVERSATION.right())
-        }
-
-        eventHandler.handle(event)
-
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::fetchConversationIfUnknown)
-            .with(eq(event.conversationId))
-            .wasInvoked(exactly = once)
-
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::fetchConversation)
-            .with(eq(event.conversationId))
-            .wasNotInvoked()
-    }
-
-    @Test
->>>>>>> 39f2aa35cd (fix: No SystemMessage on new 1o1 conversation (#2730))
     fun givenMemberJoinEventWithSelfUser_whenHandlingIt_thenShouldFetchConversation() = runTest {
         val newMembers = listOf(Member(TestUser.SELF.id, Member.Role.Member))
         val event = TestEvent.memberJoin(members = newMembers)
@@ -148,16 +118,9 @@ class MemberJoinEventHandlerTest {
 
         eventHandler.handle(event)
 
-<<<<<<< HEAD
         coVerify {
-            arrangement.persistMessage.invoke(
+            arrangement.persistMessageUseCase.invoke(
                 matches {
-=======
-        verify(arrangement.persistMessageUseCase)
-            .suspendFunction(arrangement.persistMessageUseCase::invoke)
-            .with(
-                matching {
->>>>>>> 39f2aa35cd (fix: No SystemMessage on new 1o1 conversation (#2730))
                     it is Message.System && it.content is MessageContent.MemberChange
                 }
             )
@@ -176,10 +139,7 @@ class MemberJoinEventHandlerTest {
 
         eventHandler.handle(event)
 
-        verify(arrangement.persistMessageUseCase)
-            .suspendFunction(arrangement.persistMessageUseCase::invoke)
-            .with(any())
-            .wasNotInvoked()
+        coVerify { arrangement.persistMessageUseCase(any()) }.wasNotInvoked()
     }
 
     @Test
@@ -194,16 +154,9 @@ class MemberJoinEventHandlerTest {
 
         eventHandler.handle(event)
 
-<<<<<<< HEAD
         coVerify {
-            arrangement.persistMessage.invoke(
+            arrangement.persistMessageUseCase.invoke(
                 matches {
-=======
-        verify(arrangement.persistMessageUseCase)
-            .suspendFunction(arrangement.persistMessageUseCase::invoke)
-            .with(
-                matching {
->>>>>>> 39f2aa35cd (fix: No SystemMessage on new 1o1 conversation (#2730))
                     it is Message.System && it.content is MessageContent.MemberChange && it.id.isNotEmpty()
                 }
             )
@@ -215,12 +168,13 @@ class MemberJoinEventHandlerTest {
         // given
         val newMembers = listOf(Member(TestUser.USER_ID, Member.Role.Admin))
         val event = TestEvent.memberJoin(members = newMembers)
-        val (arrangement, eventHandler) = Arrangement()
-            .withPersistingMessageReturning(Either.Right(Unit))
-            .withFetchConversationIfUnknownSucceeding()
-            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
-            .withPersistMembersSucceeding()
-            .arrange()
+        val (arrangement, eventHandler) = arrange {
+            withPersistingMessage(Either.Right(Unit))
+            withFetchConversationSucceeding()
+            withConversationDetailsByIdReturning(TestConversation.GROUP().right())
+            withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
+            withPersistMembers(Unit.right())
+        }
         // when
         eventHandler.handle(event)
         // then
@@ -229,94 +183,31 @@ class MemberJoinEventHandlerTest {
         }.wasInvoked(exactly = once)
     }
 
-<<<<<<< HEAD
-    private class Arrangement {
-        @Mock
-        val persistMessage = mock(PersistMessageUseCase::class)
-
-        @Mock
-        val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
-        private val userRepository = mock(UserRepository::class)
-
-        @Mock
-        val legalHoldHandler = mock(LegalHoldHandler::class)
-
-        private val memberJoinEventHandler: MemberJoinEventHandler = MemberJoinEventHandlerImpl(
-            conversationRepository = conversationRepository,
-            userRepository = userRepository,
-            persistMessage = persistMessage,
-            legalHoldHandler = legalHoldHandler
-        )
-
-        suspend fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
-                persistMessage.invoke(any())
-            }.returns(result)
-        }
-
-        suspend fun withFetchConversationIfUnknownSucceeding() = apply {
-            coEvery {
-                conversationRepository.fetchConversationIfUnknown(any())
-            }.returns(Either.Right(Unit))
-            coEvery {
-                conversationRepository.fetchConversation(any())
-            }.returns(Either.Right(Unit))
-        }
-
-        suspend fun withFetchConversationIfUnknownFailing(coreFailure: CoreFailure) = apply {
-            coEvery {
-                conversationRepository.fetchConversationIfUnknown(any())
-            }.returns(Either.Left(coreFailure))
-            coEvery {
-                conversationRepository.fetchConversation(any())
-            }.returns(Either.Left(coreFailure))
-        }
-
-        suspend fun withPersistMembersSucceeding() = apply {
-            coEvery {
-                conversationRepository.persistMembers(any(), any())
-            }.returns(Either.Right(Unit))
-        }
-
-        suspend fun withFetchUsersIfUnknownByIdsReturning(result: Either<StorageFailure, Unit>) = apply {
-            coEvery {
-                userRepository.fetchUsersIfUnknownByIds(any())
-            }.returns(result)
-        }
-
-        suspend fun arrange() = run {
-            coEvery {
-                legalHoldHandler.handleConversationMembersChanged(any())
-            }.returns(Either.Right(Unit))
-            this to memberJoinEventHandler
-        }
-=======
     private class Arrangement(
-        private val block: Arrangement.() -> Unit
+        private val block: suspend Arrangement.() -> Unit
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
-        PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl() {
+        PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
+        LegalHoldHandlerArrangement by LegalHoldHandlerArrangementImpl() {
 
-        fun withFetchConversationSucceeding() = apply {
+        suspend fun withFetchConversationSucceeding() = apply {
             withFetchConversationIfUnknownSucceeding()
             withFetchConversation(Unit.right())
         }
 
-        fun arrange() = run {
+        suspend fun arrange() = run {
             block()
 
             withPersistingMessage(Unit.right())
             withFetchUsersIfUnknownByIdsReturning(Unit.right())
             withPersistMembers(Unit.right())
+            withHandleConversationMembersChanged(Unit.right())
 
-            this to MemberJoinEventHandlerImpl(conversationRepository, userRepository, persistMessageUseCase, TestUser.SELF.id)
+            this to MemberJoinEventHandlerImpl(conversationRepository, userRepository, persistMessageUseCase, legalHoldHandler)
         }
->>>>>>> 39f2aa35cd (fix: No SystemMessage on new 1o1 conversation (#2730))
     }
 
     private companion object {
-        fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
+        suspend fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
     }
 }
