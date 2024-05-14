@@ -101,8 +101,14 @@ internal interface ConversationRepositoryArrangement {
 
     suspend fun withSetDegradedConversationNotifiedFlag(result: Either<CoreFailure, Unit>)
 
+<<<<<<< HEAD
     suspend fun withSelectGroupStatusMembersNamesAndHandles(result: Either<StorageFailure, EpochChangesData>)
     suspend fun withConversationDetailsByIdReturning(result: Either<StorageFailure, Conversation>)
+=======
+    fun withSelectGroupStatusMembersNamesAndHandles(result: Either<StorageFailure, EpochChangesData>)
+    fun withConversationDetailsByIdReturning(result: Either<StorageFailure, Conversation>)
+    fun withPersistMembers(result: Either<StorageFailure, Unit>)
+>>>>>>> 39f2aa35cd (fix: No SystemMessage on new 1o1 conversation (#2730))
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -258,5 +264,12 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
         coEvery {
             conversationRepository.detailsById(any())
         }.returns(result)
+    }
+
+    override fun withPersistMembers(result: Either<StorageFailure, Unit>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::persistMembers)
+            .whenInvokedWith(any())
+            .thenReturn(result)
     }
 }

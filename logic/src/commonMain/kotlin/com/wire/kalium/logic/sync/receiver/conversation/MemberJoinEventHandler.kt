@@ -21,6 +21,7 @@ package com.wire.kalium.logic.sync.receiver.conversation
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
@@ -72,6 +73,7 @@ internal class MemberJoinEventHandlerImpl(
                 userRepository.fetchUsersIfUnknownByIds(event.members.map { it.id }.toSet())
                 conversationRepository.persistMembers(event.members, event.conversationId)
             }.onSuccess {
+<<<<<<< HEAD
                 val message = Message.System(
                     id = event.id.ifEmpty { uuid4().toString() },
                     content = MessageContent.MemberChange.Added(members = event.members.map { it.id }),
@@ -84,6 +86,11 @@ internal class MemberJoinEventHandlerImpl(
                 )
                 persistMessage(message)
                 legalHoldHandler.handleConversationMembersChanged(event.conversationId)
+=======
+                conversationRepository.detailsById(event.conversationId).onSuccess { conversation ->
+                    if (conversation.type == Conversation.Type.GROUP) addSystemMessage(event)
+                }
+>>>>>>> 39f2aa35cd (fix: No SystemMessage on new 1o1 conversation (#2730))
                 kaliumLogger
                     .logEventProcessing(
                         EventLoggingStatus.SUCCESS,
@@ -97,4 +104,18 @@ internal class MemberJoinEventHandlerImpl(
                         Pair("errorInfo", "$it")
                     )
             }
+
+    private suspend fun addSystemMessage(event: Event.Conversation.MemberJoin) {
+        val message = Message.System(
+            id = event.id.ifEmpty { uuid4().toString() },
+            content = MessageContent.MemberChange.Added(members = event.members.map { it.id }),
+            conversationId = event.conversationId,
+            date = event.timestampIso,
+            senderUserId = event.addedBy,
+            status = Message.Status.Sent,
+            visibility = Message.Visibility.VISIBLE,
+            expirationData = null
+        )
+        persistMessage(message)
+    }
 }
