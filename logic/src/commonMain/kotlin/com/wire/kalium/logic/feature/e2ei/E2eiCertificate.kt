@@ -20,15 +20,22 @@ package com.wire.kalium.logic.feature.e2ei
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.di.MapperProvider
 import kotlinx.datetime.Instant
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
 data class E2eiCertificate(
+    @SerialName("userHandle")
     var userHandle: String,
+    @SerialName("status")
     val status: CertificateStatus,
+    @SerialName("serialNumber")
     val serialNumber: String,
+    @SerialName("certificateDetail")
     val certificateDetail: String,
+    @SerialName("thumbprint")
     val thumbprint: String,
+    @SerialName("endAt")
     val endAt: Instant
 ) {
     companion object {
