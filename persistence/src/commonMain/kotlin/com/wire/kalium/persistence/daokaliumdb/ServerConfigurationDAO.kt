@@ -187,7 +187,7 @@ internal class ServerConfigurationDAOImpl internal constructor(
     }
 
     override suspend fun allConfigFlow(): Flow<List<ServerConfigEntity>> =
-        queries.storedConfig(mapper = ServerConfigMapper::fromServerConfiguration).asFlow().flowOn(queriesContext).mapToList()
+        queries.storedConfig(mapper = mapper::fromServerConfiguration).asFlow().flowOn(queriesContext).mapToList()
 
     override suspend fun allConfig(): List<ServerConfigEntity> = withContext(queriesContext) {
         queries.storedConfig(mapper = mapper::fromServerConfiguration).executeAsList()
