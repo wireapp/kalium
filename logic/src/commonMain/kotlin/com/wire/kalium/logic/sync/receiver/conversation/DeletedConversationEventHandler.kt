@@ -23,8 +23,8 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.feature.message.EphemeralConversationNotification
-import com.wire.kalium.logic.feature.message.EphemeralEventsNotificationManager
+import com.wire.kalium.logic.data.notification.EphemeralConversationNotification
+import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -37,7 +37,7 @@ interface DeletedConversationEventHandler {
 internal class DeletedConversationEventHandlerImpl(
     private val userRepository: UserRepository,
     private val conversationRepository: ConversationRepository,
-    private val deleteConversationNotificationsManager: EphemeralEventsNotificationManager
+    private val notificationEventsManager: NotificationEventsManager
 ) : DeletedConversationEventHandler {
 
     override suspend fun handle(event: Event.Conversation.DeletedConversation) {
@@ -54,7 +54,7 @@ internal class DeletedConversationEventHandlerImpl(
                 }.onSuccess {
                     val senderUser = userRepository.observeUser(event.senderUserId).firstOrNull()
                     val dataNotification = EphemeralConversationNotification(event, conversation, senderUser)
-                    deleteConversationNotificationsManager.scheduleDeleteConversationNotification(dataNotification)
+                    notificationEventsManager.scheduleDeleteConversationNotification(dataNotification)
                     kaliumLogger
                         .logEventProcessing(
                             EventLoggingStatus.SUCCESS,

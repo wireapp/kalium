@@ -21,8 +21,12 @@ package com.wire.kalium.logic.data.message
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.persistence.dao.message.InsertMessageResult
 
 /**
  * Internal UseCase that should be used instead of MessageRepository.persistMessage(Message)
@@ -34,16 +38,24 @@ interface PersistMessageUseCase {
 
 internal class PersistMessageUseCaseImpl(
     private val messageRepository: MessageRepository,
-    private val selfUserId: UserId
+    private val selfUserId: UserId,
+    private val notificationEventsManager: NotificationEventsManager
 ) : PersistMessageUseCase {
     override suspend operator fun invoke(message: Message.Standalone): Either<CoreFailure, Unit> {
         val modifiedMessage = getExpectsReadConfirmationFromMessage(message)
 
+        val isSelfSender = message.isSelfTheSender(selfUserId)
         return messageRepository.persistMessage(
             message = modifiedMessage,
-            updateConversationReadDate = message.isSelfTheSender(selfUserId),
+            updateConversationReadDate = isSelfSender,
             updateConversationModifiedDate = message.content.shouldUpdateConversationOrder()
-        )
+        ).onSuccess {
+            val isConversationMuted = it == InsertMessageResult.INSERTED_INTO_MUTED_CONVERSATION
+
+            if (!isConversationMuted && !isSelfSender && message.content.shouldNotifyUser()) {
+                notificationEventsManager.scheduleRegularNotificationChecking()
+            }
+        }.map { }
     }
 
     private fun Message.isSelfTheSender(selfUserId: UserId) = senderUserId == selfUserId
@@ -113,6 +125,60 @@ internal class PersistMessageUseCaseImpl(
             is MessageContent.Location -> true
             is MessageContent.LegalHold -> false
             is MessageContent.MemberChange.RemovedFromTeam -> false
+            is MessageContent.TeamMemberRemoved -> false
+        }
+
+    @Suppress("ComplexMethod")
+    private fun MessageContent.shouldNotifyUser(): Boolean =
+        when (this) {
+            is MessageContent.Text,
+            is MessageContent.Asset,
+            is MessageContent.Knock,
+            is MessageContent.RestrictedAsset,
+            is MessageContent.MissedCall,
+            is MessageContent.Location -> true
+
+            is MessageContent.MemberChange.Added,
+            is MessageContent.MemberChange.Removed,
+            is MessageContent.Calling,
+            is MessageContent.DeleteMessage,
+            is MessageContent.TextEdited,
+            is MessageContent.DeleteForMe,
+            is MessageContent.Unknown,
+            is MessageContent.Availability,
+            is MessageContent.FailedDecryption,
+            is MessageContent.Ignored,
+            is MessageContent.LastRead,
+            is MessageContent.Reaction,
+            is MessageContent.Cleared,
+            is MessageContent.ConversationRenamed,
+            is MessageContent.Receipt,
+            is MessageContent.ClientAction,
+            is MessageContent.CryptoSessionReset,
+            is MessageContent.NewConversationReceiptMode,
+            is MessageContent.ConversationReceiptModeChanged,
+            is MessageContent.HistoryLost,
+            is MessageContent.HistoryLostProtocolChanged,
+            is MessageContent.ConversationMessageTimerChanged,
+            is MessageContent.MemberChange.CreationAdded,
+            is MessageContent.MemberChange.FailedToAdd,
+            is MessageContent.ConversationCreated,
+            is MessageContent.MLSWrongEpochWarning,
+            MessageContent.ConversationDegradedMLS,
+            MessageContent.ConversationVerifiedMLS,
+            MessageContent.ConversationDegradedProteus,
+            MessageContent.ConversationVerifiedProteus,
+            is MessageContent.Composite,
+            is MessageContent.ButtonAction,
+            is MessageContent.ButtonActionConfirmation,
+            is MessageContent.MemberChange.FederationRemoved,
+            is MessageContent.FederationStopped.ConnectionRemoved,
+            is MessageContent.FederationStopped.Removed,
+            is MessageContent.ConversationProtocolChanged,
+            is MessageContent.ConversationProtocolChangedDuringACall,
+            is MessageContent.ConversationStartedUnverifiedWarning,
+            is MessageContent.LegalHold,
+            is MessageContent.MemberChange.RemovedFromTeam,
             is MessageContent.TeamMemberRemoved -> false
         }
 }

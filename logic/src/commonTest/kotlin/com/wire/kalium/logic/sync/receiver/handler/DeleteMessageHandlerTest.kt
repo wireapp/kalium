@@ -27,7 +27,7 @@ import com.wire.kalium.logic.util.arrangement.repository.AssetRepositoryArrangem
 import com.wire.kalium.logic.util.arrangement.repository.AssetRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.NotificationEventsManagerArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangementImpl
 import io.mockative.any
 import io.mockative.coVerify
@@ -107,7 +107,7 @@ class DeleteMessageHandlerTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.ephemeralNotifications.scheduleDeleteMessageNotification(any())
+            arrangement.notificationEventsManager.scheduleDeleteMessageNotification(any())
         }.wasNotInvoked()
     }
 
@@ -149,7 +149,7 @@ class DeleteMessageHandlerTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.ephemeralNotifications.scheduleDeleteMessageNotification(eq(originalMessage))
+            arrangement.notificationEventsManager.scheduleDeleteMessageNotification(eq(originalMessage))
         }.wasInvoked(exactly = once)
     }
 
@@ -187,7 +187,7 @@ class DeleteMessageHandlerTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.ephemeralNotifications.scheduleDeleteMessageNotification(any())
+            arrangement.notificationEventsManager.scheduleDeleteMessageNotification(any())
         }.wasNotInvoked()
     }
 
@@ -227,7 +227,7 @@ class DeleteMessageHandlerTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.ephemeralNotifications.scheduleDeleteMessageNotification(any())
+            arrangement.notificationEventsManager.scheduleDeleteMessageNotification(any())
         }.wasNotInvoked()
     }
 
@@ -241,14 +241,14 @@ class DeleteMessageHandlerTest {
         private val block: suspend Arrangement.() -> Unit
     ) : MessageRepositoryArrangement by MessageRepositoryArrangementImpl(),
         AssetRepositoryArrangement by AssetRepositoryArrangementImpl(),
-        EphemeralEventsNotificationManagerArrangement by EphemeralEventsNotificationManagerArrangementImpl() {
+        NotificationEventsManagerArrangement by EphemeralEventsNotificationManagerArrangementImpl() {
 
         fun arrange() = run {
             runBlocking { block() }
             this@Arrangement to DeleteMessageHandlerImpl(
                 messageRepository = messageRepository,
                 assetRepository = assetRepository,
-                deleteMessageNotificationsManager = ephemeralNotifications,
+                notificationEventsManager = notificationEventsManager,
                 selfUserId = SELF_USER_ID
             )
         }
