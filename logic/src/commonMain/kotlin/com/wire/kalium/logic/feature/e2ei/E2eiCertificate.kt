@@ -20,7 +20,9 @@ package com.wire.kalium.logic.feature.e2ei
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.di.MapperProvider
 import kotlinx.datetime.Instant
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class E2eiCertificate(
     var userHandle: String,
     val status: CertificateStatus,
