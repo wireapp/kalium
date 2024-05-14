@@ -36,7 +36,11 @@ sqldelight = "2.0.1"
 sqlcipher-android = "4.5.6"
 pbandk = "0.14.2"
 turbine = "1.1.0"
+<<<<<<< HEAD
 avs = "9.7.13"
+=======
+avs = "9.7.15"
+>>>>>>> fd90a9b77b (chore: update AVS lib to 9.7.15 (#2762))
 jna = "5.14.0"
 core-crypto = "1.0.0-rc.55"
 core-crypto-multiplatform = "0.6.0-rc.3-multiplatform-pre1"
