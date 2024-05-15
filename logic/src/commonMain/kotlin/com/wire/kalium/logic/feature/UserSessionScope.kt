@@ -1159,7 +1159,7 @@ class UserSessionScope internal constructor(
 
     internal val mlsMigrationManager: MLSMigrationManager = MLSMigrationManagerImpl(
         kaliumConfigs,
-        featureSupport,
+        isMLSEnabled,
         incrementalSyncRepository,
         lazy { clientRepository },
         lazy { users.timestampKeyRepository },
