@@ -1611,7 +1611,8 @@ class UserSessionScope internal constructor(
 
     private val oneOnOneProtocolSelector: OneOnOneProtocolSelector
         get() = OneOnOneProtocolSelectorImpl(
-            userRepository
+            userRepository,
+            userConfigRepository
         )
 
     private val acmeCertificatesSyncWorker: ACMECertificatesSyncWorker by lazy {
