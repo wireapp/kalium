@@ -1,0 +1,156 @@
+ALTER TABLE User ADD COLUMN supported_protocols TEXT AS Set<SupportedProtocolEntity> DEFAULT 'PROTEUS';
+ALTER TABLE User ADD COLUMN active_one_on_one_conversation_id TEXT AS QualifiedIDEntity;
+
+-- Re-create ConversationDetails view
+
+DROP VIEW IF EXISTS ConversationDetails;
+
+CREATE VIEW IF NOT EXISTS ConversationDetails AS
+SELECT
+Conversation.qualified_id AS qualifiedId,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.name
+    WHEN 'CONNECTION_PENDING' THEN connection_user.name
+    ELSE Conversation.name
+END AS name,
+Conversation.type,
+Call.status AS callStatus,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.preview_asset_id
+    WHEN 'CONNECTION_PENDING' THEN connection_user.preview_asset_id
+END AS previewAssetId,
+Conversation.muted_status AS mutedStatus,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN User.team
+    ELSE Conversation.team_id
+END AS teamId,
+CASE (Conversation.type)
+    WHEN 'CONNECTION_PENDING' THEN Connection.last_update_date
+    ELSE Conversation.last_modified_date
+END AS lastModifiedDate,
+Conversation.last_read_date AS lastReadDate,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.user_availability_status
+    WHEN 'CONNECTION_PENDING' THEN connection_user.user_availability_status
+END AS userAvailabilityStatus,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.user_type
+    WHEN 'CONNECTION_PENDING' THEN connection_user.user_type
+END AS userType,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.bot_service
+    WHEN 'CONNECTION_PENDING' THEN connection_user.bot_service
+END AS botService,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.deleted
+    WHEN 'CONNECTION_PENDING' THEN connection_user.deleted
+END AS userDeleted,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.defederated
+    WHEN 'CONNECTION_PENDING' THEN connection_user.defederated
+END AS userDefederated,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.supported_protocols
+    WHEN 'CONNECTION_PENDING' THEN connection_user.supported_protocols
+END AS userSupportedProtocols,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.connection_status
+    WHEN 'CONNECTION_PENDING' THEN connection_user.connection_status
+END AS connectionStatus,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.qualified_id
+    WHEN 'CONNECTION_PENDING' THEN connection_user.qualified_id
+END AS otherUserId,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN User.active_one_on_one_conversation_id
+    WHEN 'CONNECTION_PENDING' THEN connection_user.active_one_on_one_conversation_id
+END AS otherUserActiveConversationId,
+CASE
+    WHEN ((SELECT id FROM SelfUser LIMIT 1) LIKE (Conversation.creator_id || '@%')) THEN 1
+    ELSE 0
+END AS isCreator,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN coalesce(User.active_one_on_one_conversation_id = Conversation.qualified_id, 0)
+    ELSE 1
+END AS isActive,
+Conversation.last_notified_date AS lastNotifiedMessageDate,
+memberRole. role AS selfRole,
+Conversation.protocol,
+Conversation.mls_cipher_suite,
+Conversation.mls_epoch,
+Conversation.mls_group_id,
+Conversation.mls_last_keying_material_update_date,
+Conversation.mls_group_state,
+Conversation.access_list,
+Conversation.access_role_list,
+Conversation.team_id,
+Conversation.mls_proposal_timer,
+Conversation.muted_time,
+Conversation.creator_id,
+Conversation.last_modified_date,
+Conversation.receipt_mode,
+Conversation.message_timer,
+Conversation.user_message_timer,
+Conversation.incomplete_metadata,
+Conversation.archived,
+Conversation.archived_date_time,
+Conversation.verification_status
+FROM Conversation
+LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
+    AND Conversation.type IS 'ONE_ON_ONE'
+    AND Member.user IS NOT (SELECT SelfUser.id FROM SelfUser LIMIT 1)
+LEFT JOIN Member AS memberRole ON Conversation.qualified_id = memberRole.conversation
+    AND memberRole.user IS (SELECT SelfUser.id FROM SelfUser LIMIT 1)
+LEFT JOIN User ON User.qualified_id = Member.user
+LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualified_id
+    AND (Connection.status = 'SENT'
+         OR Connection.status = 'PENDING'
+         OR Connection.status = 'NOT_CONNECTED'
+         AND Conversation.type IS 'CONNECTION_PENDING')
+LEFT JOIN User AS connection_user ON Connection.qualified_to = connection_user.qualified_id
+LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = Conversation.qualified_id AND Call.status IS 'STILL_ONGOING' ORDER BY created_at DESC LIMIT 1);
+
+-- Re-create UserDetails view
+
+DROP VIEW IF EXISTS UserDetails;
+
+CREATE VIEW IF NOT EXISTS UserDetails AS
+SELECT
+User.qualified_id,
+User.name,
+User.handle,
+User.email,
+User.phone,
+User.accent_id,
+User.team,
+User.connection_status,
+User.preview_asset_id,
+User.complete_asset_id,
+User.user_availability_status,
+User.user_type,
+User.bot_service,
+User.deleted,
+User.incomplete_metadata,
+User.expires_at,
+User.defederated,
+User.supported_protocols,
+User.active_one_on_one_conversation_id,
+CASE
+    WHEN SUM(Client.is_verified) = COUNT(*) THEN 1
+    ELSE 0
+END AS is_proteus_verified
+FROM User
+LEFT JOIN Client ON User.qualified_id = Client.user_id
+GROUP BY User.qualified_id;
+
+-- Populate active_one_on_one_conversation_id for users with existing one-on-one conversations
+
+UPDATE User
+SET active_one_on_one_conversation_id = (
+	SELECT Member.conversation FROM Member
+	JOIN Conversation ON Conversation.qualified_id = Member.conversation
+	WHERE Conversation.type = 'ONE_ON_ONE' AND Conversation.protocol = 'PROTEUS' AND Member.user = User.qualified_id
+	LIMIT  1
+)
+WHERE qualified_id != (SELECT id FROM SelfUser);
+

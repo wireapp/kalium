@@ -1,0 +1,27 @@
+import com.wire.kalium.persistence.dao.client.DeviceTypeEntity;
+import kotlinx.datetime.Instant;
+
+CREATE TABLE NewClient (
+    id TEXT NOT NULL PRIMARY KEY,
+    device_type TEXT AS DeviceTypeEntity,
+    registration_date INTEGER AS Instant DEFAULT NULL,
+    model TEXT DEFAULT NULL
+);
+
+insertNewClient {
+INSERT INTO NewClient(id, device_type, registration_date, model)
+VALUES(:id, :device_type, :registration_date, :model)
+ON CONFLICT (id) DO UPDATE SET
+device_type = coalesce(excluded.device_type, device_type),
+registration_date = coalesce(excluded.registration_date, registration_date),
+model = coalesce(excluded.model, model);
+
+INSERT OR IGNORE INTO Client(user_id, id, device_type, client_type, is_valid, registration_date, label, model, last_active, mls_public_keys, is_mls_capable)
+VALUES(:user_id, :id, :device_type, :client_type, :is_valid, :registration_date, :label, :model, :last_active, :mls_public_keys, :is_mls_capable);
+}
+
+selectNewClientsForUser:
+SELECT * FROM NewClient;
+
+clearNewClients:
+DELETE FROM NewClient;

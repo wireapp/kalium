@@ -1,0 +1,53 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity;
+import kotlinx.datetime.Instant;
+
+CREATE TABLE UnreadEvent (
+      id TEXT NOT NULL,
+      type TEXT AS UnreadEventTypeEntity NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      creation_date INTEGER AS Instant NOT NULL,
+
+    FOREIGN KEY (id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    PRIMARY KEY (id, conversation_id)
+);
+
+deleteUnreadEvent:
+DELETE FROM UnreadEvent WHERE id = ? AND conversation_id = ?;
+
+deleteUnreadEvents:
+DELETE FROM UnreadEvent WHERE creation_date <= ? AND conversation_id = ?;
+
+insertEvent:
+INSERT OR IGNORE INTO UnreadEvent(id, type, conversation_id, creation_date)
+VALUES(?, ?, ?, ?);
+
+updateEvent:
+UPDATE OR IGNORE UnreadEvent
+SET type = :type
+WHERE id = :id AND conversation_id = :conversation_id;
+
+getUnreadEvents:
+SELECT conversation_id, type FROM UnreadEvent;
+
+getConversationsUnreadEvents:
+SELECT
+    conversation_id AS conversationId,
+    SUM(CASE WHEN type = 'KNOCK' THEN 1 ELSE 0 END) AS knocksCount,
+    SUM(CASE WHEN type = 'MISSED_CALL' THEN 1 ELSE 0 END) AS missedCallsCount,
+    SUM(CASE WHEN type = 'MENTION' THEN 1 ELSE 0 END) AS mentionsCount,
+    SUM(CASE WHEN type = 'REPLY' THEN 1 ELSE 0 END) AS repliesCount,
+    SUM(CASE WHEN type = 'MESSAGE' THEN 1 ELSE 0 END) AS messagesCount
+FROM UnreadEvent
+GROUP BY conversation_id;
+
+getPaginatedUnreadEvents:
+SELECT * FROM UnreadEvent LIMIT ? OFFSET ?;
+
+getConversationUnreadEventsCount:
+SELECT COUNT(*) FROM UnreadEvent WHERE  conversation_id = ?;
+
+getUnreadArchivedConversationsCount:
+SELECT COUNT(DISTINCT ue.conversation_id) FROM UnreadEvent ue
+INNER JOIN Conversation c ON ue.conversation_id = c.qualified_id
+WHERE c.archived = 1;

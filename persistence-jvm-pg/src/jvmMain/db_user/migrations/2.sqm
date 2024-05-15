@@ -1,0 +1,192 @@
+DROP VIEW MessageDetailsView;
+DROP VIEW ConversationDetails;
+
+CREATE VIEW IF NOT EXISTS MessageDetailsView
+AS SELECT
+Message.id AS id,
+Message.conversation_id AS conversationId,
+Message.content_type AS contentType,
+Message.date AS date,
+Message.sender_user_id AS senderUserId,
+Message.sender_client_id AS senderClientId,
+Message.status AS status,
+Message.last_edit_timestamp AS lastEditTimestamp,
+Message.visibility AS visibility,
+User.name AS senderName,
+User.handle AS senderHandle,
+User.email AS senderEmail,
+User.phone AS senderPhone,
+User.accent_id AS senderAccentId,
+User.team AS senderTeamId,
+User.connection_status AS senderConnectionStatus,
+User.preview_asset_id AS senderPreviewAssetId,
+User.complete_asset_id AS senderCompleteAssetId,
+User.user_availability_status AS senderAvailabilityStatus,
+User.user_type AS senderUserType,
+User.bot_service AS senderBotService,
+User.deleted AS senderIsDeleted,
+TextContent.text_body AS text,
+AssetContent.asset_size AS assetSize,
+AssetContent.asset_name AS assetName,
+AssetContent.asset_mime_type AS assetMimeType,
+AssetContent.asset_upload_status AS assetUploadStatus,
+AssetContent.asset_download_status AS assetDownloadStatus,
+AssetContent.asset_otr_key AS assetOtrKey,
+AssetContent.asset_sha256 AS assetSha256,
+AssetContent.asset_id AS assetId,
+AssetContent.asset_token AS assetToken,
+AssetContent.asset_domain AS assetDomain,
+AssetContent.asset_encryption_algorithm AS assetEncryptionAlgorithm,
+AssetContent.asset_width AS assetWidth,
+AssetContent.asset_height AS assetHeight,
+AssetContent.asset_duration_ms AS assetDuration,
+AssetContent.asset_normalized_loudness AS assetNormalizedLoudness,
+MissedCallContent.caller_id AS callerId,
+MemberChangeContent.member_change_list AS memberChangeList,
+MemberChangeContent.member_change_type AS memberChangeType,
+UnknownContent.unknown_type_name AS unknownContentTypeName,
+UnknownContent.unknown_encoded_data AS unknownContentData,
+RestrictedAssetContent.asset_mime_type AS restrictedAssetMimeType,
+RestrictedAssetContent.asset_size AS restrictedAssetSize,
+RestrictedAssetContent.asset_name AS restrictedAssetName,
+FailedToDecryptContent.unknown_encoded_data AS failedToDecryptData,
+ConversationNameChangedContent.conversation_name AS conversationName,
+'{' || IFNULL(
+    (SELECT GROUP_CONCAT('"' || emoji || '":' || count)
+    FROM (
+        SELECT COUNT(*) count, Reaction.emoji emoji
+        FROM Reaction
+        WHERE Reaction.message_id = Message.id
+        AND Reaction.conversation_id = Message.conversation_id
+        GROUP BY Reaction.emoji
+    )),
+    '')
+|| '}' AS allReactionsJson,
+IFNULL(
+    (SELECT '[' || GROUP_CONCAT('"' || Reaction.emoji || '"') || ']'
+    FROM Reaction
+    WHERE Reaction.message_id = Message.id
+        AND Reaction.conversation_id = Message.conversation_id
+        AND Reaction.sender_id = SelfUser.id
+    ),
+    '[]'
+) AS selfReactionsJson,
+IFNULL(
+    (SELECT '[' || GROUP_CONCAT(
+        '{"start":' || start || ', "length":' || length ||
+        ', "userId":{"value":"' || replace(substr(user_id, 0, instr(user_id, '@')), '@', '') || '"' ||
+        ',"domain":"' || replace(substr(user_id, instr(user_id, '@')+1, length(user_id)), '@', '') || '"' ||
+        '}' || '}') || ']'
+    FROM MessageMention
+    WHERE MessageMention.message_id = Message.id
+        AND MessageMention.conversation_id = Message.conversation_id
+    ),
+    '[]'
+) AS mentions
+FROM Message
+LEFT JOIN User ON Message.sender_user_id = User.qualified_id
+LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
+LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
+LEFT JOIN MessageMissedCallContent AS MissedCallContent ON Message.id = MissedCallContent.message_id AND Message.conversation_id = MissedCallContent.conversation_id
+LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
+LEFT JOIN MessageUnknownContent AS UnknownContent ON Message.id = UnknownContent.message_id AND Message.conversation_id = UnknownContent.conversation_id
+LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id = RestrictedAssetContent.message_id AND RestrictedAssetContent.conversation_id = RestrictedAssetContent.conversation_id
+LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id = FailedToDecryptContent.message_id AND Message.conversation_id = FailedToDecryptContent.conversation_id
+LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
+LEFT JOIN SelfUser;
+
+CREATE VIEW IF NOT EXISTS ConversationDetails AS
+SELECT
+Conversation.qualified_id AS qualifiedId,
+CASE (Conversation.type)
+    WHEN "ONE_ON_ONE" THEN  User.name
+    WHEN "CONNECTION_PENDING" THEN connection_user.name
+    ELSE Conversation.name
+    END AS name,
+Conversation.type,
+Call.status AS callStatus,
+CASE (Conversation.type)
+    WHEN "ONE_ON_ONE" THEN  User.preview_asset_id
+    WHEN "CONNECTION_PENDING" THEN connection_user.preview_asset_id
+    END AS previewAssetId,
+Conversation.muted_status AS mutedStatus,
+CASE (Conversation.type)
+    WHEN "ONE_ON_ONE" THEN User.team
+    ELSE Conversation.team_id
+    END AS teamId,
+CASE (Conversation.type)
+        WHEN "CONNECTION_PENDING" THEN Connection.last_update
+        ELSE Conversation.last_modified_date
+        END AS lastModifiedDate,
+Conversation.last_read_date AS lastReadDate,
+CASE (Conversation.type)
+    WHEN "ONE_ON_ONE" THEN  User.user_availability_status
+    WHEN "CONNECTION_PENDING" THEN connection_user.user_availability_status
+    END AS userAvailabilityStatus,
+CASE (Conversation.type)
+    WHEN "ONE_ON_ONE" THEN  User.user_type
+    WHEN "CONNECTION_PENDING" THEN connection_user.user_type
+    END AS userType,
+CASE (Conversation.type)
+    WHEN "ONE_ON_ONE" THEN  User.bot_service
+    WHEN "CONNECTION_PENDING" THEN connection_user.bot_service
+    END AS botService,
+CASE (Conversation.type)
+    WHEN "ONE_ON_ONE" THEN  User.deleted
+    WHEN "CONNECTION_PENDING" THEN connection_user.deleted
+    END AS userDeleted,
+CASE (Conversation.type)
+    WHEN "ONE_ON_ONE" THEN  User.connection_status
+    WHEN "CONNECTION_PENDING" THEN connection_user.connection_status
+    END AS connectionStatus,
+CASE (Conversation.type)
+    WHEN "ONE_ON_ONE" THEN  User.qualified_id
+    WHEN "CONNECTION_PENDING" THEN connection_user.qualified_id
+    END AS otherUserId,
+CASE
+    WHEN ((SELECT id FROM SelfUser LIMIT 1) LIKE (Conversation.creator_id || '@%')) THEN 1
+    ELSE 0
+    END AS isCreator,
+Conversation.last_notified_message_date AS lastNotifiedMessageDate,
+(SELECT COUNT() FROM Message AS message
+    WHERE message.conversation_id = Conversation.qualified_id
+    AND (DateTime(message.date) >  DateTime(Conversation.last_read_date))
+    AND message.content_type IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL') AND message.visibility IS 'VISIBLE')
+    AS unreadMessageCount,
+(SELECT COUNT() FROM MessageMention
+    WHERE message_id IN (SELECT Message.id FROM Message WHERE Message.conversation_id = Conversation.qualified_id
+                 AND (DateTime(Message.date) >  DateTime(Conversation.last_read_date))
+                 AND Message.content_type IN ('TEXT') AND Message.visibility IS 'VISIBLE')
+         AND conversation_id = Conversation.qualified_id
+         AND user_id = (SELECT SelfUser.id FROM SelfUser LIMIT 1))
+    AS unreadMentionsCount,
+(SELECT COUNT() FROM Member
+    WHERE Member.user == (SELECT SelfUser.id FROM SelfUser LIMIT 1)
+    AND Member.conversation == Conversation.qualified_id
+    LIMIT 1)
+    AS isMember,
+Conversation.protocol,
+Conversation.mls_cipher_suite,
+Conversation.mls_epoch,
+Conversation.mls_group_id,
+Conversation.mls_last_keying_material_update,
+Conversation.mls_group_state,
+Conversation.access_list,
+Conversation.access_role_list,
+Conversation.team_id,
+Conversation.mls_proposal_timer,
+Conversation.muted_time,
+Conversation.creator_id,
+Conversation.last_modified_date
+FROM Conversation
+LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
+    AND Conversation.type IS "ONE_ON_ONE"
+    AND Member.user IS NOT (SELECT SelfUser.id FROM SelfUser LIMIT 1)
+LEFT JOIN User ON User.qualified_id = Member.user
+LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualified_id
+    AND (Connection.status = 'SENT'
+         OR Connection.status = 'PENDING'
+         OR Connection.status = "NOT_CONNECTED"
+         AND Conversation.type IS "CONNECTION_PENDING")
+LEFT JOIN User AS connection_user ON Connection.qualified_to = connection_user.qualified_id
+LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = Conversation.qualified_id AND Call.status IS "STILL_ONGOING" ORDER BY created_at DESC LIMIT 1);

@@ -1,0 +1,21 @@
+CREATE TABLE Metadata (
+    key TEXT NOT NULL PRIMARY KEY,
+    stringValue TEXT NOT NULL
+);
+
+insertValue:
+INSERT INTO Metadata(key, stringValue)
+VALUES (?, ?)
+ON CONFLICT(key) DO UPDATE SET stringValue = excluded.stringValue;
+
+selectValueByKey:
+SELECT stringValue FROM Metadata WHERE key = ?;
+
+deleteValue:
+DELETE FROM Metadata WHERE key = ?;
+
+deleteAllExcept:
+DELETE FROM Metadata WHERE key NOT IN ?;
+
+deleteAll:
+DELETE FROM Metadata;

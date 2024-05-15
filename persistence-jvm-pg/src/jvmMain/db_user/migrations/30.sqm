@@ -1,0 +1,14 @@
+CREATE TABLE UnreadEvent (
+      id TEXT NOT NULL,
+      type TEXT NOT NULL,
+      conversation_id TEXT NOT NULL,
+      creation_date INTEGER NOT NULL,
+
+    FOREIGN KEY (id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+    PRIMARY KEY (id, conversation_id)
+);
+
+INSERT OR IGNORE INTO UnreadEvent(id, type, conversation_id, creation_date)
+SELECT id, 'MESSAGE', conversationId, date FROM MessagePreview AS message
+WHERE isUnread AND isSelfMessage = 0
+AND visibility = 'VISIBLE' AND contentType IN ('TEXT', 'ASSET', 'KNOCK', 'MISSED_CALL');
