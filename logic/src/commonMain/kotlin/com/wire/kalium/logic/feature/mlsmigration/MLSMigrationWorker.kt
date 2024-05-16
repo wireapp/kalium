@@ -42,7 +42,7 @@ internal class MLSMigrationWorkerImpl(
     override suspend fun runMigration() =
         syncMigrationConfigurations().flatMap {
             userConfigRepository.getMigrationConfiguration().getOrNull()?.let { configuration ->
-                if (configuration.status.toBoolean() && configuration.hasMigrationStarted()) {
+                if (configuration.hasMigrationStarted()) {
                     kaliumLogger.i("Running proteus to MLS migration")
                     mlsMigrator.migrateProteusConversations().flatMap {
                         if (configuration.hasMigrationEnded()) {

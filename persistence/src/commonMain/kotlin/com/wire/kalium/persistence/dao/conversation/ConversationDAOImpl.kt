@@ -353,11 +353,13 @@ internal class ConversationDAOImpl internal constructor(
 
     override suspend fun updateConversationProtocolAndCipherSuite(
         conversationId: QualifiedIDEntity,
+        groupID: String?,
         protocol: ConversationEntity.Protocol,
         cipherSuite: ConversationEntity.CipherSuite
     ): Boolean {
         return withContext(coroutineContext) {
-            conversationQueries.updateConversationProtocol(
+            conversationQueries.updateConversationGroupIdAndProtocolInfo(
+                groupID,
                 protocol,
                 cipherSuite,
                 conversationId

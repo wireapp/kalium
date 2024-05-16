@@ -1033,6 +1033,7 @@ internal class ConversationDataSource internal constructor(
             wrapStorageRequest {
                 conversationDAO.updateConversationProtocolAndCipherSuite(
                     conversationId = conversationId.toDao(),
+                    groupID = conversationResponse.groupId,
                     protocol = protocol.toDao(),
                     cipherSuite = ConversationEntity.CipherSuite.fromTag(conversationResponse.mlsCipherSuiteTag)
                 )

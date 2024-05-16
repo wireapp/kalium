@@ -99,6 +99,7 @@ interface ConversationDAO {
     suspend fun updateConversationType(conversationID: QualifiedIDEntity, type: ConversationEntity.Type)
     suspend fun updateConversationProtocolAndCipherSuite(
         conversationId: QualifiedIDEntity,
+        groupID: String?,
         protocol: ConversationEntity.Protocol,
         cipherSuite: ConversationEntity.CipherSuite
     ): Boolean

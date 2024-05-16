@@ -440,13 +440,18 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenNewValue_whenUpdatingProtocol_thenItsUpdatedAndReportedAsChanged() = runTest {
         val conversation = conversationEntity5
+        val groupId = "groupId"
+        val updatedCipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521
         val updatedProtocol = ConversationEntity.Protocol.MLS
 
         conversationDAO.insertConversation(conversation)
-        val changed = conversationDAO.updateConversationProtocol(conversation.id, updatedProtocol)
+        val changed =
+            conversationDAO.updateConversationProtocolAndCipherSuite(conversation.id, groupId, updatedProtocol, updatedCipherSuite)
 
         assertTrue(changed)
         assertEquals(conversationDAO.getConversationByQualifiedID(conversation.id)?.protocol, updatedProtocol)
+        assertEquals(conversationDAO.getConversationByQualifiedID(conversation.id)?.mlsGroupId, groupId)
+        assertEquals(conversationDAO.getConversationByQualifiedID(conversation.id)?.mlsCipherSuite, updatedCipherSuite)
     }
 
     @Test
@@ -455,7 +460,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val updatedProtocol = ConversationEntity.Protocol.PROTEUS
 
         conversationDAO.insertConversation(conversation)
-        val changed = conversationDAO.updateConversationProtocol(conversation.id, updatedProtocol)
+        val changed = conversationDAO.updateConversationProtocolAndCipherSuite(
+            conversation.id,
+            null,
+            updatedProtocol,
+            cipherSuite = ConversationEntity.CipherSuite.UNKNOWN
+        )
 
         assertFalse(changed)
     }
