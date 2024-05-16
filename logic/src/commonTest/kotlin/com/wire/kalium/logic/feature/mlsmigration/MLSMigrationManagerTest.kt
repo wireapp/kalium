@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.TimestampKeyRepository
 import com.wire.kalium.logic.feature.TimestampKeys
-import com.wire.kalium.logic.featureFlags.FeatureSupport
+import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -121,7 +121,11 @@ class MLSMigrationManagerTest {
         val clientRepository = mock(ClientRepository::class)
 
         @Mock
+<<<<<<< HEAD
         val featureSupport = mock(FeatureSupport::class)
+=======
+        val isMLSEnabledUseCase = mock(classOf<IsMLSEnabledUseCase>())
+>>>>>>> ab0156b20f (fix(mls): respect default protocol in one-on-one conversation initialisation (WPB-8975) (#2768))
 
         @Mock
         val timestampKeyRepository = mock(TimestampKeyRepository::class)
@@ -148,9 +152,15 @@ class MLSMigrationManagerTest {
         }
 
         fun withIsMLSSupported(supported: Boolean) = apply {
+<<<<<<< HEAD
             every {
                 featureSupport.isMLSSupported
             }.returns(supported)
+=======
+            given(isMLSEnabledUseCase)
+                .invocation { isMLSEnabledUseCase.invoke() }
+                .thenReturn(supported)
+>>>>>>> ab0156b20f (fix(mls): respect default protocol in one-on-one conversation initialisation (WPB-8975) (#2768))
         }
 
         suspend fun withHasRegisteredMLSClient(result: Boolean) = apply {
@@ -161,7 +171,7 @@ class MLSMigrationManagerTest {
 
         fun arrange() = this to MLSMigrationManagerImpl(
             kaliumConfigs,
-            featureSupport,
+            isMLSEnabledUseCase,
             incrementalSyncRepository,
             lazy { clientRepository },
             lazy { timestampKeyRepository },

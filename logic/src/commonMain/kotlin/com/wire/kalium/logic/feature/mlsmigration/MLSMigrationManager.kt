@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.TimestampKeyRepository
 import com.wire.kalium.logic.feature.TimestampKeys
-import com.wire.kalium.logic.featureFlags.FeatureSupport
+import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -46,11 +46,10 @@ import kotlinx.datetime.Clock
  * Orchestrates the migration from proteus to MLS.
  */
 internal interface MLSMigrationManager
-
 @Suppress("LongParameterList")
 internal class MLSMigrationManagerImpl(
     private val kaliumConfigs: KaliumConfigs,
-    private val featureSupport: FeatureSupport,
+    private val isMLSEnabledUseCase: IsMLSEnabledUseCase,
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val clientRepository: Lazy<ClientRepository>,
     private val timestampKeyRepository: Lazy<TimestampKeyRepository>,
@@ -73,7 +72,7 @@ internal class MLSMigrationManagerImpl(
             incrementalSyncRepository.incrementalSyncState.collect { syncState ->
                 ensureActive()
                 if (syncState is IncrementalSyncStatus.Live &&
-                    featureSupport.isMLSSupported &&
+                    isMLSEnabledUseCase() &&
                     clientRepository.value.hasRegisteredMLSClient().getOrElse(false)
                 ) {
                     updateMigration()
