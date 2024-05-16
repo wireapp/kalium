@@ -26,7 +26,6 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.TimestampKeyRepository
 import com.wire.kalium.logic.feature.TimestampKeys
 import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
-import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -47,7 +46,6 @@ import kotlinx.datetime.Clock
  * Orchestrates the migration from proteus to MLS.
  */
 internal interface MLSMigrationManager
-//todo: fix based on the usecase
 @Suppress("LongParameterList")
 internal class MLSMigrationManagerImpl(
     private val kaliumConfigs: KaliumConfigs,

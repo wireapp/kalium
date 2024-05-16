@@ -42,7 +42,7 @@ internal class MLSMigrationWorkerImpl(
     override suspend fun runMigration() =
         syncMigrationConfigurations().flatMap {
             userConfigRepository.getMigrationConfiguration().getOrNull()?.let { configuration ->
-                if (configuration.hasMigrationStarted()) {
+                if (configuration.status.toBoolean() && configuration.hasMigrationStarted()) {
                     kaliumLogger.i("Running proteus to MLS migration")
                     mlsMigrator.migrateProteusConversations().flatMap {
                         if (configuration.hasMigrationEnded()) {
@@ -57,7 +57,6 @@ internal class MLSMigrationWorkerImpl(
                 }
             } ?: Either.Right(Unit)
         }
-
     private suspend fun syncMigrationConfigurations(): Either<CoreFailure, Unit> =
         featureConfigRepository.getFeatureConfigs().flatMap { configurations ->
             mlsConfigHandler.handle(configurations.mlsModel, duringSlowSync = false)
