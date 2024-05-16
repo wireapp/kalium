@@ -52,6 +52,7 @@ import com.wire.kalium.logic.functional.mapRight
 import com.wire.kalium.logic.functional.mapToRightOr
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
@@ -63,7 +64,6 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationR
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationProtocolResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationReceiptModeResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
@@ -1019,17 +1019,8 @@ internal class ConversationDataSource internal constructor(
     ): Either<CoreFailure, Boolean> =
         wrapApiRequest {
             conversationApi.updateProtocol(conversationId.toApi(), protocol.toApi())
-        }.flatMap { response ->
-            when (response) {
-                UpdateConversationProtocolResponse.ProtocolUnchanged -> {
-                    // no need to update conversation
-                    Either.Right(false)
-                }
-
-                is UpdateConversationProtocolResponse.ProtocolUpdated -> {
-                    updateProtocolLocally(conversationId, protocol)
-                }
-            }
+        }.flatMap {
+            updateProtocolLocally(conversationId, protocol)
         }
 
     override suspend fun updateProtocolLocally(
@@ -1039,6 +1030,7 @@ internal class ConversationDataSource internal constructor(
         wrapApiRequest {
             conversationApi.fetchConversationDetails(conversationId.toApi())
         }.flatMap { conversationResponse ->
+            // val isRemoteCipherSuiteValid = (conversationResponse.epoch != null) && conversationResponse.epoch!! > 0.toULong()
             wrapStorageRequest {
                 conversationDAO.updateConversationProtocol(
                     conversationId = conversationId.toDao(),
@@ -1046,13 +1038,11 @@ internal class ConversationDataSource internal constructor(
                 )
             }.flatMap { updated ->
                 if (updated) {
-                    val selfUserTeamId = selfTeamIdProvider().getOrNull()
-                    persistConversations(listOf(conversationResponse), selfUserTeamId, invalidateMembers = true)
-                } else {
-                    Either.Right(Unit)
-                }.map {
-                    updated
+                    return@flatMap true.right()
                 }
+                val selfUserTeamId = selfTeamIdProvider().getOrNull()
+                persistConversations(listOf(conversationResponse), selfUserTeamId, invalidateMembers = true)
+                    .map { true }
             }
         }
 
