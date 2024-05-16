@@ -374,8 +374,10 @@ WHERE qualified_id = ?;
 
 updateConversationProtocol {
 UPDATE Conversation
-SET protocol = :protocol
-WHERE qualified_id = :qualified_id AND protocol != :protocol;
+SET protocol = :protocol,
+    mls_cipher_suite = :mls_cipher_suite
+WHERE qualified_id = :qualified_id AND
+ protocol != :protocol;
 SELECT changes();
 }
 

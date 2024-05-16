@@ -97,9 +97,10 @@ interface ConversationDAO {
     suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity?
     suspend fun updateConversationName(conversationId: QualifiedIDEntity, conversationName: String, timestamp: String)
     suspend fun updateConversationType(conversationID: QualifiedIDEntity, type: ConversationEntity.Type)
-    suspend fun updateConversationProtocol(
+    suspend fun updateConversationProtocolAndCipherSuite(
         conversationId: QualifiedIDEntity,
         protocol: ConversationEntity.Protocol,
+        cipherSuite: ConversationEntity.CipherSuite
     ): Boolean
 
     suspend fun getConversationsByUserId(userId: UserIDEntity): List<ConversationEntity>

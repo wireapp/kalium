@@ -1030,11 +1030,11 @@ internal class ConversationDataSource internal constructor(
         wrapApiRequest {
             conversationApi.fetchConversationDetails(conversationId.toApi())
         }.flatMap { conversationResponse ->
-            // val isRemoteCipherSuiteValid = (conversationResponse.epoch != null) && conversationResponse.epoch!! > 0.toULong()
             wrapStorageRequest {
-                conversationDAO.updateConversationProtocol(
+                conversationDAO.updateConversationProtocolAndCipherSuite(
                     conversationId = conversationId.toDao(),
-                    protocol = protocol.toDao()
+                    protocol = protocol.toDao(),
+                    cipherSuite = ConversationEntity.CipherSuite.fromTag(conversationResponse.mlsCipherSuiteTag)
                 )
             }.flatMap { updated ->
                 if (updated) {

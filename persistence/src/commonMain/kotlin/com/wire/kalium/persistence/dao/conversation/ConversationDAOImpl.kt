@@ -351,9 +351,17 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.updateConversationType(type, conversationID)
         }
 
-    override suspend fun updateConversationProtocol(conversationId: QualifiedIDEntity, protocol: ConversationEntity.Protocol): Boolean {
+    override suspend fun updateConversationProtocolAndCipherSuite(
+        conversationId: QualifiedIDEntity,
+        protocol: ConversationEntity.Protocol,
+        cipherSuite: ConversationEntity.CipherSuite
+    ): Boolean {
         return withContext(coroutineContext) {
-            conversationQueries.updateConversationProtocol(protocol, conversationId).executeAsOne() > 0
+            conversationQueries.updateConversationProtocol(
+                protocol,
+                cipherSuite,
+                conversationId
+            ).executeAsOne() > 0
         }
     }
 
