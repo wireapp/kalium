@@ -43,7 +43,12 @@ object FeatureConfigTest {
         secondFactorPasswordChallengeModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
         ssoModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
         validateSAMLEmailsModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
-        mlsModel: MLSModel = MLSModel(SupportedProtocol.PROTEUS, setOf(SupportedProtocol.PROTEUS), Status.ENABLED),
+        mlsModel: MLSModel = MLSModel(
+            defaultProtocol = SupportedProtocol.PROTEUS,
+            supportedProtocols = setOf(SupportedProtocol.PROTEUS),
+            status = Status.ENABLED,
+            supportedCipherSuite = null
+        ),
         e2EIModel: E2EIModel = E2EIModel(E2EIConfigModel("url", 10000L), Status.ENABLED),
         mlsMigrationModel: MLSMigrationModel? = MLSMigrationModel(
             Instant.DISTANT_FUTURE,
