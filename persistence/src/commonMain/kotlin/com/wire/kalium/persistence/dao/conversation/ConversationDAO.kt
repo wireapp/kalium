@@ -36,6 +36,15 @@ interface ConversationDAO {
     suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
     suspend fun updateConversation(conversationEntity: ConversationEntity)
     suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String)
+<<<<<<< HEAD
+=======
+    suspend fun updateMlsGroupStateAndCipherSuite(
+        groupState: ConversationEntity.GroupState,
+        cipherSuite: ConversationEntity.CipherSuite,
+        groupId: String
+    )
+
+>>>>>>> dc0b429e5d (fix(mls): update migrated conversation with correct group id and cipher suites (WPB-9169) (#2770))
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: Instant)
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity)
     suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant)
@@ -47,6 +56,7 @@ interface ConversationDAO {
         protocol: ConversationEntity.Protocol,
         teamId: String? = null
     ): List<QualifiedIDEntity>
+
     suspend fun getTeamConversationIdsReadyToCompleteMigration(teamId: String): List<QualifiedIDEntity>
     suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationViewEntity?>
     suspend fun observeGetConversationBaseInfoByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
@@ -56,6 +66,7 @@ interface ConversationDAO {
         userId: UserIDEntity,
         protocol: ConversationEntity.Protocol
     ): List<QualifiedIDEntity>
+
     suspend fun observeOneOnOneConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?>
     suspend fun getConversationProtocolInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo?
     suspend fun observeConversationByGroupID(groupID: String): Flow<ConversationViewEntity?>
@@ -89,7 +100,13 @@ interface ConversationDAO {
     suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity?
     suspend fun updateConversationName(conversationId: QualifiedIDEntity, conversationName: String, timestamp: String)
     suspend fun updateConversationType(conversationID: QualifiedIDEntity, type: ConversationEntity.Type)
-    suspend fun updateConversationProtocol(conversationId: QualifiedIDEntity, protocol: ConversationEntity.Protocol): Boolean
+    suspend fun updateConversationProtocolAndCipherSuite(
+        conversationId: QualifiedIDEntity,
+        groupID: String?,
+        protocol: ConversationEntity.Protocol,
+        cipherSuite: ConversationEntity.CipherSuite
+    ): Boolean
+
     suspend fun getConversationsByUserId(userId: UserIDEntity): List<ConversationEntity>
     suspend fun updateConversationReceiptMode(conversationID: QualifiedIDEntity, receiptMode: ConversationEntity.ReceiptMode)
     suspend fun updateGuestRoomLink(
