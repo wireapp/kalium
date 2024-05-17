@@ -1,0 +1,6 @@
+ALTER TABLE ServerConfiguration
+ADD COLUMN proxyApi TEXT;
+ALTER TABLE ServerConfiguration
+ADD COLUMN proxyNeedsAuthentication INTEGER AS Boolean;
+ALTER TABLE ServerConfiguration
+ADD COLUMN proxyPort INTEGER AS Int;

@@ -52,6 +52,14 @@ sqldelight {
             srcDirs.setFrom(listOf("src/commonMain/$sourceFolderName"))
             schemaOutputDirectory.set(file("src/commonMain/$sourceFolderName/schemas"))
         }
+
+        create("GlobalDatabaseJvm") {
+            dialect(libs.sqldelight.postgres.get().toString())
+            packageName.set("com.wire.kalium.persistence")
+            val sourceFolderName = "db_global"
+            srcDirs.setFrom(listOf("src/jvmMain/$sourceFolderName"))
+            schemaOutputDirectory.set(file("src/commonMain/$sourceFolderName/schemas"))
+        }
     }
 }
 
