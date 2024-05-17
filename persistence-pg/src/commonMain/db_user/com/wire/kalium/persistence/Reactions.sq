@@ -1,0 +1,58 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+
+CREATE TABLE Reaction (
+    message_id TEXT NOT NULL,
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+    sender_id TEXT AS QualifiedIDEntity NOT NULL,
+    emoji TEXT NOT NULL,
+    date TEXT NOT NULL,
+    FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE,
+    FOREIGN KEY (sender_id) REFERENCES User(qualified_id) ON DELETE CASCADE,
+    PRIMARY KEY (message_id, conversation_id, sender_id, emoji)
+);
+CREATE INDEX reaction_sender_index ON Reaction(sender_id);
+CREATE INDEX reaction_emoji_index ON Reaction(emoji);
+
+doesMessageExist:
+SELECT 1 FROM Message WHERE id = :message_id AND conversation_id = :conversation_id;
+
+deleteAllReactionsOnMessageFromUser:
+DELETE FROM Reaction WHERE message_id = ? AND conversation_id = ? AND sender_id = ?;
+
+deleteReaction:
+DELETE FROM Reaction WHERE message_id = ? AND conversation_id = ? AND sender_id = ? AND emoji = ?;
+
+insertReaction:
+INSERT INTO Reaction(message_id, conversation_id, sender_id, emoji, date)
+VALUES(?, ?, ?, ?, ?);
+
+deleteAllReactionsForMessage:
+DELETE FROM Reaction WHERE message_id = ? AND conversation_id = ?;
+
+selectByMessageIdAndConversationIdAndSenderId:
+SELECT * FROM Reaction WHERE message_id = ? AND conversation_id = ? AND sender_id = ?;
+
+CREATE VIEW IF NOT EXISTS MessageDetailsReactions
+AS SELECT
+	Reaction.emoji,
+	Reaction.message_id AS messageId,
+	Reaction.conversation_id AS conversationId,
+	User.qualified_id AS userId,
+	User.name,
+	User.handle,
+	User.preview_asset_id AS previewAssetId,
+	User.user_type AS userType,
+	User.deleted,
+	User.connection_status AS connectionStatus,
+	User.user_availability_status AS userAvailabilityStatus
+FROM
+	Reaction
+INNER JOIN User ON User.qualified_id = Reaction.sender_id
+ORDER BY Reaction.emoji;
+
+selectMessageReactionsByConversationIdAndMessageId:
+SELECT *
+FROM MessageDetailsReactions
+WHERE
+	messageId = ?
+	AND conversationId = ?;

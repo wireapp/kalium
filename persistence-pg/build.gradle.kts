@@ -21,6 +21,7 @@ plugins {
     id(libs.plugins.android.library.get().pluginId)
     id(libs.plugins.kotlin.multiplatform.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
+    id(libs.plugins.sqldelight.get().pluginId)
     id(libs.plugins.kalium.library.get().pluginId)
 }
 
@@ -30,7 +31,32 @@ kaliumLibrary {
     }
 }
 
+dependencies {
+    implementation(libs.kotlin.nativeUtils)
+}
+
+sqldelight {
+    databases {
+        create("UserDatabase") {
+            dialect(libs.sqldelight.dialect.get().toString())
+            packageName.set("com.wire.kalium.persistence")
+            val sourceFolderName = "db_user"
+            srcDirs.setFrom(listOf("src/jvmMain/$sourceFolderName"))
+            schemaOutputDirectory.set(file("src/commonMain/$sourceFolderName/schemas"))
+        }
+
+        create("GlobalDatabase") {
+            dialect(libs.sqldelight.dialect.get().toString())
+            packageName.set("com.wire.kalium.persistence")
+            val sourceFolderName = "db_global"
+            srcDirs.setFrom(listOf("src/jvmMain/$sourceFolderName"))
+            schemaOutputDirectory.set(file("src/commonMain/$sourceFolderName/schemas"))
+        }
+    }
+}
+
 kotlin {
+
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -41,8 +67,13 @@ kotlin {
                 implementation(libs.sqldelight.coroutinesExtension)
                 implementation(libs.sqldelight.primitiveAdapters)
                 implementation(libs.ktxSerialization)
+                implementation(libs.settings.kmp)
+                implementation(libs.ktxDateTime)
+                implementation(libs.sqldelight.androidxPaging)
 
-                implementation(project(":logger"))
+                implementation(project(":util"))
+                api(project(":persistence-api"))
+                api(project(":logger"))
             }
         }
         val commonTest by getting {
@@ -54,12 +85,13 @@ kotlin {
                 implementation(libs.settings.kmpTest)
             }
         }
-        val jvmMain by getting
+        val jvmMain by getting {
+            dependencies {
+                implementation(libs.sqldelight.jvmDriver)
+                implementation(libs.sqlite.xerialDriver)
+            }
+        }
         val jvmTest by getting
-        val jsMain by getting
-        val jsTest by getting
-        val androidMain by getting
-        val appleMain by getting
     }
 }
 

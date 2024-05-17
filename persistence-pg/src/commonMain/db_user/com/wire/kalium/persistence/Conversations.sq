@@ -1,0 +1,503 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity;
+import kotlin.Boolean;
+import kotlin.collections.List;
+import kotlinx.datetime.Instant;
+
+CREATE TABLE Conversation (
+    qualified_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
+    name TEXT,
+    type TEXT AS ConversationEntity.Type NOT NULL,
+    team_id TEXT,
+    mls_group_id TEXT,
+    mls_group_state TEXT AS ConversationEntity.GroupState NOT NULL,
+    mls_epoch INTEGER DEFAULT 0 NOT NULL,
+    mls_proposal_timer TEXT,
+    protocol TEXT AS ConversationEntity.Protocol NOT NULL,
+    muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT "ALL_ALLOWED" NOT NULL,
+    muted_time INTEGER DEFAULT 0 NOT NULL,
+    creator_id TEXT NOT NULL,
+    -- when even a conversation event is received, last_modified_date is updated for specific events
+    -- e.g. updated when a new message text is received but not when a message is deleted
+    -- this is used for sorting conversations
+    last_modified_date INTEGER AS Instant NOT NULL,
+    -- whenever a user is notified about the message belonging to this conversation
+    -- last_notified_date is updated, this would be typically a notification on the client side
+    last_notified_date INTEGER AS Instant,
+    -- whenever a user opens a conversation, last_read_date is updated with date of the last_modified_date,
+    -- so that it reflects that timestamp of the last read message.
+    last_read_date INTEGER AS Instant DEFAULT 0 NOT NULL,
+    access_list TEXT AS List<ConversationEntity.Access> NOT NULL,
+    access_role_list TEXT AS List<ConversationEntity.AccessRole> NOT NULL,
+    mls_last_keying_material_update_date INTEGER AS Instant DEFAULT 0 NOT NULL,
+    mls_cipher_suite TEXT AS ConversationEntity.CipherSuite NOT NULL,
+    receipt_mode TEXT AS ConversationEntity.ReceiptMode DEFAULT "DISABLED" NOT NULL,
+    guest_room_link TEXT,
+    message_timer INTEGER DEFAULT(NULL),
+    user_message_timer INTEGER DEFAULT(NULL),
+    incomplete_metadata INTEGER AS Boolean NOT NULL DEFAULT 0,
+    mls_degraded_notified INTEGER AS Boolean NOT NULL DEFAULT 0,
+    is_guest_password_protected INTEGER AS Boolean DEFAULT 0 NOT NULL,
+    archived INTEGER AS Boolean NOT NULL DEFAULT 0,
+    archived_date_time INTEGER AS Instant,
+    -- mls_verification_status
+    verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT 'NOT_VERIFIED',
+    proteus_verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT 'NOT_VERIFIED',
+    degraded_conversation_notified INTEGER AS Boolean NOT NULL DEFAULT 1,
+    legal_hold_status TEXT AS ConversationEntity.LegalHoldStatus NOT NULL DEFAULT 'DISABLED'
+);
+
+CREATE TABLE ConversationLegalHoldStatusChangeNotified (
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
+    legal_hold_status_change_notified INTEGER AS Boolean NOT NULL DEFAULT 1,
+
+    FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+-- Optimise comparisons and sorting by dates:
+CREATE INDEX conversation_modified_date_index ON Conversation(last_modified_date);
+CREATE INDEX conversation_notified_date_index ON Conversation(last_notified_date);
+CREATE INDEX conversation_read_date_index ON Conversation(last_read_date);
+CREATE INDEX conversation_creator_index ON Conversation(creator_id);
+CREATE INDEX conversation_verification_status ON Conversation(verification_status);
+CREATE INDEX conversation_archiverd_index ON Conversation(archived);
+CREATE INDEX conversation_muted_status_index ON Conversation(muted_status);
+
+conversationIDByGroupId:
+SELECT qualified_id, verification_status FROM Conversation WHERE mls_group_id = :groupId;
+
+deleteAllConversations:
+DELETE FROM Conversation;
+
+deleteConversation:
+DELETE FROM Conversation WHERE qualified_id = ?;
+
+insertConversation:
+INSERT INTO Conversation(qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, access_list, access_role_list, last_read_date, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer, incomplete_metadata, archived, archived_date_time)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(qualified_id) DO UPDATE SET
+name = excluded.name,
+type = excluded.type,
+team_id = excluded.team_id,
+mls_group_id = excluded.mls_group_id,
+mls_epoch = excluded.mls_epoch,
+protocol = excluded.protocol,
+muted_status = excluded.muted_status,
+muted_time = excluded.muted_time,
+creator_id = excluded.creator_id,
+access_list = excluded.access_list,
+access_role_list = excluded.access_role_list,
+last_modified_date = last_modified_date,
+last_notified_date = last_notified_date,
+last_read_date = last_read_date,
+mls_last_keying_material_update_date  = excluded.mls_last_keying_material_update_date,
+mls_cipher_suite = excluded.mls_cipher_suite,
+receipt_mode = excluded.receipt_mode,
+message_timer = excluded.message_timer,
+user_message_timer = excluded.user_message_timer,
+incomplete_metadata = excluded.incomplete_metadata,
+archived = excluded.archived,
+archived_date_time = excluded.archived_date_time;
+
+updateConversation:
+UPDATE Conversation
+SET name = ?, type = ?, team_id = ?
+WHERE qualified_id = ?;
+
+updateConversationGroupState:
+UPDATE Conversation
+SET mls_group_state = ?
+WHERE mls_group_id = ?;
+
+updateConversationNotificationsDateWithTheLastMessage:
+UPDATE Conversation
+SET last_notified_date = (
+    SELECT creation_date
+    FROM Message
+    WHERE
+        Message.conversation_id = :conversationId
+    ORDER BY Message.creation_date DESC LIMIT 1
+)
+WHERE qualified_id = :conversationId;
+
+
+updateConversationNotificationsDate:
+UPDATE Conversation
+SET last_notified_date = :last_notified_date
+WHERE qualified_id = :conversationId;
+
+updateAllNotifiedConversationsNotificationsDate:
+UPDATE Conversation
+SET last_notified_date = (
+    SELECT creation_date
+    FROM Message
+    ORDER BY Message.creation_date DESC LIMIT 1
+);
+
+updateConversationModifiedDate:
+UPDATE Conversation
+SET last_modified_date = ?
+WHERE qualified_id = ?;
+
+getConversationLastReadDate:
+SELECT last_read_date FROM Conversation WHERE qualified_id = ?;
+
+updateConversationReadDate:
+UPDATE Conversation
+SET last_read_date = :last_read_date
+WHERE qualified_id = :qualified_id;
+
+isInformedAboutDegradedMLSVerification:
+SELECT mls_degraded_notified FROM Conversation
+WHERE qualified_id = :qualified_id;
+
+updateInformedAboutDegradedMLSVerification:
+UPDATE Conversation
+SET mls_degraded_notified = ?
+WHERE qualified_id = :qualified_id;
+
+updateDegradedConversationNotifiedFlag:
+UPDATE Conversation
+SET degraded_conversation_notified = ?
+WHERE qualified_id = :qualified_id;
+
+CREATE VIEW IF NOT EXISTS ConversationDetails AS
+SELECT
+Conversation.qualified_id AS qualifiedId,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.name
+    WHEN 'CONNECTION_PENDING' THEN connection_user.name
+    ELSE Conversation.name
+END AS name,
+Conversation.type,
+Call.status AS callStatus,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.preview_asset_id
+    WHEN 'CONNECTION_PENDING' THEN connection_user.preview_asset_id
+END AS previewAssetId,
+Conversation.muted_status AS mutedStatus,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN User.team
+    ELSE Conversation.team_id
+END AS teamId,
+CASE (Conversation.type)
+    WHEN 'CONNECTION_PENDING' THEN Connection.last_update_date
+    ELSE Conversation.last_modified_date
+END AS lastModifiedDate,
+Conversation.last_read_date AS lastReadDate,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.user_availability_status
+    WHEN 'CONNECTION_PENDING' THEN connection_user.user_availability_status
+END AS userAvailabilityStatus,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.user_type
+    WHEN 'CONNECTION_PENDING' THEN connection_user.user_type
+END AS userType,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.bot_service
+    WHEN 'CONNECTION_PENDING' THEN connection_user.bot_service
+END AS botService,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.deleted
+    WHEN 'CONNECTION_PENDING' THEN connection_user.deleted
+END AS userDeleted,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.defederated
+    WHEN 'CONNECTION_PENDING' THEN connection_user.defederated
+END AS userDefederated,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.supported_protocols
+    WHEN 'CONNECTION_PENDING' THEN connection_user.supported_protocols
+END AS userSupportedProtocols,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.connection_status
+    WHEN 'CONNECTION_PENDING' THEN connection_user.connection_status
+END AS connectionStatus,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.qualified_id
+    WHEN 'CONNECTION_PENDING' THEN connection_user.qualified_id
+END AS otherUserId,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN User.active_one_on_one_conversation_id
+    WHEN 'CONNECTION_PENDING' THEN connection_user.active_one_on_one_conversation_id
+END AS otherUserActiveConversationId,
+CASE
+    WHEN ((SELECT id FROM SelfUser LIMIT 1) LIKE (Conversation.creator_id || '@%')) THEN 1
+    ELSE 0
+END AS isCreator,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN coalesce(User.active_one_on_one_conversation_id = Conversation.qualified_id, 0)
+    ELSE 1
+END AS isActive,
+Conversation.last_notified_date AS lastNotifiedMessageDate,
+memberRole. role AS selfRole,
+Conversation.protocol,
+Conversation.mls_cipher_suite,
+Conversation.mls_epoch,
+Conversation.mls_group_id,
+Conversation.mls_last_keying_material_update_date,
+Conversation.mls_group_state,
+Conversation.access_list,
+Conversation.access_role_list,
+Conversation.team_id,
+Conversation.mls_proposal_timer,
+Conversation.muted_time,
+Conversation.creator_id,
+Conversation.last_modified_date,
+Conversation.receipt_mode,
+Conversation.message_timer,
+Conversation.user_message_timer,
+Conversation.incomplete_metadata,
+Conversation.archived,
+Conversation.archived_date_time,
+Conversation.verification_status AS mls_verification_status,
+Conversation.proteus_verification_status,
+Conversation.legal_hold_status
+FROM Conversation
+LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
+    AND Conversation.type IS 'ONE_ON_ONE'
+    AND Member.user IS NOT (SELECT SelfUser.id FROM SelfUser LIMIT 1)
+LEFT JOIN Member AS memberRole ON Conversation.qualified_id = memberRole.conversation
+    AND memberRole.user IS (SELECT SelfUser.id FROM SelfUser LIMIT 1)
+LEFT JOIN User ON User.qualified_id = Member.user
+LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualified_id
+    AND (Connection.status = 'SENT'
+         OR Connection.status = 'PENDING'
+         OR Connection.status = 'NOT_CONNECTED'
+         AND Conversation.type IS 'CONNECTION_PENDING')
+LEFT JOIN User AS connection_user ON Connection.qualified_to = connection_user.qualified_id
+LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = Conversation.qualified_id AND Call.status IS 'STILL_ONGOING' ORDER BY created_at DESC LIMIT 1);
+
+selectAllConversationDetails:
+SELECT * FROM ConversationDetails
+WHERE
+    type IS NOT 'SELF'
+    AND (
+    type IS 'GROUP'
+    OR (type IS 'ONE_ON_ONE' AND (name IS NOT NULL AND otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
+    OR (type IS 'ONE_ON_ONE' AND userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
+    OR (type IS 'CONNECTION_PENDING' AND otherUserId IS NOT NULL) -- show connection requests even without metadata
+    )
+    AND (protocol IS 'PROTEUS' OR protocol IS 'MIXED' OR (protocol IS 'MLS' AND mls_group_state IS 'ESTABLISHED'))
+    AND archived = :fromArchive
+    AND isActive
+ORDER BY lastModifiedDate DESC, name IS NULL, name COLLATE NOCASE ASC;
+
+selectAllConversations:
+SELECT * FROM ConversationDetails WHERE type IS NOT 'CONNECTION_PENDING' ORDER BY last_modified_date DESC, name ASC;
+
+selectAllTeamProteusConversationsReadyForMigration:
+SELECT
+qualified_id,
+(SELECT count(*) FROM Member WHERE conversation = qualified_id) AS memberCount,
+(SELECT count(*) FROM Member LEFT JOIN User ON User.qualified_id = Member.user WHERE Member.conversation = Conversation.qualified_id AND (User.supported_protocols = 'MLS' OR User.supported_protocols = 'MLS,PROTEUS' OR User.supported_protocols = 'PROTEUS,MLS')) AS mlsCapableMemberCount
+FROM Conversation
+WHERE type IS 'GROUP' AND protocol IS 'MIXED' AND team_id = ? AND memberCount = mlsCapableMemberCount;
+
+selectByQualifiedId:
+SELECT * FROM ConversationDetails WHERE qualifiedId = ?;
+
+selectConversationByQualifiedId:
+SELECT qualified_id, name, type, team_id, mls_group_id, mls_group_state, mls_epoch, mls_proposal_timer, protocol, muted_status, muted_time, creator_id, last_modified_date, last_notified_date, last_read_date, access_list, access_role_list, mls_last_keying_material_update_date, mls_cipher_suite, receipt_mode, message_timer, user_message_timer, archived, archived_date_time, verification_status, proteus_verification_status, legal_hold_status FROM Conversation WHERE qualified_id = ?;
+
+selectProtocolInfoByQualifiedId:
+SELECT protocol, mls_group_id, mls_group_state, mls_epoch ,
+mls_last_keying_material_update_date, mls_cipher_suite FROM Conversation WHERE qualified_id = ?;
+
+selectReceiptModeFromGroupConversationByQualifiedId:
+SELECT receipt_mode FROM ConversationDetails WHERE qualifiedId = ? AND type IS 'GROUP';
+
+selectByGroupId:
+SELECT * FROM ConversationDetails WHERE mls_group_id = ?;
+
+selectByGroupState:
+SELECT * FROM ConversationDetails WHERE mls_group_state = ? AND (protocol IS 'MLS' OR protocol IS 'MIXED');
+
+selectActiveOneOnOneConversation:
+SELECT * FROM ConversationDetails
+WHERE qualifiedId = (SELECT active_one_on_one_conversation_id FROM User WHERE qualified_id = :user_id);
+
+selectOneOnOneConversationIdsByProtocol:
+SELECT Member.conversation FROM Member
+JOIN Conversation ON Conversation.qualified_id = Member.conversation
+WHERE Conversation.type = 'ONE_ON_ONE' AND Conversation.protocol = :protocol AND Member.user = :user;
+
+getConversationIdByGroupId:
+SELECT qualified_id FROM Conversation WHERE mls_group_id = ?;
+
+selectConversationIds:
+SELECT qualified_id FROM Conversation WHERE protocol = :protocol AND type = :type AND (:teamId IS NULL OR team_id = :teamId);
+
+updateConversationMutingStatus:
+UPDATE Conversation
+SET muted_status = ?, muted_time = ?
+WHERE qualified_id = ?;
+
+updateConversationArchivingStatus:
+UPDATE Conversation
+SET archived = ?, archived_date_time = ?
+WHERE qualified_id = ?;
+
+updateAccess:
+UPDATE Conversation SET access_list= ?, access_role_list = ? WHERE qualified_id = ?;
+
+updateKeyingMaterialDate:
+UPDATE Conversation SET mls_last_keying_material_update_date= ? WHERE mls_group_id = ?;
+
+selectByKeyingMaterialUpdate:
+SELECT mls_group_id FROM Conversation WHERE mls_group_state = ? AND (protocol IS 'MLS' OR protocol IS 'MIXED') AND mls_last_keying_material_update_date - ? <0 AND mls_group_id IS NOT NULL;
+
+updateProposalTimer:
+UPDATE Conversation SET mls_proposal_timer = COALESCE(mls_proposal_timer, ?) WHERE mls_group_id = ?;
+
+clearProposalTimer:
+UPDATE Conversation SET mls_proposal_timer = NULL WHERE mls_group_id = ?;
+
+selectProposalTimers:
+SELECT mls_group_id, mls_proposal_timer FROM Conversation WHERE (protocol IS 'MLS' OR protocol IS 'MIXED') AND mls_group_id IS NOT NULL AND mls_proposal_timer IS NOT NULL;
+
+whoDeletedMeInConversation:
+SELECT sender_user_id FROM Message WHERE id IN (SELECT message_id FROM MessageMemberChangeContent WHERE conversation_id = :conversation_id AND member_change_type = 'REMOVED' AND member_change_list LIKE ('%' || :self_user_id || '%')) ORDER BY creation_date DESC LIMIT 1;
+
+updateConversationName:
+UPDATE Conversation
+SET name = ?, last_modified_date = ?
+WHERE qualified_id = ?;
+
+updateConversationType:
+UPDATE Conversation
+SET type = ?
+WHERE qualified_id = ?;
+
+updateConversationProtocol {
+UPDATE Conversation
+SET protocol = :protocol
+WHERE qualified_id = :qualified_id AND protocol != :protocol;
+SELECT changes();
+}
+
+selfConversationId:
+SELECT qualified_id FROM Conversation WHERE type = 'SELF' AND protocol = ? LIMIT 1;
+
+getMLSGroupIdAndUserIdByClientId:
+SELECT Conversation.mls_group_id, Client.user_id, Client.id FROM Client
+LEFT JOIN Member ON Client.user_id = Member.user
+LEFT JOIN Conversation
+ON Member.conversation = Conversation.qualified_id OR Client.user_id = Conversation.qualified_id
+WHERE Conversation.mls_group_id IS NOT NULL AND Client.id = :clientId
+AND Conversation.mls_group_state IS 'ESTABLISHED'
+ORDER BY Conversation.type DESC LIMIT 1;
+
+getMLSGroupIdByUserId:
+SELECT Conversation.mls_group_id FROM Member
+JOIN Conversation ON Conversation.qualified_id = Member.conversation
+WHERE Conversation.mls_group_id IS NOT NULL AND mls_group_state IS 'ESTABLISHED' AND Member.user = :userId LIMIT 1;
+
+getMLSGroupIdByConversationId:
+SELECT Conversation.mls_group_id FROM Conversation
+WHERE Conversation.qualified_id = :conversationId
+AND Conversation.mls_group_state IS 'ESTABLISHED';
+
+getEstablishedSelfMLSGroupId:
+SELECT Conversation.mls_group_id FROM Conversation
+WHERE type = 'SELF'
+AND protocol = 'MLS'
+AND Conversation.mls_group_state IS 'ESTABLISHED';
+
+updateConversationReceiptMode:
+UPDATE Conversation
+SET receipt_mode = ?
+WHERE qualified_id = ?;
+
+updateGuestRoomLink:
+UPDATE Conversation
+SET guest_room_link = :link, is_guest_password_protected = :isPasswordProtected
+WHERE qualified_id = :conversationId;
+
+getGuestRoomLinkByConversationId:
+SELECT guest_room_link, is_guest_password_protected FROM Conversation WHERE qualified_id = :conversationId;
+
+updateMessageTimer:
+UPDATE Conversation
+SET message_timer = ?
+WHERE qualified_id = ?;
+
+getMessageTimer:
+SELECT message_timer FROM Conversation WHERE qualified_id = ?;
+
+updateUserMessageTimer:
+UPDATE Conversation
+SET user_message_timer = ?
+WHERE qualified_id = ?;
+
+selectConversationIdsWithoutMetadata:
+SELECT qualified_id
+FROM Conversation
+WHERE type IS NOT 'SELF' AND incomplete_metadata = 1;
+
+updateMlsVerificationStatus:
+UPDATE Conversation
+SET verification_status = :status
+WHERE qualified_id = :conversationId;
+
+updateLegalHoldStatus {
+UPDATE Conversation
+SET legal_hold_status = :legal_hold_status
+WHERE qualified_id = :qualified_id AND legal_hold_status != :legal_hold_status;
+}
+
+upsertLegalHoldStatusChangeNotified {
+INSERT INTO ConversationLegalHoldStatusChangeNotified(conversation_id, legal_hold_status_change_notified)
+VALUES (:conversationId, :notified)
+ON CONFLICT(conversation_id) DO UPDATE SET
+    legal_hold_status_change_notified = excluded.legal_hold_status_change_notified
+    WHERE legal_hold_status_change_notified != excluded.legal_hold_status_change_notified;
+}
+
+selectLegalHoldStatus:
+SELECT legal_hold_status FROM Conversation
+WHERE qualified_id = :conversationId;
+
+selectLegalHoldStatusChangeNotified:
+SELECT legal_hold_status_change_notified FROM ConversationLegalHoldStatusChangeNotified
+WHERE conversation_id = :conversationId;
+
+selectDegradedConversationNotified:
+SELECT degraded_conversation_notified FROM Conversation
+WHERE qualified_id = :conversationId;
+
+clearContent {
+DELETE FROM Asset WHERE key IN (SELECT asset_id FROM MessageAssetContent WHERE conversation_id = :conversationId);
+DELETE FROM Message WHERE conversation_id = :conversationId;
+}
+
+selectChanges:
+SELECT changes();
+
+CREATE TRIGGER addMessageAfterProteusVerificationStatusChange
+AFTER UPDATE ON Conversation
+WHEN new.proteus_verification_status != old.proteus_verification_status
+AND (new.proteus_verification_status  = 'VERIFIED' OR old.proteus_verification_status = 'VERIFIED')
+AND new.protocol != 'MLS'
+BEGIN
+    INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility)
+    VALUES(
+        (SELECT lower(hex(randomblob(4)) || '-' || lower(hex(randomblob(2))) || '-4' ||
+        substr(lower(hex(randomblob(2))),2) || '-a' || substr(lower(hex(randomblob(2))),2)
+        || '-' || lower(hex(randomblob(6))))),
+        (CASE (new.proteus_verification_status)
+            WHEN 'VERIFIED' THEN 'CONVERSATION_VERIFIED_PROTEUS'
+            ELSE 'CONVERSATION_DEGRADED_PROTEUS' END
+        ),
+        new.qualified_id,
+        (SELECT CAST((julianday('now') - 2440587.5) * 86400 * 1000 AS INTEGER)),
+        (SELECT SelfUser.id FROM SelfUser LIMIT 1),
+        (SELECT Client.id FROM Client WHERE Client.user_id = (SELECT SelfUser.id FROM SelfUser LIMIT 1) LIMIT 1),
+        'SENT',
+        'VISIBLE'
+    );
+
+    UPDATE Conversation
+    SET degraded_conversation_notified = (new.proteus_verification_status != 'DEGRADED')
+    WHERE qualified_id = new.qualified_id;
+END;

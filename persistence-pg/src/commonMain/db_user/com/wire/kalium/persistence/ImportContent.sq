@@ -1,0 +1,104 @@
+importUserTable:
+INSERT OR IGNORE INTO User SELECT * FROM backup_db.User;
+
+-- Parsing Ambiguity
+--When the INSERT statement to which the UPSERT is attached takes its values from a SELECT statement,
+--there is a potential parsing ambiguity. The parser might not be able to tell if the "ON" keyword is
+--introducing the UPSERT or if it is the ON clause of a join. To work around this, the SELECT statement
+--should always include a WHERE clause, even if that WHERE clause is just "WHERE true".
+--Ambiguous use of ON:
+--INSERT INTO t1 SELECT * FROM t2
+--ON CONFLICT(x) DO UPDATE SET y=excluded.y;
+
+--Ambiguity resolved using a WHERE clause:
+--INSERT INTO t1 SELECT * FROM t2 WHERE true
+--ON CONFLICT(x) DO UPDATE SET y=excluded.y;
+
+--https://www.sqlite.org/lang_UPSERT.html
+
+importConversationTable:
+INSERT OR IGNORE INTO Conversation
+SELECT * FROM backup_db.Conversation WHERE TRUE -- see above before thinking of removing this
+ON CONFLICT(qualified_id) DO UPDATE SET
+        last_read_date =
+    CASE WHEN last_read_date > excluded.last_read_date
+        THEN last_read_date
+        ELSE excluded.last_read_date END,
+        last_modified_date =
+    CASE WHEN last_modified_date > excluded.last_modified_date
+     THEN last_modified_date
+     ELSE excluded.last_modified_date END,
+        last_notified_date =
+    CASE WHEN last_notified_date > excluded.last_notified_date
+        THEN last_notified_date
+        ELSE excluded.last_notified_date END;
+
+importMessageTable:
+INSERT OR IGNORE INTO Message SELECT * FROM backup_db.Message;
+
+-- this need to be called only if the client ID fron the backup and local match
+importCallsTable:
+INSERT OR IGNORE INTO Call SELECT
+    conversation_id,
+    id,
+    CASE WHEN status != 'MISSED' THEN 'CLOSED' ELSE status END,
+    caller_id,
+    conversation_type,
+    created_at,
+    type
+    FROM backup_db.Call;
+
+importMessageAssetContentTable:
+INSERT OR IGNORE INTO MessageAssetContent SELECT
+    message_id,
+    conversation_id,
+    asset_size,
+    asset_name,
+    asset_mime_type,
+    asset_otr_key,
+    asset_sha256,
+    asset_id,
+    asset_token,
+    asset_domain,
+    asset_encryption_algorithm,
+    asset_width,
+    asset_height,
+    asset_duration_ms,
+    asset_normalized_loudness
+    FROM backup_db.MessageAssetContent;
+
+importMessageRestrictedAssetContentTable:
+INSERT OR IGNORE INTO MessageRestrictedAssetContent SELECT * FROM backup_db.MessageRestrictedAssetContent;
+
+importMessageConversationChangedContentTable:
+INSERT OR IGNORE INTO MessageConversationChangedContent SELECT * FROM backup_db.MessageConversationChangedContent;
+
+importMessageFailedToDecryptContentTable:
+INSERT OR IGNORE INTO MessageFailedToDecryptContent SELECT * FROM backup_db.MessageFailedToDecryptContent;
+
+importMessageMemberChangeContentTable:
+INSERT OR IGNORE INTO MessageMemberChangeContent SELECT * FROM backup_db.MessageMemberChangeContent;
+
+importMessageMentionTable:
+INSERT OR IGNORE INTO MessageMention SELECT * FROM backup_db.MessageMention;
+
+importMessageMissedCallContentTable:
+INSERT OR IGNORE INTO MessageMissedCallContent SELECT * FROM backup_db.MessageMissedCallContent;
+
+importMessageTextContentTable:
+INSERT OR IGNORE INTO MessageTextContent SELECT * FROM backup_db.MessageTextContent;
+
+importMessageUnknownContentTable:
+INSERT OR IGNORE INTO MessageUnknownContent SELECT * FROM backup_db.MessageUnknownContent;
+
+importReactionTable:
+INSERT OR IGNORE INTO Reaction SELECT * FROM backup_db.Reaction;
+
+importReceiptTable:
+INSERT OR IGNORE INTO Receipt SELECT * FROM backup_db.Receipt;
+
+importCompositeButtons:
+INSERT OR IGNORE INTO ButtonContent SELECT * FROM backup_db.ButtonContent;
+
+importMessageLocationContentTable:
+INSERT OR IGNORE INTO MessageConversationLocationContent SELECT * FROM backup_db.MessageConversationLocationContent;

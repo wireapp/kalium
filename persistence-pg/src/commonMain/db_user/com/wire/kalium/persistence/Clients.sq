@@ -1,0 +1,122 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import com.wire.kalium.persistence.dao.client.ClientTypeEntity;
+import com.wire.kalium.persistence.dao.client.DeviceTypeEntity;
+import kotlin.Boolean;
+import kotlin.String;
+import kotlin.collections.Map;
+import kotlinx.datetime.Instant;
+
+CREATE TABLE Client (
+    user_id TEXT AS QualifiedIDEntity NOT NULL,
+    id TEXT NOT NULL,
+    device_type TEXT AS DeviceTypeEntity,
+    is_valid INTEGER  AS Boolean NOT NULL DEFAULT 1,
+    -- is_proteus_verified
+    is_verified INTEGER  AS Boolean NOT NULL DEFAULT 0,
+    client_type TEXT AS ClientTypeEntity DEFAULT NULL,
+    registration_date INTEGER AS Instant DEFAULT NULL,
+    label TEXT DEFAULT NULL,
+    model TEXT DEFAULT NULL,
+    last_active INTEGER AS Instant DEFAULT NULL,
+    mls_public_keys TEXT AS Map<String, String> DEFAULT NULL,
+    is_mls_capable INTEGER AS Boolean NOT NULL DEFAULT 0,
+    FOREIGN KEY (user_id) REFERENCES User(qualified_id) ON DELETE CASCADE,
+    PRIMARY KEY (user_id, id)
+);
+
+deleteAllClients:
+DELETE FROM User;
+
+deleteClient:
+DELETE FROM Client WHERE user_id = ? AND id = ?;
+
+deeteCliuentsOfUser:
+DELETE FROM Client WHERE user_id = :userId AND id IN :clientIds;
+
+usersWithNotClients:
+SELECT U.qualified_id
+FROM User U
+LEFT JOIN Client C ON U.qualified_id = C.user_id
+WHERE U.qualified_id IN :userIds AND C.user_id IS NULL;
+
+deleteClientsOfUser:
+DELETE FROM Client WHERE user_id = ?;
+
+insertClient:
+INSERT INTO Client(user_id, id, device_type, client_type, is_valid, registration_date, label, model, last_active, mls_public_keys, is_mls_capable)
+VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+ON CONFLICT(id, user_id) DO UPDATE SET
+device_type = coalesce(excluded.device_type, device_type),
+registration_date = coalesce(excluded.registration_date, registration_date),
+label = coalesce(excluded.label, label),
+model = coalesce(excluded.model, model),
+is_valid = is_valid,
+last_active = coalesce(excluded.last_active, last_active),
+mls_public_keys = excluded.mls_public_keys,
+is_mls_capable = excluded.is_mls_capable OR is_mls_capable; -- it's not possible to remove mls capability once added
+
+selectAllClients:
+SELECT * FROM Client;
+
+selectAllClientsByUserId:
+SELECT * FROM Client WHERE user_id = ?;
+
+selectAllClientsByUserIdList:
+SELECT * FROM Client WHERE user_id IN :userIds GROUP BY user_id;
+
+selectAllClientsByConversation:
+SELECT * FROM Client WHERE user_id IN (SELECT user FROM Member WHERE conversation = :conversation_id);
+
+selectByUserAndClientId:
+SELECT * FROM Client WHERE user_id = :user_id AND id = :client_id;
+
+deleteClientsOfUserExcept:
+DELETE FROM Client WHERE user_id = :user_id AND id NOT IN :exception_ids;
+
+tryMarkAsInvalid:
+UPDATE OR IGNORE Client SET is_valid = 0 WHERE user_id = :user_id AND  id IN :clientId_List;
+
+conversationRecipets:
+SELECT * FROM Client WHERE user_id IN (SELECT user FROM Member WHERE conversation = :conversation_id) AND is_valid = 1;
+
+updateClientProteusVerificationStatus:
+UPDATE Client SET is_verified = :is_verified WHERE user_id = :user_id AND id = :client_id;
+
+selectRecipientsByConversationAndUserId:
+SELECT *
+ FROM Client
+  WHERE user_id IN
+  (SELECT user FROM Member WHERE conversation = :conversation_id AND user_id IN :userIdList)
+  AND is_valid = 1;
+
+CREATE TRIGGER updateConversationProteusVerificationStatus
+AFTER UPDATE ON Client
+BEGIN
+    UPDATE Conversation SET proteus_verification_status = (CASE (new.is_verified) WHEN 1 THEN 'VERIFIED' ELSE 'DEGRADED' END)
+        WHERE qualified_id IN (
+            SELECT id FROM (SELECT
+                conv.qualified_id AS id,
+                conv.proteus_verification_status AS verificationStatus,
+                -- +1 is to not count a current client, for checking if conversation is verified
+                (COUNT(*) = 1 + SUM(CASE WHEN client.is_verified = 1 THEN 1 ELSE 0 END)) AS isActuallyVerified
+                FROM Conversation AS conv
+                LEFT JOIN Member AS mem ON conv.qualified_id = mem.conversation
+                LEFT JOIN Client AS client ON client.user_id = mem.user
+                WHERE conv.qualified_id IN (SELECT Member.conversation FROM Member
+                                            LEFT JOIN Client ON Client.user_id = Member.user
+                                            WHERE Client.id = new.id)
+                GROUP BY conv.qualified_id)
+            WHERE (CASE (verificationStatus) WHEN 'VERIFIED' THEN 1 ELSE 0 END) != isActuallyVerified
+        );
+END;
+
+CREATE TRIGGER updateConversationProteusVerificationStatusAfterNewClient
+AFTER INSERT ON Client
+BEGIN
+    UPDATE Conversation SET proteus_verification_status = 'DEGRADED'
+    WHERE qualified_id IN (
+        SELECT Member.conversation FROM Member
+        LEFT JOIN Client ON Client.user_id = Member.user
+        WHERE Client.id = new.id
+    );
+END;
