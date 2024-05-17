@@ -36,18 +36,18 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 // coroutines
-                api(libs.coroutines.core)
+                implementation(libs.coroutines.core)
 
-                api(libs.sqldelight.runtime)
-                api(libs.sqldelight.coroutinesExtension)
-                api(libs.sqldelight.primitiveAdapters)
-                api(libs.ktxSerialization)
-                api(libs.settings.kmp)
-                api(libs.ktxDateTime)
-                api(libs.sqldelight.androidxPaging)
+                implementation(libs.sqldelight.runtime)
+                implementation(libs.sqldelight.coroutinesExtension)
+                implementation(libs.sqldelight.primitiveAdapters)
+                implementation(libs.ktxSerialization)
+                implementation(libs.settings.kmp)
+                implementation(libs.ktxDateTime)
+                implementation(libs.sqldelight.androidxPaging)
 
                 implementation(project(":util"))
-                api(project(":logger"))
+                implementation(project(":logger"))
             }
         }
         val commonTest by getting {
