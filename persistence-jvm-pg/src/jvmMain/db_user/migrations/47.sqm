@@ -1,3 +1,0 @@
-import kotlinx.datetime.Instant;
-
-ALTER TABLE User ADD COLUMN expires_at INTEGER AS Instant;

@@ -1,3 +1,0 @@
-import kotlinx.datetime.Instant;
-
-ALTER TABLE Client ADD COLUMN last_active INTEGER AS Instant DEFAULT NULL;

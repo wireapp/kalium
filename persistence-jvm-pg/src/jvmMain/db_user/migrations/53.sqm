@@ -1,1 +1,0 @@
-ALTER TABLE Client ADD COLUMN mls_public_keys TEXT AS Map<String, String> DEFAULT NULL;

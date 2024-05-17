@@ -22,4 +22,4 @@ package com.wire.kalium.persistence.db
  * that might be necessary for future operations
  * in the future like [nuke]
  */
-//expect class PlatformDatabaseData
+expect class PlatformDatabaseData

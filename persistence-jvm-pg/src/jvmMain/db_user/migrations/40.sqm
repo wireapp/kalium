@@ -1,5 +1,0 @@
-UPDATE Message
-SET visibility = 'DELETED'
-WHERE Message.content_type = 'ASSET' AND
-        Message.visibility IS NOT 'DELETED' AND
- (SELECT message_id FROM MessageAssetContent WHERE Message.id = MessageAssetContent.message_id AND Message.conversation_id = MessageAssetContent.conversation_id) IS NULL;

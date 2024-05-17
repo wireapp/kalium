@@ -1,3 +1,0 @@
-
-originalSenderId:
-SELECT sender_user_id FROM Message WHERE conversation_id = :conversationId AND id = :messageId;

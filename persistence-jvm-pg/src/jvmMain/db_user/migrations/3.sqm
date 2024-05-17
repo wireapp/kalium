@@ -1,2 +1,0 @@
-ALTER TABLE MessageTextContent
-ADD COLUMN quoted_message_id TEXT;

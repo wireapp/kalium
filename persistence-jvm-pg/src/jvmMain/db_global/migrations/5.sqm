@@ -1,2 +1,0 @@
-ALTER TABLE ServerConfiguration
-ADD COLUMN lastBlackListCheck TEXT;

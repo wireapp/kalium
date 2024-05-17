@@ -1,3 +1,0 @@
-import kotlin.Boolean;
-
-ALTER TABLE Client ADD COLUMN is_mls_capable INTEGER AS Boolean NOT NULL DEFAULT 0;

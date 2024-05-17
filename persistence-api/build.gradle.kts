@@ -31,32 +31,7 @@ kaliumLibrary {
     }
 }
 
-dependencies {
-    implementation(libs.kotlin.nativeUtils)
-}
-
-sqldelight {
-    databases {
-        create("UserDatabase") {
-            dialect(libs.sqldelight.dialect.get().toString())
-            packageName.set("com.wire.kalium.persistence")
-            val sourceFolderName = "db_user"
-            srcDirs.setFrom(listOf("src/commonMain/$sourceFolderName"))
-            schemaOutputDirectory.set(file("src/commonMain/$sourceFolderName/schemas"))
-        }
-
-        create("GlobalDatabase") {
-            dialect(libs.sqldelight.dialect.get().toString())
-            packageName.set("com.wire.kalium.persistence")
-            val sourceFolderName = "db_global"
-            srcDirs.setFrom(listOf("src/commonMain/$sourceFolderName"))
-            schemaOutputDirectory.set(file("src/commonMain/$sourceFolderName/schemas"))
-        }
-    }
-}
-
 kotlin {
-
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -72,7 +47,6 @@ kotlin {
                 api(libs.sqldelight.androidxPaging)
 
                 implementation(project(":util"))
-                api(project(":persistence-api"))
                 api(project(":logger"))
             }
         }

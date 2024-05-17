@@ -1,8 +1,0 @@
-import com.wire.kalium.persistence.dao.client.ClientTypeEntity;
-import kotlinx.datetime.Instant;
-
-ALTER TABLE Client ADD COLUMN is_verified INTEGER AS Boolean NOT NULL DEFAULT 0;
-ALTER TABLE Client ADD COLUMN client_type TEXT AS ClientTypeEntity DEFAULT NULL;
-ALTER TABLE Client ADD COLUMN registration_date INTEGER AS Instant DEFAULT NULL;
-ALTER TABLE Client ADD COLUMN label TEXT DEFAULT NULL;
-ALTER TABLE Client ADD COLUMN model TEXT DEFAULT NULL;
