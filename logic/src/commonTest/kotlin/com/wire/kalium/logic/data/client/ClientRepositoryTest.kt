@@ -55,9 +55,9 @@ import com.wire.kalium.util.DelicateKaliumApi
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -86,7 +86,11 @@ class ClientRepositoryTest {
         clientRepository.registerMLSClient(CLIENT_ID, MLS_PUBLIC_KEY, MLS_CIPHER_SUITE)
 
         coVerify {
-            arrangement.clientRemoteRepository.registerMLSClient(eq(CLIENT_ID), eq(MLS_PUBLIC_KEY.encodeBase64()))
+            arrangement.clientRemoteRepository.registerMLSClient(
+                eq(CLIENT_ID),
+                eq(MLS_PUBLIC_KEY.encodeBase64()),
+                eq(MLS_CIPHER_SUITE)
+            )
         }.wasInvoked(once)
 
         coVerify {
@@ -472,7 +476,7 @@ class ClientRepositoryTest {
             secondFactorVerificationCode = SECOND_FACTOR_CODE,
         )
         val MLS_PUBLIC_KEY = "public_key".encodeToByteArray()
-        val MLS_CIPHER_SUITE =  CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+        val MLS_CIPHER_SUITE = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         val CLIENT_ID = TestClient.CLIENT_ID
         val CLIENT_RESULT = TestClient.CLIENT
         val TEST_FAILURE = NetworkFailure.ServerMiscommunication(
@@ -563,7 +567,7 @@ class ClientRepositoryTest {
 
         suspend fun withRegisterMLSClient(result: Either<NetworkFailure, Unit>) = apply {
             coEvery {
-                clientRemoteRepository.registerMLSClient(any(), any())
+                clientRemoteRepository.registerMLSClient(any(), any(), any())
             }.returns(result)
         }
 

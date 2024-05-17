@@ -27,7 +27,9 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseTest.Arrangement.Companion.E2EI_TEAM_SETTINGS
+import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCaseTest.Arrangement.Companion.MLS_CIPHER_SUITE
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
@@ -68,7 +70,11 @@ class RegisterMLSClientUseCaseTest {
             assertIs<RegisterMLSClientResult.Success>(result.value)
 
             coVerify {
-                arrangement.clientRepository.registerMLSClient(eq(TestClient.CLIENT_ID), eq(Arrangement.MLS_PUBLIC_KEY))
+                arrangement.clientRepository.registerMLSClient(
+                    eq(TestClient.CLIENT_ID),
+                    eq(Arrangement.MLS_PUBLIC_KEY),
+                    eq(CipherSuite.Companion.fromTag(MLS_CIPHER_SUITE))
+                )
             }.wasInvoked(exactly = once)
 
             coVerify {
@@ -101,7 +107,11 @@ class RegisterMLSClientUseCaseTest {
             assertIs<RegisterMLSClientResult.E2EICertificateRequired>(result.value)
 
             coVerify {
-                arrangement.clientRepository.registerMLSClient(eq(TestClient.CLIENT_ID), eq(Arrangement.MLS_PUBLIC_KEY))
+                arrangement.clientRepository.registerMLSClient(
+                    eq(TestClient.CLIENT_ID),
+                    eq(Arrangement.MLS_PUBLIC_KEY),
+                    eq(CipherSuite.Companion.fromTag(MLS_CIPHER_SUITE))
+                )
             }.wasNotInvoked()
 
             coVerify {
@@ -129,7 +139,11 @@ class RegisterMLSClientUseCaseTest {
             assertIs<RegisterMLSClientResult.Success>(result.value)
 
             coVerify {
-                arrangement.clientRepository.registerMLSClient(eq(TestClient.CLIENT_ID), eq(Arrangement.MLS_PUBLIC_KEY))
+                arrangement.clientRepository.registerMLSClient(
+                    eq(TestClient.CLIENT_ID),
+                    eq(Arrangement.MLS_PUBLIC_KEY),
+                    eq(CipherSuite.Companion.fromTag(MLS_CIPHER_SUITE))
+                )
             }.wasInvoked(exactly = once)
 
             coVerify {
@@ -179,7 +193,7 @@ class RegisterMLSClientUseCaseTest {
 
         suspend fun withRegisterMLSClient(result: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                clientRepository.registerMLSClient(any(), any())
+                clientRepository.registerMLSClient(any(), any(), any())
             }.returns(result)
         }
 
@@ -195,18 +209,10 @@ class RegisterMLSClientUseCaseTest {
             }.returns(Either.Right(Unit))
         }
 
-<<<<<<< HEAD
-        suspend fun withGetPublicKey(result: ByteArray) = apply {
+        suspend fun withGetPublicKey(publicKey: ByteArray, cipherSuite: UShort) = apply {
             coEvery {
                 mlsClient.getPublicKey()
-            }.returns(result)
-=======
-        fun withGetPublicKey(publicKey: ByteArray, cipherSuite: UShort) = apply {
-            given(mlsClient)
-                .suspendFunction(mlsClient::getPublicKey)
-                .whenInvoked()
-                .thenReturn(publicKey to cipherSuite)
->>>>>>> 00d9937da6 (feat: pass the MLS public key signature algorithm when updating MLS p… (#2720))
+            }.returns(publicKey to cipherSuite)
         }
 
         suspend fun withGetMLSClientSuccessful() = apply {
@@ -225,7 +231,7 @@ class RegisterMLSClientUseCaseTest {
 
         companion object {
             val MLS_PUBLIC_KEY = "public_key".encodeToByteArray()
-            val MLS_CIPHER_SUITE = 0.toUShort()
+            val MLS_CIPHER_SUITE = 1.toUShort()
             const val REFILL_AMOUNT = 100
             val RANDOM_URL = "https://random.rn"
             val E2EI_TEAM_SETTINGS = E2EISettings(
