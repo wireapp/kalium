@@ -53,10 +53,10 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 // coroutines
-                api(libs.coroutines.test)
-                api(libs.turbine)
+                implementation(libs.coroutines.test)
+                implementation(libs.turbine)
                 // MultiplatformSettings
-                api(libs.settings.kmpTest)
+                implementation(libs.settings.kmpTest)
             }
         }
         val jvmMain by getting {
