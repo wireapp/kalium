@@ -20,7 +20,6 @@ package com.wire.kalium.persistence.daokaliumdb
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ServerConfigurationQueries
-import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.persistence.model.ServerConfigWithUserIdEntity
@@ -29,127 +28,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.withContext
 import kotlin.coroutines.CoroutineContext
-
-@Suppress("FunctionParameterNaming", "LongParameterList")
-internal object ServerConfigMapper {
-
-    @Suppress("UNUSED_PARAMETER")
-    fun fromServerConfiguration(
-        id: String,
-        title: String,
-        apiBaseUrl: String,
-        accountBaseUrl: String,
-        webSocketBaseUrl: String,
-        blackListUrl: String,
-        teamsUrl: String,
-        websiteUrl: String,
-        isOnPremises: Boolean,
-        domain: String?,
-        commonApiVersion: Int,
-        federation: Boolean,
-        apiProxyHost: String?,
-        apiProxyNeedsAuthentication: Boolean?,
-        apiProxyPort: Int?,
-        lastBlackListCheck: String?
-    ): ServerConfigEntity = ServerConfigEntity(
-        id,
-        ServerConfigEntity.Links(
-            api = apiBaseUrl,
-            accounts = accountBaseUrl,
-            webSocket = webSocketBaseUrl,
-            blackList = blackListUrl,
-            teams = teamsUrl,
-            website = websiteUrl,
-            title = title,
-            isOnPremises = isOnPremises,
-            apiProxy = if (apiProxyHost != null && apiProxyNeedsAuthentication != null && apiProxyPort != null) {
-                ServerConfigEntity.ApiProxy(
-                    needsAuthentication = apiProxyNeedsAuthentication,
-                    host = apiProxyHost,
-                    port = apiProxyPort
-                )
-            } else null
-        ),
-        ServerConfigEntity.MetaData(
-            federation = federation,
-            apiVersion = commonApiVersion,
-            domain = domain
-        )
-    )
-
-    fun serverConfigWithAccId(
-        id: String?,
-        title: String?,
-        apiBaseUrl: String?,
-        accountBaseUrl: String?,
-        webSocketBaseUrl: String?,
-        blackListUrl: String?,
-        teamsUrl: String?,
-        websiteUrl: String?,
-        isOnPremises: Boolean?,
-        domain: String?,
-        commonApiVersion: Int?,
-        federation: Boolean?,
-        apiProxyHost: String?,
-        apiProxyNeedsAuthentication: Boolean?,
-        apiProxyPort: Int?,
-        lastBlackListCheck: String?,
-        id_: QualifiedIDEntity,
-    ): ServerConfigWithUserIdEntity = ServerConfigWithUserIdEntity(
-        userId = id_,
-        serverConfig = fromServerConfiguration(
-            id = id!!,
-            title = title!!,
-            apiBaseUrl = apiBaseUrl!!,
-            accountBaseUrl = accountBaseUrl!!,
-            webSocketBaseUrl = webSocketBaseUrl!!,
-            blackListUrl = blackListUrl!!,
-            teamsUrl = teamsUrl!!,
-            websiteUrl = websiteUrl!!,
-            isOnPremises = isOnPremises!!,
-            domain = domain,
-            commonApiVersion = commonApiVersion!!,
-            federation = federation!!,
-            apiProxyHost = apiProxyHost,
-            apiProxyNeedsAuthentication = apiProxyNeedsAuthentication,
-            apiProxyPort = apiProxyPort,
-            lastBlackListCheck = lastBlackListCheck
-        ),
-    )
-}
-
-interface ServerConfigurationDAO {
-    suspend fun deleteById(id: String)
-    suspend fun insert(insertData: InsertData)
-    suspend fun allConfigFlow(): Flow<List<ServerConfigEntity>>
-    suspend fun allConfig(): List<ServerConfigEntity>
-    fun configById(id: String): ServerConfigEntity?
-    suspend fun configByLinks(links: ServerConfigEntity.Links): ServerConfigEntity?
-    suspend fun updateApiVersion(id: String, commonApiVersion: Int)
-    suspend fun updateApiVersionAndDomain(id: String, domain: String, commonApiVersion: Int)
-    suspend fun configForUser(userId: UserIDEntity): ServerConfigEntity?
-    suspend fun setFederationToTrue(id: String)
-    suspend fun getServerConfigsWithAccIdWithLastCheckBeforeDate(date: String): Flow<List<ServerConfigWithUserIdEntity>>
-    suspend fun updateBlackListCheckDate(configIds: Set<String>, date: String)
-
-    data class InsertData(
-        val id: String,
-        val apiBaseUrl: String,
-        val accountBaseUrl: String,
-        val webSocketBaseUrl: String,
-        val blackListUrl: String,
-        val teamsUrl: String,
-        val websiteUrl: String,
-        val title: String,
-        val isOnPremises: Boolean,
-        val federation: Boolean,
-        val domain: String?,
-        val commonApiVersion: Int,
-        val apiProxyHost: String?,
-        val apiProxyNeedsAuthentication: Boolean?,
-        val apiProxyPort: Int?
-    )
-}
 
 internal class ServerConfigurationDAOImpl internal constructor(
     private val queries: ServerConfigurationQueries,

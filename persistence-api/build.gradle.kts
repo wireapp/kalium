@@ -42,11 +42,7 @@ kotlin {
                 implementation(libs.sqldelight.coroutinesExtension)
                 implementation(libs.sqldelight.primitiveAdapters)
                 implementation(libs.ktxSerialization)
-                implementation(libs.settings.kmp)
-                implementation(libs.ktxDateTime)
-                implementation(libs.sqldelight.androidxPaging)
 
-                implementation(project(":util"))
                 implementation(project(":logger"))
             }
         }
@@ -59,34 +55,12 @@ kotlin {
                 implementation(libs.settings.kmpTest)
             }
         }
-        val jvmMain by getting {
-            dependencies {
-                implementation(libs.sqldelight.jvmDriver)
-                implementation(libs.sqlite.xerialDriver)
-            }
-        }
+        val jvmMain by getting
         val jvmTest by getting
-        val jsMain by getting {
-            dependencies {
-                implementation(libs.sqldelight.jsDriver)
-                implementation(npm("sql.js", "1.6.2"))
-                implementation(devNpm("copy-webpack-plugin", "9.1.0"))
-            }
-        }
+        val jsMain by getting
         val jsTest by getting
-        val androidMain by getting {
-            dependencies {
-                implementation(libs.androidCrypto)
-                implementation(libs.sqldelight.androidDriver)
-                implementation(libs.sqlite.androidx)
-                implementation(libs.sql.android.cipher)
-            }
-        }
-        val appleMain by getting {
-            dependencies {
-                implementation(libs.sqldelight.nativeDriver)
-            }
-        }
+        val androidMain by getting
+        val appleMain by getting
     }
 }
 
