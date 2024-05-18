@@ -118,6 +118,18 @@ data class UpdateClientCapabilitiesRequest(
 
 @Serializable
 enum class MLSPublicKeyTypeDTO {
+    @SerialName("p256")
+    P256,
+
+    @SerialName("p384")
+    P384,
+
+    @SerialName("p521")
+    P521,
+
+    @SerialName("ed448")
+    ED448,
+
     @SerialName("ed25519")
     ED25519;
 }

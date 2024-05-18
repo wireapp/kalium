@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.data.featureConfig
 
+import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
@@ -76,14 +78,19 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
     override fun fromDTO(data: FeatureConfigData.MLS?): MLSModel =
         data?.let {
             MLSModel(
-                it.config.defaultProtocol.toModel(),
-                it.config.supportedProtocols.map { it.toModel() }.toSet(),
-                fromDTO(it.status)
+                defaultProtocol = it.config.defaultProtocol.toModel(),
+                supportedProtocols = it.config.supportedProtocols.map { it.toModel() }.toSet(),
+                status = fromDTO(it.status),
+                supportedCipherSuite = SupportedCipherSuite(
+                    default = CipherSuite.fromTag(it.config.defaultCipherSuite),
+                    supported = it.config.allowedCipherSuites.map { CipherSuite.fromTag(it) }
+                )
             )
         } ?: MLSModel(
-            SupportedProtocol.PROTEUS,
-            setOf(SupportedProtocol.PROTEUS),
-            Status.DISABLED
+            defaultProtocol = SupportedProtocol.PROTEUS,
+            supportedCipherSuite = null,
+            supportedProtocols = setOf(SupportedProtocol.PROTEUS),
+            status = Status.DISABLED
         )
 
     @Suppress("MagicNumber")

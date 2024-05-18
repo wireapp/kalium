@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.util.arrangement.repository
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
@@ -37,15 +36,10 @@ internal interface UserConfigRepositoryArrangement {
     suspend fun withSetSupportedProtocolsSuccessful()
     fun withSetDefaultProtocolSuccessful()
     fun withSetMLSEnabledSuccessful()
-<<<<<<< HEAD
-    suspend fun withSetMigrationConfigurationSuccessful()
-    suspend fun withGetMigrationConfigurationReturning(result: Either<StorageFailure, MLSMigrationModel>)
-=======
     fun withSetMigrationConfigurationSuccessful()
     fun withGetMigrationConfigurationReturning(result: Either<StorageFailure, MLSMigrationModel>)
     fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>)
     fun withGetSupportedCipherSuitesReturning(result: Either<StorageFailure, SupportedCipherSuite>)
->>>>>>> d8ec03ef73 (feat: fetch MLS config when not available locally (#2740))
 }
 
 internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrangement {
@@ -88,10 +82,7 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
         }.returns(result)
     }
 
-    override fun withGetSupportedCipherSuitesReturning(result: Either<StorageFailure, SupportedCipherSuite>) {
-        given(userConfigRepository)
-            .suspendFunction(userConfigRepository::getSupportedCipherSuite)
-            .whenInvoked()
-            .thenReturn(result)
+    override suspend fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>) {
+        coEvery { userConfigRepository.setSupportedCipherSuite(any()) }.returns(result)
     }
 }

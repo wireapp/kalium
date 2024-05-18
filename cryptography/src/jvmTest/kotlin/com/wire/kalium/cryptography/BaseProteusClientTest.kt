@@ -37,10 +37,6 @@ actual open class BaseProteusClientTest {
     ): ProteusClient {
         return databaseKey?.let {
             coreCryptoCentral(proteusStore.value, it.value).proteusClient()
-<<<<<<< HEAD
-        } ?: cryptoboxProteusClient(proteusStore.value, testCoroutineScheduler,testCoroutineScheduler)
-=======
         } ?: cryptoboxProteusClient(proteusStore.value, testCoroutineScheduler, testCoroutineScheduler)
->>>>>>> d8ec03ef73 (feat: fetch MLS config when not available locally (#2740))
     }
 }

@@ -24,14 +24,10 @@ import com.wire.crypto.CoreCryptoCallbacks
 import platform.Foundation.NSFileManager
 import kotlin.time.Duration
 
-<<<<<<< HEAD
-actual suspend fun coreCryptoCentral(rootDir: String, databaseKey: String): CoreCryptoCentral {
-=======
 actual suspend fun coreCryptoCentral(
     rootDir: String,
     databaseKey: String
 ): CoreCryptoCentral {
->>>>>>> d8ec03ef73 (feat: fetch MLS config when not available locally (#2740))
     val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
     NSFileManager.defaultManager.createDirectoryAtPath(rootDir, withIntermediateDirectories = true, null, null)
     val coreCrypto = CoreCrypto.deferredInit(path, databaseKey, null)
@@ -61,14 +57,10 @@ private class Callbacks : CoreCryptoCallbacks {
     }
 }
 
-<<<<<<< HEAD
-class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: String) : CoreCryptoCentral {
-=======
 class CoreCryptoCentralImpl(
     private val cc: CoreCrypto,
     private val rootDir: String
 ) : CoreCryptoCentral {
->>>>>>> d8ec03ef73 (feat: fetch MLS config when not available locally (#2740))
 
     override suspend fun mlsClient(
         clientId: CryptoQualifiedClientId,
@@ -76,11 +68,7 @@ class CoreCryptoCentralImpl(
         defaultCipherSuite: UShort
     ): MLSClient {
         cc.mlsInit(MLSClientImpl.toUByteList(clientId.toString()))
-<<<<<<< HEAD
-        return MLSClientImpl(cc)
-=======
         return MLSClientImpl(cc, defaultCipherSuite = defaultCipherSuite)
->>>>>>> d8ec03ef73 (feat: fetch MLS config when not available locally (#2740))
     }
 
     override suspend fun mlsClient(

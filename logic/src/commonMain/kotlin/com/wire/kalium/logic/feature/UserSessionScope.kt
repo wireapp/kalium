@@ -630,13 +630,9 @@ class UserSessionScope internal constructor(
             rootKeyStorePath = rootPathsProvider.rootMLSPath(userId),
             userId = userId,
             currentClientIdProvider = clientIdProvider,
-<<<<<<< HEAD
-            passphraseStorage = globalPreferences.passphraseStorage
-=======
             passphraseStorage = globalPreferences.passphraseStorage,
             userConfigRepository = userConfigRepository,
             featureConfigRepository = featureConfigRepository
->>>>>>> d8ec03ef73 (feat: fetch MLS config when not available locally (#2740))
         )
     }
 

@@ -26,16 +26,12 @@ interface CoreCryptoCentral {
         defaultCipherSuite: UShort
     ): MLSClient
 
-<<<<<<< HEAD
-    suspend fun mlsClient(enrollment: E2EIClient, certificateChain: CertificateChain, newMLSKeyPackageCount: UInt): MLSClient
-=======
     suspend fun mlsClient(
         enrollment: E2EIClient,
         certificateChain: CertificateChain,
         newMLSKeyPackageCount: UInt,
         defaultCipherSuite: UShort
     ): MLSClient
->>>>>>> d8ec03ef73 (feat: fetch MLS config when not available locally (#2740))
 
     suspend fun proteusClient(): ProteusClient
 
@@ -74,11 +70,7 @@ interface CoreCryptoCentral {
     suspend fun registerIntermediateCa(pem: CertificateChain)
 }
 
-<<<<<<< HEAD
-expect suspend fun coreCryptoCentral(rootDir: String, databaseKey: String): CoreCryptoCentral
-=======
 expect suspend fun coreCryptoCentral(
     rootDir: String,
     databaseKey: String
 ): CoreCryptoCentral
->>>>>>> d8ec03ef73 (feat: fetch MLS config when not available locally (#2740))

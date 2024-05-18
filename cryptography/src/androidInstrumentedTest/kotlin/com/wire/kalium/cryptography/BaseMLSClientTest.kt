@@ -22,13 +22,6 @@ import java.nio.file.Files
 
 actual open class BaseMLSClientTest {
 
-<<<<<<< HEAD
-    actual suspend fun createMLSClient(clientId: CryptoQualifiedClientId): MLSClient {
-        return createCoreCrypto(clientId).mlsClient(clientId)
-    }
-
-    actual suspend fun createCoreCrypto(clientId: CryptoQualifiedClientId): CoreCryptoCentral {
-=======
     actual suspend fun createMLSClient(
         clientId: CryptoQualifiedClientId,
         allowedCipherSuites: List<UShort>,
@@ -38,9 +31,10 @@ actual open class BaseMLSClientTest {
     }
 
     actual suspend fun createCoreCrypto(
-        clientId: CryptoQualifiedClientId
+        clientId: CryptoQualifiedClientId,
+        allowedCipherSuites: List<UShort>,
+        defaultCipherSuite: UShort
     ): CoreCryptoCentral {
->>>>>>> d8ec03ef73 (feat: fetch MLS config when not available locally (#2740))
         val root = Files.createTempDirectory("mls").toFile()
         val keyStore = root.resolve("keystore-$clientId")
         return coreCryptoCentral(keyStore.absolutePath, "test")

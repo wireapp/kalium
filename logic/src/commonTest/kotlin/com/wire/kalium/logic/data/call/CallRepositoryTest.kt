@@ -47,6 +47,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.data.conversation.EpochChangesObserver
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
@@ -1717,7 +1718,7 @@ class CallRepositoryTest {
                 Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
                 1UL,
                 Clock.System.now(),
-                Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
 
             val qualifiedClientID = QualifiedClientID(
