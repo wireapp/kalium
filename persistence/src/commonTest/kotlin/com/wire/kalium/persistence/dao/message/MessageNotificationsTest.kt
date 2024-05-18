@@ -18,7 +18,6 @@
 
 package com.wire.kalium.persistence.dao.message
 
-import app.cash.turbine.test
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -42,9 +41,7 @@ class MessageNotificationsTest : BaseMessageTest() {
 
         messageDAO.insertOrIgnoreMessage(message)
 
-        messageDAO.getNotificationMessage().test {
-            assertEquals(1, awaitItem().size)
-        }
+        assertEquals(1, messageDAO.getNotificationMessage().size)
     }
 
     @Test
@@ -55,9 +52,7 @@ class MessageNotificationsTest : BaseMessageTest() {
 
         conversationDAO.updateConversationNotificationDate(TEST_CONVERSATION_1.id)
 
-        messageDAO.getNotificationMessage().test {
-            assertEquals(0, awaitItem().size)
-        }
+        assertEquals(0, messageDAO.getNotificationMessage().size)
     }
 
     @Test
@@ -67,11 +62,9 @@ class MessageNotificationsTest : BaseMessageTest() {
         insertInitialData()
         messageDAO.insertOrIgnoreMessage(message)
 
-        messageDAO.getNotificationMessage().test {
-            assertEquals(1, awaitItem().size)
+        messageDAO.getNotificationMessage().let {
+            assertEquals(1, it.size)
             conversationDAO.updateConversationModifiedDate(TEST_CONVERSATION_1.id, date)
-
-            ensureAllEventsConsumed()
         }
     }
 
@@ -83,9 +76,7 @@ class MessageNotificationsTest : BaseMessageTest() {
 
         messageDAO.insertOrIgnoreMessage(message)
 
-        messageDAO.getNotificationMessage().test {
-            assertEquals(0, awaitItem().size)
-        }
+        assertEquals(0, messageDAO.getNotificationMessage().size)
     }
 
     @Test
@@ -95,8 +86,7 @@ class MessageNotificationsTest : BaseMessageTest() {
         insertInitialData()
         messageDAO.insertOrIgnoreMessages(listOf(message, replyMessage))
 
-        messageDAO.getNotificationMessage().test {
-            val notifications = awaitItem()
+        messageDAO.getNotificationMessage().let { notifications ->
             assertEquals(1, notifications.size)
             assertEquals(true, notifications[0].isQuotingSelf)
         }
@@ -109,8 +99,7 @@ class MessageNotificationsTest : BaseMessageTest() {
         insertInitialData()
         messageDAO.insertOrIgnoreMessages(listOf(message, replyMessage))
 
-        messageDAO.getNotificationMessage().test {
-            val notifications = awaitItem()
+        messageDAO.getNotificationMessage().let { notifications ->
             assertEquals(2, notifications.size)
             assertEquals(false, notifications.any { it.isQuotingSelf })
         }
@@ -302,8 +291,7 @@ class MessageNotificationsTest : BaseMessageTest() {
         insertInitialData()
         messageDAO.insertOrIgnoreMessages(listOf(message))
 
-        messageDAO.getNotificationMessage().test {
-            val notifications = awaitItem()
+        messageDAO.getNotificationMessage().let { notifications ->
             assertTrue { notifications.first().isSelfDelete }
         }
     }
@@ -314,8 +302,7 @@ class MessageNotificationsTest : BaseMessageTest() {
         insertInitialData()
         messageDAO.insertOrIgnoreMessages(listOf(message))
 
-        messageDAO.getNotificationMessage().test {
-            val notifications = awaitItem()
+        messageDAO.getNotificationMessage().let { notifications ->
             assertFalse { notifications.first().isSelfDelete }
         }
     }
@@ -335,8 +322,7 @@ class MessageNotificationsTest : BaseMessageTest() {
 
         messageDAO.insertOrIgnoreMessage(message)
 
-        messageDAO.getNotificationMessage().test {
-            val notifications = awaitItem()
+        messageDAO.getNotificationMessage().let { notifications ->
             assertTrue { notifications.isEmpty() }
         }
     }
