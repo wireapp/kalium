@@ -20,7 +20,6 @@ package com.wire.kalium.cryptography
 import com.wire.crypto.ClientId
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoCallbacks
-import com.wire.crypto.client.Ciphersuites
 import com.wire.crypto.coreCryptoDeferredInit
 import com.wire.kalium.cryptography.MLSClientImpl.Companion.toCrlRegistration
 import com.wire.kalium.cryptography.exceptions.CryptographyException
@@ -80,10 +79,14 @@ class CoreCryptoCentralImpl(
 
     override suspend fun mlsClient(
         clientId: CryptoQualifiedClientId,
-        cipherSuite: Ciphersuites,
+        allowedCipherSuites: List<UShort>,
         defaultCipherSuite: UShort
     ): MLSClient {
-        cc.mlsInit(clientId.toString().encodeToByteArray(), cipherSuite, null)
+        cc.mlsInit(
+            clientId.toString().encodeToByteArray(),
+            allowedCipherSuites,
+            nbKeyPackage = null
+        )
         return MLSClientImpl(cc, defaultCipherSuite)
     }
 
