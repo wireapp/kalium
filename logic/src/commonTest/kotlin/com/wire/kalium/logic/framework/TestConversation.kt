@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.conversation.MutedConversationStatus
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
@@ -343,7 +344,7 @@ object TestConversation {
         ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
         0UL,
         Instant.parse("2021-03-30T15:36:00.000Z"),
-        cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+        cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )
 
     val PROTEUS_PROTOCOL_INFO = ProtocolInfo.Proteus
@@ -353,7 +354,7 @@ object TestConversation {
         ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
         0UL,
         Instant.parse("2021-03-30T15:36:00.000Z"),
-        cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+        cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
     )
 
     val CONVERSATION = Conversation(
