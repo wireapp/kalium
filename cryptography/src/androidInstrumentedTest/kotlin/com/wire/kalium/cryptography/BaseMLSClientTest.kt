@@ -31,9 +31,7 @@ actual open class BaseMLSClientTest {
     }
 
     actual suspend fun createCoreCrypto(
-        clientId: CryptoQualifiedClientId,
-        allowedCipherSuites: List<UShort>,
-        defaultCipherSuite: UShort
+        clientId: CryptoQualifiedClientId
     ): CoreCryptoCentral {
         val root = Files.createTempDirectory("mls").toFile()
         val keyStore = root.resolve("keystore-$clientId")

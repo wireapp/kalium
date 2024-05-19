@@ -20,7 +20,11 @@ package com.wire.kalium.cryptography
 
 expect open class BaseMLSClientTest() {
 
-    suspend fun createMLSClient(clientId: CryptoQualifiedClientId): MLSClient
+    suspend fun createMLSClient(
+        clientId: CryptoQualifiedClientId,
+        allowedCipherSuites: List<UShort>,
+        defaultCipherSuite: UShort
+    ): MLSClient
 
     suspend fun createCoreCrypto(
         clientId: CryptoQualifiedClientId
