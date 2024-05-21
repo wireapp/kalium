@@ -1,1 +1,0 @@
-UPDATE ServerConfiguration SET commonApiVersion = 2 WHERE commonApiVersion = 3;

@@ -1,3 +1,0 @@
-
-enableForeignKeyContraints:
-PRAGMA foreign_keys = 1;
