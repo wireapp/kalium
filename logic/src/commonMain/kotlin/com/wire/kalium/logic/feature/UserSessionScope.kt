@@ -663,8 +663,7 @@ class UserSessionScope internal constructor(
             proposalTimersFlow,
             keyPackageLimitsProvider,
             checkRevocationList,
-            certificateRevocationListRepository,
-            sessionManager.getServerConfig().links,
+            certificateRevocationListRepository
         )
 
     private val e2eiRepository: E2EIRepository

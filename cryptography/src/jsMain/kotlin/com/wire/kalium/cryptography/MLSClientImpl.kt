@@ -22,6 +22,10 @@ import kotlin.time.Duration
 
 @Suppress("TooManyFunctions")
 class MLSClientImpl : MLSClient {
+    override fun getDefaultCipherSuite(): UShort {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun close() {
         TODO("Not yet implemented")
     }
@@ -66,7 +70,7 @@ class MLSClientImpl : MLSClient {
         TODO("Not yet implemented")
     }
 
-    override suspend fun createConversation(groupId: MLSGroupId, externalSenders: List<Ed22519Key>) {
+    override suspend fun createConversation(groupId: MLSGroupId, externalSenders: ByteArray) {
         TODO("Not yet implemented")
     }
 
