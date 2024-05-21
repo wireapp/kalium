@@ -47,6 +47,10 @@ class MLSClientImpl(
     private val keyRotationDuration: Duration = 30.toDuration(DurationUnit.DAYS)
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration.toJavaDuration(), MlsWirePolicy.PLAINTEXT)
 
+    override fun getDefaultCipherSuite(): UShort {
+        return defaultCipherSuite
+    }
+
     override suspend fun close() {
         coreCrypto.close()
     }
@@ -104,11 +108,12 @@ class MLSClientImpl(
 
     override suspend fun createConversation(
         groupId: MLSGroupId,
-        externalSenders: List<Ed22519Key>
+        externalSenders: ByteArray
     ) {
+        kaliumLogger.d("createConversation: using defaultCipherSuite=$defaultCipherSuite")
         val conf = ConversationConfiguration(
             defaultCipherSuite,
-            externalSenders.map { it.value },
+            listOf(externalSenders),
             defaultGroupConfiguration
         )
 
