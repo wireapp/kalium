@@ -33,7 +33,11 @@ class MLSClientTest : BaseMLSClientTest() {
     }
 
     private suspend fun createClient(user: SampleUser): MLSClient {
-        return createMLSClient(user.qualifiedClientId)
+        return createMLSClient(
+            clientId = user.qualifiedClientId,
+            allowedCipherSuites = ALLOWED_CIPHER_SUITES,
+            defaultCipherSuite = DEFAULT_CIPHER_SUITES
+        )
     }
 
     @Test
@@ -45,7 +49,7 @@ class MLSClientTest : BaseMLSClientTest() {
     @Test
     fun givenClient_whenCallingGetPublicKey_ReturnNonEmptyResult() = runTest {
         val mlsClient = createClient(ALICE1)
-        assertTrue(mlsClient.getPublicKey().isNotEmpty())
+        assertTrue(mlsClient.getPublicKey().first.isNotEmpty())
     }
 
     @Test
