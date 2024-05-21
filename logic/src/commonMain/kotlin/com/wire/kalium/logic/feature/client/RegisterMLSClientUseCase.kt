@@ -25,10 +25,12 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.right
+import com.wire.kalium.logic.wrapMLSRequest
 
 sealed class RegisterMLSClientResult {
     data object Success : RegisterMLSClientResult()
@@ -60,8 +62,12 @@ internal class RegisterMLSClientUseCaseImpl(
             }
         }.onFailure {
             mlsClientProvider.getMLSClient(clientId)
-        }.flatMap {
-            clientRepository.registerMLSClient(clientId, it.getPublicKey())
+        }.flatMap { mlsClient ->
+            wrapMLSRequest {
+                mlsClient.getPublicKey()
+            }
+        }.flatMap { (publicKey, cipherSuite) ->
+            clientRepository.registerMLSClient(clientId, publicKey, CipherSuite.fromTag(cipherSuite))
         }.flatMap {
             keyPackageRepository.uploadNewKeyPackages(clientId, keyPackageLimitsProvider.refillAmount())
             Either.Right(RegisterMLSClientResult.Success)
