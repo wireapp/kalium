@@ -29,11 +29,8 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
-<<<<<<< HEAD
 import com.wire.kalium.logic.data.message.MessageContent.MemberChange.FailedToAdd
-=======
 import com.wire.kalium.logic.data.mls.CipherSuite
->>>>>>> 2bcb2885ba (feat: set the correct cipher suite when claiming key packages (#2742))
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository

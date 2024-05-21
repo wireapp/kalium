@@ -41,9 +41,9 @@ import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
@@ -212,29 +212,26 @@ class KeyPackageRepositoryTest {
             }.returns(NetworkResponse.Success(KEY_PACKAGE_COUNT_DTO, mapOf(), 200))
         }
 
-<<<<<<< HEAD
         suspend fun withClaimKeyPackagesSuccessful(userId: UserId) = apply {
             coEvery {
-                keyPackageApi.claimKeyPackages(eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value)))
+                keyPackageApi.claimKeyPackages(
+                    eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag))
+                )
             }.returns(NetworkResponse.Success(CLAIMED_KEY_PACKAGES, mapOf(), 200))
         }
 
         suspend fun withClaimKeyPackagesSuccessfulWithEmptyResponse(userId: UserId) = apply {
             coEvery {
-                keyPackageApi.claimKeyPackages(eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value)))
+                keyPackageApi.claimKeyPackages(
+                    eq(
+                        KeyPackageApi.Param.SkipOwnClient(
+                            userId.toApi(),
+                            SELF_CLIENT_ID.value,
+                            CIPHER_SUITE.tag
+                        )
+                    )
+                )
             }.returns(NetworkResponse.Success(EMPTY_CLAIMED_KEY_PACKAGES, mapOf(), 200))
-=======
-        fun withClaimKeyPackagesSuccessful(userId: UserId) = apply {
-            given(keyPackageApi).suspendFunction(keyPackageApi::claimKeyPackages)
-                .whenInvokedWith(eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag)))
-                .thenReturn(NetworkResponse.Success(CLAIMED_KEY_PACKAGES, mapOf(), 200))
-        }
-
-        fun withClaimKeyPackagesSuccessfulWithEmptyResponse(userId: UserId) = apply {
-            given(keyPackageApi).suspendFunction(keyPackageApi::claimKeyPackages)
-                .whenInvokedWith(eq(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), SELF_CLIENT_ID.value, CIPHER_SUITE.tag)))
-                .thenReturn(NetworkResponse.Success(EMPTY_CLAIMED_KEY_PACKAGES, mapOf(), 200))
->>>>>>> 2bcb2885ba (feat: set the correct cipher suite when claiming key packages (#2742))
         }
 
         fun arrange() = this to KeyPackageDataSource(currentClientIdProvider, keyPackageApi, mlsClientProvider, SELF_USER_ID)

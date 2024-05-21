@@ -1415,12 +1415,9 @@ class MLSConversationRepositoryTest {
     @Test
     fun givenSuccessfulResponses_whenCallingEstablishMLSSubConversationGroup_thenGroupIsCreatedAndCommitBundleIsSentAndAccepted() =
         runTest {
-<<<<<<< HEAD
-            val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
-=======
             val defaultCipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
-            val (arrangement, mlsConversationRepository) = Arrangement()
->>>>>>> 2bcb2885ba (feat: set the correct cipher suite when claiming key packages (#2742))
+
+            val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
                 .withCommitPendingProposalsReturningNothing()
                 .withClaimKeyPackagesSuccessful()
                 .withGetMLSClientSuccessful()
@@ -1592,16 +1589,9 @@ class MLSConversationRepositoryTest {
             keyPackages: List<KeyPackageDTO> = listOf(KEY_PACKAGE),
             usersWithoutKeyPackages: Set<UserId> = setOf()
         ) = apply {
-<<<<<<< HEAD
             coEvery {
-                keyPackageRepository.claimKeyPackages(any())
+                keyPackageRepository.claimKeyPackages(any(), any())
             }.returns(Either.Right(KeyPackageClaimResult(keyPackages, usersWithoutKeyPackages)))
-=======
-            given(keyPackageRepository)
-                .suspendFunction(keyPackageRepository::claimKeyPackages)
-                .whenInvokedWith(anything(), anything())
-                .then { _, _ -> Either.Right(KeyPackageClaimResult(keyPackages, usersWithoutKeyPackages)) }
->>>>>>> 2bcb2885ba (feat: set the correct cipher suite when claiming key packages (#2742))
         }
 
         fun withKeyPackageLimits(refillAmount: Int) = apply {
