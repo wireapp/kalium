@@ -31,7 +31,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
@@ -49,7 +48,6 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
 import com.wire.kalium.logic.data.mls.CipherSuite
-import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapper
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
@@ -220,10 +218,8 @@ internal class MLSConversationDataSource(
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
     private val checkRevocationList: CheckRevocationListUseCase,
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
-    private val serverConfigLinks: ServerConfig.Links,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
-    private val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper(),
     private val mlsCommitBundleMapper: MLSCommitBundleMapper = MapperProvider.mlsCommitBundleMapper(),
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : MLSConversationRepository {

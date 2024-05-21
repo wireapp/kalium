@@ -32,7 +32,6 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.logic.wrapMLSRequest
 
 sealed class RegisterMLSClientResult {
     data object Success : RegisterMLSClientResult()

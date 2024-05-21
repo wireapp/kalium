@@ -64,7 +64,7 @@ class MLSClientImpl(
     }
 
     override suspend fun validKeyPackageCount(): ULong {
-        return coreCrypto.clientValidKeypackagesCount(defaultCiphersuite, toCredentialType(getMLSCredentials()))
+        return coreCrypto.clientValidKeypackagesCount(defaultCipherSuite, toCredentialType(getMLSCredentials()))
     }
 
     override suspend fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle {

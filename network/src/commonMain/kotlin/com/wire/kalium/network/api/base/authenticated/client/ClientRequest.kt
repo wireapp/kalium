@@ -120,12 +120,16 @@ data class UpdateClientCapabilitiesRequest(
 enum class MLSPublicKeyTypeDTO {
     @SerialName("ecdsa_secp256r1_sha256")
     ECDSA_SECP256R1_SHA256,
+
     @SerialName("ecdsa_secp384r1_sha384")
     ECDSA_SECP384R1_SHA384,
+
     @SerialName("ecdsa_secp521r1_sha512")
     ECDSA_SECP521R1_SHA512,
+
     @SerialName("ed448")
     ED448,
+
     @SerialName("ed25519")
     ED25519;
 }
