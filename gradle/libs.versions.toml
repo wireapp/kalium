@@ -181,6 +181,7 @@ sqldelight-androidxPaging = { module = "app.cash.sqldelight:androidx-paging3-ext
 sqldelight-nativeDriver = { module = "app.cash.sqldelight:native-driver", version.ref = "sqldelight" }
 sqldelight-jvmDriver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight" }
 sqldelight-jsDriver = { module = "app.cash.sqldelight:web-worker-driver", version.ref = "sqldelight" }
+sqldelight-jdbcDriver = { module = "app.cash.sqldelight:jdbc-driver", version.ref = "sqldelight" }
 sqldelight-primitiveAdapters = { module = "app.cash.sqldelight:primitive-adapters", version.ref = "sqldelight" }
 sqldelight-dialect = { module = "app.cash.sqldelight:sqlite-3-38-dialect", version.ref = "sqldelight" }
 sqldelight-postgres = { module = "app.cash.sqldelight:postgresql-dialect", version.ref = "sqldelight" }
@@ -189,6 +190,8 @@ sqldelight-async = { module = "app.cash.sqldelight:async-extensions", version.re
 r2dbc-postgres = { module = "org.postgresql:r2dbc-postgresql", version.ref = "postgres" }
 r2dbc-spi = { module = "io.r2dbc:r2dbc-spi", version.ref = "r2dbc" }
 sqlite-xerialDriver = { module = "org.xerial:sqlite-jdbc", version.ref = "xerialDriver" }
+hikaricp = { module = "com.zaxxer:HikariCP", version = "5.0.1" }
+postgres-driver = { module = "org.postgresql:postgresql", version = "42.5.4" }
 
 # mocks and testing
 mockative-runtime = { module = "io.mockative:mockative", version.ref = "mockative" }
@@ -196,6 +199,7 @@ mockative-processor = { module = "io.mockative:mockative-processor", version.ref
 turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 konsist = { module = "com.lemonappdev:konsist", version.ref = "konsist" }
+testContainers-postgres = { module = "org.testcontainers:postgresql", version = "1.19.6" }
 
 # detekt
 detekt-cli = { module = "io.gitlab.arturbosch.detekt:detekt-cli", version.ref = "detekt" }

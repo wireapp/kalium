@@ -89,6 +89,10 @@ kotlin {
             dependencies {
                 implementation(libs.sqldelight.jvmDriver)
                 implementation(libs.sqlite.xerialDriver)
+                implementation(libs.sqldelight.jdbcDriver)
+                implementation(libs.hikaricp)
+                implementation(libs.postgres.driver)
+                implementation(libs.testContainers.postgres)
             }
         }
         val jvmTest by getting
