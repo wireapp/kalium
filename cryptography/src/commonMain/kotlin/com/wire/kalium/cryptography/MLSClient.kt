@@ -165,8 +165,9 @@ interface MLSClient {
      * Public key of the client's identity.
      *
      * @return public key of the client
+     * @return ciphersuite used for the public key
      */
-    suspend fun getPublicKey(): ByteArray
+    suspend fun getPublicKey(): Pair<ByteArray, UShort>
 
     /**
      * Generate a fresh set of key packages.

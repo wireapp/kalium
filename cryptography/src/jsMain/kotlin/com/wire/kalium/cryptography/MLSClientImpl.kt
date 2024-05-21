@@ -30,7 +30,7 @@ class MLSClientImpl : MLSClient {
         TODO("Not yet implemented")
     }
 
-    override suspend fun getPublicKey(): ByteArray {
+    override suspend fun getPublicKey(): Pair<ByteArray, UShort> {
         TODO("Not yet implemented")
     }
 

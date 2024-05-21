@@ -194,12 +194,8 @@ class MLSClientTest : BaseMLSClientTest() {
     }
 
     companion object {
-<<<<<<< HEAD
-=======
         val externalSenderKey = ByteArray(32)
-        val ALLOWED_CIPHER_SUITES = listOf(1.toUShort())
         val DEFAULT_CIPHER_SUITES = 1.toUShort()
->>>>>>> d726d685a9 (feat: set the correct external sender key when creating MLS conversation (#2735))
         const val MLS_CONVERSATION_ID = "JfflcPtUivbg+1U3Iyrzsh5D2ui/OGS5Rvf52ipH5KY="
         const val PLAIN_TEXT = "Hello World"
         val ALICE1 = SampleUser(
@@ -219,5 +215,4 @@ class MLSClientTest : BaseMLSClientTest() {
             "Carol"
         )
     }
-
 }

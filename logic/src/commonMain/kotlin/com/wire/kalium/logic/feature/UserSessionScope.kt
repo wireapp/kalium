@@ -630,7 +630,9 @@ class UserSessionScope internal constructor(
             rootKeyStorePath = rootPathsProvider.rootMLSPath(userId),
             userId = userId,
             currentClientIdProvider = clientIdProvider,
-            passphraseStorage = globalPreferences.passphraseStorage
+            passphraseStorage = globalPreferences.passphraseStorage,
+            userConfigRepository = userConfigRepository,
+            featureConfigRepository = featureConfigRepository
         )
     }
 

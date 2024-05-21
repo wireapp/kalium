@@ -15,27 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.persistence.model
 
-package com.wire.kalium.cryptography
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-import java.nio.file.Files
-
-actual open class BaseMLSClientTest {
-
-    actual suspend fun createMLSClient(
-        clientId: CryptoQualifiedClientId,
-        allowedCipherSuites: List<UShort>,
-        defaultCipherSuite: UShort
-    ): MLSClient {
-        return createCoreCrypto(clientId).mlsClient(clientId, allowedCipherSuites, defaultCipherSuite)
-    }
-
-    actual suspend fun createCoreCrypto(
-        clientId: CryptoQualifiedClientId
-    ): CoreCryptoCentral {
-        val root = Files.createTempDirectory("mls").toFile()
-        val keyStore = root.resolve("keystore-$clientId")
-        return coreCryptoCentral(keyStore.absolutePath, "test")
-    }
-
-}
+@Serializable
+data class SupportedCipherSuiteEntity(
+    @SerialName("supported")
+    val supported: List<Int>,
+    @SerialName("default")
+    val default: Int
+)
