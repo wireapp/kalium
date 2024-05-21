@@ -36,10 +36,10 @@ internal interface UserConfigRepositoryArrangement {
     suspend fun withSetSupportedProtocolsSuccessful()
     fun withSetDefaultProtocolSuccessful()
     fun withSetMLSEnabledSuccessful()
-    fun withSetMigrationConfigurationSuccessful()
-    fun withGetMigrationConfigurationReturning(result: Either<StorageFailure, MLSMigrationModel>)
-    fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>)
-    fun withGetSupportedCipherSuitesReturning(result: Either<StorageFailure, SupportedCipherSuite>)
+    suspend fun withSetMigrationConfigurationSuccessful()
+    suspend fun withGetMigrationConfigurationReturning(result: Either<StorageFailure, MLSMigrationModel>)
+    suspend fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>)
+    suspend fun withGetSupportedCipherSuitesReturning(result: Either<StorageFailure, SupportedCipherSuite>)
 }
 
 internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrangement {
@@ -68,6 +68,10 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
         every {
             userConfigRepository.setMLSEnabled(any())
         }.returns(Either.Right(Unit))
+    }
+
+    override suspend fun withGetSupportedCipherSuitesReturning(result: Either<StorageFailure, SupportedCipherSuite>) {
+        coEvery { userConfigRepository.getSupportedCipherSuite() }.returns(result)
     }
 
     override suspend fun withSetMigrationConfigurationSuccessful() {

@@ -22,28 +22,25 @@ import com.wire.kalium.logic.data.featureConfig.FeatureConfigModel
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 
 interface FeatureConfigRepositoryArrangement {
 
     val featureConfigRepository: FeatureConfigRepository
 
-    fun withGetFeatureConfigsReturning(result: Either<NetworkFailure, FeatureConfigModel>)
+    suspend fun withGetFeatureConfigsReturning(result: Either<NetworkFailure, FeatureConfigModel>)
 }
 
 class FeatureConfigRepositoryArrangementImpl : FeatureConfigRepositoryArrangement {
     @Mock
     override val featureConfigRepository: FeatureConfigRepository = mock(FeatureConfigRepository::class)
 
-    override fun withGetFeatureConfigsReturning(result: Either<NetworkFailure, FeatureConfigModel>) {
-        given(featureConfigRepository)
-            .suspendFunction(featureConfigRepository::getFeatureConfigs)
-            .whenInvoked()
-            .then { result }
+    override suspend fun withGetFeatureConfigsReturning(result: Either<NetworkFailure, FeatureConfigModel>) {
+        coEvery {
+            featureConfigRepository.getFeatureConfigs()
+        }.returns(result)
     }
-
-
 }
 
 

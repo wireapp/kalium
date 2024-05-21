@@ -35,9 +35,10 @@ import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArr
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.dbPassphrase.PassphraseStorage
 import io.mockative.Mock
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -61,19 +62,17 @@ class MLSClientProviderTest {
 
         val (arrangement, mlsClientProvider) = Arrangement().arrange {
             withGetSupportedCipherSuitesReturning(StorageFailure.DataNotFound.left())
-            withGetFeatureConfigsReturning(FeatureConfigTest.newModel(mlsModel =expected).right())
+            withGetFeatureConfigsReturning(FeatureConfigTest.newModel(mlsModel = expected).right())
         }
 
         mlsClientProvider.getOrFetchMLSConfig().shouldSucceed {
             assertEquals(expected.supportedCipherSuite, it)
         }
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::getSupportedCipherSuite)
+        coVerify { arrangement.userConfigRepository.getSupportedCipherSuite() }
             .wasInvoked(exactly = once)
 
-        verify(arrangement.featureConfigRepository)
-            .suspendFunction(arrangement.featureConfigRepository::getFeatureConfigs)
+        coVerify { arrangement.featureConfigRepository.getFeatureConfigs() }
             .wasInvoked(exactly = once)
     }
 
@@ -95,13 +94,13 @@ class MLSClientProviderTest {
             assertEquals(expected, it)
         }
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::getSupportedCipherSuite)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userConfigRepository.getSupportedCipherSuite()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.featureConfigRepository)
-            .suspendFunction(arrangement.featureConfigRepository::getFeatureConfigs)
-            .wasNotInvoked()
+        coVerify {
+            arrangement.featureConfigRepository.getFeatureConfigs()
+        }.wasNotInvoked()
     }
 
     private class Arrangement : UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(),
@@ -116,7 +115,7 @@ class MLSClientProviderTest {
         @Mock
         val passphraseStorage: PassphraseStorage = mock(PassphraseStorage::class)
 
-        fun arrange(block: Arrangement.() -> Unit) = apply(block).let {
+        fun arrange(block: suspend Arrangement.() -> Unit) = apply { runBlocking { block() } }.let {
             this to MLSClientProviderImpl(
                 rootKeyStorePath = rootKeyStorePath,
                 currentClientIdProvider = currentClientIdProvider,
