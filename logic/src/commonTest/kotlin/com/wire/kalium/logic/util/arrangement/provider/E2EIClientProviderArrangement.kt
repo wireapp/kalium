@@ -80,7 +80,7 @@ class E2EIClientProviderArrangementImpl : E2EIClientProviderArrangement {
 
     override suspend fun withGetNewAcmeEnrollmentSuccessful() {
         coEvery {
-            coreCryptoCentral.newAcmeEnrollment(any(), any(), any(), any(), any())
+            coreCryptoCentral.newAcmeEnrollment(any(), any(), any(), any(), any(), any())
         }.returns(e2eiClient)
     }
 

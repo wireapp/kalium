@@ -24,7 +24,14 @@ import com.wire.crypto.CoreCryptoCallbacks
 import platform.Foundation.NSFileManager
 import kotlin.time.Duration
 
+<<<<<<< HEAD
 actual suspend fun coreCryptoCentral(rootDir: String, databaseKey: String): CoreCryptoCentral {
+=======
+actual suspend fun coreCryptoCentral(
+    rootDir: String,
+    databaseKey: String
+): CoreCryptoCentral {
+>>>>>>> f8c4a14166 (feat: fetch MLS config when not available locally [WPB-8592] 🍒 (#2744))
     val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
     NSFileManager.defaultManager.createDirectoryAtPath(rootDir, withIntermediateDirectories = true, null, null)
     val coreCrypto = CoreCrypto.deferredInit(path, databaseKey, null)
@@ -54,17 +61,33 @@ private class Callbacks : CoreCryptoCallbacks {
     }
 }
 
+<<<<<<< HEAD
 class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: String) : CoreCryptoCentral {
+=======
+class CoreCryptoCentralImpl(
+    private val cc: CoreCrypto,
+    private val rootDir: String
+) : CoreCryptoCentral {
+>>>>>>> f8c4a14166 (feat: fetch MLS config when not available locally [WPB-8592] 🍒 (#2744))
 
-    override suspend fun mlsClient(clientId: CryptoQualifiedClientId): MLSClient {
+    override suspend fun mlsClient(
+        clientId: CryptoQualifiedClientId,
+        allowedCipherSuites: List<UShort>,
+        defaultCipherSuite: UShort
+    ): MLSClient {
         cc.mlsInit(MLSClientImpl.toUByteList(clientId.toString()))
+<<<<<<< HEAD
         return MLSClientImpl(cc)
+=======
+        return MLSClientImpl(cc, defaultCipherSuite = defaultCipherSuite)
+>>>>>>> f8c4a14166 (feat: fetch MLS config when not available locally [WPB-8592] 🍒 (#2744))
     }
 
     override suspend fun mlsClient(
         enrollment: E2EIClient,
         certificateChain: CertificateChain,
-        newMLSKeyPackageCount: UInt
+        newMLSKeyPackageCount: UInt,
+        defaultCipherSuite: UShort
     ): MLSClient {
         TODO("Not yet implemented")
     }
@@ -78,7 +101,8 @@ class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: Str
         displayName: String,
         handle: String,
         teamId: String?,
-        expiry: Duration
+        expiry: Duration,
+        defaultCipherSuite: UShort
     ): E2EIClient {
         TODO("Not yet implemented")
     }

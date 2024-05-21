@@ -17,4 +17,11 @@
  */
 package com.wire.kalium.cryptography
 
+<<<<<<< HEAD
 actual suspend fun coreCryptoCentral(rootDir: String, databaseKey: String): CoreCryptoCentral = TODO("Not yet implemented")
+=======
+actual suspend fun coreCryptoCentral(
+    rootDir: String,
+    databaseKey: String
+): CoreCryptoCentral = TODO("Not yet implemented")
+>>>>>>> f8c4a14166 (feat: fetch MLS config when not available locally [WPB-8592] 🍒 (#2744))

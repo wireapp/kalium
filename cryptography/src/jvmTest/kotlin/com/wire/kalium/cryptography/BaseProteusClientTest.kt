@@ -31,9 +31,16 @@ actual open class BaseProteusClientTest {
         return ProteusStoreRef(keyStore.absolutePath)
     }
 
-    actual suspend fun createProteusClient(proteusStore: ProteusStoreRef, databaseKey: ProteusDBSecret?): ProteusClient {
+    actual suspend fun createProteusClient(
+        proteusStore: ProteusStoreRef,
+        databaseKey: ProteusDBSecret?
+    ): ProteusClient {
         return databaseKey?.let {
             coreCryptoCentral(proteusStore.value, it.value).proteusClient()
+<<<<<<< HEAD
         } ?: cryptoboxProteusClient(proteusStore.value, testCoroutineScheduler,testCoroutineScheduler)
+=======
+        } ?: cryptoboxProteusClient(proteusStore.value, testCoroutineScheduler, testCoroutineScheduler)
+>>>>>>> f8c4a14166 (feat: fetch MLS config when not available locally [WPB-8592] 🍒 (#2744))
     }
 }

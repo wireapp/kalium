@@ -24,11 +24,25 @@ import platform.Foundation.NSURL
 import platform.Foundation.URLByAppendingPathComponent
 
 actual open class BaseMLSClientTest actual constructor() {
+<<<<<<< HEAD
     actual suspend fun createMLSClient(clientId: CryptoQualifiedClientId): MLSClient {
         return createCoreCrypto(clientId).mlsClient(clientId)
     }
 
     actual suspend fun createCoreCrypto(clientId: CryptoQualifiedClientId): CoreCryptoCentral {
+=======
+    actual suspend fun createMLSClient(
+        clientId: CryptoQualifiedClientId,
+        allowedCipherSuites: List<UShort>,
+        defaultCipherSuite: UShort
+    ): MLSClient {
+        return createCoreCrypto(clientId).mlsClient(clientId, allowedCipherSuites, defaultCipherSuite)
+    }
+
+    actual suspend fun createCoreCrypto(
+        clientId: CryptoQualifiedClientId
+    ): CoreCryptoCentral {
+>>>>>>> f8c4a14166 (feat: fetch MLS config when not available locally [WPB-8592] 🍒 (#2744))
         val rootDir = NSURL.fileURLWithPath(NSTemporaryDirectory() + "/mls", isDirectory = true)
         NSFileManager.defaultManager.createDirectoryAtURL(rootDir, true, null, null)
         val keyStore = rootDir.URLByAppendingPathComponent("keystore-$clientId")!!
