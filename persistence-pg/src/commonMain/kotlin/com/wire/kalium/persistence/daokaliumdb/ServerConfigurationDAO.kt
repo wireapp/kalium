@@ -55,11 +55,11 @@ internal class ServerConfigurationDAOImpl internal constructor(
                 title,
                 isOnPremises,
                 federation,
-                domain,
+                domain ?: "",
                 commonApiVersion,
-                apiProxyHost,
+                apiProxyHost ?: "",
                 apiProxyNeedsAuthentication,
-                apiProxyPort
+                apiProxyPort ?: 0
             )
         }
     }
@@ -80,8 +80,8 @@ internal class ServerConfigurationDAOImpl internal constructor(
                 apiBaseUrl = api,
                 webSocketBaseUrl = webSocket,
                 title = title,
-                api_proxy_host = apiProxy?.host,
-                api_proxy_port = apiProxy?.port,
+                api_proxy_host = apiProxy?.host ?: "",
+                api_proxy_port = apiProxy?.port ?: 0,
                 mapper = mapper::fromServerConfiguration
             )
         }.executeAsOneOrNull()
@@ -105,7 +105,8 @@ internal class ServerConfigurationDAOImpl internal constructor(
     }
 
     override suspend fun getServerConfigsWithAccIdWithLastCheckBeforeDate(date: String): Flow<List<ServerConfigWithUserIdEntity>> =
-        queries.getServerConfigsWithAccIdWithLastCheckBeforeDate(date, mapper::serverConfigWithAccId).asFlow().flowOn(queriesContext)
+        queries.getServerConfigsWithAccIdWithLastCheckBeforeDate(mapper::serverConfigWithAccId)
+            .asFlow().flowOn(queriesContext)
             .mapToList()
 
     override suspend fun updateBlackListCheckDate(configIds: Set<String>, date: String) = withContext(queriesContext) {

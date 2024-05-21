@@ -25,7 +25,7 @@ deleteById:
 DELETE FROM ServerConfiguration WHERE id = ?;
 
 insert:
-INSERT OR FAIL INTO ServerConfiguration(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, isOnPremises, federation, domain, commonApiVersion, apiProxyHost, apiProxyNeedsAuthentication, apiProxyPort)
+INSERT INTO ServerConfiguration(id, apiBaseUrl, accountBaseUrl, webSocketBaseUrl, blackListUrl, teamsUrl, websiteUrl, title, isOnPremises, federation, domain, commonApiVersion, apiProxyHost, apiProxyNeedsAuthentication, apiProxyPort)
 VALUES( ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?,?);
 
 updateApiVersion:
@@ -55,6 +55,8 @@ SELECT * FROM ServerConfiguration WHERE id = (SELECT server_config_id FROM Accou
 
 getServerConfigsWithAccIdWithLastCheckBeforeDate:
 SELECT sc.*, acc.id
-    FROM  Accounts AS acc LEFT JOIN ServerConfiguration AS sc ON acc.server_config_id == sc.id
-    WHERE acc.logout_reason IS NULL AND (sc.lastBlackListCheck IS NULL OR DateTime(sc.lastBlackListCheck) < DateTime(?))
-    GROUP BY sc.id;
+FROM Accounts AS acc
+LEFT JOIN ServerConfiguration AS sc ON acc.server_config_id = sc.id
+WHERE acc.logout_reason IS NULL
+AND (sc.lastBlackListCheck IS NULL OR sc.lastBlackListCheck < NOW())
+GROUP BY sc.id, acc.id;

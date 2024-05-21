@@ -46,7 +46,7 @@ sqldelight {
         }
 
         create("GlobalDatabase") {
-            dialect(libs.sqldelight.dialect.get().toString())
+            dialect(libs.sqldelight.postgres.get().toString())
             packageName.set("com.wire.kalium.persistence")
             val sourceFolderName = "db_global"
             srcDirs.setFrom(listOf("src/jvmMain/$sourceFolderName"))

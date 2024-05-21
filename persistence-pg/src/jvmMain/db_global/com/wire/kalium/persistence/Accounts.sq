@@ -15,7 +15,7 @@ CREATE TABLE Accounts (
 );
 
 insertOrReplace:
-INSERT OR REPLACE INTO Accounts (id, scim_external_id, subject, tenant, server_config_id, logout_reason, isPersistentWebSocketEnabled)
+INSERT INTO Accounts (id, scim_external_id, subject, tenant, server_config_id, logout_reason, isPersistentWebSocketEnabled)
 VALUES (:id, :scimExternalId, :subject, :tenant, :serverConfigId, :logoutReason,:isPersistentWebSocketEnabled);
 
 delete:

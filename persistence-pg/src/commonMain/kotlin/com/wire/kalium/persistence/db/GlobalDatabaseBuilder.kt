@@ -19,12 +19,13 @@
 package com.wire.kalium.persistence.db
 
 import app.cash.sqldelight.EnumColumnAdapter
-import app.cash.sqldelight.adapter.primitive.IntColumnAdapter
 import app.cash.sqldelight.db.SqlDriver
 import com.wire.kalium.persistence.Accounts
 import com.wire.kalium.persistence.CurrentAccount
 import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.ServerConfiguration
+import com.wire.kalium.persistence.adapter.BooleanAdapter
+import com.wire.kalium.persistence.adapter.IntAdapterAdapter
 import com.wire.kalium.persistence.adapter.LogoutReasonAdapter
 import com.wire.kalium.persistence.adapter.QualifiedIDAdapter
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
@@ -48,13 +49,17 @@ class GlobalDatabaseBuilder internal constructor(
     internal val database: GlobalDatabase = GlobalDatabase(
         sqlDriver,
         ServerConfigurationAdapter = ServerConfiguration.Adapter(
-            commonApiVersionAdapter = IntColumnAdapter,
-            apiProxyPortAdapter = IntColumnAdapter
+            commonApiVersionAdapter = IntAdapterAdapter,
+            apiProxyPortAdapter = IntAdapterAdapter,
+            apiProxyNeedsAuthenticationAdapter = BooleanAdapter,
+            isOnPremisesAdapter = BooleanAdapter,
+            federationAdapter = BooleanAdapter
         ),
         AccountsAdapter = Accounts.Adapter(
             idAdapter = QualifiedIDAdapter,
             logout_reasonAdapter = LogoutReasonAdapter,
-            managed_byAdapter = EnumColumnAdapter()
+            managed_byAdapter = EnumColumnAdapter(),
+            isPersistentWebSocketEnabledAdapter = BooleanAdapter
         ),
         CurrentAccountAdapter = CurrentAccount.Adapter(
             user_idAdapter = QualifiedIDAdapter
