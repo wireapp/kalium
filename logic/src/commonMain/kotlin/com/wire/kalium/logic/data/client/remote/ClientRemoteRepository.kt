@@ -26,28 +26,37 @@ import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.client.RegisterClientParam
 import com.wire.kalium.logic.data.client.UpdateClientCapabilitiesParam
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.data.mls.signatureAlgorithm
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
-import com.wire.kalium.network.api.base.authenticated.client.MLSPublicKeyTypeDTO
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
 import com.wire.kalium.network.api.base.authenticated.client.UpdateClientMlsPublicKeysRequest
 import com.wire.kalium.network.api.base.model.PushTokenBody
+import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
 
 interface ClientRemoteRepository {
     suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client>
-    suspend fun registerMLSClient(clientId: ClientId, publicKey: String): Either<NetworkFailure, Unit>
+    suspend fun registerMLSClient(
+        clientId: ClientId,
+        publicKey: String,
+        cipherSuite: CipherSuite
+    ): Either<NetworkFailure, Unit>
+
     suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
     suspend fun registerToken(body: PushTokenBody): Either<NetworkFailure, Unit>
     suspend fun deregisterToken(pid: String): Either<NetworkFailure, Unit>
     suspend fun fetchOtherUserClients(
         userIdList: List<UserId>
     ): Either<NetworkFailure, Map<UserIdDTO, List<SimpleClientResponse>>>
+
     suspend fun updateClientCapabilities(
         updateClientCapabilitiesParam: UpdateClientCapabilitiesParam,
         clientID: String
@@ -58,20 +67,26 @@ class ClientRemoteDataSource(
     private val clientApi: ClientApi,
     private val clientConfig: ClientConfig,
     private val clientMapper: ClientMapper = MapperProvider.clientMapper(),
-    private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : ClientRemoteRepository {
 
     override suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client> =
         wrapApiRequest { clientApi.registerClient(clientMapper.toRegisterClientRequest(clientConfig, param)) }
             .map { clientResponse -> clientMapper.fromClientDto(clientResponse) }
 
-    override suspend fun registerMLSClient(clientId: ClientId, publicKey: String): Either<NetworkFailure, Unit> =
+    override suspend fun registerMLSClient(
+        clientId: ClientId,
+        publicKey: String,
+        cipherSuite: CipherSuite
+    ): Either<NetworkFailure, Unit> = cipherSuite.signatureAlgorithm()?.let { signatureAlgorithm ->
         wrapApiRequest {
             clientApi.updateClientMlsPublicKeys(
-                UpdateClientMlsPublicKeysRequest(mapOf(Pair(MLSPublicKeyTypeDTO.ED25519, publicKey))),
+                UpdateClientMlsPublicKeysRequest(
+                    mapOf(signatureAlgorithm to publicKey),
+                ),
                 clientId.value
             )
         }
+    } ?: NetworkFailure.ServerMiscommunication(KaliumException.GenericError(IllegalArgumentException("Unknown cipher suite"))).left()
 
     override suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit> =
         wrapApiRequest { clientApi.deleteClient(param.password, param.clientId.value) }
@@ -87,7 +102,7 @@ class ClientRemoteDataSource(
     override suspend fun fetchOtherUserClients(
         userIdList: List<UserId>
     ): Either<NetworkFailure, Map<UserIdDTO, List<SimpleClientResponse>>> {
-        val networkUserId = userIdList.map { idMapper.toNetworkUserId(it) }
+        val networkUserId = userIdList.map { it.toApi() }
         return wrapApiRequest { clientApi.listClientsOfUsers(networkUserId) }
     }
 

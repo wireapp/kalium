@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 
@@ -38,14 +39,14 @@ class ProtocolInfoMapperImpl(
                 Conversation.ProtocolInfo.MLSCapable.GroupState.valueOf(protocolInfo.groupState.name),
                 protocolInfo.epoch,
                 protocolInfo.keyingMaterialLastUpdate,
-                Conversation.CipherSuite.fromTag(protocolInfo.cipherSuite.cipherSuiteTag)
+                CipherSuite.fromTag(protocolInfo.cipherSuite.cipherSuiteTag)
             )
             is ConversationEntity.ProtocolInfo.Mixed -> Conversation.ProtocolInfo.Mixed(
                 idMapper.fromGroupIDEntity(protocolInfo.groupId),
                 Conversation.ProtocolInfo.MLSCapable.GroupState.valueOf(protocolInfo.groupState.name),
                 protocolInfo.epoch,
                 protocolInfo.keyingMaterialLastUpdate,
-                Conversation.CipherSuite.fromTag(protocolInfo.cipherSuite.cipherSuiteTag)
+                CipherSuite.fromTag(protocolInfo.cipherSuite.cipherSuiteTag)
             )
         }
 
