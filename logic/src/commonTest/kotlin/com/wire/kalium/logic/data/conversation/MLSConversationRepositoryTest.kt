@@ -388,7 +388,12 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed()
 
         coVerify {
-            arrangement.keyPackageRepository.claimKeyPackages(matches { it.containsAll(listOf(TestConversation.USER_1)) })
+            arrangement.keyPackageRepository.claimKeyPackages(
+                matches {
+                    it.containsAll(listOf(TestConversation.USER_1))
+                },
+                eq(CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519)
+            )
         }.wasInvoked(once)
     }
 
