@@ -172,7 +172,7 @@ class E2EIClientProviderTest {
             return this to e2eiClientProvider
         }
 
-        suspend fun withGetOrFetchMLSConfig(result: SupportedCipherSuite) {
+        override suspend fun withGetOrFetchMLSConfig(result: SupportedCipherSuite) {
             coEvery { mlsClientProvider.getOrFetchMLSConfig() }.returns(result.right())
         }
     }

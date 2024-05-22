@@ -33,11 +33,15 @@ class MLSClientTest : BaseMLSClientTest() {
     }
 
     private suspend fun createClient(user: SampleUser): MLSClient {
-        return createMLSClient(user.qualifiedClientId, allowedCipherSuites = ALLOWED_CIPHER_SUITES, DEFAULT_CIPHER_SUITES)
+        return createMLSClient(
+            clientId = user.qualifiedClientId,
+            allowedCipherSuites = ALLOWED_CIPHER_SUITES,
+            defaultCipherSuite = DEFAULT_CIPHER_SUITES
+        )
     }
 
     @Test
-    fun givemMlsClient_whenCallingGetDefaultCipherSuite_ReturnExpectedValue() = runTest {
+    fun givenMlsClient_whenCallingGetDefaultCipherSuite_ReturnExpectedValue() = runTest {
         val mlsClient = createClient(ALICE1)
         assertEquals(DEFAULT_CIPHER_SUITES, mlsClient.getDefaultCipherSuite())
     }
