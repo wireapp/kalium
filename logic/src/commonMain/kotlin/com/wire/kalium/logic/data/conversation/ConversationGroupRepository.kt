@@ -131,21 +131,13 @@ internal class ConversationGroupRepositoryImpl(
             }
 
             when (apiResult) {
-<<<<<<< HEAD
-                is Either.Left -> {
-                    val canRetryOnce = apiResult.value.hasUnreachableDomainsError && lastUsersAttempt is LastUsersAttempt.None
-                    if (canRetryOnce) {
-                        extractValidUsersForRetryableError(apiResult.value, usersList)
-                            .flatMap { (validUsers, failedUsers, failType) ->
-                                // edge case, in case backend goes 🍌 and returns non-matching domains
-                                if (failedUsers.isEmpty()) Either.Left(apiResult.value)
-
-                                createGroupConversation(name, validUsers, options, LastUsersAttempt.Failed(failedUsers, failType))
-                            }
-                    } else {
-                        Either.Left(apiResult.value)
-                    }
-                }
+                is Either.Left -> handleCreateConverstionFailure(
+                    apiResult = apiResult,
+                    usersList = usersList,
+                    name = name,
+                    options = options,
+                    lastUsersAttempt = lastUsersAttempt
+                )
 
                 is Either.Right -> handleGroupConversationCreated(apiResult.value, selfTeamId, usersList, lastUsersAttempt)
             }
@@ -207,61 +199,6 @@ internal class ConversationGroupRepositoryImpl(
             wrapStorageRequest {
                 conversationDAO.getConversationByQualifiedID(conversationEntity.id)?.let {
                     conversationMapper.fromDaoModel(it)
-=======
-                is Either.Left -> handleCreateConverstionFailure(apiResult, usersList, failedUsersList, name, options)
-
-                is Either.Right -> {
-                    handleCreateConversationSucess(
-                        apiResult,
-                        usersList,
-                        failedUsersList,
-                        selfTeamId
-                    )
->>>>>>> 2bcb2885ba (feat: set the correct cipher suite when claiming key packages (#2742))
-                }
-            }
-        }
-    }
-
-    private suspend fun handleCreateConversationSucess(
-        apiResult: Either.Right<ConversationResponse>,
-        usersList: List<UserId>,
-        failedUsersList: List<UserId>,
-        selfTeamId: TeamId?
-    ): Either<CoreFailure, Conversation> {
-        val conversationResponse = apiResult.value
-        val conversationEntity = conversationMapper.fromApiModelToDaoModel(
-            conversationResponse, mlsGroupState = ConversationEntity.GroupState.PENDING_CREATION, selfTeamId
-        )
-        val protocol = protocolInfoMapper.fromEntity(conversationEntity.protocolInfo)
-
-        return wrapStorageRequest {
-            conversationDAO.insertConversation(conversationEntity)
-        }.flatMap {
-            newGroupConversationSystemMessagesCreator.value.conversationStarted(conversationEntity)
-        }.flatMap {
-            when (protocol) {
-                is Conversation.ProtocolInfo.Proteus -> Either.Right(setOf())
-                is Conversation.ProtocolInfo.MLSCapable -> mlsConversationRepository.establishMLSGroup(
-                    groupID = protocol.groupId,
-                    members = usersList + selfUserId,
-                    allowSkippingUsersWithoutKeyPackages = true
-                ).map { it.notAddedUsers }
-            }
-        }.flatMap { additionalFailedUsers ->
-            newConversationMembersRepository.persistMembersAdditionToTheConversation(
-                conversationEntity.id, conversationResponse, failedUsersList + additionalFailedUsers
-            )
-        }.flatMap {
-            wrapStorageRequest {
-                newGroupConversationSystemMessagesCreator.value.conversationStartedUnverifiedWarning(
-                    conversationEntity.id.toModel()
-                )
-            }
-        }.flatMap {
-            wrapStorageRequest {
-                conversationDAO.getConversationByQualifiedID(conversationEntity.id)?.let {
-                    conversationMapper.fromDaoModel(it)
                 }
             }
         }
@@ -270,20 +207,19 @@ internal class ConversationGroupRepositoryImpl(
     private suspend fun handleCreateConverstionFailure(
         apiResult: Either.Left<NetworkFailure>,
         usersList: List<UserId>,
-        failedUsersList: List<UserId>,
         name: String?,
-        options: ConversationOptions
+        options: ConversationOptions,
+        lastUsersAttempt: LastUsersAttempt
     ): Either<CoreFailure, Conversation> {
-        val canRetryOnce = apiResult.value.hasUnreachableDomainsError && failedUsersList.isEmpty()
+        val canRetryOnce = apiResult.value.hasUnreachableDomainsError && lastUsersAttempt is LastUsersAttempt.None
         return if (canRetryOnce) {
-            val (validUsers, failedUsers) = extractValidUsersForRetryableFederationError(
-                usersList,
-                apiResult.value as NetworkFailure.FederatedBackendFailure.FailedDomains
-            )
-            // edge case, in case backend goes 🍌 and returns non-matching domains
-            if (failedUsers.isEmpty()) Either.Left(apiResult.value)
+            extractValidUsersForRetryableError(apiResult.value, usersList)
+                .flatMap { (validUsers, failedUsers, failType) ->
+                    // edge case, in case backend goes 🍌 and returns non-matching domains
+                    if (failedUsers.isEmpty()) Either.Left(apiResult.value)
 
-            createGroupConversation(name, validUsers, options, failedUsers)
+                    createGroupConversation(name, validUsers, options, LastUsersAttempt.Failed(failedUsers, failType))
+                }
         } else {
             Either.Left(apiResult.value)
         }
@@ -311,16 +247,13 @@ internal class ConversationGroupRepositoryImpl(
                             }
 
                     is ConversationEntity.ProtocolInfo.MLS -> {
-<<<<<<< HEAD
-                        tryAddMembersToMLSGroup(conversationId, protocol.groupId, userIdList, LastUsersAttempt.None)
-=======
                         tryAddMembersToMLSGroup(
-                            conversationId = conversationId,
-                            groupId = protocol.groupId,
-                            userIdList = userIdList,
+                            conversationId,
+                            protocol.groupId,
+                            userIdList,
+                            LastUsersAttempt.None,
                             cipherSuite = CipherSuite.fromTag(protocol.cipherSuite.cipherSuiteTag)
                         )
->>>>>>> 2bcb2885ba (feat: set the correct cipher suite when claiming key packages (#2742))
                     }
                 }
             }
@@ -333,24 +266,16 @@ internal class ConversationGroupRepositoryImpl(
         conversationId: ConversationId,
         groupId: String,
         userIdList: List<UserId>,
-<<<<<<< HEAD
         lastUsersAttempt: LastUsersAttempt,
+        cipherSuite: CipherSuite,
         remainingAttempts: Int = 2
-    ): Either<CoreFailure, Unit> {
-        return when (val addingMemberResult = mlsConversationRepository.addMemberToMLSGroup(GroupID(groupId), userIdList)) {
-            is Either.Right -> handleMLSMembersNotAdded(conversationId, lastUsersAttempt)
-=======
-        failedUsersList: Set<UserId> = emptySet(),
-        remainingAttempts: Int = 2,
-        cipherSuite: CipherSuite
     ): Either<CoreFailure, Unit> {
         return when (val addingMemberResult = mlsConversationRepository.addMemberToMLSGroup(
             GroupID(groupId),
             userIdList,
             cipherSuite
         )) {
-            is Either.Right -> handleMLSMembersNotAdded(conversationId, failedUsersList)
->>>>>>> 2bcb2885ba (feat: set the correct cipher suite when claiming key packages (#2742))
+            is Either.Right -> handleMLSMembersNotAdded(conversationId, lastUsersAttempt)
             is Either.Left -> {
                 addingMemberResult.value.handleMLSMembersFailed(
                     conversationId = conversationId,
@@ -380,17 +305,12 @@ internal class ConversationGroupRepositoryImpl(
                     conversationId = conversationId,
                     groupId = groupId,
                     userIdList = validUsers,
-<<<<<<< HEAD
                     lastUsersAttempt = LastUsersAttempt.Failed(
                         failedUsers = lastUsersAttempt.failedUsers + failedUsers,
                         failType = FailedToAdd.Type.Federation,
                     ),
-                    remainingAttempts = remainingAttempts - 1
-=======
-                    failedUsersList = (failedUsersList + failedUsers).toSet(),
                     remainingAttempts = remainingAttempts - 1,
                     cipherSuite = cipherSuite
->>>>>>> 2bcb2885ba (feat: set the correct cipher suite when claiming key packages (#2742))
                 )
             }
 
@@ -401,17 +321,12 @@ internal class ConversationGroupRepositoryImpl(
                     conversationId = conversationId,
                     groupId = groupId,
                     userIdList = validUsers,
-<<<<<<< HEAD
                     lastUsersAttempt = LastUsersAttempt.Failed(
                         failedUsers = lastUsersAttempt.failedUsers + failedUsers,
                         failType = FailedToAdd.Type.Federation,
                     ),
-                    remainingAttempts = remainingAttempts - 1
-=======
-                    failedUsersList = (failedUsersList + failedUsers).toSet(),
                     remainingAttempts = remainingAttempts - 1,
                     cipherSuite = cipherSuite
->>>>>>> 2bcb2885ba (feat: set the correct cipher suite when claiming key packages (#2742))
                 )
             }
 
@@ -427,7 +342,8 @@ internal class ConversationGroupRepositoryImpl(
                                 failedUsers = lastUsersAttempt.failedUsers + failedUsers,
                                 failType = FailedToAdd.Type.LegalHold,
                             ),
-                            remainingAttempts = remainingAttempts - 1
+                            remainingAttempts = remainingAttempts - 1,
+                            cipherSuite = cipherSuite
                         )
                     }
             }
