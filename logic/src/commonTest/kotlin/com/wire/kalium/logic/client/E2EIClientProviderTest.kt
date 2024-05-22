@@ -26,10 +26,6 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
-import com.wire.kalium.logic.data.mls.CipherSuite
-import com.wire.kalium.logic.data.mls.SupportedCipherSuite
-import com.wire.kalium.logic.framework.TestClient
-import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.util.arrangement.provider.E2EIClientProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.E2EIClientProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
@@ -176,7 +172,7 @@ class E2EIClientProviderTest {
             return this to e2eiClientProvider
         }
 
-        suspend fun withGetOrFetchMLSConfig(result: SupportedCipherSuite) {
+        override suspend fun withGetOrFetchMLSConfig(result: SupportedCipherSuite) {
             coEvery { mlsClientProvider.getOrFetchMLSConfig() }.returns(result.right())
         }
     }
