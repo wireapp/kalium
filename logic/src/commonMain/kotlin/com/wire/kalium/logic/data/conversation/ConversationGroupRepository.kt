@@ -262,6 +262,7 @@ internal class ConversationGroupRepositoryImpl(
      * Handle the error cases and retry for claimPackages offline and out of packages.
      * Handle error case and retry for sendingCommit unreachable or missing legal hold consent.
      */
+    @Suppress("LongMethod")
     private suspend fun tryAddMembersToMLSGroup(
         conversationId: ConversationId,
         groupId: String,
@@ -270,11 +271,13 @@ internal class ConversationGroupRepositoryImpl(
         cipherSuite: CipherSuite,
         remainingAttempts: Int = 2
     ): Either<CoreFailure, Unit> {
-        return when (val addingMemberResult = mlsConversationRepository.addMemberToMLSGroup(
-            GroupID(groupId),
-            userIdList,
-            cipherSuite
-        )) {
+        return when (
+            val addingMemberResult = mlsConversationRepository.addMemberToMLSGroup(
+                GroupID(groupId),
+                userIdList,
+                cipherSuite
+            )
+        ) {
             is Either.Right -> handleMLSMembersNotAdded(conversationId, lastUsersAttempt)
             is Either.Left -> {
                 addingMemberResult.value.handleMLSMembersFailed(
@@ -289,6 +292,7 @@ internal class ConversationGroupRepositoryImpl(
         }
     }
 
+    @Suppress("LongMethod")
     private suspend fun CoreFailure.handleMLSMembersFailed(
         conversationId: ConversationId,
         groupId: String,
