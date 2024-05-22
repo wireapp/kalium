@@ -80,7 +80,6 @@ class GetE2eiCertificateUseCaseTest {
         runTest {
             val (arrangement, getE2eiCertificateUseCase) = Arrangement()
                 .withRepositoryValidCertificate(IDENTITY)
-                .withMapperReturning(CertificateStatus.EXPIRED)
                 .arrange()
 
             val result = getE2eiCertificateUseCase.invoke(CLIENT_ID)
@@ -89,13 +88,6 @@ class GetE2eiCertificateUseCaseTest {
                 arrangement.mlsConversationRepository.getClientIdentity(any())
             }.wasInvoked(once)
 
-<<<<<<< HEAD
-            verify {
-                arrangement.certificateStatusMapper.toCertificateStatus(any())
-            }.wasInvoked(once)
-
-=======
->>>>>>> a1fdb7faa6 (fix(e2ei): expose thumbprint and userhandle with e2ei cert (WPB-8606) (#2739))
             assertEquals(true, result is GetE2EICertificateUseCaseResult.Success)
         }
 
@@ -112,10 +104,6 @@ class GetE2eiCertificateUseCaseTest {
                 arrangement.mlsConversationRepository.getClientIdentity(any())
             }.wasInvoked(once)
 
-            verify {
-                arrangement.certificateStatusMapper.toCertificateStatus(any())
-            }.wasNotInvoked()
-
             assertEquals(true, result is GetE2EICertificateUseCaseResult.NotActivated)
         }
 
@@ -123,9 +111,6 @@ class GetE2eiCertificateUseCaseTest {
 
         @Mock
         val mlsConversationRepository = mock(MLSConversationRepository::class)
-
-        @Mock
-        val certificateStatusMapper = mock(CertificateStatusMapper::class)
 
         fun arrange() = this to GetE2eiCertificateUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository
@@ -142,12 +127,6 @@ class GetE2eiCertificateUseCaseTest {
                 mlsConversationRepository.getClientIdentity(any())
             }.returns(Either.Right(identity))
         }
-
-        fun withMapperReturning(status: CertificateStatus) = apply {
-            every {
-                certificateStatusMapper.toCertificateStatus(any())
-            }.returns(status)
-        }
     }
 
     companion object {
@@ -157,7 +136,14 @@ class GetE2eiCertificateUseCaseTest {
             CryptoQualifiedClientId("clientId", USER_ID.toCrypto())
 
         val e2eiCertificate =
-            E2eiCertificate(CertificateStatus.EXPIRED, "serialNumber", "certificateDetail", Instant.DISTANT_FUTURE)
+            E2eiCertificate(
+                userHandle = "handle",
+                status = CertificateStatus.EXPIRED,
+                serialNumber = "serialNumber",
+                certificateDetail = "certificateDetail",
+                endAt = Instant.DISTANT_FUTURE,
+                thumbprint = "thumbprint"
+            )
         val IDENTITY = WireIdentity(
             CRYPTO_QUALIFIED_CLIENT_ID,
             handle = "alic_test",
