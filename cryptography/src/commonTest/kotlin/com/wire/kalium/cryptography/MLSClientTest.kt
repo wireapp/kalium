@@ -33,7 +33,21 @@ class MLSClientTest : BaseMLSClientTest() {
     }
 
     private suspend fun createClient(user: SampleUser): MLSClient {
+<<<<<<< HEAD
         return createMLSClient(user.qualifiedClientId)
+=======
+        return createMLSClient(
+            clientId = user.qualifiedClientId,
+            allowedCipherSuites = ALLOWED_CIPHER_SUITES,
+            defaultCipherSuite = DEFAULT_CIPHER_SUITES
+        )
+    }
+
+    @Test
+    fun givenMlsClient_whenCallingGetDefaultCipherSuite_ReturnExpectedValue() = runTest {
+        val mlsClient = createClient(ALICE1)
+        assertEquals(DEFAULT_CIPHER_SUITES, mlsClient.getDefaultCipherSuite())
+>>>>>>> d9132dece3 (feat: set the correct cipher suite when claiming key packages [WPB-8592] 🍒 (#2746))
     }
 
     @Test

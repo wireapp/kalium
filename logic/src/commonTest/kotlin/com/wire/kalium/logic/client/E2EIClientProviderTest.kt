@@ -159,5 +159,12 @@ class E2EIClientProviderTest {
 
             return this to e2eiClientProvider
         }
+<<<<<<< HEAD
+=======
+
+        override suspend fun withGetOrFetchMLSConfig(result: SupportedCipherSuite) {
+            coEvery { mlsClientProvider.getOrFetchMLSConfig() }.returns(result.right())
+        }
+>>>>>>> d9132dece3 (feat: set the correct cipher suite when claiming key packages [WPB-8592] 🍒 (#2746))
     }
 }
