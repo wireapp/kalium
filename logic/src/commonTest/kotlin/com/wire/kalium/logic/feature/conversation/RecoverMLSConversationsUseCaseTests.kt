@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationUseCas
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
@@ -243,7 +244,7 @@ class RecoverMLSConversationsUseCaseTests {
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 1UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
-                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                    cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("id1", "domain"))
 
@@ -253,7 +254,7 @@ class RecoverMLSConversationsUseCaseTests {
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 1UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
-                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                    cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("id2", "domain"))
         }

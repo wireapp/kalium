@@ -15,19 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.persistence.model
 
-package com.wire.kalium.logic.data.mlspublickeys
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
-import kotlin.jvm.JvmInline
-
-@JvmInline
-value class Ed25519Key(
-    val value: ByteArray
+@Serializable
+data class SupportedCipherSuiteEntity(
+    @SerialName("supported")
+    val supported: List<Int>,
+    @SerialName("default")
+    val default: Int
 )
-
-data class MLSPublicKey(
-    val key: Ed25519Key,
-    val keyType: KeyType
-)
-
-enum class KeyType { REMOVAL }
