@@ -50,7 +50,6 @@ import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollment
 import com.wire.kalium.logic.feature.conversation.GetAllContactsNotInConversationUseCase
 import com.wire.kalium.logic.feature.e2ei.CertificateRevocationListCheckWorker
 import com.wire.kalium.logic.feature.e2ei.CertificateRevocationListCheckWorkerImpl
-import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapperImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
@@ -119,7 +118,6 @@ class UserScope internal constructor(
     val observeUserInfo: ObserveUserInfoUseCase get() = ObserveUserInfoUseCaseImpl(userRepository, teamRepository)
     val uploadUserAvatar: UploadUserAvatarUseCase get() = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
 
-    private val certificateStatusMapper by lazy { CertificateStatusMapperImpl() }
     val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository, userRepository)
     val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2EIRepository)
 
@@ -135,13 +133,11 @@ class UserScope internal constructor(
     val getUserE2eiCertificateStatus: GetUserE2eiCertificateStatusUseCase
         get() = GetUserE2eiCertificateStatusUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,
-            certificateStatusMapper = certificateStatusMapper,
             isE2EIEnabledUseCase = isE2EIEnabledUseCase
         )
     val getUserE2eiCertificates: GetUserE2eiCertificatesUseCase
         get() = GetUserE2eiCertificatesUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,
-            certificateStatusMapper = certificateStatusMapper,
             isE2EIEnabledUseCase = isE2EIEnabledUseCase
         )
     val getMembersE2EICertificateStatuses: GetMembersE2EICertificateStatusesUseCase

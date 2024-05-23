@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.CertificateStatus
-import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapper
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import com.wire.kalium.logic.functional.fold
 
@@ -33,7 +32,6 @@ interface GetUserE2eiCertificateStatusUseCase {
 
 class GetUserE2eiCertificateStatusUseCaseImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
-    private val certificateStatusMapper: CertificateStatusMapper,
     private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase
 ) : GetUserE2eiCertificateStatusUseCase {
     override suspend operator fun invoke(userId: UserId): GetUserE2eiCertificateStatusResult =

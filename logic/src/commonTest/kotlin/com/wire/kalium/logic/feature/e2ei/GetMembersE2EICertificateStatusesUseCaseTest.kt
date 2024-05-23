@@ -26,8 +26,6 @@ import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMembersE2EICertificateStatusesUseCaseImpl
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.util.arrangement.mls.CertificateStatusMapperArrangement
-import com.wire.kalium.logic.util.arrangement.mls.CertificateStatusMapperArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
 import io.mockative.matchers.EqualsMatcher
@@ -108,23 +106,9 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
         }
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
-        MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
-        CertificateStatusMapperArrangement by CertificateStatusMapperArrangementImpl() {
+        MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl() {
 
         fun arrange() = run {
-            withCertificateStatusMapperReturning(
-                CertificateStatus.VALID,
-                EqualsMatcher(CryptoCertificateStatus.VALID)
-            )
-            withCertificateStatusMapperReturning(
-                CertificateStatus.EXPIRED,
-                EqualsMatcher(CryptoCertificateStatus.EXPIRED)
-            )
-            withCertificateStatusMapperReturning(
-                CertificateStatus.REVOKED,
-                EqualsMatcher(CryptoCertificateStatus.REVOKED)
-            )
-
             runBlocking { block() }
             this@Arrangement to GetMembersE2EICertificateStatusesUseCaseImpl(
                 mlsConversationRepository = mlsConversationRepository
