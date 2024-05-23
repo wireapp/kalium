@@ -93,7 +93,7 @@ kotlin {
         val jvmMain by getting {
             addCommonKotlinJvmSourceDir()
             dependencies {
-//                 implementation(project(":persistence-pg"))
+                implementation(project(":persistence-pg"))
                 implementation(libs.jna)
                 implementation(libs.coreCryptoJvm)
             }

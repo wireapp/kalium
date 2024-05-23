@@ -30,13 +30,10 @@ import com.wire.kalium.logic.sync.GlobalWorkSchedulerImpl
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
-import com.wire.kalium.persistence.db.PlatformDatabaseData
-import com.wire.kalium.persistence.db.StorageData
-import com.wire.kalium.persistence.db.globalDatabaseProvider
+import com.wire.kalium.persistence.db.pgGlobalDatabaseProvider
+import com.wire.kalium.persistence.db.sqliteGlobalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
-import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.cancel
-import java.io.File
 
 /**
  * @sample samples.logic.CoreLogicSamples.versionedAuthScope
@@ -45,7 +42,7 @@ actual class CoreLogic(
     rootPath: String,
     kaliumConfigs: KaliumConfigs,
     userAgent: String,
-    useInMemoryStorage: Boolean = false,
+    usePg: Boolean = false,
 ) : CoreLogicCommon(
     rootPath = rootPath, kaliumConfigs = kaliumConfigs, userAgent = userAgent
 ) {
@@ -56,17 +53,11 @@ actual class CoreLogic(
             shouldEncryptData = kaliumConfigs.shouldEncryptData
         )
 
-    override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
-        platformDatabaseData = PlatformDatabaseData(
-            storageData = if (useInMemoryStorage) {
-                StorageData.InMemory
-            } else {
-                StorageData.FileBacked(File("$rootPath/global-storage"))
-            }
-        ),
-        passphrase = null,
-        queriesContext = KaliumDispatcherImpl.io
-    )
+    override val globalDatabaseBuilder: GlobalDatabaseBuilder = if (usePg) {
+        pgGlobalDatabaseProvider(sad)
+    } else {
+        sqliteGlobalDatabaseProvider()
+    }
 
     override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
@@ -92,7 +83,7 @@ actual class CoreLogic(
             networkStateObserver,
             logoutCallbackManager,
             userAgent,
-            useInMemoryStorage
+            usePg
         )
     }
 }

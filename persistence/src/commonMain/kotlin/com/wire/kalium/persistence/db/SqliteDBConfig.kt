@@ -15,27 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.persistence.db
 
-package com.wire.kalium.monkeys
+data class SqliteDBConfig(
+    val path: String
+)
 
-import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.featureFlags.KaliumConfigs
-
-fun homeDirectory(): String {
-    return System.getProperty("user.home")
-}
-
-fun coreLogic(
-    rootPath: String,
-): CoreLogic {
-    val coreLogic = CoreLogic(
-        rootPath, kaliumConfigs = KaliumConfigs(
-            developmentApiEnabled = true,
-            encryptProteusStorage = true,
-            isMLSSupportEnabled = true,
-            wipeOnDeviceRemoval = true,
-        ), userAgent = "Wire Infinite Monkeys", usePg = true
-    )
-    coreLogic.updateApiVersionsScheduler.scheduleImmediateApiVersionUpdate()
-    return coreLogic
-}

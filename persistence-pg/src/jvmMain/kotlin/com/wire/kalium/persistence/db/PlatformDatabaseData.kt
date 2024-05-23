@@ -20,16 +20,12 @@ package com.wire.kalium.persistence.db
 import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.jdbc.sqlite.JdbcSqliteDriver
 import org.sqlite.SQLiteConfig
-import java.io.File
 
 actual data class PlatformDatabaseData(
     val storageData: StorageData
 )
 
-sealed interface StorageData {
-    data class FileBacked(val file: File) : StorageData
-    data object InMemory : StorageData
-}
+data class StorageData(val uri: String, val username: String, val password: String)
 
 fun databaseDriver(uri: String, config: DriverConfigurationBuilder.() -> Unit = {}): SqlDriver {
     val driverConfiguration = DriverConfigurationBuilder().apply(config)

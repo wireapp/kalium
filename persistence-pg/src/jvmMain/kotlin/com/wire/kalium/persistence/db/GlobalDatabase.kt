@@ -23,11 +23,10 @@ import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
 
-actual fun globalDatabaseProvider(
+actual fun pgGlobalDatabaseProvider(
     platformDatabaseData: PlatformDatabaseData,
     queriesContext: CoroutineDispatcher,
     passphrase: GlobalDatabaseSecret?,
-    enableWAL: Boolean,
 ): GlobalDatabaseBuilder {
     val storageData = platformDatabaseData.storageData
     if (storageData is StorageData.InMemory) {
