@@ -30,7 +30,7 @@ data class E2eiCertificate(
     val endAt: Instant
 ) {
     companion object {
-        val certificateStatusMapper = MapperProvider.certificateStatusMapper()
+        private val certificateStatusMapper = MapperProvider.certificateStatusMapper()
 
         fun fromWireIdentity(identity: WireIdentity): E2eiCertificate? =
             identity.certificate?.let {
