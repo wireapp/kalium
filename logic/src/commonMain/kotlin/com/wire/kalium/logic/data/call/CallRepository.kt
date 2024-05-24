@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.call
 
+import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.obfuscateDomain
@@ -155,8 +156,8 @@ internal class CallDataSource(
 
     private val job = SupervisorJob() // TODO(calling): clear job method
     private val scope = CoroutineScope(job + kaliumDispatchers.io)
-    private val callJobs = mutableMapOf<ConversationId, Job>()
-    private val staleParticipantJobs = mutableMapOf<QualifiedClientID, Job>()
+    private val callJobs = ConcurrentMutableMap<ConversationId, Job>()
+    private val staleParticipantJobs = ConcurrentMutableMap<QualifiedClientID, Job>()
 
     override suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String> = wrapApiRequest {
         callApi.getCallConfig(limit = limit)
