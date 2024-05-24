@@ -19,11 +19,28 @@ package com.wire.kalium.logic.feature.e2ei
 
 import com.wire.kalium.cryptography.WireIdentity
 import kotlinx.datetime.Instant
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class E2eiCertificate(
+<<<<<<< HEAD
+=======
+    @SerialName("userHandle")
+    var userHandle: String,
+    @SerialName("status")
+>>>>>>> 0cdf629aac (fix(e2ei): crash on downloading certificates (WPB-9097) 🍒 (#2761))
     val status: CertificateStatus,
+    @SerialName("serialNumber")
     val serialNumber: String,
+    @SerialName("certificateDetail")
     val certificateDetail: String,
+<<<<<<< HEAD
+=======
+    @SerialName("thumbprint")
+    val thumbprint: String,
+    @SerialName("endAt")
+>>>>>>> 0cdf629aac (fix(e2ei): crash on downloading certificates (WPB-9097) 🍒 (#2761))
     val endAt: Instant
 ) {
     companion object {
