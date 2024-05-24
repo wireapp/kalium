@@ -626,8 +626,9 @@ internal class MLSConversationDataSource(
                 }
             }.flatMap { additionResult ->
                 wrapStorageRequest {
-                    conversationDAO.updateConversationGroupState(
+                    conversationDAO.updateMlsGroupStateAndCipherSuite(
                         ConversationEntity.GroupState.ESTABLISHED,
+                        ConversationEntity.CipherSuite.fromTag(mlsClient.getDefaultCipherSuite().toInt()),
                         idMapper.toGroupIDEntity(groupID)
                     )
                 }.map { additionResult }
