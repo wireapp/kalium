@@ -46,6 +46,7 @@ import kotlinx.datetime.Clock
  * Orchestrates the migration from proteus to MLS.
  */
 internal interface MLSMigrationManager
+
 @Suppress("LongParameterList")
 internal class MLSMigrationManagerImpl(
     private val kaliumConfigs: KaliumConfigs,

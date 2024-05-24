@@ -151,13 +151,6 @@ class OneOnOneProtocolSelectorTest {
             }
     }
 
-<<<<<<< HEAD
-    private class Arrangement(private val configure: suspend Arrangement.() -> Unit) :
-        UserRepositoryArrangement by UserRepositoryArrangementImpl() {
-        fun arrange(): Pair<Arrangement, OneOnOneProtocolSelector> = run {
-            runBlocking { configure() }
-            this@Arrangement to OneOnOneProtocolSelectorImpl(userRepository)
-=======
     @Test
     fun givenUsersHaveProtocolInCommonButDiffersWithDefaultProtocol_thenShouldReturnNoCommonProtocol() = runTest {
         val (_, oneOnOneProtocolSelector) = arrange {
@@ -214,18 +207,16 @@ class OneOnOneProtocolSelectorTest {
             }
     }
 
-    private class Arrangement(private val configure: Arrangement.() -> Unit) :
+    private class Arrangement(private val configure: suspend Arrangement.() -> Unit) :
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl() {
-        fun arrange(): Pair<Arrangement, OneOnOneProtocolSelector> = run {
+        suspend fun arrange(): Pair<Arrangement, OneOnOneProtocolSelector> = run {
             configure()
             this@Arrangement to OneOnOneProtocolSelectorImpl(userRepository, userConfigRepository)
->>>>>>> ab0156b20f (fix(mls): respect default protocol in one-on-one conversation initialisation (WPB-8975) (#2768))
         }
     }
 
     private companion object {
-        fun arrange(configure: suspend Arrangement.() -> Unit) = Arrangement(configure).arrange()
+        fun arrange(configure: suspend Arrangement.() -> Unit) = runBlocking { Arrangement(configure).arrange() }
     }
-
 }

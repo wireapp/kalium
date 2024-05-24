@@ -121,11 +121,7 @@ class MLSMigrationManagerTest {
         val clientRepository = mock(ClientRepository::class)
 
         @Mock
-<<<<<<< HEAD
-        val featureSupport = mock(FeatureSupport::class)
-=======
-        val isMLSEnabledUseCase = mock(classOf<IsMLSEnabledUseCase>())
->>>>>>> ab0156b20f (fix(mls): respect default protocol in one-on-one conversation initialisation (WPB-8975) (#2768))
+        val isMLSEnabledUseCase = mock(IsMLSEnabledUseCase::class)
 
         @Mock
         val timestampKeyRepository = mock(TimestampKeyRepository::class)
@@ -152,15 +148,10 @@ class MLSMigrationManagerTest {
         }
 
         fun withIsMLSSupported(supported: Boolean) = apply {
-<<<<<<< HEAD
             every {
-                featureSupport.isMLSSupported
+                isMLSEnabledUseCase()
             }.returns(supported)
-=======
-            given(isMLSEnabledUseCase)
-                .invocation { isMLSEnabledUseCase.invoke() }
-                .thenReturn(supported)
->>>>>>> ab0156b20f (fix(mls): respect default protocol in one-on-one conversation initialisation (WPB-8975) (#2768))
+
         }
 
         suspend fun withHasRegisteredMLSClient(result: Boolean) = apply {

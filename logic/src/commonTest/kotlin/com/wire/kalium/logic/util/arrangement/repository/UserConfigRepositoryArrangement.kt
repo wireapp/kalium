@@ -66,10 +66,7 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
     }
 
     override fun withGetDefaultProtocolReturning(result: Either<StorageFailure, SupportedProtocol>) {
-        given(userConfigRepository)
-            .function(userConfigRepository::getDefaultProtocol)
-            .whenInvoked()
-            .thenReturn(result)
+        every { userConfigRepository.getDefaultProtocol() }.returns(result)
     }
 
     override fun withSetMLSEnabledSuccessful() {
