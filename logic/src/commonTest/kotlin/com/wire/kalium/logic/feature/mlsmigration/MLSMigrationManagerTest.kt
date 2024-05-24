@@ -23,7 +23,7 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.TimestampKeyRepository
 import com.wire.kalium.logic.feature.TimestampKeys
-import com.wire.kalium.logic.featureFlags.FeatureSupport
+import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -121,7 +121,7 @@ class MLSMigrationManagerTest {
         val clientRepository = mock(ClientRepository::class)
 
         @Mock
-        val featureSupport = mock(FeatureSupport::class)
+        val isMLSEnabledUseCase = mock(IsMLSEnabledUseCase::class)
 
         @Mock
         val timestampKeyRepository = mock(TimestampKeyRepository::class)
@@ -149,8 +149,9 @@ class MLSMigrationManagerTest {
 
         fun withIsMLSSupported(supported: Boolean) = apply {
             every {
-                featureSupport.isMLSSupported
+                isMLSEnabledUseCase()
             }.returns(supported)
+
         }
 
         suspend fun withHasRegisteredMLSClient(result: Boolean) = apply {
@@ -161,7 +162,7 @@ class MLSMigrationManagerTest {
 
         fun arrange() = this to MLSMigrationManagerImpl(
             kaliumConfigs,
-            featureSupport,
+            isMLSEnabledUseCase,
             incrementalSyncRepository,
             lazy { clientRepository },
             lazy { timestampKeyRepository },
