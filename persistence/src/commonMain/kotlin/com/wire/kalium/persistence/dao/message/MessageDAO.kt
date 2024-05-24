@@ -29,6 +29,10 @@ import com.wire.kalium.persistence.dao.unread.UnreadEventEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.datetime.Instant
 
+enum class InsertMessageResult {
+    INSERTED_INTO_MUTED_CONVERSATION, INSERTED_NEED_TO_NOTIFY_USER
+}
+
 @Suppress("TooManyFunctions")
 interface MessageDAO {
     suspend fun deleteMessage(id: String, conversationsId: QualifiedIDEntity)
@@ -48,7 +52,7 @@ interface MessageDAO {
         message: MessageEntity,
         updateConversationReadDate: Boolean = false,
         updateConversationModifiedDate: Boolean = false
-    )
+    ): InsertMessageResult
 
     /**
      * Inserts the messages, or ignores messages if there already exists a message with the same [MessageEntity.id] and
@@ -75,7 +79,7 @@ interface MessageDAO {
 
     suspend fun getLastMessagesByConversations(conversationIds: List<QualifiedIDEntity>): Map<QualifiedIDEntity, MessageEntity>
 
-    suspend fun getNotificationMessage(maxNumberOfMessagesPerConversation: Int = 10): Flow<List<NotificationMessageEntity>>
+    suspend fun getNotificationMessage(maxNumberOfMessagesPerConversation: Int = 10): List<NotificationMessageEntity>
 
     suspend fun observeMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
@@ -91,6 +95,7 @@ interface MessageDAO {
         newTextContent: MessageEntityContent.Text,
         newMessageId: String
     )
+
     suspend fun updateLegalHoldMessageMembers(conversationId: QualifiedIDEntity, messageId: String, newMembers: List<QualifiedIDEntity>)
 
     suspend fun observeMessageVisibility(messageUuid: String, conversationId: QualifiedIDEntity): Flow<MessageEntity.Visibility?>

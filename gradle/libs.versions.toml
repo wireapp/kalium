@@ -36,7 +36,7 @@ sqldelight = "2.0.1"
 sqlcipher-android = "4.5.6"
 pbandk = "0.14.2"
 turbine = "1.1.0"
-avs = "9.7.9"
+avs = "9.7.15"
 jna = "5.14.0"
 core-crypto = "1.0.0-rc.55"
 core-crypto-multiplatform = "0.6.0-rc.3-multiplatform-pre1"
@@ -62,6 +62,10 @@ postgres = "1.0.5.RELEASE"
 r2dbc = "1.0.0.RELEASE"
 slf4js = "2.0.13"
 dagCommand = "1.9.0"
+benchmark = "0.4.10"
+jmh = "1.37"
+jmhReport = "0.9.6"
+xerialDriver = "3.45.3.0"
 
 [plugins]
 # Home-made convention plugins
@@ -78,6 +82,9 @@ ksp = { id = "com.google.devtools.ksp", version = "1.9.23-1.0.20" }
 carthage = { id = "com.wire.carthage-gradle-plugin", version.ref = "carthage" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobufCodegen" }
+benchmark = { id = "org.jetbrains.kotlinx.benchmark", version.ref = "benchmark" }
+allOpen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "kotlin" }
+jhmReport = { id = "io.morethan.jmhreport", version.ref = "jmhReport" }
 
 [bundles]
 android = ["appCompat", "activityCompose", "work", "composeMaterial", "coroutinesAndroid", "ktor", "ktor-okHttp"]
@@ -88,6 +95,7 @@ detekt-core = ["detekt-api"]
 # Kotlin Gradle Plugin
 kotlin-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlin" }
+kotlinx-benchmark-runtime = { group = "org.jetbrains.kotlinx", name = "kotlinx-benchmark-runtime", version.ref = "benchmark" }
 
 kotlin-nativeUtils = { module = "org.jetbrains.kotlin:kotlin-native-utils", version.ref = "kotlin" }
 ktxSerialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "ktx-serialization" }
@@ -180,6 +188,7 @@ sqldelight-r2dbc = { module = "app.cash.sqldelight:r2dbc-driver", version.ref = 
 sqldelight-async = { module = "app.cash.sqldelight:async-extensions", version.ref = "sqldelight" }
 r2dbc-postgres = { module = "org.postgresql:r2dbc-postgresql", version.ref = "postgres" }
 r2dbc-spi = { module = "io.r2dbc:r2dbc-spi", version.ref = "r2dbc" }
+sqlite-xerialDriver = { module = "org.xerial:sqlite-jdbc", version.ref = "xerialDriver" }
 
 # mocks and testing
 mockative-runtime = { module = "io.mockative:mockative", version.ref = "mockative" }

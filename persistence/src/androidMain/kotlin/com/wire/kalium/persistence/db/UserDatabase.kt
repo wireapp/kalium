@@ -26,7 +26,6 @@ import app.cash.sqldelight.db.SqlDriver
 import app.cash.sqldelight.driver.android.AndroidSqliteDriver
 import com.wire.kalium.persistence.UserDatabase
 import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.db.support.SqliteCallback
 import com.wire.kalium.persistence.db.support.SupportOpenHelperFactory
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
@@ -34,15 +33,6 @@ import net.zetetic.database.sqlcipher.SQLiteDatabase
 import java.io.File
 
 private const val DEFAULT_CACHE_SIZE = 20
-
-/**
- * Platform-specific data used to create the database
- * that might be necessary for future operations
- * in the future like [nuke]
- */
-actual class PlatformDatabaseData(
-    val context: Context
-)
 
 actual fun userDatabaseBuilder(
     platformDatabaseData: PlatformDatabaseData,
@@ -52,27 +42,16 @@ actual fun userDatabaseBuilder(
     enableWAL: Boolean
 ): UserDatabaseBuilder {
     val dbName = FileNameUtil.userDBName(userId)
-
-    val driver: AndroidSqliteDriver = if (passphrase != null) {
-        System.loadLibrary("sqlcipher")
-        AndroidSqliteDriver(
-            schema = UserDatabase.Schema,
-            context = platformDatabaseData.context,
-            name = dbName,
-            factory = SupportOpenHelperFactory(
-                passphrase.value,
-                enableWriteAheadLogging = enableWAL
-            )
-        )
-    } else {
-        AndroidSqliteDriver(
-            schema = UserDatabase.Schema,
-            context = platformDatabaseData.context,
-            name = dbName,
-            callback = SqliteCallback(UserDatabase.Schema, enableWAL = enableWAL)
-        )
+    val isEncryptionEnabled = passphrase != null
+    val driver = databaseDriver(
+        context = platformDatabaseData.context,
+        dbName = dbName,
+        passphrase = passphrase?.value,
+        schema = UserDatabase.Schema
+    ) {
+        isWALEnabled = enableWAL
     }
-    return UserDatabaseBuilder(userId, driver, dispatcher, platformDatabaseData, passphrase != null)
+    return UserDatabaseBuilder(userId, driver, dispatcher, platformDatabaseData, isEncryptionEnabled)
 }
 
 actual fun userDatabaseDriverByPath(

@@ -19,9 +19,9 @@ package com.wire.kalium.logic.feature.e2ei
 
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
+import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.functional.map
 import kotlinx.coroutines.flow.filter
 import kotlinx.datetime.Clock
@@ -38,13 +38,13 @@ interface CertificateRevocationListCheckWorker {
  * Base implementation of [CertificateRevocationListCheckWorker].
  * @param certificateRevocationListRepository The CRL repository.
  * @param incrementalSyncRepository The incremental sync repository.
- * @param checkRevocationList The check revocation list use case.
+ * @param revocationListChecker The check revocation list use case.
  *
  */
 internal class CertificateRevocationListCheckWorkerImpl(
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
-    private val checkRevocationList: CheckRevocationListUseCase,
+    private val revocationListChecker: RevocationListChecker,
     kaliumLogger: KaliumLogger
 ) : CertificateRevocationListCheckWorker {
 
@@ -58,7 +58,7 @@ internal class CertificateRevocationListCheckWorkerImpl(
                 logger.i("Checking certificate revocation list (CRL)..")
                 certificateRevocationListRepository.getCRLs()?.cRLWithExpirationList?.forEach { crl ->
                     if (crl.expiration < Clock.System.now().epochSeconds.toULong()) {
-                        checkRevocationList(crl.url).map { newExpirationTime ->
+                        revocationListChecker.check(crl.url).map { newExpirationTime ->
                             newExpirationTime?.let {
                                 certificateRevocationListRepository.addOrUpdateCRL(crl.url, it)
                             }
