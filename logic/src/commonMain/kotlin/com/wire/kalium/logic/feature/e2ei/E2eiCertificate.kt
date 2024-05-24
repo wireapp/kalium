@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.e2ei
 
 import com.wire.kalium.cryptography.WireIdentity
+import com.wire.kalium.logic.di.MapperProvider
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -38,7 +39,9 @@ data class E2eiCertificate(
     val endAt: Instant
 ) {
     companion object {
-        fun fromWireIdentity(identity: WireIdentity, certificateStatusMapper: CertificateStatusMapper): E2eiCertificate? =
+        private val certificateStatusMapper = MapperProvider.certificateStatusMapper()
+
+        fun fromWireIdentity(identity: WireIdentity): E2eiCertificate? =
             identity.certificate?.let {
                 E2eiCertificate(
                     userHandle = it.handle.handle,

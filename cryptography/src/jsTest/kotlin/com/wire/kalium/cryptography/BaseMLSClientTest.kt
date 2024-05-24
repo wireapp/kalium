@@ -28,9 +28,7 @@ actual open class BaseMLSClientTest actual constructor() {
     }
 
     actual suspend fun createCoreCrypto(
-        clientId: CryptoQualifiedClientId,
-        allowedCipherSuites: List<UShort>,
-        defaultCipherSuite: UShort
+        clientId: CryptoQualifiedClientId
     ): CoreCryptoCentral {
         TODO("Not yet implemented")
     }

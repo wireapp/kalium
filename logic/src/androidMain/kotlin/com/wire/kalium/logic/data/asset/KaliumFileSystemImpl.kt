@@ -103,6 +103,7 @@ actual class KaliumFileSystemImpl actual constructor(
      */
     override fun tempFilePath(pathString: String?): Path {
         val filePath = pathString ?: "temp_file_path"
+        createDirectories(rootCachePath) // create dir structure in case cache is cleared
         return "$rootCachePath/$filePath".toPath()
     }
 

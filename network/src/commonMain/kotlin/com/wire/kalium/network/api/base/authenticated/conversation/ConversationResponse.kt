@@ -234,7 +234,7 @@ data class SubconversationResponse(
     val epochTimestamp: String?,
 
     @SerialName("cipher_suite")
-    val mlsCipherSuiteTag: Int,
+    val mlsCipherSuiteTag: Int?,
 
     @SerialName("members")
     val members: List<SubconversationMember>,

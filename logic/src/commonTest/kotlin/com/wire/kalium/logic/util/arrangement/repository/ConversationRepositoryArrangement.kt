@@ -103,6 +103,7 @@ internal interface ConversationRepositoryArrangement {
 
     suspend fun withSelectGroupStatusMembersNamesAndHandles(result: Either<StorageFailure, EpochChangesData>)
     suspend fun withConversationDetailsByIdReturning(result: Either<StorageFailure, Conversation>)
+    suspend fun withPersistMembers(result: Either<StorageFailure, Unit>)
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -258,5 +259,9 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
         coEvery {
             conversationRepository.detailsById(any())
         }.returns(result)
+    }
+
+    override suspend fun withPersistMembers(result: Either<StorageFailure, Unit>) {
+        coEvery { conversationRepository.persistMembers(any(), any()) }.returns(result)
     }
 }
