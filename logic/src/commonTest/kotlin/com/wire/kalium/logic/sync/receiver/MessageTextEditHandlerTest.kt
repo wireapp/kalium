@@ -26,7 +26,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
 import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.NotificationEventsManagerArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangementImpl
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.any
@@ -107,7 +107,7 @@ class MessageTextEditHandlerTest {
                 messageRepository.updateMessageStatus(eq(MessageEntity.Status.SENT), eq(editMessage.conversationId), eq(editMessage.id))
             }.wasInvoked(exactly = once)
             coVerify {
-                ephemeralNotifications.scheduleEditMessageNotification(eq(editMessage), eq(editContent))
+                notificationEventsManager.scheduleEditMessageNotification(eq(editMessage), eq(editContent))
             }.wasInvoked(exactly = once)
         }
     }
@@ -153,7 +153,7 @@ class MessageTextEditHandlerTest {
     private class Arrangement(
         private val block: suspend Arrangement.() -> Unit
     ) : MessageRepositoryArrangement by MessageRepositoryArrangementImpl(),
-        EphemeralEventsNotificationManagerArrangement by EphemeralEventsNotificationManagerArrangementImpl() {
+        NotificationEventsManagerArrangement by EphemeralEventsNotificationManagerArrangementImpl() {
 
         suspend fun arrange() = block().run {
             coEvery {
@@ -164,7 +164,7 @@ class MessageTextEditHandlerTest {
             }.returns(Either.Right(Unit))
             this@Arrangement to MessageTextEditHandlerImpl(
                 messageRepository = messageRepository,
-                editMessageNotificationsManager = ephemeralNotifications,
+                notificationEventsManager = notificationEventsManager,
             )
         }
 

@@ -92,7 +92,7 @@ internal class MessageDAOImpl internal constructor(
         updateConversationReadDate: Boolean,
         updateConversationModifiedDate: Boolean
     ) = withContext(coroutineContext) {
-        queries.transaction {
+        queries.transactionWithResult {
             val messageCreationInstant = message.date
 
             if (updateConversationReadDate) {
@@ -102,13 +102,17 @@ internal class MessageDAOImpl internal constructor(
 
             insertInDB(message)
 
-            if (!nonSuspendNeedsToBeNotified(message.id, message.conversationId)) {
+            val needsToBeNotified = nonSuspendNeedsToBeNotified(message.id, message.conversationId)
+            if (!needsToBeNotified) {
                 conversationsQueries.updateConversationNotificationsDate(messageCreationInstant, message.conversationId)
             }
 
             if (updateConversationModifiedDate) {
                 conversationsQueries.updateConversationModifiedDate(messageCreationInstant, message.conversationId)
             }
+
+            if (needsToBeNotified) InsertMessageResult.INSERTED_NEED_TO_NOTIFY_USER
+            else InsertMessageResult.INSERTED_INTO_MUTED_CONVERSATION
         }
     }
 
@@ -292,11 +296,11 @@ internal class MessageDAOImpl internal constructor(
                 .associateBy { it.conversationId }
         }
 
-    override suspend fun getNotificationMessage(maxNumberOfMessagesPerConversation: Int): Flow<List<NotificationMessageEntity>> =
-        notificationQueries.getNotificationsMessages(mapper::toNotificationEntity)
-            .asFlow()
-            .flowOn(coroutineContext)
-            .mapToList()
+    override suspend fun getNotificationMessage(maxNumberOfMessagesPerConversation: Int): List<NotificationMessageEntity> =
+        withContext(coroutineContext) {
+            notificationQueries.getNotificationsMessages(mapper::toNotificationEntity)
+                .executeAsList()
+        }
 
     override suspend fun observeMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,

@@ -252,7 +252,7 @@ import com.wire.kalium.logic.feature.legalhold.UpdateSelfClientCapabilityToLegal
 import com.wire.kalium.logic.feature.legalhold.UpdateSelfClientCapabilityToLegalHoldConsentUseCaseImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCaseImpl
-import com.wire.kalium.logic.feature.message.EphemeralEventsNotificationManagerImpl
+import com.wire.kalium.logic.data.notification.NotificationEventsManagerImpl
 import com.wire.kalium.logic.feature.message.MessageScope
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
@@ -847,7 +847,7 @@ class UserSessionScope internal constructor(
         )
 
     val persistMessage: PersistMessageUseCase
-        get() = PersistMessageUseCaseImpl(messageRepository, userId)
+        get() = PersistMessageUseCaseImpl(messageRepository, userId, NotificationEventsManagerImpl)
 
     private val addSystemMessageToAllConversationsUseCase: AddSystemMessageToAllConversationsUseCase
         get() = AddSystemMessageToAllConversationsUseCaseImpl(messageRepository, userId)
@@ -1299,12 +1299,12 @@ class UserSessionScope internal constructor(
             callManager,
             persistMessage,
             persistReaction,
-            MessageTextEditHandlerImpl(messageRepository, EphemeralEventsNotificationManagerImpl),
+            MessageTextEditHandlerImpl(messageRepository, NotificationEventsManagerImpl),
             LastReadContentHandlerImpl(
                 conversationRepository,
                 userId,
                 isMessageSentInSelfConversation,
-                EphemeralEventsNotificationManagerImpl
+                NotificationEventsManagerImpl
             ),
             ClearConversationContentHandlerImpl(
                 conversationRepository,
@@ -1312,7 +1312,7 @@ class UserSessionScope internal constructor(
                 isMessageSentInSelfConversation,
             ),
             DeleteForMeHandlerImpl(messageRepository, isMessageSentInSelfConversation),
-            DeleteMessageHandlerImpl(messageRepository, assetRepository, EphemeralEventsNotificationManagerImpl, userId),
+            DeleteMessageHandlerImpl(messageRepository, assetRepository, NotificationEventsManagerImpl, userId),
             messageEncoder,
             receiptMessageHandler,
             buttonActionConfirmationHandler,
@@ -1350,7 +1350,9 @@ class UserSessionScope internal constructor(
         )
     private val deletedConversationHandler: DeletedConversationEventHandler
         get() = DeletedConversationEventHandlerImpl(
-            userRepository, conversationRepository, EphemeralEventsNotificationManagerImpl
+            userRepository,
+            conversationRepository,
+            NotificationEventsManagerImpl
         )
     private val memberJoinHandler: MemberJoinEventHandler
         get() = MemberJoinEventHandlerImpl(

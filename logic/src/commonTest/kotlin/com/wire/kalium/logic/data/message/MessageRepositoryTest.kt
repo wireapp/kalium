@@ -32,6 +32,7 @@ import com.wire.kalium.logic.framework.TestMessage.TEST_MESSAGE_ID
 import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID
 import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID_2
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
@@ -41,6 +42,7 @@ import com.wire.kalium.network.api.base.authenticated.message.SendMLSMessageResp
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
+import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
@@ -137,15 +139,15 @@ class MessageRepositoryTest {
 
     @Test
     fun givenAMessage_whenPersisting_thenTheDAOShouldBeUsedWithMappedValues() = runTest {
-        val mappedId: QualifiedIDEntity = TEST_QUALIFIED_ID_ENTITY
-        val selfUserId = TEST_QUALIFIED_ID_ENTITY
         val message = TEST_MESSAGE
         val mappedEntity = TEST_MESSAGE_ENTITY
+        val insertOrIgnoreMessage = InsertMessageResult.INSERTED_INTO_MUTED_CONVERSATION
         val (arrangement, messageRepository) = Arrangement()
             .withMappedMessageEntity(mappedEntity)
+            .withInsertOrIgnoreMessage(insertOrIgnoreMessage)
             .arrange()
 
-        messageRepository.persistMessage(message)
+        assertEquals(insertOrIgnoreMessage.right(), messageRepository.persistMessage(message))
 
         with(arrangement) {
             verify {
@@ -707,6 +709,12 @@ class MessageRepositoryTest {
         suspend fun withGetLastMessagesByConversations(result: Map<QualifiedIDEntity, MessageEntity>) = apply {
             coEvery {
                 messageDAO.getLastMessagesByConversations(any())
+            }.returns(result)
+        }
+
+        suspend fun withInsertOrIgnoreMessage(result: InsertMessageResult) = apply {
+            coEvery {
+                messageDAO.insertOrIgnoreMessage(any(), any(), any())
             }.returns(result)
         }
 
