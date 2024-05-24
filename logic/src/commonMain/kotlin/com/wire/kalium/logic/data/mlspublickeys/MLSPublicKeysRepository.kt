@@ -19,34 +19,55 @@
 package com.wire.kalium.logic.data.mlspublickeys
 
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.MLSFailure
+import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
+import io.ktor.util.decodeBase64Bytes
+
+data class MLSPublicKeys(
+    val removal: Map<String, String>?
+)
 
 interface MLSPublicKeysRepository {
-    suspend fun fetchKeys(): Either<CoreFailure, List<MLSPublicKey>>
-    suspend fun getKeys(): Either<CoreFailure, List<MLSPublicKey>>
+    suspend fun fetchKeys(): Either<CoreFailure, MLSPublicKeys>
+    suspend fun getKeys(): Either<CoreFailure, MLSPublicKeys>
+    suspend fun getKeyForCipherSuite(cipherSuite: CipherSuite): Either<CoreFailure, ByteArray>
 }
 
 class MLSPublicKeysRepositoryImpl(
     private val mlsPublicKeyApi: MLSPublicKeyApi,
-    private val mapper: MLSPublicKeysMapper = MLSPublicKeysMapperImpl()
+    private val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper()
 ) : MLSPublicKeysRepository {
 
-    var publicKeys: List<MLSPublicKey>? = null
+    // TODO: make it thread safe
+    var publicKeys: MLSPublicKeys? = null
 
     override suspend fun fetchKeys() =
         wrapApiRequest {
             mlsPublicKeyApi.getMLSPublicKeys()
         }.map {
-            val keys = mapper.fromDTO(it)
-            publicKeys = keys
-            keys
+            MLSPublicKeys(removal = it.removal)
         }
 
-    override suspend fun getKeys(): Either<CoreFailure, List<MLSPublicKey>> {
+    override suspend fun getKeys(): Either<CoreFailure, MLSPublicKeys> {
         return publicKeys?.let { Either.Right(it) } ?: fetchKeys()
+    }
+
+    override suspend fun getKeyForCipherSuite(cipherSuite: CipherSuite): Either<CoreFailure, ByteArray> {
+
+        return getKeys().flatMap { serverPublicKeys ->
+            val keySignature = mlsPublicKeysMapper.fromCipherSuite(cipherSuite)
+            val key = serverPublicKeys.removal?.let { removalKeys ->
+                removalKeys[keySignature.value]
+            } ?: return Either.Left(MLSFailure.Generic(IllegalStateException("No key found for cipher suite $cipherSuite")))
+            key.decodeBase64Bytes().right()
+        }
     }
 
 }
