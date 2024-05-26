@@ -96,7 +96,6 @@ sealed class CipherSuite(open val tag: Int) {
             61489 -> MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_ED25519
             else -> UNKNOWN(tag)
         }
-
         fun fromTag(tag: UShort) = fromTag(tag.toInt())
     }
 }
@@ -111,4 +110,6 @@ fun CipherSuite.signatureAlgorithm(): MLSPublicKeyTypeDTO? = when (this) {
     CipherSuite.MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448 -> MLSPublicKeyTypeDTO.ED448
     CipherSuite.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 -> MLSPublicKeyTypeDTO.ED448
     is CipherSuite.UNKNOWN -> null
+}
+    }
 }

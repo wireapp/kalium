@@ -185,8 +185,8 @@ class RegisterMLSClientUseCaseTest {
             }.returns(result)
         }
 
-        fun withIsMLSClientInitialisedReturns(result: Boolean = true) = apply {
-            every {
+        suspend fun withIsMLSClientInitialisedReturns(result: Boolean = true) = apply {
+            coEvery {
                 mlsClientProvider.isMLSClientInitialised()
             }.returns(result)
         }
@@ -238,6 +238,5 @@ class RegisterMLSClientUseCaseTest {
                 true, RANDOM_URL, DateTimeUtil.currentInstant()
             )
         }
-
     }
 }
