@@ -17,21 +17,31 @@
  */
 package com.wire.kalium.cryptography
 
+import com.wire.crypto.Ciphersuites
 import com.wire.crypto.ClientId
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CoreCryptoCallbacks
-import com.wire.crypto.client.Ciphersuites
 import com.wire.crypto.coreCryptoDeferredInit
 import com.wire.kalium.cryptography.MLSClientImpl.Companion.toCrlRegistration
 import com.wire.kalium.cryptography.exceptions.CryptographyException
 import java.io.File
 
-actual suspend fun coreCryptoCentral(rootDir: String, databaseKey: String): CoreCryptoCentral {
+actual suspend fun coreCryptoCentral(
+    rootDir: String,
+    databaseKey: String,
+    allowedCipherSuites: Ciphersuites,
+    defaultCipherSuite: UShort?
+): CoreCryptoCentral {
     val path = "$rootDir/${CoreCryptoCentralImpl.KEYSTORE_NAME}"
     File(rootDir).mkdirs()
-    val coreCrypto = coreCryptoDeferredInit(path, databaseKey, Ciphersuites.DEFAULT.lower(), null)
+    val coreCrypto = coreCryptoDeferredInit(path, databaseKey, allowedCipherSuites, null)
     coreCrypto.setCallbacks(Callbacks())
-    return CoreCryptoCentralImpl(coreCrypto, rootDir)
+    return CoreCryptoCentralImpl(
+        cc = coreCrypto,
+        rootDir = rootDir,
+        cipherSuite = allowedCipherSuites,
+        defaultCipherSuite = defaultCipherSuite
+    )
 }
 
 private class Callbacks : CoreCryptoCallbacks {
@@ -61,12 +71,18 @@ private class Callbacks : CoreCryptoCallbacks {
     }
 }
 
-class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: String) : CoreCryptoCentral {
+class CoreCryptoCentralImpl(
+    private val cc: CoreCrypto,
+    private val rootDir: String,
+    // TODO: remove one they are removed from the CC api
+    private val cipherSuite: Ciphersuites,
+    private val defaultCipherSuite: UShort?
+) : CoreCryptoCentral {
     fun getCoreCrypto() = cc
 
     override suspend fun mlsClient(clientId: CryptoQualifiedClientId): MLSClient {
-        cc.mlsInit(clientId.toString().encodeToByteArray(), Ciphersuites.DEFAULT.lower(), null)
-        return MLSClientImpl(cc)
+        cc.mlsInit(clientId.toString().encodeToByteArray(), cipherSuite, null)
+        return MLSClientImpl(cc, defaultCipherSuite!!)
     }
 
     override suspend fun mlsClient(
@@ -79,7 +95,7 @@ class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: Str
             (enrollment as E2EIClientImpl).wireE2eIdentity,
             certificateChain, newMLSKeyPackageCount
         )
-        return MLSClientImpl(cc)
+        return MLSClientImpl(cc, defaultCipherSuite!!)
     }
 
     override suspend fun proteusClient(): ProteusClient {
@@ -100,7 +116,7 @@ class CoreCryptoCentralImpl(private val cc: CoreCrypto, private val rootDir: Str
                 handle,
                 teamId,
                 expiry.inWholeSeconds.toUInt(),
-                Ciphersuites.DEFAULT.lower().first()
+                defaultCipherSuite!!
             )
 
         )

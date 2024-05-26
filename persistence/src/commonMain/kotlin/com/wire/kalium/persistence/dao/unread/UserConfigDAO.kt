@@ -26,6 +26,7 @@ import com.wire.kalium.persistence.config.MLSMigrationEntity
 import com.wire.kalium.persistence.config.TeamSettingsSelfDeletionStatusEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
+import com.wire.kalium.persistence.model.SupportedCipherSuiteEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.builtins.SetSerializer
@@ -57,6 +58,8 @@ interface UserConfigDAO {
     suspend fun observeCertificateExpirationTime(url: String): Flow<ULong?>
     suspend fun setShouldNotifyForRevokedCertificate(shouldNotify: Boolean)
     suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Boolean?>
+    suspend fun setDefaultCipherSuite(cipherSuite: SupportedCipherSuiteEntity)
+    suspend fun getDefaultCipherSuite(): SupportedCipherSuiteEntity?
 }
 
 @Suppress("TooManyFunctions")
@@ -176,7 +179,15 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Boolean?> =
         metadataDAO.valueByKeyFlow(SHOULD_NOTIFY_FOR_REVOKED_CERTIFICATE).map { it?.toBoolean() }
 
+    override suspend fun setDefaultCipherSuite(cipherSuite: SupportedCipherSuiteEntity) {
+        metadataDAO.putSerializable(DEFAULT_CIPHER_SUITE_KEY, cipherSuite, SupportedCipherSuiteEntity.serializer())
+    }
+
+    override suspend fun getDefaultCipherSuite(): SupportedCipherSuiteEntity? =
+        metadataDAO.getSerializable(DEFAULT_CIPHER_SUITE_KEY, SupportedCipherSuiteEntity.serializer())
+
     private companion object {
+        private const val DEFAULT_CIPHER_SUITE_KEY = "DEFAULT_CIPHER_SUITE"
         private const val SELF_DELETING_MESSAGES_KEY = "SELF_DELETING_MESSAGES"
         private const val SHOULD_NOTIFY_FOR_REVOKED_CERTIFICATE = "should_notify_for_revoked_certificate"
         private const val MLS_MIGRATION_KEY = "MLS_MIGRATION"
