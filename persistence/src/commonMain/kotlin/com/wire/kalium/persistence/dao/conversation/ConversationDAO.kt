@@ -36,15 +36,11 @@ interface ConversationDAO {
     suspend fun insertConversations(conversationEntities: List<ConversationEntity>)
     suspend fun updateConversation(conversationEntity: ConversationEntity)
     suspend fun updateConversationGroupState(groupState: ConversationEntity.GroupState, groupId: String)
-<<<<<<< HEAD
-=======
     suspend fun updateMlsGroupStateAndCipherSuite(
         groupState: ConversationEntity.GroupState,
         cipherSuite: ConversationEntity.CipherSuite,
         groupId: String
     )
-
->>>>>>> dc0b429e5d (fix(mls): update migrated conversation with correct group id and cipher suites (WPB-9169) (#2770))
     suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: Instant)
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity)
     suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant)

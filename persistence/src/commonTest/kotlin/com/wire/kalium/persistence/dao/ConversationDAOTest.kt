@@ -267,6 +267,23 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenExistingConversation_ThenConversationGroupStateCanBeUpdatedToEstablished() = runTest {
+        conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.updateMlsGroupStateAndCipherSuite(
+            ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
+            ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
+            (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+
+        )
+        val result = conversationDAO.getConversationByQualifiedID(conversationEntity2.id)
+        assertEquals(
+            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState, ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
+        )
+        assertEquals(
+            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).cipherSuite, ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521
+        )
+    }
+    @Test
     fun givenExistingConversation_ThenConversationIsUpdatedOnInsert() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
         insertTeamUserAndMember(team, user1, conversationEntity1.id)

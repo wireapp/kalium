@@ -95,14 +95,13 @@ import com.wire.kalium.util.DateTimeUtil
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.EqualsMatcher
 import io.mockative.matchers.Matcher
-import io.mockative.matchers.PredicateMatcher
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
@@ -121,7 +120,6 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import com.wire.kalium.network.api.base.model.ConversationId as APIConversationId
-import com.wire.kalium.network.api.base.model.ConversationId as ConversationIdDTO
 import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 
 @Suppress("LargeClass")
@@ -562,7 +560,6 @@ class ConversationRepositoryTest {
 
             val (arrange, conversationRepository) = Arrangement()
                 .withApiUpdateAccessRoleReturns(NetworkResponse.Success(newAccess, mapOf(), 200))
-                .withDaoUpdateAccessSuccess()
                 .arrange()
 
             conversationRepository.updateAccessInfo(
@@ -1176,16 +1173,8 @@ class ConversationRepositoryTest {
         // then
         with(result) {
             shouldSucceed()
-<<<<<<< HEAD
-            coVerify {
-                arrange.conversationDAO.updateConversationProtocol(eq(CONVERSATION_ID.toDao()), eq(protocol.toDao()))
-            }.wasNotInvoked()
-=======
-            verify(arrange.conversationDAO)
-                .suspendFunction(arrange.conversationDAO::updateConversationProtocolAndCipherSuite)
-                .with(any(), any(), any(), any())
+            coVerify { arrange.conversationDAO.updateConversationProtocolAndCipherSuite(any(), any(), any(), any()) }
                 .wasNotInvoked()
->>>>>>> dc0b429e5d (fix(mls): update migrated conversation with correct group id and cipher suites (WPB-9169) (#2770))
         }
     }
 
@@ -1239,21 +1228,14 @@ class ConversationRepositoryTest {
         // then
         with(result) {
             shouldSucceed()
-<<<<<<< HEAD
             coVerify {
-                arrange.conversationDAO.updateConversationProtocol(eq(CONVERSATION_ID.toDao()), eq(protocol.toDao()))
-            }.wasInvoked(exactly = once)
-=======
-            verify(arrange.conversationDAO)
-                .suspendFunction(arrange.conversationDAO::updateConversationProtocolAndCipherSuite)
-                .with(
+                arrange.conversationDAO.updateConversationProtocolAndCipherSuite(
                     eq(CONVERSATION_ID.toDao()),
                     eq(conversationResponse.value.groupId),
                     eq(protocol.toDao()),
                     eq(ConversationEntity.CipherSuite.fromTag(conversationResponse.value.mlsCipherSuiteTag))
                 )
-                .wasInvoked(exactly = once)
->>>>>>> dc0b429e5d (fix(mls): update migrated conversation with correct group id and cipher suites (WPB-9169) (#2770))
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -1278,21 +1260,14 @@ class ConversationRepositoryTest {
         // then
         with(result) {
             shouldSucceed()
-<<<<<<< HEAD
             coVerify {
-                arrange.conversationDAO.updateConversationProtocol(eq(CONVERSATION_ID.toDao()), eq(protocol.toDao()))
-            }.wasInvoked(exactly = once)
-=======
-            verify(arrange.conversationDAO)
-                .suspendFunction(arrange.conversationDAO::updateConversationProtocolAndCipherSuite)
-                .with(
+                arrange.conversationDAO.updateConversationProtocolAndCipherSuite(
                     eq(CONVERSATION_ID.toDao()),
                     eq(conversationResponse.value.groupId),
                     eq(protocol.toDao()),
                     eq(ConversationEntity.CipherSuite.fromTag(conversationResponse.value.mlsCipherSuiteTag))
                 )
-                .wasInvoked(exactly = once)
->>>>>>> dc0b429e5d (fix(mls): update migrated conversation with correct group id and cipher suites (WPB-9169) (#2770))
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -1311,16 +1286,8 @@ class ConversationRepositoryTest {
         // then
         with(result) {
             shouldFail()
-<<<<<<< HEAD
-            coVerify {
-                arrange.conversationDAO.updateConversationProtocol(eq(CONVERSATION_ID.toDao()), eq(protocol.toDao()))
-            }.wasNotInvoked()
-=======
-            verify(arrange.conversationDAO)
-                .suspendFunction(arrange.conversationDAO::updateConversationProtocolAndCipherSuite)
-                .with(any(), any(), any(), any())
+            coVerify { arrange.conversationDAO.updateConversationProtocolAndCipherSuite(any(), any(), any(), any()) }
                 .wasNotInvoked()
->>>>>>> dc0b429e5d (fix(mls): update migrated conversation with correct group id and cipher suites (WPB-9169) (#2770))
         }
     }
 
@@ -1555,24 +1522,9 @@ class ConversationRepositoryTest {
             }.returns(response)
         }
 
-<<<<<<< HEAD
-        suspend fun withDaoUpdateAccessSuccess() = apply {
-            coEvery {
-                conversationDAO.updateAccess(any(), any(), any())
-            }.returns(Unit)
-=======
-        fun withDaoUpdateProtocolSuccess() = apply {
-            given(conversationDAO)
-                .suspendFunction(conversationDAO::updateConversationProtocolAndCipherSuite)
-                .whenInvokedWith(anything(), anything(), anything(), anything())
-                .thenReturn(true)
->>>>>>> dc0b429e5d (fix(mls): update migrated conversation with correct group id and cipher suites (WPB-9169) (#2770))
-        }
-
         suspend fun withDaoUpdateProtocolSuccess() = apply {
-            coEvery {
-                conversationDAO.updateConversationProtocol(any(), any())
-            }.returns(true)
+            coEvery { conversationDAO.updateConversationProtocolAndCipherSuite(any(), any(), any(), any()) }
+                .returns(true)
         }
 
         suspend fun withGetConversationProtocolInfoReturns(result: ConversationEntity.ProtocolInfo) = apply {
