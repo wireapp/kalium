@@ -1153,7 +1153,7 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenNoChange_whenUpdatingProtocolToMls_thenShouldNotUpdateLocally() = runTest {
+    fun givenNoChange_whenUpdatingProtocolToMls_thenShouldUpdateLocally() = runTest {
         // given
         val protocol = Conversation.Protocol.MLS
         val conversationResponse = NetworkResponse.Success(
@@ -1173,8 +1173,14 @@ class ConversationRepositoryTest {
         // then
         with(result) {
             shouldSucceed()
-            coVerify { arrange.conversationDAO.updateConversationProtocolAndCipherSuite(any(), any(), any(), any()) }
-                .wasNotInvoked()
+            coVerify {
+                arrange.conversationDAO.updateConversationProtocolAndCipherSuite(
+                    eq(CONVERSATION_ID.toDao()),
+                    eq(conversationResponse.value.groupId),
+                    eq(protocol.toDao()),
+                    eq(ConversationEntity.CipherSuite.fromTag(conversationResponse.value.mlsCipherSuiteTag))
+                )
+            }.wasInvoked(exactly = once)
         }
     }
 
