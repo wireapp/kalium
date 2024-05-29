@@ -114,6 +114,10 @@ data class SelfDeletingMessagesConfigDTO(
 data class E2EIConfigDTO(
     @SerialName("acmeDiscoveryUrl")
     val url: String?,
+    @SerialName("crlProxy")
+    val crlProxy: String,
+    @SerialName("useProxyOnMobile")
+    val shouldUseProxy: Boolean?,
     @SerialName("verificationExpiration")
     val verificationExpirationSeconds: Long
 )
