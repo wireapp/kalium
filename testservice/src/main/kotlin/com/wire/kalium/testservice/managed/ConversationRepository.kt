@@ -115,8 +115,14 @@ sealed class ConversationRepository {
             when (val session = session.currentSession()) {
                 is CurrentSessionResult.Success -> {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
-                        log.info("Instance ${instance.instanceId}: Create group conversation with ...")
-                        when (val result = conversations.createGroupConversation(name, listOf(), ConversationOptions())) {
+                        log.info("Instance ${instance.instanceId}: Create conversation \"$name\" with ${
+                                    userIds.joinToString { user -> user.value + "@" + user.domain }
+                                }")
+                        when (val result = conversations.createGroupConversation(
+                            name,
+                            userIds,
+                            ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
+                        )) {
                             is CreateGroupConversationUseCase.Result.Success -> {
                                 Response.status(Response.Status.OK).build()
                             }
