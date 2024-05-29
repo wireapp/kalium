@@ -57,7 +57,6 @@ internal class MLSMigrationWorkerImpl(
                 }
             } ?: Either.Right(Unit)
         }
-
     private suspend fun syncMigrationConfigurations(): Either<CoreFailure, Unit> =
         featureConfigRepository.getFeatureConfigs().flatMap { configurations ->
             mlsConfigHandler.handle(configurations.mlsModel, duringSlowSync = false)

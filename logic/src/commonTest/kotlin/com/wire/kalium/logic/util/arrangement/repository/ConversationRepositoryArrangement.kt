@@ -104,6 +104,7 @@ internal interface ConversationRepositoryArrangement {
 
     fun withSelectGroupStatusMembersNamesAndHandles(result: Either<StorageFailure, EpochChangesData>)
     fun withConversationDetailsByIdReturning(result: Either<StorageFailure, Conversation>)
+    fun withPersistMembers(result: Either<StorageFailure, Unit>)
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -275,6 +276,13 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
     override fun withConversationDetailsByIdReturning(result: Either<StorageFailure, Conversation>) {
         given(conversationRepository)
             .suspendFunction(conversationRepository::detailsById)
+            .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withPersistMembers(result: Either<StorageFailure, Unit>) {
+        given(conversationRepository)
+            .suspendFunction(conversationRepository::persistMembers)
             .whenInvokedWith(any())
             .thenReturn(result)
     }
