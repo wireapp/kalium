@@ -111,5 +111,3 @@ fun CipherSuite.signatureAlgorithm(): MLSPublicKeyTypeDTO? = when (this) {
     CipherSuite.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 -> MLSPublicKeyTypeDTO.ED448
     is CipherSuite.UNKNOWN -> null
 }
-    }
-}
