@@ -25,6 +25,9 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":persistence"))
+                implementation(project(":testservice"))
+                implementation("io.dropwizard:dropwizard-core:2.1.4")
+                implementation("org.json:json:20230227")
                 implementation(libs.coroutines.core)
                 implementation(libs.ktxDateTime)
                 implementation(libs.kotlinx.benchmark.runtime)
@@ -36,6 +39,18 @@ kotlin {
 }
 
 benchmark {
+    configurations {
+        register("testservice") {
+            include("Testservice")
+            iterations = 10
+            warmups = 2
+            iterationTime = 1
+            iterationTimeUnit = "s"
+        }
+        register("messages") {
+            include("Messages")
+        }
+    }
     targets {
         register("jvm") {
             this as JvmBenchmarkTarget
