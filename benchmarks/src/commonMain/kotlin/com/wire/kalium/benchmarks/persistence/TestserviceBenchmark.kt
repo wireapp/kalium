@@ -77,6 +77,8 @@ class TestserviceBenchmark {
             val configuration = TestserviceConfiguration()
             instanceService = InstanceService(metricRegistry, cleanupPool, configuration)
             instanceId = UUID.randomUUID().toString()
+            email = user.email
+            password = user.password
         }
 
         @TearDown(Level.Trial)

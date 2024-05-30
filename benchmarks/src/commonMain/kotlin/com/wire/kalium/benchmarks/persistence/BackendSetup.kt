@@ -32,6 +32,8 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import java.util.Locale
+import java.util.UUID
 import javax.ws.rs.core.MediaType
 
 class BackendSetup(private val backendUrl: String, private val basicAuth: BasicAuth) {
@@ -44,11 +46,18 @@ class BackendSetup(private val backendUrl: String, private val basicAuth: BasicA
     )
 
     fun createUser(): ClientUser {
-        var user = ClientUser(name = "Herr Bla", email = "smoketester+1224234@wire.com", password = "Aqa123456!", id = null)
+        var user = generateRandomClientUser()
         user = registerNewUser(user)
         val activationCode = getActivationCodeForEmail(user.email)
         activateRegisteredEmailByBackdoorCode(user.email, activationCode)
         return user;
+    }
+
+    private fun generateRandomClientUser(): ClientUser {
+        val name = "Benchmark"
+        val password = "Aqa123456!"
+        val email = "benchmark" + UUID.randomUUID().toString().replace("[^A-Za-z0-9]".toRegex(), "") + "@wire.com"
+        return ClientUser(name, email, password, id = null)
     }
 
     private fun registerNewUser(user: ClientUser): ClientUser {
@@ -62,8 +71,8 @@ class BackendSetup(private val backendUrl: String, private val basicAuth: BasicA
         user.id = `object`.getString("id")
         val cookiesHeader = c.getHeaderField("Set-Cookie")
         val cookies = HttpCookie.parse(cookiesHeader)
-        //val cookie: AccessCookie = AccessCookie("zuid", cookies)
-        //user.setAccessCredentials(AccessCredentials(null, cookie))
+        // val cookie: AccessCookie = AccessCookie("zuid", cookies)
+        // user.setAccessCredentials(AccessCredentials(null, cookie))
         return user
     }
 
