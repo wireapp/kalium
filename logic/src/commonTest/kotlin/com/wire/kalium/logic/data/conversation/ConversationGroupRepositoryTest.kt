@@ -1788,7 +1788,7 @@ class ConversationGroupRepositoryTest {
 
         suspend fun withSuccessfulNewConversationGroupStartedHandled() = apply {
             coEvery {
-                newGroupConversationSystemMessagesCreator.conversationStarted(any(), any())
+                newGroupConversationSystemMessagesCreator.conversationStarted(any(), any(), any())
             }.returns(Either.Right(Unit))
             coEvery {
                 newGroupConversationSystemMessagesCreator.conversationStarted(any())
