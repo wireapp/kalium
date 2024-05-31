@@ -58,7 +58,7 @@ class NewConversationMembersRepositoryTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(any(), any())
+            arrangement.newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(any(), any(), any())
         }.wasInvoked(once)
     }
 
@@ -89,7 +89,7 @@ class NewConversationMembersRepositoryTest {
 
         suspend fun withPersistResolvedMembersSystemMessageSuccess() = apply {
             coEvery {
-                newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(any(), any())
+                newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 

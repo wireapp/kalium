@@ -169,7 +169,10 @@ class NewConversationEventHandlerTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(eq(event.conversation.id.toModel()))
+            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
+                eq(event.conversation.id.toModel()),
+                eq(event.timestampIso)
+            )
         }.wasInvoked(exactly = once)
     }
 
@@ -347,7 +350,7 @@ class NewConversationEventHandlerTest {
 
         suspend fun withConversationUnverifiedWarningSystemMessage() = apply {
             coEvery {
-                newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any())
+                newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
             }.returns(Either.Right(Unit))
         }
 

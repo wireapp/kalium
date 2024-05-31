@@ -1225,7 +1225,7 @@ class ConversationGroupRepositoryTest {
             }.wasInvoked(once)
 
             coVerify {
-                newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any())
+                newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
             }.wasInvoked(once)
         }
     }
@@ -1843,7 +1843,7 @@ class ConversationGroupRepositoryTest {
 
         suspend fun withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled() = apply {
             coEvery {
-                newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any())
+                newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
             }.returns(Either.Right(Unit))
         }
 
