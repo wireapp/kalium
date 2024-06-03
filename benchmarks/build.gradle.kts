@@ -25,9 +25,11 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 implementation(project(":persistence"))
+                implementation(project(":logic"))
                 implementation(libs.coroutines.core)
                 implementation(libs.ktxDateTime)
                 implementation(libs.kotlinx.benchmark.runtime)
+                implementation(libs.ktor.mock)
             }
         }
 
@@ -36,6 +38,18 @@ kotlin {
 }
 
 benchmark {
+    configurations {
+        register("logic") {
+            include("CoreLogic")
+            iterations = 10
+            warmups = 2
+            iterationTime = 1
+            iterationTimeUnit = "s"
+        }
+        register("persistence") {
+            include("Messages")
+        }
+    }
     targets {
         register("jvm") {
             this as JvmBenchmarkTarget
