@@ -19,17 +19,17 @@
 package com.wire.kalium.cryptography
 
 actual open class BaseMLSClientTest actual constructor() {
-    actual suspend fun createMLSClient(clientId: CryptoQualifiedClientId): MLSClient {
+    actual suspend fun createMLSClient(
+        clientId: CryptoQualifiedClientId,
+        allowedCipherSuites: List<UShort>,
+        defaultCipherSuite: UShort
+    ): MLSClient {
         TODO("Not yet implemented")
     }
 
-<<<<<<< HEAD
-    actual suspend fun createCoreCrypto(clientId: CryptoQualifiedClientId):CoreCryptoCentral {
-=======
     actual suspend fun createCoreCrypto(
         clientId: CryptoQualifiedClientId
     ): CoreCryptoCentral {
->>>>>>> f8c4a14166 (feat: fetch MLS config when not available locally [WPB-8592] 🍒 (#2744))
         TODO("Not yet implemented")
     }
 }

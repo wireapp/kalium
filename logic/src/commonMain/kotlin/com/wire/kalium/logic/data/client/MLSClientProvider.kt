@@ -28,6 +28,7 @@ import com.wire.kalium.cryptography.coreCryptoCentral
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -37,6 +38,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.right
@@ -52,7 +54,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 interface MLSClientProvider {
-    fun isMLSClientInitialised(): Boolean
+    suspend fun isMLSClientInitialised(): Boolean
 
     suspend fun getMLSClient(clientId: ClientId? = null): Either<CoreFailure, MLSClient>
 
@@ -74,11 +76,8 @@ class MLSClientProviderImpl(
     private val userId: UserId,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val passphraseStorage: PassphraseStorage,
-<<<<<<< HEAD
-=======
     private val userConfigRepository: UserConfigRepository,
     private val featureConfigRepository: FeatureConfigRepository,
->>>>>>> f8c4a14166 (feat: fetch MLS config when not available locally [WPB-8592] 🍒 (#2744))
     private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : MLSClientProvider {
 
@@ -88,7 +87,7 @@ class MLSClientProviderImpl(
     private val mlsClientMutex = Mutex()
     private val coreCryptoCentralMutex = Mutex()
 
-    override fun isMLSClientInitialised() = mlsClient != null
+    override suspend fun isMLSClientInitialised() = mlsClientMutex.withLock { mlsClient != null }
 
     override suspend fun getMLSClient(clientId: ClientId?): Either<CoreFailure, MLSClient> = mlsClientMutex.withLock {
         withContext(dispatchers.io) {

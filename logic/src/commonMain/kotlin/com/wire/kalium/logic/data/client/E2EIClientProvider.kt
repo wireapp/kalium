@@ -81,11 +81,11 @@ internal class EI2EIClientProviderImpl(
                                 selfUser.id.toCrypto()
                             )
                             val newE2EIClient = it.newAcmeEnrollment(
-                                cryptoQualifiedClientId,
-                                selfUser.name!!,
-                                selfUser.handle!!,
-                                selfUser.teamId?.value,
-                                defaultE2EIExpiry
+                                clientId = cryptoQualifiedClientId,
+                                displayName = selfUser.name!!,
+                                handle = selfUser.handle!!,
+                                teamId = selfUser.teamId?.value,
+                                expiry = defaultE2EIExpiry
                             )
                             e2EIClient = newE2EIClient
                             Either.Right(newE2EIClient)

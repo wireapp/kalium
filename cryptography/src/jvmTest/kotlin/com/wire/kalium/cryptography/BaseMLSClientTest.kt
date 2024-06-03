@@ -21,14 +21,6 @@ package com.wire.kalium.cryptography
 import java.nio.file.Files
 
 actual open class BaseMLSClientTest {
-<<<<<<< HEAD
-
-    actual suspend fun createMLSClient(clientId: CryptoQualifiedClientId): MLSClient {
-        return createCoreCrypto(clientId).mlsClient(clientId)
-    }
-
-    actual suspend fun createCoreCrypto(clientId: CryptoQualifiedClientId): CoreCryptoCentral {
-=======
     actual suspend fun createMLSClient(
         clientId: CryptoQualifiedClientId,
         allowedCipherSuites: List<UShort>,
@@ -40,7 +32,6 @@ actual open class BaseMLSClientTest {
     actual suspend fun createCoreCrypto(
         clientId: CryptoQualifiedClientId
     ): CoreCryptoCentral {
->>>>>>> f8c4a14166 (feat: fetch MLS config when not available locally [WPB-8592] 🍒 (#2744))
         val root = Files.createTempDirectory("mls").toFile()
         val keyStore = root.resolve("keystore-$clientId")
         return coreCryptoCentral(keyStore.absolutePath, "test")
