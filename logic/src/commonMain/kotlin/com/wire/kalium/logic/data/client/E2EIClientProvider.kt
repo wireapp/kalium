@@ -71,28 +71,7 @@ internal class EI2EIClientProviderImpl(
             } ?: run {
                 getSelfUserInfo().flatMap { selfUser ->
                     if (isNewClient) {
-<<<<<<< HEAD
-                        kaliumLogger.w("initial E2EI client without MLS client")
-                        mlsClientProvider.getCoreCrypto(currentClientId).fold({
-                            E2EIFailure.GettingE2EIClient(it).left()
-                        }, {
-                            val cryptoQualifiedClientId = CryptoQualifiedClientId(
-                                currentClientId.value,
-                                selfUser.id.toCrypto()
-                            )
-                            val newE2EIClient = it.newAcmeEnrollment(
-                                clientId = cryptoQualifiedClientId,
-                                displayName = selfUser.name!!,
-                                handle = selfUser.handle!!,
-                                teamId = selfUser.teamId?.value,
-                                expiry = defaultE2EIExpiry
-                            )
-                            e2EIClient = newE2EIClient
-                            Either.Right(newE2EIClient)
-                        })
-=======
                         createNewE2EIClient(currentClientId, selfUser)
->>>>>>> f8c4a14166 (feat: fetch MLS config when not available locally [WPB-8592] 🍒 (#2744))
                     } else {
                         getE2EIClientFromMLSClient(currentClientId, selfUser)
                     }
