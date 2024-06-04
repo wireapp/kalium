@@ -30,6 +30,7 @@ import com.wire.kalium.testservice.models.ClearConversationRequest
 import com.wire.kalium.testservice.models.DeleteMessageRequest
 import com.wire.kalium.testservice.models.GetMessageReceiptsRequest
 import com.wire.kalium.testservice.models.GetMessagesRequest
+import com.wire.kalium.testservice.models.NewConversationRequest
 import com.wire.kalium.testservice.models.SendButtonActionConfirmationRequest
 import com.wire.kalium.testservice.models.SendButtonActionRequest
 import com.wire.kalium.testservice.models.SendConfirmationReadRequest
@@ -476,6 +477,30 @@ class ConversationResources(private val instanceService: InstanceService) {
                     instance,
                     ConversationId(conversationId, conversationDomain),
                     status
+                )
+            }
+        }
+    }
+
+    @POST
+    @Path("/instance/{id}/conversation")
+    @Operation(summary = "Create a new conversation")
+    @Consumes(MediaType.APPLICATION_JSON)
+    fun createConversation(@PathParam("id") id: String, @Valid request: NewConversationRequest): Response {
+        val instance = instanceService.getInstanceOrThrow(id)
+        return with(request) {
+            val users = userIds.map {
+                if (it.contains("@")) {
+                    UserId(it.split("@")[0], it.split("@")[1])
+                } else {
+                    UserId(it, "staging.zinfra.io")
+                }
+            }
+            runBlocking {
+                ConversationRepository.createConversation(
+                    instance,
+                    name,
+                    users
                 )
             }
         }
