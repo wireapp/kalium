@@ -74,9 +74,10 @@ class FeatureConfigRepositoryTest {
             ConfigsStatusModel(Status.ENABLED),
             ConfigsStatusModel(Status.ENABLED),
             MLSModel(
-                SupportedProtocol.PROTEUS,
-                setOf(SupportedProtocol.PROTEUS),
-                Status.ENABLED
+                defaultProtocol = SupportedProtocol.PROTEUS,
+                supportedProtocols = setOf(SupportedProtocol.PROTEUS),
+                status = Status.ENABLED,
+                supportedCipherSuite = null
             ),
             E2EIModel(
                 E2EIConfigModel("url", 1000000L),
@@ -158,8 +159,8 @@ class FeatureConfigRepositoryTest {
                 MLSConfigDTO(
                     SupportedProtocolDTO.PROTEUS,
                     listOf(SupportedProtocolDTO.PROTEUS),
-                    emptyList(),
-                    1
+                    allowedCipherSuites = listOf(1),
+                    defaultCipherSuite = 1
                 ), FeatureFlagStatusDTO.ENABLED
             ),
             FeatureConfigData.E2EI(
