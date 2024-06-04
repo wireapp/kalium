@@ -51,11 +51,6 @@ import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollment
 import com.wire.kalium.logic.feature.conversation.GetAllContactsNotInConversationUseCase
 import com.wire.kalium.logic.feature.e2ei.CertificateRevocationListCheckWorker
 import com.wire.kalium.logic.feature.e2ei.CertificateRevocationListCheckWorkerImpl
-<<<<<<< HEAD
-import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapperImpl
-=======
-import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
->>>>>>> c9ae87ae96 (fix(e2ei): expose thumbprint and userhandle with e2ei cert (WPB-8606) 🍒 (#2741))
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCase
