@@ -36,11 +36,13 @@ import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE
+import com.wire.kalium.logic.framework.TestConversation.ADD_SERVICE_TO_CONVERSATION_SUCCESSFUL_RESPONSE
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
@@ -73,9 +75,9 @@ import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
@@ -102,6 +104,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+            .withSuccessfulLegalHoldHandleConversationMembersChanged()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -133,6 +136,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+            .withSuccessfulLegalHoldHandleConversationMembersChanged()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -155,6 +159,32 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
+    fun givenSuccess_whenCallingCreateGroupConversation_thenHandleLegalHoldConversationMembersChanged() = runTest {
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
+            .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
+            .withInsertConversationSuccess()
+            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
+            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+            .withSuccessfulLegalHoldHandleConversationMembersChanged()
+            .arrange()
+
+        val result = conversationGroupRepository.createGroupConversation(
+            GROUP_NAME,
+            listOf(TestUser.USER_ID),
+            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+        )
+
+        result.shouldSucceed()
+
+        coVerify {
+            arrangement.legalHoldHandler.handleConversationMembersChanged(any())
+        }.wasInvoked(once)
+    }
+
+    @Test
     fun givenCreatingAGroupConversation_whenThereIsAnUnreachableError_thenRetryIsExecutedWithValidUsersOnly() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withCreateNewConversationAPIResponses(
@@ -169,6 +199,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+            .withSuccessfulLegalHoldHandleConversationMembersChanged()
             .withInsertFailedToAddSystemMessageSuccess()
             .arrange()
 
@@ -269,6 +300,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
             .withInsertFailedToAddSystemMessageSuccess()
             .withSuccessfulFetchUsersLegalHoldConsent(ListUsersLegalHoldConsent(usersWithConsent, usersWithoutConsent, usersFailed))
+            .withSuccessfulLegalHoldHandleConversationMembersChanged()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -360,6 +392,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+            .withSuccessfulLegalHoldHandleConversationMembersChanged()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -401,6 +434,7 @@ class ConversationGroupRepositoryTest {
                 .withSuccessfulNewConversationGroupStartedHandled()
                 .withSuccessfulNewConversationMemberHandled()
                 .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+                .withSuccessfulLegalHoldHandleConversationMembersChanged()
                 .withInsertFailedToAddSystemMessageSuccess()
                 .arrange()
 
@@ -1161,8 +1195,8 @@ class ConversationGroupRepositoryTest {
             coVerify {
                 arrangement.conversationApi.addMember(
                     matches {
-                    it.users.size == expectedValidUsersCount && it.users.first().domain != failedDomain
-                }, any()
+                        it.users.size == expectedValidUsersCount && it.users.first().domain != failedDomain
+                    }, any()
                 )
             }.wasInvoked(exactly = once)
 
@@ -1305,6 +1339,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+            .withSuccessfulLegalHoldHandleConversationMembersChanged()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -1609,6 +1644,9 @@ class ConversationGroupRepositoryTest {
         @Mock
         val joinExistingMLSConversation: JoinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
 
+        @Mock
+        val legalHoldHandler: LegalHoldHandler = mock(LegalHoldHandler::class)
+
         val conversationGroupRepository =
             ConversationGroupRepositoryImpl(
                 mlsConversationRepository,
@@ -1622,7 +1660,8 @@ class ConversationGroupRepositoryTest {
                 userRepository,
                 lazy { newGroupConversationSystemMessagesCreator },
                 TestUser.SELF.id,
-                selfTeamIdProvider
+                selfTeamIdProvider,
+                legalHoldHandler
             )
 
         suspend fun withMlsConversationEstablished(additionResult: MLSAdditionResult): Arrangement {
@@ -1636,7 +1675,7 @@ class ConversationGroupRepositoryTest {
          * Mocks a sequence of [NetworkResponse]s for [ConversationApi.createNewConversation].
          */
         suspend fun withCreateNewConversationAPIResponses(result: Array<NetworkResponse<ConversationResponse>>): Arrangement = apply {
-            coEvery{conversationApi.createNewConversation(any())}
+            coEvery { conversationApi.createNewConversation(any()) }
                 .thenReturnSequentially(*result)
         }
 
@@ -1701,80 +1740,80 @@ class ConversationGroupRepositoryTest {
             coEvery {
                 conversationApi.addMember(any(), any())
             }.returns(
-                    NetworkResponse.Success(
-                        TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
-                        mapOf(),
-                        HttpStatusCode.OK.value
-                    )
+                NetworkResponse.Success(
+                    ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
+                    mapOf(),
+                    HttpStatusCode.OK.value
                 )
+            )
         }
 
         suspend fun withAddServiceAPISucceedChanged() = apply {
             coEvery {
                 conversationApi.addService(any(), any())
             }.returns(
-                    NetworkResponse.Success(
-                        TestConversation.ADD_SERVICE_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
-                        mapOf(),
-                        HttpStatusCode.OK.value
-                    )
+                NetworkResponse.Success(
+                    ADD_SERVICE_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
+                    mapOf(),
+                    HttpStatusCode.OK.value
                 )
+            )
         }
 
         suspend fun withAddMemberAPISucceedUnchanged() = apply {
             coEvery {
                 conversationApi.addMember(any(), any())
             }.returns(
-                    NetworkResponse.Success(
-                        ConversationMemberAddedResponse.Unchanged,
-                        mapOf(),
-                        HttpStatusCode.OK.value
-                    )
+                NetworkResponse.Success(
+                    ConversationMemberAddedResponse.Unchanged,
+                    mapOf(),
+                    HttpStatusCode.OK.value
                 )
+            )
         }
 
         suspend fun withAddMemberAPIFailed() = apply {
             coEvery {
                 conversationApi.addMember(any(), any())
             }.returns(
-                    NetworkResponse.Error(
-                        KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
-                    )
+                NetworkResponse.Error(
+                    KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
                 )
+            )
         }
 
         suspend fun withDeleteMemberAPISucceedChanged() = apply {
             coEvery {
                 conversationApi.removeMember(any(), any())
             }.returns(
-                    NetworkResponse.Success(
-                        TestConversation.REMOVE_MEMBER_FROM_CONVERSATION_SUCCESSFUL_RESPONSE,
-                        mapOf(),
-                        HttpStatusCode.OK.value
-                    )
+                NetworkResponse.Success(
+                    TestConversation.REMOVE_MEMBER_FROM_CONVERSATION_SUCCESSFUL_RESPONSE,
+                    mapOf(),
+                    HttpStatusCode.OK.value
                 )
+            )
         }
 
         suspend fun withDeleteMemberAPISucceedUnchanged() = apply {
             coEvery {
                 conversationApi.removeMember(any(), any())
             }.returns(
-                    NetworkResponse.Success(
-                        ConversationMemberRemovedResponse.Unchanged,
-                        mapOf(),
-                        HttpStatusCode.OK.value
-                    )
+                NetworkResponse.Success(
+                    ConversationMemberRemovedResponse.Unchanged,
+                    mapOf(),
+                    HttpStatusCode.OK.value
                 )
+            )
         }
 
         suspend fun withDeleteMemberAPIFailed() = apply {
             coEvery {
                 conversationApi.removeMember(any(), any())
             }.returns(
-                    NetworkResponse.Error(
-                        KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
-                    )
+                NetworkResponse.Error(
+                    KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
                 )
+            )
         }
 
         suspend fun withFetchUsersIfUnknownByIdsSuccessful() = apply {
@@ -1828,22 +1867,22 @@ class ConversationGroupRepositoryTest {
             coEvery {
                 conversationApi.generateGuestRoomLink(any(), any())
             }.returns(
-                    NetworkResponse.Success(
-                        result,
-                        mapOf(),
-                        HttpStatusCode.OK.value
-                    )
+                NetworkResponse.Success(
+                    result,
+                    mapOf(),
+                    HttpStatusCode.OK.value
                 )
+            )
         }
 
         suspend fun withFailedCallToGenerateGuestRoomLinkApi() = apply {
             coEvery {
                 conversationApi.generateGuestRoomLink(any(), any())
             }.returns(
-                    NetworkResponse.Error(
-                        KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
-                    )
+                NetworkResponse.Error(
+                    KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
                 )
+            )
         }
 
         suspend fun withDeleteGuestLink() = apply {
@@ -1856,22 +1895,22 @@ class ConversationGroupRepositoryTest {
             coEvery {
                 conversationApi.revokeGuestRoomLink(any())
             }.returns(
-                    NetworkResponse.Success(
-                        Unit,
-                        mapOf(),
-                        HttpStatusCode.OK.value
-                    )
+                NetworkResponse.Success(
+                    Unit,
+                    mapOf(),
+                    HttpStatusCode.OK.value
                 )
+            )
         }
 
         suspend fun withFailedCallToRevokeGuestRoomLinkApi() = apply {
             coEvery {
                 conversationApi.revokeGuestRoomLink(any())
             }.returns(
-                    NetworkResponse.Error(
-                        KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
-                    )
+                NetworkResponse.Error(
+                    KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
                 )
+            )
         }
 
         suspend fun withSuccessfulFetchOfGuestRoomLink(
@@ -1901,22 +1940,22 @@ class ConversationGroupRepositoryTest {
             coEvery {
                 conversationApi.updateMessageTimer(any(), any())
             }.returns(
-                    NetworkResponse.Success(
-                        event,
-                        emptyMap(),
-                        HttpStatusCode.NoContent.value
-                    )
+                NetworkResponse.Success(
+                    event,
+                    emptyMap(),
+                    HttpStatusCode.NoContent.value
                 )
+            )
         }
 
         suspend fun withUpdateMessageTimerAPIFailed() = apply {
             coEvery {
                 conversationApi.updateMessageTimer(any(), any())
             }.returns(
-                    NetworkResponse.Error(
-                        KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
-                    )
+                NetworkResponse.Error(
+                    KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
                 )
+            )
         }
 
         suspend fun withSuccessfulHandleMessageTimerUpdateEvent() = apply {
@@ -1956,6 +1995,13 @@ class ConversationGroupRepositoryTest {
                 userRepository.fetchUsersLegalHoldConsent(any())
             }.returns(Either.Right(result))
         }
+
+        suspend fun withSuccessfulLegalHoldHandleConversationMembersChanged() = apply {
+            coEvery {
+                legalHoldHandler.handleConversationMembersChanged(any())
+            }.returns(Either.Right(Unit))
+        }
+
 
         fun arrange() = this to conversationGroupRepository
     }
@@ -2035,7 +2081,7 @@ class ConversationGroupRepositoryTest {
         )
 
         val API_SUCCESS_MEMBER_ADDED = NetworkResponse.Success(
-            TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
+            ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
             mapOf(),
             HttpStatusCode.OK.value
         )

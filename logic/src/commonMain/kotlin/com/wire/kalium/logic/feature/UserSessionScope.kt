@@ -719,7 +719,8 @@ class UserSessionScope internal constructor(
             userRepository,
             lazy { conversations.newGroupConversationSystemMessagesCreator },
             userId,
-            selfTeamId
+            selfTeamId,
+            legalHoldHandler,
         )
 
     private val newConversationMembersRepository: NewConversationMembersRepository
