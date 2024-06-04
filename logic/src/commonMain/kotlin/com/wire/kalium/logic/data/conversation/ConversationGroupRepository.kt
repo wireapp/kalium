@@ -131,7 +131,7 @@ internal class ConversationGroupRepositoryImpl(
 
             when (apiResult) {
                 is Either.Left -> {
-                    val canRetryOnce = apiResult.value.hasUnreachableDomainsError && lastUsersAttempt is LastUsersAttempt.None
+                    val canRetryOnce = apiResult.value.isRetryable && lastUsersAttempt is LastUsersAttempt.None
                     if (canRetryOnce) {
                         extractValidUsersForRetryableError(apiResult.value, usersList)
                             .flatMap { (validUsers, failedUsers, failType) ->
