@@ -253,6 +253,102 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
+    fun givenCreatingAGroupConversation_whenThereIsAMissingLegalHoldConsentError_thenRetryIsExecutedWithValidUsersOnly() = runTest {
+        val usersWithConsent = listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID.copy(value = "idWithConsent"))
+        val usersWithoutConsent = listOf(TestUser.OTHER_USER_ID.copy(value = "idWithoutConsent"))
+        val usersFailed = listOf(TestUser.OTHER_USER_ID.copy(value = "idFailed"))
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withCreateNewConversationAPIResponses(
+                arrayOf(ERROR_MISSING_LEGALHOLD_CONSENT, NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201))
+            )
+            .withSelfTeamId(Either.Right(null))
+            .withInsertConversationSuccess()
+            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
+            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+            .withInsertFailedToAddSystemMessageSuccess()
+            .withSuccessfulFetchUsersLegalHoldConsent(ListUsersLegalHoldConsent(usersWithConsent, usersWithoutConsent, usersFailed))
+            .arrange()
+
+        val result = conversationGroupRepository.createGroupConversation(
+            GROUP_NAME,
+            usersWithConsent + usersWithoutConsent + usersFailed,
+            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+        )
+
+        result.shouldSucceed()
+
+        with(arrangement) {
+            coVerify {
+                conversationApi.createNewConversation(matches { it.qualifiedUsers?.size == 4 })
+            }.wasInvoked(once)
+
+            coVerify {
+                conversationApi.createNewConversation(matches { it.qualifiedUsers?.size == 2 })
+            }.wasInvoked(once)
+
+            coVerify {
+                conversationDAO.insertConversation(any())
+            }.wasInvoked(once)
+
+            coVerify {
+                newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
+            }.wasInvoked(once)
+
+            coVerify {
+                newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
+                    any(),
+                    userIdList = eq(usersWithoutConsent + usersFailed),
+                    eq(MessageContent.MemberChange.FailedToAdd.Type.LegalHold)
+                )
+            }.wasInvoked(once)
+        }
+    }
+
+    @Test
+    fun givenCreatingAGroupConversation_whenThereIsAMissingLegalHoldConsentError_thenRetryIsExecutedWithValidUsersOnlyOnce() = runTest {
+        val usersWithConsent = listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID.copy(value = "idWithConsent"))
+        val usersWithoutConsent = listOf(TestUser.OTHER_USER_ID.copy(value = "idWithoutConsent"))
+        val usersFailed = listOf(TestUser.OTHER_USER_ID.copy(value = "idFailed"))
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withCreateNewConversationAPIResponses(arrayOf(ERROR_MISSING_LEGALHOLD_CONSENT, ERROR_MISSING_LEGALHOLD_CONSENT))
+            .withSelfTeamId(Either.Right(null))
+            .withInsertConversationSuccess()
+            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
+            .withSuccessfulFetchUsersLegalHoldConsent(ListUsersLegalHoldConsent(usersWithConsent, usersWithoutConsent, usersFailed))
+            .arrange()
+
+        val result = conversationGroupRepository.createGroupConversation(
+            GROUP_NAME,
+            usersWithConsent + usersWithoutConsent + usersFailed,
+            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+        )
+
+        result.shouldFail()
+
+        with(arrangement) {
+            coVerify {
+                conversationApi.createNewConversation(any())
+            }.wasInvoked(twice)
+
+            coVerify {
+                conversationDAO.insertConversation(any())
+            }.wasNotInvoked()
+
+            coVerify {
+                newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
+            }.wasNotInvoked()
+
+            coVerify {
+                newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(any(), any(), any())
+            }.wasNotInvoked()
+        }
+    }
+
+    @Test
     fun givenMLSProtocolIsUsed_whenCallingCreateGroupConversation_thenMLSGroupIsEstablished() = runTest {
         val conversationResponse = CONVERSATION_RESPONSE.copy(protocol = MLS)
         val (arrangement, conversationGroupRepository) = Arrangement()
