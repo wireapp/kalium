@@ -17,7 +17,6 @@
  */
 package com.wire.kalium.logic.util.arrangement.repository
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.featureConfig.MLSMigrationModel
@@ -35,9 +34,11 @@ internal interface UserConfigRepositoryArrangement {
     suspend fun withGetSupportedProtocolsReturning(result: Either<StorageFailure, Set<SupportedProtocol>>)
     suspend fun withSetSupportedProtocolsSuccessful()
     fun withSetDefaultProtocolSuccessful()
+    fun withGetDefaultProtocolReturning(result: Either<StorageFailure, SupportedProtocol>)
     fun withSetMLSEnabledSuccessful()
     suspend fun withSetMigrationConfigurationSuccessful()
     suspend fun withGetMigrationConfigurationReturning(result: Either<StorageFailure, MLSMigrationModel>)
+    suspend fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>)
 }
 
 internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrangement {
@@ -62,6 +63,10 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
         }.returns(Either.Right(Unit))
     }
 
+    override fun withGetDefaultProtocolReturning(result: Either<StorageFailure, SupportedProtocol>) {
+        every { userConfigRepository.getDefaultProtocol() }.returns(result)
+    }
+
     override fun withSetMLSEnabledSuccessful() {
         every {
             userConfigRepository.setMLSEnabled(any())
@@ -78,5 +83,9 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
         coEvery {
             userConfigRepository.getMigrationConfiguration()
         }.returns(result)
+    }
+
+    override suspend fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>) {
+        coEvery { userConfigRepository.setSupportedCipherSuite(any()) }.returns(result)
     }
 }

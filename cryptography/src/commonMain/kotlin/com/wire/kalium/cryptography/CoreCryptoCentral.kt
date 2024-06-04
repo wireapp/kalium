@@ -22,7 +22,11 @@ import kotlin.time.Duration
 interface CoreCryptoCentral {
     suspend fun mlsClient(clientId: CryptoQualifiedClientId): MLSClient
 
-    suspend fun mlsClient(enrollment: E2EIClient, certificateChain: CertificateChain, newMLSKeyPackageCount: UInt): MLSClient
+    suspend fun mlsClient(
+        enrollment: E2EIClient,
+        certificateChain: CertificateChain,
+        newMLSKeyPackageCount: UInt
+    ): MLSClient
 
     suspend fun proteusClient(): ProteusClient
 
@@ -59,4 +63,9 @@ interface CoreCryptoCentral {
     suspend fun registerIntermediateCa(pem: CertificateChain)
 }
 
-expect suspend fun coreCryptoCentral(rootDir: String, databaseKey: String): CoreCryptoCentral
+expect suspend fun coreCryptoCentral(
+    rootDir: String,
+    databaseKey: String,
+    allowedCipherSuites: List<UShort>,
+    defaultCipherSuite: UShort?
+): CoreCryptoCentral

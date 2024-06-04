@@ -26,15 +26,12 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificateStatusResult
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificateStatusUseCaseImpl
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.util.arrangement.mls.CertificateStatusMapperArrangement
-import com.wire.kalium.logic.util.arrangement.mls.CertificateStatusMapperArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
 import io.mockative.any
 import io.mockative.coVerify
-import io.mockative.matchers.EqualsMatcher
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -164,27 +161,12 @@ class GetUserE2eiCertificateStatusUseCaseTest {
 
     private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
-        CertificateStatusMapperArrangement by CertificateStatusMapperArrangementImpl(),
         IsE2EIEnabledUseCaseArrangement by IsE2EIEnabledUseCaseArrangementImpl() {
 
         fun arrange() = run {
-            withCertificateStatusMapperReturning(
-                CertificateStatus.VALID,
-                EqualsMatcher(CryptoCertificateStatus.VALID)
-            )
-            withCertificateStatusMapperReturning(
-                CertificateStatus.EXPIRED,
-                EqualsMatcher(CryptoCertificateStatus.EXPIRED)
-            )
-            withCertificateStatusMapperReturning(
-                CertificateStatus.REVOKED,
-                EqualsMatcher(CryptoCertificateStatus.REVOKED)
-            )
-
             runBlocking { block() }
             this@Arrangement to GetUserE2eiCertificateStatusUseCaseImpl(
                 mlsConversationRepository = mlsConversationRepository,
-                certificateStatusMapper = certificateStatusMapper,
                 isE2EIEnabledUseCase = isE2EIEnabledUseCase
             )
         }

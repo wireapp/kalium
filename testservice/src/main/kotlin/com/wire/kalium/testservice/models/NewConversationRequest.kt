@@ -15,11 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.cryptography
+package com.wire.kalium.testservice.models
 
-actual suspend fun coreCryptoCentral(
-    rootDir: String,
-    databaseKey: String,
-    allowedCipherSuites: List<UShort>,
-    defaultCipherSuite: UShort?
-): CoreCryptoCentral = TODO("Not yet implemented")
+data class NewConversationRequest(
+    val name: String = "",
+    val userIds: List<String> = emptyList()
+)
