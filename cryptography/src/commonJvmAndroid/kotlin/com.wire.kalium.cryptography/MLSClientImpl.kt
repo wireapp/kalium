@@ -28,7 +28,7 @@ import com.wire.crypto.MlsCredentialType
 import com.wire.crypto.MlsGroupInfoEncryptionType
 import com.wire.crypto.MlsRatchetTreeType
 import com.wire.crypto.MlsWirePolicy
-import com.wire.crypto.client.Ciphersuites
+import com.wire.crypto.Ciphersuite
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import kotlin.time.Duration
@@ -41,25 +41,26 @@ typealias ConversationId = ByteArray
 @Suppress("TooManyFunctions")
 @OptIn(ExperimentalUnsignedTypes::class)
 class MLSClientImpl(
-    private val coreCrypto: CoreCrypto
+    private val coreCrypto: CoreCrypto,
+    private val defaultCipherSuite: Ciphersuite
 ) : MLSClient {
     private val keyRotationDuration: Duration = 30.toDuration(DurationUnit.DAYS)
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration.toJavaDuration(), MlsWirePolicy.PLAINTEXT)
-    private val defaultCiphersuite = Ciphersuites.DEFAULT.lower().first()
+
     override suspend fun close() {
         coreCrypto.close()
     }
 
-    override suspend fun getPublicKey(): ByteArray {
-        return coreCrypto.clientPublicKey(defaultCiphersuite, toCredentialType(getMLSCredentials()))
+    override suspend fun getPublicKey(): Pair<ByteArray, Ciphersuite> {
+        return coreCrypto.clientPublicKey(defaultCipherSuite, toCredentialType(getMLSCredentials())) to defaultCipherSuite
     }
 
     override suspend fun generateKeyPackages(amount: Int): List<ByteArray> {
-        return coreCrypto.clientKeypackages(defaultCiphersuite, toCredentialType(getMLSCredentials()), amount.toUInt())
+        return coreCrypto.clientKeypackages(defaultCipherSuite, toCredentialType(getMLSCredentials()), amount.toUInt())
     }
 
     override suspend fun validKeyPackageCount(): ULong {
-        return coreCrypto.clientValidKeypackagesCount(defaultCiphersuite, toCredentialType(getMLSCredentials()))
+        return coreCrypto.clientValidKeypackagesCount(defaultCipherSuite, toCredentialType(getMLSCredentials()))
     }
 
     override suspend fun updateKeyingMaterial(groupId: MLSGroupId): CommitBundle {
@@ -78,7 +79,7 @@ class MLSClientImpl(
         return coreCrypto.newExternalAddProposal(
             conversationId = groupId.decodeBase64Bytes(),
             epoch = epoch,
-            ciphersuite = defaultCiphersuite,
+            ciphersuite = defaultCipherSuite,
             credentialType = toCredentialType(getMLSCredentials())
         )
     }
@@ -106,7 +107,7 @@ class MLSClientImpl(
         externalSenders: List<Ed22519Key>
     ) {
         val conf = ConversationConfiguration(
-            defaultCiphersuite,
+            defaultCipherSuite,
             externalSenders.map { it.value },
             defaultGroupConfiguration
         )
@@ -210,7 +211,7 @@ class MLSClientImpl(
                 handle,
                 teamId,
                 expiry.inWholeSeconds.toUInt(),
-                defaultCiphersuite
+                defaultCipherSuite
             )
         )
     }
@@ -227,7 +228,7 @@ class MLSClientImpl(
                 handle,
                 teamId,
                 expiry.inWholeSeconds.toUInt(),
-                defaultCiphersuite
+                defaultCipherSuite
             )
         )
     }
@@ -237,7 +238,7 @@ class MLSClientImpl(
     }
 
     override suspend fun isE2EIEnabled(): Boolean {
-        return coreCrypto.e2eiIsEnabled(defaultCiphersuite)
+        return coreCrypto.e2eiIsEnabled(defaultCipherSuite)
     }
 
     override suspend fun getMLSCredentials(): CredentialType {
