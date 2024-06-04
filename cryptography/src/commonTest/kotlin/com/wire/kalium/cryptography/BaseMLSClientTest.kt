@@ -27,9 +27,6 @@ expect open class BaseMLSClientTest() {
     ): MLSClient
 
     suspend fun createCoreCrypto(
-        clientId: CryptoQualifiedClientId,
-        allowedCipherSuites: List<UShort>,
-        defaultCipherSuite: UShort
+        clientId: CryptoQualifiedClientId
     ): CoreCryptoCentral
-
 }
