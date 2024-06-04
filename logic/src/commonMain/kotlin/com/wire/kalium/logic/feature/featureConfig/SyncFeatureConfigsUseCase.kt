@@ -65,7 +65,7 @@ internal class SyncFeatureConfigsUseCaseImpl(
             // TODO handle other feature flags and after it bump version in [SlowSyncManager.CURRENT_VERSION]
             guestRoomConfigHandler.handle(it.guestRoomLinkModel)
             fileSharingConfigHandler.handle(it.fileSharingModel)
-            mlsConfigHandler.handle(it.mlsModel, duringSlowSync = true)
+             mlsConfigHandler.handle(it.mlsModel, duringSlowSync = true)
             it.mlsMigrationModel?.let { mlsMigrationConfigHandler.handle(it, duringSlowSync = true) }
             classifiedDomainsConfigHandler.handle(it.classifiedDomainsModel)
             conferenceCallingConfigHandler.handle(it.conferenceCallingModel)
