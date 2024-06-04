@@ -34,6 +34,7 @@ internal interface UserConfigRepositoryArrangement {
     suspend fun withGetSupportedProtocolsReturning(result: Either<StorageFailure, Set<SupportedProtocol>>)
     suspend fun withSetSupportedProtocolsSuccessful()
     fun withSetDefaultProtocolSuccessful()
+    fun withGetDefaultProtocolReturning(result: Either<StorageFailure, SupportedProtocol>)
     fun withSetMLSEnabledSuccessful()
     suspend fun withSetMigrationConfigurationSuccessful()
     suspend fun withGetMigrationConfigurationReturning(result: Either<StorageFailure, MLSMigrationModel>)
@@ -60,6 +61,10 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
         every {
             userConfigRepository.setDefaultProtocol(any())
         }.returns(Either.Right(Unit))
+    }
+
+    override fun withGetDefaultProtocolReturning(result: Either<StorageFailure, SupportedProtocol>) {
+        every { userConfigRepository.getDefaultProtocol() }.returns(result)
     }
 
     override fun withSetMLSEnabledSuccessful() {
