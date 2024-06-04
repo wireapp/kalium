@@ -24,32 +24,28 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class E2eiCertificate(
-<<<<<<< HEAD
-=======
     @SerialName("userHandle")
     var userHandle: String,
     @SerialName("status")
->>>>>>> 0cdf629aac (fix(e2ei): crash on downloading certificates (WPB-9097) 🍒 (#2761))
     val status: CertificateStatus,
     @SerialName("serialNumber")
     val serialNumber: String,
     @SerialName("certificateDetail")
     val certificateDetail: String,
-<<<<<<< HEAD
-=======
     @SerialName("thumbprint")
     val thumbprint: String,
     @SerialName("endAt")
->>>>>>> 0cdf629aac (fix(e2ei): crash on downloading certificates (WPB-9097) 🍒 (#2761))
     val endAt: Instant
 ) {
     companion object {
         fun fromWireIdentity(identity: WireIdentity, certificateStatusMapper: CertificateStatusMapper): E2eiCertificate? =
             identity.certificate?.let {
                 E2eiCertificate(
+                    userHandle = it.handle.handle,
                     status = certificateStatusMapper.toCertificateStatus(identity.status),
                     serialNumber = it.serialNumber,
                     certificateDetail = it.certificate,
+                    thumbprint = it.thumbprint,
                     endAt = Instant.fromEpochSeconds(it.endTimestampSeconds)
                 )
             }
