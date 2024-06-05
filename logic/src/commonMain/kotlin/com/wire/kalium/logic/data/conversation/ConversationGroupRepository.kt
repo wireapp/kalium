@@ -211,7 +211,7 @@ internal class ConversationGroupRepositoryImpl(
         options: ConversationOptions,
         lastUsersAttempt: LastUsersAttempt
     ): Either<CoreFailure, Conversation> {
-        val canRetryOnce = apiResult.value.hasUnreachableDomainsError && lastUsersAttempt is LastUsersAttempt.None
+        val canRetryOnce = apiResult.value.isRetryable && lastUsersAttempt is LastUsersAttempt.None
         return if (canRetryOnce) {
             extractValidUsersForRetryableError(apiResult.value, usersList)
                 .flatMap { (validUsers, failedUsers, failType) ->
