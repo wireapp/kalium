@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.mls.KeyPackageClaimResult
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.toApi
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
@@ -50,7 +51,10 @@ interface KeyPackageRepository {
      * available. If the operation fails, it will be [Either.Left] with a [CoreFailure] object indicating the reason for the failure.
      * If **no** KeyPackages are available, [CoreFailure.MissingKeyPackages] will be the cause.
      */
-    suspend fun claimKeyPackages(userIds: List<UserId>): Either<CoreFailure, KeyPackageClaimResult>
+    suspend fun claimKeyPackages(
+        userIds: List<UserId>,
+        cipherSuite: CipherSuite
+    ): Either<CoreFailure, KeyPackageClaimResult>
 
     suspend fun uploadNewKeyPackages(clientId: ClientId, amount: Int = 100): Either<CoreFailure, Unit>
 
@@ -61,7 +65,6 @@ interface KeyPackageRepository {
     suspend fun getAvailableKeyPackageCount(clientId: ClientId): Either<NetworkFailure, KeyPackageCountDTO>
 
     suspend fun validKeyPackageCount(clientId: ClientId): Either<CoreFailure, Int>
-
 }
 
 class KeyPackageDataSource(
@@ -71,13 +74,22 @@ class KeyPackageDataSource(
     private val selfUserId: UserId,
 ) : KeyPackageRepository {
 
-    override suspend fun claimKeyPackages(userIds: List<UserId>): Either<CoreFailure, KeyPackageClaimResult> =
+    override suspend fun claimKeyPackages(
+        userIds: List<UserId>,
+        cipherSuite: CipherSuite
+    ): Either<CoreFailure, KeyPackageClaimResult> =
         currentClientIdProvider().flatMap { selfClientId ->
             val failedUsers = mutableSetOf<UserId>()
             val claimedKeyPackages = mutableListOf<KeyPackageDTO>()
             userIds.forEach { userId ->
                 wrapApiRequest {
-                    keyPackageApi.claimKeyPackages(KeyPackageApi.Param.SkipOwnClient(userId.toApi(), selfClientId.value))
+                    keyPackageApi.claimKeyPackages(
+                        KeyPackageApi.Param.SkipOwnClient(
+                            userId.toApi(),
+                            selfClientId.value,
+                            cipherSuite = cipherSuite.tag
+                        )
+                    )
                 }.fold({ failedUsers.add(userId) }) {
                     if (it.keyPackages.isEmpty() && userId != selfUserId) {
                         failedUsers.add(userId)

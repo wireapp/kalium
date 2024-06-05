@@ -99,13 +99,14 @@ class NewConversationMembersRepositoryTest {
     }
 
     private companion object {
+        const val GROUP_NAME = "Group Name"
         val CONVERSATION_RESPONSE = ConversationResponse(
             "creator",
             ConversationMembersResponse(
                 ConversationMemberDTO.Self(TestUser.SELF.id.toApi(), "wire_member"),
                 listOf(ConversationMemberDTO.Other(TestUser.OTHER.id.toApi(), "wire_member"))
             ),
-            ConversationGroupRepositoryTest.GROUP_NAME,
+            GROUP_NAME,
             TestConversation.NETWORK_ID,
             null,
             0UL,
