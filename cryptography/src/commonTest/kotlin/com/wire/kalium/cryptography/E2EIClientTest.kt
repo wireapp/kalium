@@ -35,7 +35,7 @@ class E2EIClientTest : BaseMLSClientTest() {
     }
 
     private suspend fun createE2EIClient(user: SampleUser): E2EIClient {
-        return createMLSClient(user.qualifiedClientId).e2eiNewActivationEnrollment(
+        return createMLSClient(user.qualifiedClientId, ALLOWED_CIPHER_SUITES, DEFAULT_CIPHER_SUITE).e2eiNewActivationEnrollment(
             user.name, user.handle, user.teamId,90.days
         )
     }
@@ -169,6 +169,8 @@ class E2EIClientTest : BaseMLSClientTest() {
 
     companion object {
 
+        val DEFAULT_CIPHER_SUITE = 1.toUShort()
+        val ALLOWED_CIPHER_SUITES = listOf(1.toUShort())
         val ALICE1 = SampleUser(
             CryptoQualifiedID("837655f7-b448-465a-b4b2-93f0919b38f0", "elna.wire.link"),
             CryptoClientId("fb4b58152e20"),
