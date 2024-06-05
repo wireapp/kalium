@@ -22,7 +22,6 @@ import com.wire.kalium.cryptography.CommitBundle
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIClient
-import com.wire.kalium.cryptography.Ed22519Key
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logger.obfuscateId
@@ -30,7 +29,6 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.configuration.server.ServerConfig
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
@@ -47,7 +45,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
-import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapper
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
@@ -141,7 +139,12 @@ interface MLSConversationRepository {
 
     suspend fun establishMLSSubConversationGroup(groupID: GroupID, parentId: ConversationId): Either<CoreFailure, Unit>
     suspend fun hasEstablishedMLSGroup(groupID: GroupID): Either<CoreFailure, Boolean>
-    suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
+    suspend fun addMemberToMLSGroup(
+        groupID: GroupID,
+        userIdList: List<UserId>,
+        cipherSuite: CipherSuite
+    ): Either<CoreFailure, Unit>
+
     suspend fun removeMembersFromMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun removeClientsFromMLSGroup(groupID: GroupID, clientIdList: List<QualifiedClientID>): Either<CoreFailure, Unit>
     suspend fun leaveGroup(groupID: GroupID): Either<CoreFailure, Unit>
@@ -202,7 +205,7 @@ private fun CoreFailure.getStrategy(
 
 // TODO: refactor this repository as it's doing too much.
 // A Repository should be a dummy class that get and set some values
-@Suppress("TooManyFunctions", "LongParameterList")
+@Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 internal class MLSConversationDataSource(
     private val selfUserId: UserId,
     private val keyPackageRepository: KeyPackageRepository,
@@ -218,10 +221,8 @@ internal class MLSConversationDataSource(
     private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
     private val revocationListChecker: RevocationListChecker,
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
-    private val serverConfigLinks: ServerConfig.Links,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
-    private val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper(),
     private val mlsCommitBundleMapper: MLSCommitBundleMapper = MapperProvider.mlsCommitBundleMapper(),
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : MLSConversationRepository {
@@ -310,10 +311,12 @@ internal class MLSConversationDataSource(
                 }
                 sendCommitBundleForExternalCommit(groupID, commitBundle)
             }.onSuccess {
-                conversationDAO.updateConversationGroupState(
-                    ConversationEntity.GroupState.ESTABLISHED,
-                    idMapper.toCryptoModel(groupID)
-                )
+                wrapStorageRequest {
+                    conversationDAO.updateConversationGroupState(
+                        ConversationEntity.GroupState.ESTABLISHED,
+                        idMapper.toCryptoModel(groupID)
+                    )
+                }
             }
         }
     }
@@ -448,23 +451,29 @@ internal class MLSConversationDataSource(
             conversationDAO.getProposalTimers().map { it.map(conversationMapper::fromDaoModel) }.flatten()
         )
 
-    override suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =
+    override suspend fun addMemberToMLSGroup(
+        groupID: GroupID,
+        userIdList: List<UserId>,
+        cipherSuite: CipherSuite
+    ): Either<CoreFailure, Unit> =
         internalAddMemberToMLSGroup(
             groupID = groupID,
             userIdList = userIdList,
             retryOnStaleMessage = true,
-            allowPartialMemberList = false
+            allowPartialMemberList = false,
+            cipherSuite = cipherSuite
         ).map { Unit }
 
     private suspend fun internalAddMemberToMLSGroup(
         groupID: GroupID,
         userIdList: List<UserId>,
         retryOnStaleMessage: Boolean,
+        cipherSuite: CipherSuite,
         allowPartialMemberList: Boolean = false,
     ): Either<CoreFailure, MLSAdditionResult> = withContext(serialDispatcher) {
         commitPendingProposals(groupID).flatMap {
             produceAndSendCommitWithRetryAndResult(groupID, retryOnStaleMessage = retryOnStaleMessage) {
-                keyPackageRepository.claimKeyPackages(userIdList).flatMap { result ->
+                keyPackageRepository.claimKeyPackages(userIdList, cipherSuite).flatMap { result ->
                     if (result.usersWithoutKeyPackagesAvailable.isNotEmpty() && !allowPartialMemberList) {
                         Either.Left(CoreFailure.MissingKeyPackages(result.usersWithoutKeyPackagesAvailable))
                     } else {
@@ -552,14 +561,17 @@ internal class MLSConversationDataSource(
         members: List<UserId>,
         allowSkippingUsersWithoutKeyPackages: Boolean,
     ): Either<CoreFailure, MLSAdditionResult> = withContext(serialDispatcher) {
-        mlsPublicKeysRepository.getKeys().flatMap { publicKeys ->
-            val keys = publicKeys.map { mlsPublicKeysMapper.toCrypto(it) }
-            establishMLSGroup(
-                groupID = groupID,
-                members = members,
-                keys = keys,
-                allowPartialMemberList = allowSkippingUsersWithoutKeyPackages
-            )
+        mlsClientProvider.getMLSClient().flatMap<MLSAdditionResult, CoreFailure, MLSClient> {
+            mlsPublicKeysRepository.getKeyForCipherSuite(
+                CipherSuite.fromTag(it.getDefaultCipherSuite())
+            ).flatMap { key ->
+                establishMLSGroup(
+                    groupID = groupID,
+                    members = members,
+                    externalSenders = key,
+                    allowPartialMemberList = allowSkippingUsersWithoutKeyPackages
+                )
+            }
         }
     }
 
@@ -573,7 +585,7 @@ internal class MLSConversationDataSource(
                 establishMLSGroup(
                     groupID = groupID,
                     members = emptyList(),
-                    keys = listOf(mlsPublicKeysMapper.toCrypto(externalSenderKey)),
+                    externalSenders = externalSenderKey.value,
                     allowPartialMemberList = false
                 ).map { Unit }
             } ?: Either.Left(StorageFailure.DataNotFound)
@@ -583,14 +595,14 @@ internal class MLSConversationDataSource(
     private suspend fun establishMLSGroup(
         groupID: GroupID,
         members: List<UserId>,
-        keys: List<Ed22519Key>,
+        externalSenders: ByteArray,
         allowPartialMemberList: Boolean = false,
     ): Either<CoreFailure, MLSAdditionResult> = withContext(serialDispatcher) {
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapMLSRequest {
                 mlsClient.createConversation(
                     idMapper.toCryptoModel(groupID),
-                    keys
+                    externalSenders
                 )
             }.flatMapLeft {
                 if (it is MLSFailure.ConversationAlreadyExists) {
@@ -603,7 +615,8 @@ internal class MLSConversationDataSource(
                     groupID = groupID,
                     userIdList = members,
                     retryOnStaleMessage = false,
-                    allowPartialMemberList = allowPartialMemberList
+                    allowPartialMemberList = allowPartialMemberList,
+                    cipherSuite = CipherSuite.fromTag(mlsClient.getDefaultCipherSuite())
                 ).onFailure {
                     wrapMLSRequest {
                         mlsClient.wipeConversation(groupID.toCrypto())

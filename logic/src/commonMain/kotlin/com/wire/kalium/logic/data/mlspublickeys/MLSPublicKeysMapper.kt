@@ -18,36 +18,63 @@
 
 package com.wire.kalium.logic.data.mlspublickeys
 
-import com.wire.kalium.cryptography.ExternalSenderKey
-import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeysDTO
-import io.ktor.util.decodeBase64Bytes
+import com.wire.kalium.logic.data.mls.CipherSuite
 
 interface MLSPublicKeysMapper {
-    fun fromDTO(publicKeys: MLSPublicKeysDTO): List<MLSPublicKey>
-    fun toCrypto(publicKey: MLSPublicKey): com.wire.kalium.cryptography.Ed22519Key
-    fun toCrypto(externalSenderKey: ExternalSenderKey): com.wire.kalium.cryptography.Ed22519Key
+    fun fromCipherSuite(cipherSuite: CipherSuite): MLSPublicKeyType
 }
 
 class MLSPublicKeysMapperImpl : MLSPublicKeysMapper {
-    override fun fromDTO(publicKeys: MLSPublicKeysDTO) = with(publicKeys) {
-        removal?.entries?.mapNotNull {
-            when (it.key) {
-                ED25519 -> MLSPublicKey(Ed25519Key(it.value.decodeBase64Bytes()), KeyType.REMOVAL)
-                else -> null
-            }
-        } ?: emptyList()
+
+    override fun fromCipherSuite(cipherSuite: CipherSuite): MLSPublicKeyType {
+        return when (cipherSuite) {
+            CipherSuite.MLS_128_DHKEMP256_AES128GCM_SHA256_P256 -> MLSPublicKeyType.ECDSA_SECP256R1_SHA256
+            CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519 -> MLSPublicKeyType.ED25519
+            CipherSuite.MLS_128_DHKEMX25519_CHACHA20POLY1305_SHA256_Ed25519 -> MLSPublicKeyType.ED25519
+            CipherSuite.MLS_128_X25519KYBER768DRAFT00_AES128GCM_SHA256_ED25519 -> MLSPublicKeyType.ED25519
+            CipherSuite.MLS_256_DHKEMP384_AES256GCM_SHA384_P384 -> MLSPublicKeyType.ECDSA_SECP384R1_SHA384
+            CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521 -> MLSPublicKeyType.ECDSA_SECP521R1_SHA512
+            CipherSuite.MLS_256_DHKEMX448_AES256GCM_SHA512_Ed448 -> MLSPublicKeyType.ED448
+            CipherSuite.MLS_256_DHKEMX448_CHACHA20POLY1305_SHA512_Ed448 -> MLSPublicKeyType.ED448
+            is CipherSuite.UNKNOWN -> MLSPublicKeyType.Unknown(null)
+        }
+    }
+}
+
+@Suppress("ClassNaming")
+sealed interface MLSPublicKeyType {
+    val value: String?
+
+    data object ECDSA_SECP256R1_SHA256 : MLSPublicKeyType {
+        override val value: String = "ecdsa_secp256r1_sha256"
     }
 
-    override fun toCrypto(publicKey: MLSPublicKey) = with(publicKey) {
-        com.wire.kalium.cryptography.Ed22519Key(key.value)
+    data object ECDSA_SECP384R1_SHA384 : MLSPublicKeyType {
+        override val value: String = "ecdsa_secp384r1_sha384"
     }
 
-    override fun toCrypto(externalSenderKey: ExternalSenderKey) = with(externalSenderKey) {
-        com.wire.kalium.cryptography.Ed22519Key(this.value)
+    data object ECDSA_SECP521R1_SHA512 : MLSPublicKeyType {
+        override val value: String = "ecdsa_secp521r1_sha512"
     }
+
+    data object ED448 : MLSPublicKeyType {
+        override val value: String = "ed448"
+    }
+
+    data object ED25519 : MLSPublicKeyType {
+        override val value: String = "ed25519"
+    }
+
+    data class Unknown(override val value: String?) : MLSPublicKeyType
 
     companion object {
-        const val ED25519 = "ed25519"
+        fun from(value: String) = when (value) {
+            ECDSA_SECP256R1_SHA256.value -> ECDSA_SECP256R1_SHA256
+            ECDSA_SECP384R1_SHA384.value -> ECDSA_SECP384R1_SHA384
+            ECDSA_SECP521R1_SHA512.value -> ECDSA_SECP521R1_SHA512
+            ED448.value -> ED448
+            ED25519.value -> ED25519
+            else -> Unknown(value)
+        }
     }
-
 }

@@ -44,6 +44,9 @@ class MLSClientImpl(
 
     private val keyRotationDuration: Duration = 30.toDuration(DurationUnit.DAYS)
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration, MlsWirePolicy.PLAINTEXT)
+    override fun getDefaultCipherSuite(): UShort {
+        return defaultCipherSuite
+    }
 
     @Suppress("EmptyFunctionBlock")
     override suspend fun close() {
@@ -97,11 +100,11 @@ class MLSClientImpl(
 
     override suspend fun createConversation(
         groupId: MLSGroupId,
-        externalSenders: List<Ed22519Key>
+        externalSenders: ByteArray
     ) {
         val conf = ConversationConfiguration(
             CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519,
-            externalSenders.map { toUByteList(it.value) },
+            listOf(toUByteList(externalSenders)),
             defaultGroupConfiguration
         )
 

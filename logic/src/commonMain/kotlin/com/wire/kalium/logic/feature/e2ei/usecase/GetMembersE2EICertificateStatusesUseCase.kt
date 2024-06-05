@@ -22,7 +22,6 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.CertificateStatus
-import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapper
 import com.wire.kalium.logic.feature.e2ei.E2eiCertificate
 import com.wire.kalium.logic.functional.fold
 
@@ -35,15 +34,14 @@ interface GetMembersE2EICertificateStatusesUseCase {
 }
 
 class GetMembersE2EICertificateStatusesUseCaseImpl internal constructor(
-    private val mlsConversationRepository: MLSConversationRepository,
-    private val certificateStatusMapper: CertificateStatusMapper
+    private val mlsConversationRepository: MLSConversationRepository
 ) : GetMembersE2EICertificateStatusesUseCase {
     override suspend operator fun invoke(conversationId: ConversationId, userIds: List<UserId>): Map<UserId, CertificateStatus?> =
         mlsConversationRepository.getMembersIdentities(conversationId, userIds).fold(
             { mapOf() },
             {
                 it.mapValues { (_, identities) ->
-                    identities.getUserCertificateStatus(certificateStatusMapper)
+                    identities.getUserCertificateStatus()
                 }
             }
         )
@@ -55,9 +53,9 @@ class GetMembersE2EICertificateStatusesUseCaseImpl internal constructor(
  * [CertificateStatus.EXPIRED] if any certificate is expired;
  * [CertificateStatus.VALID] otherwise.
  */
-fun List<WireIdentity>.getUserCertificateStatus(certificateStatusMapper: CertificateStatusMapper): CertificateStatus? {
+fun List<WireIdentity>.getUserCertificateStatus(): CertificateStatus? {
     val certificates = this.map {
-        E2eiCertificate.fromWireIdentity(it, certificateStatusMapper)
+        E2eiCertificate.fromWireIdentity(it)
     }
     return if (certificates.isEmpty() || certificates.any { it == null }) {
         null

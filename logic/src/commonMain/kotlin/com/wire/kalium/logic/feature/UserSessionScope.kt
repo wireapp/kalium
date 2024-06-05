@@ -631,7 +631,8 @@ class UserSessionScope internal constructor(
             userId = userId,
             currentClientIdProvider = clientIdProvider,
             passphraseStorage = globalPreferences.passphraseStorage,
-            userConfigRepository = userConfigRepository
+            userConfigRepository = userConfigRepository,
+            featureConfigRepository = featureConfigRepository
         )
     }
 
@@ -664,8 +665,7 @@ class UserSessionScope internal constructor(
             proposalTimersFlow,
             keyPackageLimitsProvider,
             checkRevocationList,
-            certificateRevocationListRepository,
-            sessionManager.getServerConfig().links,
+            certificateRevocationListRepository
         )
 
     private val e2eiRepository: E2EIRepository
@@ -1185,7 +1185,7 @@ class UserSessionScope internal constructor(
 
     internal val mlsMigrationManager: MLSMigrationManager = MLSMigrationManagerImpl(
         kaliumConfigs,
-        featureSupport,
+        isMLSEnabled,
         incrementalSyncRepository,
         lazy { clientRepository },
         lazy { users.timestampKeyRepository },
@@ -1635,7 +1635,8 @@ class UserSessionScope internal constructor(
 
     private val oneOnOneProtocolSelector: OneOnOneProtocolSelector
         get() = OneOnOneProtocolSelectorImpl(
-            userRepository
+            userRepository,
+            userConfigRepository
         )
 
     private val acmeCertificatesSyncWorker: ACMECertificatesSyncWorker by lazy {

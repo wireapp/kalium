@@ -138,7 +138,11 @@ internal class MLSMigratorImpl(
                         mlsConversationRepository.establishMLSGroup(protocolInfo.groupId, emptyList())
                             .flatMap {
                                 conversationRepository.getConversationMembers(conversationId).flatMap { members ->
-                                    mlsConversationRepository.addMemberToMLSGroup(protocolInfo.groupId, members)
+                                    mlsConversationRepository.addMemberToMLSGroup(
+                                        protocolInfo.groupId,
+                                        members,
+                                        protocolInfo.cipherSuite
+                                    )
                                 }
                             }
                     }

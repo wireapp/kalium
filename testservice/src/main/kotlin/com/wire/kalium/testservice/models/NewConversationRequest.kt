@@ -15,26 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.testservice.models
 
-package com.wire.kalium.cryptography
-
-import java.nio.file.Files
-
-actual open class BaseMLSClientTest {
-
-    actual suspend fun createMLSClient(
-        clientId: CryptoQualifiedClientId,
-        allowedCipherSuites: List<UShort>,
-        defaultCipherSuite: UShort
-    ): MLSClient {
-        return createCoreCrypto(clientId).mlsClient(clientId, allowedCipherSuites, defaultCipherSuite)
-    }
-
-    actual suspend fun createCoreCrypto(
-        clientId: CryptoQualifiedClientId
-    ): CoreCryptoCentral {
-        val root = Files.createTempDirectory("mls").toFile()
-        val keyStore = root.resolve("keystore-$clientId")
-        return coreCryptoCentral(keyStore.absolutePath, "test")
-    }
-}
+data class NewConversationRequest(
+    val name: String = "",
+    val userIds: List<String> = emptyList()
+)
