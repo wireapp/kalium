@@ -31,7 +31,6 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.wrapMLSRequest
-import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.kaliumLogger
 
 sealed class RegisterMLSClientResult {
