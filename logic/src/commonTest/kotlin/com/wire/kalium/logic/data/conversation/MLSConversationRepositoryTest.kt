@@ -54,11 +54,6 @@ import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeys
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.user.UserId
-<<<<<<< HEAD
-import com.wire.kalium.logic.di.MapperProvider
-=======
-import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
->>>>>>> c6a9c302c2 (feat: set the correct external sender key when creating MLS conversation [WPB-8592] 🍒 (#2745))
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
