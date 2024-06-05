@@ -51,6 +51,10 @@ class MLSClientImpl(
         coreCrypto.close()
     }
 
+    override fun getDefaultCipherSuite(): UShort {
+        return defaultCipherSuite
+    }
+
     override suspend fun getPublicKey(): Pair<ByteArray, Ciphersuite> {
         return coreCrypto.clientPublicKey(defaultCipherSuite, toCredentialType(getMLSCredentials())) to defaultCipherSuite
     }
@@ -104,11 +108,12 @@ class MLSClientImpl(
 
     override suspend fun createConversation(
         groupId: MLSGroupId,
-        externalSenders: List<Ed22519Key>
+        externalSenders: ByteArray
     ) {
+        kaliumLogger.d("createConversation: using defaultCipherSuite=$defaultCipherSuite")
         val conf = ConversationConfiguration(
             defaultCipherSuite,
-            externalSenders.map { it.value },
+            listOf(externalSenders),
             defaultGroupConfiguration
         )
 

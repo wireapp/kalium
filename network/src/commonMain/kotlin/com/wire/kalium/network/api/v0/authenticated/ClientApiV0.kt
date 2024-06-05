@@ -85,7 +85,7 @@ internal open class ClientApiV0 internal constructor(
         updateClientMlsPublicKeysRequest: UpdateClientMlsPublicKeysRequest,
         clientID: String
     ): NetworkResponse<Unit> =
-        wrapKaliumResponse {
+        wrapKaliumResponse<Unit> {
             httpClient.put("$PATH_CLIENTS/$clientID") {
                 setBody(updateClientMlsPublicKeysRequest)
             }
