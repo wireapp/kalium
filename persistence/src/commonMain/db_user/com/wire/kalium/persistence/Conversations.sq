@@ -374,10 +374,11 @@ UPDATE Conversation
 SET type = ?
 WHERE qualified_id = ?;
 
-updateConversationProtocol {
+updateConversationGroupIdAndProtocolInfo {
 UPDATE Conversation
-SET protocol = :protocol
-WHERE qualified_id = :qualified_id AND protocol != :protocol;
+SET mls_group_id = :groupId, protocol = :protocol, mls_cipher_suite = :mls_cipher_suite
+WHERE qualified_id = :qualified_id AND
+ protocol != :protocol;
 SELECT changes();
 }
 
