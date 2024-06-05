@@ -229,7 +229,7 @@ class RegisterMLSClientUseCaseTest {
             const val REFILL_AMOUNT = 100
             val RANDOM_URL = "https://random.rn"
             val E2EI_TEAM_SETTINGS = E2EISettings(
-                true, RANDOM_URL, DateTimeUtil.currentInstant()
+                true, RANDOM_URL, DateTimeUtil.currentInstant(), false, null
             )
         }
 

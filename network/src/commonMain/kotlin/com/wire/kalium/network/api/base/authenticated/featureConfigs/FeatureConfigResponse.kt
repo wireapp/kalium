@@ -115,7 +115,7 @@ data class E2EIConfigDTO(
     @SerialName("acmeDiscoveryUrl")
     val url: String?,
     @SerialName("crlProxy")
-    val crlProxy: String,
+    val crlProxy: String?,
     @SerialName("useProxyOnMobile")
     val shouldUseProxy: Boolean?,
     @SerialName("verificationExpiration")

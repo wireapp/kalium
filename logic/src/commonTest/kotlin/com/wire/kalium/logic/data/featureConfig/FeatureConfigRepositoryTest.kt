@@ -81,7 +81,7 @@ class FeatureConfigRepositoryTest {
                 supportedCipherSuite = null
             ),
             E2EIModel(
-                E2EIConfigModel("url", 1000000L),
+                E2EIConfigModel("url", 1000000L, false, null),
                 Status.ENABLED
             ),
             MLSMigrationModel(
@@ -165,7 +165,7 @@ class FeatureConfigRepositoryTest {
                 ), FeatureFlagStatusDTO.ENABLED
             ),
             FeatureConfigData.E2EI(
-                E2EIConfigDTO("url", 1000000L),
+                E2EIConfigDTO("url", null, false, 1000000L),
                 FeatureFlagStatusDTO.ENABLED
             ),
             FeatureConfigData.MLSMigration(

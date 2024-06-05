@@ -370,7 +370,7 @@ class ObserveE2EIRequiredUseCaseTest {
     }
 
     companion object {
-        private val MLS_E2EI_SETTING = E2EISettings(true, "some_url", null)
+        private val MLS_E2EI_SETTING = E2EISettings(true, "some_url", null, false, null)
         private val VALID_CERTIFICATE = E2eiCertificate(
             userHandle = "userHandle",
             serialNumber = "serialNumber",
