@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.kaliumLogger
@@ -57,7 +58,10 @@ internal class EI2EIClientProviderImpl(
 
     private val mutex = Mutex()
 
-    override suspend fun getE2EIClient(clientId: ClientId?, isNewClient: Boolean): Either<E2EIFailure, E2EIClient> = mutex.withLock {
+    override suspend fun getE2EIClient(
+        clientId: ClientId?,
+        isNewClient: Boolean
+    ): Either<E2EIFailure, E2EIClient> = mutex.withLock {
         withContext(dispatchers.io) {
             val currentClientId =
                 clientId ?: currentClientIdProvider().fold({ return@withContext E2EIFailure.GettingE2EIClient(it).left() }, { it })
@@ -67,52 +71,71 @@ internal class EI2EIClientProviderImpl(
             } ?: run {
                 getSelfUserInfo().flatMap { selfUser ->
                     if (isNewClient) {
-                        kaliumLogger.w("initial E2EI client without MLS client")
-                        mlsClientProvider.getCoreCrypto(currentClientId).fold({
-                            E2EIFailure.GettingE2EIClient(it).left()
-                        }, {
-                            val cryptoQualifiedClientId = CryptoQualifiedClientId(
-                                currentClientId.value,
-                                selfUser.id.toCrypto()
-                            )
-                            val newE2EIClient = it.newAcmeEnrollment(
-                                cryptoQualifiedClientId,
-                                selfUser.name!!,
-                                selfUser.handle!!,
-                                selfUser.teamId?.value,
-                                defaultE2EIExpiry
-                            )
-                            e2EIClient = newE2EIClient
-                            Either.Right(newE2EIClient)
-                        })
+                        createNewE2EIClient(currentClientId, selfUser)
                     } else {
-                        mlsClientProvider.getMLSClient(currentClientId).fold({
-                            E2EIFailure.GettingE2EIClient(it).left()
-                        }, {
-                            val newE2EIClient = if (it.isE2EIEnabled()) {
-                                kaliumLogger.w("initial E2EI client for MLS client that already has E2EI enabled")
-                                it.e2eiNewRotateEnrollment(
-                                    selfUser.name,
-                                    selfUser.handle,
-                                    selfUser.teamId?.value,
-                                    defaultE2EIExpiry
-                                )
-                            } else {
-                                kaliumLogger.w("initial E2EI client for MLS client without E2EI")
-                                it.e2eiNewActivationEnrollment(
-                                    selfUser.name!!,
-                                    selfUser.handle!!,
-                                    selfUser.teamId?.value,
-                                    defaultE2EIExpiry
-                                )
-                            }
-                            e2EIClient = newE2EIClient
-                            Either.Right(newE2EIClient)
-                        })
+                        getE2EIClientFromMLSClient(currentClientId, selfUser)
                     }
                 }
             }
         }
+    }
+
+    private suspend fun getE2EIClientFromMLSClient(
+        currentClientId: ClientId,
+        selfUser: SelfUser
+    ): Either<E2EIFailure.GettingE2EIClient, E2EIClient> {
+        return mlsClientProvider.getMLSClient(currentClientId).fold({
+            E2EIFailure.GettingE2EIClient(it).left()
+        }, {
+            val newE2EIClient = if (it.isE2EIEnabled()) {
+                kaliumLogger.w("initial E2EI client for MLS client that already has E2EI enabled")
+                it.e2eiNewRotateEnrollment(
+                    selfUser.name,
+                    selfUser.handle,
+                    selfUser.teamId?.value,
+                    defaultE2EIExpiry
+                )
+            } else {
+                kaliumLogger.w("initial E2EI client for MLS client without E2EI")
+                it.e2eiNewActivationEnrollment(
+                    selfUser.name!!,
+                    selfUser.handle!!,
+                    selfUser.teamId?.value,
+                    defaultE2EIExpiry
+                )
+            }
+            e2EIClient = newE2EIClient
+            Either.Right(newE2EIClient)
+        })
+    }
+
+    private suspend fun createNewE2EIClient(
+        currentClientId: ClientId,
+        selfUser: SelfUser
+    ): Either<E2EIFailure.GettingE2EIClient, E2EIClient> {
+        kaliumLogger.w("initial E2EI client without MLS client")
+        return mlsClientProvider.getCoreCrypto(currentClientId).fold({
+            E2EIFailure.GettingE2EIClient(it).left()
+        }, {
+            val cryptoQualifiedClientId = CryptoQualifiedClientId(
+                currentClientId.value,
+                selfUser.id.toCrypto()
+            )
+            val (_, defaultCipherSuite) = mlsClientProvider.getOrFetchMLSConfig().getOrElse { error ->
+                return E2EIFailure.GettingE2EIClient(error).left()
+            }
+
+            val newE2EIClient = it.newAcmeEnrollment(
+                clientId = cryptoQualifiedClientId,
+                displayName = selfUser.name!!,
+                handle = selfUser.handle!!,
+                teamId = selfUser.teamId?.value,
+                expiry = defaultE2EIExpiry,
+                defaultCipherSuite = defaultCipherSuite.tag.toUShort()
+            )
+            e2EIClient = newE2EIClient
+            Either.Right(newE2EIClient)
+        })
     }
 
     private suspend fun getSelfUserInfo(): Either<E2EIFailure, SelfUser> {

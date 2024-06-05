@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.legalhold.ListUsersLegalHoldConsent
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConversation
@@ -73,9 +74,9 @@ import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
@@ -228,6 +229,102 @@ class ConversationGroupRepositoryTest {
         val result = conversationGroupRepository.createGroupConversation(
             GROUP_NAME,
             listOf(TestUser.USER_ID, unreachableUserId),
+            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+        )
+
+        result.shouldFail()
+
+        with(arrangement) {
+            coVerify {
+                conversationApi.createNewConversation(any())
+            }.wasInvoked(twice)
+
+            coVerify {
+                conversationDAO.insertConversation(any())
+            }.wasNotInvoked()
+
+            coVerify {
+                newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
+            }.wasNotInvoked()
+
+            coVerify {
+                newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(any(), any(), any())
+            }.wasNotInvoked()
+        }
+    }
+
+    @Test
+    fun givenCreatingAGroupConversation_whenThereIsAMissingLegalHoldConsentError_thenRetryIsExecutedWithValidUsersOnly() = runTest {
+        val usersWithConsent = listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID.copy(value = "idWithConsent"))
+        val usersWithoutConsent = listOf(TestUser.OTHER_USER_ID.copy(value = "idWithoutConsent"))
+        val usersFailed = listOf(TestUser.OTHER_USER_ID.copy(value = "idFailed"))
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withCreateNewConversationAPIResponses(
+                arrayOf(ERROR_MISSING_LEGALHOLD_CONSENT, NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201))
+            )
+            .withSelfTeamId(Either.Right(null))
+            .withInsertConversationSuccess()
+            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
+            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+            .withInsertFailedToAddSystemMessageSuccess()
+            .withSuccessfulFetchUsersLegalHoldConsent(ListUsersLegalHoldConsent(usersWithConsent, usersWithoutConsent, usersFailed))
+            .arrange()
+
+        val result = conversationGroupRepository.createGroupConversation(
+            GROUP_NAME,
+            usersWithConsent + usersWithoutConsent + usersFailed,
+            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+        )
+
+        result.shouldSucceed()
+
+        with(arrangement) {
+            coVerify {
+                conversationApi.createNewConversation(matches { it.qualifiedUsers?.size == 4 })
+            }.wasInvoked(once)
+
+            coVerify {
+                conversationApi.createNewConversation(matches { it.qualifiedUsers?.size == 2 })
+            }.wasInvoked(once)
+
+            coVerify {
+                conversationDAO.insertConversation(any())
+            }.wasInvoked(once)
+
+            coVerify {
+                newConversationMembersRepository.persistMembersAdditionToTheConversation(any(), any())
+            }.wasInvoked(once)
+
+            coVerify {
+                newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
+                    any(),
+                    userIdList = eq(usersWithoutConsent + usersFailed),
+                    eq(MessageContent.MemberChange.FailedToAdd.Type.LegalHold)
+                )
+            }.wasInvoked(once)
+        }
+    }
+
+    @Test
+    fun givenCreatingAGroupConversation_whenThereIsAMissingLegalHoldConsentError_thenRetryIsExecutedWithValidUsersOnlyOnce() = runTest {
+        val usersWithConsent = listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID.copy(value = "idWithConsent"))
+        val usersWithoutConsent = listOf(TestUser.OTHER_USER_ID.copy(value = "idWithoutConsent"))
+        val usersFailed = listOf(TestUser.OTHER_USER_ID.copy(value = "idFailed"))
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withCreateNewConversationAPIResponses(arrayOf(ERROR_MISSING_LEGALHOLD_CONSENT, ERROR_MISSING_LEGALHOLD_CONSENT))
+            .withSelfTeamId(Either.Right(null))
+            .withInsertConversationSuccess()
+            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
+            .withSuccessfulFetchUsersLegalHoldConsent(ListUsersLegalHoldConsent(usersWithConsent, usersWithoutConsent, usersFailed))
+            .arrange()
+
+        val result = conversationGroupRepository.createGroupConversation(
+            GROUP_NAME,
+            usersWithConsent + usersWithoutConsent + usersFailed,
             ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
         )
 
@@ -506,7 +603,11 @@ class ConversationGroupRepositoryTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(eq(GROUP_ID), eq(listOf(TestConversation.USER_1)))
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                eq(GROUP_ID),
+                eq(listOf(TestConversation.USER_1)),
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
     }
 
@@ -532,7 +633,11 @@ class ConversationGroupRepositoryTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(eq(GROUP_ID), eq(listOf(TestConversation.USER_1)))
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                eq(GROUP_ID),
+                eq(listOf(TestConversation.USER_1)),
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
     }
 
@@ -758,7 +863,11 @@ class ConversationGroupRepositoryTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(eq(GroupID(MLS_PROTOCOL_INFO.groupId)), eq(listOf(TestUser.SELF.id)))
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                eq(GroupID(MLS_PROTOCOL_INFO.groupId)),
+                eq(listOf(TestUser.SELF.id)),
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
     }
 
@@ -801,7 +910,8 @@ class ConversationGroupRepositoryTest {
         coVerify {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
                 eq(GroupID(MIXED_PROTOCOL_INFO.groupId)),
-                eq(listOf(TestUser.SELF.id))
+                eq(listOf(TestUser.SELF.id)),
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
             )
         }.wasInvoked(exactly = once)
     }
@@ -1065,8 +1175,8 @@ class ConversationGroupRepositoryTest {
             coVerify {
                 arrangement.conversationApi.addMember(
                     matches {
-                    it.users.size == expectedValidUsersCount && it.users.first().domain != failedDomain
-                }, any()
+                        it.users.size == expectedValidUsersCount && it.users.first().domain != failedDomain
+                    }, any()
                 )
             }.wasInvoked(exactly = once)
 
@@ -1253,15 +1363,21 @@ class ConversationGroupRepositoryTest {
         val expectedFullUserIdsForRequestCount = 2
         val expectedValidUsersWithKeyPackagesCount = 1
         coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), matches {
-                it.size == expectedFullUserIdsForRequestCount
-            })
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                any(), matches {
+                    it.size == expectedFullUserIdsForRequestCount
+                },
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), matches {
-                it.size == expectedValidUsersWithKeyPackagesCount && it.first() == TestConversation.USER_1
-            })
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                any(), matches {
+                    it.size == expectedValidUsersWithKeyPackagesCount && it.first() == TestConversation.USER_1
+                },
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -1296,15 +1412,21 @@ class ConversationGroupRepositoryTest {
         val expectedFullUserIdsForRequestCount = 2
         val expectedValidUsersWithKeyPackagesCount = 1
         coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), matches {
-                it.size == expectedFullUserIdsForRequestCount
-            })
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                any(), matches {
+                    it.size == expectedFullUserIdsForRequestCount
+                },
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), matches {
-                it.size == expectedValidUsersWithKeyPackagesCount && it.first() == TestConversation.USER_1
-            })
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                any(), matches {
+                    it.size == expectedValidUsersWithKeyPackagesCount && it.first() == TestConversation.USER_1
+                },
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -1337,21 +1459,30 @@ class ConversationGroupRepositoryTest {
         // then
         val initialCountUsers = expectedInitialUsers.size
         coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), matches {
-                it.size == initialCountUsers
-            })
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                any(), matches {
+                    it.size == initialCountUsers
+                },
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), matches {
-                it.size == initialCountUsers - 1 // removed 1 failed users with key packages
-            })
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                any(), matches {
+                    it.size == initialCountUsers - 1 // removed 1 failed users with key packages
+                },
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), matches {
-                it.size == initialCountUsers - 2  // removed 1 failed user with commit bundle federated error
-            })
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                any(), matches {
+                    it.size == initialCountUsers - 2  // removed 1 failed user with commit bundle federated error
+                },
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -1540,7 +1671,7 @@ class ConversationGroupRepositoryTest {
          * Mocks a sequence of [NetworkResponse]s for [ConversationApi.createNewConversation].
          */
         suspend fun withCreateNewConversationAPIResponses(result: Array<NetworkResponse<ConversationResponse>>): Arrangement = apply {
-            coEvery{conversationApi.createNewConversation(any())}
+            coEvery { conversationApi.createNewConversation(any()) }
                 .thenReturnSequentially(*result)
         }
 
@@ -1605,80 +1736,80 @@ class ConversationGroupRepositoryTest {
             coEvery {
                 conversationApi.addMember(any(), any())
             }.returns(
-                    NetworkResponse.Success(
-                        TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
-                        mapOf(),
-                        HttpStatusCode.OK.value
-                    )
+                NetworkResponse.Success(
+                    TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
+                    mapOf(),
+                    HttpStatusCode.OK.value
                 )
+            )
         }
 
         suspend fun withAddServiceAPISucceedChanged() = apply {
             coEvery {
                 conversationApi.addService(any(), any())
             }.returns(
-                    NetworkResponse.Success(
-                        TestConversation.ADD_SERVICE_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
-                        mapOf(),
-                        HttpStatusCode.OK.value
-                    )
+                NetworkResponse.Success(
+                    TestConversation.ADD_SERVICE_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
+                    mapOf(),
+                    HttpStatusCode.OK.value
                 )
+            )
         }
 
         suspend fun withAddMemberAPISucceedUnchanged() = apply {
             coEvery {
                 conversationApi.addMember(any(), any())
             }.returns(
-                    NetworkResponse.Success(
-                        ConversationMemberAddedResponse.Unchanged,
-                        mapOf(),
-                        HttpStatusCode.OK.value
-                    )
+                NetworkResponse.Success(
+                    ConversationMemberAddedResponse.Unchanged,
+                    mapOf(),
+                    HttpStatusCode.OK.value
                 )
+            )
         }
 
         suspend fun withAddMemberAPIFailed() = apply {
             coEvery {
                 conversationApi.addMember(any(), any())
             }.returns(
-                    NetworkResponse.Error(
-                        KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
-                    )
+                NetworkResponse.Error(
+                    KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
                 )
+            )
         }
 
         suspend fun withDeleteMemberAPISucceedChanged() = apply {
             coEvery {
                 conversationApi.removeMember(any(), any())
             }.returns(
-                    NetworkResponse.Success(
-                        TestConversation.REMOVE_MEMBER_FROM_CONVERSATION_SUCCESSFUL_RESPONSE,
-                        mapOf(),
-                        HttpStatusCode.OK.value
-                    )
+                NetworkResponse.Success(
+                    TestConversation.REMOVE_MEMBER_FROM_CONVERSATION_SUCCESSFUL_RESPONSE,
+                    mapOf(),
+                    HttpStatusCode.OK.value
                 )
+            )
         }
 
         suspend fun withDeleteMemberAPISucceedUnchanged() = apply {
             coEvery {
                 conversationApi.removeMember(any(), any())
             }.returns(
-                    NetworkResponse.Success(
-                        ConversationMemberRemovedResponse.Unchanged,
-                        mapOf(),
-                        HttpStatusCode.OK.value
-                    )
+                NetworkResponse.Success(
+                    ConversationMemberRemovedResponse.Unchanged,
+                    mapOf(),
+                    HttpStatusCode.OK.value
                 )
+            )
         }
 
         suspend fun withDeleteMemberAPIFailed() = apply {
             coEvery {
                 conversationApi.removeMember(any(), any())
             }.returns(
-                    NetworkResponse.Error(
-                        KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
-                    )
+                NetworkResponse.Error(
+                    KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
                 )
+            )
         }
 
         suspend fun withFetchUsersIfUnknownByIdsSuccessful() = apply {
@@ -1707,7 +1838,7 @@ class ConversationGroupRepositoryTest {
 
         suspend fun withSuccessfulAddMemberToMLSGroup() = apply {
             coEvery {
-                mlsConversationRepository.addMemberToMLSGroup(any(), any())
+                mlsConversationRepository.addMemberToMLSGroup(any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 
@@ -1716,7 +1847,7 @@ class ConversationGroupRepositoryTest {
          */
         suspend fun withAddingMemberToMlsGroupResults(vararg results: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                mlsConversationRepository.addMemberToMLSGroup(any(), any())
+                mlsConversationRepository.addMemberToMLSGroup(any(), any(), any())
             }.thenReturnSequentially(*results)
         }
 
@@ -1732,22 +1863,22 @@ class ConversationGroupRepositoryTest {
             coEvery {
                 conversationApi.generateGuestRoomLink(any(), any())
             }.returns(
-                    NetworkResponse.Success(
-                        result,
-                        mapOf(),
-                        HttpStatusCode.OK.value
-                    )
+                NetworkResponse.Success(
+                    result,
+                    mapOf(),
+                    HttpStatusCode.OK.value
                 )
+            )
         }
 
         suspend fun withFailedCallToGenerateGuestRoomLinkApi() = apply {
             coEvery {
                 conversationApi.generateGuestRoomLink(any(), any())
             }.returns(
-                    NetworkResponse.Error(
-                        KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
-                    )
+                NetworkResponse.Error(
+                    KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
                 )
+            )
         }
 
         suspend fun withDeleteGuestLink() = apply {
@@ -1760,22 +1891,22 @@ class ConversationGroupRepositoryTest {
             coEvery {
                 conversationApi.revokeGuestRoomLink(any())
             }.returns(
-                    NetworkResponse.Success(
-                        Unit,
-                        mapOf(),
-                        HttpStatusCode.OK.value
-                    )
+                NetworkResponse.Success(
+                    Unit,
+                    mapOf(),
+                    HttpStatusCode.OK.value
                 )
+            )
         }
 
         suspend fun withFailedCallToRevokeGuestRoomLinkApi() = apply {
             coEvery {
                 conversationApi.revokeGuestRoomLink(any())
             }.returns(
-                    NetworkResponse.Error(
-                        KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
-                    )
+                NetworkResponse.Error(
+                    KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
                 )
+            )
         }
 
         suspend fun withSuccessfulFetchOfGuestRoomLink(
@@ -1805,22 +1936,22 @@ class ConversationGroupRepositoryTest {
             coEvery {
                 conversationApi.updateMessageTimer(any(), any())
             }.returns(
-                    NetworkResponse.Success(
-                        event,
-                        emptyMap(),
-                        HttpStatusCode.NoContent.value
-                    )
+                NetworkResponse.Success(
+                    event,
+                    emptyMap(),
+                    HttpStatusCode.NoContent.value
                 )
+            )
         }
 
         suspend fun withUpdateMessageTimerAPIFailed() = apply {
             coEvery {
                 conversationApi.updateMessageTimer(any(), any())
             }.returns(
-                    NetworkResponse.Error(
-                        KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
-                    )
+                NetworkResponse.Error(
+                    KaliumException.ServerError(ErrorResponse(500, "error_message", "error_label"))
                 )
+            )
         }
 
         suspend fun withSuccessfulHandleMessageTimerUpdateEvent() = apply {
@@ -1864,7 +1995,8 @@ class ConversationGroupRepositoryTest {
         fun arrange() = this to conversationGroupRepository
     }
 
-    companion object {
+    private companion object {
+        val CIPHER_SUITE = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         private const val RAW_GROUP_ID = "mlsGroupId"
         val GROUP_ID = GroupID(RAW_GROUP_ID)
         val PROTEUS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.Proteus
@@ -1874,7 +2006,7 @@ class ConversationGroupRepositoryTest {
                 groupState = ConversationEntity.GroupState.ESTABLISHED,
                 0UL,
                 Instant.parse("2021-03-30T15:36:00.000Z"),
-                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                cipherSuite = CIPHER_SUITE
             )
         val MIXED_PROTOCOL_INFO = ConversationEntity.ProtocolInfo
             .Mixed(
