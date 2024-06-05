@@ -118,8 +118,6 @@ data class UpdateClientCapabilitiesRequest(
 
 @Serializable
 enum class MLSPublicKeyTypeDTO {
-<<<<<<< HEAD
-=======
     @SerialName("ecdsa_secp256r1_sha256")
     ECDSA_SECP256R1_SHA256,
 
@@ -132,7 +130,6 @@ enum class MLSPublicKeyTypeDTO {
     @SerialName("ed448")
     ED448,
 
->>>>>>> c6a9c302c2 (feat: set the correct external sender key when creating MLS conversation [WPB-8592] 🍒 (#2745))
     @SerialName("ed25519")
     ED25519;
 }

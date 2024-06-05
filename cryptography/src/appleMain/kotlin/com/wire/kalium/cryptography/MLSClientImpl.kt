@@ -38,7 +38,8 @@ import kotlin.time.toDuration
 @Suppress("TooManyFunctions")
 @OptIn(ExperimentalUnsignedTypes::class)
 class MLSClientImpl(
-    private val coreCrypto: CoreCrypto
+    private val coreCrypto: CoreCrypto,
+    private val defaultCipherSuite: UShort
 ) : MLSClient {
 
     private val keyRotationDuration: Duration = 30.toDuration(DurationUnit.DAYS)
@@ -51,8 +52,8 @@ class MLSClientImpl(
     override suspend fun close() {
     }
 
-    override suspend fun getPublicKey(): ByteArray {
-        return coreCrypto.clientPublicKey().toUByteArray().asByteArray()
+    override suspend fun getPublicKey(): Pair<ByteArray, UShort> {
+        return coreCrypto.clientPublicKey().toUByteArray().asByteArray() to defaultCipherSuite
     }
 
     override suspend fun generateKeyPackages(amount: Int): List<ByteArray> {

@@ -25,15 +25,14 @@ import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.right
-<<<<<<< HEAD
-=======
+import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.kaliumLogger
->>>>>>> c6a9c302c2 (feat: set the correct external sender key when creating MLS conversation [WPB-8592] 🍒 (#2745))
 
 sealed class RegisterMLSClientResult {
     data object Success : RegisterMLSClientResult()
@@ -65,8 +64,12 @@ internal class RegisterMLSClientUseCaseImpl(
             }
         }.onFailure {
             mlsClientProvider.getMLSClient(clientId)
-        }.flatMap {
-            clientRepository.registerMLSClient(clientId, it.getPublicKey())
+        }.flatMap { mlsClient ->
+            wrapMLSRequest {
+                mlsClient.getPublicKey()
+            }
+        }.flatMap { (publicKey, cipherSuite) ->
+            clientRepository.registerMLSClient(clientId, publicKey, CipherSuite.fromTag(cipherSuite))
         }.flatMap {
             keyPackageRepository.uploadNewKeyPackages(clientId, keyPackageLimitsProvider.refillAmount())
             Either.Right(RegisterMLSClientResult.Success)
