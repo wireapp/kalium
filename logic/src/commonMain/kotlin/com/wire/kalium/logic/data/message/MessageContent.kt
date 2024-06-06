@@ -81,7 +81,7 @@ sealed class MessageContent {
     // client message content types
     data class Text(
         val value: String,
-        val linkPreview: List<MessageLinkPreview> = emptyList(),
+        val linkPreviews: List<MessageLinkPreview> = emptyList(),
         val mentions: List<MessageMention> = emptyList(),
         val quotedMessageReference: QuoteReference? = null,
         val quotedMessageDetails: QuotedMessageDetails? = null

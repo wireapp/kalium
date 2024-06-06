@@ -64,7 +64,7 @@ class SendTextMessageUseCase internal constructor(
     suspend operator fun invoke(
         conversationId: ConversationId,
         text: String,
-        linkPreview: List<MessageLinkPreview> = emptyList(),
+        linkPreviews: List<MessageLinkPreview> = emptyList(),
         mentions: List<MessageMention> = emptyList(),
         quotedMessageId: String? = null
     ): Either<CoreFailure, Unit> = scope.async(dispatchers.io) {
@@ -83,7 +83,7 @@ class SendTextMessageUseCase internal constructor(
                 id = generatedMessageUuid,
                 content = MessageContent.Text(
                     value = text,
-                    linkPreview = linkPreview,
+                    linkPreviews = linkPreviews,
                     mentions = mentions,
                     quotedMessageReference = quotedMessageId?.let { quotedMessageId ->
                         MessageContent.QuoteReference(
