@@ -631,7 +631,8 @@ class UserSessionScope internal constructor(
             userId = userId,
             currentClientIdProvider = clientIdProvider,
             passphraseStorage = globalPreferences.passphraseStorage,
-            userConfigRepository = userConfigRepository
+            userConfigRepository = userConfigRepository,
+            featureConfigRepository = featureConfigRepository
         )
     }
 
@@ -664,8 +665,7 @@ class UserSessionScope internal constructor(
             proposalTimersFlow,
             keyPackageLimitsProvider,
             checkRevocationList,
-            certificateRevocationListRepository,
-            sessionManager.getServerConfig().links,
+            certificateRevocationListRepository
         )
 
     private val e2eiRepository: E2EIRepository
