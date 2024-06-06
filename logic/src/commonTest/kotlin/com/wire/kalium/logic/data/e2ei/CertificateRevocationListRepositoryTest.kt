@@ -17,14 +17,28 @@
  */
 package com.wire.kalium.logic.data.e2ei
 
+import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.E2EISettings
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepositoryDataSource.Companion.CRL_LIST_KEY
+import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
+import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.config.CRLUrlExpirationList
 import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.dao.MetadataDAO
+import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
+<<<<<<< HEAD
 import io.mockative.coEvery
 import io.mockative.coVerify
+=======
+import io.mockative.any
+import io.mockative.classOf
+import io.mockative.eq
+import io.mockative.given
+>>>>>>> 06c66ee1a6 (feat: CRL proxy [WPB-8793] (#2800))
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
@@ -105,6 +119,54 @@ class CertificateRevocationListRepositoryTest {
         }.wasInvoked(once)
     }
 
+    @Test
+    fun givenCRLUrlProxyRequired_whenClientDomainCRLRequested_thenProxyIsApplied() = runTest {
+        val (arrangement, crlRepository) = Arrangement()
+            .withClientDomainCRL()
+            .withE2EISettings(E2EI_SETTINGS.copy(shouldUseProxy = true, crlProxy = DUMMY_URL).right())
+            .arrange()
+
+        crlRepository.getClientDomainCRL(DUMMY_URL2)
+
+        verify(arrangement.userConfigRepository).coroutine { getE2EISettings() }.wasInvoked(once)
+
+        verify(arrangement.acmeApi).coroutine {
+            getClientDomainCRL(DUMMY_URL2, DUMMY_URL)
+        }.wasInvoked(once)
+    }
+
+    @Test
+    fun givenCRLUrlProxyRequiredButEmpty_whenClientDomainCRLRequested_thenProxyIsNotApplied() = runTest {
+        val (arrangement, crlRepository) = Arrangement()
+            .withClientDomainCRL()
+            .withE2EISettings(E2EI_SETTINGS.copy(shouldUseProxy = true, crlProxy = "").right())
+            .arrange()
+
+        crlRepository.getClientDomainCRL(DUMMY_URL2)
+
+        verify(arrangement.userConfigRepository).coroutine { getE2EISettings() }.wasInvoked(once)
+
+        verify(arrangement.acmeApi).coroutine {
+            getClientDomainCRL(DUMMY_URL2, null)
+        }.wasInvoked(once)
+    }
+
+    @Test
+    fun givenCRLUrlProxyNotRequired_whenClientDomainCRLRequested_thenProxyIsNotApplied() = runTest {
+        val (arrangement, crlRepository) = Arrangement()
+            .withClientDomainCRL()
+            .withE2EISettings(E2EI_SETTINGS.copy(shouldUseProxy = false, crlProxy = DUMMY_URL).right())
+            .arrange()
+
+        crlRepository.getClientDomainCRL(DUMMY_URL2)
+
+        verify(arrangement.userConfigRepository).coroutine { getE2EISettings() }.wasInvoked(once)
+
+        verify(arrangement.acmeApi).coroutine {
+            getClientDomainCRL(DUMMY_URL2, null)
+        }.wasInvoked(once)
+    }
+
     private class Arrangement {
 
         @Mock
@@ -113,7 +175,10 @@ class CertificateRevocationListRepositoryTest {
         @Mock
         val metadataDAO = mock(MetadataDAO::class)
 
-        fun arrange() = this to CertificateRevocationListRepositoryDataSource(acmeApi, metadataDAO)
+        @Mock
+        val userConfigRepository = mock(classOf<UserConfigRepository>())
+
+        fun arrange() = this to CertificateRevocationListRepositoryDataSource(acmeApi, metadataDAO, userConfigRepository)
 
         suspend fun withEmptyList() = apply {
             coEvery {
@@ -141,6 +206,22 @@ class CertificateRevocationListRepositoryTest {
                 )
             }.returns(CRLUrlExpirationList(listOf(CRLWithExpiration(DUMMY_URL, TIMESTAMP))))
         }
+
+        suspend fun withE2EISettings(result: Either<StorageFailure, E2EISettings> = E2EI_SETTINGS.right()) = apply {
+            given(userConfigRepository).function(userConfigRepository::getE2EISettings)
+                .whenInvoked()
+                .thenReturn(result)
+        }
+
+        suspend fun withClientDomainCRL() = apply {
+            given(acmeApi).suspendFunction(acmeApi::getClientDomainCRL)
+                .whenInvokedWith(any(), any<String?>())
+                .thenReturn(NetworkResponse.Success("some_response".toByteArray(), mapOf(), 200))
+        }.apply {
+            given(acmeApi).suspendFunction(acmeApi::getClientDomainCRL)
+                .whenInvokedWith(any(), eq(null))
+                .thenReturn(NetworkResponse.Success("some_response".toByteArray(), mapOf(), 200))
+        }
     }
 
     companion object {
@@ -148,5 +229,12 @@ class CertificateRevocationListRepositoryTest {
         private const val DUMMY_URL2 = "https://dummy-2.url"
         private val TIMESTAMP = 1234567890.toULong()
         private val TIMESTAMP2 = 5453222.toULong()
+        private val E2EI_SETTINGS = E2EISettings(
+            isRequired = true,
+            discoverUrl = "discoverUrl",
+            gracePeriodEnd = null,
+            shouldUseProxy = false,
+            crlProxy = null
+        )
     }
 }
