@@ -103,9 +103,7 @@ class UserDatabaseDataGenerator(
     @Suppress("StringTemplate")
     private suspend fun generateAssetMessages(
         amount: Int,
-        conversationIDEntity: ConversationIDEntity,
-        assetUploadStatus: MessageEntity.UploadStatus,
-        assetDownloadStatus: MessageEntity.DownloadStatus
+        conversationIDEntity: ConversationIDEntity
     ): List<MessageEntity> {
         val messagePrefix = "Asset${databasePrefix}Message${generatedAssetsCount}"
         val messages = mutableListOf<MessageEntity>()
@@ -124,7 +122,7 @@ class UserDatabaseDataGenerator(
             messages.add(
                 MessageEntity.Regular(
                     id = "${messagePrefix}messageId",
-                    content = generateMessageAssetContent(assetUploadStatus, assetDownloadStatus),
+                    content = generateMessageAssetContent(),
                     conversationId = conversationIDEntity,
                     date = DEFAULT_DATE,
                     senderUserId = senderUser.id,
@@ -146,18 +144,13 @@ class UserDatabaseDataGenerator(
     }
 
     @Suppress("StringTemplate")
-    private fun generateMessageAssetContent(
-        assetUploadStatus: MessageEntity.UploadStatus,
-        assetDownloadStatus: MessageEntity.DownloadStatus
-    ): MessageEntityContent.Asset {
+    private fun generateMessageAssetContent(): MessageEntityContent.Asset {
         val messageAssetContentPrefix = "${databasePrefix}MessageAssetContent${generatedAssetsCount}"
 
         return MessageEntityContent.Asset(
             assetSizeInBytes = 256,
             assetName = "${messageAssetContentPrefix}Name",
             assetMimeType = "MP4",
-            assetUploadStatus = assetUploadStatus,
-            assetDownloadStatus = assetDownloadStatus,
             assetOtrKey = byteArrayOf(1),
             assetSha256Key = byteArrayOf(1),
             assetId = "${messageAssetContentPrefix}AssetId",
@@ -230,7 +223,7 @@ class UserDatabaseDataGenerator(
                     visibility = sanitizedVisibility,
                     senderName = "$messagePrefix SenderName",
                     expireAfterMs = null,
-                    selfDeletionStartDate = null,
+                    selfDeletionEndDate = null,
                     readCount = 0
                 )
             )
@@ -579,7 +572,6 @@ class UserDatabaseDataGenerator(
                 domain = "${assetPrefix}Domain${index}",
                 dataPath = "${assetPrefix}DataPath${index}",
                 dataSize = 256,
-                assetToken = null,
                 downloadedDate = null
             )
 
@@ -596,9 +588,7 @@ class UserDatabaseDataGenerator(
     @Suppress("StringTemplate")
     suspend fun generateAndInsertMessageAssetContent(
         conversationAmount: Int,
-        assetAmountPerConversation: Int,
-        assetUploadStatus: MessageEntity.UploadStatus,
-        assetDownloadStatus: MessageEntity.DownloadStatus
+        assetAmountPerConversation: Int
     ): List<ConversationViewEntity> {
         val conversationPrefix = "${databasePrefix}Conversation${generatedConversationsCount}"
 
@@ -647,9 +637,7 @@ class UserDatabaseDataGenerator(
             userDatabaseBuilder.messageDAO.insertOrIgnoreMessages(
                 generateAssetMessages(
                     amount = assetAmountPerConversation,
-                    conversationIDEntity = conversationId,
-                    assetUploadStatus = assetUploadStatus,
-                    assetDownloadStatus = assetDownloadStatus
+                    conversationIDEntity = conversationId
                 )
             )
         }

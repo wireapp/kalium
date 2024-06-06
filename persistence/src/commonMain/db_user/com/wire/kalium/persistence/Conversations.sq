@@ -41,10 +41,10 @@ CREATE TABLE Conversation (
     archived INTEGER AS Boolean NOT NULL DEFAULT 0,
     archived_date_time INTEGER AS Instant,
     -- mls_verification_status
-    verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT "NOT_VERIFIED",
-    proteus_verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT "NOT_VERIFIED",
+    verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT 'NOT_VERIFIED',
+    proteus_verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT 'NOT_VERIFIED',
     degraded_conversation_notified INTEGER AS Boolean NOT NULL DEFAULT 1,
-    legal_hold_status TEXT AS ConversationEntity.LegalHoldStatus NOT NULL DEFAULT "DISABLED"
+    legal_hold_status TEXT AS ConversationEntity.LegalHoldStatus NOT NULL DEFAULT 'DISABLED'
 );
 
 CREATE TABLE ConversationLegalHoldStatusChangeNotified (
@@ -59,6 +59,12 @@ CREATE INDEX conversation_modified_date_index ON Conversation(last_modified_date
 CREATE INDEX conversation_notified_date_index ON Conversation(last_notified_date);
 CREATE INDEX conversation_read_date_index ON Conversation(last_read_date);
 CREATE INDEX conversation_creator_index ON Conversation(creator_id);
+CREATE INDEX conversation_verification_status ON Conversation(verification_status);
+CREATE INDEX conversation_archiverd_index ON Conversation(archived);
+CREATE INDEX conversation_muted_status_index ON Conversation(muted_status);
+
+conversationIDByGroupId:
+SELECT qualified_id, verification_status FROM Conversation WHERE mls_group_id = :groupId;
 
 deleteAllConversations:
 DELETE FROM Conversation;
@@ -102,6 +108,11 @@ updateConversationGroupState:
 UPDATE Conversation
 SET mls_group_state = ?
 WHERE mls_group_id = ?;
+
+updateMlsGroupStateAndCipherSuite:
+UPDATE Conversation
+SET mls_group_state = :mls_group_state, mls_cipher_suite = :mls_cipher_suite
+WHERE mls_group_id = :mls_group_id;
 
 updateConversationNotificationsDateWithTheLastMessage:
 UPDATE Conversation
@@ -266,10 +277,11 @@ selectAllConversationDetails:
 SELECT * FROM ConversationDetails
 WHERE
     type IS NOT 'SELF'
-    AND incomplete_metadata = 0
     AND (
-    type IS 'GROUP' OR (type IS NOT 'GROUP' AND (name IS NOT NULL AND otherUserId IS NOT NULL)) -- show 1:1 convos and connection requests if they have user metadata
-    OR (type IS 'ONE_ON_ONE' AND userDeleted = 1) -- show deleted 1:1 convos, to maintain prev, logic
+    type IS 'GROUP'
+    OR (type IS 'ONE_ON_ONE' AND (name IS NOT NULL AND otherUserId IS NOT NULL)) -- show 1:1 convos if they have user metadata
+    OR (type IS 'ONE_ON_ONE' AND userDeleted = 1) -- show deleted 1:1 convos to maintain prev, logic
+    OR (type IS 'CONNECTION_PENDING' AND otherUserId IS NOT NULL) -- show connection requests even without metadata
     )
     AND (protocol IS 'PROTEUS' OR protocol IS 'MIXED' OR (protocol IS 'MLS' AND mls_group_state IS 'ESTABLISHED'))
     AND archived = :fromArchive
@@ -304,7 +316,7 @@ selectByGroupId:
 SELECT * FROM ConversationDetails WHERE mls_group_id = ?;
 
 selectByGroupState:
-SELECT * FROM ConversationDetails WHERE mls_group_state = ? AND (protocol IS "MLS" OR protocol IS "MIXED");
+SELECT * FROM ConversationDetails WHERE mls_group_state = ? AND (protocol IS 'MLS' OR protocol IS 'MIXED');
 
 selectActiveOneOnOneConversation:
 SELECT * FROM ConversationDetails
@@ -338,7 +350,7 @@ updateKeyingMaterialDate:
 UPDATE Conversation SET mls_last_keying_material_update_date= ? WHERE mls_group_id = ?;
 
 selectByKeyingMaterialUpdate:
-SELECT mls_group_id FROM Conversation WHERE mls_group_state = ? AND (protocol IS "MLS" OR protocol IS "MIXED") AND mls_last_keying_material_update_date - ? <0 AND mls_group_id IS NOT NULL;
+SELECT mls_group_id FROM Conversation WHERE mls_group_state = ? AND (protocol IS 'MLS' OR protocol IS 'MIXED') AND mls_last_keying_material_update_date - ? <0 AND mls_group_id IS NOT NULL;
 
 updateProposalTimer:
 UPDATE Conversation SET mls_proposal_timer = COALESCE(mls_proposal_timer, ?) WHERE mls_group_id = ?;
@@ -347,7 +359,7 @@ clearProposalTimer:
 UPDATE Conversation SET mls_proposal_timer = NULL WHERE mls_group_id = ?;
 
 selectProposalTimers:
-SELECT mls_group_id, mls_proposal_timer FROM Conversation WHERE (protocol IS "MLS" OR protocol IS "MIXED") AND mls_group_id IS NOT NULL AND mls_proposal_timer IS NOT NULL;
+SELECT mls_group_id, mls_proposal_timer FROM Conversation WHERE (protocol IS 'MLS' OR protocol IS 'MIXED') AND mls_group_id IS NOT NULL AND mls_proposal_timer IS NOT NULL;
 
 whoDeletedMeInConversation:
 SELECT sender_user_id FROM Message WHERE id IN (SELECT message_id FROM MessageMemberChangeContent WHERE conversation_id = :conversation_id AND member_change_type = 'REMOVED' AND member_change_list LIKE ('%' || :self_user_id || '%')) ORDER BY creation_date DESC LIMIT 1;
@@ -362,10 +374,11 @@ UPDATE Conversation
 SET type = ?
 WHERE qualified_id = ?;
 
-updateConversationProtocol {
+updateConversationGroupIdAndProtocolInfo {
 UPDATE Conversation
-SET protocol = :protocol
-WHERE qualified_id = :qualified_id AND protocol != :protocol;
+SET mls_group_id = :groupId, protocol = :protocol, mls_cipher_suite = :mls_cipher_suite
+WHERE qualified_id = :qualified_id AND
+ protocol != :protocol;
 SELECT changes();
 }
 
@@ -378,16 +391,24 @@ LEFT JOIN Member ON Client.user_id = Member.user
 LEFT JOIN Conversation
 ON Member.conversation = Conversation.qualified_id OR Client.user_id = Conversation.qualified_id
 WHERE Conversation.mls_group_id IS NOT NULL AND Client.id = :clientId
+AND Conversation.mls_group_state IS 'ESTABLISHED'
 ORDER BY Conversation.type DESC LIMIT 1;
 
 getMLSGroupIdByUserId:
 SELECT Conversation.mls_group_id FROM Member
 JOIN Conversation ON Conversation.qualified_id = Member.conversation
-WHERE Conversation.mls_group_id IS NOT NULL AND Member.user = :userId LIMIT 1;
+WHERE Conversation.mls_group_id IS NOT NULL AND mls_group_state IS 'ESTABLISHED' AND Member.user = :userId LIMIT 1;
 
 getMLSGroupIdByConversationId:
 SELECT Conversation.mls_group_id FROM Conversation
-WHERE Conversation.qualified_id = :conversationId;
+WHERE Conversation.qualified_id = :conversationId
+AND Conversation.mls_group_state IS 'ESTABLISHED';
+
+getEstablishedSelfMLSGroupId:
+SELECT Conversation.mls_group_id FROM Conversation
+WHERE type = 'SELF'
+AND protocol = 'MLS'
+AND Conversation.mls_group_state IS 'ESTABLISHED';
 
 updateConversationReceiptMode:
 UPDATE Conversation
@@ -429,7 +450,6 @@ updateLegalHoldStatus {
 UPDATE Conversation
 SET legal_hold_status = :legal_hold_status
 WHERE qualified_id = :qualified_id AND legal_hold_status != :legal_hold_status;
-SELECT changes();
 }
 
 upsertLegalHoldStatusChangeNotified {
@@ -438,7 +458,6 @@ VALUES (:conversationId, :notified)
 ON CONFLICT(conversation_id) DO UPDATE SET
     legal_hold_status_change_notified = excluded.legal_hold_status_change_notified
     WHERE legal_hold_status_change_notified != excluded.legal_hold_status_change_notified;
-SELECT changes();
 }
 
 selectLegalHoldStatus:
@@ -464,7 +483,8 @@ SELECT changes();
 CREATE TRIGGER addMessageAfterProteusVerificationStatusChange
 AFTER UPDATE ON Conversation
 WHEN new.proteus_verification_status != old.proteus_verification_status
-AND (new.proteus_verification_status  = "VERIFIED" OR old.proteus_verification_status = "VERIFIED")
+AND (new.proteus_verification_status  = 'VERIFIED' OR old.proteus_verification_status = 'VERIFIED')
+AND new.protocol != 'MLS'
 BEGIN
     INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility)
     VALUES(
@@ -472,18 +492,18 @@ BEGIN
         substr(lower(hex(randomblob(2))),2) || '-a' || substr(lower(hex(randomblob(2))),2)
         || '-' || lower(hex(randomblob(6))))),
         (CASE (new.proteus_verification_status)
-            WHEN "VERIFIED" THEN "CONVERSATION_VERIFIED_PROTEUS"
-            ELSE "CONVERSATION_DEGRADED_PROTEUS" END
+            WHEN 'VERIFIED' THEN 'CONVERSATION_VERIFIED_PROTEUS'
+            ELSE 'CONVERSATION_DEGRADED_PROTEUS' END
         ),
         new.qualified_id,
         (SELECT CAST((julianday('now') - 2440587.5) * 86400 * 1000 AS INTEGER)),
         (SELECT SelfUser.id FROM SelfUser LIMIT 1),
         (SELECT Client.id FROM Client WHERE Client.user_id = (SELECT SelfUser.id FROM SelfUser LIMIT 1) LIMIT 1),
-        "SENT",
-        "VISIBLE"
+        'SENT',
+        'VISIBLE'
     );
 
     UPDATE Conversation
-    SET degraded_conversation_notified = (new.proteus_verification_status != "DEGRADED")
+    SET degraded_conversation_notified = (new.proteus_verification_status != 'DEGRADED')
     WHERE qualified_id = new.qualified_id;
 END;

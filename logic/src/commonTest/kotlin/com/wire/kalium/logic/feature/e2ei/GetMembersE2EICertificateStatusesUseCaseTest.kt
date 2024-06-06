@@ -18,18 +18,18 @@
 package com.wire.kalium.logic.feature.e2ei
 
 import com.wire.kalium.cryptography.CryptoCertificateStatus
+import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMembersE2EICertificateStatusesUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.mls.PemCertificateDecoderArrangement
-import com.wire.kalium.logic.util.arrangement.mls.PemCertificateDecoderArrangementImpl
-import io.mockative.any
-import io.mockative.eq
+import io.mockative.matchers.EqualsMatcher
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -37,15 +37,16 @@ import kotlin.test.assertEquals
 class GetMembersE2EICertificateStatusesUseCaseTest {
 
     @Test
-    fun givenErrorOnGettingMembersIdentities_whenRequestMembersStatuses_thenEmptyMapResult() = runTest {
-        val (_, getMembersE2EICertificateStatuses) = arrange {
-            withMembersIdentities(Either.Left(MLSFailure.WrongEpoch))
+    fun givenErrorOnGettingMembersIdentities_whenRequestMembersStatuses_thenEmptyMapResult() =
+        runTest {
+            val (_, getMembersE2EICertificateStatuses) = arrange {
+                withMembersIdentities(Either.Left(MLSFailure.WrongEpoch))
+            }
+
+            val result = getMembersE2EICertificateStatuses(CONVERSATION_ID, listOf())
+
+            assertEquals(mapOf(), result)
         }
-
-        val result = getMembersE2EICertificateStatuses(conversationId, listOf())
-
-        assertEquals(mapOf(), result)
-    }
 
     @Test
     fun givenEmptyWireIdentityMap_whenRequestMembersStatuses_thenNotActivatedResult() = runTest {
@@ -53,79 +54,87 @@ class GetMembersE2EICertificateStatusesUseCaseTest {
             withMembersIdentities(Either.Right(mapOf()))
         }
 
-        val result = getMembersE2EICertificateStatuses(conversationId, listOf())
+        val result = getMembersE2EICertificateStatuses(CONVERSATION_ID, listOf())
 
         assertEquals(mapOf(), result)
     }
 
     @Test
-    fun givenOneWireIdentityExpiredForSomeUser_whenRequestMembersStatuses_thenResultUsersStatusIsExpired() = runTest {
-        val (_, getMembersE2EICertificateStatuses) = arrange {
-            withMembersIdentities(
-                Either.Right(
-                    mapOf(
-                        userId to listOf(
-                            WIRE_IDENTITY,
-                            WIRE_IDENTITY.copy(status = CryptoCertificateStatus.EXPIRED)
+    fun givenOneWireIdentityExpiredForSomeUser_whenRequestMembersStatuses_thenResultUsersStatusIsExpired() =
+        runTest {
+            val (_, getMembersE2EICertificateStatuses) = arrange {
+                withMembersIdentities(
+                    Either.Right(
+                        mapOf(
+                            USER_ID to listOf(
+                                WIRE_IDENTITY,
+                                WIRE_IDENTITY.copy(status = CryptoCertificateStatus.EXPIRED)
+                            )
                         )
                     )
                 )
-            )
+            }
+
+            val result = getMembersE2EICertificateStatuses(CONVERSATION_ID, listOf(USER_ID))
+
+            assertEquals(CertificateStatus.EXPIRED, result[USER_ID])
         }
-
-        val result = getMembersE2EICertificateStatuses(conversationId, listOf(userId))
-
-        assertEquals(CertificateStatus.EXPIRED, result[userId])
-    }
 
     @Test
-    fun givenOneWireIdentityRevokedForSomeUser_whenRequestMembersStatuses_thenResultUsersStatusIsRevoked() = runTest {
-        val userId2 = userId.copy(value = "value_2")
-        val (_, getMembersE2EICertificateStatuses) = arrange {
-            withMembersIdentities(
-                Either.Right(
-                    mapOf(
-                        userId to listOf(
-                            WIRE_IDENTITY,
-                            WIRE_IDENTITY.copy(status = CryptoCertificateStatus.REVOKED)
-                        ),
-                        userId2 to listOf(WIRE_IDENTITY)
+    fun givenOneWireIdentityRevokedForSomeUser_whenRequestMembersStatuses_thenResultUsersStatusIsRevoked() =
+        runTest {
+            val userId2 = USER_ID.copy(value = "value_2")
+            val (_, getMembersE2EICertificateStatuses) = arrange {
+                withMembersIdentities(
+                    Either.Right(
+                        mapOf(
+                            USER_ID to listOf(
+                                WIRE_IDENTITY,
+                                WIRE_IDENTITY.copy(status = CryptoCertificateStatus.REVOKED)
+                            ),
+                            userId2 to listOf(WIRE_IDENTITY)
+                        )
                     )
                 )
-            )
+            }
+
+            val result =
+                getMembersE2EICertificateStatuses(CONVERSATION_ID, listOf(USER_ID, userId2))
+
+            assertEquals(CertificateStatus.REVOKED, result[USER_ID])
+            assertEquals(CertificateStatus.VALID, result[userId2])
         }
 
-        val result = getMembersE2EICertificateStatuses(conversationId, listOf(userId, userId2))
-
-        assertEquals(CertificateStatus.REVOKED, result[userId])
-        assertEquals(CertificateStatus.VALID, result[userId2])
-    }
-
-    private class Arrangement(private val block: Arrangement.() -> Unit) :
-        MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
-        PemCertificateDecoderArrangement by PemCertificateDecoderArrangementImpl() {
+    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
+        MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl() {
 
         fun arrange() = run {
-            withPemCertificateDecode(E2EI_CERTIFICATE, any(), eq(CryptoCertificateStatus.VALID))
-            withPemCertificateDecode(E2EI_CERTIFICATE.copy(status = CertificateStatus.EXPIRED), any(), eq(CryptoCertificateStatus.EXPIRED))
-            withPemCertificateDecode(E2EI_CERTIFICATE.copy(status = CertificateStatus.REVOKED), any(), eq(CryptoCertificateStatus.REVOKED))
-
-            block()
+            runBlocking { block() }
             this@Arrangement to GetMembersE2EICertificateStatusesUseCaseImpl(
-                mlsConversationRepository = mlsConversationRepository,
-                pemCertificateDecoder = pemCertificateDecoder
+                mlsConversationRepository = mlsConversationRepository
             )
         }
     }
 
     private companion object {
-        fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+        fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
-        private val userId = UserId("value", "domain")
-        private val conversationId = ConversationId("conversation_value", "domain")
+        private val USER_ID = UserId("value", "domain")
+        private val CRYPTO_QUALIFIED_CLIENT_ID =
+            CryptoQualifiedClientId("clientId", USER_ID.toCrypto())
+
+        private val CONVERSATION_ID = ConversationId("conversation_value", "domain")
         private val WIRE_IDENTITY =
-            WireIdentity("id", "user_handle", "User Test", "domain.com", "certificate", CryptoCertificateStatus.VALID)
-        private val E2EI_CERTIFICATE =
-            E2eiCertificate(issuer = "issue", status = CertificateStatus.VALID, serialNumber = "number", certificateDetail = "details")
+            WireIdentity(
+                CRYPTO_QUALIFIED_CLIENT_ID,
+                "user_handle",
+                "User Test",
+                "domain.com",
+                "certificate",
+                CryptoCertificateStatus.VALID,
+                "thumbprint",
+                "serialNumber",
+                endTimestampSeconds = 1899105093
+            )
     }
 }

@@ -1,0 +1,37 @@
+service:
+  appName: infinitemonkeys
+  controllerName: monkey-controller
+  serverName: monkey-server
+
+podMonitorIntegration:
+  enabled: true
+
+monkeyController:
+  name: Diya
+  teamName: Diya
+  instanceURL: diya.wire.link
+  userCount: 4
+  authUser: basic-auth-user
+  authPassword: "..."
+
+# replicaCount needs to be one more than userCount above
+# as monkeyController expects an additional owner
+monkeyServer:
+  replicaCount: 5
+
+image:
+  repository: quay.io/wire/infinitemonkeys
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+jvm:
+  garbageCollector: -XX:+UseG1GC
+  # values in Mi
+  memory:
+    heap: 96
+    metaspace: 96
+    compressedClassSpaceSize: 128
+    nonMethodCodeHeapSize: 5
+    profiledCodeHeapSize: 48
+    nonProfiledCodeHeapSize: 48
+    buffer: 128

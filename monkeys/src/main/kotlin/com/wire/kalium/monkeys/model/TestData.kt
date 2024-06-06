@@ -27,6 +27,14 @@ data class TestData(
     @SerialName("testCases") val testCases: List<TestCase>,
     @SerialName("backends") val backends: List<BackendConfig>,
     @SerialName("eventStorage") val eventStorage: EventStorage? = null,
+    @SerialName("externalMonkey") val externalMonkey: ExternalMonkey? = null
+)
+
+@Serializable
+data class ExternalMonkey(
+    @SerialName("startCommand") val startCommand: String,
+    @SerialName("addressTemplate") val addressTemplate: String,
+    @SerialName("waitTime") val waitForProcess: Long? = null
 )
 
 @Serializable
@@ -179,7 +187,9 @@ data class BackendConfig(
     @SerialName("teamName") val teamName: String,
     @SerialName("authUser") val authUser: String,
     @SerialName("authPassword") val authPassword: String,
-    @SerialName("userCount") val userCount: ULong,
+    @SerialName("userCount") val userCount: ULong = 10u,
+    @SerialName("2FAEnabled") val secondFactorAuth: Boolean = false,
+    @SerialName("disable2FA") val forceDisable2fa: Boolean = false,
     @SerialName("dumpUsers") val dumpUsers: Boolean = false,
     @SerialName("presetTeam") val presetTeam: TeamConfig? = null
 )

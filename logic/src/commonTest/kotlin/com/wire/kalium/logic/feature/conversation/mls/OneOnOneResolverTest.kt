@@ -32,12 +32,15 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.matchers.OneOfMatcher
+import io.mockative.`in`
 import io.mockative.once
 import io.mockative.twice
-import io.mockative.verify
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -57,10 +60,136 @@ class OneOnOneResolverTest {
         resolver.resolveAllOneOnOneConversations().shouldSucceed()
 
         // then
-        verify(arrangement.oneOnOneProtocolSelector)
-            .suspendFunction(arrangement.oneOnOneProtocolSelector::getProtocolForUser)
-            .with(OneOfMatcher(oneOnOneUsers.map { it.id }))
-            .wasInvoked(exactly = twice)
+        coVerify {
+            arrangement.oneOnOneProtocolSelector.getProtocolForUser(`in`(oneOnOneUsers.map { it.id }))
+        }.wasInvoked(exactly = twice)
+    }
+
+    @Test
+    fun givenListOneOnOneUsersAndSynchronizeUsers_whenResolveAllOneOnOneConversations_thenShouldFetchAllUserDetailsAtOnce() = runTest {
+        // given
+        val oneOnOneUsers = listOf(
+            TestUser.OTHER.copy(id = TestUser.OTHER_USER_ID),
+            TestUser.OTHER.copy(id = TestUser.OTHER_USER_ID_2)
+        )
+        val (arrangement, resolver) = arrange {
+            withFetchAllOtherUsersReturning(Either.Right(Unit))
+            withGetUsersWithOneOnOneConversationReturning(oneOnOneUsers)
+            withGetProtocolForUser(Either.Right(SupportedProtocol.MLS))
+            withMigrateToMLSReturns(Either.Right(TestConversation.ID))
+        }
+
+        // when
+        resolver.resolveAllOneOnOneConversations(true).shouldSucceed()
+
+        // then
+        coVerify {
+            arrangement.userRepository.fetchAllOtherUsers()
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.userRepository.fetchUserInfo(any())
+        }.wasNotInvoked()
+
+        coVerify {
+            arrangement.userRepository.fetchUsersByIds(any())
+        }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenSingleOneOnOneUserIdAndSynchronizeUser_whenResolveAllOneOnOneConversations_thenShouldFetchUserDetailsOnce() = runTest {
+        // given
+        val oneOnOneUser = TestUser.OTHER.copy(id = TestUser.OTHER_USER_ID)
+        val (arrangement, resolver) = arrange {
+            withFetchUsersByIdReturning(Either.Right(Unit))
+            withGetProtocolForUser(Either.Right(SupportedProtocol.MLS))
+            withMigrateToMLSReturns(Either.Right(TestConversation.ID))
+        }
+
+        // when
+        resolver.resolveOneOnOneConversationWithUser(oneOnOneUser, true).shouldSucceed()
+
+        // then
+        coVerify {
+            arrangement.userRepository.fetchAllOtherUsers()
+        }.wasNotInvoked()
+
+        coVerify {
+            arrangement.userRepository.fetchUserInfo(any())
+        }.wasNotInvoked()
+
+        coVerify {
+            arrangement.userRepository.fetchUsersByIds(eq(setOf(oneOnOneUser.id)))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenSingleOneOnOneUserIdAndSynchronizeUserFails_whenResolveAllOneOnOneConversations_thenShouldNotPropagateFailure() = runTest {
+        // given
+        val oneOnOneUser = TestUser.OTHER.copy(id = TestUser.OTHER_USER_ID)
+        val (arrangement, resolver) = arrange {
+            withFetchUsersByIdReturning(Either.Right(Unit))
+            withGetProtocolForUser(Either.Right(SupportedProtocol.MLS))
+            withMigrateToMLSReturns(Either.Right(TestConversation.ID))
+        }
+
+        // when
+        resolver.resolveOneOnOneConversationWithUser(oneOnOneUser, true)
+            // then
+            .shouldSucceed()
+
+        coVerify {
+            arrangement.userRepository.fetchUsersByIds(eq(setOf(oneOnOneUser.id)))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenSingleOneOnOneUserAndSynchronizeUsers_whenResolveAllOneOnOneConversations_thenShouldFetchUserDetailsOnce() = runTest {
+        // given
+        val oneOnOneUser = TestUser.OTHER.copy(id = TestUser.OTHER_USER_ID)
+        val (arrangement, resolver) = arrange {
+            withGetKnownUserReturning(flowOf(oneOnOneUser))
+            withFetchUsersByIdReturning(Either.Right(Unit))
+            withGetProtocolForUser(Either.Right(SupportedProtocol.MLS))
+            withMigrateToMLSReturns(Either.Right(TestConversation.ID))
+        }
+
+        // when
+        resolver.resolveOneOnOneConversationWithUserId(oneOnOneUser.id, true).shouldSucceed()
+
+        // then
+        coVerify {
+            arrangement.userRepository.fetchAllOtherUsers()
+        }.wasNotInvoked()
+
+        coVerify {
+            arrangement.userRepository.fetchUserInfo(any())
+        }.wasNotInvoked()
+
+        coVerify {
+            arrangement.userRepository.fetchUsersByIds(eq(setOf(oneOnOneUser.id)))
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenSingleOneOnOneUserAndSynchronizeUserFails_whenResolveAllOneOnOneConversations_thenShouldNotPropagateFailure() = runTest {
+        // given
+        val oneOnOneUser = TestUser.OTHER.copy(id = TestUser.OTHER_USER_ID)
+        val (arrangement, resolver) = arrange {
+            withFetchUsersByIdReturning(Either.Left(CoreFailure.Unknown(null)))
+            withGetKnownUserReturning(flowOf(oneOnOneUser))
+            withGetProtocolForUser(Either.Right(SupportedProtocol.MLS))
+            withMigrateToMLSReturns(Either.Right(TestConversation.ID))
+        }
+
+        // when
+        resolver.resolveOneOnOneConversationWithUserId(oneOnOneUser.id, true)
+            // then
+            .shouldSucceed()
+
+        coVerify {
+            arrangement.userRepository.fetchUsersByIds(eq(setOf(oneOnOneUser.id)))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -73,10 +202,9 @@ class OneOnOneResolverTest {
             withMigrateToMLSReturns(Either.Right(TestConversation.ID))
         }
 
-        given(arrangement.oneOnOneMigrator)
-            .suspendFunction(arrangement.oneOnOneMigrator::migrateToMLS)
-            .whenInvokedWith(eq(oneOnOneUsers.last()))
-            .thenReturn(Either.Left(CoreFailure.Unknown(null)))
+        coEvery {
+            arrangement.oneOnOneMigrator.migrateToMLS(eq(oneOnOneUsers.last()))
+        }.returns(Either.Left(CoreFailure.Unknown(null)))
 
         // when then
         resolver.resolveAllOneOnOneConversations().shouldFail()
@@ -91,13 +219,12 @@ class OneOnOneResolverTest {
         }
 
         // when
-        resolver.resolveOneOnOneConversationWithUser(OTHER_USER).shouldSucceed()
+        resolver.resolveOneOnOneConversationWithUser(OTHER_USER, false).shouldSucceed()
 
         // then
-        verify(arrangement.oneOnOneMigrator)
-            .suspendFunction(arrangement.oneOnOneMigrator::migrateToMLS)
-            .with(eq(OTHER_USER))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.oneOnOneMigrator.migrateToMLS(eq(OTHER_USER))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -109,23 +236,21 @@ class OneOnOneResolverTest {
         }
 
         // when
-        resolver.resolveOneOnOneConversationWithUser(OTHER_USER).shouldSucceed()
+        resolver.resolveOneOnOneConversationWithUser(OTHER_USER, false).shouldSucceed()
 
         // then
-        verify(arrangement.oneOnOneMigrator)
-            .suspendFunction(arrangement.oneOnOneMigrator::migrateToProteus)
-            .with(eq(OTHER_USER))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.oneOnOneMigrator.migrateToProteus(eq(OTHER_USER))
+        }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement(private val block: Arrangement.() -> Unit) :
+    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         OneOnOneProtocolSelectorArrangement by OneOnOneProtocolSelectorArrangementImpl(),
         OneOnOneMigratorArrangement by OneOnOneMigratorArrangementImpl(),
-        IncrementalSyncRepositoryArrangement by IncrementalSyncRepositoryArrangementImpl()
-    {
+        IncrementalSyncRepositoryArrangement by IncrementalSyncRepositoryArrangementImpl() {
         fun arrange() = run {
-            block()
+            runBlocking { block() }
             this@Arrangement to OneOnOneResolverImpl(
                 userRepository = userRepository,
                 oneOnOneProtocolSelector = oneOnOneProtocolSelector,
@@ -136,7 +261,7 @@ class OneOnOneResolverTest {
     }
 
     private companion object {
-        fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+        fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
         val OTHER_USER = TestUser.OTHER
     }

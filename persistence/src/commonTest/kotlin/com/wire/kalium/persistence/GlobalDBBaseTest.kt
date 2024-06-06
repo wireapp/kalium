@@ -18,9 +18,9 @@
 
 package com.wire.kalium.persistence
 
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 
 expect abstract class GlobalDBBaseTest() {
         fun deleteDatabase()
-        fun createDatabase(): GlobalDatabaseProvider
+        fun createDatabase(): GlobalDatabaseBuilder
 }

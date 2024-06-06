@@ -23,6 +23,9 @@ import com.wire.kalium.logic.data.message.IsMessageSentInSelfConversationUseCase
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.notification.NotificationEventsManager
+import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.map
 
 internal interface LastReadContentHandler {
     suspend fun handle(
@@ -36,6 +39,7 @@ internal class LastReadContentHandlerImpl internal constructor(
     private val conversationRepository: ConversationRepository,
     private val selfUserId: UserId,
     private val isMessageSentInSelfConversation: IsMessageSentInSelfConversationUseCase,
+    private val notificationEventsManager: NotificationEventsManager
 ) : LastReadContentHandler {
 
     override suspend fun handle(
@@ -52,7 +56,11 @@ internal class LastReadContentHandlerImpl internal constructor(
             conversationRepository.updateConversationReadDate(
                 qualifiedID = messageContent.conversationId,
                 date = messageContent.time
-            )
+            ).flatMap { conversationRepository.getConversationUnreadEventsCount(messageContent.conversationId) }
+                .map {
+                    if (it <= 0)
+                        notificationEventsManager.scheduleConversationSeenNotification(messageContent.conversationId)
+                }
         }
     }
 

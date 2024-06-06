@@ -22,6 +22,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.UserId
@@ -29,75 +30,80 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.fake.valueOf
+import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
+import io.mockative.matches
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
 
 internal interface ConversationRepositoryArrangement {
     val conversationRepository: ConversationRepository
-    fun withGetGroupConversationsWithMembersWithBothDomains(
+    suspend fun withGetGroupConversationsWithMembersWithBothDomains(
         result: Either<CoreFailure, Map<ConversationId, List<UserId>>>,
-        firstDomain: Matcher<String> = any(),
-        secondDomain: Matcher<String> = any()
+        firstDomain: Matcher<String> = AnyMatcher(valueOf()),
+        secondDomain: Matcher<String> = AnyMatcher(valueOf())
     )
 
-    fun withGetOneOnOneConversationsWithFederatedMember(
+    suspend fun withGetOneOnOneConversationsWithFederatedMember(
         result: Either<CoreFailure, Map<ConversationId, UserId>>,
-        domain: Matcher<String> = any()
+        domain: Matcher<String> = AnyMatcher(valueOf())
     )
 
-    fun withDeletingConversationSucceeding(conversationId: Matcher<ConversationId> = any())
-    fun withDeletingConversationFailing(conversationId: Matcher<ConversationId> = any())
-    fun withGetConversation(conversation: Conversation? = TestConversation.CONVERSATION)
-    fun withSetInformedAboutDegradedMLSVerificationFlagResult(result: Either<StorageFailure, Unit> = Either.Right(Unit))
-    fun withInformedAboutDegradedMLSVerification(isInformed: Either<StorageFailure, Boolean>): ConversationRepositoryArrangementImpl
-    fun withConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>): ConversationRepositoryArrangementImpl
-    fun withUpdateVerificationStatus(result: Either<StorageFailure, Unit>): ConversationRepositoryArrangementImpl
-    fun withConversationDetailsByMLSGroupId(result: Either<StorageFailure, ConversationDetails>): ConversationRepositoryArrangementImpl
-    fun withUpdateProtocolLocally(result: Either<CoreFailure, Boolean>)
-    fun withConversationsForUserIdReturning(result: Either<CoreFailure, List<Conversation>>)
-    fun withFetchMlsOneToOneConversation(result: Either<CoreFailure, Conversation>)
-    fun withFetchConversation(result: Either<CoreFailure, Unit>)
-    fun withObserveOneToOneConversationWithOtherUserReturning(result: Either<CoreFailure, Conversation>)
+    suspend fun withDeletingConversationSucceeding(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
+    suspend fun withDeletingConversationFailing(conversationId: Matcher<ConversationId> = AnyMatcher(valueOf()))
+    suspend fun withGetConversation(conversation: Conversation? = TestConversation.CONVERSATION)
+    suspend fun withSetInformedAboutDegradedMLSVerificationFlagResult(result: Either<StorageFailure, Unit> = Either.Right(Unit))
+    suspend fun withInformedAboutDegradedMLSVerification(isInformed: Either<StorageFailure, Boolean>): ConversationRepositoryArrangementImpl
+    suspend fun withConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>): ConversationRepositoryArrangementImpl
+    suspend fun withUpdateVerificationStatus(result: Either<StorageFailure, Unit>): ConversationRepositoryArrangementImpl
+    suspend fun withConversationDetailsByMLSGroupId(result: Either<StorageFailure, ConversationDetails>): ConversationRepositoryArrangementImpl
+    suspend fun withUpdateProtocolLocally(result: Either<CoreFailure, Boolean>)
+    suspend fun withConversationsForUserIdReturning(result: Either<CoreFailure, List<Conversation>>)
+    suspend fun withFetchMlsOneToOneConversation(result: Either<CoreFailure, Conversation>)
+    suspend fun withFetchConversation(result: Either<CoreFailure, Unit>)
+    suspend fun withObserveOneToOneConversationWithOtherUserReturning(result: Either<CoreFailure, Conversation>)
 
-    fun withObserveConversationDetailsByIdReturning(vararg results: Either<StorageFailure, ConversationDetails>)
+    suspend fun withObserveConversationDetailsByIdReturning(vararg results: Either<StorageFailure, ConversationDetails>)
 
-    fun withGetConversationIdsReturning(result: Either<StorageFailure, List<QualifiedID>>)
+    suspend fun withGetConversationIdsReturning(result: Either<StorageFailure, List<QualifiedID>>)
 
-    fun withGetOneOnOneConversationsWithOtherUserReturning(result: Either<StorageFailure, List<QualifiedID>>)
+    suspend fun withGetOneOnOneConversationsWithOtherUserReturning(result: Either<StorageFailure, List<QualifiedID>>)
 
-    fun withGetConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>)
+    suspend fun withGetConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>)
 
-    fun withGetConversationByIdReturning(result: Conversation?)
+    suspend fun withGetConversationByIdReturning(result: Conversation?)
 
-    fun withFetchConversationIfUnknownFailingWith(coreFailure: CoreFailure) {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::fetchConversationIfUnknown)
-            .whenInvokedWith(any())
-            .thenReturn(Either.Left(coreFailure))
+    suspend fun withFetchConversationIfUnknownFailingWith(coreFailure: CoreFailure) {
+        coEvery {
+            conversationRepository.fetchConversationIfUnknown(any())
+        }.returns(Either.Left(coreFailure))
     }
 
-    fun withFetchConversationIfUnknownSucceeding() {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::fetchConversationIfUnknown)
-            .whenInvokedWith(any())
-            .thenReturn(Either.Right(Unit))
+    suspend fun withFetchConversationIfUnknownSucceeding() {
+        coEvery {
+            conversationRepository.fetchConversationIfUnknown(any())
+        }.returns(Either.Right(Unit))
     }
 
-    fun withUpdateGroupStateReturning(result: Either<StorageFailure, Unit>) {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::updateConversationGroupState)
-            .whenInvokedWith(any(), any())
-            .thenReturn(result)
+    suspend fun withUpdateGroupStateReturning(result: Either<StorageFailure, Unit>) {
+        coEvery {
+            conversationRepository.updateConversationGroupState(any(), any())
+        }.returns(result)
     }
 
-    fun withUpdateConversationModifiedDate(result: Either<StorageFailure, Unit>) {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::updateConversationModifiedDate)
-            .whenInvokedWith(any(), any())
-            .thenReturn(result)
+    suspend fun withUpdateConversationModifiedDate(result: Either<StorageFailure, Unit>) {
+        coEvery {
+            conversationRepository.updateConversationModifiedDate(any(), any())
+        }.returns(result)
     }
+
+    suspend fun withSetDegradedConversationNotifiedFlag(result: Either<CoreFailure, Unit>)
+
+    suspend fun withSelectGroupStatusMembersNamesAndHandles(result: Either<StorageFailure, EpochChangesData>)
+    suspend fun withConversationDetailsByIdReturning(result: Either<StorageFailure, Conversation>)
+    suspend fun withPersistMembers(result: Either<StorageFailure, Unit>)
 }
 
 internal open class ConversationRepositoryArrangementImpl : ConversationRepositoryArrangement {
@@ -105,151 +111,157 @@ internal open class ConversationRepositoryArrangementImpl : ConversationReposito
     @Mock
     override val conversationRepository: ConversationRepository = mock(ConversationRepository::class)
 
-    override fun withGetGroupConversationsWithMembersWithBothDomains(
+    override suspend fun withGetGroupConversationsWithMembersWithBothDomains(
         result: Either<CoreFailure, Map<ConversationId, List<UserId>>>,
         firstDomain: Matcher<String>,
         secondDomain: Matcher<String>,
     ) {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getGroupConversationsWithMembersWithBothDomains)
-            .whenInvokedWith(firstDomain, secondDomain)
-            .thenReturn(result)
+        coEvery {
+            conversationRepository.getGroupConversationsWithMembersWithBothDomains(
+                matches { firstDomain.matches(it) },
+                matches { secondDomain.matches(it) }
+            )
+        }.returns(result)
     }
 
-    override fun withGetOneOnOneConversationsWithFederatedMember(
+    override suspend fun withGetOneOnOneConversationsWithFederatedMember(
         result: Either<CoreFailure, Map<ConversationId, UserId>>,
         domain: Matcher<String>
     ) {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getOneOnOneConversationsWithFederatedMembers)
-            .whenInvokedWith(domain)
-            .thenReturn(result)
+        coEvery {
+            conversationRepository.getOneOnOneConversationsWithFederatedMembers(
+                matches { domain.matches(it) }
+            )
+        }.returns(result)
     }
 
-    override fun withDeletingConversationSucceeding(conversationId: Matcher<ConversationId>) {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::deleteConversation)
-            .whenInvokedWith(conversationId)
-            .thenReturn(Either.Right(Unit))
+    override suspend fun withDeletingConversationSucceeding(conversationId: Matcher<ConversationId>) {
+        coEvery {
+            conversationRepository.deleteConversation(matches { conversationId.matches(it) })
+        }.returns(Either.Right(Unit))
     }
 
-    override fun withDeletingConversationFailing(conversationId: Matcher<ConversationId>) {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::deleteConversation)
-            .whenInvokedWith(conversationId)
-            .thenReturn(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
+    override suspend fun withDeletingConversationFailing(conversationId: Matcher<ConversationId>) {
+        coEvery {
+            conversationRepository.deleteConversation(matches { conversationId.matches(it) })
+        }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
     }
 
-    override fun withGetConversation(conversation: Conversation?) {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationById)
-            .whenInvokedWith(any())
-            .thenReturn(conversation)
+    override suspend fun withGetConversation(conversation: Conversation?) {
+        coEvery {
+            conversationRepository.getConversationById(any())
+        }.returns(conversation)
     }
 
-    override fun withSetInformedAboutDegradedMLSVerificationFlagResult(result: Either<StorageFailure, Unit>) {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::setInformedAboutDegradedMLSVerificationFlag)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withSetInformedAboutDegradedMLSVerificationFlagResult(result: Either<StorageFailure, Unit>) {
+        coEvery {
+            conversationRepository.setInformedAboutDegradedMLSVerificationFlag(any(), any())
+        }.returns(result)
     }
 
-    override fun withInformedAboutDegradedMLSVerification(isInformed: Either<StorageFailure, Boolean>) = apply {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::isInformedAboutDegradedMLSVerification)
-            .whenInvokedWith(any())
-            .thenReturn(isInformed)
+    override suspend fun withInformedAboutDegradedMLSVerification(isInformed: Either<StorageFailure, Boolean>) = apply {
+        coEvery {
+            conversationRepository.isInformedAboutDegradedMLSVerification(any())
+        }.returns(isInformed)
     }
 
-    override fun withConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>) = apply {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationProtocolInfo)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>) = apply {
+        coEvery {
+            conversationRepository.getConversationProtocolInfo(any())
+        }.returns(result)
     }
 
-    override fun withUpdateVerificationStatus(result: Either<StorageFailure, Unit>) = apply {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::updateMlsVerificationStatus)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withUpdateVerificationStatus(result: Either<StorageFailure, Unit>) = apply {
+        coEvery {
+            conversationRepository.updateMlsVerificationStatus(any(), any())
+        }.returns(result)
     }
 
-    override fun withConversationDetailsByMLSGroupId(result: Either<StorageFailure, ConversationDetails>) = apply {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationDetailsByMLSGroupId)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withConversationDetailsByMLSGroupId(result: Either<StorageFailure, ConversationDetails>) = apply {
+        coEvery {
+            conversationRepository.getConversationDetailsByMLSGroupId(any())
+        }.returns(result)
     }
 
-    override fun withUpdateProtocolLocally(result: Either<CoreFailure, Boolean>) {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::updateProtocolLocally)
-            .whenInvokedWith(any(), any())
-            .thenReturn(result)
+    override suspend fun withUpdateProtocolLocally(result: Either<CoreFailure, Boolean>) {
+        coEvery {
+            conversationRepository.updateProtocolLocally(any(), any())
+        }.returns(result)
     }
 
-    override fun withConversationsForUserIdReturning(result: Either<CoreFailure, List<Conversation>>) {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationsByUserId)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withConversationsForUserIdReturning(result: Either<CoreFailure, List<Conversation>>) {
+        coEvery {
+            conversationRepository.getConversationsByUserId(any())
+        }.returns(result)
     }
 
-    override fun withFetchMlsOneToOneConversation(result: Either<CoreFailure, Conversation>) {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::fetchMlsOneToOneConversation)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withFetchMlsOneToOneConversation(result: Either<CoreFailure, Conversation>) {
+        coEvery {
+            conversationRepository.fetchMlsOneToOneConversation(any())
+        }.returns(result)
     }
 
-    override fun withFetchConversation(result: Either<CoreFailure, Unit>) {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::fetchConversation)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withFetchConversation(result: Either<CoreFailure, Unit>) {
+        coEvery {
+            conversationRepository.fetchConversation(any())
+        }.returns(result)
     }
 
-    override fun withObserveOneToOneConversationWithOtherUserReturning(result: Either<CoreFailure, Conversation>) {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeOneToOneConversationWithOtherUser)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf(result))
+    override suspend fun withObserveOneToOneConversationWithOtherUserReturning(result: Either<CoreFailure, Conversation>) {
+        coEvery {
+            conversationRepository.observeOneToOneConversationWithOtherUser(any())
+        }.returns(flowOf(result))
     }
 
-    override fun withObserveConversationDetailsByIdReturning(vararg results: Either<StorageFailure, ConversationDetails>) {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::observeConversationDetailsById)
-            .whenInvokedWith(any())
-            .thenReturn(flowOf(*results))
+    override suspend fun withObserveConversationDetailsByIdReturning(vararg results: Either<StorageFailure, ConversationDetails>) {
+        coEvery {
+            conversationRepository.observeConversationDetailsById(any())
+        }.returns(flowOf(*results))
     }
 
-    override fun withGetConversationIdsReturning(result: Either<StorageFailure, List<QualifiedID>>) {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationIds)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withGetConversationIdsReturning(result: Either<StorageFailure, List<QualifiedID>>) {
+        coEvery {
+            conversationRepository.getConversationIds(any(), any())
+        }.returns(result)
     }
 
-    override fun withGetOneOnOneConversationsWithOtherUserReturning(result: Either<StorageFailure, List<QualifiedID>>) {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getOneOnOneConversationsWithOtherUser)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withGetOneOnOneConversationsWithOtherUserReturning(result: Either<StorageFailure, List<QualifiedID>>) {
+        coEvery {
+            conversationRepository.getOneOnOneConversationsWithOtherUser(any(), any())
+        }.returns(result)
     }
 
-    override fun withGetConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>) {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationProtocolInfo)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withGetConversationProtocolInfo(result: Either<StorageFailure, Conversation.ProtocolInfo>) {
+        coEvery {
+            conversationRepository.getConversationProtocolInfo(any())
+        }.returns(result)
     }
 
-    override fun withGetConversationByIdReturning(result: Conversation?) {
-        given(conversationRepository)
-            .suspendFunction(conversationRepository::getConversationById)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withGetConversationByIdReturning(result: Conversation?) {
+        coEvery {
+            conversationRepository.getConversationById(any())
+        }.returns(result)
     }
 
+    override suspend fun withSetDegradedConversationNotifiedFlag(result: Either<CoreFailure, Unit>) {
+        coEvery {
+            conversationRepository.setDegradedConversationNotifiedFlag(any(), any())
+        }.returns(result)
+    }
+
+    override suspend fun withSelectGroupStatusMembersNamesAndHandles(result: Either<StorageFailure, EpochChangesData>) {
+        coEvery {
+            conversationRepository.getGroupStatusMembersNamesAndHandles(any())
+        }.returns(result)
+    }
+
+    override suspend fun withConversationDetailsByIdReturning(result: Either<StorageFailure, Conversation>) {
+        coEvery {
+            conversationRepository.detailsById(any())
+        }.returns(result)
+    }
+
+    override suspend fun withPersistMembers(result: Either<StorageFailure, Unit>) {
+        coEvery { conversationRepository.persistMembers(any(), any()) }.returns(result)
+    }
 }

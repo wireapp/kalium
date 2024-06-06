@@ -39,10 +39,12 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
-import io.mockative.configure
+
+import io.mockative.coEvery
+import io.mockative.every
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -88,10 +90,9 @@ class SessionEstablisherTest {
 
         sessionEstablisher.prepareRecipientsForNewOutgoingMessage(listOf(TEST_RECIPIENT_1))
 
-        verify(arrangement.preKeyRepository)
-            .suspendFunction(arrangement.preKeyRepository::establishSessions)
-            .with(anything())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.preKeyRepository.establishSessions(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -102,10 +103,9 @@ class SessionEstablisherTest {
 
         sessionEstablisher.prepareRecipientsForNewOutgoingMessage(listOf(TEST_RECIPIENT_1))
 
-        verify(arrangement.proteusClient)
-            .suspendFunction(arrangement.proteusClient::doesSessionExist)
-            .with(eq(CryptoSessionId(CryptoUserID(TEST_USER_ID_1.value, TEST_USER_ID_1.domain), CryptoClientId(TEST_CLIENT_ID_1.value))))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.proteusClient.doesSessionExist(eq(CryptoSessionId(CryptoUserID(TEST_USER_ID_1.value, TEST_USER_ID_1.domain), CryptoClientId(TEST_CLIENT_ID_1.value))))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -130,61 +130,53 @@ class SessionEstablisherTest {
 
     private class Arrangement {
         @Mock
-        val proteusClient = configure(mock(ProteusClient::class)) { stubsUnitByDefault = true }
+        val proteusClient = mock(ProteusClient::class)
 
         @Mock
         val proteusClientProvider = mock(ProteusClientProvider::class)
 
         @Mock
-        val preKeyRepository = configure(mock(PreKeyRepository::class)) { stubsUnitByDefault = true }
+        val preKeyRepository = mock(PreKeyRepository::class)
 
         private val sessionEstablisher: SessionEstablisher =
             SessionEstablisherImpl(proteusClientProvider, preKeyRepository)
 
-        init {
-            given(proteusClientProvider)
-                .suspendFunction(proteusClientProvider::getOrError)
-                .whenInvoked()
-                .thenReturn(Either.Right(proteusClient))
-        }
-
-        fun withCreateSession(throwable: Throwable?) = apply {
+        suspend fun withCreateSession(throwable: Throwable?) = apply {
             if (throwable == null) {
-                given(proteusClient)
-                    .suspendFunction(proteusClient::createSession)
-                    .whenInvokedWith(anything(), anything())
-                    .thenReturn(Unit)
+                coEvery {
+                    proteusClient.createSession(any(), any())
+                }.returns(Unit)
             } else {
-                given(proteusClient)
-                    .suspendFunction(proteusClient::createSession)
-                    .whenInvokedWith(anything(), anything())
-                    .thenThrow(throwable)
+                coEvery {
+                    proteusClient.createSession(any(), any())
+                }.throws(throwable)
             }
 
         }
 
-        fun withEstablishSessions(result: Either<CoreFailure, UsersWithoutSessions>) = apply {
-            given(preKeyRepository)
-                .suspendFunction(preKeyRepository::establishSessions)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withEstablishSessions(result: Either<CoreFailure, UsersWithoutSessions>) = apply {
+            coEvery {
+                preKeyRepository.establishSessions(any())
+            }.returns(result)
         }
 
-        fun withDoesSessionExist(result: Boolean) = apply {
-            given(proteusClient)
-                .suspendFunction(proteusClient::doesSessionExist)
-                .whenInvokedWith(anything())
-                .then { result }
+        suspend fun withDoesSessionExist(result: Boolean) = apply {
+            coEvery {
+                proteusClient.doesSessionExist(any())
+            }.returns(result)
         }
 
-        fun withDoesSessionExistThrows(throwable: Throwable) = apply {
-            given(proteusClient)
-                .suspendFunction(proteusClient::doesSessionExist)
-                .whenInvokedWith(anything())
-                .thenThrow(throwable)
+        suspend fun withDoesSessionExistThrows(throwable: Throwable) = apply {
+            coEvery {
+                proteusClient.doesSessionExist(any())
+            }.throws(throwable)
         }
 
 
-        fun arrange() = this to sessionEstablisher
+        suspend fun arrange() = this to sessionEstablisher.also {
+            coEvery {
+                proteusClientProvider.getOrError()
+            }.returns(Either.Right(proteusClient))
+        }
     }
 }

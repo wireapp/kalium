@@ -28,10 +28,10 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -42,7 +42,7 @@ class GetUpdatedSelfTeamUseCaseTest {
         // given
         val (arrangement, sut) = Arrangement()
             .withSelfTeamIdProvider(Either.Right(null))
-            .withFetchingIdReturning(Either.Right(TestTeam.TEAM))
+            .withSyncingByIdReturning(Either.Right(TestTeam.TEAM))
             .arrange()
 
         // when
@@ -50,10 +50,9 @@ class GetUpdatedSelfTeamUseCaseTest {
 
         // then
         result.shouldSucceed()
-        verify(arrangement.teamRepository)
-            .suspendFunction(arrangement.teamRepository::fetchTeamById)
-            .with(eq(TestTeam.TEAM_ID))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.teamRepository.fetchTeamById(eq(TestTeam.TEAM_ID))
+        }.wasNotInvoked()
     }
 
     @Test
@@ -61,7 +60,7 @@ class GetUpdatedSelfTeamUseCaseTest {
         // given
         val (arrangement, sut) = Arrangement()
             .withSelfTeamIdProvider(Either.Left(CoreFailure.Unknown(RuntimeException("some error"))))
-            .withFetchingIdReturning(Either.Right(TestTeam.TEAM))
+            .withSyncingByIdReturning(Either.Right(TestTeam.TEAM))
             .arrange()
 
         // when
@@ -69,10 +68,9 @@ class GetUpdatedSelfTeamUseCaseTest {
 
         // then
         result.shouldFail()
-        verify(arrangement.teamRepository)
-            .suspendFunction(arrangement.teamRepository::fetchTeamById)
-            .with(eq(TestTeam.TEAM_ID))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.teamRepository.fetchTeamById(eq(TestTeam.TEAM_ID))
+        }.wasNotInvoked()
     }
 
     @Test
@@ -80,7 +78,7 @@ class GetUpdatedSelfTeamUseCaseTest {
         // given
         val (arrangement, sut) = Arrangement()
             .withSelfTeamIdProvider(Either.Right(TestTeam.TEAM_ID))
-            .withFetchingIdReturning(Either.Right(TestTeam.TEAM))
+            .withSyncingByIdReturning(Either.Right(TestTeam.TEAM))
             .arrange()
 
         // when
@@ -88,32 +86,28 @@ class GetUpdatedSelfTeamUseCaseTest {
 
         // then
         result.shouldSucceed()
-        verify(arrangement.teamRepository)
-            .suspendFunction(arrangement.teamRepository::fetchTeamById)
-            .with(eq(TestTeam.TEAM_ID))
-            .wasInvoked()
+        coVerify {
+            arrangement.teamRepository.syncTeam(eq(TestTeam.TEAM_ID))
+        }.wasInvoked()
     }
 
-
-    private class Arrangement() {
+    private class Arrangement {
         @Mock
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
         @Mock
         val teamRepository: TeamRepository = mock(TeamRepository::class)
 
-        fun withSelfTeamIdProvider(result: Either<CoreFailure, TeamId?>) = apply {
-            given(selfTeamIdProvider)
-                .suspendFunction(selfTeamIdProvider::invoke)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withSelfTeamIdProvider(result: Either<CoreFailure, TeamId?>) = apply {
+            coEvery {
+                selfTeamIdProvider.invoke()
+            }.returns(result)
         }
 
-        fun withFetchingIdReturning(result: Either<CoreFailure, Team>) = apply {
-            given(teamRepository)
-                .suspendFunction(teamRepository::fetchTeamById)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withSyncingByIdReturning(result: Either<CoreFailure, Team>) = apply {
+            coEvery {
+                teamRepository.syncTeam(any())
+            }.returns(result)
         }
 
         fun arrange() = this to GetUpdatedSelfTeamUseCase(

@@ -18,8 +18,8 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation.message
 
+import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -39,6 +39,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.logStructuredJson
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.ktor.util.decodeBase64Bytes
@@ -101,7 +102,13 @@ internal class MLSMessageUnpackerImpl(
     }
 
     private suspend fun handlePendingProposal(timestamp: Instant, groupId: GroupID, commitDelay: Long) {
-        logger.d("Received MLS proposal, scheduling commit in $commitDelay seconds")
+        logger.logStructuredJson(
+            KaliumLogLevel.DEBUG, "Received MLS proposal, scheduling delayed commit",
+            mapOf(
+                "groupId" to groupId.toLogString(),
+                "commitDelay" to "$commitDelay"
+            )
+        )
         pendingProposalScheduler.scheduleCommit(
             groupId,
             timestamp.plus(commitDelay.seconds)
@@ -111,22 +118,25 @@ internal class MLSMessageUnpackerImpl(
     private suspend fun messageFromMLSMessage(
         messageEvent: Event.Conversation.NewMLSMessage
     ): Either<CoreFailure, List<DecryptedMessageBundle>> =
-        messageEvent.subconversationId?.let { subconversationId ->
-            subconversationRepository.getSubconversationInfo(messageEvent.conversationId, subconversationId)?.let { groupID ->
-                logger.d(
-                    "Decrypting MLS for " +
-                            "converationId = ${messageEvent.conversationId.value.obfuscateId()} " +
-                            "subconversationId = $subconversationId " +
-                            "groupID = ${groupID.value.obfuscateId()}"
+        messageEvent.subconversationId?.let { subConversationId ->
+            subconversationRepository.getSubconversationInfo(messageEvent.conversationId, subConversationId)?.let { groupID ->
+                logger.logStructuredJson(
+                    KaliumLogLevel.DEBUG, "Decrypting MLS for SubConversation", mapOf(
+                        "conversationId" to messageEvent.conversationId.toLogString(),
+                        "subConversationId" to subConversationId.toLogString(),
+                        "groupID" to groupID.toLogString()
+                    )
                 )
                 mlsConversationRepository.decryptMessage(messageEvent.content.decodeBase64Bytes(), groupID)
             }
         } ?: conversationRepository.getConversationProtocolInfo(messageEvent.conversationId).flatMap { protocolInfo ->
             if (protocolInfo is Conversation.ProtocolInfo.MLSCapable) {
-                logger.d(
-                    "Decrypting MLS for " +
-                            "converationId = ${messageEvent.conversationId.value.obfuscateId()} " +
-                            "groupID = ${protocolInfo.groupId.value.obfuscateId()}"
+                logger.logStructuredJson(
+                    KaliumLogLevel.DEBUG, "Decrypting MLS for Conversation", mapOf(
+                        "conversationId" to messageEvent.conversationId.toLogString(),
+                        "groupID" to protocolInfo.groupId.toLogString(),
+                        "protocolInfo" to protocolInfo.toLogMap()
+                    )
                 )
                 mlsConversationRepository.decryptMessage(messageEvent.content.decodeBase64Bytes(), protocolInfo.groupId)
             } else {

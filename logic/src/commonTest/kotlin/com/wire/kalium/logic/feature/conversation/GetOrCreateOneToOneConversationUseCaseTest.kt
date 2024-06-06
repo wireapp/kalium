@@ -23,17 +23,17 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangement
 import com.wire.kalium.logic.util.arrangement.mls.OneOnOneResolverArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
-import io.mockative.anything
+import io.mockative.any
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -54,24 +54,37 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         // then
         assertIs<CreateConversationResult.Success>(result)
 
-        verify(arrangement.oneOnOneResolver)
-            .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUser)
-            .with(anything())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any())
+        }.wasNotInvoked()
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::observeOneToOneConversationWithOtherUser)
-            .with(anything())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.conversationRepository.observeOneToOneConversationWithOtherUser(any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenFailure_whenCallingTheUseCase_ThenErrorIsPropagated() = runTest {
         // given
-        val (_, useCase) =  arrange {
+        val (_, useCase) = arrange {
             withObserveOneToOneConversationWithOtherUserReturning(Either.Left(StorageFailure.DataNotFound))
-            withGetKnownUserReturning(flowOf(OTHER_USER))
+            withUserByIdReturning(OTHER_USER.right())
             withResolveOneOnOneConversationWithUserReturning(Either.Left(CoreFailure.NoCommonProtocolFound))
+        }
+
+        // when
+        val result = useCase.invoke(OTHER_USER_ID)
+
+        // then
+        assertIs<CreateConversationResult.Failure>(result)
+    }
+
+    @Test
+    fun givenFailureWhileGettingUser_whenCallingTheUseCase_ThenErrorIsPropagated() = runTest {
+        // given
+        val (_, useCase) = arrange {
+            withObserveOneToOneConversationWithOtherUserReturning(Either.Left(StorageFailure.DataNotFound))
+            withUserByIdReturning(Either.Left(StorageFailure.DataNotFound))
         }
 
         // when
@@ -86,9 +99,9 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         // given
         val (arrangement, useCase) = arrange {
             withObserveOneToOneConversationWithOtherUserReturning(Either.Left(StorageFailure.DataNotFound))
-            withGetKnownUserReturning(flowOf(OTHER_USER))
+            withUserByIdReturning(OTHER_USER.right())
             withResolveOneOnOneConversationWithUserReturning(Either.Right(CONVERSATION.id))
-            withGetConversationByIdReturning(CONVERSATION)
+            withConversationDetailsByIdReturning(CONVERSATION.right())
         }
 
         // when
@@ -97,21 +110,21 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         // then
         assertIs<CreateConversationResult.Success>(result)
 
-        verify(arrangement.oneOnOneResolver)
-            .suspendFunction(arrangement.oneOnOneResolver::resolveOneOnOneConversationWithUser)
-            .with(eq(OTHER_USER))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.oneOnOneResolver.resolveOneOnOneConversationWithUser(eq(OTHER_USER), any())
+        }.wasInvoked(exactly = once)
     }
 
-    private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
+    private suspend fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     internal class Arrangement(
-        private val block: Arrangement.() -> Unit
+        private val block: suspend Arrangement.() -> Unit
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         UserRepositoryArrangement by UserRepositoryArrangementImpl(),
         OneOnOneResolverArrangement by OneOnOneResolverArrangementImpl() {
 
-        fun arrange() = block().run {
+        suspend fun arrange() = run {
+            block()
             this@Arrangement to GetOrCreateOneToOneConversationUseCaseImpl(
                 conversationRepository = conversationRepository,
                 userRepository = userRepository,

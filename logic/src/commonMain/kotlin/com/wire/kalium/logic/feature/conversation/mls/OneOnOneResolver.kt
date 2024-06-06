@@ -48,8 +48,32 @@ import kotlin.time.Duration
 interface OneOnOneResolver {
     suspend fun resolveAllOneOnOneConversations(synchronizeUsers: Boolean = false): Either<CoreFailure, Unit>
     suspend fun scheduleResolveOneOnOneConversationWithUserId(userId: UserId, delay: Duration = Duration.ZERO): Job
-    suspend fun resolveOneOnOneConversationWithUserId(userId: UserId): Either<CoreFailure, ConversationId>
-    suspend fun resolveOneOnOneConversationWithUser(user: OtherUser): Either<CoreFailure, ConversationId>
+
+    /**
+     * Resolves a one-on-one conversation with a user based on their userId.
+     *
+     * @param userId The userId of the other user in the conversation.
+     * @param invalidateCurrentKnownProtocols Flag indicating whether to whether it should attempt refreshing the other user's list of
+     * supported protocols by fetching from remote. In case of failure, the local result will be used as a fallback.
+     * @return Either a [CoreFailure] if there is an error or a [ConversationId] if the resolution is successful.
+     */
+    suspend fun resolveOneOnOneConversationWithUserId(
+        userId: UserId,
+        invalidateCurrentKnownProtocols: Boolean,
+    ): Either<CoreFailure, ConversationId>
+
+    /**
+     * Resolves a one-on-one conversation with a user.
+     *
+     * @param user The other user in the conversation.
+     * @param invalidateCurrentKnownProtocols Flag indicating whether to whether it should attempt refreshing the other user's list of
+     * supported protocols by fetching from remote. In case of failure, the local result will be used as a fallback.
+     * @return Either a [CoreFailure] if there is an error or a [ConversationId] if the resolution is successful.
+     */
+    suspend fun resolveOneOnOneConversationWithUser(
+        user: OtherUser,
+        invalidateCurrentKnownProtocols: Boolean,
+    ): Either<CoreFailure, ConversationId>
 }
 
 internal class OneOnOneResolverImpl(
@@ -62,52 +86,74 @@ internal class OneOnOneResolverImpl(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val dispatcher = kaliumDispatcher.default.limitedParallelism(1)
+
+    // TODO: inherit the scope of UserSessionScope so it's cancelled if user logs out, etc.
     private val resolveActiveOneOnOneScope = CoroutineScope(dispatcher)
 
     override suspend fun resolveAllOneOnOneConversations(synchronizeUsers: Boolean): Either<CoreFailure, Unit> =
-        if (synchronizeUsers) {
-            userRepository.fetchAllOtherUsers()
-        } else {
-            Either.Right(Unit)
-        }.flatMap {
+        fetchAllOtherUsersIfNeeded(synchronizeUsers).flatMap {
             val usersWithOneOnOne = userRepository.getUsersWithOneOnOneConversation()
             kaliumLogger.i("Resolving one-on-one protocol for ${usersWithOneOnOne.size} user(s)")
             usersWithOneOnOne.foldToEitherWhileRight(Unit) { item, _ ->
-                resolveOneOnOneConversationWithUser(item).flatMapLeft {
-                    when (it) {
-                        is CoreFailure.NoKeyPackagesAvailable,
-                        is NetworkFailure.ServerMiscommunication,
-                        is NetworkFailure.FederatedBackendFailure,
-                        is CoreFailure.NoCommonProtocolFound
-                        -> {
-                            kaliumLogger.e("Resolving one-on-one failed $it, skipping")
-                            Either.Right(Unit)
-                        }
-
-                        else -> {
-                            kaliumLogger.e("Resolving one-on-one failed $it, retrying")
-                            Either.Left(it)
-                        }
-                    }
+                resolveOneOnOneConversationWithUser(
+                    user = item,
+                    // Either it fetched all users on the previous step, or it's not needed
+                    invalidateCurrentKnownProtocols = false
+                ).flatMapLeft {
+                    handleBatchEntryFailure(it)
                 }.map { }
             }
         }
+
+    private fun handleBatchEntryFailure(it: CoreFailure) = when (it) {
+        is CoreFailure.MissingKeyPackages,
+        is NetworkFailure.ServerMiscommunication,
+        is NetworkFailure.FederatedBackendFailure,
+        is CoreFailure.NoCommonProtocolFound
+        -> {
+            kaliumLogger.e("Resolving one-on-one failed $it, skipping")
+            Either.Right(Unit)
+        }
+
+        else -> {
+            kaliumLogger.e("Resolving one-on-one failed $it, retrying")
+            Either.Left(it)
+        }
+    }
+
+    private suspend fun fetchAllOtherUsersIfNeeded(synchronizeUsers: Boolean) = if (synchronizeUsers) {
+        userRepository.fetchAllOtherUsers()
+    } else {
+        Either.Right(Unit)
+    }
 
     override suspend fun scheduleResolveOneOnOneConversationWithUserId(userId: UserId, delay: Duration) =
         resolveActiveOneOnOneScope.launch {
             kaliumLogger.d("Schedule resolving active one-on-one")
             incrementalSyncRepository.incrementalSyncState.first { it is IncrementalSyncStatus.Live }
             delay(delay)
-            resolveOneOnOneConversationWithUserId(userId)
+            resolveOneOnOneConversationWithUserId(
+                userId = userId,
+                invalidateCurrentKnownProtocols = true
+            )
         }
 
-    override suspend fun resolveOneOnOneConversationWithUserId(userId: UserId): Either<CoreFailure, ConversationId> =
+    override suspend fun resolveOneOnOneConversationWithUserId(
+        userId: UserId,
+        invalidateCurrentKnownProtocols: Boolean
+    ): Either<CoreFailure, ConversationId> =
         userRepository.getKnownUser(userId).firstOrNull()?.let {
-            resolveOneOnOneConversationWithUser(it)
+            resolveOneOnOneConversationWithUser(it, invalidateCurrentKnownProtocols)
         } ?: Either.Left(StorageFailure.DataNotFound)
 
-    override suspend fun resolveOneOnOneConversationWithUser(user: OtherUser): Either<CoreFailure, ConversationId> {
+    override suspend fun resolveOneOnOneConversationWithUser(
+        user: OtherUser,
+        invalidateCurrentKnownProtocols: Boolean,
+    ): Either<CoreFailure, ConversationId> {
         kaliumLogger.i("Resolving one-on-one protocol for ${user.id.toLogString()}")
+        if (invalidateCurrentKnownProtocols) {
+            userRepository.fetchUsersByIds(setOf(user.id))
+        }
         return oneOnOneProtocolSelector.getProtocolForUser(user.id).flatMap { supportedProtocol ->
             when (supportedProtocol) {
                 SupportedProtocol.PROTEUS -> oneOnOneMigrator.migrateToProteus(user)

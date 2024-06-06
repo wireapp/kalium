@@ -23,7 +23,8 @@ import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.eq
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.Job
 
@@ -31,10 +32,10 @@ interface OneOnOneResolverArrangement {
 
     val oneOnOneResolver: OneOnOneResolver
 
-    fun withScheduleResolveOneOnOneConversationWithUserId()
-    fun withResolveOneOnOneConversationWithUserIdReturning(result: Either<CoreFailure, ConversationId>)
-    fun withResolveOneOnOneConversationWithUserReturning(result: Either<CoreFailure, ConversationId>)
-    fun withResolveAllOneOnOneConversationsReturning(result: Either<CoreFailure, Unit>)
+    suspend fun withScheduleResolveOneOnOneConversationWithUserId()
+    suspend fun withResolveOneOnOneConversationWithUserIdReturning(result: Either<CoreFailure, ConversationId>)
+    suspend fun withResolveOneOnOneConversationWithUserReturning(result: Either<CoreFailure, ConversationId>)
+    suspend fun withResolveAllOneOnOneConversationsReturning(result: Either<CoreFailure, Unit>)
 
 }
 
@@ -42,32 +43,28 @@ class OneOnOneResolverArrangementImpl : OneOnOneResolverArrangement {
 
     @Mock
     override val oneOnOneResolver = mock(OneOnOneResolver::class)
-    override fun withScheduleResolveOneOnOneConversationWithUserId() {
-        given(oneOnOneResolver)
-            .suspendFunction(oneOnOneResolver::scheduleResolveOneOnOneConversationWithUserId)
-            .whenInvokedWith(any(), any())
-            .thenReturn(Job())
+    override suspend fun withScheduleResolveOneOnOneConversationWithUserId() {
+        coEvery {
+            oneOnOneResolver.scheduleResolveOneOnOneConversationWithUserId(any(), any())
+        }.returns(Job())
     }
 
-    override fun withResolveOneOnOneConversationWithUserIdReturning(result: Either<CoreFailure, ConversationId>) {
-        given(oneOnOneResolver)
-            .suspendFunction(oneOnOneResolver::resolveOneOnOneConversationWithUserId)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withResolveOneOnOneConversationWithUserIdReturning(result: Either<CoreFailure, ConversationId>) {
+        coEvery {
+            oneOnOneResolver.resolveOneOnOneConversationWithUserId(any(), eq(true))
+        }.returns(result)
     }
 
-    override fun withResolveOneOnOneConversationWithUserReturning(result: Either<CoreFailure, ConversationId>) {
-        given(oneOnOneResolver)
-            .suspendFunction(oneOnOneResolver::resolveOneOnOneConversationWithUser)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withResolveOneOnOneConversationWithUserReturning(result: Either<CoreFailure, ConversationId>) {
+        coEvery {
+            oneOnOneResolver.resolveOneOnOneConversationWithUser(any(), any())
+        }.returns(result)
     }
 
-    override fun withResolveAllOneOnOneConversationsReturning(result: Either<CoreFailure, Unit>) {
-        given(oneOnOneResolver)
-            .suspendFunction(oneOnOneResolver::resolveAllOneOnOneConversations)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withResolveAllOneOnOneConversationsReturning(result: Either<CoreFailure, Unit>) {
+        coEvery {
+            oneOnOneResolver.resolveAllOneOnOneConversations(any())
+        }.returns(result)
     }
 
 }

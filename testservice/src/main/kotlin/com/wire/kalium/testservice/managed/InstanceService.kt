@@ -25,6 +25,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreLogger
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.logic.configuration.server.ServerConfig
+import com.wire.kalium.logic.data.auth.login.ProxyCredentials
 import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -172,7 +173,7 @@ class InstanceService(
             }
         }
 
-        val loginResult = provideVersionedAuthenticationScope(coreLogic, serverConfig)
+        val loginResult = provideVersionedAuthenticationScope(coreLogic, serverConfig, null)
             .login(
                 instanceRequest.email, instanceRequest.password, true,
                 secondFactorVerificationCode = instanceRequest.verificationCode
@@ -250,6 +251,8 @@ class InstanceService(
 
                             return@runBlocking instance
                         }
+                        is RegisterClientResult.E2EICertificateRequired ->
+                            throw WebApplicationException("Instance $instanceId: Client registration blocked by e2ei")
                         is RegisterClientResult.Failure.TooManyClients ->
                             throw WebApplicationException("Instance $instanceId: Client registration failed, too many clients")
                         is RegisterClientResult.Failure.InvalidCredentials.Invalid2FA ->
@@ -304,15 +307,21 @@ class InstanceService(
                     // close the stream
                     files.close()
                 } catch (e: IOException) {
-                    log.warn("Instance ${instance.instanceId}: Could not delete directory ${instance.instancePath}: "
-                            + e.message)
+                    log.warn(
+                        "Instance ${instance.instanceId}: Could not delete directory ${instance.instancePath}: "
+                                + e.message
+                    )
                 }
             }
         }, deleteLocalFilesTimeoutInMinutes.toMinutes(), TimeUnit.MINUTES)
     }
 
-    private suspend fun provideVersionedAuthenticationScope(coreLogic: CoreLogic, serverLinks: ServerConfig.Links): AuthenticationScope =
-        when (val result = coreLogic.versionedAuthenticationScope(serverLinks).invoke()) {
+    private suspend fun provideVersionedAuthenticationScope(
+        coreLogic: CoreLogic,
+        serverLinks: ServerConfig.Links,
+        proxyCredentials: ProxyCredentials?
+    ): AuthenticationScope =
+        when (val result = coreLogic.versionedAuthenticationScope(serverLinks).invoke(proxyCredentials)) {
             is AutoVersionAuthScopeUseCase.Result.Failure.Generic ->
                 throw WebApplicationException("failed to create authentication scope: ${result.genericFailure}")
 

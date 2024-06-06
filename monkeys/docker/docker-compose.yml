@@ -1,19 +1,28 @@
 services:
-    monkeys:
+    monkeys-controller:
         platform: linux/amd64
         build:
             context: ../../
             dockerfile: ./monkeys/docker/Dockerfile
         image: monkeys
+        networks:
+            - monkeys
         depends_on:
             - postgres
         volumes:
             - ./config:/config
+            - /var/run/docker.sock:/var/run/docker.sock
+        entrypoint:
+            - /opt/app/bin/monkeys
         command:
+            # comment-delete below line (--sequential-warmup) when kalium fixes concurrency issue for global db and sever config
+            - --sequential-warmup
             - /config/${CONFIG:-config.json}
     postgres:
         image: postgres
         restart: unless-stopped
+        networks:
+            - monkeys
         environment:
             POSTGRES_PASSWORD: monkeys
             POSTGRES_USER: monkeys
@@ -25,6 +34,8 @@ services:
         command:
             - '--config.file=/etc/prometheus/prometheus.yml'
         restart: unless-stopped
+        networks:
+            - monkeys
         ports:
             - 9090:9090
         volumes:
@@ -35,6 +46,8 @@ services:
         ports:
             - 3000:3000
         restart: unless-stopped
+        networks:
+            - monkeys
         environment:
             - GF_SECURITY_ADMIN_USER=admin
             - GF_SECURITY_ADMIN_PASSWORD=grafana
@@ -53,3 +66,5 @@ services:
             - ./grafana/dashboards:/var/lib/grafana/dashboards
 volumes:
     prom_data:
+networks:
+    monkeys:

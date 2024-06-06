@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.Either
@@ -52,7 +53,12 @@ import kotlinx.coroutines.flow.map
 @Suppress("TooManyFunctions")
 interface ClientRepository {
     suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client>
-    suspend fun registerMLSClient(clientId: ClientId, publicKey: ByteArray): Either<CoreFailure, Unit>
+    suspend fun registerMLSClient(
+        clientId: ClientId,
+        publicKey: ByteArray,
+        cipherSuite: CipherSuite
+    ): Either<CoreFailure, Unit>
+
     suspend fun hasRegisteredMLSClient(): Either<CoreFailure, Boolean>
     suspend fun persistClientId(clientId: ClientId): Either<CoreFailure, Unit>
 
@@ -64,6 +70,10 @@ interface ClientRepository {
     suspend fun clearRetainedClientId(): Either<CoreFailure, Unit>
     suspend fun clearHasRegisteredMLSClient(): Either<CoreFailure, Unit>
     suspend fun observeCurrentClientId(): Flow<ClientId?>
+    suspend fun setClientRegistrationBlockedByE2EI(): Either<CoreFailure, Unit>
+    suspend fun clearClientRegistrationBlockedByE2EI(): Either<CoreFailure, Unit>
+    suspend fun observeIsClientRegistrationBlockedByE2EI(): Flow<Boolean?>
+    suspend fun isClientRegistrationBlockedByE2EI(): Either<CoreFailure, Boolean>
     suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit>
     suspend fun selfListOfClients(): Either<NetworkFailure, List<Client>>
     suspend fun observeClientsByUserIdAndClientId(userId: UserId, clientId: ClientId): Flow<Either<StorageFailure, Client>>
@@ -152,6 +162,24 @@ class ClientDataSource(
             rawClientId?.let { ClientId(it) }
         }
 
+    override suspend fun setClientRegistrationBlockedByE2EI(): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            clientRegistrationStorage.setClientRegistrationBlockedByE2EI()
+        }
+
+    override suspend fun clearClientRegistrationBlockedByE2EI(): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            clientRegistrationStorage.clearClientRegistrationBlockedByE2EI()
+        }
+
+    override suspend fun observeIsClientRegistrationBlockedByE2EI(): Flow<Boolean> =
+        clientRegistrationStorage.observeIsClientRegistrationBlockedByE2EI()
+
+    override suspend fun isClientRegistrationBlockedByE2EI(): Either<CoreFailure, Boolean> =
+        wrapStorageRequest {
+            clientRegistrationStorage.isBlockedByE2EI()
+        }
+
     override suspend fun deleteClient(param: DeleteClientParam): Either<NetworkFailure, Unit> {
         return clientRemoteRepository.deleteClient(param).onSuccess {
             wrapStorageRequest { clientDAO.deleteClient(selfUserID.toDao(), param.clientId.value) }
@@ -182,8 +210,12 @@ class ClientDataSource(
             .map { it?.let { clientMapper.fromClientEntity(it) } }
             .wrapStorageRequest()
 
-    override suspend fun registerMLSClient(clientId: ClientId, publicKey: ByteArray): Either<CoreFailure, Unit> =
-        clientRemoteRepository.registerMLSClient(clientId, publicKey.encodeBase64())
+    override suspend fun registerMLSClient(
+        clientId: ClientId,
+        publicKey: ByteArray,
+        cipherSuite: CipherSuite
+    ): Either<CoreFailure, Unit> =
+        clientRemoteRepository.registerMLSClient(clientId, publicKey.encodeBase64(), cipherSuite)
             .flatMap {
                 wrapStorageRequest {
                     clientRegistrationStorage.setHasRegisteredMLSClient()

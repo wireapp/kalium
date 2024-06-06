@@ -24,6 +24,7 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
@@ -36,8 +37,7 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -319,23 +319,22 @@ class UserSearchApiWrapperTest {
         lateinit var selfUserId: UserId
 
         @Mock
-        private val userSearchApi: UserSearchApi = mock(classOf<UserSearchApi>())
+        private val userSearchApi: UserSearchApi = mock(UserSearchApi::class)
 
         fun withSelfUserId(selfUserId: UserId) = apply {
             this.selfUserId = selfUserId
         }
 
-        fun withSuccessConversationExcludedFullSearch(
+        suspend fun withSuccessConversationExcludedFullSearch(
             conversationMembers: List<MemberEntity>,
             searchApiUsers: List<ContactDTO>,
         ): Arrangement {
 
             withObserveConversationMembers(flowOf(conversationMembers))
 
-            given(userSearchApi)
-                .suspendFunction(userSearchApi::search)
-                .whenInvokedWith(any())
-                .thenReturn(
+            coEvery {
+                userSearchApi.search(any())
+            }.returns(
                     NetworkResponse.Success(
                         generateUserSearchResponse(searchApiUsers),
                         mapOf(),
@@ -346,14 +345,13 @@ class UserSearchApiWrapperTest {
             return this
         }
 
-        fun withSuccessFullSearch(
+        suspend fun withSuccessFullSearch(
             searchApiUsers: List<ContactDTO>,
         ): Arrangement {
 
-            given(userSearchApi)
-                .suspendFunction(userSearchApi::search)
-                .whenInvokedWith(any())
-                .thenReturn(
+            coEvery {
+                userSearchApi.search(any())
+            }.returns(
                     NetworkResponse.Success(
                         generateUserSearchResponse(searchApiUsers),
                         mapOf(),
@@ -406,6 +404,7 @@ class UserSearchApiWrapperTest {
                     availabilityStatus = UserAvailabilityStatus.AVAILABLE,
                     expiresAt = null,
                     supportedProtocols = null,
+                    userType = UserType.INTERNAL,
                 )
             }
 
@@ -422,7 +421,8 @@ class UserSearchApiWrapperTest {
                 completePicture = null,
                 availabilityStatus = UserAvailabilityStatus.AVAILABLE,
                 expiresAt = null,
-                supportedProtocols = null
+                supportedProtocols = null,
+                userType = UserType.INTERNAL,
             )
         }
     }

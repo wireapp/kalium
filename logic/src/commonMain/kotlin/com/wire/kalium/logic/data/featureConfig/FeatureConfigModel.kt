@@ -18,9 +18,9 @@
 
 package com.wire.kalium.logic.data.featureConfig
 
-import com.wire.kalium.logic.data.id.PlainId
-import com.wire.kalium.util.time.Second
+import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
+import com.wire.kalium.util.time.Second
 import kotlinx.datetime.Instant
 
 data class FeatureConfigModel(
@@ -77,9 +77,9 @@ data class SelfDeletingMessagesConfigModel(
 )
 
 data class MLSModel(
-    val allowedUsers: List<PlainId>,
     val defaultProtocol: SupportedProtocol,
     val supportedProtocols: Set<SupportedProtocol>,
+    val supportedCipherSuite: SupportedCipherSuite?,
     val status: Status
 )
 
@@ -99,6 +99,6 @@ data class E2EIModel(
 )
 
 data class E2EIConfigModel(
-    val discoverUrl: String,
+    val discoverUrl: String?,
     val verificationExpirationSeconds: Long
 )

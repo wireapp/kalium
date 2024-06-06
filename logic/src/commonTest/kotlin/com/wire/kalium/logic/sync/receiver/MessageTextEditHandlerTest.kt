@@ -26,15 +26,14 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandlerImpl
 import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.NotificationEventsManagerArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangementImpl
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import io.mockative.any
-import io.mockative.anything
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -49,10 +48,14 @@ class MessageTextEditHandlerTest {
         messageTextEditHandler.handle(EDIT_MESSAGE.copy(senderUserId = ORIGINAL_SENDER_USER_ID), EDIT_CONTENT)
 
         with(arrangement) {
-            verify(messageRepository)
-                .suspendFunction(messageRepository::updateTextMessage)
-                .with(eq(EDIT_MESSAGE.conversationId), eq(EDIT_CONTENT), eq(EDIT_MESSAGE.id), eq(EDIT_MESSAGE.date))
-                .wasInvoked(exactly = once)
+            coVerify {
+                messageRepository.updateTextMessage(
+                    eq(EDIT_MESSAGE.conversationId),
+                    eq(EDIT_CONTENT),
+                    eq(EDIT_MESSAGE.id),
+                    eq(EDIT_MESSAGE.date)
+                )
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -65,10 +68,9 @@ class MessageTextEditHandlerTest {
         messageTextEditHandler.handle(EDIT_MESSAGE.copy(senderUserId = TestUser.OTHER_USER_ID), EDIT_CONTENT)
 
         with(arrangement) {
-            verify(messageRepository)
-                .suspendFunction(messageRepository::updateTextMessage)
-                .with(any(), any(), any(), any())
-                .wasNotInvoked()
+            coVerify {
+                messageRepository.updateTextMessage(any(), any(), any(), any())
+            }.wasNotInvoked()
         }
     }
 
@@ -93,18 +95,20 @@ class MessageTextEditHandlerTest {
         messageTextEditHandler.handle(editMessage, editContent)
 
         with(arrangement) {
-            verify(messageRepository)
-                .suspendFunction(messageRepository::updateTextMessage)
-                .with(eq(editMessage.conversationId), eq(editContent), eq(editMessage.id), eq(editMessage.date))
-                .wasInvoked(exactly = once)
-            verify(messageRepository)
-                .suspendFunction(messageRepository::updateMessageStatus)
-                .with(eq(MessageEntity.Status.SENT), eq(editMessage.conversationId), eq(editMessage.id))
-                .wasInvoked(exactly = once)
-            verify(ephemeralNotifications)
-                .suspendFunction(ephemeralNotifications::scheduleEditMessageNotification)
-                .with(eq(editMessage), eq(editContent), )
-                .wasInvoked(exactly = once)
+            coVerify {
+                messageRepository.updateTextMessage(
+                    eq(editMessage.conversationId),
+                    eq(editContent),
+                    eq(editMessage.id),
+                    eq(editMessage.date)
+                )
+            }.wasInvoked(exactly = once)
+            coVerify {
+                messageRepository.updateMessageStatus(eq(MessageEntity.Status.SENT), eq(editMessage.conversationId), eq(editMessage.id))
+            }.wasInvoked(exactly = once)
+            coVerify {
+                notificationEventsManager.scheduleEditMessageNotification(eq(editMessage), eq(editContent))
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -135,39 +139,32 @@ class MessageTextEditHandlerTest {
         messageTextEditHandler.handle(editMessage, editContent)
 
         with(arrangement) {
-            verify(messageRepository)
-                .suspendFunction(messageRepository::updateTextMessage)
-                .with(any(), eq(expectedContent), eq(editMessage.id), eq(originalEditStatus.lastTimeStamp))
-                .wasInvoked(exactly = once)
-            verify(messageRepository)
-                .suspendFunction(messageRepository::updateMessageStatus)
-                .with(any(), any(), any())
-                .wasNotInvoked()
+            coVerify {
+                messageRepository.updateTextMessage(any(), eq(expectedContent), eq(editMessage.id), eq(originalEditStatus.lastTimeStamp))
+            }.wasInvoked(exactly = once)
+            coVerify {
+                messageRepository.updateMessageStatus(any(), any(), any())
+            }.wasNotInvoked()
         }
     }
 
-    private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
+    private suspend fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     private class Arrangement(
-        private val block: Arrangement.() -> Unit
+        private val block: suspend Arrangement.() -> Unit
     ) : MessageRepositoryArrangement by MessageRepositoryArrangementImpl(),
-        EphemeralEventsNotificationManagerArrangement by EphemeralEventsNotificationManagerArrangementImpl() {
+        NotificationEventsManagerArrangement by EphemeralEventsNotificationManagerArrangementImpl() {
 
-        init {
-            given(messageRepository)
-                .suspendFunction(messageRepository::updateTextMessage)
-                .whenInvokedWith(anything(), anything(), anything(), anything())
-                .thenReturn(Either.Right(Unit))
-            given(messageRepository)
-                .suspendFunction(messageRepository::updateMessageStatus)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(Either.Right(Unit))
-        }
-
-        fun arrange() = block().run {
+        suspend fun arrange() = block().run {
+            coEvery {
+                messageRepository.updateTextMessage(any(), any(), any(), any())
+            }.returns(Either.Right(Unit))
+            coEvery {
+                messageRepository.updateMessageStatus(any(), any(), any())
+            }.returns(Either.Right(Unit))
             this@Arrangement to MessageTextEditHandlerImpl(
                 messageRepository = messageRepository,
-                editMessageNotificationsManager = ephemeralNotifications,
+                notificationEventsManager = notificationEventsManager,
             )
         }
 

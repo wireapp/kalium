@@ -22,7 +22,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.CertificateStatus
-import com.wire.kalium.logic.feature.e2ei.PemCertificateDecoder
+import com.wire.kalium.logic.feature.e2ei.E2eiCertificate
 import com.wire.kalium.logic.functional.fold
 
 /**
@@ -34,15 +34,14 @@ interface GetMembersE2EICertificateStatusesUseCase {
 }
 
 class GetMembersE2EICertificateStatusesUseCaseImpl internal constructor(
-    private val mlsConversationRepository: MLSConversationRepository,
-    private val pemCertificateDecoder: PemCertificateDecoder
+    private val mlsConversationRepository: MLSConversationRepository
 ) : GetMembersE2EICertificateStatusesUseCase {
     override suspend operator fun invoke(conversationId: ConversationId, userIds: List<UserId>): Map<UserId, CertificateStatus?> =
         mlsConversationRepository.getMembersIdentities(conversationId, userIds).fold(
             { mapOf() },
             {
                 it.mapValues { (_, identities) ->
-                    identities.getUserCertificateStatus(pemCertificateDecoder)
+                    identities.getUserCertificateStatus()
                 }
             }
         )
@@ -54,13 +53,15 @@ class GetMembersE2EICertificateStatusesUseCaseImpl internal constructor(
  * [CertificateStatus.EXPIRED] if any certificate is expired;
  * [CertificateStatus.VALID] otherwise.
  */
-fun List<WireIdentity>.getUserCertificateStatus(pemCertificateDecoder: PemCertificateDecoder): CertificateStatus? {
-    val certificates = this.map { pemCertificateDecoder.decode(it.certificate, it.status) }
-    return if (certificates.isEmpty()) {
+fun List<WireIdentity>.getUserCertificateStatus(): CertificateStatus? {
+    val certificates = this.map {
+        E2eiCertificate.fromWireIdentity(it)
+    }
+    return if (certificates.isEmpty() || certificates.any { it == null }) {
         null
-    } else if (certificates.any { it.status == CertificateStatus.REVOKED }) {
+    } else if (certificates.any { it!!.status == CertificateStatus.REVOKED }) {
         CertificateStatus.REVOKED
-    } else if (certificates.any { it.status == CertificateStatus.EXPIRED }) {
+    } else if (certificates.any { it!!.status == CertificateStatus.EXPIRED }) {
         CertificateStatus.EXPIRED
     } else {
         CertificateStatus.VALID

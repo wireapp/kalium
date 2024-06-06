@@ -21,9 +21,11 @@ package com.wire.kalium.logic.feature.asset
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.encryptFileWithAES256
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.AssetContent
@@ -39,14 +41,12 @@ import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
-import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import okio.Path
@@ -59,11 +59,9 @@ import kotlin.test.assertTrue
 
 class GetMessageAssetUseCaseTest {
 
-    private fun getSuccessfulFlowArrangement(
+    private suspend fun getSuccessfulFlowArrangement(
         conversationId: ConversationId = ConversationId("some-conversation-id", "some-domain.com"),
         messageId: String = "some-message-id",
-        downloadStatus: Message.DownloadStatus = Message.DownloadStatus.NOT_DOWNLOADED,
-        uploadStatus: Message.UploadStatus = Message.UploadStatus.UPLOADED,
         encryptedPath: Path = "output_encrypted_path".toPath(),
     ): Arrangement {
         val expectedDecodedAsset = byteArrayOf(14, 2, 10, 63, -2, -1, 34, 0, 12, 4, 5, 6, 8, 9, -22, 9, 63)
@@ -74,7 +72,7 @@ class GetMessageAssetUseCaseTest {
         val encryptedDataSink = fakeFileSystem.sink(encryptedPath)
         encryptFileWithAES256(rawDataSource, randomAES256Key, encryptedDataSink)
         return Arrangement()
-            .withSuccessfulFlow(conversationId, messageId, encryptedPath, randomAES256Key, downloadStatus, uploadStatus)
+            .withSuccessfulFlow(conversationId, messageId, encryptedPath, randomAES256Key)
     }
 
     @Test
@@ -85,6 +83,7 @@ class GetMessageAssetUseCaseTest {
         val someMessageId = "some-message-id"
         val (_, getMessageAsset) =
             getSuccessfulFlowArrangement(conversationId = someConversationId, messageId = someMessageId, encryptedPath = encryptedPath)
+                .withFetchDecodedAsset(Either.Right(encryptedPath))
                 .arrange()
 
         // When
@@ -133,10 +132,13 @@ class GetMessageAssetUseCaseTest {
             assertEquals(result.coreFailure::class, connectionFailure::class)
             assertEquals(true, result.isRetryNeeded)
 
-            verify(arrangement.updateAssetMessageDownloadStatus)
-                .suspendFunction(arrangement.updateAssetMessageDownloadStatus::invoke)
-                .with(matching { it == Message.DownloadStatus.FAILED_DOWNLOAD }, eq(someConversationId), eq(someMessageId))
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.updateAssetMessageTransferStatus.invoke(
+                    matches { it == AssetTransferStatus.FAILED_DOWNLOAD },
+                    eq(someConversationId),
+                    eq(someMessageId)
+                )
+            }.wasInvoked(exactly = once)
         }
 
     @Test
@@ -168,15 +170,17 @@ class GetMessageAssetUseCaseTest {
             assertEquals(result.coreFailure::class, notFoundFailure::class)
             assertEquals(false, result.isRetryNeeded)
 
-            verify(arrangement.updateAssetMessageDownloadStatus)
-                .suspendFunction(arrangement.updateAssetMessageDownloadStatus::invoke)
-                .with(matching { it == Message.DownloadStatus.NOT_FOUND }, eq(someConversationId), eq(someMessageId))
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.updateAssetMessageTransferStatus.invoke(
+                    matches { it == AssetTransferStatus.NOT_FOUND },
+                    eq(someConversationId),
+                    eq(someMessageId)
+                )
+            }.wasInvoked(exactly = once)
 
-            verify(arrangement.userRepository)
-                .suspendFunction(arrangement.userRepository::removeUserBrokenAsset)
-                .with(any())
-                .wasInvoked(once)
+            coVerify {
+                arrangement.userRepository.removeUserBrokenAsset(any())
+            }.wasInvoked(once)
         }
 
     @Test
@@ -200,15 +204,17 @@ class GetMessageAssetUseCaseTest {
             assertEquals(result.coreFailure::class, federatedBackendFailure::class)
             assertEquals(false, result.isRetryNeeded)
 
-            verify(arrangement.updateAssetMessageDownloadStatus)
-                .suspendFunction(arrangement.updateAssetMessageDownloadStatus::invoke)
-                .with(matching { it == Message.DownloadStatus.FAILED_DOWNLOAD }, eq(someConversationId), eq(someMessageId))
-                .wasInvoked(once)
+            coVerify {
+                arrangement.updateAssetMessageTransferStatus.invoke(
+                    matches { it == AssetTransferStatus.FAILED_DOWNLOAD },
+                    eq(someConversationId),
+                    eq(someMessageId)
+                )
+            }.wasInvoked(once)
 
-            verify(arrangement.userRepository)
-                .suspendFunction(arrangement.userRepository::removeUserBrokenAsset)
-                .with(any())
-                .wasNotInvoked()
+            coVerify {
+                arrangement.userRepository.removeUserBrokenAsset(any())
+            }.wasNotInvoked()
         }
 
     @Test
@@ -216,22 +222,33 @@ class GetMessageAssetUseCaseTest {
         // Given
         val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
         val someMessageId = "some-message-id"
-        val (arrangement, getMessageAsset) = getSuccessfulFlowArrangement(
-            someConversationId, someMessageId, Message.DownloadStatus.NOT_DOWNLOADED, Message.UploadStatus.UPLOADED
-        ).arrange()
+        val (arrangement, getMessageAsset) = getSuccessfulFlowArrangement(someConversationId, someMessageId)
+            .withFetchDecodedAsset(Either.Left(StorageFailure.DataNotFound))
+            .arrange()
 
         // When
         getMessageAsset(someConversationId, someMessageId).await()
 
         // Then
-        verify(arrangement.assetDataSource)
-            .suspendFunction(arrangement.assetDataSource::fetchPrivateDecodedAsset)
-            .with(eq(arrangement.mockedImageContent.remoteData.assetId), any(), any(), any(), any(), any(), any(), eq(true))
-            .wasInvoked(once)
-        verify(arrangement.updateAssetMessageDownloadStatus)
-            .suspendFunction(arrangement.updateAssetMessageDownloadStatus::invoke)
-            .with(matching { it == Message.DownloadStatus.SAVED_INTERNALLY }, eq(someConversationId), eq(someMessageId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.assetDataSource.fetchPrivateDecodedAsset(
+                eq(arrangement.mockedImageContent.remoteData.assetId),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                eq(true)
+            )
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.updateAssetMessageTransferStatus.invoke(
+                matches { it == AssetTransferStatus.SAVED_INTERNALLY },
+                eq(someConversationId),
+                eq(someMessageId)
+            )
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -239,36 +256,40 @@ class GetMessageAssetUseCaseTest {
         // Given
         val someConversationId = ConversationId("some-conversation-id", "some-domain.com")
         val someMessageId = "some-message-id"
-        val (arrangement, getMessageAsset) = getSuccessfulFlowArrangement(
-            someConversationId, someMessageId, Message.DownloadStatus.SAVED_INTERNALLY, Message.UploadStatus.FAILED_UPLOAD
-        ).arrange()
+        val (arrangement, getMessageAsset) = getSuccessfulFlowArrangement(someConversationId, someMessageId)
+            .withFetchDecodedAsset(Either.Right("local/path".toPath()))
+            .arrange()
 
         // When
         getMessageAsset(someConversationId, someMessageId).await()
 
         // Then
-        verify(arrangement.assetDataSource)
-            .suspendFunction(arrangement.assetDataSource::fetchPrivateDecodedAsset)
-            .with(eq(arrangement.mockedImageContent.remoteData.assetId), any(), any(), any(), any(), any(), any(), eq(false))
-            .wasInvoked(once)
-        verify(arrangement.updateAssetMessageDownloadStatus)
-            .suspendFunction(arrangement.updateAssetMessageDownloadStatus::invoke)
-            .with(matching { it == Message.DownloadStatus.SAVED_INTERNALLY }, eq(someConversationId), eq(someMessageId))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.assetDataSource.fetchPrivateDecodedAsset(
+                eq(arrangement.mockedImageContent.remoteData.assetId),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any(),
+                any()
+            )
+        }.wasNotInvoked()
     }
 
     private class Arrangement {
         @Mock
-        val messageRepository = mock(classOf<MessageRepository>())
+        val messageRepository = mock(MessageRepository::class)
 
         @Mock
-        val userRepository = mock(classOf<UserRepository>())
+        val userRepository = mock(UserRepository::class)
 
         @Mock
-        val assetDataSource = mock(classOf<AssetRepository>())
+        val assetDataSource = mock(AssetRepository::class)
 
         @Mock
-        val updateAssetMessageDownloadStatus = mock(classOf<UpdateAssetMessageDownloadStatusUseCase>())
+        val updateAssetMessageTransferStatus = mock(UpdateAssetMessageTransferStatusUseCase::class)
 
         private val testScope = TestScope(testDispatcher.default)
 
@@ -294,8 +315,7 @@ class GetMessageAssetUseCaseTest {
                     assetToken = someAssetToken,
                     assetDomain = "some-asset-domain.com",
                     encryptionAlgorithm = MessageEncryptionAlgorithm.AES_GCM
-                ),
-                downloadStatus = Message.DownloadStatus.NOT_DOWNLOADED
+                )
             )
         }
         val mockedImageMessage by lazy {
@@ -315,93 +335,85 @@ class GetMessageAssetUseCaseTest {
         val getMessageAssetUseCase =
             GetMessageAssetUseCaseImpl(
                 assetDataSource, messageRepository, userRepository,
-                updateAssetMessageDownloadStatus, testScope, testDispatcher
+                updateAssetMessageTransferStatus, testScope, testDispatcher
             )
 
-        fun withSuccessfulFlow(
+        suspend fun withSuccessfulFlow(
             conversationId: ConversationId,
             messageId: String,
             encodedPath: Path,
-            secretKey: AES256Key,
-            downloadStatus: Message.DownloadStatus = Message.DownloadStatus.NOT_DOWNLOADED,
-            uploadStatus: Message.UploadStatus = Message.UploadStatus.UPLOADED
+            secretKey: AES256Key
         ): Arrangement {
             convId = conversationId
             msgId = messageId
             encryptionKey = secretKey
-            given(messageRepository)
-                .suspendFunction(messageRepository::getMessageById)
-                .whenInvokedWith(any(), any())
-                .thenReturn(
-                    Either.Right(
-                        mockedImageMessage.copy(
-                            content = MessageContent.Asset(
-                                mockedImageContent.copy(
-                                    downloadStatus = downloadStatus,
-                                    uploadStatus = uploadStatus
-                                )
-                            )
-                        )
-                    )
+            coEvery {
+                messageRepository.getMessageById(any(), any())
+            }.returns(Either.Right(mockedImageMessage.copy(content = MessageContent.Asset(mockedImageContent))))
+            coEvery {
+                assetDataSource.fetchPrivateDecodedAsset(
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                    any(),
+                    matches { it.data.contentEquals(secretKey.data) },
+                    any(),
+                    any()
                 )
-            given(assetDataSource)
-                .suspendFunction(assetDataSource::fetchPrivateDecodedAsset)
-                .whenInvokedWith(
-                    anything(),
-                    anything(),
-                    anything(),
-                    anything(),
-                    anything(),
-                    matching { it.data.contentEquals(secretKey.data) },
-                    anything(),
-                    anything()
-                )
-                .thenReturn(Either.Right(encodedPath))
-            given(updateAssetMessageDownloadStatus)
-                .suspendFunction(updateAssetMessageDownloadStatus::invoke)
-                .whenInvokedWith(anything(), matching { it == conversationId }, matching { it == messageId })
-                .thenReturn(UpdateDownloadStatusResult.Success)
+            }.returns(Either.Right(encodedPath))
+            coEvery {
+                updateAssetMessageTransferStatus.invoke(any(), matches { it == conversationId }, matches { it == messageId })
+            }.returns(UpdateTransferStatusResult.Success)
             return this
         }
 
-        fun withSuccessfulDownloadStatusUpdate(): Arrangement = apply {
-            given(updateAssetMessageDownloadStatus)
-                .suspendFunction(updateAssetMessageDownloadStatus::invoke)
-                .whenInvokedWith(anything(), anything(), anything())
-                .thenReturn(UpdateDownloadStatusResult.Success)
+        suspend fun withSuccessfulDownloadStatusUpdate(): Arrangement = apply {
+            coEvery {
+                updateAssetMessageTransferStatus.invoke(any(), any(), any())
+            }.returns(UpdateTransferStatusResult.Success)
         }
 
-        fun withSuccessfulDeleteUserAsset(): Arrangement = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::removeUserBrokenAsset)
-                .whenInvokedWith(anything())
-                .thenReturn(Either.Right(Unit))
+        suspend fun withSuccessfulDeleteUserAsset(): Arrangement = apply {
+            coEvery {
+                userRepository.removeUserBrokenAsset(any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withGetMessageErrorResponse(): Arrangement {
-            given(messageRepository)
-                .suspendFunction(messageRepository::getMessageById)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Left(StorageFailure.DataNotFound))
+        suspend fun withGetMessageErrorResponse(): Arrangement {
+            coEvery {
+                messageRepository.getMessageById(any(), any())
+            }.returns(Either.Left(StorageFailure.DataNotFound))
             return this
         }
 
-        fun withDownloadAssetErrorResponse(noNetworkConnection: NetworkFailure): Arrangement {
+        suspend fun withDownloadAssetErrorResponse(noNetworkConnection: NetworkFailure): Arrangement {
             convId = ConversationId("", "")
             encryptionKey = AES256Key(ByteArray(0))
             msgId = ""
-            given(messageRepository)
-                .suspendFunction(messageRepository::getMessageById)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(mockedImageMessage))
-            given(assetDataSource)
-                .suspendFunction(assetDataSource::fetchPrivateDecodedAsset)
-                .whenInvokedWith(any(), any(), any(), anything(), any(), any(), any())
-                .thenReturn(Either.Left(noNetworkConnection))
+            coEvery {
+                messageRepository.getMessageById(any(), any())
+            }.returns(Either.Right(mockedImageMessage))
+            coEvery {
+                assetDataSource.fetchPrivateDecodedAsset(any(), any(), any(), any(), any(), any(), any(), any())
+            }.returns(Either.Left(noNetworkConnection))
+            coEvery {
+                assetDataSource.fetchDecodedAsset(any())
+            }.returns(Either.Left(StorageFailure.DataNotFound))
             return this
         }
 
-        fun arrange() = this to getMessageAssetUseCase
+        suspend fun withFetchDecodedAsset(result: Either<CoreFailure, Path>) = apply {
+            coEvery {
+                assetDataSource.fetchDecodedAsset(any())
+            }.returns(result)
+        }
+
+        suspend fun arrange() = this to getMessageAssetUseCase.also {
+            coEvery {
+                updateAssetMessageTransferStatus.invoke(any(), any(), any())
+            }.returns(UpdateTransferStatusResult.Success)
+        }
     }
 
     private fun createFileSystem(): Pair<FakeFileSystem, Path> {

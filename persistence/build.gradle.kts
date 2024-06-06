@@ -77,7 +77,6 @@ kotlin {
         }
         val commonTest by getting {
             dependencies {
-                implementation(kotlin("test"))
                 // coroutines
                 implementation(libs.coroutines.test)
                 implementation(libs.turbine)
@@ -88,6 +87,7 @@ kotlin {
         val jvmMain by getting {
             dependencies {
                 implementation(libs.sqldelight.jvmDriver)
+                implementation(libs.sqlite.xerialDriver)
             }
         }
         val jvmTest by getting

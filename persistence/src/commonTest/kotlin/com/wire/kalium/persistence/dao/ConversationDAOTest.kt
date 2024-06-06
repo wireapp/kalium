@@ -26,9 +26,12 @@ import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationGuestLinkEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.E2EIConversationClientInfoEntity
+import com.wire.kalium.persistence.dao.conversation.EpochChangesDataEntity
 import com.wire.kalium.persistence.dao.conversation.MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI
+import com.wire.kalium.persistence.dao.conversation.NameAndHandleEntity
 import com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberEntity
@@ -264,6 +267,23 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenExistingConversation_ThenConversationGroupStateCanBeUpdatedToEstablished() = runTest {
+        conversationDAO.insertConversation(conversationEntity2)
+        conversationDAO.updateMlsGroupStateAndCipherSuite(
+            ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
+            ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
+            (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+
+        )
+        val result = conversationDAO.getConversationByQualifiedID(conversationEntity2.id)
+        assertEquals(
+            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState, ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
+        )
+        assertEquals(
+            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).cipherSuite, ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521
+        )
+    }
+    @Test
     fun givenExistingConversation_ThenConversationIsUpdatedOnInsert() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
         insertTeamUserAndMember(team, user1, conversationEntity1.id)
@@ -421,13 +441,18 @@ class ConversationDAOTest : BaseDatabaseTest() {
     @Test
     fun givenNewValue_whenUpdatingProtocol_thenItsUpdatedAndReportedAsChanged() = runTest {
         val conversation = conversationEntity5
+        val groupId = "groupId"
+        val updatedCipherSuite = ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521
         val updatedProtocol = ConversationEntity.Protocol.MLS
 
         conversationDAO.insertConversation(conversation)
-        val changed = conversationDAO.updateConversationProtocol(conversation.id, updatedProtocol)
+        val changed =
+            conversationDAO.updateConversationProtocolAndCipherSuite(conversation.id, groupId, updatedProtocol, updatedCipherSuite)
 
         assertTrue(changed)
         assertEquals(conversationDAO.getConversationByQualifiedID(conversation.id)?.protocol, updatedProtocol)
+        assertEquals(conversationDAO.getConversationByQualifiedID(conversation.id)?.mlsGroupId, groupId)
+        assertEquals(conversationDAO.getConversationByQualifiedID(conversation.id)?.mlsCipherSuite, updatedCipherSuite)
     }
 
     @Test
@@ -436,7 +461,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val updatedProtocol = ConversationEntity.Protocol.PROTEUS
 
         conversationDAO.insertConversation(conversation)
-        val changed = conversationDAO.updateConversationProtocol(conversation.id, updatedProtocol)
+        val changed = conversationDAO.updateConversationProtocolAndCipherSuite(
+            conversation.id,
+            null,
+            updatedProtocol,
+            cipherSuite = ConversationEntity.CipherSuite.UNKNOWN
+        )
 
         assertFalse(changed)
     }
@@ -512,8 +542,6 @@ class ConversationDAOTest : BaseDatabaseTest() {
                             assetSizeInBytes = 123L,
                             assetName = "assetName",
                             assetMimeType = "assetMimeType",
-                            assetUploadStatus = MessageEntity.UploadStatus.UPLOADED,
-                            assetDownloadStatus = MessageEntity.DownloadStatus.SAVED_INTERNALLY,
                             assetOtrKey = ByteArray(32),
                             assetSha256Key = ByteArray(32),
                             assetId = "assetId",
@@ -954,7 +982,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenConnectionRequestAndUserWithoutName_whenSelectingAllConversationDetails_thenShouldNotReturnConnectionRequest() = runTest {
+    fun givenConnectionRequestAndUserWithoutName_whenSelectingAllConversationDetails_thenShouldReturnConnectionRequest() = runTest {
         val fromArchive = false
         val conversationId = QualifiedIDEntity("connection-conversationId", "domain")
         val conversation = conversationEntity1.copy(id = conversationId, type = ConversationEntity.Type.CONNECTION_PENDING)
@@ -973,7 +1001,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         connectionDAO.insertConnection(connectionEntity)
 
         conversationDAO.getAllConversationDetails(fromArchive).first().let {
-            assertEquals(0, it.size)
+            assertEquals(1, it.size)
         }
     }
 
@@ -1233,15 +1261,15 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenNoMLSConversationExistsForGivenClients_whenGettingE2EIClientInfoByClientId_thenReturnsNull() = runTest {
         // given
 
-        //insert userA data
+        // insert userA data
         val userA = user1
         val clientCA1 = "clientA1"
         val clientCA2 = "clientA2"
         userDAO.upsertUser(userA)
         clientDao.insertClients(listOf(insertedClient.copy(userA.id, id = clientCA1), insertedClient.copy(userA.id, id = clientCA2)))
 
-        //insert userB data
-        val userB = user1.copy(id = user1.id.copy("b","b.com"))
+        // insert userB data
+        val userB = user1.copy(id = user1.id.copy("b", "b.com"))
         val clientCB1 = "clientB1"
         val clientCB2 = "clientB2"
         userDAO.upsertUser(userB)
@@ -1255,68 +1283,69 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMLSGroupConversationExistsForGivenClients_whenGettingE2EIClientInfoByClientId_thenReturnsE2EIConversationClientInfo() = runTest {
-        // given
+    fun givenMLSGroupConversationExistsForGivenClients_whenGettingE2EIClientInfoByClientId_thenReturnsE2EIConversationClientInfo() =
+        runTest {
+            // given
 
-        //insert userA data
-        val userA = user1
-        val clientCA1 = "clientA1"
-        val clientCA2 = "clientA2"
-        userDAO.upsertUser(userA)
-        clientDao.insertClients(listOf(insertedClient.copy(userA.id, id = clientCA1), insertedClient.copy(userA.id, id = clientCA2)))
-        conversationDAO.insertConversation(conversationEntity1.copy(id = userA.id, type = ConversationEntity.Type.SELF))
+            // insert userA data
+            val userA = user1
+            val clientCA1 = "clientA1"
+            val clientCA2 = "clientA2"
+            userDAO.upsertUser(userA)
+            clientDao.insertClients(listOf(insertedClient.copy(userA.id, id = clientCA1), insertedClient.copy(userA.id, id = clientCA2)))
+            conversationDAO.insertConversation(conversationEntity1.copy(id = userA.id, type = ConversationEntity.Type.SELF))
 
-        //insert userB data
-        val userB = user1.copy(id = user1.id.copy("b","b.com"))
-        val clientCB1 = "clientB1"
-        val clientCB2 = "clientB2"
-        userDAO.upsertUser(userB)
-        clientDao.insertClients(listOf(insertedClient.copy(userB.id, id = clientCB1), insertedClient.copy(userB.id, id = clientCB2)))
+            // insert userB data
+            val userB = user1.copy(id = user1.id.copy("b", "b.com"))
+            val clientCB1 = "clientB1"
+            val clientCB2 = "clientB2"
+            userDAO.upsertUser(userB)
+            clientDao.insertClients(listOf(insertedClient.copy(userB.id, id = clientCB1), insertedClient.copy(userB.id, id = clientCB2)))
 
-        //insert 1:1 proteus between userA and userB
-        conversationDAO.insertConversation(conversationEntity1.copy(id = userA.id, type = ConversationEntity.Type.ONE_ON_ONE))
+            // insert 1:1 proteus between userA and userB
+            conversationDAO.insertConversation(conversationEntity1.copy(id = userA.id, type = ConversationEntity.Type.ONE_ON_ONE))
 
-        //insert a group proteus between userA and userB
-        conversationDAO.insertConversation(conversationEntity4)
-        memberDAO.insertMembersWithQualifiedId(
-            listOf(
-                MemberEntity(userA.id, MemberEntity.Role.Member),
-                MemberEntity(userB.id, MemberEntity.Role.Member) // adding SelfUser as a member too
-            ),
-            conversationEntity4.id
-        )
+            // insert a group proteus between userA and userB
+            conversationDAO.insertConversation(conversationEntity4)
+            memberDAO.insertMembersWithQualifiedId(
+                listOf(
+                    MemberEntity(userA.id, MemberEntity.Role.Member),
+                    MemberEntity(userB.id, MemberEntity.Role.Member) // adding SelfUser as a member too
+                ),
+                conversationEntity4.id
+            )
 
-        val expectedUserA = E2EIConversationClientInfoEntity(
-            userId = userA.id,
-            mlsGroupId = (conversationEntity4.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
-            clientId = clientCA1
-        )
-        val expectedUserB = E2EIConversationClientInfoEntity(
-            userId = userB.id,
-            mlsGroupId = (conversationEntity4.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
-            clientId = clientCA1
-        )
+            val expectedUserA = E2EIConversationClientInfoEntity(
+                userId = userA.id,
+                mlsGroupId = (conversationEntity4.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+                clientId = clientCA1
+            )
+            val expectedUserB = E2EIConversationClientInfoEntity(
+                userId = userB.id,
+                mlsGroupId = (conversationEntity4.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+                clientId = clientCA1
+            )
 
-        // then
-        assertEquals(
-            expectedUserA.copy(clientId = clientCA1), conversationDAO.getE2EIConversationClientInfoByClientId(clientCA1)
-        )
-        assertEquals(
-            expectedUserA.copy(clientId = clientCA2), conversationDAO.getE2EIConversationClientInfoByClientId(clientCA2)
-        )
-        assertEquals(
-            expectedUserB.copy(clientId = clientCB1), conversationDAO.getE2EIConversationClientInfoByClientId(clientCB1)
-        )
-        assertEquals(
-            expectedUserB.copy(clientId = clientCB2), conversationDAO.getE2EIConversationClientInfoByClientId(clientCB2)
-        )
-    }
+            // then
+            assertEquals(
+                expectedUserA.copy(clientId = clientCA1), conversationDAO.getE2EIConversationClientInfoByClientId(clientCA1)
+            )
+            assertEquals(
+                expectedUserA.copy(clientId = clientCA2), conversationDAO.getE2EIConversationClientInfoByClientId(clientCA2)
+            )
+            assertEquals(
+                expectedUserB.copy(clientId = clientCB1), conversationDAO.getE2EIConversationClientInfoByClientId(clientCB1)
+            )
+            assertEquals(
+                expectedUserB.copy(clientId = clientCB2), conversationDAO.getE2EIConversationClientInfoByClientId(clientCB2)
+            )
+        }
 
     @Test
     fun givenAllTypeOfConversationsForGivenClients_whenGettingE2EIClientInfoByClientId_thenReturnsSelfE2EIInfoFirst() = runTest {
         // given
 
-        //insert userA data
+        // insert userA data
         val userA = user1
         val clientCA1 = "clientA1"
         val clientCA2 = "clientA2"
@@ -1325,21 +1354,27 @@ class ConversationDAOTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1.copy(id = userA.id, type = ConversationEntity.Type.SELF))
         conversationDAO.insertConversation(conversationEntity2.copy(id = userA.id, type = ConversationEntity.Type.SELF))
 
-        //insert userB data
-        val userB = user1.copy(id = user1.id.copy("b","b.com"))
+        // insert userB data
+        val userB = user1.copy(id = user1.id.copy("b", "b.com"))
         val clientCB1 = "clientB1"
         val clientCB2 = "clientB2"
         userDAO.upsertUser(userB)
         clientDao.insertClients(listOf(insertedClient.copy(userB.id, id = clientCB1), insertedClient.copy(userB.id, id = clientCB2)))
 
-        //insert 1:1 proteus between userA and userB
+        // insert 1:1 proteus between userA and userB
         conversationDAO.insertConversation(conversationEntity1.copy(id = userB.id, type = ConversationEntity.Type.ONE_ON_ONE))
 
-        //insert 1:1 mls between userA and userB
+        // insert 1:1 mls between userA and userB
         val protocolInfo = (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).copy(groupId = "groupAB")
-        conversationDAO.insertConversation(conversationEntity2.copy(id = userB.id, type = ConversationEntity.Type.ONE_ON_ONE, protocolInfo = protocolInfo))
+        conversationDAO.insertConversation(
+            conversationEntity2.copy(
+                id = userB.id,
+                type = ConversationEntity.Type.ONE_ON_ONE,
+                protocolInfo = protocolInfo
+            )
+        )
 
-        //insert an MLSGroup between userA and userB
+        // insert an MLSGroup between userA and userB
         conversationDAO.insertConversation(conversationEntity4)
         memberDAO.insertMembersWithQualifiedId(
             listOf(
@@ -1349,7 +1384,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             conversationEntity4.id
         )
 
-        //insert a proteus group between userA and userB
+        // insert a proteus group between userA and userB
         conversationDAO.insertConversation(conversationEntity5)
         memberDAO.insertMembersWithQualifiedId(
             listOf(
@@ -1378,28 +1413,34 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenAllTypeOfConversationsForGivenClientsExceptSelf_whenGettingE2EIClientInfoByClientId_thenReturnsE2EIInfo() = runTest {
         // given
 
-        //insert userA data
+        // insert userA data
         val userA = user1
         val clientCA1 = "clientA1"
         val clientCA2 = "clientA2"
         userDAO.upsertUser(userA)
         clientDao.insertClients(listOf(insertedClient.copy(userA.id, id = clientCA1), insertedClient.copy(userA.id, id = clientCA2)))
 
-        //insert userB data
-        val userB = user1.copy(id = user1.id.copy("b","b.com"))
+        // insert userB data
+        val userB = user1.copy(id = user1.id.copy("b", "b.com"))
         val clientCB1 = "clientB1"
         val clientCB2 = "clientB2"
         userDAO.upsertUser(userB)
         clientDao.insertClients(listOf(insertedClient.copy(userB.id, id = clientCB1), insertedClient.copy(userB.id, id = clientCB2)))
 
-        //insert 1:1 proteus between userA and userB
+        // insert 1:1 proteus between userA and userB
         conversationDAO.insertConversation(conversationEntity1.copy(id = userB.id, type = ConversationEntity.Type.ONE_ON_ONE))
 
-        //insert 1:1 mls between userA and userB
+        // insert 1:1 mls between userA and userB
         val protocolInfo = (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).copy(groupId = "groupAB")
-        conversationDAO.insertConversation(conversationEntity2.copy(id = userB.id, type = ConversationEntity.Type.ONE_ON_ONE, protocolInfo = protocolInfo))
+        conversationDAO.insertConversation(
+            conversationEntity2.copy(
+                id = userB.id,
+                type = ConversationEntity.Type.ONE_ON_ONE,
+                protocolInfo = protocolInfo
+            )
+        )
 
-        //insert an MLSGroup between userA and userB
+        // insert an MLSGroup between userA and userB
         conversationDAO.insertConversation(conversationEntity4)
         memberDAO.insertMembersWithQualifiedId(
             listOf(
@@ -1409,7 +1450,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             conversationEntity4.id
         )
 
-        //insert a proteus group between userA and userB
+        // insert a proteus group between userA and userB
         conversationDAO.insertConversation(conversationEntity5)
         memberDAO.insertMembersWithQualifiedId(
             listOf(
@@ -1435,78 +1476,79 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
-    fun givenMLSGroupsAndProteusGroupsForGivenClients_whenGettingE2EIClientInfoByClientId_thenReturnsE2EIConversationClientInfo() = runTest {
-        // given
+    fun givenMLSGroupsAndProteusGroupsForGivenClients_whenGettingE2EIClientInfoByClientId_thenReturnsE2EIConversationClientInfo() =
+        runTest {
+            // given
 
-        //insert userA data
-        val userA = user1
-        val clientCA1 = "clientA1"
-        val clientCA2 = "clientA2"
-        userDAO.upsertUser(userA)
-        clientDao.insertClients(listOf(insertedClient.copy(userA.id, id = clientCA1), insertedClient.copy(userA.id, id = clientCA2)))
-        conversationDAO.insertConversation(conversationEntity1.copy(id = userA.id, type = ConversationEntity.Type.SELF))
+            // insert userA data
+            val userA = user1
+            val clientCA1 = "clientA1"
+            val clientCA2 = "clientA2"
+            userDAO.upsertUser(userA)
+            clientDao.insertClients(listOf(insertedClient.copy(userA.id, id = clientCA1), insertedClient.copy(userA.id, id = clientCA2)))
+            conversationDAO.insertConversation(conversationEntity1.copy(id = userA.id, type = ConversationEntity.Type.SELF))
 
-        //insert userB data
-        val userB = user1.copy(id = user1.id.copy("b","b.com"))
-        val clientCB1 = "clientB1"
-        val clientCB2 = "clientB2"
-        userDAO.upsertUser(userB)
-        clientDao.insertClients(listOf(insertedClient.copy(userB.id, id = clientCB1), insertedClient.copy(userB.id, id = clientCB2)))
+            // insert userB data
+            val userB = user1.copy(id = user1.id.copy("b", "b.com"))
+            val clientCB1 = "clientB1"
+            val clientCB2 = "clientB2"
+            userDAO.upsertUser(userB)
+            clientDao.insertClients(listOf(insertedClient.copy(userB.id, id = clientCB1), insertedClient.copy(userB.id, id = clientCB2)))
 
-        //insert 1:1 proteus between userA and userB
-        conversationDAO.insertConversation(conversationEntity1.copy(id = userA.id, type = ConversationEntity.Type.ONE_ON_ONE))
+            // insert 1:1 proteus between userA and userB
+            conversationDAO.insertConversation(conversationEntity1.copy(id = userA.id, type = ConversationEntity.Type.ONE_ON_ONE))
 
-        //insert an MLSGroup between userA and userB
-        conversationDAO.insertConversation(conversationEntity4)
-        memberDAO.insertMembersWithQualifiedId(
-            listOf(
-                MemberEntity(userA.id, MemberEntity.Role.Member),
-                MemberEntity(userB.id, MemberEntity.Role.Member) // adding SelfUser as a member too
-            ),
-            conversationEntity4.id
-        )
+            // insert an MLSGroup between userA and userB
+            conversationDAO.insertConversation(conversationEntity4)
+            memberDAO.insertMembersWithQualifiedId(
+                listOf(
+                    MemberEntity(userA.id, MemberEntity.Role.Member),
+                    MemberEntity(userB.id, MemberEntity.Role.Member) // adding SelfUser as a member too
+                ),
+                conversationEntity4.id
+            )
 
-        //insert a proteus group between userA and userB
-        conversationDAO.insertConversation(conversationEntity5)
-        memberDAO.insertMembersWithQualifiedId(
-            listOf(
-                MemberEntity(userA.id, MemberEntity.Role.Member),
-                MemberEntity(userB.id, MemberEntity.Role.Member) // adding SelfUser as a member too
-            ),
-            conversationEntity5.id
-        )
+            // insert a proteus group between userA and userB
+            conversationDAO.insertConversation(conversationEntity5)
+            memberDAO.insertMembersWithQualifiedId(
+                listOf(
+                    MemberEntity(userA.id, MemberEntity.Role.Member),
+                    MemberEntity(userB.id, MemberEntity.Role.Member) // adding SelfUser as a member too
+                ),
+                conversationEntity5.id
+            )
 
-        val expectedUserA = E2EIConversationClientInfoEntity(
-            userId = userA.id,
-            mlsGroupId = (conversationEntity4.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
-            clientId = clientCA1
-        )
-        val expectedUserB = E2EIConversationClientInfoEntity(
-            userId = userB.id,
-            mlsGroupId = (conversationEntity4.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
-            clientId = clientCA1
-        )
+            val expectedUserA = E2EIConversationClientInfoEntity(
+                userId = userA.id,
+                mlsGroupId = (conversationEntity4.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+                clientId = clientCA1
+            )
+            val expectedUserB = E2EIConversationClientInfoEntity(
+                userId = userB.id,
+                mlsGroupId = (conversationEntity4.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+                clientId = clientCA1
+            )
 
-        // then
-        assertEquals(
-            expectedUserA.copy(clientId = clientCA1), conversationDAO.getE2EIConversationClientInfoByClientId(clientCA1)
-        )
-        assertEquals(
-            expectedUserA.copy(clientId = clientCA2), conversationDAO.getE2EIConversationClientInfoByClientId(clientCA2)
-        )
-        assertEquals(
-            expectedUserB.copy(clientId = clientCB1), conversationDAO.getE2EIConversationClientInfoByClientId(clientCB1)
-        )
-        assertEquals(
-            expectedUserB.copy(clientId = clientCB2), conversationDAO.getE2EIConversationClientInfoByClientId(clientCB2)
-        )
-    }
+            // then
+            assertEquals(
+                expectedUserA.copy(clientId = clientCA1), conversationDAO.getE2EIConversationClientInfoByClientId(clientCA1)
+            )
+            assertEquals(
+                expectedUserA.copy(clientId = clientCA2), conversationDAO.getE2EIConversationClientInfoByClientId(clientCA2)
+            )
+            assertEquals(
+                expectedUserB.copy(clientId = clientCB1), conversationDAO.getE2EIConversationClientInfoByClientId(clientCB1)
+            )
+            assertEquals(
+                expectedUserB.copy(clientId = clientCB2), conversationDAO.getE2EIConversationClientInfoByClientId(clientCB2)
+            )
+        }
 
     @Test
     fun givenOnlyProteusConversationExistsForGivenClients_whenGettingE2EIClientInfoByClientId_thenReturnsNull() = runTest {
         // given
 
-        //insert userA data
+        // insert userA data
         val userA = user1
         val clientCA1 = "clientA1"
         val clientCA2 = "clientA2"
@@ -1514,17 +1556,17 @@ class ConversationDAOTest : BaseDatabaseTest() {
         clientDao.insertClients(listOf(insertedClient.copy(userA.id, id = clientCA1), insertedClient.copy(userA.id, id = clientCA2)))
         conversationDAO.insertConversation(conversationEntity1.copy(id = userA.id, type = ConversationEntity.Type.SELF))
 
-        //insert userB data
-        val userB = user1.copy(id = user1.id.copy("b","b.com"))
+        // insert userB data
+        val userB = user1.copy(id = user1.id.copy("b", "b.com"))
         val clientCB1 = "clientB1"
         val clientCB2 = "clientB2"
         userDAO.upsertUser(userB)
         clientDao.insertClients(listOf(insertedClient.copy(userB.id, id = clientCB1), insertedClient.copy(userB.id, id = clientCB2)))
 
-        //insert 1:1 proteus between userA and userB
+        // insert 1:1 proteus between userA and userB
         conversationDAO.insertConversation(conversationEntity1.copy(id = userA.id, type = ConversationEntity.Type.ONE_ON_ONE))
 
-        //insert a group proteus between userA and userB
+        // insert a group proteus between userA and userB
         conversationDAO.insertConversation(conversationEntity5)
         memberDAO.insertMembersWithQualifiedId(
             listOf(
@@ -1564,6 +1606,67 @@ class ConversationDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenNotEstablishedMLSConversationExists_whenGettingE2EIClientInfoByClientId_thenReturnsNull() = runTest {
+        // given
+        val clientId = "id0"
+        userDAO.upsertUser(user1)
+
+        clientDao.insertClients(listOf(insertedClient.copy(user1.id, id = clientId), insertedClient.copy(user1.id, id = "id1")))
+
+        conversationDAO.insertConversation(conversationEntity1.copy(id = user1.id, type = ConversationEntity.Type.SELF))
+        conversationDAO.insertConversation(conversationEntity3)
+        memberDAO.insertMembersWithQualifiedId(
+            listOf(
+                MemberEntity(user1.id, MemberEntity.Role.Admin),
+            ),
+            conversationEntity3.id
+        )
+        // then
+        assertNull(conversationDAO.getE2EIConversationClientInfoByClientId(clientId))
+    }
+
+    @Test
+    fun givenNotEstablishedMLSConversationExists_whenGettingMLSGroupIdByUserId_thenReturnsNull() = runTest {
+        // given
+        val clientId = "id0"
+        userDAO.upsertUser(user1)
+        userDAO.upsertUser(user2)
+
+        conversationDAO.insertConversation(conversationEntity1.copy(id = user1.id, type = ConversationEntity.Type.SELF))
+        conversationDAO.insertConversation(conversationEntity3)
+        memberDAO.insertMembersWithQualifiedId(
+            listOf(
+                MemberEntity(user1.id, MemberEntity.Role.Admin),
+                MemberEntity(user2.id, MemberEntity.Role.Admin),
+            ),
+            conversationEntity3.id
+        )
+        // then
+        assertNull(conversationDAO.getMLSGroupIdByUserId(user1.id))
+    }
+
+    @Test
+    fun givenEstablishedMLSConversationExists_whenGettingMLSGroupIdByUserId_thenReturnsMLSGroupId() = runTest {
+        // given
+        val expected = (conversationEntity4.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+        userDAO.upsertUser(user1)
+        userDAO.upsertUser(user2)
+
+        conversationDAO.insertConversation(conversationEntity1.copy(id = user1.id, type = ConversationEntity.Type.SELF))
+        conversationDAO.insertConversation(conversationEntity4)
+        memberDAO.insertMembersWithQualifiedId(
+            listOf(
+                MemberEntity(user1.id, MemberEntity.Role.Admin),
+                MemberEntity(user2.id, MemberEntity.Role.Admin),
+            ),
+            conversationEntity4.id
+        )
+        // then
+        assertEquals(expected, conversationDAO.getMLSGroupIdByUserId(user1.id))
+    }
+
+
+    @Test
     fun givenMLSSelfConversationDoesNotExists_whenGettingE2EIClientInfoByClientId_thenShouldReturnNull() = runTest {
         // given
         val clientId = "id0"
@@ -1600,6 +1703,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // then
         assertEquals(true, result)
     }
+
     @Test
     fun givenTheSameLegalHoldStatus_whenUpdating_thenShouldReturnFalse() = runTest {
         // given
@@ -1611,6 +1715,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // then
         assertEquals(false, result)
     }
+
     @Test
     fun givenNewLegalHoldStatusChangeNotifiedFlag_whenUpdating_thenShouldReturnTrue() = runTest {
         // given
@@ -1622,6 +1727,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // then
         assertEquals(true, result)
     }
+
     @Test
     fun givenTheSameLegalHoldStatusChangeNotifiedFlag_whenUpdating_thenShouldReturnFalse() = runTest {
         // given
@@ -1633,6 +1739,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // then
         assertEquals(false, result)
     }
+
     @Test
     fun givenLegalHoldStatus_whenObserving_thenShouldReturnCorrectValue() = runTest {
         // given
@@ -1644,6 +1751,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
         // then
         assertEquals(ConversationEntity.LegalHoldStatus.ENABLED, result)
     }
+
     @Test
     fun givenLegalHoldStatusChangeNotified_whenObserving_thenShouldReturnCorrectValue() = runTest {
         // given
@@ -1654,6 +1762,158 @@ class ConversationDAOTest : BaseDatabaseTest() {
         val result = conversationDAO.observeLegalHoldStatusChangeNotified(conversationId).first()
         // then
         assertEquals(false, result)
+    }
+
+    @Test
+    fun givenOnlyProteusConversation_whenGettingMLSGroupIdByConversationId_thenShouldReturnNull() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("conversationId", "domain")
+        conversationDAO.insertConversation(conversationEntity1.copy(conversationId))
+
+        // when
+        val result = conversationDAO.getMLSGroupIdByConversationId(conversationId)
+
+        // then
+        assertNull(result)
+    }
+
+    @Test
+    fun givenNotEstablishedMLSConversation_whenGettingMLSGroupIdByConversationId_thenShouldReturnNull() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("conversationId", "domain")
+        conversationDAO.insertConversation(conversationEntity3.copy(conversationId))
+
+        // when
+        val result = conversationDAO.getMLSGroupIdByConversationId(conversationId)
+
+        // then
+        assertNull(result)
+    }
+
+    @Test
+    fun givenEstablishedMLSConversation_whenGettingMLSGroupIdByConversationId_thenShouldReturnMLSGroupId() = runTest {
+        // given
+        val expected = (conversationEntity4.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+        val conversationId = QualifiedIDEntity("conversationId", "domain")
+        conversationDAO.insertConversation(conversationEntity4.copy(conversationId))
+
+        // when
+        val result = conversationDAO.getMLSGroupIdByConversationId(conversationId)
+
+        // then
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun givenEstablishedMLSConversation_whenGettingMLSGroupIdByUserId_thenShouldReturnMLSGroupId() = runTest {
+        // given
+        val expected = (conversationEntity4.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+        val conversationId = QualifiedIDEntity("conversationId", "domain")
+        conversationDAO.insertConversation(conversationEntity4.copy(conversationId))
+
+        // when
+        val result = conversationDAO.getMLSGroupIdByConversationId(conversationId)
+
+        // then
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun givenEstablishedSelfMLSConversation_whenGettingEstablishedSelfMLSGroupId_thenShouldReturnEstablishedSelfMLSGroupId() = runTest {
+        // given
+        val expected = (conversationEntity4.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
+        conversationDAO.insertConversation(
+            conversationEntity4.copy(
+                type = ConversationEntity.Type.SELF
+            )
+        )
+
+        // when
+        val result = conversationDAO.getEstablishedSelfMLSGroupId()
+
+        // then
+        assertEquals(
+            expected,
+            result
+        )
+    }
+
+    @Test
+    fun givenConversationWithGuestLink_whenCallingDelete_thenTheLinkIsDeleted() = runTest {
+        val conversationId = QualifiedIDEntity("conversationId", "domain")
+        conversationDAO.insertConversation(conversationEntity1.copy(conversationId))
+        conversationDAO.updateGuestRoomLink(conversationId, "link", true)
+
+        conversationDAO.observeGuestRoomLinkByConversationId(conversationId).first().let {
+            assertEquals(ConversationGuestLinkEntity("link", true), it)
+        }
+
+        conversationDAO.deleteGuestRoomLink(conversationId)
+
+        conversationDAO.observeGuestRoomLinkByConversationId(conversationId).first().let {
+            assertEquals(null, it)
+        }
+    }
+
+    @Test
+    fun givenInsertedConversations_whenGettingConversationByInexistingGroupId_thenReturnNull() = runTest {
+        // given
+        val expected = null
+        conversationDAO.insertConversation(conversationEntity4)
+
+        // when
+        val result = conversationDAO.getConversationByGroupID("call_subconversation_groupid")
+
+        // then
+        assertEquals(
+            expected,
+            result
+        )
+    }
+
+    @Test
+    fun givenConversationMembers_whenCallingSelectGroupStatusMembersNamesAndHandles_thenRerturn() = runTest {
+        // given
+        val conversationId = QualifiedIDEntity("conversationId", "domain")
+        val groupId = "groupId"
+
+        val mlsConversation = conversationEntity1.copy(
+            id = conversationId,
+            protocolInfo = ConversationEntity.ProtocolInfo.MLS(
+                groupId = groupId,
+                groupState = ConversationEntity.GroupState.ESTABLISHED,
+                keyingMaterialLastUpdate = Instant.fromEpochMilliseconds(0),
+                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519,
+                epoch = 0UL
+            )
+        )
+
+        val users = listOf(user1, user2, user3)
+        val members = listOf(
+            MemberEntity(user1.id, MemberEntity.Role.Admin),
+            MemberEntity(user2.id, MemberEntity.Role.Member),
+            MemberEntity(user3.id, MemberEntity.Role.Member)
+        )
+
+        val expected = EpochChangesDataEntity(
+            conversationId,
+            mlsVerificationStatus = mlsConversation.mlsVerificationStatus,
+            members = mapOf(
+                user1.id to NameAndHandleEntity(user1.name, user1.handle),
+                user2.id to NameAndHandleEntity(user2.name, user2.handle),
+                user3.id to NameAndHandleEntity(user3.name, user3.handle)
+            )
+        )
+
+        conversationDAO.insertConversation(mlsConversation)
+        userDAO.insertOrIgnoreUsers(users)
+        memberDAO.insertMembersWithQualifiedId(members, conversationId)
+
+        // when
+        val result = conversationDAO.selectGroupStatusMembersNamesAndHandles(groupId)
+
+        // then
+        assertEquals(expected, result)
     }
 
     private fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity {

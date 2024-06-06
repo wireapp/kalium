@@ -21,12 +21,14 @@ package com.wire.kalium.logic.feature.conversation
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.logic.test_util.testKaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -36,28 +38,30 @@ class RefreshConversationsWithoutMetadataUseCaseTest {
 
     @Test
     fun givenConversationsWithoutMetadata_whenRefreshing_thenShouldRefreshThoseConversationInformation() = runTest {
-        val (arrangement, refreshConversationsWithoutMetadata) = Arrangement()
+        val (arrangement, refreshConversationsWithoutMetadata) = Arrangement(testKaliumDispatcher)
             .withResponse()
             .arrange()
 
         refreshConversationsWithoutMetadata()
 
-        verify(arrangement.conversationRepository)
-            .suspendFunction(arrangement.conversationRepository::syncConversationsWithoutMetadata)
-            .wasInvoked(once)
+        coVerify {
+            arrangement.conversationRepository.syncConversationsWithoutMetadata()
+        }.wasInvoked(once)
     }
 
-    private class Arrangement {
+    private class Arrangement(var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
+        val conversationRepository = mock(ConversationRepository::class)
 
-        fun withResponse(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::syncConversationsWithoutMetadata)
-                .whenInvoked()
-                .thenReturn(result)
+        suspend fun withResponse(result: Either<CoreFailure, Unit> = Either.Right(Unit)) = apply {
+            coEvery {
+                conversationRepository.syncConversationsWithoutMetadata()
+            }.returns(result)
         }
 
-        fun arrange() = this to RefreshConversationsWithoutMetadataUseCaseImpl(conversationRepository)
+        fun arrange() = this to RefreshConversationsWithoutMetadataUseCaseImpl(
+            conversationRepository,
+            dispatcher
+        )
     }
 }

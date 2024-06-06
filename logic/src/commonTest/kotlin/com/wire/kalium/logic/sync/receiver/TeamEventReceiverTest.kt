@@ -27,11 +27,10 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -49,39 +48,35 @@ class TeamEventReceiverTest {
                 withPersistMessageSuccess()
             }
 
-        eventReceiver.onEvent(event)
+        eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
 
-        verify(arrangement.persistMessageUseCase)
-            .suspendFunction(arrangement.persistMessageUseCase::invoke)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.persistMessageUseCase.invoke(any())
+        }.wasInvoked(exactly = once)
 
     }
 
     private class Arrangement : UserRepositoryArrangement by UserRepositoryArrangementImpl() {
 
         @Mock
-        val persistMessageUseCase = mock(classOf<PersistMessageUseCase>())
+        val persistMessageUseCase = mock(PersistMessageUseCase::class)
 
         private val teamEventReceiver: TeamEventReceiver = TeamEventReceiverImpl(
-            userRepository, persistMessageUseCase,
+            userRepository,
+            persistMessageUseCase,
             TestUser.USER_ID
         )
 
-        init {
-            apply {
-                withGetKnownUserReturning(flowOf(TestUser.OTHER))
-            }
+        suspend fun withPersistMessageSuccess() = apply {
+            coEvery {
+                persistMessageUseCase.invoke(any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withPersistMessageSuccess() = apply {
-            given(persistMessageUseCase).suspendFunction(persistMessageUseCase::invoke)
-                .whenInvokedWith(any()).thenReturn(Either.Right(Unit))
+        suspend fun arrange(block: suspend Arrangement.() -> Unit = { }) = run {
+            withGetKnownUserReturning(flowOf(TestUser.OTHER))
+            block()
+            this to teamEventReceiver
         }
-
-        fun arrange(block: Arrangement.() -> Unit = { }) = apply(block)
-            .let {
-                this to teamEventReceiver
-            }
     }
 }

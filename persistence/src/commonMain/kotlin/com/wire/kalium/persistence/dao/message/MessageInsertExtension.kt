@@ -85,8 +85,6 @@ internal class MessageInsertExtensionImpl(
                 assetName = assetName,
                 assetOtrKey = assetOtrKey,
                 assetSha256 = assetSha256Key,
-                assetUploadStatus = assetUploadStatus,
-                assetDownloadStatus = assetDownloadStatus,
                 assetEncryptionAlgorithm = assetEncryptionAlgorithm
             )
         }
@@ -112,11 +110,14 @@ internal class MessageInsertExtensionImpl(
             sender_user_id = message.senderUserId,
             sender_client_id = if (message is MessageEntity.Regular) message.senderClientId else null,
             visibility = message.visibility,
+            last_edit_date =
+                if (message is MessageEntity.Regular && message.editStatus is MessageEntity.EditStatus.Edited) message.editStatus.lastDate
+                else null,
             status = message.status,
             content_type = contentTypeOf(message.content),
             expects_read_confirmation = if (message is MessageEntity.Regular) message.expectsReadConfirmation else false,
             expire_after_millis = if (message is MessageEntity.Regular) message.expireAfterMs else null,
-            self_deletion_start_date = if (message is MessageEntity.Regular) message.selfDeletionStartDate else null
+            self_deletion_end_date = if (message is MessageEntity.Regular) message.selfDeletionEndDate else null
         )
     }
 
@@ -157,8 +158,6 @@ internal class MessageInsertExtensionImpl(
                     asset_size = content.assetSizeInBytes,
                     asset_name = content.assetName,
                     asset_mime_type = content.assetMimeType,
-                    asset_upload_status = content.assetUploadStatus,
-                    asset_download_status = content.assetDownloadStatus,
                     asset_otr_key = content.assetOtrKey,
                     asset_sha256 = content.assetSha256Key,
                     asset_id = content.assetId,

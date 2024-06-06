@@ -19,6 +19,7 @@
 package com.wire.kalium.network.api.base.authenticated.conversation
 
 import com.wire.kalium.network.api.base.authenticated.BaseApi
+import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
@@ -162,6 +163,10 @@ interface ConversationApi : BaseApi {
         conversationId: ConversationId,
         protocol: ConvProtocol
     ): NetworkResponse<UpdateConversationProtocolResponse>
+
+    suspend fun guestLinkInfo(
+        conversationId: ConversationId
+    ): NetworkResponse<ConversationInviteLinkResponse>
 
     companion object {
         fun getApiNotSupportError(apiName: String, apiVersion: String = "4") = NetworkResponse.Error(

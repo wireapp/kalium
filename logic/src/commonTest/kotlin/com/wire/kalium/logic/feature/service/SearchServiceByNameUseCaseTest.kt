@@ -23,8 +23,8 @@ import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.service.ServiceRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
+import io.mockative.coEvery
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -90,12 +90,12 @@ class SearchServiceByNameUseCaseTest {
 
         private val searchServiceByNameUseCase = SearchServicesByNameUseCaseImpl(serviceRepository)
 
-        fun withSearchServiceByName(query: String, result: Flow<Either<StorageFailure, List<ServiceDetails>>>) = apply {
-            given(serviceRepository)
-                .suspendFunction(serviceRepository::searchServicesByName)
-                .whenInvokedWith(eq(query))
-                .then { result }
+        suspend fun withSearchServiceByName(query: String, result: Flow<Either<StorageFailure, List<ServiceDetails>>>) = apply {
+            coEvery {
+                serviceRepository.searchServicesByName(eq(query))
+            }.returns(result)
         }
+
         fun arrange() = this to searchServiceByNameUseCase
     }
 }

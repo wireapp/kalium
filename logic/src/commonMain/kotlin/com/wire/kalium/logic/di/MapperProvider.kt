@@ -49,6 +49,8 @@ import com.wire.kalium.logic.data.conversation.ProtocolInfoMapper
 import com.wire.kalium.logic.data.conversation.ProtocolInfoMapperImpl
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapperImpl
+import com.wire.kalium.logic.data.e2ei.AcmeMapper
+import com.wire.kalium.logic.data.e2ei.AcmeMapperImpl
 import com.wire.kalium.logic.data.event.EventMapper
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapper
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapperImpl
@@ -99,12 +101,15 @@ import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapperImpl
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapperImpl
+import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapper
+import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapperImpl
 
+@Suppress("TooManyFunctions")
 internal object MapperProvider {
     fun apiVersionMapper(): ApiVersionMapper = ApiVersionMapperImpl()
     fun idMapper(): IdMapper = IdMapperImpl()
-    fun serverConfigMapper(): ServerConfigMapper = ServerConfigMapperImpl(apiVersionMapper(), idMapper())
-    fun sessionMapper(): SessionMapper = SessionMapperImpl(idMapper())
+    fun serverConfigMapper(): ServerConfigMapper = ServerConfigMapperImpl(apiVersionMapper())
+    fun sessionMapper(): SessionMapper = SessionMapperImpl()
     fun availabilityStatusMapper(): AvailabilityStatusMapper = AvailabilityStatusMapperImpl()
     fun connectionStateMapper(): ConnectionStateMapper = ConnectionStateMapperImpl()
     fun userMapper(): UserMapper = UserMapperImpl()
@@ -174,4 +179,6 @@ internal object MapperProvider {
     fun sendMessagePartialFailureMapper(): SendMessagePartialFailureMapper = SendMessagePartialFailureMapperImpl()
     fun serviceMapper(): ServiceMapper = ServiceMapper()
     fun legalHoldStatusMapper(): LegalHoldStatusMapper = LegalHoldStatusMapperImpl
+    fun acmeMapper(): AcmeMapper = AcmeMapperImpl()
+    fun certificateStatusMapper(): CertificateStatusMapper = CertificateStatusMapperImpl()
 }

@@ -24,6 +24,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.NetworkLogger
 import com.wire.kalium.network.NetworkUtilLogger
 import com.wire.kalium.persistence.PersistenceLogger
+import com.wire.kalium.util.serialization.toJsonElement
 
 private var kaliumLoggerConfig = KaliumLogger.Config.disabled()
 internal var kaliumLogger = KaliumLogger.disabled()
@@ -44,4 +45,34 @@ object CoreLogger {
     fun setLoggingLevel(level: KaliumLogLevel) {
         kaliumLoggerConfig.setLogLevel(level)
     }
+}
+
+/**
+ * Log a structured JSON message, in the following format:
+ *
+ * Example:
+ * ```
+ * leadingMessage: {map of key-value pairs represented as JSON}
+ * ```
+ * @param level the severity of the log message
+ * @param leadingMessage the leading message useful for later grok parsing
+ * @param jsonStringKeyValues the map of key-value pairs to be logged in a valid JSON format
+ */
+internal fun KaliumLogger.logStructuredJson(
+    level: KaliumLogLevel,
+    leadingMessage: String,
+    jsonStringKeyValues: Map<String, Any?>
+) {
+    val logJson = jsonStringKeyValues.toJsonElement()
+    val sanitizedLeadingMessage = if (leadingMessage.endsWith(":")) leadingMessage else "$leadingMessage:"
+    val logMessage = "$sanitizedLeadingMessage $logJson"
+    when (level) {
+        KaliumLogLevel.DEBUG -> d(logMessage)
+        KaliumLogLevel.INFO -> i(logMessage)
+        KaliumLogLevel.WARN -> w(logMessage)
+        KaliumLogLevel.ERROR -> e(logMessage)
+        KaliumLogLevel.DISABLED,
+        KaliumLogLevel.VERBOSE -> v(logMessage)
+    }
+
 }

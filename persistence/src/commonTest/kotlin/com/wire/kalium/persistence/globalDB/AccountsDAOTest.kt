@@ -25,7 +25,7 @@ import com.wire.kalium.persistence.daokaliumdb.AccountInfoEntity
 import com.wire.kalium.persistence.daokaliumdb.FullAccountEntity
 import com.wire.kalium.persistence.daokaliumdb.PersistentWebSocketStatusEntity
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.model.LogoutReason
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.persistence.model.SsoIdEntity
@@ -39,15 +39,15 @@ import kotlin.test.assertNull
 @OptIn(ExperimentalCoroutinesApi::class)
 class AccountsDAOTest : GlobalDBBaseTest() {
 
-    lateinit var db: GlobalDatabaseProvider
+    lateinit var globalDatabaseBuilder: GlobalDatabaseBuilder
 
     @BeforeTest
     fun setUp() = runTest {
         deleteDatabase()
-        db = createDatabase()
+        globalDatabaseBuilder = createDatabase()
 
         with(SERVER_CONFIG) {
-            db.serverConfigurationDAO.insert(
+            globalDatabaseBuilder.serverConfigurationDAO.insert(
                 ServerConfigurationDAO.InsertData(
                     id = id,
                     apiBaseUrl = links.api,
@@ -78,23 +78,23 @@ class AccountsDAOTest : GlobalDBBaseTest() {
             ssoId = SsoIdEntity("sso_id", null, null)
         )
 
-        db.accountsDAO.insertOrReplace(
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(
             accountWithNullSsoId.info.userIDEntity,
             accountWithNullSsoId.ssoId,
             accountWithNullSsoId.serverConfigId,
             false
         )
-        db.accountsDAO.insertOrReplace(
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(
             accountWithSsoId.info.userIDEntity,
             accountWithSsoId.ssoId,
             accountWithSsoId.serverConfigId,
             false
         )
 
-        db.accountsDAO.ssoId(accountWithNullSsoId.info.userIDEntity).also {
+        globalDatabaseBuilder.accountsDAO.ssoId(accountWithNullSsoId.info.userIDEntity).also {
             assertNull(it)
         }
-        db.accountsDAO.ssoId(accountWithSsoId.info.userIDEntity).also {
+        globalDatabaseBuilder.accountsDAO.ssoId(accountWithSsoId.info.userIDEntity).also {
             assertEquals(accountWithSsoId.ssoId, it)
         }
     }
@@ -102,16 +102,16 @@ class AccountsDAOTest : GlobalDBBaseTest() {
     @Test
     fun whenInsertingAccount_thenAccountIsInserted() = runTest {
         val account = VALID_ACCOUNT
-        db.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
 
-        val insertedAccount = db.accountsDAO.fullAccountInfo(account.info.userIDEntity)
+        val insertedAccount = globalDatabaseBuilder.accountsDAO.fullAccountInfo(account.info.userIDEntity)
         assertEquals(account.info, insertedAccount?.info)
     }
 
     @Test
     fun whenCallingAllAccountList_thenAllStoredAccountsAreReturned() = runTest {
         val expectedList = insertAccounts().map { it.info }
-        val actualList = db.accountsDAO.allAccountList()
+        val actualList = globalDatabaseBuilder.accountsDAO.allAccountList()
         assertEquals(4, actualList.size)
         assertEquals(expectedList, actualList)
     }
@@ -119,7 +119,7 @@ class AccountsDAOTest : GlobalDBBaseTest() {
     @Test
     fun whenCallingAllValidAccountList_thenOnlyValidAccountsAreReturned() = runTest {
         val expectedList = insertAccounts().filter { it.info.logoutReason == null }.map { it.info }
-        val actualList = db.accountsDAO.allValidAccountList()
+        val actualList = globalDatabaseBuilder.accountsDAO.allValidAccountList()
         assertEquals(3, actualList.size)
 
         assertEquals(expectedList, actualList)
@@ -132,11 +132,11 @@ class AccountsDAOTest : GlobalDBBaseTest() {
         val account3 = VALID_ACCOUNT
             .copy(info = VALID_ACCOUNT.info.copy(userIDEntity = UserIDEntity("user3", "domain3")))
         val account4 = INVALID_ACCOUNT
-        db.accountsDAO.insertOrReplace(account1.info.userIDEntity, account1.ssoId, account1.serverConfigId, false)
-        db.accountsDAO.insertOrReplace(account2.info.userIDEntity, account2.ssoId, account2.serverConfigId, false)
-        db.accountsDAO.insertOrReplace(account3.info.userIDEntity, account3.ssoId, account3.serverConfigId, false)
-        db.accountsDAO.insertOrReplace(account4.info.userIDEntity, account4.ssoId, account4.serverConfigId, false)
-        db.accountsDAO.markAccountAsInvalid(account4.info.userIDEntity, account4.info.logoutReason!!)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(account1.info.userIDEntity, account1.ssoId, account1.serverConfigId, false)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(account2.info.userIDEntity, account2.ssoId, account2.serverConfigId, false)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(account3.info.userIDEntity, account3.ssoId, account3.serverConfigId, false)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(account4.info.userIDEntity, account4.ssoId, account4.serverConfigId, false)
+        globalDatabaseBuilder.accountsDAO.markAccountAsInvalid(account4.info.userIDEntity, account4.info.logoutReason!!)
 
         return listOf(account1, account2, account3, account4)
     }
@@ -144,57 +144,57 @@ class AccountsDAOTest : GlobalDBBaseTest() {
     @Test
     fun whenMarkingAccountAsInvalid_thenAccountIsMarkedAsInvalid() = runTest {
         val account = VALID_ACCOUNT
-        db.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
-        db.accountsDAO.markAccountAsInvalid(account.info.userIDEntity, LogoutReason.SELF_SOFT_LOGOUT)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
+        globalDatabaseBuilder.accountsDAO.markAccountAsInvalid(account.info.userIDEntity, LogoutReason.SELF_SOFT_LOGOUT)
 
-        val insertedAccount = db.accountsDAO.fullAccountInfo(account.info.userIDEntity)
+        val insertedAccount = globalDatabaseBuilder.accountsDAO.fullAccountInfo(account.info.userIDEntity)
         assertEquals(account.info.copy(logoutReason = LogoutReason.SELF_SOFT_LOGOUT), insertedAccount?.info)
     }
 
     @Test
     fun whenDeletingAccount_thenAccountIsDeleted() = runTest {
         val account = VALID_ACCOUNT
-        db.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
-        val insertedAccount = db.accountsDAO.fullAccountInfo(account.info.userIDEntity)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
+        val insertedAccount = globalDatabaseBuilder.accountsDAO.fullAccountInfo(account.info.userIDEntity)
         assertEquals(account, insertedAccount)
 
-        db.accountsDAO.deleteAccount(account.info.userIDEntity)
-        val deletedAccount = db.accountsDAO.fullAccountInfo(account.info.userIDEntity)
+        globalDatabaseBuilder.accountsDAO.deleteAccount(account.info.userIDEntity)
+        val deletedAccount = globalDatabaseBuilder.accountsDAO.fullAccountInfo(account.info.userIDEntity)
         assertEquals(null, deletedAccount)
     }
 
     @Test
     fun givenAccountNotInserted_whenCallindDoesAccountExists_thenFalseIsReturned() = runTest {
         val account = VALID_ACCOUNT
-        val exists = db.accountsDAO.doesValidAccountExists(account.info.userIDEntity)
+        val exists = globalDatabaseBuilder.accountsDAO.doesValidAccountExists(account.info.userIDEntity)
         assertEquals(false, exists)
     }
 
     @Test
     fun givenInvalidSession_whenCallindDoesValidAccountExists_thenFalseIsReturned() = runTest {
         val account = INVALID_ACCOUNT
-        db.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
-        db.accountsDAO.markAccountAsInvalid(account.info.userIDEntity, account.info.logoutReason!!)
-        val exists = db.accountsDAO.doesValidAccountExists(account.info.userIDEntity)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
+        globalDatabaseBuilder.accountsDAO.markAccountAsInvalid(account.info.userIDEntity, account.info.logoutReason!!)
+        val exists = globalDatabaseBuilder.accountsDAO.doesValidAccountExists(account.info.userIDEntity)
         assertEquals(false, exists)
     }
 
     @Test
     fun givenValidAccount_whenManagedByIsPresent_thenReturnsTheCorrespondingValue() = runTest {
         val account = VALID_ACCOUNT
-        db.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
-        db.accountsDAO.updateSsoIdAndScimInfo(account.info.userIDEntity, account.ssoId, ManagedByEntity.SCIM)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
+        globalDatabaseBuilder.accountsDAO.updateSsoIdAndScimInfo(account.info.userIDEntity, account.ssoId, ManagedByEntity.SCIM)
 
-        val result = db.accountsDAO.getAccountManagedBy(account.info.userIDEntity)
+        val result = globalDatabaseBuilder.accountsDAO.getAccountManagedBy(account.info.userIDEntity)
         assertEquals(ManagedByEntity.SCIM, result)
     }
 
     @Test
     fun givenValidAccount_whenManagedByNotPresent_thenReturnsTheCorrespondingValue() = runTest {
         val account = VALID_ACCOUNT
-        db.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
+        globalDatabaseBuilder.accountsDAO.insertOrReplace(account.info.userIDEntity, account.ssoId, account.serverConfigId, false)
 
-        val result = db.accountsDAO.getAccountManagedBy(account.info.userIDEntity)
+        val result = globalDatabaseBuilder.accountsDAO.getAccountManagedBy(account.info.userIDEntity)
         assertEquals(null, result)
     }
 

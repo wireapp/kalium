@@ -25,8 +25,7 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.logout.LogoutRepository
 import com.wire.kalium.logic.framework.TestClient
 import io.mockative.Mock
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -43,9 +42,11 @@ class SlowSyncCriteriaProviderTest {
     fun givenClientIsNull_whenCollectingStartCriteriaFlow_thenShouldBeMissingCriteria() = runTest {
         // Given
         val clientFlow = flowOf<ClientId?>(null)
+        val e2eiIsRequiredFlow = flowOf<Boolean?>(null)
 
         val (_, syncCriteriaProvider) = Arrangement()
             .withObserveClientReturning(clientFlow)
+            .withObserveIsClientRegistrationBlockedByE2EIReturning(e2eiIsRequiredFlow)
             .withNoLogouts()
             .arrange()
 
@@ -61,13 +62,38 @@ class SlowSyncCriteriaProviderTest {
     }
 
     @Test
+    fun givenE2EIIsRequired_whenCollectingStartCriteriaFlow_thenShouldBeMissingCriteria() = runTest {
+        // Given
+        val clientFlow = flowOf<ClientId?>(TestClient.CLIENT_ID)
+        val e2eiIsRequiredFlow = flowOf<Boolean?>(true)
+
+        val (_, syncCriteriaProvider) = Arrangement()
+            .withObserveClientReturning(clientFlow)
+            .withObserveIsClientRegistrationBlockedByE2EIReturning(e2eiIsRequiredFlow)
+            .withNoLogouts()
+            .arrange()
+
+        // When
+        val result = syncCriteriaProvider.syncCriteriaFlow()
+
+        // Then
+        result.test {
+            assertIs<SyncCriteriaResolution.MissingRequirement>(awaitItem())
+            cancelAndConsumeRemainingEvents()
+        }
+    }
+
+
+    @Test
     fun givenClientIsFirstNullAndThenRegistered_whenCollectingStartCriteriaFlow_thenCriteriaShouldBeMissingThenReady() = runTest {
         // Given
         val clientChannel = Channel<ClientId?>(Channel.UNLIMITED)
+        val e2eiIsRequiredFlow = flowOf<Boolean?>(null)
         clientChannel.send(null)
 
         val (_, syncCriteriaProvider) = Arrangement()
             .withObserveClientReturning(clientChannel.consumeAsFlow())
+            .withObserveIsClientRegistrationBlockedByE2EIReturning(e2eiIsRequiredFlow)
             .withNoLogouts()
             .arrange()
 
@@ -90,10 +116,12 @@ class SlowSyncCriteriaProviderTest {
     fun givenClientIsRegisteredAndThenNull_whenCollectingStartCriteriaFlow_thenCriteriaShouldBeReadyThenMissing() = runTest {
         // Given
         val clientChannel = Channel<ClientId?>(Channel.UNLIMITED)
+        val e2eiIsRequiredFlow = flowOf<Boolean?>(null)
         clientChannel.send(TestClient.CLIENT_ID)
 
         val (_, syncCriteriaProvider) = Arrangement()
             .withObserveClientReturning(clientChannel.consumeAsFlow())
+            .withObserveIsClientRegistrationBlockedByE2EIReturning(e2eiIsRequiredFlow)
             .withNoLogouts()
             .arrange()
 
@@ -116,10 +144,12 @@ class SlowSyncCriteriaProviderTest {
     fun givenLogoutHappens_whenCollectingStartCriteriaFlow_thenCriteriaShouldGoFromReadyToMissing() = runTest {
         // Given
         val logoutReasonsChannel = Channel<LogoutReason>()
+        val e2eiIsRequiredFlow = flowOf<Boolean?>(null)
 
         val (_, syncCriteriaProvider) = Arrangement()
             .withObserveClientReturning(flowOf(TestClient.CLIENT_ID))
             .withObserveLogoutReturning(logoutReasonsChannel.consumeAsFlow())
+            .withObserveIsClientRegistrationBlockedByE2EIReturning(e2eiIsRequiredFlow)
             .arrange()
 
         // When
@@ -140,32 +170,35 @@ class SlowSyncCriteriaProviderTest {
     private class Arrangement {
 
         @Mock
-        private val clientRepository = mock(classOf<ClientRepository>())
+        private val clientRepository = mock(ClientRepository::class)
 
         @Mock
-        private val logoutRepository = mock(classOf<LogoutRepository>())
+        private val logoutRepository = mock(LogoutRepository::class)
 
         private val syncCriteriaProvider = SlowSlowSyncCriteriaProviderImpl(clientRepository, logoutRepository)
 
-        fun withObserveClientReturning(flow: Flow<ClientId?>) = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::observeCurrentClientId)
-                .whenInvoked()
-                .thenReturn(flow)
+        suspend fun withObserveClientReturning(flow: Flow<ClientId?>) = apply {
+            coEvery {
+                clientRepository.observeCurrentClientId()
+            }.returns(flow)
         }
 
-        fun withObserveLogoutReturning(flow: Flow<LogoutReason>) = apply {
-            given(logoutRepository)
-                .suspendFunction(logoutRepository::observeLogout)
-                .whenInvoked()
-                .thenReturn(flow)
+        suspend fun withObserveIsClientRegistrationBlockedByE2EIReturning(flow: Flow<Boolean?>) = apply {
+            coEvery {
+                clientRepository::observeIsClientRegistrationBlockedByE2EI.invoke()
+            }.returns(flow)
         }
 
-        fun withNoLogouts() = apply {
-            given(logoutRepository)
-                .suspendFunction(logoutRepository::observeLogout)
-                .whenInvoked()
-                .thenReturn(emptyFlow())
+        suspend fun withObserveLogoutReturning(flow: Flow<LogoutReason>) = apply {
+            coEvery {
+                logoutRepository.observeLogout()
+            }.returns(flow)
+        }
+
+        suspend fun withNoLogouts() = apply {
+            coEvery {
+                logoutRepository.observeLogout()
+            }.returns(emptyFlow())
         }
 
         fun arrange() = this to syncCriteriaProvider

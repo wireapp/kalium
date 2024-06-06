@@ -22,7 +22,6 @@ import com.wire.kalium.logic.data.publicuser.ConversationMemberExcludedOptions
 import com.wire.kalium.logic.data.publicuser.SearchUserRepository
 import com.wire.kalium.logic.data.publicuser.SearchUsersOptions
 import com.wire.kalium.logic.data.publicuser.model.UserSearchDetails
-import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
@@ -37,15 +36,16 @@ import kotlinx.coroutines.coroutineScope
  */
 class SearchUsersUseCase internal constructor(
     private val searchUserRepository: SearchUserRepository,
-    private val selfUserId: UserId
+    private val selfUserId: UserId,
+    private val maxRemoteSearchResultCount: Int
 ) {
     suspend operator fun invoke(
         searchQuery: String,
         excludingMembersOfConversation: ConversationId?,
         customDomain: String?
-    ): Result {
+    ): SearchUserResult {
         return if (searchQuery.isBlank()) {
-            Result(
+            SearchUserResult(
                 connected = searchUserRepository.getKnownContacts(excludingMembersOfConversation).getOrElse(emptyList()),
                 notConnected = emptyList()
             )
@@ -58,14 +58,14 @@ class SearchUsersUseCase internal constructor(
         searchQuery: String,
         excludingConversation: ConversationId?,
         customDomain: String?
-    ): Result = coroutineScope {
+    ): SearchUserResult = coroutineScope {
         val cleanSearchQuery = searchQuery.trim().lowercase()
 
         val remoteResultsDeferred = async {
             searchUserRepository.searchUserRemoteDirectory(
                 cleanSearchQuery,
                 customDomain ?: selfUserId.domain,
-                MAX_SEARCH_RESULTS,
+                maxRemoteSearchResultCount,
                 SearchUsersOptions(
                     conversationExcluded = excludingConversation?.let { ConversationMemberExcludedOptions.ConversationExcluded(it) }
                         ?: ConversationMemberExcludedOptions.None,
@@ -98,37 +98,6 @@ class SearchUsersUseCase internal constructor(
         val remoteResults = remoteResultsDeferred.await()
         val localSearchResult = localSearchResultDeferred.await()
 
-        resolveLocalAndRemoteResult(localSearchResult, remoteResults)
-    }
-
-    private inline fun resolveLocalAndRemoteResult(
-        localResult: MutableMap<UserId, UserSearchDetails>,
-        remoteSearch: MutableMap<UserId, UserSearchDetails>
-    ): Result {
-        val updatedUser = mutableListOf<UserId>()
-        remoteSearch.forEach { (userId, remoteUser) ->
-            if (localResult.contains(userId) || (remoteUser.connectionStatus == ConnectionState.ACCEPTED)) {
-                localResult[userId] = remoteUser
-                updatedUser.add(userId)
-            }
-        }
-
-        updatedUser.forEach { userId ->
-            remoteSearch.remove(userId)
-        }
-
-        return Result(
-            connected = localResult.values.toList(),
-            notConnected = remoteSearch.values.toList()
-        )
-    }
-
-    data class Result(
-        val connected: List<UserSearchDetails>,
-        val notConnected: List<UserSearchDetails>
-    )
-
-    private companion object {
-        private const val MAX_SEARCH_RESULTS = 30
+        SearchUserResult.resolveLocalAndRemoteResult(localSearchResult, remoteResults)
     }
 }

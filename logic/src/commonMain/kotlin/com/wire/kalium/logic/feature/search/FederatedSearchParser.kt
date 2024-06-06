@@ -17,9 +17,12 @@
  */
 package com.wire.kalium.logic.feature.search
 
+import co.touchlab.stately.concurrency.AtomicReference
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 class FederatedSearchParser(
     private val sessionRepository: SessionRepository,
@@ -29,16 +32,26 @@ class FederatedSearchParser(
         Regex(DOMAIN_REGEX)
     }
 
-    private val isFederationEnabled by lazy {
-        sessionRepository.isFederated(selfUserId).fold(
-            { false },
-            { it }
-        )
-    }
+    private val cachedIsFederationEnabled = AtomicReference<Boolean?>(null)
+    private val mutex = Mutex()
 
-    operator fun invoke(searchQuery: String): Result =
-        when {
-            isFederationEnabled.not() -> Result(searchQuery, selfUserId.domain)
+    suspend operator fun invoke(searchQuery: String): Result {
+
+        val isFederated = cachedIsFederationEnabled.get()
+            ?: mutex.withLock {
+
+                cachedIsFederationEnabled.get() ?: run {
+                    val result = sessionRepository.isFederated(selfUserId).fold(
+                        { false },
+                        { it }
+                    )
+                    cachedIsFederationEnabled.set(result)
+                    result
+                }
+            }
+
+        return when {
+            !isFederated -> Result(searchQuery, selfUserId.domain)
 
             searchQuery.matches(regex) -> {
                 val domain = searchQuery.substringAfterLast(DOMAIN_SEPARATOR)
@@ -48,6 +61,7 @@ class FederatedSearchParser(
 
             else -> Result(searchQuery, selfUserId.domain)
         }
+    }
 
     private companion object {
         const val DOMAIN_SEPARATOR = "@"

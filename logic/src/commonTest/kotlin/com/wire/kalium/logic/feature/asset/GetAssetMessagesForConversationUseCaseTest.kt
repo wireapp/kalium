@@ -20,16 +20,14 @@ package com.wire.kalium.logic.feature.asset
 
 import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import okio.Path.Companion.toPath
@@ -53,7 +51,6 @@ class GetAssetMessagesForConversationUseCaseTest {
             assetId = "assetId",
             width = 640,
             height = 480,
-            downloadStatus = Message.DownloadStatus.SAVED_INTERNALLY,
             assetPath = "asset/path".toPath(),
             isSelfAsset = false
         )
@@ -74,31 +71,29 @@ class GetAssetMessagesForConversationUseCaseTest {
         assertContains(result, assetMessage)
 
         // Then
-        verify(arrangement.messageRepository)
-            .suspendFunction(arrangement.messageRepository::getImageAssetMessagesByConversationId)
-            .with(eq(someConversationId), eq(limit), eq(offset))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageRepository.getImageAssetMessagesByConversationId(eq(someConversationId), eq(limit), eq(offset))
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
         @Mock
-        val messageRepository = mock(classOf<MessageRepository>())
+        val messageRepository = mock(MessageRepository::class)
 
         val getAssetMessagesByConversationUseCase = GetImageAssetMessagesForConversationUseCaseImpl(
             testDispatcher,
             messageRepository
         )
 
-        fun withAssetMessages(
+        suspend fun withAssetMessages(
             assetList: List<AssetMessage>,
             conversationId: ConversationId,
             limit: Int,
             offset: Int
         ): Arrangement = apply {
-            given(messageRepository)
-                .suspendFunction(messageRepository::getImageAssetMessagesByConversationId)
-                .whenInvokedWith(eq(conversationId), eq(limit), eq(offset))
-                .thenReturn(assetList)
+            coEvery {
+                messageRepository.getImageAssetMessagesByConversationId(eq(conversationId), eq(limit), eq(offset))
+            }.returns(assetList)
         }
 
         fun arrange() = this to getAssetMessagesByConversationUseCase

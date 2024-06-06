@@ -18,7 +18,9 @@
 
 package com.wire.kalium.logic.data.call
 
+import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
@@ -49,6 +51,7 @@ import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
 import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
+import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.getOrNull
@@ -56,6 +59,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.onlyRight
+import com.wire.kalium.logic.logStructuredJson
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -67,7 +71,6 @@ import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
@@ -94,6 +97,7 @@ interface CallRepository {
     fun getCallMetadataProfile(): CallMetadataProfile
     suspend fun callsFlow(): Flow<List<Call>>
     suspend fun incomingCallsFlow(): Flow<List<Call>>
+    suspend fun outgoingCallsFlow(): Flow<List<Call>>
     suspend fun ongoingCallsFlow(): Flow<List<Call>>
     suspend fun establishedCallsFlow(): Flow<List<Call>>
     fun getEstablishedCall(): Call
@@ -135,6 +139,7 @@ internal class CallDataSource(
     private val callDAO: CallDAO,
     private val conversationRepository: ConversationRepository,
     private val mlsConversationRepository: MLSConversationRepository,
+    private val epochChangesObserver: EpochChangesObserver,
     private val subconversationRepository: SubconversationRepository,
     private val userRepository: UserRepository,
     private val teamRepository: TeamRepository,
@@ -151,8 +156,8 @@ internal class CallDataSource(
 
     private val job = SupervisorJob() // TODO(calling): clear job method
     private val scope = CoroutineScope(job + kaliumDispatchers.io)
-    private val callJobs = mutableMapOf<ConversationId, Job>()
-    private val staleParticipantJobs = mutableMapOf<QualifiedClientID, Job>()
+    private val callJobs = ConcurrentMutableMap<ConversationId, Job>()
+    private val staleParticipantJobs = ConcurrentMutableMap<QualifiedClientID, Job>()
 
     override suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String> = wrapApiRequest {
         callApi.getCallConfig(limit = limit)
@@ -171,6 +176,7 @@ internal class CallDataSource(
     override suspend fun callsFlow(): Flow<List<Call>> = callDAO.observeCalls().combineWithCallsMetadata()
 
     override suspend fun incomingCallsFlow(): Flow<List<Call>> = callDAO.observeIncomingCalls().combineWithCallsMetadata()
+    override suspend fun outgoingCallsFlow(): Flow<List<Call>> = callDAO.observeOutgoingCalls().combineWithCallsMetadata()
 
     override suspend fun ongoingCallsFlow(): Flow<List<Call>> = callDAO.observeOngoingCalls().combineWithCallsMetadata()
 
@@ -561,6 +567,14 @@ internal class CallDataSource(
             callJobs[conversationId] = scope.launch {
                 observeEpochInfo(conversationId).onSuccess {
                     it.collectLatest { epochInfo ->
+                        callingLogger.logStructuredJson(
+                            level = KaliumLogLevel.DEBUG,
+                            leadingMessage = "[CallRepository] Received epoch change",
+                            jsonStringKeyValues = mapOf(
+                                "conversationId" to conversationId.toLogString(),
+                                "epoch" to epochInfo.epoch.toString()
+                            )
+                        )
                         onEpochChange(conversationId, epochInfo)
                     }
                 }
@@ -605,6 +619,16 @@ internal class CallDataSource(
                     )
                 }
 
+                callingLogger.logStructuredJson(
+                    level = KaliumLogLevel.DEBUG,
+                    leadingMessage = "[CallRepository] Created epoch info",
+                    jsonStringKeyValues = mapOf(
+                        "groupId" to parentGroupID.toLogString(),
+                        "subConversationGroupID" to subconversationGroupID.toLogString(),
+                        "epoch" to epoch
+                    )
+                )
+
                 val epochInfo = EpochInfo(
                     epoch,
                     CallClientList(callClients),
@@ -614,7 +638,6 @@ internal class CallDataSource(
             }
         }
 
-    @OptIn(FlowPreview::class)
     override suspend fun observeEpochInfo(conversationId: ConversationId): Either<CoreFailure, Flow<EpochInfo>> =
         conversationRepository.getConversationProtocolInfo(conversationId).flatMap { protocolInfo ->
             when (protocolInfo) {
@@ -625,7 +648,7 @@ internal class CallDataSource(
                     createEpochInfo(protocolInfo.groupId, subconversationGroupId).map { initialEpochInfo ->
                         flowOf(
                             flowOf(initialEpochInfo),
-                            mlsConversationRepository.observeEpochChanges()
+                            epochChangesObserver.observe()
                                 .filter { it == protocolInfo.groupId || it == subconversationGroupId }
                                 .mapNotNull { createEpochInfo(protocolInfo.groupId, subconversationGroupId).getOrNull() }
                         ).flattenConcat()

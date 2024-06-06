@@ -19,12 +19,14 @@ package com.wire.kalium.logic.feature.proteus
 
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.IncrementalSyncRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.PreKeyRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.PreKeyRepositoryArrangementImpl
 import io.mockative.Mock
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -54,9 +56,9 @@ class ProteusSyncWorkerTest {
             proteusSyncWorker.execute()
         }
 
-        verify(arrangement.proteusPreKeyRefiller)
-            .suspendFunction(arrangement.proteusPreKeyRefiller::refillIfNeeded)
-            .wasNotInvoked()
+        coVerify {
+            arrangement.proteusPreKeyRefiller.refillIfNeeded()
+        }.wasNotInvoked()
     }
 
     @Test
@@ -71,9 +73,9 @@ class ProteusSyncWorkerTest {
 
         proteusSyncWorker.execute()
 
-        verify(arrangement.proteusPreKeyRefiller)
-            .suspendFunction(arrangement.proteusPreKeyRefiller::refillIfNeeded)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.proteusPreKeyRefiller.refillIfNeeded()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -90,19 +92,19 @@ class ProteusSyncWorkerTest {
             proteusSyncWorker.execute()
         }
 
-        verify(arrangement.proteusPreKeyRefiller)
-            .suspendFunction(arrangement.proteusPreKeyRefiller::refillIfNeeded)
-            .wasNotInvoked()
+        coVerify {
+            arrangement.proteusPreKeyRefiller.refillIfNeeded()
+        }.wasNotInvoked()
 
         // Advance time until it's time to refill
         advanceTimeBy(2.hours)
 
-        verify(arrangement.proteusPreKeyRefiller)
-            .suspendFunction(arrangement.proteusPreKeyRefiller::refillIfNeeded)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.proteusPreKeyRefiller.refillIfNeeded()
+        }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement(private val configure: Arrangement.() -> Unit) :
+    private class Arrangement(private val configure: suspend Arrangement.() -> Unit) :
         IncrementalSyncRepositoryArrangement by IncrementalSyncRepositoryArrangementImpl(),
         PreKeyRepositoryArrangement by PreKeyRepositoryArrangementImpl() {
 
@@ -110,25 +112,22 @@ class ProteusSyncWorkerTest {
         val proteusPreKeyRefiller = mock(ProteusPreKeyRefiller::class)
         var minIntervalBetweenRefills: Duration = 1.days
 
-        init {
-            given(proteusPreKeyRefiller)
-                .suspendFunction(proteusPreKeyRefiller::refillIfNeeded)
-                .whenInvoked()
-                .thenReturn(Either.Right(Unit))
-        }
-
-        fun arrange(): Pair<Arrangement, ProteusSyncWorker> = run {
+        suspend fun arrange(): Pair<Arrangement, ProteusSyncWorker> = run {
+            coEvery {
+                proteusPreKeyRefiller.refillIfNeeded()
+            }.returns(Either.Right(Unit))
             configure()
             this@Arrangement to ProteusSyncWorkerImpl(
                 incrementalSyncRepository = incrementalSyncRepository,
                 proteusPreKeyRefiller = proteusPreKeyRefiller,
                 preKeyRepository = preKeyRepository,
-                minIntervalBetweenRefills = minIntervalBetweenRefills
+                minIntervalBetweenRefills = minIntervalBetweenRefills,
+                kaliumLogger = kaliumLogger
             )
         }
     }
 
     private companion object {
-        fun arrange(configure: Arrangement.() -> Unit) = Arrangement(configure).arrange()
+        suspend fun arrange(configure: suspend Arrangement.() -> Unit) = Arrangement(configure).arrange()
     }
 }

@@ -60,8 +60,8 @@ insertOrIgnoreUser:
 INSERT OR IGNORE INTO User(qualified_id, name, handle, email, phone, accent_id, team, connection_status, preview_asset_id, complete_asset_id, user_type, bot_service, deleted, incomplete_metadata, expires_at, supported_protocols)
 VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
 
-updateUser {
-UPDATE User
+updateUser:
+UPDATE OR FAIL User
 SET
 name = coalesce(:name, name),
 handle = coalesce(:handle, handle),
@@ -71,8 +71,6 @@ preview_asset_id = :preview_asset_id, preview_asset_id = coalesce(:preview_asset
 complete_asset_id = :complete_asset_id, complete_asset_id = coalesce(:complete_asset_id, complete_asset_id),
 supported_protocols = :supported_protocols, supported_protocols = coalesce(:supported_protocols, supported_protocols)
 WHERE qualified_id = ?;
-SELECT changes();
-}
 
 updatePartialUserInformation:
 UPDATE User
@@ -153,7 +151,11 @@ User.active_one_on_one_conversation_id,
 CASE
     WHEN SUM(Client.is_verified) = COUNT(*) THEN 1
     ELSE 0
-END AS is_proteus_verified
+END AS is_proteus_verified,
+CASE
+    WHEN SUM(Client.device_type = 'LegalHold') > 0 THEN 1
+    ELSE 0
+END AS is_under_legal_hold
 FROM User
 LEFT JOIN Client ON User.qualified_id = Client.user_id
 GROUP BY User.qualified_id;
@@ -199,9 +201,6 @@ UPDATE User SET handle = ? WHERE qualified_id = ?;
 updateUserAsset:
 UPDATE User SET complete_asset_id = ?, preview_asset_id = ? WHERE complete_asset_id = ?;
 
-selectChanges:
-SELECT changes();
-
 updateUserAvailabilityStatus:
 UPDATE User SET user_availability_status = ? WHERE qualified_id = ?;
 
@@ -211,20 +210,20 @@ WHERE NOT EXISTS (SELECT user FROM Member AS member WHERE member.conversation ==
 AND  (name LIKE ('%' || :searchQuery || '%')
 OR  handle LIKE  ('%' || :searchQuery || '%')
 OR  email LIKE  ('%' || :searchQuery || '%'))
-AND connection_status = "ACCEPTED"
+AND connection_status = 'ACCEPTED'
 AND defederated = 0;
 
 getUsersNotInConversationByHandle:
 SELECT * FROM UserDetails AS user
 WHERE NOT EXISTS (SELECT user FROM Member AS member WHERE member.conversation == :converastion_id AND user.qualified_id == member.user)
 AND handle LIKE ('%' || :searchQuery || '%')
-AND connection_status = "ACCEPTED"
+AND connection_status = 'ACCEPTED'
 AND defederated = 0;
 
 getUsersNotPartOfTheConversation:
 SELECT * FROM UserDetails AS user
  WHERE NOT EXISTS (SELECT user FROM Member AS member WHERE member.conversation == :converastion_id AND user.qualified_id == member.user)
- AND connection_status = "ACCEPTED"
+ AND connection_status = 'ACCEPTED'
  AND defederated = 0;
 
 updateUserDisplayName:
@@ -265,3 +264,6 @@ FROM Conversation c
 INNER JOIN Member m ON c.qualified_id = m.conversation
 WHERE m.user = :userId
   AND c.type = 'GROUP';
+
+selectOneOnOnConversationId:
+SELECT active_one_on_one_conversation_id FROM User WHERE qualified_id = :userId;

@@ -25,13 +25,13 @@ import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 
 open class CreateConversationAction(val config: ActionType.CreateConversation, sender: suspend (Event) -> Unit) : Action(sender) {
-    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
+    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool, conversationPool: ConversationPool) {
         if (this.config.team != null) {
             val conversation =
-                ConversationPool.createDynamicConversation(this.config.team, this.config.userCount, this.config.protocol, monkeyPool)
+                conversationPool.createDynamicConversation(this.config.team, this.config.userCount, this.config.protocol, monkeyPool)
             this.sender(Event(conversation.owner, EventType.CreateConversation(conversation)))
         } else {
-            val conversation = ConversationPool.createDynamicConversation(this.config.userCount, this.config.protocol, monkeyPool)
+            val conversation = conversationPool.createDynamicConversation(this.config.userCount, this.config.protocol, monkeyPool)
             this.sender(Event(conversation.owner, EventType.CreateConversation(conversation)))
         }
     }

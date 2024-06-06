@@ -24,14 +24,15 @@ import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -51,14 +52,12 @@ class SendConnectionRequestUseCaseTest {
 
         // then
         assertEquals(SendConnectionRequestResult.Success, resultOk)
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::fetchUserInfo)
-            .with(eq(userId))
-            .wasInvoked(once)
-        verify(arrangement.connectionRepository)
-            .suspendFunction(arrangement.connectionRepository::sendUserConnection)
-            .with(eq(userId))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.userRepository.fetchUserInfo(eq(userId))
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.connectionRepository.sendUserConnection(eq(userId))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -74,14 +73,12 @@ class SendConnectionRequestUseCaseTest {
 
         // then
         assertEquals(SendConnectionRequestResult.Failure.GenericFailure::class, resultFailure::class)
-        verify(arrangement.userRepository)
-            .suspendFunction(arrangement.userRepository::fetchUserInfo)
-            .with(eq(userId))
-            .wasInvoked(once)
-        verify(arrangement.connectionRepository)
-            .suspendFunction(arrangement.connectionRepository::sendUserConnection)
-            .with(eq(userId))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.userRepository.fetchUserInfo(eq(userId))
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.connectionRepository.sendUserConnection(eq(userId))
+        }.wasNotInvoked()
     }
 
     @Test
@@ -97,10 +94,9 @@ class SendConnectionRequestUseCaseTest {
 
         // then
         assertEquals(SendConnectionRequestResult.Failure.GenericFailure::class, resultFailure::class)
-        verify(arrangement.connectionRepository)
-            .suspendFunction(arrangement.connectionRepository::sendUserConnection)
-            .with(eq(userId))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.connectionRepository.sendUserConnection(eq(userId))
+        }.wasInvoked(once)
     }
 
     @Test
@@ -117,31 +113,51 @@ class SendConnectionRequestUseCaseTest {
 
         // then
         assertEquals(SendConnectionRequestResult.Failure.FederationDenied::class, resultFailure::class)
-        verify(arrangement.connectionRepository)
-            .suspendFunction(arrangement.connectionRepository::sendUserConnection)
-            .with(eq(userId))
-            .wasInvoked(once)
+        coVerify {
+            arrangement.connectionRepository.sendUserConnection(eq(userId))
+        }.wasInvoked(once)
+    }
+
+    @Test
+    fun givenAConnectionRequest_whenInvokingAndFailsByMissingLegalHoldConsent_thenShouldReturnsAMissingLegalHoldConsent() = runTest {
+        // given
+        val (arrangement, sendConnectionRequestUseCase) = Arrangement()
+            .withFetchUserInfoResult(Either.Right(Unit))
+            .withCreateConnectionResult(
+                Either.Left(
+                    NetworkFailure.ServerMiscommunication(
+                        KaliumException.InvalidRequestError(ErrorResponse(403, "", "missing-legalhold-consent"))
+                    )
+                )
+            )
+            .arrange()
+        // when
+        val resultFailure = sendConnectionRequestUseCase(userId)
+
+        // then
+        assertEquals(SendConnectionRequestResult.Failure.MissingLegalHoldConsent::class, resultFailure::class)
+        coVerify {
+            arrangement.connectionRepository.sendUserConnection(eq(userId))
+        }.wasInvoked(once)
     }
 
     private class Arrangement {
         @Mock
-        val connectionRepository = mock(classOf<ConnectionRepository>())
+        val connectionRepository = mock(ConnectionRepository::class)
 
         @Mock
-        val userRepository = mock(classOf<UserRepository>())
+        val userRepository = mock(UserRepository::class)
 
-        fun withCreateConnectionResult(result: Either<CoreFailure, Unit>) = apply {
-            given(connectionRepository)
-                .suspendFunction(connectionRepository::sendUserConnection)
-                .whenInvokedWith(eq(userId))
-                .thenReturn(result)
+        suspend fun withCreateConnectionResult(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                connectionRepository.sendUserConnection(eq(userId))
+            }.returns(result)
         }
 
-        fun withFetchUserInfoResult(result: Either<CoreFailure, Unit>) = apply {
-            given(userRepository)
-                .suspendFunction(userRepository::fetchUserInfo)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withFetchUserInfoResult(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                userRepository.fetchUserInfo(any())
+            }.returns(result)
         }
 
         fun arrange() = this to SendConnectionRequestUseCaseImpl(connectionRepository, userRepository)

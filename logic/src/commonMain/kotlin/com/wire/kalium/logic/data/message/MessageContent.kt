@@ -172,6 +172,7 @@ sealed class MessageContent {
             @SerialName("data")
             val targets: Targets? = null,
         )
+
         @Serializable
         data class Targets(
             @SerialName("targets")
@@ -251,11 +252,38 @@ sealed class MessageContent {
     // server message content types
     // TODO: rename members to userList
     sealed class MemberChange(open val members: List<UserId>) : System() {
+        /**
+         * A member(s) was added to the conversation.
+         */
         data class Added(override val members: List<UserId>) : MemberChange(members)
+
+        /**
+         * A member(s) was removed from the conversation.
+         */
         data class Removed(override val members: List<UserId>) : MemberChange(members)
+
+        /**
+         * A member(s) was removed from the team.
+         */
         data class RemovedFromTeam(override val members: List<UserId>) : MemberChange(members)
-        data class FailedToAdd(override val members: List<UserId>) : MemberChange(members)
+
+        /**
+         * A member(s) was not added to the conversation.
+         * Note: This is only valid for the creator of the conversation, local-only.
+         */
+        data class FailedToAdd(override val members: List<UserId>, val type: Type) : MemberChange(members) {
+            enum class Type { Federation, LegalHold, Unknown; }
+        }
+
+        /**
+         * A member(s) was added to the conversation while the conversation was being created.
+         * Note: This is only valid for the creator of the conversation, local-only.
+         */
         data class CreationAdded(override val members: List<UserId>) : MemberChange(members)
+
+        /**
+         * Member(s) removed from the conversation, due to some backend stopped to federate between them, or us.
+         */
         data class FederationRemoved(override val members: List<UserId>) : MemberChange(members)
     }
 
@@ -341,11 +369,13 @@ sealed class MessageContent {
         data class Removed(val domain: String) : FederationStopped()
         data class ConnectionRemoved(val domainList: List<String>) : FederationStopped()
     }
+
     sealed class LegalHold : System() {
         sealed class ForMembers(open val members: List<UserId>) : LegalHold() {
             data class Enabled(override val members: List<UserId>) : ForMembers(members)
             data class Disabled(override val members: List<UserId>) : ForMembers(members)
         }
+
         sealed class ForConversation : LegalHold() {
             data object Enabled : ForConversation()
             data object Disabled : ForConversation()
@@ -388,7 +418,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.NewConversationReceiptMode -> "NewConversationReceiptMode"
     is MessageContent.ConversationCreated -> "ConversationCreated"
     is MessageContent.MemberChange.CreationAdded -> "MemberChange.CreationAdded"
-    is MessageContent.MemberChange.FailedToAdd -> "MemberChange.FailedToAdd"
+    is MessageContent.MemberChange.FailedToAdd -> "MemberChange.FailedToAdd.${this.type}"
     is MessageContent.MLSWrongEpochWarning -> "MLSWrongEpochWarning"
     is MessageContent.ConversationDegradedMLS -> "ConversationVerification.Degraded.MLS"
     is MessageContent.ConversationDegradedProteus -> "ConversationVerification.Degraded.Proteus"
@@ -472,6 +502,7 @@ sealed interface MessagePreviewContent {
 
         data class MissedCall(override val username: String?) : WithUser
 
+        data class Deleted(override val username: String?) : WithUser
     }
 
     data class Ephemeral(val isGroupConversation: Boolean) : MessagePreviewContent
@@ -492,4 +523,5 @@ sealed interface MessagePreviewContent {
         data object DegradedProteus : VerificationChanged()
     }
 
+    data class Draft(val message: String) : MessagePreviewContent
 }

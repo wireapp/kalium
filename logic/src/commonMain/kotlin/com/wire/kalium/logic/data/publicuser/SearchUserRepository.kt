@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.toDao
-import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.publicuser.model.UserSearchDetails
 import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.data.user.ConnectionStateMapper
@@ -59,6 +58,11 @@ internal interface SearchUserRepository {
 
     suspend fun searchLocalByName(
         name: String,
+        excludeMembersOfConversation: ConversationId?
+    ): Either<StorageFailure, List<UserSearchDetails>>
+
+    suspend fun searchLocalByHandle(
+        handle: String,
         excludeMembersOfConversation: ConversationId?
     ): Either<StorageFailure, List<UserSearchDetails>>
 
@@ -131,18 +135,8 @@ internal class SearchUserRepositoryImpl(
             } else {
                 searchDAO.getKnownContactsExcludingAConversation(excludeConversation.toDao())
             }
-        }.map { searchEntityList ->
-            searchEntityList.map {
-                UserSearchDetails(
-                    id = it.id.toModel(),
-                    name = it.name,
-                    completeAssetId = it.completeAssetId?.toModel(),
-                    type = userTypeMapper.fromUserTypeEntity(it.type),
-                    previewAssetId = it.previewAssetId?.toModel(),
-                    connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(it.connectionStatus),
-                    handle = it.handle
-                )
-            }
+        }.map {
+            it.map(userMapper::fromSearchEntityToUserSearchDetails)
         }
 
     override suspend fun searchLocalByName(
@@ -155,16 +149,23 @@ internal class SearchUserRepositoryImpl(
             searchDAO.searchListExcludingAConversation(excludeMembersOfConversation.toDao(), name)
         }
     }.map {
-        it.map { searchEntity ->
-            UserSearchDetails(
-                id = searchEntity.id.toModel(),
-                name = searchEntity.name,
-                completeAssetId = searchEntity.completeAssetId?.toModel(),
-                previewAssetId = searchEntity.previewAssetId?.toModel(),
-                type = userTypeMapper.fromUserTypeEntity(searchEntity.type),
-                connectionStatus = connectionStateMapper.fromDaoConnectionStateToUser(searchEntity.connectionStatus),
-                handle = searchEntity.handle
-            )
+        it.map(userMapper::fromSearchEntityToUserSearchDetails)
+    }
+
+    override suspend fun searchLocalByHandle(
+        handle: String,
+        excludeMembersOfConversation: ConversationId?
+    ): Either<StorageFailure, List<UserSearchDetails>> = if (excludeMembersOfConversation == null) {
+        wrapStorageRequest {
+            searchDAO.handleSearch(handle)
+        }.map {
+            it.map(userMapper::fromSearchEntityToUserSearchDetails)
+        }
+    } else {
+        wrapStorageRequest {
+            searchDAO.handleSearchExcludingAConversation(handle, excludeMembersOfConversation.toDao())
+        }.map {
+            it.map(userMapper::fromSearchEntityToUserSearchDetails)
         }
     }
 

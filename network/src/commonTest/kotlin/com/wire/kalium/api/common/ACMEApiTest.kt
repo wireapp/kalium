@@ -22,17 +22,34 @@ import com.wire.kalium.api.json.model.ACMEApiResponseJsonSample
 import com.wire.kalium.api.json.model.ACMEApiResponseJsonSample.ACME_RESPONSE_SAMPLE
 import com.wire.kalium.api.json.model.ACMEApiResponseJsonSample.jsonProviderAcmeChallengeResponse
 import com.wire.kalium.network.api.base.unbound.acme.*
-import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.*
-import io.ktor.utils.io.core.*
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.*
 
-@OptIn(ExperimentalCoroutinesApi::class)
 internal class ACMEApiTest : ApiTest() {
+
+    @Test
+    fun givingASuccessfulResponse_whenGettingACMEFederationCertificateChain_thenAllCertificatesShouldBeParsed() = runTest {
+        val expected = listOf("a", "b", "potato")
+
+        val networkClient = mockUnboundNetworkClient(
+            responseBody = """
+                 {
+                     "crts": ["a", "b", "potato"]
+                 }
+            """.trimIndent(),
+            statusCode = HttpStatusCode.OK
+        )
+
+        val acmeApi: ACMEApi = ACMEApiImpl(networkClient, networkClient)
+
+        val result = acmeApi.getACMEFederationCertificateChain("someURL")
+
+        assertTrue(result.isSuccessful())
+        assertContentEquals(expected, result.value)
+    }
 
     @Ignore
     @Test
@@ -48,7 +65,7 @@ internal class ACMEApiTest : ApiTest() {
                 assertNoQueryParams()
             }
         )
-        val acmeApi: ACMEApi = ACMEApiImpl(networkClient)
+        val acmeApi: ACMEApi = ACMEApiImpl(networkClient, networkClient)
 
         acmeApi.getTrustAnchors(ACME_DISCOVERY_URL).also { actual ->
             assertIs<NetworkResponse.Success<CertificateChain>>(actual)
@@ -69,7 +86,7 @@ internal class ACMEApiTest : ApiTest() {
                 assertNoQueryParams()
             }
         )
-        val acmeApi: ACMEApi = ACMEApiImpl(networkClient)
+        val acmeApi: ACMEApi = ACMEApiImpl(networkClient, networkClient)
 
         acmeApi.getACMEDirectories(ACME_DISCOVERY_URL).also { actual ->
             assertIs<NetworkResponse.Success<AcmeDirectoriesResponse>>(actual)
@@ -90,7 +107,7 @@ internal class ACMEApiTest : ApiTest() {
                 assertNoQueryParams()
             }
         )
-        val acmeApi: ACMEApi = ACMEApiImpl(networkClient)
+        val acmeApi: ACMEApi = ACMEApiImpl(networkClient, networkClient)
 
         acmeApi.getACMENonce(ACME_DIRECTORIES_SAMPLE.newNonce).also { actual ->
             assertIs<NetworkResponse.Success<String>>(actual)
@@ -107,14 +124,14 @@ internal class ACMEApiTest : ApiTest() {
             headers = mapOf(NONCE_HEADER_KEY to RANDOM_NONCE, LOCATION_HEADER_KEY to RANDOM_LOCATION),
             assertion = {
                 assertJsonJose()
-                assertUrlEqual("")
+                assertUrlEqual("http://wire.com")
                 assertPost()
                 assertNoQueryParams()
             }
         )
-        val acmeApi: ACMEApi = ACMEApiImpl(networkClient)
+        val acmeApi: ACMEApi = ACMEApiImpl(networkClient, networkClient)
 
-        acmeApi.sendACMERequest("", byteArrayOf(0x12, 0x24, 0x32, 0x42)).also { actual ->
+        acmeApi.sendACMERequest("http://wire.com", byteArrayOf(0x12, 0x24, 0x32, 0x42)).also { actual ->
             assertIs<NetworkResponse.Success<ACMEResponse>>(actual)
             assertEquals(RANDOM_NONCE, actual.value.nonce)
             assertEquals(RANDOM_LOCATION, actual.value.location)
@@ -136,7 +153,7 @@ internal class ACMEApiTest : ApiTest() {
                 assertNoQueryParams()
             }
         )
-        val acmeApi: ACMEApi = ACMEApiImpl(networkClient)
+        val acmeApi: ACMEApi = ACMEApiImpl(networkClient, networkClient)
 
         val response = acmeApi.sendACMERequest(ACME_DIRECTORIES_SAMPLE.newNonce)
         assertFalse(response.isSuccessful())
@@ -151,14 +168,14 @@ internal class ACMEApiTest : ApiTest() {
             headers = mapOf(NONCE_HEADER_KEY to RANDOM_NONCE),
             assertion = {
                 assertJsonJose()
-                assertUrlEqual("")
+                assertUrlEqual("http://wire.com")
                 assertPost()
                 assertNoQueryParams()
             }
         )
-        val acmeApi: ACMEApi = ACMEApiImpl(networkClient)
+        val acmeApi: ACMEApi = ACMEApiImpl(networkClient, networkClient)
 
-        acmeApi.sendACMERequest("", byteArrayOf(0x12, 0x24, 0x32, 0x42)).also { actual ->
+        acmeApi.sendACMERequest("http://wire.com", byteArrayOf(0x12, 0x24, 0x32, 0x42)).also { actual ->
             assertIs<NetworkResponse.Success<ACMEResponse>>(actual)
             assertEquals(RANDOM_NONCE, actual.value.nonce)
             assertEquals("null", actual.value.location)
@@ -182,13 +199,14 @@ internal class ACMEApiTest : ApiTest() {
                 assertNoQueryParams()
             }
         )
-        val acmeApi: ACMEApi = ACMEApiImpl(networkClient)
+        val acmeApi: ACMEApi = ACMEApiImpl(networkClient, networkClient)
 
         acmeApi.sendChallengeRequest(RANDOM_CHALLENGE_URL, byteArrayOf(0x12, 0x24, 0x32, 0x42)).also { actual ->
             assertIs<NetworkResponse.Success<ChallengeResponse>>(actual)
             assertEquals(expected, actual.value)
         }
     }
+
     companion object {
         private const val ACME_DISCOVERY_URL = "https://balderdash.hogwash.work:9000/acme/google-android/directory"
         private const val ACME_DIRECTORIES_PATH = "https://balderdash.hogwash.work:9000/acme/google-android/directory"

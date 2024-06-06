@@ -21,62 +21,64 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.connection.ConnectionRepository
 import com.wire.kalium.logic.data.conversation.ConversationDetails
-import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.Connection
-import com.wire.kalium.logic.data.user.ConnectionState
-import com.wire.kalium.logic.feature.connection.AcceptConnectionRequestUseCaseTest
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.fake.valueOf
+import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
+import io.mockative.matches
 import io.mockative.mock
 import kotlinx.coroutines.flow.Flow
 
 internal interface ConnectionRepositoryArrangement {
     val connectionRepository: ConnectionRepository
 
-    fun withGetConnections(result: Either<StorageFailure, Flow<List<ConversationDetails>>>)
-    fun withDeleteConnection(result: Either<StorageFailure, Unit>, conversationId: Matcher<ConversationId> = any())
-    fun withConnectionList(connectionsFlow: Flow<List<ConversationDetails>>)
-    fun withUpdateConnectionStatus(result: Either<CoreFailure, Connection>)
+    suspend fun withGetConnections(result: Either<StorageFailure, Flow<List<ConversationDetails>>>)
+    suspend fun withDeleteConnection(result: Either<StorageFailure, Unit>, connection: Matcher<Connection> = AnyMatcher(valueOf()))
+    suspend fun withConnectionList(connectionsFlow: Flow<List<ConversationDetails>>)
+    suspend fun withUpdateConnectionStatus(result: Either<CoreFailure, Connection>)
+    suspend fun withIgnoreConnectionRequest(result: Either<CoreFailure, Unit>)
 }
 
 internal open class ConnectionRepositoryArrangementImpl : ConnectionRepositoryArrangement {
     @Mock
     override val connectionRepository: ConnectionRepository = mock(ConnectionRepository::class)
 
-    override fun withGetConnections(
+    override suspend fun withGetConnections(
         result: Either<StorageFailure, Flow<List<ConversationDetails>>>,
     ) {
-        given(connectionRepository)
-            .suspendFunction(connectionRepository::getConnections)
-            .whenInvoked()
-            .thenReturn(result)
+        coEvery {
+            connectionRepository.getConnections()
+        }.returns(result)
     }
 
-    override fun withDeleteConnection(
+    override suspend fun withDeleteConnection(
         result: Either<StorageFailure, Unit>,
-        conversationId: Matcher<ConversationId>,
+        connection: Matcher<Connection>,
     ) {
-        given(connectionRepository)
-            .suspendFunction(connectionRepository::deleteConnection)
-            .whenInvokedWith(conversationId)
-            .thenReturn(result)
+        coEvery {
+            connectionRepository.deleteConnection(matches { connection.matches(it) })
+        }.returns(result)
     }
 
-    override fun withConnectionList(connectionsFlow: Flow<List<ConversationDetails>>) {
-        given(connectionRepository)
-            .suspendFunction(connectionRepository::observeConnectionRequestsForNotification)
-            .whenInvoked()
-            .thenReturn(connectionsFlow)
+    override suspend fun withConnectionList(connectionsFlow: Flow<List<ConversationDetails>>) {
+        coEvery {
+            connectionRepository.observeConnectionRequestsForNotification()
+        }.returns(connectionsFlow)
     }
 
-    override fun withUpdateConnectionStatus(result: Either<CoreFailure, Connection>) {
-        given(connectionRepository)
-            .suspendFunction(connectionRepository::updateConnectionStatus)
-            .whenInvokedWith(any(), any())
-            .thenReturn(result)
+    override suspend fun withUpdateConnectionStatus(result: Either<CoreFailure, Connection>) {
+        coEvery {
+            connectionRepository.updateConnectionStatus(any(), any())
+        }.returns(result)
+    }
+
+    override suspend fun withIgnoreConnectionRequest(result: Either<CoreFailure, Unit>) {
+        coEvery {
+            connectionRepository.ignoreConnectionRequest(any())
+        }.returns(result)
     }
 }

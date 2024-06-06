@@ -16,6 +16,8 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:Suppress("konsist.useCasesShouldNotAccessNetworkLayerDirectly")
+
 package com.wire.kalium.logic.feature.call
 
 import com.sun.jna.Pointer
@@ -36,6 +38,8 @@ import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.EpochInfo
+import com.wire.kalium.logic.data.call.TestVideoType
+import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.CallMapper
@@ -71,6 +75,7 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.util.toInt
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.util.DateTimeUtil.toEpochMillis
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -82,6 +87,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -101,13 +107,14 @@ class CallManagerImpl internal constructor(
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val videoStateChecker: VideoStateChecker,
     private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
+    private val networkStateObserver: NetworkStateObserver,
     private val kaliumConfigs: KaliumConfigs,
     private val json: Json = Json { ignoreUnknownKeys = true },
     private val shouldRemoteMuteChecker: ShouldRemoteMuteChecker = ShouldRemoteMuteCheckerImpl(),
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : CallManager {
 
-    private val job = SupervisorJob() // TODO(calling): clear job method
+    private val job = SupervisorJob()
     private val scope = CoroutineScope(job + kaliumDispatchers.io)
     private val deferredHandle: Deferred<Handle> = startHandleAsync()
 
@@ -183,7 +190,7 @@ class CallManagerImpl internal constructor(
                     .keepingStrongReference(),
                 establishedCallHandler = OnEstablishedCall(callRepository, scope, qualifiedIdMapper)
                     .keepingStrongReference(),
-                closeCallHandler = OnCloseCall(callRepository, scope, qualifiedIdMapper)
+                closeCallHandler = OnCloseCall(callRepository, scope, qualifiedIdMapper, networkStateObserver)
                     .keepingStrongReference(),
                 metricsHandler = metricsHandler,
                 callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope)
@@ -212,10 +219,13 @@ class CallManagerImpl internal constructor(
         val msg = content.value.toByteArray()
 
         val callingValue = json.decodeFromString<MessageContent.Calling.CallingValue>(content.value)
+        val conversationMembers = conversationRepository.observeConversationMembers(message.conversationId).first()
         val shouldRemoteMute = shouldRemoteMuteChecker.check(
+            senderUserId = message.senderUserId,
             selfUserId = userId.await(),
             selfClientId = clientId.await().value,
-            targets = callingValue.targets
+            targets = callingValue.targets,
+            conversationMembers = conversationMembers
         )
 
         if (callingValue.type != REMOTE_MUTE_TYPE || shouldRemoteMute) {
@@ -355,10 +365,60 @@ class CallManagerImpl internal constructor(
         callingLogger.d("$TAG - wcall_set_mute() called")
     }
 
+    override suspend fun setTestVideoType(testVideoType: TestVideoType) = withCalling {
+        val logString = when (testVideoType) {
+            TestVideoType.NONE -> "NONE"
+            TestVideoType.PLATFORM -> "PLATFORM"
+            TestVideoType.FAKE -> "FAKE"
+            else -> "????"
+        }
+        callingLogger.d("$TAG -> set test video to $logString")
+
+        val selfUserId = federatedIdMapper.parseToFederatedId(userId.await())
+        val selfClientId = clientId.await().value
+        val handle = deferredHandle.await()
+
+        when (testVideoType) {
+            TestVideoType.NONE -> kcall_close()
+            TestVideoType.PLATFORM -> {
+                kcall_init(0)
+                kcall_set_local_user(selfUserId, selfClientId)
+                kcall_set_wuser(handle)
+
+            }
+            TestVideoType.FAKE -> {
+                kcall_init(1)
+                kcall_set_local_user(selfUserId, selfClientId)
+                kcall_set_wuser(handle)
+            }
+        }
+    }
+
+    override suspend fun setTestPreviewActive(shouldEnable: Boolean) = withCalling {
+        val logString = if (shouldEnable) "enabling" else "disabling"
+        callingLogger.d("$TAG -> $logString preview..")
+        if (shouldEnable)
+            kcall_preview_start()
+        else
+            kcall_preview_stop()
+    }
+
+    override suspend fun setTestRemoteVideoStates(conversationId: ConversationId, participants: List<Participant>) = withCalling {
+        for (participant in participants) {
+            val videoState = if (participant.isCameraOn) 1 else 0
+            kcall_set_user_vidstate(
+                federatedIdMapper.parseToFederatedId(conversationId),
+                federatedIdMapper.parseToFederatedId(participant.id),
+                clientid = participant.clientId,
+                videoState
+            )
+        }
+    }
+
     /**
      * This method should NOT be called while the call is still incoming or outgoing and not established yet.
      */
-    override suspend fun updateVideoState(conversationId: ConversationId, videoState: VideoState) {
+    override suspend fun setVideoSendState(conversationId: ConversationId, videoState: VideoState) {
         withCalling {
             callingLogger.d("$TAG -> changing video state to ${videoState.name}..")
             scope.launch {
@@ -417,12 +477,14 @@ class CallManagerImpl internal constructor(
         conversationId: ConversationId,
         clients: String
     ) {
-        withCalling {
-            wcall_set_clients_for_conv(
-                it,
-                federatedIdMapper.parseToFederatedId(conversationId),
-                clients
-            )
+        if (callRepository.getCallMetadataProfile()[conversationId]?.protocol is Conversation.ProtocolInfo.Proteus) {
+            withCalling {
+                wcall_set_clients_for_conv(
+                    it,
+                    federatedIdMapper.parseToFederatedId(conversationId),
+                    clients
+                )
+            }
         }
     }
 
@@ -556,6 +618,12 @@ class CallManagerImpl internal constructor(
         withCalling {
             wcall_process_notifications(it, isStarted)
         }
+    }
+
+    override suspend fun cancelJobs() {
+        deferredHandle.cancel()
+        scope.cancel()
+        job.cancel()
     }
 
     companion object {

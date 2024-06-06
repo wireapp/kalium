@@ -27,32 +27,37 @@ import com.wire.kalium.logic.data.publicuser.model.UserSearchResult
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.anything
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.fake.valueOf
+import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
+import io.mockative.matches
 import io.mockative.mock
 
 internal interface SearchRepositoryArrangement {
     @Mock
     val searchUserRepository: SearchUserRepository
 
-    fun withSearchUserRemoteDirectory(
+    suspend fun withSearchUserRemoteDirectory(
         result: Either<CoreFailure, UserSearchResult>,
-        searchQuery: Matcher<String> = any(),
-        domain: Matcher<String> = any(),
-        maxResultSize: Matcher<Int?> = any(),
-        searchUsersOptions: Matcher<SearchUsersOptions> = any()
+        searchQuery: Matcher<String> = AnyMatcher(valueOf()),
+        domain: Matcher<String> = AnyMatcher(valueOf()),
+        maxResultSize: Matcher<Int?> = AnyMatcher(valueOf()),
+        searchUsersOptions: Matcher<SearchUsersOptions> = AnyMatcher(valueOf())
     )
 
-    fun withGetKnownContacts(
+    suspend fun withGetKnownContacts(
         result: Either<StorageFailure, List<UserSearchDetails>>,
-        excludeConversation: Matcher<ConversationId?> = any()
     )
 
-    fun withSearchLocalByName(
+    suspend fun withSearchLocalByName(
         result: Either<StorageFailure, List<UserSearchDetails>>,
-        searchQuery: Matcher<String> = any(),
-        excludeConversation: Matcher<ConversationId?> = anything()
+        searchQuery: Matcher<String> = AnyMatcher(valueOf()),
+    )
+
+    suspend fun withSearchByHandle(
+        result: Either<StorageFailure, List<UserSearchDetails>>,
+        searchQuery: Matcher<String> = AnyMatcher(valueOf()),
     )
 }
 
@@ -60,38 +65,52 @@ internal class SearchRepositoryArrangementImpl : SearchRepositoryArrangement {
     @Mock
     override val searchUserRepository: SearchUserRepository = mock(SearchUserRepository::class)
 
-    override fun withSearchUserRemoteDirectory(
+    override suspend fun withSearchUserRemoteDirectory(
         result: Either<CoreFailure, UserSearchResult>,
         searchQuery: Matcher<String>,
         domain: Matcher<String>,
         maxResultSize: Matcher<Int?>,
         searchUsersOptions: Matcher<SearchUsersOptions>
     ) {
-        given(searchUserRepository)
-            .suspendFunction(searchUserRepository::searchUserRemoteDirectory)
-            .whenInvokedWith(searchQuery, domain, maxResultSize, searchUsersOptions)
-            .thenReturn(result)
+        coEvery {
+            searchUserRepository.searchUserRemoteDirectory(
+                matches { searchQuery.matches(it) },
+                matches { domain.matches(it) },
+                matches { maxResultSize.matches(it) },
+                matches { searchUsersOptions.matches(it) }
+            )
+        }.returns(result)
     }
 
-    override fun withGetKnownContacts(
+    override suspend fun withGetKnownContacts(
         result: Either<StorageFailure, List<UserSearchDetails>>,
-        excludeConversation: Matcher<ConversationId?>
     ) {
-        given(searchUserRepository)
-            .suspendFunction(searchUserRepository::getKnownContacts)
-            .whenInvokedWith(excludeConversation)
-            .thenReturn(result)
+        coEvery {
+            searchUserRepository.getKnownContacts(any())
+        }.returns(result)
     }
 
-    override fun withSearchLocalByName(
+    override suspend fun withSearchLocalByName(
         result: Either<StorageFailure, List<UserSearchDetails>>,
         searchQuery: Matcher<String>,
-        excludeConversation: Matcher<ConversationId?>
     ) {
-        given(searchUserRepository)
-            .suspendFunction(searchUserRepository::searchLocalByName)
-            .whenInvokedWith(searchQuery, excludeConversation)
-            .thenReturn(result)
+        coEvery {
+            searchUserRepository.searchLocalByName(
+                matches { searchQuery.matches(it) },
+                any()
+            )
+        }.returns(result)
     }
 
+    override suspend fun withSearchByHandle(
+        result: Either<StorageFailure, List<UserSearchDetails>>,
+        searchQuery: Matcher<String>,
+    ) {
+        coEvery {
+            searchUserRepository.searchLocalByHandle(
+                matches { searchQuery.matches(it) },
+                any()
+            )
+        }.returns(result)
+    }
 }

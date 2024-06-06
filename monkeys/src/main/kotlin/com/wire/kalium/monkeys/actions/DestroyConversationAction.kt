@@ -26,15 +26,15 @@ import com.wire.kalium.monkeys.pool.ConversationPool
 import com.wire.kalium.monkeys.pool.MonkeyPool
 
 open class DestroyConversationAction(val config: ActionType.DestroyConversation, sender: suspend (Event) -> Unit) : Action(sender) {
-    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool) {
-        val targets = conversationTargets()
+    override suspend fun execute(coreLogic: CoreLogic, monkeyPool: MonkeyPool, conversationPool: ConversationPool) {
+        val targets = conversationTargets(conversationPool)
         targets.forEach {
-            it.destroy()
-            this.sender(Event(it.creator.internalId, EventType.DestroyConversation(it.conversation.id)))
+            it.destroy(conversationPool::conversationDestroyed)
+            this.sender(Event(it.creator.internalId, EventType.DestroyConversation(it.conversationId)))
         }
     }
 
-    open fun conversationTargets(): List<MonkeyConversation> {
-        return ConversationPool.randomDynamicConversations(this.config.count.toInt())
+    open fun conversationTargets(conversationPool: ConversationPool): List<MonkeyConversation> {
+        return conversationPool.randomDynamicConversations(this.config.count.toInt())
     }
 }

@@ -30,7 +30,7 @@ import com.wire.kalium.protobuf.messages.GenericMessage
 import com.wire.kalium.protobuf.messages.Text
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -73,11 +73,10 @@ class PersistMigratedMessagesUseCaseTest {
             null,
         )
 
-        fun withMessagesInsertedSuccessfully(): Arrangement {
-            given(migrationDAO)
-                .suspendFunction(migrationDAO::insertMessages)
-                .whenInvokedWith(any())
-                .thenReturn(Unit)
+        suspend fun withMessagesInsertedSuccessfully(): Arrangement {
+            coEvery {
+                migrationDAO.insertMessages(any())
+            }.returns(Unit)
             return this
         }
 

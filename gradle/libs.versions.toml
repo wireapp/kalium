@@ -1,65 +1,71 @@
 [versions]
-kotlin = "1.9.0"
-activity-compose = "1.3.1"
-app-compat = "1.1.0"
+kotlin = "1.9.23"
+activity-compose = "1.9.0"
+app-compat = "1.6.1"
 android-paging3 = "3.2.1"
 cli-kt = "3.5.0"
-coroutines = "1.7.3"
-compose-compiler = "1.5.0"
-compose-ui = "1.3.2"
-compose-material = "1.3.1"
+coroutines = "1.8.0"
+compose-compiler = "1.5.11"
+compose-ui = "1.6.6"
+compose-material = "1.6.6"
 cryptobox4j = "1.4.0"
 cryptobox-android = "1.1.5"
 android-security = "1.1.0-alpha06"
-ktor = "2.3.7"
-okio = "3.6.0"
-ok-http = "4.11.0"
-mockative = "1.4.1"
-android-work = "2.8.1"
-android-test-runner = "1.5.0"
+ktor = "2.3.10"
+okio = "3.9.0"
+ok-http = "4.12.0"
+mockative = "2.2.0"
+android-work = "2.9.0"
+android-test-runner = "1.5.2"
+android-test-core-ktx = "1.5.0"
 android-test-rules = "1.5.0"
-android-test-core = "1.4.0"
+android-test-core = "1.5.0"
 androidx-arch = "2.2.0"
 androidx-test-orchestrator = "1.4.2"
 androidx-sqlite = "2.4.0"
 benasher-uuid = "0.8.0"
-ktx-datetime = { strictly = "0.4.1" }
-ktx-serialization = "1.5.1"
-ktx-atomicfu = "0.20.0"
-ktx-reactive = "1.7.3"
-kover = "0.7.1"
+ktx-datetime = { strictly = "0.5.0" }
+ktx-serialization = "1.6.3"
+ktx-atomicfu = "0.24.0"
+kover = "0.7.6"
 multiplatform-settings = "1.1.1"
+moduleGraph = "0.7.0"
 # if you update sqlDelight check if https://github.com/cashapp/sqldelight/issues/4154 is fixed
-# and delete the work around in the dev.mk file
+# and delete the workaround in the dev.mk file
 sqldelight = "2.0.1"
-sqlcipher-android = "4.5.5"
+sqlcipher-android = "4.5.6"
 pbandk = "0.14.2"
-turbine = "1.0.0"
-avs = "9.6.9"
+turbine = "1.1.0"
+avs = "9.7.15"
 jna = "5.14.0"
-core-crypto = "1.0.0-rc.29"
+core-crypto = "1.0.0-rc.56-hotfix.2"
 core-crypto-multiplatform = "0.6.0-rc.3-multiplatform-pre1"
 completeKotlin = "1.1.0"
 desugar-jdk = "2.0.4"
-kermit = "2.0.1"
-detekt = "1.19.0"
-agp = "8.1.2"
+kermit = "2.0.3"
+detekt = "1.23.6"
+agp = "8.3.2"
 dokka = "1.8.20"
 carthage = "0.0.1"
-libsodiumBindings = "0.8.6"
+libsodiumBindings = "0.8.7"
 protobufCodegen = "0.9.4"
-annotation = "1.7.0"
+annotation = "1.7.1"
 mordant = "2.0.0-beta13"
-apache-tika = "2.8.0"
-mockk = "1.13.5"
-faker = "1.15.0"
-robolectric = "4.9"
-stately = "2.0.6"
-micrometer = "1.11.3"
-bouncy-castle = "1.70"
-konsist = "0.13.0"
-postgres = "1.0.2.RELEASE"
+apache-tika = "2.9.2"
+mockk = "1.13.10"
+faker = "1.16.0"
+robolectric = "4.12.1"
+stately = "2.0.7"
+micrometer = "1.12.5"
+konsist = "0.15.1"
+postgres = "1.0.5.RELEASE"
 r2dbc = "1.0.0.RELEASE"
+slf4js = "2.0.13"
+dagCommand = "1.9.0"
+benchmark = "0.4.10"
+jmh = "1.37"
+jmhReport = "0.9.6"
+xerialDriver = "3.45.3.0"
 
 [plugins]
 # Home-made convention plugins
@@ -67,14 +73,18 @@ kalium-library = { id = "kalium.library" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 completeKotlin = { id = "com.louiscad.complete-kotlin", version.ref = "completeKotlin" }
+moduleGraph = { id = "dev.iurysouza.modulegraph", version.ref = "moduleGraph" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
-ksp = { id = "com.google.devtools.ksp", version = "1.9.0-1.0.12" }
+ksp = { id = "com.google.devtools.ksp", version = "1.9.23-1.0.20" }
 carthage = { id = "com.wire.carthage-gradle-plugin", version.ref = "carthage" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobufCodegen" }
+benchmark = { id = "org.jetbrains.kotlinx.benchmark", version.ref = "benchmark" }
+allOpen = { id = "org.jetbrains.kotlin.plugin.allopen", version.ref = "kotlin" }
+jhmReport = { id = "io.morethan.jmhreport", version.ref = "jmhReport" }
 
 [bundles]
 android = ["appCompat", "activityCompose", "work", "composeMaterial", "coroutinesAndroid", "ktor", "ktor-okHttp"]
@@ -84,12 +94,14 @@ detekt-core = ["detekt-api"]
 [libraries]
 # Kotlin Gradle Plugin
 kotlin-plugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlin-test = { group = "org.jetbrains.kotlin", name = "kotlin-test", version.ref = "kotlin" }
+kotlinx-benchmark-runtime = { group = "org.jetbrains.kotlinx", name = "kotlinx-benchmark-runtime", version.ref = "benchmark" }
 
 kotlin-nativeUtils = { module = "org.jetbrains.kotlin:kotlin-native-utils", version.ref = "kotlin" }
 ktxSerialization = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "ktx-serialization" }
 ktxDateTime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "ktx-datetime" }
 ktx-atomicfu = { module = "org.jetbrains.kotlinx:atomicfu", version.ref = "ktx-atomicfu" }
-ktxReactive = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactive", version.ref = "ktx-reactive" }
+ktxReactive = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-reactive", version.ref = "coroutines" }
 
 # android dependencies
 appCompat = { module = "androidx.appcompat:appcompat", version.ref = "app-compat" }
@@ -113,7 +125,7 @@ androidtest-rules = { module = "androidx.test:rules", version.ref = "android-tes
 androidtest-core = { module = "androidx.test:core", version.ref = "android-test-core" }
 androidtest-arch = { module = "androidx.arch.core:core-testing", version.ref = "androidx-arch" }
 androidtest-orchestrator = { module = "androidx.test:orchestrator", version.ref = "androidx-test-orchestrator" }
-core-ktx = { module = "androidx.test:core-ktx", version.ref = "android-test-runner" }
+core-ktx = { module = "androidx.test:core-ktx", version.ref = "android-test-core-ktx" }
 robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 
 # coroutines
@@ -149,6 +161,11 @@ ktor-iosHttp = { module = "io.ktor:ktor-client-ios", version.ref = "ktor" }
 ktor-encoding = { module = "io.ktor:ktor-client-encoding", version.ref = "ktor" }
 ktor-server = { module = "io.ktor:ktor-server-core", version.ref = "ktor" }
 ktor-serverNetty = { module = "io.ktor:ktor-server-netty", version.ref = "ktor" }
+ktor-serverLogging = { module = "io.ktor:ktor-server-call-logging-jvm", version.ref = "ktor" }
+ktor-serverContentNegotiation = { module = "io.ktor:ktor-server-content-negotiation", version.ref = "ktor" }
+ktor-serverCallId = { module = "io.ktor:ktor-server-call-id-jvm", version.ref = "ktor" }
+ktor-serverMetrics = { module = "io.ktor:ktor-server-metrics-micrometer-jvm", version.ref = "ktor" }
+ktor-statusPages = { module = "io.ktor:ktor-server-status-pages", version.ref = "ktor" }
 
 # okio
 okio-core = { module = "com.squareup.okio:okio", version.ref = "okio" }
@@ -165,12 +182,13 @@ sqldelight-nativeDriver = { module = "app.cash.sqldelight:native-driver", versio
 sqldelight-jvmDriver = { module = "app.cash.sqldelight:sqlite-driver", version.ref = "sqldelight" }
 sqldelight-jsDriver = { module = "app.cash.sqldelight:web-worker-driver", version.ref = "sqldelight" }
 sqldelight-primitiveAdapters = { module = "app.cash.sqldelight:primitive-adapters", version.ref = "sqldelight" }
-sqldelight-dialect = { module = "app.cash.sqldelight:sqlite-3-33-dialect", version.ref = "sqldelight" }
+sqldelight-dialect = { module = "app.cash.sqldelight:sqlite-3-38-dialect", version.ref = "sqldelight" }
 sqldelight-postgres = { module = "app.cash.sqldelight:postgresql-dialect", version.ref = "sqldelight" }
 sqldelight-r2dbc = { module = "app.cash.sqldelight:r2dbc-driver", version.ref = "sqldelight" }
 sqldelight-async = { module = "app.cash.sqldelight:async-extensions", version.ref = "sqldelight" }
 r2dbc-postgres = { module = "org.postgresql:r2dbc-postgresql", version.ref = "postgres" }
 r2dbc-spi = { module = "io.r2dbc:r2dbc-spi", version.ref = "r2dbc" }
+sqlite-xerialDriver = { module = "org.xerial:sqlite-jdbc", version.ref = "xerialDriver" }
 
 # mocks and testing
 mockative-runtime = { module = "io.mockative:mockative", version.ref = "mockative" }
@@ -204,6 +222,4 @@ jna = { module = "net.java.dev.jna:jna", version.ref = "jna" }
 # logging
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
 micrometer = { module = "io.micrometer:micrometer-registry-prometheus", version.ref = "micrometer" }
-
-# bouncy castle
-bouncy-castle = { module = "org.bouncycastle:bcprov-jdk15on", version.ref = "bouncy-castle" }
+slf4js = { module = "org.slf4j:slf4j-simple", version.ref = "slf4js" }

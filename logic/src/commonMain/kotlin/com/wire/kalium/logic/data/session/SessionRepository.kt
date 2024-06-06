@@ -20,7 +20,7 @@ package com.wire.kalium.logic.data.session
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.logic.configuration.server.ServerConfigRepository
+import com.wire.kalium.logic.configuration.server.ServerConfigMapper
 import com.wire.kalium.logic.data.auth.Account
 import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.logic.data.auth.AccountTokens
@@ -36,7 +36,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.wrapStorageNullableRequest
@@ -45,6 +45,7 @@ import com.wire.kalium.network.api.base.model.ManagedByDTO
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.dao.ManagedByEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO
+import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.model.SsoIdEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -61,7 +62,7 @@ interface SessionRepository {
     suspend fun allSessions(): Either<StorageFailure, List<AccountInfo>>
     suspend fun allSessionsFlow(): Flow<List<AccountInfo>>
     suspend fun allValidSessions(): Either<StorageFailure, List<AccountInfo.Valid>>
-    fun allValidSessionsFlow(): Flow<Either<StorageFailure, List<AccountInfo>>>
+    suspend fun allValidSessionsFlow(): Flow<Either<StorageFailure, List<AccountInfo>>>
     suspend fun doesValidSessionExist(userId: UserId): Either<StorageFailure, Boolean>
     fun fullAccountInfo(userId: UserId): Either<StorageFailure, Account>
     suspend fun userAccountInfo(userId: UserId): Either<StorageFailure, AccountInfo>
@@ -73,19 +74,21 @@ interface SessionRepository {
     suspend fun ssoId(userId: UserId): Either<StorageFailure, SsoIdEntity?>
     suspend fun updatePersistentWebSocketStatus(userId: UserId, isPersistentWebSocketEnabled: Boolean): Either<StorageFailure, Unit>
     suspend fun updateSsoIdAndScimInfo(userId: UserId, ssoId: SsoId?, managedBy: ManagedByDTO?): Either<StorageFailure, Unit>
-    fun isFederated(userId: UserId): Either<StorageFailure, Boolean>
+    suspend fun isFederated(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun getAllValidAccountPersistentWebSocketStatus(): Either<StorageFailure, Flow<List<PersistentWebSocketStatus>>>
     suspend fun persistentWebSocketStatus(userId: UserId): Either<StorageFailure, Boolean>
     suspend fun cookieLabel(userId: UserId): Either<StorageFailure, String?>
     suspend fun isAccountReadOnly(userId: UserId): Either<StorageFailure, Boolean>
+    suspend fun validSessionsWithServerConfig(): Either<StorageFailure, Map<UserId, ServerConfig>>
 }
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList")
 internal class SessionDataSource internal constructor(
     private val accountsDAO: AccountsDAO,
     private val authTokenStorage: AuthTokenStorage,
-    private val serverConfigRepository: ServerConfigRepository,
+    private val serverConfigDAO: ServerConfigurationDAO,
     private val kaliumConfigs: KaliumConfigs,
+    private val serverConfigMapper: ServerConfigMapper = MapperProvider.serverConfigMapper(),
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper()
 ) : SessionRepository {
@@ -123,7 +126,7 @@ internal class SessionDataSource internal constructor(
         wrapStorageRequest { accountsDAO.allValidAccountList() }
             .map { it.map { AccountInfo.Valid(it.userIDEntity.toModel()) } }
 
-    override fun allValidSessionsFlow(): Flow<Either<StorageFailure, List<AccountInfo>>> =
+    override suspend fun allValidSessionsFlow(): Flow<Either<StorageFailure, List<AccountInfo>>> =
         accountsDAO.observerValidAccountList()
             .map { it.map { AccountInfo.Valid(it.userIDEntity.toModel()) } }
             .wrapStorageRequest()
@@ -135,8 +138,11 @@ internal class SessionDataSource internal constructor(
         wrapStorageRequest { accountsDAO.fullAccountInfo(userId.toDao()) }
             .flatMap {
                 val accountInfo = sessionMapper.fromAccountInfoEntity(it.info)
-                val serverConfig: ServerConfig =
-                    serverConfigRepository.configById(it.serverConfigId).fold({ return Either.Left(it) }, { it })
+                val serverConfig: ServerConfig = wrapStorageRequest {
+                    serverConfigDAO.configById(it.serverConfigId)
+                }.map { serverConfigMapper.fromEntity(it) }
+                    .getOrElse { return Either.Left(it) }
+
                 val ssoId: SsoId? = sessionMapper.fromSsoIdEntity(it.ssoId)
                 Either.Right(Account(accountInfo, serverConfig, ssoId))
             }
@@ -195,7 +201,7 @@ internal class SessionDataSource internal constructor(
             accountsDAO.updateSsoIdAndScimInfo(userId.toDao(), idMapper.toSsoIdEntity(ssoId), managedBy?.toDao())
         }
 
-    override fun isFederated(userId: UserId): Either<StorageFailure, Boolean> = wrapStorageRequest {
+    override suspend fun isFederated(userId: UserId): Either<StorageFailure, Boolean> = wrapStorageRequest {
         accountsDAO.isFederated(userId.toDao())
     }
 
@@ -224,6 +230,14 @@ internal class SessionDataSource internal constructor(
                 ManagedByEntity.SCIM -> true
             }
         }
+
+    override suspend fun validSessionsWithServerConfig(): Either<StorageFailure, Map<UserId, ServerConfig>> = wrapStorageRequest {
+        accountsDAO.validAccountWithServerConfigId()
+    }.map {
+        it.map { (userId, serverConfig) ->
+            userId.toModel() to serverConfigMapper.fromEntity(serverConfig)
+        }.toMap()
+    }
 
     internal fun ManagedByDTO.toDao() = when (this) {
         ManagedByDTO.WIRE -> ManagedByEntity.WIRE

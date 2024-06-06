@@ -23,14 +23,18 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.monkeys.MetricsCollector
 import com.wire.kalium.monkeys.conversation.Monkey
 import com.wire.kalium.monkeys.conversation.MonkeyConversation
+import com.wire.kalium.monkeys.logger
 import com.wire.kalium.monkeys.model.ConversationDef
 import com.wire.kalium.monkeys.model.UserCount
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.random.Random
 import kotlin.random.nextUInt
 
 @Suppress("TooManyFunctions")
-object ConversationPool {
+class ConversationPool(private val delayPool: Long) {
     private val pool: ConcurrentHashMap<ConversationId, MonkeyConversation> = ConcurrentHashMap()
 
     // pool from conversations from an old run
@@ -51,16 +55,22 @@ object ConversationPool {
         this.pool.remove(id)
     }
 
-    private fun addToPool(monkeyConversation: MonkeyConversation) {
-        this.pool[monkeyConversation.conversation.id] = monkeyConversation
+    private suspend fun addToPool(monkeyConversation: MonkeyConversation) = coroutineScope {
+        launch {
+            delay(delayPool)
+            pool[monkeyConversation.conversationId] = monkeyConversation
+        }
     }
 
     fun conversationCreator(conversationId: ConversationId): Monkey? {
         return this.pool[conversationId]?.creator
     }
 
-    fun randomConversations(count: UInt): List<MonkeyConversation> {
-        return (1u..count).map { pool.values.random() }
+    fun randomConversations(count: UInt): List<MonkeyConversation> = try {
+        (1u..count).map { pool.values.random() }
+    } catch (_: NoSuchElementException) {
+        logger.w("No conversation is available yet")
+        listOf()
     }
 
     fun randomDynamicConversations(count: Int): List<MonkeyConversation> {
@@ -70,8 +80,8 @@ object ConversationPool {
 
     suspend fun destroyRandomConversation() {
         val conversation = this.pool.values.filter { it.isDestroyable }.random()
-        conversation.creator.destroyConversation(conversation.conversation.id)
-        this.pool.remove(conversation.conversation.id)
+        conversation.creator.destroyConversation(conversation.conversationId, conversation.creator.monkeyType.userId())
+        this.pool.remove(conversation.conversationId)
     }
 
     private suspend fun createDynamicConversation(
@@ -82,7 +92,7 @@ object ConversationPool {
         val name = "By monkey ${creator.monkeyType.userId()} - $protocol - ${Random.nextUInt()}"
         val conversation = creator.createConversation(name, monkeyList, protocol)
         this.addToPool(conversation)
-        return ConversationDef(conversation.conversation.id, creator.internalId, monkeyList.map { it.internalId }, protocol)
+        return ConversationDef(conversation.conversationId, creator.internalId, monkeyList.map { it.internalId }, protocol)
     }
 
     suspend fun createDynamicConversation(
@@ -90,7 +100,7 @@ object ConversationPool {
         protocol: ConversationOptions.Protocol,
         monkeyPool: MonkeyPool
     ): ConversationDef {
-        val creator = monkeyPool.randomMonkeys(UserCount.single())[0]
+        val creator = monkeyPool.randomLoggedInMonkeys(UserCount.single())[0]
         val members = creator.randomPeers(userCount, monkeyPool)
         return this.createDynamicConversation(creator, protocol, members)
     }
@@ -101,7 +111,7 @@ object ConversationPool {
         protocol: ConversationOptions.Protocol,
         monkeyPool: MonkeyPool
     ): ConversationDef {
-        val creator = monkeyPool.randomMonkeysFromTeam(team, UserCount.single())[0]
+        val creator = monkeyPool.randomLoggedInMonkeysFromTeam(team, UserCount.single()).first()
         val members = creator.randomPeers(userCount, monkeyPool)
         return this.createDynamicConversation(creator, protocol, members)
     }
@@ -135,18 +145,14 @@ object ConversationPool {
                 monkeyPool.randomMonkeys(UserCount.single())[0]
             }
             val name = "Prefixed $prefix by monkey ${creator.monkeyType.userId()} - $protocol - $groupIndex"
-            val conversation = creator.makeReadyThen(coreLogic, monkeyPool) {
-                val participants =
-                    preset?.initialMembers?.map { monkeyPool.getFromTeam(it.team, it.index) } ?: creator.randomPeers(userCount, monkeyPool)
-                createConversation(name, participants, protocol, false)
-            }
+            val conversation = creator.createPrefixedConversation(name, protocol, userCount, coreLogic, monkeyPool, preset)
             this.addToPool(conversation)
             if (preset != null) {
-                this.oldPool[preset.id] = conversation.conversation.id
+                this.oldPool[preset.id] = conversation.conversationId
             }
-            this.prefixedConversations.getOrPut(prefix) { mutableListOf() }.add(conversation.conversation.id)
+            this.prefixedConversations.getOrPut(prefix) { mutableListOf() }.add(conversation.conversationId)
             ConversationDef(
-                conversation.conversation.id, creator.internalId, conversation.members().map { it.internalId }, protocol
+                conversation.conversationId, creator.internalId, conversation.members().map { it.internalId }, protocol
             )
         }
     }

@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.MESSAGES
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
@@ -29,7 +30,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.Recipient
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.data.message.BroadcastMessage
 import com.wire.kalium.logic.data.message.BroadcastMessageOption
@@ -54,6 +54,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.logStructuredJson
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.network.exceptions.KaliumException
@@ -231,7 +232,7 @@ internal class MessageSenderImpl internal constructor(
             .flatMap { protocolInfo ->
                 when (protocolInfo) {
                     is Conversation.ProtocolInfo.MLS -> {
-                        attemptToSendWithMLS(protocolInfo.groupId, message)
+                        attemptToSendWithMLS(protocolInfo, message)
                     }
 
                     is Conversation.ProtocolInfo.Proteus, is Conversation.ProtocolInfo.Mixed -> {
@@ -322,13 +323,25 @@ internal class MessageSenderImpl internal constructor(
      *
      * Will handle re-trying on "mls-stale-message" after we are live again or fail if we are not syncing.
      */
-    private suspend fun attemptToSendWithMLS(groupId: GroupID, message: Message.Sendable): Either<CoreFailure, String> =
-        mlsConversationRepository.commitPendingProposals(groupId).flatMap {
-            mlsMessageCreator.createOutgoingMLSMessage(groupId, message).flatMap { mlsMessage ->
+    private suspend fun attemptToSendWithMLS(
+        protocolInfo: Conversation.ProtocolInfo.MLS,
+        message: Message.Sendable
+    ): Either<CoreFailure, String> {
+        return mlsConversationRepository.commitPendingProposals(protocolInfo.groupId).flatMap {
+            mlsMessageCreator.createOutgoingMLSMessage(protocolInfo.groupId, message).flatMap { mlsMessage ->
                 messageRepository.sendMLSMessage(message.conversationId, mlsMessage).fold({
                     if (it is NetworkFailure.ServerMiscommunication && it.kaliumException is KaliumException.InvalidRequestError) {
                         if (it.kaliumException.isMlsStaleMessage()) {
-                            logger.w("Encrypted MLS message for stale epoch '${message.id}', re-trying..")
+                            logger.logStructuredJson(
+                                level = KaliumLogLevel.WARN,
+                                leadingMessage = "Message Send Stale",
+                                jsonStringKeyValues = mapOf(
+                                    "message" to message.toLogString(),
+                                    "protocolInfo" to protocolInfo.toLogMap(),
+                                    "protocol" to ConversationOptions.Protocol.MLS.name,
+                                    "errorInfo" to "$it"
+                                )
+                            )
                             return staleEpochVerifier.verifyEpoch(message.conversationId)
                                 .flatMap {
                                     syncManager.waitUntilLiveOrFailure().flatMap {
@@ -344,7 +357,29 @@ internal class MessageSenderImpl internal constructor(
                     }
                 })
             }
+        }.onFailure {
+            logger.logStructuredJson(
+                level = KaliumLogLevel.ERROR,
+                leadingMessage = "Message Send Failure",
+                jsonStringKeyValues = mapOf(
+                    "message" to message.toLogString(),
+                    "protocolInfo" to protocolInfo.toLogMap(),
+                    "protocol" to ConversationOptions.Protocol.MLS.name,
+                    "errorInfo" to "$it"
+                )
+            )
+        }.onSuccess {
+            logger.logStructuredJson(
+                level = KaliumLogLevel.INFO,
+                leadingMessage = "Message Send Success",
+                jsonStringKeyValues = mapOf(
+                    "message" to message.toLogString(),
+                    "protocolInfo" to protocolInfo.toLogMap(),
+                    "protocol" to ConversationOptions.Protocol.MLS.name,
+                )
+            )
         }
+    }
 
     /**
      * Attempts to send a Proteus envelope
@@ -371,11 +406,19 @@ internal class MessageSenderImpl internal constructor(
                     attemptToSendWithProteus(message, messageTarget, remainingAttempts)
                 }
             }, { messageSent ->
-                logger.i("Message Send Success: { \"message\" : \"${message.toLogString()}\" }")
                 handleRecipientsDeliveryFailure(envelope, message, messageSent).flatMap {
                     Either.Right(messageSent.time)
                 }
-            })
+            }).onSuccess {
+                logger.logStructuredJson(
+                    level = KaliumLogLevel.INFO,
+                    leadingMessage = "Message Send Success",
+                    jsonStringKeyValues = mapOf(
+                        "message" to message.toLogString(),
+                        "protocol" to ConversationOptions.Protocol.PROTEUS.name
+                    )
+                )
+            }
 
     /**
      * Attempts to send a Proteus envelope without need to provide a specific conversationId
@@ -399,9 +442,17 @@ internal class MessageSenderImpl internal constructor(
                     )
                 }
             }, {
-                logger.i("Message Broadcast Success: { \"message\" : \"${message.toLogString()}\" }")
                 Either.Right(it)
-            })
+            }).onSuccess {
+                logger.logStructuredJson(
+                    level = KaliumLogLevel.INFO,
+                    leadingMessage = "Message Broadcast Success",
+                    jsonStringKeyValues = mapOf(
+                        "message" to message.toLogString(),
+                        "protocol" to ConversationOptions.Protocol.PROTEUS.name
+                    )
+                )
+            }
 
     private suspend fun handleProteusError(
         failure: CoreFailure,
@@ -431,6 +482,7 @@ internal class MessageSenderImpl internal constructor(
                                 )
                                 Either.Left(LegalHoldEnabledForConversationFailure(messageId))
                             }
+
                             remainingAttempts > 0 -> {
                                 logger.w(
                                     "Retrying (remaining attempts: $remainingAttempts) after Proteus $action " +
@@ -438,6 +490,7 @@ internal class MessageSenderImpl internal constructor(
                                 )
                                 retry(remainingAttempts - 1)
                             }
+
                             else -> {
                                 logger.e(
                                     "No remaining attempts to retry after Proteus $action " +

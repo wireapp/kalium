@@ -57,6 +57,42 @@ class UserDAOTest : BaseDatabaseTest() {
     }
 
     @Test
+    fun givenUser_whenUpdatingProfileAvatar_thenChangesAreEmittedCorrectly() = runTest(dispatcher) {
+        //given
+        val updatedUser = PartialUserEntity(
+            id = user1.id,
+            name = "newName",
+            handle = user1.handle,
+            email = user1.email,
+            accentId = user1.accentId,
+            previewAssetId = UserAssetIdEntity(
+                value ="newAvatar",
+                domain = "newAvatarDomain"
+            ),
+            completeAssetId = UserAssetIdEntity(
+                value ="newAvatar",
+                domain = "newAvatarDomain"
+            ),
+            supportedProtocols = user1.supportedProtocols
+        )
+
+        db.userDAO.upsertUser(user1)
+
+        db.userDAO.observeUserDetailsByQualifiedID(user1.id).test {
+            assertEquals(user1, (awaitItem() as UserDetailsEntity).toSimpleEntity())
+
+            // when
+            db.userDAO.updateUser(updatedUser)
+
+            // then
+            val newItem = (awaitItem() as UserDetailsEntity)
+            assertEquals(updatedUser.previewAssetId, newItem.previewAssetId)
+            assertEquals(updatedUser.completeAssetId, newItem.completeAssetId)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun givenUser_ThenUserCanBeInserted() = runTest(dispatcher) {
         db.userDAO.upsertUser(user1)
         val result = db.userDAO.observeUserDetailsByQualifiedID(user1.id).first()

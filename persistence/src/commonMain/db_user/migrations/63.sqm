@@ -1,6 +1,6 @@
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity;
 
-ALTER TABLE Conversation ADD COLUMN proteus_verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT "NOT_VERIFIED";
+ALTER TABLE Conversation ADD COLUMN proteus_verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT 'NOT_VERIFIED';
 
 DROP VIEW IF EXISTS ConversationDetails;
 
@@ -113,7 +113,7 @@ LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = C
 CREATE TRIGGER updateConversationProteusVerificationStatus
 AFTER UPDATE ON Client
 BEGIN
-    UPDATE Conversation SET proteus_verification_status = (CASE (new.is_verified) WHEN 1 THEN "VERIFIED" ELSE "DEGRADED" END)
+    UPDATE Conversation SET proteus_verification_status = (CASE (new.is_verified) WHEN 1 THEN 'VERIFIED' ELSE 'DEGRADED' END)
         WHERE qualified_id IN (
             SELECT id FROM (SELECT conv.qualified_id AS id, conv.proteus_verification_status AS verificationStatus, (COUNT(*) = SUM(CASE WHEN client.is_verified = 1 THEN 1 ELSE 0 END)) AS isActuallyVerified
                 FROM Conversation AS conv
@@ -124,14 +124,14 @@ BEGIN
                                             WHERE Client.id = new.id)
                 AND mem.user IS NOT (SELECT SelfUser.id FROM SelfUser LIMIT 1)
                 GROUP BY conv.qualified_id)
-            WHERE (CASE (verificationStatus) WHEN "VERIFIED" THEN 1 ELSE 0 END) != isActuallyVerified
+            WHERE (CASE (verificationStatus) WHEN 'VERIFIED' THEN 1 ELSE 0 END) != isActuallyVerified
         );
 END;
 
 CREATE TRIGGER updateConversationProteusVerificationStatusAfterNewClient
 AFTER INSERT ON Client
 BEGIN
-    UPDATE Conversation SET proteus_verification_status = "DEGRADED"
+    UPDATE Conversation SET proteus_verification_status = 'DEGRADED'
     WHERE qualified_id IN (
         SELECT Member.conversation FROM Member
         LEFT JOIN Client ON Client.user_id = Member.user
@@ -149,14 +149,14 @@ BEGIN
         substr(lower(hex(randomblob(2))),2) || '-a' || substr(lower(hex(randomblob(2))),2)
         || '-' || lower(hex(randomblob(6))))),
         (CASE (new.proteus_verification_status)
-            WHEN "VERIFIED" THEN "CONVERSATION_VERIFIED_PROTEUS"
-            ELSE "CONVERSATION_DEGRADED_PROTEUS" END
+            WHEN 'VERIFIED' THEN 'CONVERSATION_VERIFIED_PROTEUS'
+            ELSE 'CONVERSATION_DEGRADED_PROTEUS' END
         ),
         new.qualified_id,
         (SELECT CAST((julianday('now') - 2440587.5) * 86400 * 1000 AS INTEGER)),
         (SELECT SelfUser.id FROM SelfUser LIMIT 1),
         (SELECT Client.id FROM Client WHERE Client.user_id = (SELECT SelfUser.id FROM SelfUser LIMIT 1) LIMIT 1),
-        "SENT",
-        "VISIBLE"
+        'SENT',
+        'VISIBLE'
     );
 END;

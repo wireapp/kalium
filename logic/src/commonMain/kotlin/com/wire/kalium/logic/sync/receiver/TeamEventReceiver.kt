@@ -21,6 +21,7 @@ package com.wire.kalium.logic.sync.receiver
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
@@ -37,7 +38,7 @@ internal class TeamEventReceiverImpl(
     private val selfUserId: UserId,
 ) : TeamEventReceiver {
 
-    override suspend fun onEvent(event: Event.Team): Either<CoreFailure, Unit> {
+    override suspend fun onEvent(event: Event.Team, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
         when {
             event is Event.Team.MemberLeave -> handleMemberLeave(event)
         }

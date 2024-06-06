@@ -19,16 +19,22 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.cryptography.CommitBundle
+import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIClient
+import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.E2EIFailure
 import com.wire.kalium.logic.MLSFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
+import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.event.Event.Conversation.MLSWelcome
+import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
@@ -37,22 +43,27 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.keypackage.KeyPackageLimitsProvider
 import com.wire.kalium.logic.data.keypackage.KeyPackageRepository
-import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysMapper
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
+import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.flatten
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
+import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -65,6 +76,7 @@ import com.wire.kalium.network.exceptions.isMlsCommitMissingReferences
 import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.message.LocalId
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -72,7 +84,6 @@ import io.ktor.util.decodeBase64Bytes
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.withContext
@@ -91,15 +102,49 @@ data class DecryptedMessageBundle(
     val identity: E2EIdentity?
 )
 
-data class E2EIdentity(val clientId: String, val handle: String, val displayName: String, val domain: String)
+data class E2EIdentity(
+    val clientId: CryptoQualifiedClientId,
+    val handle: String,
+    val displayName: String,
+    val domain: String,
+    val certificate: String,
+    val status: CryptoCertificateStatus,
+    val thumbprint: String
+)
 
 @Suppress("TooManyFunctions", "LongParameterList")
 interface MLSConversationRepository {
     suspend fun decryptMessage(message: ByteArray, groupID: GroupID): Either<CoreFailure, List<DecryptedMessageBundle>>
-    suspend fun establishMLSGroup(groupID: GroupID, members: List<UserId>): Either<CoreFailure, Unit>
-    suspend fun establishMLSGroupFromWelcome(welcomeEvent: MLSWelcome): Either<CoreFailure, Unit>
+
+    /**
+     * Establishes an MLS (Messaging Layer Security) group with the specified group ID and members.
+     *
+     * Allows partial addition of members through the [allowSkippingUsersWithoutKeyPackages] parameter.
+     * If this parameter is set to true, users without key packages will be ignored and the rest will be added to the group.
+     *
+     * @param groupID The ID of the group to be established. Must be of type [GroupID].
+     * @param members The list of user IDs (of type [UserId]) to be added as members to the group.
+     * @param allowSkippingUsersWithoutKeyPackages Flag indicating whether to allow a partial member list in case of some users
+     * not having key packages available. Default value is false. If false, will return [Either.Left] containing
+     * [CoreFailure.MissingKeyPackages] for the missing users.
+     * @return An instance of [Either] indicating the result of the operation. It can be either [Either.Right] if the
+     *         group was successfully established, or [Either.Left] if an error occurred. If successful, returns [Unit].
+     *         Possible types of [Either.Left] are defined in the sealed interface [CoreFailure].
+     */
+    suspend fun establishMLSGroup(
+        groupID: GroupID,
+        members: List<UserId>,
+        allowSkippingUsersWithoutKeyPackages: Boolean = false
+    ): Either<CoreFailure, MLSAdditionResult>
+
+    suspend fun establishMLSSubConversationGroup(groupID: GroupID, parentId: ConversationId): Either<CoreFailure, Unit>
     suspend fun hasEstablishedMLSGroup(groupID: GroupID): Either<CoreFailure, Boolean>
-    suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
+    suspend fun addMemberToMLSGroup(
+        groupID: GroupID,
+        userIdList: List<UserId>,
+        cipherSuite: CipherSuite
+    ): Either<CoreFailure, Unit>
+
     suspend fun removeMembersFromMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit>
     suspend fun removeClientsFromMLSGroup(groupID: GroupID, clientIdList: List<QualifiedClientID>): Either<CoreFailure, Unit>
     suspend fun leaveGroup(groupID: GroupID): Either<CoreFailure, Unit>
@@ -111,16 +156,16 @@ interface MLSConversationRepository {
     suspend fun commitPendingProposals(groupID: GroupID): Either<CoreFailure, Unit>
     suspend fun setProposalTimer(timer: ProposalTimer, inMemory: Boolean = false)
     suspend fun observeProposalTimers(): Flow<ProposalTimer>
-    suspend fun observeEpochChanges(): Flow<GroupID>
-    suspend fun getConversationVerificationStatus(groupID: GroupID): Either<CoreFailure, Conversation.VerificationStatus>
     suspend fun rotateKeysAndMigrateConversations(
         clientId: ClientId,
         e2eiClient: E2EIClient,
-        certificateChain: String
-    ): Either<CoreFailure, Unit>
+        certificateChain: String,
+        isNewClient: Boolean = false
+    ): Either<E2EIFailure, Unit>
 
-    suspend fun getClientIdentity(clientId: ClientId): Either<CoreFailure, WireIdentity>
+    suspend fun getClientIdentity(clientId: ClientId): Either<CoreFailure, WireIdentity?>
     suspend fun getUserIdentity(userId: UserId): Either<CoreFailure, List<WireIdentity>>
+
     suspend fun getMembersIdentities(
         conversationId: ConversationId,
         userIds: List<UserId>
@@ -158,7 +203,9 @@ private fun CoreFailure.getStrategy(
     }
 }
 
-@Suppress("TooManyFunctions", "LongParameterList")
+// TODO: refactor this repository as it's doing too much.
+// A Repository should be a dummy class that get and set some values
+@Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 internal class MLSConversationDataSource(
     private val selfUserId: UserId,
     private val keyPackageRepository: KeyPackageRepository,
@@ -171,9 +218,11 @@ internal class MLSConversationDataSource(
     private val commitBundleEventReceiver: CommitBundleEventReceiver,
     private val epochsFlow: MutableSharedFlow<GroupID>,
     private val proposalTimersFlow: MutableSharedFlow<ProposalTimer>,
+    private val keyPackageLimitsProvider: KeyPackageLimitsProvider,
+    private val revocationListChecker: RevocationListChecker,
+    private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
-    private val mlsPublicKeysMapper: MLSPublicKeysMapper = MapperProvider.mlsPublicKeyMapper(),
     private val mlsCommitBundleMapper: MLSCommitBundleMapper = MapperProvider.mlsCommitBundleMapper(),
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : MLSConversationRepository {
@@ -209,30 +258,16 @@ internal class MLSConversationDataSource(
                         kaliumLogger.d("Epoch changed for groupID = ${groupID.value.obfuscateId()}")
                         epochsFlow.emit(groupID)
                     }
-                    messages.map { it.toModel(groupID) }
+                    messages.map {
+                        it.crlNewDistributionPoints?.let { newDistributionPoints ->
+                            checkRevocationList(newDistributionPoints)
+                        }
+                        it.toModel(groupID)
+                    }
                 }
             }
         }
     }
-
-    override suspend fun establishMLSGroupFromWelcome(welcomeEvent: MLSWelcome): Either<CoreFailure, Unit> =
-        mlsClientProvider.getMLSClient().flatMap { client ->
-            wrapMLSRequest { client.processWelcomeMessage(welcomeEvent.message.decodeBase64Bytes()) }
-                .flatMap { groupID ->
-                    kaliumLogger.i("Created conversation from welcome message (groupID = $groupID)")
-
-                    wrapStorageRequest {
-                        if (conversationDAO.observeConversationByGroupID(groupID).first() != null) {
-                            // Welcome arrived after the conversation create event, updating existing conversation.
-                            conversationDAO.updateConversationGroupState(
-                                ConversationEntity.GroupState.ESTABLISHED,
-                                groupID
-                            )
-                            kaliumLogger.i("Updated conversation from welcome message (groupID = $groupID)")
-                        }
-                    }
-                }
-        }
 
     override suspend fun hasEstablishedMLSGroup(groupID: GroupID): Either<CoreFailure, Boolean> =
         mlsClientProvider.getMLSClient()
@@ -243,7 +278,7 @@ internal class MLSConversationDataSource(
             }
 
     override suspend fun requestToJoinGroup(groupID: GroupID, epoch: ULong): Either<CoreFailure, Unit> {
-        kaliumLogger.d("Requesting to re-join MLS group $groupID with epoch $epoch")
+        kaliumLogger.d("Requesting to re-join MLS group ${groupID.toLogString()} with epoch $epoch")
         return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapMLSRequest {
                 mlsClient.joinConversation(idMapper.toCryptoModel(groupID), epoch)
@@ -266,17 +301,22 @@ internal class MLSConversationDataSource(
         groupID: GroupID,
         groupInfo: ByteArray
     ): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
-        kaliumLogger.d("Requesting to re-join MLS group $groupID via external commit")
+        kaliumLogger.d("Requesting to re-join MLS group ${groupID.toLogString()} via external commit")
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapMLSRequest {
                 mlsClient.joinByExternalCommit(groupInfo)
             }.flatMap { commitBundle ->
+                commitBundle.crlNewDistributionPoints?.let {
+                    checkRevocationList(it)
+                }
                 sendCommitBundleForExternalCommit(groupID, commitBundle)
             }.onSuccess {
-                conversationDAO.updateConversationGroupState(
-                    ConversationEntity.GroupState.ESTABLISHED,
-                    idMapper.toCryptoModel(groupID)
-                )
+                wrapStorageRequest {
+                    conversationDAO.updateConversationGroupState(
+                        ConversationEntity.GroupState.ESTABLISHED,
+                        idMapper.toCryptoModel(groupID)
+                    )
+                }
             }
         }
     }
@@ -294,20 +334,16 @@ internal class MLSConversationDataSource(
         }
 
     override suspend fun updateKeyingMaterial(groupID: GroupID): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
-        retryOnCommitFailure(groupID) {
-            mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                wrapMLSRequest {
-                    mlsClient.updateKeyingMaterial(idMapper.toCryptoModel(groupID))
-                }.flatMap { commitBundle ->
-                    sendCommitBundle(groupID, commitBundle)
-                }.flatMap {
-                    wrapStorageRequest {
-                        conversationDAO.updateKeyingMaterial(
-                            idMapper.toCryptoModel(groupID),
-                            DateTimeUtil.currentInstant()
-                        )
-                    }
-                }
+        produceAndSendCommitWithRetry(groupID) {
+            wrapMLSRequest {
+                updateKeyingMaterial(idMapper.toCryptoModel(groupID))
+            }
+        }.flatMap {
+            wrapStorageRequest {
+                conversationDAO.updateKeyingMaterial(
+                    idMapper.toCryptoModel(groupID),
+                    DateTimeUtil.currentInstant()
+                )
             }
         }
     }
@@ -349,32 +385,57 @@ internal class MLSConversationDataSource(
 
     private suspend fun processCommitBundleEvents(events: List<EventContentDTO>) {
         events.forEach { eventContentDTO ->
-            val event = MapperProvider.eventMapper(selfUserId).fromEventContentDTO("", eventContentDTO, true, false)
+            val event =
+                MapperProvider.eventMapper(selfUserId).fromEventContentDTO(
+                    LocalId.generate(),
+                    eventContentDTO
+                )
             if (event is Event.Conversation) {
-                commitBundleEventReceiver.onEvent(event)
+                commitBundleEventReceiver.onEvent(event, EventDeliveryInfo(isTransient = true, source = EventSource.LIVE))
             }
         }
     }
 
-    override suspend fun commitPendingProposals(groupID: GroupID): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
-        retryOnCommitFailure(groupID) {
-            internalCommitPendingProposals(groupID)
+    override suspend fun commitPendingProposals(
+        groupID: GroupID
+    ): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
+        produceAndSendCommitWithRetry(groupID) {
+            getPendingCommitBundle(groupID)
+        }.flatMap {
+            wrapStorageRequest {
+                conversationDAO.clearProposalTimer(idMapper.toCryptoModel(groupID))
+            }
         }
     }
 
-    private suspend fun internalCommitPendingProposals(groupID: GroupID): Either<CoreFailure, Unit> =
-        mlsClientProvider.getMLSClient()
-            .flatMap { mlsClient ->
-                wrapMLSRequest {
-                    mlsClient.commitPendingProposals(idMapper.toCryptoModel(groupID))
-                }.flatMap { commitBundle ->
-                    commitBundle?.let { sendCommitBundle(groupID, it) } ?: Either.Right(Unit)
-                }.flatMap {
-                    wrapStorageRequest {
-                        conversationDAO.clearProposalTimer(idMapper.toCryptoModel(groupID))
-                    }
+    private suspend fun commitPendingProposalsWithoutRetry(
+        groupID: GroupID
+    ): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
+        getPendingCommitBundle(groupID).flatMap {
+            if (it != null) {
+                sendCommitBundle(groupID, it)
+            } else {
+                Either.Right(Unit)
+            }
+        }.flatMap {
+            wrapStorageRequest {
+                conversationDAO.clearProposalTimer(idMapper.toCryptoModel(groupID))
+            }
+        }
+    }
+
+    private suspend fun getPendingCommitBundle(
+        groupID: GroupID
+    ): Either<CoreFailure, CommitBundle?> =
+        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            wrapMLSRequest {
+                mlsClient.commitPendingProposals(idMapper.toCryptoModel(groupID))
+            }.onSuccess { commitBundle ->
+                commitBundle?.crlNewDistributionPoints?.let {
+                    checkRevocationList(it)
                 }
             }
+        }
 
     override suspend fun setProposalTimer(timer: ProposalTimer, inMemory: Boolean) {
         if (inMemory) {
@@ -390,38 +451,56 @@ internal class MLSConversationDataSource(
             conversationDAO.getProposalTimers().map { it.map(conversationMapper::fromDaoModel) }.flatten()
         )
 
-    override suspend fun observeEpochChanges(): Flow<GroupID> {
-        return epochsFlow
-    }
-
-    override suspend fun addMemberToMLSGroup(groupID: GroupID, userIdList: List<UserId>): Either<CoreFailure, Unit> =
-        internalAddMemberToMLSGroup(groupID, userIdList, retryOnStaleMessage = true)
+    override suspend fun addMemberToMLSGroup(
+        groupID: GroupID,
+        userIdList: List<UserId>,
+        cipherSuite: CipherSuite
+    ): Either<CoreFailure, Unit> =
+        internalAddMemberToMLSGroup(
+            groupID = groupID,
+            userIdList = userIdList,
+            retryOnStaleMessage = true,
+            allowPartialMemberList = false,
+            cipherSuite = cipherSuite
+        ).map { Unit }
 
     private suspend fun internalAddMemberToMLSGroup(
         groupID: GroupID,
         userIdList: List<UserId>,
-        retryOnStaleMessage: Boolean
-    ): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
+        retryOnStaleMessage: Boolean,
+        cipherSuite: CipherSuite,
+        allowPartialMemberList: Boolean = false,
+    ): Either<CoreFailure, MLSAdditionResult> = withContext(serialDispatcher) {
         commitPendingProposals(groupID).flatMap {
-            retryOnCommitFailure(groupID, retryOnStaleMessage = retryOnStaleMessage) {
-                keyPackageRepository.claimKeyPackages(userIdList).flatMap { keyPackages ->
-                    mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                        val clientKeyPackageList = keyPackages.map { it.keyPackage.decodeBase64Bytes() }
-
-                        wrapMLSRequest {
-                            if (userIdList.isEmpty()) {
-                                // We are creating a group with only our self client which technically
-                                // doesn't need be added with a commit, but our backend API requires one,
-                                // so we create a commit by updating our key material.
-                                mlsClient.updateKeyingMaterial(idMapper.toCryptoModel(groupID))
-                            } else {
-                                mlsClient.addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)
-                            }
-                        }.flatMap { commitBundle ->
-                            commitBundle?.let {
-                                sendCommitBundle(groupID, it)
-                            } ?: Either.Right(Unit)
+            produceAndSendCommitWithRetryAndResult(groupID, retryOnStaleMessage = retryOnStaleMessage) {
+                keyPackageRepository.claimKeyPackages(userIdList, cipherSuite).flatMap { result ->
+                    if (result.usersWithoutKeyPackagesAvailable.isNotEmpty() && !allowPartialMemberList) {
+                        Either.Left(CoreFailure.MissingKeyPackages(result.usersWithoutKeyPackagesAvailable))
+                    } else {
+                        Either.Right(result)
+                    }
+                }.flatMap { result ->
+                    val keyPackages = result.successfullyFetchedKeyPackages
+                    val clientKeyPackageList = keyPackages.map { it.keyPackage.decodeBase64Bytes() }
+                    wrapMLSRequest {
+                        if (userIdList.isEmpty()) {
+                            // We are creating a group with only our self client which technically
+                            // doesn't need be added with a commit, but our backend API requires one,
+                            // so we create a commit by updating our key material.
+                            updateKeyingMaterial(idMapper.toCryptoModel(groupID))
+                        } else {
+                            addMember(idMapper.toCryptoModel(groupID), clientKeyPackageList)
                         }
+                    }.onSuccess { commitBundle ->
+                        commitBundle?.crlNewDistributionPoints?.let { revocationList ->
+                            checkRevocationList(revocationList)
+                        }
+                    }.map {
+                        val additionResult = MLSAdditionResult(
+                            result.successfullyFetchedKeyPackages.map { user -> UserId(user.userId, user.domain) }.toSet(),
+                            result.usersWithoutKeyPackagesAvailable.toSet()
+                        )
+                        CommitOperationResult(it, additionResult)
                     }
                 }
             }
@@ -433,7 +512,7 @@ internal class MLSConversationDataSource(
         userIdList: List<UserId>
     ): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
         commitPendingProposals(groupID).flatMap {
-            retryOnCommitFailure(groupID) {
+            produceAndSendCommitWithRetry(groupID) {
                 wrapApiRequest { clientApi.listClientsOfUsers(userIdList.map { it.toApi() }) }.map { userClientsList ->
                     val usersCryptoQualifiedClientIDs = userClientsList.flatMap { userClients ->
                         userClients.value.map { userClient ->
@@ -443,12 +522,8 @@ internal class MLSConversationDataSource(
                             )
                         }
                     }
-                    return@retryOnCommitFailure mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                        wrapMLSRequest {
-                            mlsClient.removeMember(idMapper.toCryptoModel(groupID), usersCryptoQualifiedClientIDs)
-                        }.flatMap {
-                            sendCommitBundle(groupID, it)
-                        }
+                    return@produceAndSendCommitWithRetry wrapMLSRequest {
+                        removeMember(idMapper.toCryptoModel(groupID), usersCryptoQualifiedClientIDs)
                     }
                 }
             }
@@ -460,19 +535,15 @@ internal class MLSConversationDataSource(
         clientIdList: List<QualifiedClientID>
     ): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
         commitPendingProposals(groupID).flatMap {
-            retryOnCommitFailure(groupID, retryOnClientMismatch = false) {
+            produceAndSendCommitWithRetry(groupID, retryOnClientMismatch = false) {
                 val qualifiedClientIDs = clientIdList.map { userClient ->
                     CryptoQualifiedClientId(
                         userClient.clientId.value,
                         userClient.userId.toCrypto()
                     )
                 }
-                return@retryOnCommitFailure mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-                    wrapMLSRequest {
-                        mlsClient.removeMember(groupID.toCrypto(), qualifiedClientIDs)
-                    }.flatMap {
-                        sendCommitBundle(groupID, it)
-                    }
+                return@produceAndSendCommitWithRetry wrapMLSRequest {
+                    removeMember(groupID.toCrypto(), qualifiedClientIDs)
                 }
             }
         }
@@ -487,85 +558,140 @@ internal class MLSConversationDataSource(
 
     override suspend fun establishMLSGroup(
         groupID: GroupID,
-        members: List<UserId>
+        members: List<UserId>,
+        allowSkippingUsersWithoutKeyPackages: Boolean,
+    ): Either<CoreFailure, MLSAdditionResult> = withContext(serialDispatcher) {
+        mlsClientProvider.getMLSClient().flatMap<MLSAdditionResult, CoreFailure, MLSClient> {
+            mlsPublicKeysRepository.getKeyForCipherSuite(
+                CipherSuite.fromTag(it.getDefaultCipherSuite())
+            ).flatMap { key ->
+                establishMLSGroup(
+                    groupID = groupID,
+                    members = members,
+                    externalSenders = key,
+                    allowPartialMemberList = allowSkippingUsersWithoutKeyPackages
+                )
+            }
+        }
+    }
+
+    override suspend fun establishMLSSubConversationGroup(
+        groupID: GroupID,
+        parentId: ConversationId
     ): Either<CoreFailure, Unit> = withContext(serialDispatcher) {
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            mlsPublicKeysRepository.getKeys().flatMap { publicKeys ->
-                wrapMLSRequest {
-                    mlsClient.createConversation(
-                        idMapper.toCryptoModel(groupID),
-                        publicKeys.map { mlsPublicKeysMapper.toCrypto(it) }
-                    )
-                }.flatMapLeft {
-                    if (it is MLSFailure.ConversationAlreadyExists) {
-                        Either.Right(Unit)
-                    } else {
-                        Either.Left(it)
-                    }
+            conversationDAO.getMLSGroupIdByConversationId(parentId.toDao())?.let { parentGroupId ->
+                val externalSenderKey = mlsClient.getExternalSenders(GroupID(parentGroupId).toCrypto())
+                establishMLSGroup(
+                    groupID = groupID,
+                    members = emptyList(),
+                    externalSenders = externalSenderKey.value,
+                    allowPartialMemberList = false
+                ).map { Unit }
+            } ?: Either.Left(StorageFailure.DataNotFound)
+        }
+    }
+
+    private suspend fun establishMLSGroup(
+        groupID: GroupID,
+        members: List<UserId>,
+        externalSenders: ByteArray,
+        allowPartialMemberList: Boolean = false,
+    ): Either<CoreFailure, MLSAdditionResult> = withContext(serialDispatcher) {
+        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+            wrapMLSRequest {
+                mlsClient.createConversation(
+                    idMapper.toCryptoModel(groupID),
+                    externalSenders
+                )
+            }.flatMapLeft {
+                if (it is MLSFailure.ConversationAlreadyExists) {
+                    Either.Right(Unit)
+                } else {
+                    Either.Left(it)
                 }
             }.flatMap {
-                internalAddMemberToMLSGroup(groupID, members, retryOnStaleMessage = false).onFailure {
+                internalAddMemberToMLSGroup(
+                    groupID = groupID,
+                    userIdList = members,
+                    retryOnStaleMessage = false,
+                    allowPartialMemberList = allowPartialMemberList,
+                    cipherSuite = CipherSuite.fromTag(mlsClient.getDefaultCipherSuite())
+                ).onFailure {
                     wrapMLSRequest {
                         mlsClient.wipeConversation(groupID.toCrypto())
                     }
                 }
-            }.flatMap {
+            }.flatMap { additionResult ->
                 wrapStorageRequest {
                     conversationDAO.updateConversationGroupState(
                         ConversationEntity.GroupState.ESTABLISHED,
                         idMapper.toGroupIDEntity(groupID)
                     )
-                }
+                }.map { additionResult }
             }
         }
     }
-
-    override suspend fun getConversationVerificationStatus(groupID: GroupID): Either<CoreFailure, Conversation.VerificationStatus> =
-        mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            wrapMLSRequest { mlsClient.isGroupVerified(idMapper.toCryptoModel(groupID)) }
-        }.map { it.toModel() }
 
     override suspend fun rotateKeysAndMigrateConversations(
         clientId: ClientId,
         e2eiClient: E2EIClient,
-        certificateChain: String
-    ) = mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+        certificateChain: String,
+        isNewClient: Boolean
+    ) = mlsClientProvider.getMLSClient(clientId).fold({
+        E2EIFailure.MissingMLSClient(it).left()
+    }, { mlsClient ->
         wrapMLSRequest {
-            mlsClient.e2eiRotateAll(e2eiClient, certificateChain, 10U)
-        }.map { rotateBundle ->
-            // todo: store keypackages to drop, later drop them again
-            kaliumLogger.w("upload new keypackages and drop old ones")
-            keyPackageRepository.replaceKeyPackages(clientId, rotateBundle.newKeyPackages).flatMapLeft {
-                return Either.Left(it)
+            mlsClient.e2eiRotateAll(e2eiClient, certificateChain, keyPackageLimitsProvider.refillAmount().toUInt())
+        }.fold({
+            E2EIFailure.RotationAndMigration(it).left()
+        }, { rotateBundle ->
+            rotateBundle.crlNewDistributionPoints?.let {
+                checkRevocationList(it)
             }
-
+            if (!isNewClient) {
+                kaliumLogger.w("enrollment for existing client: upload new keypackages and drop old ones")
+                keyPackageRepository.replaceKeyPackages(clientId, rotateBundle.newKeyPackages).flatMapLeft {
+                    return E2EIFailure.RotationAndMigration(it).left()
+                }
+            }
             kaliumLogger.w("send migration commits after key rotations")
+            kaliumLogger.w("rotate bundles: ${rotateBundle.commits.size}")
             rotateBundle.commits.map {
                 sendCommitBundle(GroupID(it.key), it.value)
-            }.foldToEitherWhileRight(Unit) { value, _ -> value }.fold({ return Either.Left(it) }, { })
-        }
-    }
+            }.foldToEitherWhileRight(Unit) { value, _ -> value }.fold({ E2EIFailure.RotationAndMigration(it).left() }, {
+                Unit.right()
+            })
+        })
+    })
 
     override suspend fun getClientIdentity(clientId: ClientId) =
         wrapStorageRequest { conversationDAO.getE2EIConversationClientInfoByClientId(clientId.value) }.flatMap {
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
+
                     mlsClient.getDeviceIdentities(
                         it.mlsGroupId,
                         listOf(CryptoQualifiedClientId(it.clientId, it.userId.toModel().toCrypto()))
-                    ).first() // todo: ask if it's possible that's a client has more than one identity?
+                    ).firstOrNull()
                 }
             }
         }
 
     override suspend fun getUserIdentity(userId: UserId) =
-        wrapStorageRequest { conversationDAO.getMLSGroupIdByUserId(userId.toDao()) }.flatMap { mlsGroupId ->
+        wrapStorageRequest {
+            if (userId == selfUserId) {
+                conversationDAO.getEstablishedSelfMLSGroupId()
+            } else {
+                conversationDAO.getMLSGroupIdByUserId(userId.toDao())
+            }
+        }.flatMap { mlsGroupId ->
             mlsClientProvider.getMLSClient().flatMap { mlsClient ->
                 wrapMLSRequest {
                     mlsClient.getUserIdentities(
                         mlsGroupId,
                         listOf(userId.toCrypto())
-                    )[userId.value]!!
+                    )[userId.value] ?: emptyList()
                 }
             }
         }
@@ -593,76 +719,147 @@ internal class MLSConversationDataSource(
             }
         }
 
-    private suspend fun retryOnCommitFailure(
+    /**
+     * Takes an operation that generates a commit, performs it and sends the commit to remote.
+     * For convenience, it provides a MLSClient scope within the [operation].
+     * In case of failure, will follow [CoreFailure.getStrategy], retrying the [operation], retrying the sending of the commit, or just
+     * aborting.
+     * If the [operation] produces a null commit, will skip the sending of the commit and just return success.
+     *
+     * @param groupID The ID of the group to send the commit for.
+     * @param retryOnClientMismatch Whether to retry if a client mismatch occurs. Default is true.
+     * @param retryOnStaleMessage Whether to retry if a stale message occurs. Default is true.
+     * @param operation The operation to perform, which should return an [Either] containing a [CoreFailure] or [CommitBundle].
+     * @return An [Either] containing a [CoreFailure] or [Unit], indicating whether the operation was successful.
+     * @see produceAndSendCommitWithRetryAndResult
+     */
+    private suspend fun produceAndSendCommitWithRetry(
         groupID: GroupID,
         retryOnClientMismatch: Boolean = true,
         retryOnStaleMessage: Boolean = true,
-        operation: suspend () -> Either<CoreFailure, Unit>
-    ) =
-        operation()
-            .flatMapLeft {
+        operation: suspend MLSClient.() -> Either<CoreFailure, CommitBundle?>
+    ): Either<CoreFailure, Unit> = mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+        produceAndSendCommitWithRetryAndResult(
+            groupID = groupID,
+            retryOnClientMismatch = retryOnClientMismatch,
+            retryOnStaleMessage = retryOnStaleMessage
+        ) {
+            mlsClient.operation().map { CommitOperationResult(it, Unit) }
+        }
+    }.map { Unit }
+
+    /**
+     * Takes an operation that generates a commit, performs it and sends the commit to remote.
+     * This allows returning a value with the produced commit.
+     * For convenience, it provides a MLSClient scope within the [operation].
+     * In case of success, will return the latest result of the [operation], including the last result obtained during a retry.
+     * In case of failure, will follow [CoreFailure.getStrategy], retrying the [operation], retrying the sending of the commit, or just
+     * aborting.
+     * If the [operation] produces a null commit, will skip the sending of the commit and just return success.
+     *
+     * @param groupID The ID of the group to send the commit for.
+     * @param retryOnClientMismatch Whether to retry if a client mismatch occurs. Default is true.
+     * @param retryOnStaleMessage Whether to retry if a stale message occurs. Default is true.
+     * @param operation The operation to perform, which should return an [Either] containing a [CoreFailure] or [CommitOperationResult].
+     * @return An [Either] containing a [CoreFailure] or [Unit], indicating whether the operation was successful.
+     * @see produceAndSendCommitWithRetry
+     */
+    private suspend fun <T> produceAndSendCommitWithRetryAndResult(
+        groupID: GroupID,
+        retryOnClientMismatch: Boolean = true,
+        retryOnStaleMessage: Boolean = true,
+        operation: suspend MLSClient.() -> Either<CoreFailure, CommitOperationResult<T>>
+    ): Either<CoreFailure, T> = mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+        mlsClient.operation().fold({
+            kaliumLogger.w("Failure to produce commit. Aborting retry.")
+            // Failure to generate commit. Nothing to retry
+            Either.Left(it)
+        }, { operationResult ->
+            // Try sending the produced commit (or skip if null), and return the produced result
+            val commitBundle = operationResult.commitBundle ?: return@fold Either.Right(operationResult.result)
+            sendCommitBundle(groupID, commitBundle).map {
+                operationResult
+            }.flatMapLeft { failure ->
                 handleCommitFailure(
-                    failure = it,
+                    failure = failure,
                     groupID = groupID,
+                    currentOperationResult = operationResult,
                     remainingAttempts = 2,
                     retryOnClientMismatch = retryOnClientMismatch,
                     retryOnStaleMessage = retryOnStaleMessage,
-                    retryOperation = operation
-                )
-            }
+                ) { mlsClient.operation() }
+            }.map { it.result }
+        })
+    }
 
-    private suspend fun handleCommitFailure(
+    private suspend fun <T> handleCommitFailure(
         failure: CoreFailure,
         groupID: GroupID,
+        currentOperationResult: CommitOperationResult<T>,
         remainingAttempts: Int,
         retryOnClientMismatch: Boolean,
         retryOnStaleMessage: Boolean,
-        retryOperation: suspend () -> Either<CoreFailure, Unit>
-    ): Either<CoreFailure, Unit> {
-        return when (
+        retryOperation: suspend () -> Either<CoreFailure, CommitOperationResult<T>>
+    ): Either<CoreFailure, CommitOperationResult<T>> = // Handle error in case the sending fails
+        when (
             failure.getStrategy(
                 remainingAttempts = remainingAttempts,
                 retryOnClientMismatch = retryOnClientMismatch,
                 retryOnStaleMessage = retryOnStaleMessage
             )
         ) {
-            CommitStrategy.KEEP_AND_RETRY -> keepCommitAndRetry(groupID)
-            CommitStrategy.DISCARD_AND_RETRY -> discardCommitAndRetry(groupID, retryOperation)
-            CommitStrategy.ABORT -> return discardCommit(groupID).flatMap { Either.Left(failure) }
-        }.flatMapLeft {
-            handleCommitFailure(
-                failure = it,
-                groupID = groupID,
-                remainingAttempts = remainingAttempts - 1,
-                retryOnClientMismatch = retryOnClientMismatch,
-                retryOnStaleMessage = retryOnStaleMessage,
-                retryOperation = retryOperation
-            )
+            CommitStrategy.KEEP_AND_RETRY -> {
+                // If we keep the commit, and resending it works, return the previous result
+                keepCommitAndRetry(groupID).map { currentOperationResult }.flatMapLeft {
+                    handleCommitFailure(
+                        failure = it,
+                        groupID = groupID,
+                        currentOperationResult = currentOperationResult,
+                        remainingAttempts = remainingAttempts - 1,
+                        retryOnClientMismatch = retryOnClientMismatch,
+                        retryOnStaleMessage = retryOnStaleMessage,
+                        retryOperation = retryOperation
+                    )
+                }
+            }
+
+            CommitStrategy.DISCARD_AND_RETRY -> {
+                // In case of DISCARD AND RETRY, discard pending commits and retry the operation, sending the new commit
+                kaliumLogger.w("Discarding failed commit and retrying operation")
+                discardCommitForRetrying(groupID).flatMap { retryOperation() }.flatMap { newResult ->
+                    val commitBundle = newResult.commitBundle ?: return@flatMap Either.Right(newResult)
+                    sendCommitBundle(groupID, commitBundle).map { newResult }.flatMapLeft {
+                        handleCommitFailure(
+                            failure = it,
+                            groupID = groupID,
+                            currentOperationResult = newResult,
+                            remainingAttempts = remainingAttempts - 1,
+                            retryOnClientMismatch = retryOnClientMismatch,
+                            retryOnStaleMessage = retryOnStaleMessage,
+                            retryOperation = retryOperation
+                        )
+                    }
+                }
+            }
+
+            CommitStrategy.ABORT -> discardCommit(groupID).flatMap { Either.Left(failure) }
         }
-    }
 
     private suspend fun keepCommitAndRetry(groupID: GroupID): Either<CoreFailure, Unit> {
         kaliumLogger.w("Migrating failed commit to new epoch and re-trying.")
 
         return syncManager.waitUntilLiveOrFailure().flatMap {
-            internalCommitPendingProposals(groupID)
+            commitPendingProposalsWithoutRetry(groupID)
         }
     }
 
-    private suspend fun discardCommitAndRetry(
+    private suspend fun discardCommitForRetrying(
         groupID: GroupID,
-        operation: suspend () -> Either<CoreFailure, Unit>
-    ): Either<CoreFailure, Unit> {
-        kaliumLogger.w("Discarding failed commit and retry by re-generating the commit.")
-
-        return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            wrapMLSRequest {
-                mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
-            }.flatMap {
-                syncManager.waitUntilLiveOrFailure().flatMap {
-                    operation()
-                }
-            }
+    ): Either<CoreFailure, Unit> = mlsClientProvider.getMLSClient().flatMap { mlsClient ->
+        wrapMLSRequest {
+            mlsClient.clearPendingCommit(idMapper.toCryptoModel(groupID))
+        }.flatMap {
+            syncManager.waitUntilLiveOrFailure()
         }
     }
 
@@ -679,4 +876,16 @@ internal class MLSConversationDataSource(
             Either.Right(Unit)
         }
     }
+
+    private suspend fun checkRevocationList(crlNewDistributionPoints: List<String>) {
+        crlNewDistributionPoints.forEach { url ->
+            revocationListChecker.check(url).map { newExpiration ->
+                newExpiration?.let {
+                    certificateRevocationListRepository.addOrUpdateCRL(url, it)
+                }
+            }
+        }
+    }
+
+    private data class CommitOperationResult<T>(val commitBundle: CommitBundle?, val result: T)
 }

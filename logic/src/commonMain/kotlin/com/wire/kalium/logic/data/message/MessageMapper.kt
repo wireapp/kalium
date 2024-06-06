@@ -35,16 +35,19 @@ import com.wire.kalium.logic.data.notification.LocalNotificationCommentType
 import com.wire.kalium.logic.data.notification.LocalNotificationMessage
 import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.message.AssetTypeEntity
 import com.wire.kalium.persistence.dao.message.ButtonEntity
 import com.wire.kalium.persistence.dao.message.DeliveryStatusEntity
+import com.wire.kalium.persistence.dao.message.MessageAssetStatusEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
+import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
@@ -57,6 +60,7 @@ interface MessageMapper {
     fun fromEntityToMessage(message: MessageEntity): Message.Standalone
     fun fromAssetEntityToAssetMessage(message: AssetMessageEntity): AssetMessage
     fun fromEntityToMessagePreview(message: MessagePreviewEntity): MessagePreview
+    fun fromDraftToMessagePreview(message: MessageDraftEntity): MessagePreview
     fun fromMessageToLocalNotificationMessage(message: NotificationMessageEntity): LocalNotificationMessage?
     fun toMessageEntityContent(regularMessage: MessageContent.Regular): MessageEntityContent.Regular
 }
@@ -64,7 +68,8 @@ interface MessageMapper {
 @Suppress("TooManyFunctions")
 class MessageMapperImpl(
     private val selfUserId: UserId,
-    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId)
+    private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
+    private val userMapper: UserMapper = MapperProvider.userMapper()
 ) : MessageMapper {
 
     override fun fromMessageToEntity(message: Message.Standalone): MessageEntity =
@@ -89,9 +94,9 @@ class MessageMapperImpl(
             is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp.toInstant())
         },
         expireAfterMs = message.expirationData?.expireAfter?.inWholeMilliseconds,
-        selfDeletionStartDate = message.expirationData?.let {
+        selfDeletionEndDate = message.expirationData?.let {
             when (it.selfDeletionStatus) {
-                is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionStatus.selfDeletionStartDate
+                is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionStatus.selfDeletionEndDate
                 is Message.ExpirationData.SelfDeletionStatus.NotStarted -> null
             }
         },
@@ -114,9 +119,9 @@ class MessageMapperImpl(
         senderName = message.senderUserName,
         expireAfterMs = message.expirationData?.expireAfter?.inWholeMilliseconds,
         readCount = if (message.status is Message.Status.Read) message.status.readCount else 0,
-        selfDeletionStartDate = message.expirationData?.let {
+        selfDeletionEndDate = message.expirationData?.let {
             when (it.selfDeletionStatus) {
-                is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionStatus.selfDeletionStartDate
+                is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionStatus.selfDeletionEndDate
                 is Message.ExpirationData.SelfDeletionStatus.NotStarted -> null
             }
         }
@@ -138,7 +143,6 @@ class MessageMapperImpl(
             message.assetId,
             message.width,
             message.height,
-            message.downloadStatus.toModel(),
             message.assetPath?.toPath(),
             message.isSelfAsset
         )
@@ -159,9 +163,10 @@ class MessageMapperImpl(
         expirationData = message.expireAfterMs?.let {
             Message.ExpirationData(
                 expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
-                selfDeletionStatus = message.selfDeletionStartDate
+                selfDeletionStatus = message.selfDeletionEndDate
                     ?.let { Message.ExpirationData.SelfDeletionStatus.Started(it) }
-                    ?: Message.ExpirationData.SelfDeletionStatus.NotStarted)
+                    ?: Message.ExpirationData.SelfDeletionStatus.NotStarted
+            )
         },
         visibility = message.visibility.toModel(),
         reactions = Message.Reactions(message.reactions.totalReactions, message.reactions.selfUserReactions),
@@ -174,6 +179,13 @@ class MessageMapperImpl(
                 recipientsFailedWithNoClients = recipientsFailure.recipientsFailedWithNoClients.map { it.toModel() },
                 recipientsFailedDelivery = recipientsFailure.recipientsFailedDelivery.map { it.toModel() }
             )
+        },
+        sender = message.sender?.let {
+            if (message.isSelfMessage) {
+                userMapper.fromUserDetailsEntityToSelfUser(it)
+            } else {
+                userMapper.fromUserDetailsEntityToOtherUser(it)
+            }
         }
     )
 
@@ -189,9 +201,17 @@ class MessageMapperImpl(
         expirationData = message.expireAfterMs?.let {
             Message.ExpirationData(
                 expireAfter = it.toDuration(DurationUnit.MILLISECONDS),
-                selfDeletionStatus = message.selfDeletionStartDate
+                selfDeletionStatus = message.selfDeletionEndDate
                     ?.let { Message.ExpirationData.SelfDeletionStatus.Started(it) }
-                    ?: Message.ExpirationData.SelfDeletionStatus.NotStarted)
+                    ?: Message.ExpirationData.SelfDeletionStatus.NotStarted
+            )
+        },
+        sender = message.sender?.let {
+            if (message.isSelfMessage) {
+                userMapper.fromUserDetailsEntityToSelfUser(it)
+            } else {
+                userMapper.fromUserDetailsEntityToOtherUser(it)
+            }
         }
     )
 
@@ -200,10 +220,20 @@ class MessageMapperImpl(
             id = message.id,
             conversationId = message.conversationId.toModel(),
             content = message.content.toMessageContent(),
-            date = message.date,
             visibility = message.visibility.toModel(),
             isSelfMessage = message.isSelfMessage,
             senderUserId = message.senderUserId.toModel()
+        )
+    }
+
+    override fun fromDraftToMessagePreview(message: MessageDraftEntity): MessagePreview {
+        return MessagePreview(
+            id = message.conversationId.toString(),
+            conversationId = message.conversationId.toModel(),
+            content = MessagePreviewContent.Draft(message.text),
+            visibility = Message.Visibility.VISIBLE,
+            isSelfMessage = true,
+            senderUserId = selfUserId
         )
     }
 
@@ -320,8 +350,6 @@ class MessageMapperImpl(
                 assetSizeInBytes = sizeInBytes,
                 assetName = name,
                 assetMimeType = mimeType,
-                assetUploadStatus = uploadStatus.toDao(),
-                assetDownloadStatus = downloadStatus.toDao(),
                 assetOtrKey = remoteData.otrKey,
                 assetSha256Key = remoteData.sha256,
                 assetId = remoteData.assetId,
@@ -383,18 +411,23 @@ class MessageMapperImpl(
 }
 
 @Suppress("ComplexMethod")
- fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when (this) {
-        is MessageEntityContent.MemberChange -> {
-            val memberList = this.memberUserIdList.map { it.toModel() }
-            when (this.memberChangeType) {
-                MessageEntity.MemberChangeType.ADDED -> MessageContent.MemberChange.Added(memberList)
-                MessageEntity.MemberChangeType.REMOVED -> MessageContent.MemberChange.Removed(memberList)
-                MessageEntity.MemberChangeType.CREATION_ADDED -> MessageContent.MemberChange.CreationAdded(memberList)
-                MessageEntity.MemberChangeType.FAILED_TO_ADD -> MessageContent.MemberChange.FailedToAdd(memberList)
-                MessageEntity.MemberChangeType.FEDERATION_REMOVED -> MessageContent.MemberChange.FederationRemoved(memberList)
-                MessageEntity.MemberChangeType.REMOVED_FROM_TEAM -> MessageContent.MemberChange.RemovedFromTeam(memberList)
-            }
+fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when (this) {
+    is MessageEntityContent.MemberChange -> {
+        val memberList = this.memberUserIdList.map { it.toModel() }
+        when (this.memberChangeType) {
+            MessageEntity.MemberChangeType.ADDED -> MessageContent.MemberChange.Added(memberList)
+            MessageEntity.MemberChangeType.REMOVED -> MessageContent.MemberChange.Removed(memberList)
+            MessageEntity.MemberChangeType.CREATION_ADDED -> MessageContent.MemberChange.CreationAdded(memberList)
+            MessageEntity.MemberChangeType.FAILED_TO_ADD_FEDERATION ->
+                MessageContent.MemberChange.FailedToAdd(memberList, MessageContent.MemberChange.FailedToAdd.Type.Federation)
+            MessageEntity.MemberChangeType.FAILED_TO_ADD_LEGAL_HOLD ->
+                MessageContent.MemberChange.FailedToAdd(memberList, MessageContent.MemberChange.FailedToAdd.Type.LegalHold)
+            MessageEntity.MemberChangeType.FAILED_TO_ADD_UNKNOWN ->
+                MessageContent.MemberChange.FailedToAdd(memberList, MessageContent.MemberChange.FailedToAdd.Type.Unknown)
+            MessageEntity.MemberChangeType.FEDERATION_REMOVED -> MessageContent.MemberChange.FederationRemoved(memberList)
+            MessageEntity.MemberChangeType.REMOVED_FROM_TEAM -> MessageContent.MemberChange.RemovedFromTeam(memberList)
         }
+    }
 
     is MessageEntityContent.MissedCall -> MessageContent.MissedCall
     is MessageEntityContent.ConversationRenamed -> MessageContent.ConversationRenamed(conversationName)
@@ -425,6 +458,7 @@ class MessageMapperImpl(
             MessageEntity.LegalHoldType.ENABLED_FOR_CONVERSATION -> MessageContent.LegalHold.ForConversation.Enabled
             MessageEntity.LegalHoldType.DISABLED_FOR_MEMBERS ->
                 MessageContent.LegalHold.ForMembers.Disabled(this.memberUserIdList.map { it.toModel() })
+
             MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS ->
                 MessageContent.LegalHold.ForMembers.Enabled(this.memberUserIdList.map { it.toModel() })
         }
@@ -499,6 +533,7 @@ private fun MessagePreviewEntityContent.toMessageContent(): MessagePreviewConten
     is MessagePreviewEntityContent.ConversationVerificationDegradedMls -> MessagePreviewContent.VerificationChanged.DegradedMls
     is MessagePreviewEntityContent.ConversationVerificationDegradedProteus -> MessagePreviewContent.VerificationChanged.DegradedProteus
     is MessagePreviewEntityContent.Location -> MessagePreviewContent.WithUser.Location(username = senderName)
+    is MessagePreviewEntityContent.Deleted -> MessagePreviewContent.WithUser.Deleted(username = senderName)
 }
 
 fun AssetTypeEntity.toModel(): AssetType = when (this) {
@@ -615,7 +650,7 @@ private fun quotedContentFromEntity(it: MessageEntityContent.Text.QuotedMessage)
     else -> MessageContent.QuotedMessageDetails.Invalid
 }
 
-@Suppress("ComplexMethod")
+@Suppress("ComplexMethod", "LongMethod")
 fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System = when (this) {
     is MessageContent.MemberChange -> {
         val memberUserIdList = this.members.map { it.toDao() }
@@ -630,7 +665,14 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
                 MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.CREATION_ADDED)
 
             is MessageContent.MemberChange.FailedToAdd ->
-                MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD)
+                when (this.type) {
+                    MessageContent.MemberChange.FailedToAdd.Type.Federation ->
+                        MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD_FEDERATION)
+                    MessageContent.MemberChange.FailedToAdd.Type.LegalHold ->
+                        MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD_LEGAL_HOLD)
+                    MessageContent.MemberChange.FailedToAdd.Type.Unknown ->
+                        MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD_UNKNOWN)
+                }
 
             is MessageContent.MemberChange.FederationRemoved -> MessageEntityContent.MemberChange(
                 memberUserIdList,
@@ -675,11 +717,30 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
     is MessageContent.LegalHold -> when (this) {
         MessageContent.LegalHold.ForConversation.Disabled ->
             MessageEntityContent.LegalHold(emptyList(), MessageEntity.LegalHoldType.DISABLED_FOR_CONVERSATION)
+
         MessageContent.LegalHold.ForConversation.Enabled ->
             MessageEntityContent.LegalHold(emptyList(), MessageEntity.LegalHoldType.ENABLED_FOR_CONVERSATION)
+
         is MessageContent.LegalHold.ForMembers.Disabled ->
             MessageEntityContent.LegalHold(this.members.map { it.toDao() }, MessageEntity.LegalHoldType.DISABLED_FOR_MEMBERS)
+
         is MessageContent.LegalHold.ForMembers.Enabled ->
             MessageEntityContent.LegalHold(this.members.map { it.toDao() }, MessageEntity.LegalHoldType.ENABLED_FOR_MEMBERS)
     }
+}
+
+fun MessageAssetStatus.toDao(): MessageAssetStatusEntity {
+    return MessageAssetStatusEntity(
+        id = id,
+        conversationId = conversationId.toDao(),
+        transferStatus = transferStatus.toDao()
+    )
+}
+
+fun MessageAssetStatusEntity.toModel(): MessageAssetStatus {
+    return MessageAssetStatus(
+        id = id,
+        conversationId = conversationId.toModel(),
+        transferStatus = transferStatus.toModel()
+    )
 }

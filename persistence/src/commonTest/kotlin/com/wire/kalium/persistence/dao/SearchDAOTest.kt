@@ -207,4 +207,77 @@ class SearchDAOTest : BaseDatabaseTest() {
             assertEquals(connectedUser2.id, it[0].id)
         }
     }
+
+    @Test
+    fun givenConnectedUser_whenSearchingByHandle_thenReturnOnlyConnectedUsers() = runTest {
+        val searchQuery = "searchQuery"
+        val connectedUser1 = newUserEntity(id = "1").copy(handle = "searchQuery", connectionStatus = ConnectionEntity.State.ACCEPTED)
+        val connectedUser2 = newUserEntity(id = "2").copy(handle = "qwerty", connectionStatus = ConnectionEntity.State.ACCEPTED)
+        val pendingUser = newUserEntity(id = "pendingUser").copy(connectionStatus = ConnectionEntity.State.PENDING)
+        val blockedUser = newUserEntity(id = "blockedUser").copy(connectionStatus = ConnectionEntity.State.BLOCKED)
+        val notConnectedUser = newUserEntity(id = "notConnectedUser").copy(connectionStatus = ConnectionEntity.State.NOT_CONNECTED)
+        val ignoredUser = newUserEntity(id = "ignoredUser").copy(connectionStatus = ConnectionEntity.State.IGNORED)
+        val missingLeaseholdConsentUser =
+            newUserEntity(id = "missingLeaseholdConsentUser").copy(connectionStatus = ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT)
+        val deletedUser = newUserEntity(id = "deletedUser").copy(connectionStatus = ConnectionEntity.State.ACCEPTED, deleted = true)
+
+        userDAO.insertOrIgnoreUsers(
+            listOf(
+                connectedUser1,
+                connectedUser2,
+                pendingUser,
+                blockedUser,
+                notConnectedUser,
+                ignoredUser,
+                missingLeaseholdConsentUser,
+                deletedUser
+            )
+        )
+
+        searchDAO.handleSearch(searchQuery).also {
+            assertEquals(1, it.size)
+            assertEquals(connectedUser1.id, it[0].id)
+        }
+    }
+
+    @Test
+    fun givenUsers_whenSearchingVByHandleAndExcludingAConversation_thenOnlyReturnConnectedUsersThatAreNotMembers() = runTest {
+        val searchQuery = "searchQuery"
+        val connectedUser1 = newUserEntity(id = "1").copy(handle = searchQuery, connectionStatus = ConnectionEntity.State.ACCEPTED)
+        val connectedUser2 = newUserEntity(id = "2").copy(handle = searchQuery, connectionStatus = ConnectionEntity.State.ACCEPTED)
+        val pendingUser = newUserEntity(id = "pendingUser").copy(connectionStatus = ConnectionEntity.State.PENDING)
+        val blockedUser = newUserEntity(id = "blockedUser").copy(connectionStatus = ConnectionEntity.State.BLOCKED)
+        val notConnectedUser = newUserEntity(id = "notConnectedUser").copy(connectionStatus = ConnectionEntity.State.NOT_CONNECTED)
+        val ignoredUser = newUserEntity(id = "ignoredUser").copy(connectionStatus = ConnectionEntity.State.IGNORED)
+        val missingLeaseholdConsentUser =
+            newUserEntity(id = "missingLeaseholdConsentUser").copy(connectionStatus = ConnectionEntity.State.MISSING_LEGALHOLD_CONSENT)
+        val deletedUser = newUserEntity(id = "deletedUser").copy(connectionStatus = ConnectionEntity.State.ACCEPTED, deleted = true)
+
+        val conversation = newConversationEntity(id = "1")
+
+        userDAO.insertOrIgnoreUsers(
+            listOf(
+                connectedUser1,
+                connectedUser2,
+                pendingUser,
+                blockedUser,
+                notConnectedUser,
+                ignoredUser,
+                missingLeaseholdConsentUser,
+                deletedUser
+            )
+        )
+        conversationDAO.insertConversation(conversation)
+        memberDAO.insertMember(
+            MemberEntity(
+                connectedUser1.id,
+                MemberEntity.Role.Member
+            ), conversation.id
+        )
+
+        searchDAO.handleSearchExcludingAConversation(searchQuery, conversation.id).also {
+            assertEquals(1, it.size)
+            assertEquals(connectedUser2.id, it[0].id)
+        }
+    }
 }

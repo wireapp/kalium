@@ -33,9 +33,12 @@ import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderAr
 import com.wire.kalium.logic.util.arrangement.repository.MessageMetadataRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.MessageMetadataRepositoryArrangementImpl
 import io.mockative.any
-import io.mockative.matching
+import io.mockative.matches
+import io.mockative.coVerify
+import io.mockative.coEvery
 import io.mockative.once
 import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -58,23 +61,21 @@ class SendButtonActionMessageTest {
 
         assertIs<SendButtonActionMessageUseCase.Result.Failure>(result)
 
-        verify(arrangement.messageMetadataRepository)
-            .suspendFunction(arrangement.messageMetadataRepository::originalSenderId)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.messageMetadataRepository.originalSenderId(any(), any())
+        }.wasNotInvoked()
 
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(any(), any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.messageSender.sendMessage(any(), any())
+        }.wasNotInvoked()
 
-        verify(arrangement.currentClientIdProvider)
-            .suspendFunction(arrangement.currentClientIdProvider::invoke)
-            .wasNotInvoked()
+        coVerify {
+            arrangement.currentClientIdProvider.invoke()
+        }.wasNotInvoked()
 
-        verify(arrangement.syncManager)
-            .suspendFunction(arrangement.syncManager::waitUntilLiveOrFailure)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.syncManager.waitUntilLiveOrFailure()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -97,23 +98,21 @@ class SendButtonActionMessageTest {
 
         assertIs<SendButtonActionMessageUseCase.Result.Success>(result)
 
-        verify(arrangement.messageMetadataRepository)
-            .suspendFunction(arrangement.messageMetadataRepository::originalSenderId)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageMetadataRepository.originalSenderId(any(), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageSender.sendMessage(any(), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.currentClientIdProvider)
-            .suspendFunction(arrangement.currentClientIdProvider::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.currentClientIdProvider.invoke()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.syncManager)
-            .suspendFunction(arrangement.syncManager::waitUntilLiveOrFailure)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.syncManager.waitUntilLiveOrFailure()
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -136,25 +135,23 @@ class SendButtonActionMessageTest {
 
         assertIs<SendButtonActionMessageUseCase.Result.Success>(result)
 
-        verify(arrangement.messageMetadataRepository)
-            .suspendFunction(arrangement.messageMetadataRepository::originalSenderId)
-            .with(any(), any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.messageMetadataRepository.originalSenderId(any(), any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.messageSender)
-            .suspendFunction(arrangement.messageSender::sendMessage)
-            .with(any(), matching {
+        coVerify {
+            arrangement.messageSender.sendMessage(any(), matches {
                 it is MessageTarget.Users && it.userId == listOf(originalSender)
             })
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.currentClientIdProvider)
-            .suspendFunction(arrangement.currentClientIdProvider::invoke)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.currentClientIdProvider.invoke()
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.syncManager)
-            .suspendFunction(arrangement.syncManager::waitUntilLiveOrFailure)
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.syncManager.waitUntilLiveOrFailure()
+        }.wasInvoked(exactly = once)
     }
 
     private companion object {
@@ -169,8 +166,8 @@ class SendButtonActionMessageTest {
 
         private lateinit var useCase: SendButtonActionMessageUseCase
 
-        fun arrange(block: Arrangement.() -> Unit): Pair<Arrangement, SendButtonActionMessageUseCase> {
-            apply(block)
+        fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, SendButtonActionMessageUseCase> {
+            runBlocking { block() }
             useCase = SendButtonActionMessageUseCase(
                 messageMetadataRepository = messageMetadataRepository,
                 messageSender = messageSender,

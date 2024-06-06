@@ -64,7 +64,6 @@ class FeatureConfigMapperTest {
         val model = mapper.fromDTO(arrangement.featureConfigResponse.mls)
 
         assertEquals(Status.ENABLED, model.status)
-        assertEquals(listOf(PlainId("someId")), model.allowedUsers)
     }
 
     @Test
@@ -156,10 +155,9 @@ class FeatureConfigMapperTest {
             FeatureConfigData.ValidateSAMLEmails(FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.MLS(
                 MLSConfigDTO(
-                    listOf("someId"),
                     SupportedProtocolDTO.MLS,
                     listOf(SupportedProtocolDTO.MLS),
-                    emptyList(),
+                    listOf(1),
                     1
                 ), FeatureFlagStatusDTO.ENABLED
             ),

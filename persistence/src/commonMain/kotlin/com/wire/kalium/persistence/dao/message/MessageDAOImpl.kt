@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.dao.message
 
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationsQueries
+import com.wire.kalium.persistence.MessageAssetTransferStatusQueries
 import com.wire.kalium.persistence.MessageAssetViewQueries
 import com.wire.kalium.persistence.MessagePreviewQueries
 import com.wire.kalium.persistence.MessagesQueries
@@ -31,6 +32,7 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
+import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventEntity
@@ -58,6 +60,7 @@ internal class MessageDAOImpl internal constructor(
     private val selfUserId: UserIDEntity,
     private val reactionsQueries: ReactionsQueries,
     private val coroutineContext: CoroutineContext,
+    private val assetStatusQueries: MessageAssetTransferStatusQueries,
     buttonContentQueries: ButtonContentQueries
 ) : MessageDAO,
     MessageInsertExtension by MessageInsertExtensionImpl(
@@ -89,7 +92,7 @@ internal class MessageDAOImpl internal constructor(
         updateConversationReadDate: Boolean,
         updateConversationModifiedDate: Boolean
     ) = withContext(coroutineContext) {
-        queries.transaction {
+        queries.transactionWithResult {
             val messageCreationInstant = message.date
 
             if (updateConversationReadDate) {
@@ -99,13 +102,17 @@ internal class MessageDAOImpl internal constructor(
 
             insertInDB(message)
 
-            if (!nonSuspendNeedsToBeNotified(message.id, message.conversationId)) {
+            val needsToBeNotified = nonSuspendNeedsToBeNotified(message.id, message.conversationId)
+            if (!needsToBeNotified) {
                 conversationsQueries.updateConversationNotificationsDate(messageCreationInstant, message.conversationId)
             }
 
             if (updateConversationModifiedDate) {
                 conversationsQueries.updateConversationModifiedDate(messageCreationInstant, message.conversationId)
             }
+
+            if (needsToBeNotified) InsertMessageResult.INSERTED_NEED_TO_NOTIFY_USER
+            else InsertMessageResult.INSERTED_INTO_MUTED_CONVERSATION
         }
     }
 
@@ -114,7 +121,7 @@ internal class MessageDAOImpl internal constructor(
     }
 
     private fun nonSuspendNeedsToBeNotified(id: String, conversationId: QualifiedIDEntity) =
-        queries.needsToBeNotified(id, conversationId).executeAsList().first() == 1L
+        queries.needsToBeNotified(id, conversationId).executeAsList().firstOrNull() == 1L
 
     @Deprecated("For test only!")
     override suspend fun insertOrIgnoreMessages(messages: List<MessageEntity>) = withContext(coroutineContext) {
@@ -216,20 +223,16 @@ internal class MessageDAOImpl internal constructor(
                 }
         } ?: false
 
-    override suspend fun updateAssetUploadStatus(
-        uploadStatus: MessageEntity.UploadStatus,
+    override suspend fun updateAssetTransferStatus(
+        transferStatus: AssetTransferStatusEntity,
         id: String,
         conversationId: QualifiedIDEntity
     ) = withContext(coroutineContext) {
-        queries.updateAssetUploadStatus(uploadStatus, id, conversationId)
-    }
-
-    override suspend fun updateAssetDownloadStatus(
-        downloadStatus: MessageEntity.DownloadStatus,
-        id: String,
-        conversationId: QualifiedIDEntity
-    ) = withContext(coroutineContext) {
-        queries.updateAssetDownloadStatus(downloadStatus, id, conversationId)
+        assetStatusQueries.upsertMessageAssetStatus(
+            id,
+            conversationId,
+            transferStatus
+        )
     }
 
     override suspend fun updateMessageStatus(status: MessageEntity.Status, id: String, conversationId: QualifiedIDEntity) =
@@ -293,12 +296,11 @@ internal class MessageDAOImpl internal constructor(
                 .associateBy { it.conversationId }
         }
 
-    override suspend fun getNotificationMessage(): Flow<List<NotificationMessageEntity>> =
-        notificationQueries.getNotificationsMessages(mapper::toNotificationEntity)
-            .asFlow()
-            .flowOn(coroutineContext)
-            .mapToList()
-            .distinctUntilChanged()
+    override suspend fun getNotificationMessage(maxNumberOfMessagesPerConversation: Int): List<NotificationMessageEntity> =
+        withContext(coroutineContext) {
+            notificationQueries.getNotificationsMessages(mapper::toNotificationEntity)
+                .executeAsList()
+        }
 
     override suspend fun observeMessagesByConversationAndVisibilityAfterDate(
         conversationId: QualifiedIDEntity,
@@ -343,7 +345,8 @@ internal class MessageDAOImpl internal constructor(
                     user_id = it.userId
                 )
             }
-            val selfMention = newTextContent.mentions.firstNotNullOfOrNull { it.userId == selfUserId }
+
+            val selfMention = newTextContent.mentions.firstOrNull { it.userId == selfUserId }
             if (selfMention != null) {
                 unreadEventsQueries.updateEvent(UnreadEventTypeEntity.MENTION, currentMessageId, conversationId)
             } else {
@@ -378,8 +381,8 @@ internal class MessageDAOImpl internal constructor(
             conversationId to count.toInt()
         }.asFlow().flowOn(coroutineContext).mapToList().map { it.toMap() }
 
-    override suspend fun resetAssetDownloadStatus() = withContext(coroutineContext) {
-        queries.resetAssetDownloadStatus()
+    override suspend fun resetAssetTransferStatus() = withContext(coroutineContext) {
+        assetStatusQueries.resetAssetTransferStatus()
     }
 
     override suspend fun markMessagesAsDecryptionResolved(
@@ -388,10 +391,6 @@ internal class MessageDAOImpl internal constructor(
         clientId: String,
     ) = withContext(coroutineContext) {
         queries.markMessagesAsDecryptionResolved(userId, clientId)
-    }
-
-    override suspend fun resetAssetUploadStatus() = withContext(coroutineContext) {
-        queries.resetAssetUploadStatus()
     }
 
     override suspend fun getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
@@ -423,15 +422,25 @@ internal class MessageDAOImpl internal constructor(
         )
     }
 
-    override suspend fun getEphemeralMessagesMarkedForDeletion(): List<MessageEntity> {
+    override suspend fun getAllPendingEphemeralMessages(): List<MessageEntity> {
         return withContext(coroutineContext) {
-            queries.selectAllEphemeralMessagesMarkedForDeletion(mapper::toEntityMessageFromView).executeAsList()
+            queries.selectPendingEphemeralMessages(mapper::toEntityMessageFromView).executeAsList()
         }
     }
 
-    override suspend fun updateSelfDeletionStartDate(conversationId: QualifiedIDEntity, messageId: String, selfDeletionStartDate: Instant) {
+    override suspend fun getAllAlreadyEndedEphemeralMessages(): List<MessageEntity> {
         return withContext(coroutineContext) {
-            queries.markSelfDeletionStartDate(selfDeletionStartDate, conversationId, messageId)
+            queries.selectAlreadyEndedEphemeralMessages(mapper::toEntityMessageFromView).executeAsList()
+        }
+    }
+
+    override suspend fun updateSelfDeletionEndDate(
+        conversationId: QualifiedIDEntity,
+        messageId: String,
+        selfDeletionEndDate: Instant
+    ) {
+        return withContext(coroutineContext) {
+            queries.markSelfDeletionEndDate(selfDeletionEndDate, conversationId, messageId)
         }
     }
 
@@ -472,6 +481,18 @@ internal class MessageDAOImpl internal constructor(
             .executeAsOne()
             .toInt()
     }
+
+    override suspend fun observeAssetStatuses(conversationId: QualifiedIDEntity): Flow<List<MessageAssetStatusEntity>> =
+        assetStatusQueries.selectConversationAssetStatus(conversationId, mapper::fromAssetStatus)
+            .asFlow()
+            .flowOn(coroutineContext)
+            .mapToList()
+
+    override suspend fun getMessageAssetTransferStatus(messageId: String, conversationId: QualifiedIDEntity): AssetTransferStatusEntity =
+        withContext(coroutineContext) {
+            assetStatusQueries.selectMessageAssetStatus(conversationId, messageId)
+                .executeAsOne()
+        }
 
     override val platformExtensions: MessageExtensions = MessageExtensionsImpl(queries, assetViewQueries, mapper, coroutineContext)
 

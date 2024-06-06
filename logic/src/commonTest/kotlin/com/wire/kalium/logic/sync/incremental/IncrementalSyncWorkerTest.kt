@@ -21,24 +21,27 @@ package com.wire.kalium.logic.sync.incremental
 import app.cash.turbine.test
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventEnvelope
 import com.wire.kalium.logic.framework.TestEvent
+import com.wire.kalium.logic.framework.TestEvent.wrapInEnvelope
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.KaliumSyncException
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -50,27 +53,26 @@ class IncrementalSyncWorkerTest {
     @Test
     fun givenGathererEmitsEvent_whenPerformingIncrementalSync_thenProcessorShouldReceiveTheEvent() = runTest(TestKaliumDispatcher.default) {
         // Given
-        val event = TestEvent.memberJoin()
+        val envelope = TestEvent.memberJoin().wrapInEnvelope()
         val (arrangement, worker) = Arrangement()
             .withEventGathererSourceReturning(MutableStateFlow(EventSource.LIVE))
-            .withEventGathererReturning(flowOf(event))
+            .withEventGathererReturning(flowOf(envelope))
             .arrange()
 
         // When
         worker.processEventsWhilePolicyAllowsFlow().collect()
 
         // Then
-        verify(arrangement.eventProcessor)
-            .suspendFunction(arrangement.eventProcessor::processEvent)
-            .with(eq(event))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.eventProcessor.processEvent(eq(envelope))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
     fun givenGathererEmitsEventDuringLiveSource_whenPerformingIncrementalSync_thenWorkerShouldEmitLiveSource() =
         runTest(TestKaliumDispatcher.default) {
             // Given
-            val event = TestEvent.memberJoin()
+            val event = TestEvent.memberJoin().wrapInEnvelope()
             val (_, worker) = Arrangement()
                 .withEventGathererReturning(flowOf(event))
                 .withEventGathererSourceReturning(MutableStateFlow(EventSource.LIVE))
@@ -88,7 +90,7 @@ class IncrementalSyncWorkerTest {
     fun givenGathererEmitsEventDuringPendingSource_whenPerformingIncrementalSync_thenWorkerShouldEmitPendingSource() =
         runTest(TestKaliumDispatcher.default) {
             // Given
-            val event = TestEvent.memberJoin()
+            val event = TestEvent.memberJoin().wrapInEnvelope()
             val (_, worker) = Arrangement()
                 .withEventGathererReturning(flowOf(event))
                 .withEventGathererSourceReturning(MutableStateFlow(EventSource.PENDING))
@@ -125,7 +127,7 @@ class IncrementalSyncWorkerTest {
         val coreFailureCause = NetworkFailure.NoNetworkConnection(null)
         val (_, worker) = Arrangement()
             .withEventGathererSourceReturning(MutableStateFlow(EventSource.PENDING))
-            .withEventGathererReturning(flowOf(TestEvent.memberJoin()))
+            .withEventGathererReturning(flowOf(TestEvent.memberJoin().wrapInEnvelope()))
             .withEventProcessorFailingWith(coreFailureCause)
             .arrange()
 
@@ -145,40 +147,37 @@ class IncrementalSyncWorkerTest {
         val eventGatherer: EventGatherer = mock(EventGatherer::class)
 
         init {
-            withEventProcessorSucceeding()
+            runBlocking {
+                withEventProcessorSucceeding()
+            }
         }
 
-        fun withEventGathererReturning(eventFlow: Flow<Event>) = apply {
-            given(eventGatherer)
-                .suspendFunction(eventGatherer::gatherEvents)
-                .whenInvoked()
-                .thenReturn(eventFlow)
+        suspend fun withEventGathererReturning(eventFlow: Flow<EventEnvelope>) = apply {
+            coEvery {
+                eventGatherer.gatherEvents()
+            }.returns(eventFlow)
         }
 
         fun withEventGathererSourceReturning(sourceFlow: StateFlow<EventSource>) = apply {
-            given(eventGatherer)
-                .getter(eventGatherer::currentSource)
-                .whenInvoked()
-                .thenReturn(sourceFlow)
+            every {
+                eventGatherer.currentSource
+            }.returns(sourceFlow)
         }
 
-        fun withEventGathererThrowing(throwable: Throwable) = apply {
-            given(eventGatherer)
-                .suspendFunction(eventGatherer::gatherEvents)
-                .whenInvoked()
-                .thenThrow(throwable)
+        suspend fun withEventGathererThrowing(throwable: Throwable) = apply {
+            coEvery { eventGatherer.gatherEvents() }
+                .throws(throwable)
         }
 
-        fun withEventProcessorReturning(result: Either<CoreFailure, Unit>) = apply {
-            given(eventProcessor)
-                .suspendFunction(eventProcessor::processEvent)
-                .whenInvokedWith(any())
-                .thenReturn(result)
+        suspend fun withEventProcessorReturning(result: Either<CoreFailure, Unit>) = apply {
+            coEvery {
+                eventProcessor.processEvent(any())
+            }.returns(result)
         }
 
-        fun withEventProcessorSucceeding() = withEventProcessorReturning(Either.Right(Unit))
+        suspend fun withEventProcessorSucceeding() = withEventProcessorReturning(Either.Right(Unit))
 
-        fun withEventProcessorFailingWith(failure: CoreFailure) = withEventProcessorReturning(Either.Left(failure))
+        suspend fun withEventProcessorFailingWith(failure: CoreFailure) = withEventProcessorReturning(Either.Left(failure))
 
         fun arrange() = this to IncrementalSyncWorkerImpl(
             eventGatherer, eventProcessor

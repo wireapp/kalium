@@ -46,6 +46,8 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.logic.data.conversation.EpochChangesObserver
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
@@ -60,15 +62,13 @@ import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.ktor.util.reflect.instanceOf
 import io.mockative.Mock
-import io.mockative.Times
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.configure
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.oneOf
 import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -107,7 +107,7 @@ class CallRepositoryTest {
     @Test
     fun givenEmptyListOfCalls_whenGetAllCallsIsCalled_thenReturnAnEmptyListOfCalls() = runTest {
         val (_, callRepository) = Arrangement()
-            .givenObserveCallsReturns(flowOf(listOf<CallEntity>()))
+            .givenObserveCallsReturns(flowOf(listOf()))
             .arrange()
 
         val calls = callRepository.callsFlow()
@@ -191,7 +191,7 @@ class CallRepositoryTest {
         callRepository.createCall(
             conversationId = Arrangement.conversationId,
             status = CallStatus.STARTED,
-            callerId = Arrangement.callerId.value,
+            callerId = callerId.value,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -199,9 +199,9 @@ class CallRepositoryTest {
         )
 
         // then
-        verify(arrangement.callDAO).suspendFunction(arrangement.callDAO::insertCall)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.callDAO.insertCall(any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -241,7 +241,7 @@ class CallRepositoryTest {
         callRepository.createCall(
             conversationId = Arrangement.conversationId,
             status = CallStatus.STARTED,
-            callerId = Arrangement.callerId.value,
+            callerId = callerId.value,
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
@@ -249,9 +249,9 @@ class CallRepositoryTest {
         )
 
         // then
-        verify(arrangement.callDAO).suspendFunction(arrangement.callDAO::insertCall)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.callDAO.insertCall(any())
+        }.wasInvoked(exactly = once)
 
         assertEquals(
             true,
@@ -295,9 +295,9 @@ class CallRepositoryTest {
         )
 
         // then
-        verify(arrangement.callDAO).suspendFunction(arrangement.callDAO::insertCall)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.callDAO.insertCall(any())
+        }.wasInvoked(exactly = once)
 
         assertTrue(
             callRepository.getCallMetadataProfile().data.containsKey(Arrangement.conversationId)
@@ -350,9 +350,9 @@ class CallRepositoryTest {
         )
 
         // then
-        verify(arrangement.callDAO).suspendFunction(arrangement.callDAO::insertCall)
-            .with(any())
-            .wasInvoked(exactly = Times(0))
+        coVerify {
+            arrangement.callDAO.insertCall(any())
+        }.wasNotInvoked()
 
         assertTrue(
             callRepository.getCallMetadataProfile().data.containsKey(Arrangement.conversationId)
@@ -399,12 +399,12 @@ class CallRepositoryTest {
         )
 
         // then
-        verify(arrangement.callDAO).suspendFunction(arrangement.callDAO::updateLastCallStatusByConversationId)
-            .with(
+        coVerify {
+            arrangement.callDAO.updateLastCallStatusByConversationId(
                 eq(CallEntity.Status.STILL_ONGOING),
                 eq(callEntity.conversationId)
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
 
         assertTrue(
             callRepository.getCallMetadataProfile().data.containsKey(Arrangement.conversationId)
@@ -434,9 +434,9 @@ class CallRepositoryTest {
         )
 
         // then
-        verify(arrangement.callDAO).suspendFunction(arrangement.callDAO::insertCall)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.callDAO.insertCall(any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -473,14 +473,13 @@ class CallRepositoryTest {
         )
 
         // then
-        verify(arrangement.callDAO).suspendFunction(arrangement.callDAO::insertCall)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.callDAO.insertCall(any())
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.persistMessage.invoke(any())
+        }.wasNotInvoked()
 
         assertEquals(
             true,
@@ -511,14 +510,13 @@ class CallRepositoryTest {
             type = ConversationType.OneOnOne
         )
 
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(any())
-            .wasInvoked(exactly = Times(0))
+        coVerify {
+            arrangement.persistMessage.invoke(any())
+        }.wasNotInvoked()
 
-        verify(arrangement.callDAO).suspendFunction(arrangement.callDAO::insertCall)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.callDAO.insertCall(any())
+        }.wasInvoked(exactly = once)
 
         assertTrue(
             callRepository.getCallMetadataProfile().data.containsKey(Arrangement.conversationId)
@@ -559,14 +557,13 @@ class CallRepositoryTest {
         )
 
         // then
-        verify(arrangement.callDAO).suspendFunction(arrangement.callDAO::insertCall)
-            .with(any())
-            .wasInvoked(exactly = Times(0))
+        coVerify {
+            arrangement.callDAO.insertCall(any())
+        }.wasNotInvoked()
 
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.persistMessage.invoke(any())
+        }.wasNotInvoked()
 
         assertTrue(
             callRepository.getCallMetadataProfile().data.containsKey(Arrangement.conversationId)
@@ -597,13 +594,13 @@ class CallRepositoryTest {
         )
 
         // then
-        verify(arrangement.callDAO).suspendFunction(arrangement.callDAO::updateLastCallStatusByConversationId)
-            .with(eq(CallEntity.Status.CLOSED), eq(Arrangement.conversationId.toDao()))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.callDAO.updateLastCallStatusByConversationId(eq(CallEntity.Status.CLOSED), eq(Arrangement.conversationId.toDao()))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.callDAO).suspendFunction(arrangement.callDAO::insertCall)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.callDAO.insertCall(any())
+        }.wasInvoked(exactly = once)
 
         assertTrue(
             callRepository.getCallMetadataProfile().data.containsKey(Arrangement.conversationId)
@@ -630,13 +627,12 @@ class CallRepositoryTest {
         callRepository.updateCallStatusById(Arrangement.conversationId, CallStatus.ESTABLISHED)
 
         // then
-        verify(arrangement.callDAO)
-            .suspendFunction(arrangement.callDAO::updateLastCallStatusByConversationId)
-            .with(
+        coVerify {
+            arrangement.callDAO.updateLastCallStatusByConversationId(
                 eq(CallEntity.Status.ESTABLISHED),
                 eq(callEntity.conversationId)
             )
-            .wasInvoked(exactly = once)
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -645,10 +641,9 @@ class CallRepositoryTest {
 
         callRepository.updateCallStatusById(Arrangement.randomConversationId, CallStatus.INCOMING)
 
-        verify(arrangement.callDAO)
-            .suspendFunction(arrangement.callDAO::updateLastCallStatusByConversationId)
-            .with(any(), any())
-            .wasInvoked(exactly = Times(1))
+        coVerify {
+            arrangement.callDAO.updateLastCallStatusByConversationId(any(), any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -1121,18 +1116,16 @@ class CallRepositoryTest {
             .givenGetCallerIdByConversationIdReturns(Arrangement.callerIdString)
             .givenPersistMessageSuccessful()
             .arrange()
-        
+
         callRepository.persistMissedCall(Arrangement.conversationId)
 
-        verify(arrangement.callDAO)
-            .suspendFunction(arrangement.callDAO::getCallerIdByConversationId)
-            .with(eq(Arrangement.conversationId.toDao()))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.callDAO.getCallerIdByConversationId(eq(Arrangement.conversationId.toDao()))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(any())
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.persistMessage.invoke(any())
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -1145,15 +1138,13 @@ class CallRepositoryTest {
 
         callRepository.persistMissedCall(Arrangement.conversationId)
 
-        verify(arrangement.callDAO)
-            .suspendFunction(arrangement.callDAO::getCallerIdByConversationId)
-            .with(eq(Arrangement.conversationId.toDao()))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.callDAO.getCallerIdByConversationId(eq(Arrangement.conversationId.toDao()))
+        }.wasInvoked(exactly = once)
 
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.persistMessage.invoke(any())
+        }.wasNotInvoked()
     }
 
     @Test
@@ -1171,10 +1162,9 @@ class CallRepositoryTest {
 
         callRepository.joinMlsConference(Arrangement.conversationId) { _, _ -> }
 
-        verify(arrangement.joinSubconversationUseCase)
-            .suspendFunction(arrangement.joinSubconversationUseCase::invoke)
-            .with(eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.joinSubconversationUseCase.invoke(eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -1199,9 +1189,9 @@ class CallRepositoryTest {
         yield()
         advanceUntilIdle()
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::observeEpochChanges)
-            .wasInvoked(exactly = once)
+        verify {
+            arrangement.epochChangesObserver.observe()
+        }.wasInvoked(exactly = once)
 
         assertEquals(1, onEpochChangeCallCount)
     }
@@ -1298,10 +1288,9 @@ class CallRepositoryTest {
         yield()
         advanceUntilIdle()
 
-        verify(arrangement.leaveSubconversationUseCase)
-            .suspendFunction(arrangement.leaveSubconversationUseCase::invoke)
-            .with(eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.leaveSubconversationUseCase.invoke(eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -1313,10 +1302,9 @@ class CallRepositoryTest {
 
         callRepository.advanceEpoch(Arrangement.conversationId)
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::updateKeyingMaterial)
-            .with(eq(Arrangement.subconversationGroupId))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.mlsConversationRepository.updateKeyingMaterial(eq(Arrangement.subconversationGroupId))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -1349,10 +1337,12 @@ class CallRepositoryTest {
         advanceTimeBy(CallDataSource.STALE_PARTICIPANT_TIMEOUT.toLong(DurationUnit.MILLISECONDS))
         yield()
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::removeClientsFromMLSGroup)
-            .with(eq(Arrangement.subconversationGroupId), eq(listOf(Arrangement.qualifiedClientID)))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.mlsConversationRepository.removeClientsFromMLSGroup(
+                groupID = eq(Arrangement.subconversationGroupId),
+                clientIdList = eq(listOf(Arrangement.qualifiedClientID))
+            )
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -1400,10 +1390,12 @@ class CallRepositoryTest {
         advanceTimeBy(CallDataSource.STALE_PARTICIPANT_TIMEOUT.toLong(DurationUnit.MILLISECONDS))
         yield()
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::removeClientsFromMLSGroup)
-            .with(eq(Arrangement.subconversationGroupId), eq(listOf(Arrangement.qualifiedClientID)))
-            .wasNotInvoked()
+        coVerify {
+            arrangement.mlsConversationRepository.removeClientsFromMLSGroup(
+                groupID = eq(Arrangement.subconversationGroupId),
+                clientIdList = eq(listOf(Arrangement.qualifiedClientID))
+            )
+        }.wasNotInvoked()
     }
 
     @Test
@@ -1425,10 +1417,9 @@ class CallRepositoryTest {
         advanceUntilIdle()
 
         // then
-        verify(arrangement.leaveSubconversationUseCase)
-            .suspendFunction(arrangement.leaveSubconversationUseCase::invoke)
-            .with(eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.leaveSubconversationUseCase.invoke(eq(Arrangement.conversationId), eq(CALL_SUBCONVERSATION_ID))
+        }.wasInvoked(exactly = once)
 
     }
 
@@ -1474,48 +1465,49 @@ class CallRepositoryTest {
     private class Arrangement {
 
         @Mock
-        val callApi = mock(classOf<CallApi>())
+        val callApi = mock(CallApi::class)
 
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
+        val conversationRepository = mock(ConversationRepository::class)
 
         @Mock
-        val userRepository = mock(classOf<UserRepository>())
+        val userRepository = mock(UserRepository::class)
 
         @Mock
-        val teamRepository = mock(classOf<TeamRepository>())
+        val teamRepository = mock(TeamRepository::class)
 
         @Mock
-        val sessionRepository = mock(classOf<SessionRepository>())
+        val sessionRepository = mock(SessionRepository::class)
 
         @Mock
-        val qualifiedIdMapper = mock(classOf<QualifiedIdMapper>())
+        val qualifiedIdMapper = mock(QualifiedIdMapper::class)
 
         @Mock
-        val persistMessage = mock(classOf<PersistMessageUseCase>())
+        val persistMessage = mock(PersistMessageUseCase::class)
 
         @Mock
-        val mlsClientProvider = mock(classOf<MLSClientProvider>())
+        val mlsClientProvider = mock(MLSClientProvider::class)
 
         @Mock
-        val mlsClient = mock(classOf<MLSClient>())
+        val mlsClient = mock(MLSClient::class)
 
         @Mock
-        val joinSubconversationUseCase = mock(classOf<JoinSubconversationUseCase>())
+        val joinSubconversationUseCase = mock(JoinSubconversationUseCase::class)
 
         @Mock
-        val leaveSubconversationUseCase = mock(classOf<LeaveSubconversationUseCase>())
+        val leaveSubconversationUseCase = mock(LeaveSubconversationUseCase::class)
 
         @Mock
-        val subconversationRepository = mock(classOf<SubconversationRepository>())
+        val subconversationRepository = mock(SubconversationRepository::class)
 
         @Mock
-        val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
+        val mlsConversationRepository = mock(MLSConversationRepository::class)
 
         @Mock
-        val callDAO = configure(mock(classOf<CallDAO>())) {
-            stubsUnitByDefault = true
-        }
+        val epochChangesObserver = mock(EpochChangesObserver::class)
+
+        @Mock
+        val callDAO = mock(CallDAO::class)
 
         private val callMapper = CallMapperImpl(qualifiedIdMapper)
         private val federatedIdMapper = FederatedIdMapperImpl(TestUser.SELF.id, qualifiedIdMapper, sessionRepository)
@@ -1528,6 +1520,7 @@ class CallRepositoryTest {
             subconversationRepository = subconversationRepository,
             mlsConversationRepository = mlsConversationRepository,
             userRepository = userRepository,
+            epochChangesObserver = epochChangesObserver,
             teamRepository = teamRepository,
             persistMessage = persistMessage,
             mlsClientProvider = mlsClientProvider,
@@ -1539,186 +1532,165 @@ class CallRepositoryTest {
         )
 
         init {
-            given(qualifiedIdMapper).function(qualifiedIdMapper::fromStringToQualifiedID)
-                .whenInvokedWith(eq("convId@domainId"))
-                .thenReturn(QualifiedID("convId", "domainId"))
+            every {
+                qualifiedIdMapper.fromStringToQualifiedID(eq("convId@domainId"))
+            }.returns(QualifiedID("convId", "domainId"))
 
-            given(qualifiedIdMapper).function(qualifiedIdMapper::fromStringToQualifiedID)
-                .whenInvokedWith(eq("random@domain"))
-                .thenReturn(QualifiedID("random", "domain"))
+            every {
+                qualifiedIdMapper.fromStringToQualifiedID(eq("random@domain"))
+            }.returns(QualifiedID("random", "domain"))
 
-            given(qualifiedIdMapper).function(qualifiedIdMapper::fromStringToQualifiedID)
-                .whenInvokedWith(eq("callerId@domain"))
-                .thenReturn(QualifiedID("callerId", "domain"))
+            every {
+                qualifiedIdMapper.fromStringToQualifiedID(eq("callerId@domain"))
+            }.returns(QualifiedID("callerId", "domain"))
 
-            given(qualifiedIdMapper).function(qualifiedIdMapper::fromStringToQualifiedID)
-                .whenInvokedWith(eq("callerId"))
-                .thenReturn(QualifiedID("callerId", ""))
+            every {
+                qualifiedIdMapper.fromStringToQualifiedID(eq("callerId"))
+            }.returns(QualifiedID("callerId", ""))
         }
 
         fun arrange() = this to callRepository
 
         fun givenEstablishedCall(callEntity: CallEntity) = apply {
-            given(callDAO)
-                .function(callDAO::getEstablishedCall)
-                .whenInvoked()
-                .thenReturn(callEntity)
+            every {
+                callDAO.getEstablishedCall()
+            }.returns(callEntity)
         }
 
-        fun givenGetCallConfigResponse(response: NetworkResponse<String>) = apply {
-            given(callApi)
-                .suspendFunction(callApi::getCallConfig)
-                .whenInvokedWith(oneOf(null))
-                .thenReturn(response)
+        suspend fun givenGetCallConfigResponse(response: NetworkResponse<String>) = apply {
+            coEvery {
+                callApi.getCallConfig(null)
+            }.returns(response)
         }
 
-        fun givenObserveCallsReturns(flow: Flow<List<CallEntity>>) = apply {
-            given(callDAO)
-                .suspendFunction(callDAO::observeCalls)
-                .whenInvoked()
-                .thenReturn(flow)
+        suspend fun givenObserveCallsReturns(flow: Flow<List<CallEntity>>) = apply {
+            coEvery {
+                callDAO.observeCalls()
+            }.returns(flow)
         }
 
-        fun givenObserveIncomingCallsReturns(flow: Flow<List<CallEntity>>) = apply {
-            given(callDAO)
-                .suspendFunction(callDAO::observeIncomingCalls)
-                .whenInvoked()
-                .thenReturn(flow)
+        suspend fun givenObserveIncomingCallsReturns(flow: Flow<List<CallEntity>>) = apply {
+            coEvery {
+                callDAO.observeIncomingCalls()
+            }.returns(flow)
         }
 
-        fun givenObserveOngoingCallsReturns(flow: Flow<List<CallEntity>>) = apply {
-            given(callDAO)
-                .suspendFunction(callDAO::observeOngoingCalls)
-                .whenInvoked()
-                .thenReturn(flow)
+        suspend fun givenObserveOngoingCallsReturns(flow: Flow<List<CallEntity>>) = apply {
+            coEvery {
+                callDAO.observeOngoingCalls()
+            }.returns(flow)
         }
 
-        fun givenObserveEstablishedCallsReturns(flow: Flow<List<CallEntity>>) = apply {
-            given(callDAO)
-                .suspendFunction(callDAO::observeEstablishedCalls)
-                .whenInvoked()
-                .thenReturn(flow)
+        suspend fun givenObserveEstablishedCallsReturns(flow: Flow<List<CallEntity>>) = apply {
+            coEvery {
+                callDAO.observeEstablishedCalls()
+            }.returns(flow)
         }
 
-        fun givenInsertCallSucceeds() = apply {
-            given(callDAO)
-                .suspendFunction(callDAO::insertCall)
-                .whenInvokedWith(any())
+        suspend fun givenInsertCallSucceeds() = apply {
+            coEvery { callDAO.insertCall(any()) }.returns(Unit)
         }
 
-        fun givenGetCallerIdByConversationIdReturns(callerId: String?) = apply {
-            given(callDAO)
-                .suspendFunction(callDAO::getCallerIdByConversationId)
-                .whenInvokedWith(any())
-                .thenReturn(callerId)
+        suspend fun givenGetCallerIdByConversationIdReturns(callerId: String?) = apply {
+            coEvery {
+                callDAO.getCallerIdByConversationId(any())
+            }.returns(callerId)
         }
 
-        fun givenObserveConversationDetailsByIdReturns(flow: Flow<Either<StorageFailure, ConversationDetails>>) = apply {
-            given(conversationRepository).suspendFunction(conversationRepository::observeConversationDetailsById)
-                .whenInvokedWith(any())
-                .thenReturn(flow)
+        suspend fun givenObserveConversationDetailsByIdReturns(flow: Flow<Either<StorageFailure, ConversationDetails>>) = apply {
+            coEvery {
+                conversationRepository.observeConversationDetailsById(any())
+            }.returns(flow)
         }
 
-        fun givenGetKnownUserSucceeds() = apply {
-            given(userRepository).suspendFunction(userRepository::getKnownUser)
-                .whenInvokedWith(any())
-                .thenReturn(flowOf(TestUser.OTHER))
+        suspend fun givenGetKnownUserSucceeds() = apply {
+            coEvery {
+                userRepository.getKnownUser(any())
+            }.returns(flowOf(TestUser.OTHER))
         }
 
-        fun givenGetTeamSucceeds() = apply {
-            given(teamRepository).suspendFunction(teamRepository::getTeam)
-                .whenInvokedWith(any())
-                .thenReturn(flowOf(TestTeam.TEAM))
+        suspend fun givenGetTeamSucceeds() = apply {
+            coEvery {
+                teamRepository.getTeam(any())
+            }.returns(flowOf(TestTeam.TEAM))
         }
 
-        fun givenGetCallStatusByConversationIdReturns(status: CallEntity.Status?) = apply {
-            given(callDAO)
-                .suspendFunction(callDAO::getCallStatusByConversationId)
-                .whenInvokedWith(any())
-                .thenReturn(status)
+        suspend fun givenGetCallStatusByConversationIdReturns(status: CallEntity.Status?) = apply {
+            coEvery {
+                callDAO.getCallStatusByConversationId(any())
+            }.returns(status)
         }
 
-        fun givenPersistMessageSuccessful() = apply {
-            given(persistMessage).suspendFunction(persistMessage::invoke)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun givenPersistMessageSuccessful() = apply {
+            coEvery {
+                persistMessage.invoke(any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun givenGetConversationProtocolInfoReturns(protocolInfo: Conversation.ProtocolInfo) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationProtocolInfo)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(protocolInfo))
+        suspend fun givenGetConversationProtocolInfoReturns(protocolInfo: Conversation.ProtocolInfo) = apply {
+            coEvery {
+                conversationRepository.getConversationProtocolInfo(any())
+            }.returns(Either.Right(protocolInfo))
         }
 
-        fun givenJoinSubconversationSuccessful() = apply {
-            given(joinSubconversationUseCase)
-                .suspendFunction(joinSubconversationUseCase::invoke)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun givenJoinSubconversationSuccessful() = apply {
+            coEvery {
+                joinSubconversationUseCase.invoke(any(), any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun givenLeaveSubconversationSuccessful() = apply {
-            given(leaveSubconversationUseCase)
-                .suspendFunction(leaveSubconversationUseCase::invoke)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun givenLeaveSubconversationSuccessful() = apply {
+            coEvery {
+                leaveSubconversationUseCase.invoke(any(), any())
+            }.returns(Either.Right(Unit))
         }
 
         fun givenObserveEpochChangesReturns(flow: Flow<GroupID>) = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::observeEpochChanges)
-                .whenInvoked()
-                .thenReturn(flow)
+            every {
+                epochChangesObserver.observe()
+            }.returns(flow)
         }
 
-        fun givenUpdateKeyMaterialSucceeds() = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::updateKeyingMaterial)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun givenUpdateKeyMaterialSucceeds() = apply {
+            coEvery {
+                mlsConversationRepository.updateKeyingMaterial(any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun givenRemoveClientsFromMLSGroupSucceeds() = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::removeClientsFromMLSGroup)
-                .whenInvokedWith(any(), any())
-                .thenReturn(Either.Right(Unit))
+        suspend fun givenRemoveClientsFromMLSGroupSucceeds() = apply {
+            coEvery {
+                mlsConversationRepository.removeClientsFromMLSGroup(any(), any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun givenGetSubconversationInfoReturns(groupId: GroupID?) = apply {
-            given(subconversationRepository)
-                .suspendFunction(subconversationRepository::getSubconversationInfo)
-                .whenInvokedWith(any(), any())
-                .thenReturn(groupId)
+        suspend fun givenGetSubconversationInfoReturns(groupId: GroupID?) = apply {
+            coEvery {
+                subconversationRepository.getSubconversationInfo(any(), any())
+            }.returns(groupId)
         }
 
-        fun givenGetMLSClientSucceeds() = apply {
-            given(mlsClientProvider)
-                .suspendFunction(mlsClientProvider::getMLSClient)
-                .whenInvokedWith(eq(null))
-                .thenReturn(Either.Right(mlsClient))
+        suspend fun givenGetMLSClientSucceeds() = apply {
+            coEvery {
+                mlsClientProvider.getMLSClient(null)
+            }.returns(Either.Right(mlsClient))
         }
 
-        fun givenGetMlsEpochReturns(epoch: ULong) = apply {
-            given(mlsClient)
-                .suspendFunction(mlsClient::conversationEpoch)
-                .whenInvokedWith(any())
-                .thenReturn(epoch)
+        suspend fun givenGetMlsEpochReturns(epoch: ULong) = apply {
+            coEvery {
+                mlsClient.conversationEpoch(any())
+            }.returns(epoch)
         }
 
-        fun givenMlsMembersReturns(members: List<CryptoQualifiedClientId>) = apply {
-            given(mlsClient)
-                .suspendFunction(mlsClient::members)
-                .whenInvokedWith(any())
-                .thenReturn(members)
+        suspend fun givenMlsMembersReturns(members: List<CryptoQualifiedClientId>) = apply {
+            coEvery {
+                mlsClient.members(any())
+            }.returns(members)
         }
 
-        fun givenDeriveSecretSuccessful() = apply {
-            given(mlsClient)
-                .suspendFunction(mlsClient::deriveSecret)
-                .whenInvokedWith(any(), any())
-                .thenReturn(ByteArray(32))
+        suspend fun givenDeriveSecretSuccessful() = apply {
+            coEvery {
+                mlsClient.deriveSecret(any(), any())
+            }.returns(ByteArray(32))
         }
 
         companion object {
@@ -1746,7 +1718,7 @@ class CallRepositoryTest {
                 Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED,
                 1UL,
                 Clock.System.now(),
-                Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             )
 
             val qualifiedClientID = QualifiedClientID(

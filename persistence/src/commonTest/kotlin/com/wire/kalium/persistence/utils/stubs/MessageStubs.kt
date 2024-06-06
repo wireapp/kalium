@@ -19,6 +19,7 @@
 package com.wire.kalium.persistence.utils.stubs
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.UserDetailsEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -38,7 +39,8 @@ fun newRegularMessageEntity(
     senderName: String = "senderName",
     expectsReadConfirmation: Boolean = false,
     expireAfterMs: Long? = null,
-    selfDeletionStartDate: Instant? = null,
+    selfDeletionEndDate: Instant? = null,
+    sender: UserDetailsEntity? = null
 ) = MessageEntity.Regular(
     id = id,
     content = content,
@@ -53,7 +55,8 @@ fun newRegularMessageEntity(
     expectsReadConfirmation = expectsReadConfirmation,
     readCount = 0,
     expireAfterMs = expireAfterMs,
-    selfDeletionStartDate = selfDeletionStartDate,
+    selfDeletionEndDate = selfDeletionEndDate,
+    sender = sender
 )
 
 @Suppress("LongParameterList")
@@ -78,6 +81,6 @@ fun newSystemMessageEntity(
     visibility = visibility,
     senderName = "senderName",
     expireAfterMs = null,
-    selfDeletionStartDate = null,
+    selfDeletionEndDate = null,
     readCount = 0
 )

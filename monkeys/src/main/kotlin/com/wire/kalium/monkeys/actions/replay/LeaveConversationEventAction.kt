@@ -29,8 +29,8 @@ import com.wire.kalium.monkeys.pool.MonkeyPool
 
 class LeaveConversationEventAction(private val leaver: MonkeyId, private val eventConfig: EventType.LeaveConversation) :
     LeaveConversationAction(ActionType.LeaveConversation(1u, UserCount.single()), {}) {
-    override fun leavers(monkeyPool: MonkeyPool): List<Pair<MonkeyConversation, List<Monkey>>> {
-        val conversation = ConversationPool.getFromOldId(this.eventConfig.conversationId)
+    override suspend fun leavers(monkeyPool: MonkeyPool, conversationPool: ConversationPool): List<Pair<MonkeyConversation, List<Monkey>>> {
+        val conversation = conversationPool.getFromOldId(this.eventConfig.conversationId)
         return listOf(Pair(conversation, listOf(monkeyPool.getFromTeam(this.leaver.team, this.leaver.index))))
     }
 }

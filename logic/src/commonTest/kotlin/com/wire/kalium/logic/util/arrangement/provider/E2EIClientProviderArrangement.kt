@@ -17,17 +17,19 @@
  */
 package com.wire.kalium.logic.util.arrangement.provider
 
+import com.wire.kalium.cryptography.CoreCryptoCentral
 import com.wire.kalium.cryptography.E2EIClient
 import com.wire.kalium.cryptography.MLSClient
 import com.wire.kalium.logic.data.client.MLSClientProvider
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.right
 import io.mockative.Mock
-import io.mockative.anything
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.any
+import io.mockative.coEvery
 import io.mockative.mock
 
 interface E2EIClientProviderArrangement {
@@ -38,6 +40,9 @@ interface E2EIClientProviderArrangement {
     val mlsClient: MLSClient
 
     @Mock
+    val coreCryptoCentral: CoreCryptoCentral
+
+    @Mock
     val e2eiClient: E2EIClient
 
     @Mock
@@ -46,56 +51,76 @@ interface E2EIClientProviderArrangement {
     @Mock
     val currentClientIdProvider: CurrentClientIdProvider
 
-    fun withGetMLSClientSuccessful()
+    suspend fun withGettingCoreCryptoSuccessful()
 
-    fun withE2EINewActivationEnrollmentSuccessful()
+    suspend fun withGetNewAcmeEnrollmentSuccessful()
 
-    fun withE2EINewRotationEnrollmentSuccessful()
+    suspend fun withGetMLSClientSuccessful()
 
+    suspend fun withE2EINewActivationEnrollmentSuccessful()
 
-    fun withE2EIEnabled(isEnabled: Boolean)
+    suspend fun withE2EINewRotationEnrollmentSuccessful()
 
-    fun withSelfUser(selfUser: SelfUser?)
+    suspend fun withE2EIEnabled(isEnabled: Boolean)
+
+    suspend fun withSelfUser(selfUser: SelfUser?)
+
+    suspend fun withGetOrFetchMLSConfig(result: SupportedCipherSuite)
 }
 
 class E2EIClientProviderArrangementImpl : E2EIClientProviderArrangement {
-    override val mlsClientProvider: MLSClientProvider = mock(classOf<MLSClientProvider>())
-    override val mlsClient: MLSClient = mock(classOf<MLSClient>())
-    override val e2eiClient: E2EIClient = mock(classOf<E2EIClient>())
-    override val userRepository: UserRepository = mock(classOf<UserRepository>())
-    override val currentClientIdProvider = mock(classOf<CurrentClientIdProvider>())
-    override fun withGetMLSClientSuccessful() {
-        given(mlsClientProvider)
-            .suspendFunction(mlsClientProvider::getMLSClient)
-            .whenInvokedWith(anything())
-            .then { Either.Right(mlsClient) }
+    override val mlsClientProvider: MLSClientProvider = mock(MLSClientProvider::class)
+    override val mlsClient: MLSClient = mock(MLSClient::class)
+    override val e2eiClient: E2EIClient = mock(E2EIClient::class)
+    override val userRepository: UserRepository = mock(UserRepository::class)
+    override val currentClientIdProvider = mock(CurrentClientIdProvider::class)
+    override val coreCryptoCentral = mock(CoreCryptoCentral::class)
+
+    override suspend fun withGettingCoreCryptoSuccessful() {
+        coEvery {
+            mlsClientProvider.getCoreCrypto(any())
+        }.returns(Either.Right(coreCryptoCentral))
     }
 
-    override fun withE2EINewActivationEnrollmentSuccessful() {
-        given(mlsClient)
-            .suspendFunction(mlsClient::e2eiNewActivationEnrollment)
-            .whenInvokedWith(anything(), anything(), anything())
-            .thenReturn(e2eiClient)
-    }
-    override fun withE2EINewRotationEnrollmentSuccessful() {
-        given(mlsClient)
-            .suspendFunction(mlsClient::e2eiNewRotateEnrollment)
-            .whenInvokedWith(anything(), anything(), anything())
-            .thenReturn(e2eiClient)
+    override suspend fun withGetNewAcmeEnrollmentSuccessful() {
+        coEvery {
+            coreCryptoCentral.newAcmeEnrollment(any(), any(), any(), any(), any(), any())
+        }.returns(e2eiClient)
     }
 
-    override fun withE2EIEnabled(isEnabled: Boolean) {
-        given(mlsClient)
-            .suspendFunction(mlsClient::isE2EIEnabled)
-            .whenInvoked()
-            .thenReturn(isEnabled)
+    override suspend fun withGetMLSClientSuccessful() {
+        coEvery {
+            mlsClientProvider.getMLSClient(any())
+        }.returns(Either.Right(mlsClient))
     }
 
-    override fun withSelfUser(selfUser: SelfUser?) {
-        given(userRepository)
-            .suspendFunction(userRepository::getSelfUser)
-            .whenInvoked()
-            .thenReturn(selfUser)
+    override suspend fun withE2EINewActivationEnrollmentSuccessful() {
+        coEvery {
+            mlsClient.e2eiNewActivationEnrollment(any(), any(), any(), any())
+        }.returns(e2eiClient)
+    }
+    override suspend fun withE2EINewRotationEnrollmentSuccessful() {
+        coEvery {
+            mlsClient.e2eiNewRotateEnrollment(any(), any(), any(), any())
+        }.returns(e2eiClient)
+    }
+
+    override suspend fun withE2EIEnabled(isEnabled: Boolean) {
+        coEvery {
+            mlsClient.isE2EIEnabled()
+        }.returns(isEnabled)
+    }
+
+    override suspend fun withSelfUser(selfUser: SelfUser?) {
+        coEvery {
+            userRepository.getSelfUser()
+        }.returns(selfUser)
+    }
+
+    override suspend fun withGetOrFetchMLSConfig(result: SupportedCipherSuite) {
+        coEvery {
+            mlsClientProvider.getOrFetchMLSConfig()
+        }.returns(result.right())
     }
 
 }

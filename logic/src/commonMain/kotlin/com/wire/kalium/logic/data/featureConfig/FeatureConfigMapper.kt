@@ -18,7 +18,8 @@
 
 package com.wire.kalium.logic.data.featureConfig
 
-import com.wire.kalium.logic.data.id.PlainId
+import com.wire.kalium.logic.data.mls.CipherSuite
+import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
@@ -77,16 +78,19 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
     override fun fromDTO(data: FeatureConfigData.MLS?): MLSModel =
         data?.let {
             MLSModel(
-                it.config.protocolToggleUsers.map { userId -> PlainId(userId) },
-                it.config.defaultProtocol.toModel(),
-                it.config.supportedProtocols.map { it.toModel() }.toSet(),
-                fromDTO(it.status)
+                defaultProtocol = it.config.defaultProtocol.toModel(),
+                supportedProtocols = it.config.supportedProtocols.map { it.toModel() }.toSet(),
+                status = fromDTO(it.status),
+                supportedCipherSuite = SupportedCipherSuite(
+                    default = CipherSuite.fromTag(it.config.defaultCipherSuite),
+                    supported = it.config.allowedCipherSuites.map { CipherSuite.fromTag(it) }
+                )
             )
         } ?: MLSModel(
-            listOf(),
-            SupportedProtocol.PROTEUS,
-            setOf(SupportedProtocol.PROTEUS),
-            Status.DISABLED
+            defaultProtocol = SupportedProtocol.PROTEUS,
+            supportedCipherSuite = null,
+            supportedProtocols = setOf(SupportedProtocol.PROTEUS),
+            status = Status.DISABLED
         )
 
     @Suppress("MagicNumber")
@@ -131,13 +135,22 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
         )
 
     override fun fromDTO(data: FeatureConfigData.E2EI?): E2EIModel =
-        E2EIModel(
+        data?.let {
+            E2EIModel(
+                E2EIConfigModel(
+                    data.config.url,
+                    data.config.verificationExpirationSeconds
+                ),
+                fromDTO(data.status)
+            )
+        } ?: E2EIModel(
             E2EIConfigModel(
-                data?.config?.url ?: "",
-                data?.config?.verificationExpirationSeconds ?: 0L
+                null,
+                0
             ),
-            fromDTO(data?.status ?: FeatureFlagStatusDTO.DISABLED)
+            Status.DISABLED
         )
+
     override fun fromModel(status: Status): FeatureFlagStatusDTO =
         when (status) {
             Status.ENABLED -> FeatureFlagStatusDTO.ENABLED

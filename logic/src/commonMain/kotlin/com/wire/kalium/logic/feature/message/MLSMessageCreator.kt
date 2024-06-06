@@ -57,7 +57,7 @@ class MLSMessageCreatorImpl(
 
     override suspend fun createOutgoingMLSMessage(groupId: GroupID, message: Message.Sendable): Either<CoreFailure, MLSMessageApi.Message> {
         return mlsClientProvider.getMLSClient().flatMap { mlsClient ->
-            kaliumLogger.i("Creating outgoing MLS message (groupID = $groupId)")
+            kaliumLogger.i("Creating outgoing MLS message (groupID = ${groupId.toLogString()})")
 
             val expectsReadConfirmation = when (message) {
                 is Message.Regular -> message.expectsReadConfirmation
@@ -75,6 +75,7 @@ class MLSMessageCreatorImpl(
                     messageUid = message.id,
                     messageContent = message.content,
                     expectsReadConfirmation = expectsReadConfirmation,
+                    expiresAfterMillis = message.expirationData?.expireAfter?.inWholeMilliseconds,
                     legalHoldStatus = legalHoldStatus
                 )
             )

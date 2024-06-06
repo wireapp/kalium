@@ -23,8 +23,7 @@ import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -40,28 +39,26 @@ class UserPropertiesEventReceiverTest {
             .withUpdateReadReceiptsSuccess()
             .arrange()
 
-        eventReceiver.onEvent(event)
+        eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
 
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setReadReceiptsStatus)
-            .with(any())
-            .wasInvoked(exactly = once)
+        verify {
+            arrangement.userConfigRepository.setReadReceiptsStatus(any())
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement {
 
         @Mock
-        val userConfigRepository = mock(classOf<UserConfigRepository>())
+        val userConfigRepository = mock(UserConfigRepository::class)
 
         private val userPropertiesEventReceiver: UserPropertiesEventReceiver = UserPropertiesEventReceiverImpl(
             userConfigRepository = userConfigRepository
         )
 
         fun withUpdateReadReceiptsSuccess() = apply {
-            given(userConfigRepository)
-                .function(userConfigRepository::setReadReceiptsStatus)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
+            every {
+                userConfigRepository.setReadReceiptsStatus(any())
+            }.returns(Either.Right(Unit))
         }
 
         fun arrange() = this to userPropertiesEventReceiver

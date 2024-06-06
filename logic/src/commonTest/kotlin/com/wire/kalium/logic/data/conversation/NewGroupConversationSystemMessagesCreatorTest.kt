@@ -36,11 +36,12 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationR
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
-import io.mockative.matching
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.every
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 
@@ -58,12 +59,13 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
         result.shouldSucceed()
 
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
-                (it.content is MessageContent.System && it.content is MessageContent.ConversationCreated)
-            })
-            .wasInvoked(once)
+        coVerify {
+            arrangement.persistMessage.invoke(
+                matches {
+                    (it.content is MessageContent.System && it.content is MessageContent.ConversationCreated)
+                }
+            )
+        }.wasInvoked(once)
     }
 
     @Test
@@ -79,14 +81,14 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
         result.shouldSucceed()
 
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
-                (it.content is MessageContent.System && it.content is MessageContent.ConversationCreated)
-            })
-            .wasInvoked(once)
+        coVerify {
+            arrangement.persistMessage.invoke(
+                matches {
+                    (it.content is MessageContent.System && it.content is MessageContent.ConversationCreated)
+                }
+            )
+        }.wasInvoked(once)
     }
-
 
     @Test
     fun givenNotAGroupConversation_whenPersisting_ThenShouldNOTCreateAStartedSystemMessage() = runTest {
@@ -100,12 +102,11 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
         result.shouldSucceed()
 
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
+        coVerify {
+            arrangement.persistMessage.invoke(matches {
                 (it.content is MessageContent.System && it.content is MessageContent.ConversationCreated)
             })
-            .wasNotInvoked()
+        }.wasNotInvoked()
     }
 
     @Test
@@ -119,12 +120,11 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
         result.shouldSucceed()
 
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
+        coVerify {
+            arrangement.persistMessage.invoke(matches {
                 (it.content is MessageContent.System && it.content is MessageContent.NewConversationReceiptMode)
             })
-            .wasInvoked(once)
+        }.wasInvoked(once)
     }
 
     @Test
@@ -139,14 +139,12 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
         result.shouldSucceed()
 
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
+        coVerify {
+            arrangement.persistMessage.invoke(matches {
                 (it.content is MessageContent.System && it.content is MessageContent.NewConversationReceiptMode)
             })
-            .wasNotInvoked()
+        }.wasNotInvoked()
     }
-
 
     @Test
     fun givenAModelGroupConversation_whenPersistingAndValid_ThenShouldCreateASystemMessageForReceiptStatus() = runTest {
@@ -159,12 +157,11 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
         result.shouldSucceed()
 
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
+        coVerify {
+            arrangement.persistMessage.invoke(matches {
                 (it.content is MessageContent.System && it.content is MessageContent.NewConversationReceiptMode)
             })
-            .wasInvoked(once)
+        }.wasInvoked(once)
     }
 
     @Test
@@ -178,12 +175,11 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
         result.shouldSucceed()
 
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
+        coVerify {
+            arrangement.persistMessage.invoke(matches {
                 (it.content is MessageContent.System && it.content is MessageContent.NewConversationReceiptMode)
             })
-            .wasNotInvoked()
+        }.wasNotInvoked()
     }
 
     @Test
@@ -199,12 +195,11 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
             result.shouldSucceed()
 
-            verify(arrangement.persistMessage)
-                .suspendFunction(arrangement.persistMessage::invoke)
-                .with(matching {
+            coVerify {
+                arrangement.persistMessage.invoke(matches {
                     (it.content is MessageContent.System && it.content is MessageContent.NewConversationReceiptMode)
                 })
-                .wasNotInvoked()
+            }.wasNotInvoked()
         }
 
     @Test
@@ -219,12 +214,11 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
             result.shouldSucceed()
 
-            verify(arrangement.persistMessage)
-                .suspendFunction(arrangement.persistMessage::invoke)
-                .with(matching {
+            coVerify {
+                arrangement.persistMessage.invoke(matches {
                     (it.content is MessageContent.System && it.content is MessageContent.NewConversationReceiptMode)
                 })
-                .wasNotInvoked()
+            }.wasNotInvoked()
         }
 
     @Test
@@ -235,68 +229,35 @@ class NewGroupConversationSystemMessagesCreatorTest {
                 .withPersistMessageSuccess()
                 .arrange()
 
-            val result = sysMessageCreator.conversationResolvedMembersAddedAndFailed(
+            val result = sysMessageCreator.conversationResolvedMembersAdded(
                 TestConversation.CONVERSATION_RESPONSE.id.toDao(),
                 otherMembersIds
             )
 
             result.shouldSucceed()
 
-            verify(arrangement.persistMessage)
-                .suspendFunction(arrangement.persistMessage::invoke)
-                .with(matching {
+            coVerify {
+                arrangement.persistMessage.invoke(matches {
                     (it.content is MessageContent.System && it.content is MessageContent.MemberChange.CreationAdded)
                 })
-                .wasInvoked(once)
+            }.wasInvoked(once)
 
-            verify(arrangement.persistMessage)
-                .suspendFunction(arrangement.persistMessage::invoke)
-                .with(matching {
+            coVerify {
+                arrangement.persistMessage.invoke(matches {
                     (it.content is MessageContent.System && it.content is MessageContent.MemberChange.FailedToAdd)
                 })
-                .wasNotInvoked()
+            }.wasNotInvoked()
         }
 
     @Test
-    fun givenAGroupConversation_whenPersistingMembersAndSomeFailed_ThenShouldCreateASystemMessageForStartedWithAndFailedToAdd() =
+    fun givenAGroupConversation_whenPersistingMembersAndOtherMembersListIsEmpty_ThenShouldNOTCreateASystemMessage() =
         runTest {
             val (arrangement, sysMessageCreator) = Arrangement()
                 .withIsASelfTeamMember(false)
                 .withPersistMessageSuccess()
                 .arrange()
 
-            val result = sysMessageCreator.conversationResolvedMembersAddedAndFailed(
-                TestConversation.CONVERSATION_RESPONSE.id.toDao(),
-                otherMembersIds,
-                listOf(TestUser.USER_ID)
-            )
-
-            result.shouldSucceed()
-
-            verify(arrangement.persistMessage)
-                .suspendFunction(arrangement.persistMessage::invoke)
-                .with(matching {
-                    (it.content is MessageContent.System && it.content is MessageContent.MemberChange.CreationAdded)
-                })
-                .wasInvoked(once)
-
-            verify(arrangement.persistMessage)
-                .suspendFunction(arrangement.persistMessage::invoke)
-                .with(matching {
-                    (it.content is MessageContent.System && it.content is MessageContent.MemberChange.FailedToAdd)
-                })
-                .wasInvoked(once)
-        }
-
-    @Test
-    fun givenAGroupConversation_whenPersistingMembersAndAllFailed_ThenShouldCreateASystemMessageOnlyWithFailedToAdd() =
-        runTest {
-            val (arrangement, sysMessageCreator) = Arrangement()
-                .withIsASelfTeamMember(false)
-                .withPersistMessageSuccess()
-                .arrange()
-
-            val result = sysMessageCreator.conversationResolvedMembersAddedAndFailed(
+            val result = sysMessageCreator.conversationResolvedMembersAdded(
                 TestConversation.CONVERSATION_RESPONSE.id.toDao(),
                 TestConversation.CONVERSATION_RESPONSE.copy(
                     members = ConversationMembersResponse(
@@ -305,25 +266,22 @@ class NewGroupConversationSystemMessagesCreatorTest {
                             "wire_admin"
                         ), emptyList()
                     )
-                ).members.otherMembers.map { it.id.toModel() },
-                listOf(TestUser.USER_ID)
+                ).members.otherMembers.map { it.id.toModel() }
             )
 
             result.shouldSucceed()
 
-            verify(arrangement.persistMessage)
-                .suspendFunction(arrangement.persistMessage::invoke)
-                .with(matching {
+            coVerify {
+                arrangement.persistMessage.invoke(matches {
                     (it.content is MessageContent.System && it.content is MessageContent.MemberChange.CreationAdded)
                 })
-                .wasNotInvoked()
+            }.wasNotInvoked()
 
-            verify(arrangement.persistMessage)
-                .suspendFunction(arrangement.persistMessage::invoke)
-                .with(matching {
+            coVerify {
+                arrangement.persistMessage.invoke(matches {
                     (it.content is MessageContent.System && it.content is MessageContent.MemberChange.FailedToAdd)
                 })
-                .wasInvoked(once)
+            }.wasNotInvoked()
         }
 
     @Test
@@ -333,16 +291,17 @@ class NewGroupConversationSystemMessagesCreatorTest {
                 .withPersistMessageSuccess()
                 .arrange()
 
-            val result = sysMessageCreator.conversationFailedToAddMembers(TestConversation.ID, setOf(TestUser.OTHER.id))
+            val result = sysMessageCreator.conversationFailedToAddMembers(
+                TestConversation.ID, listOf(TestUser.OTHER.id), MessageContent.MemberChange.FailedToAdd.Type.Unknown
+            )
 
             result.shouldSucceed()
 
-            verify(arrangement.persistMessage)
-                .suspendFunction(arrangement.persistMessage::invoke)
-                .with(matching {
+            coVerify {
+                arrangement.persistMessage.invoke(matches {
                     (it.content is MessageContent.System && it.content is MessageContent.MemberChange.FailedToAdd)
                 })
-                .wasInvoked(once)
+            }.wasInvoked(once)
         }
 
     @Test
@@ -357,12 +316,11 @@ class NewGroupConversationSystemMessagesCreatorTest {
 
         result.shouldSucceed()
 
-        verify(arrangement.persistMessage)
-            .suspendFunction(arrangement.persistMessage::invoke)
-            .with(matching {
+        coVerify {
+            arrangement.persistMessage.invoke(matches {
                 (it.content is MessageContent.System && it.content is MessageContent.ConversationStartedUnverifiedWarning)
             })
-            .wasInvoked(once)
+        }.wasInvoked(once)
     }
 
     private class Arrangement {
@@ -376,23 +334,21 @@ class NewGroupConversationSystemMessagesCreatorTest {
         val qualifiedIdMapper = mock(QualifiedIdMapper::class)
 
         init {
-            given(qualifiedIdMapper)
-                .function(qualifiedIdMapper::fromStringToQualifiedID)
-                .whenInvokedWith(any())
-                .then { TestUser.USER_ID }
+            every {
+                qualifiedIdMapper.fromStringToQualifiedID(any())
+            }.returns(TestUser.USER_ID)
         }
 
-        fun withPersistMessageSuccess() = apply {
-            given(persistMessage)
-                .suspendFunction(persistMessage::invoke)
-                .whenInvokedWith(any())
-                .then { Either.Right(Unit) }
+        suspend fun withPersistMessageSuccess() = apply {
+            coEvery {
+                persistMessage.invoke(any())
+            }.returns(Either.Right(Unit))
         }
 
         suspend fun withIsASelfTeamMember(isMember: Boolean = true) = apply {
-            given(selfTeamIdProvider)
-                .coroutine { invoke() }
-                .then { if (isMember) Either.Right(TestTeam.TEAM_ID) else Either.Right(null) }
+            coEvery {
+                selfTeamIdProvider.invoke()
+            }.returns(if (isMember) Either.Right(TestTeam.TEAM_ID) else Either.Right(null))
         }
 
         fun arrange() = this to NewGroupConversationSystemMessagesCreatorImpl(

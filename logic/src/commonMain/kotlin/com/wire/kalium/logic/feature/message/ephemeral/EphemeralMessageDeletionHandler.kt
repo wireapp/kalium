@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.message.ephemeral
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageRepository
@@ -25,7 +26,6 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -41,16 +41,22 @@ internal interface EphemeralMessageDeletionHandler {
     fun startSelfDeletion(conversationId: ConversationId, messageId: String)
     fun enqueueSelfDeletion(message: Message, expirationData: Message.ExpirationData)
     suspend fun enqueuePendingSelfDeletionMessages()
+
+    suspend fun deleteAlreadyEndedSelfDeletionMessages()
 }
 
+@Suppress("LongParameterList")
 internal class EphemeralMessageDeletionHandlerImpl(
     private val messageRepository: MessageRepository,
     private val selfUserId: UserId,
     private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     private val deleteEphemeralMessageForSelfUserAsReceiver: DeleteEphemeralMessageForSelfUserAsReceiverUseCase,
     private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCase,
+    kaliumLogger: KaliumLogger,
     userSessionCoroutineScope: CoroutineScope
 ) : EphemeralMessageDeletionHandler, CoroutineScope by userSessionCoroutineScope {
+    private val kaliumLogger = kaliumLogger.withTextTag("EphemeralMessageDeletionHandler")
+    private val logger = SelfDeletionEventLogger(kaliumLogger)
     override val coroutineContext: CoroutineContext
         get() = kaliumDispatcher.default
 
@@ -74,7 +80,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
     }
 
     override fun enqueueSelfDeletion(message: Message, expirationData: Message.ExpirationData) {
-        SelfDeletionEventLogger.log(
+        logger.log(
             LoggingSelfDeletionEvent.InvalidMessageStatus(
                 message,
                 expirationData
@@ -85,7 +91,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
             ongoingSelfDeletionMessagesMutex.withLock {
                 val isSelfDeletionOutgoing = ongoingSelfDeletionMessages[message.conversationId to message.id] != null
 
-                SelfDeletionEventLogger.log(
+                logger.log(
                     LoggingSelfDeletionEvent.SelfSelfDeletionAlreadyRequested(
                         message,
                         expirationData
@@ -98,7 +104,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
             }
             markDeletionDateAndWait(message, expirationData)
 
-            SelfDeletionEventLogger.log(
+            logger.log(
                 LoggingSelfDeletionEvent.StartingSelfSelfDeletion(
                     message,
                     expirationData
@@ -113,7 +119,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
         removeFromOutgoingDeletion(message)
 
         if (message.senderUserId == selfUserId) {
-            SelfDeletionEventLogger.log(
+            logger.log(
                 LoggingSelfDeletionEvent.AttemptingToDelete(
                     message,
                     expirationData,
@@ -122,7 +128,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
 
             when (val result = deleteEphemeralMessageForSelfUserAsSender(message.conversationId, message.id)) {
                 is Either.Left -> {
-                    SelfDeletionEventLogger.log(
+                    logger.log(
                         LoggingSelfDeletionEvent.SelfDeletionFailed(
                             message,
                             expirationData,
@@ -132,7 +138,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                 }
 
                 is Either.Right -> {
-                    SelfDeletionEventLogger.log(
+                    logger.log(
                         LoggingSelfDeletionEvent.SuccessfullyDeleted(
                             message,
                             expirationData,
@@ -141,7 +147,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                 }
             }
         } else {
-            SelfDeletionEventLogger.log(
+            logger.log(
                 LoggingSelfDeletionEvent.AttemptingToDelete(
                     message,
                     expirationData,
@@ -150,7 +156,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
 
             when (val result = deleteEphemeralMessageForSelfUserAsReceiver(message.conversationId, message.id)) {
                 is Either.Left -> {
-                    SelfDeletionEventLogger.log(
+                    logger.log(
                         LoggingSelfDeletionEvent.SelfDeletionFailed(
                             message,
                             expirationData,
@@ -160,7 +166,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
                 }
 
                 is Either.Right -> {
-                    SelfDeletionEventLogger.log(
+                    logger.log(
                         LoggingSelfDeletionEvent.SuccessfullyDeleted(
                             message,
                             expirationData
@@ -180,7 +186,7 @@ internal class EphemeralMessageDeletionHandlerImpl(
     private suspend fun markDeletionDateAndWait(message: Message, expirationData: Message.ExpirationData) {
         with(expirationData) {
             if (selfDeletionStatus is Message.ExpirationData.SelfDeletionStatus.NotStarted) {
-                SelfDeletionEventLogger.log(
+                logger.log(
                     LoggingSelfDeletionEvent.StartingSelfSelfDeletion(
                         message,
                         expirationData
@@ -189,24 +195,25 @@ internal class EphemeralMessageDeletionHandlerImpl(
 
                 val deletionStartMark = Clock.System.now()
 
-                messageRepository.markSelfDeletionStartDate(
+                val deletionEndDate = deletionStartMark + expireAfter
+                messageRepository.markSelfDeletionEndDate(
                     conversationId = message.conversationId,
                     messageUuid = message.id,
-                    deletionStartDate = deletionStartMark
+                    deletionEndDate = deletionEndDate
                 )
 
-                SelfDeletionEventLogger.log(
-                    LoggingSelfDeletionEvent.MarkingSelfSelfDeletionStartDate(
+                logger.log(
+                    LoggingSelfDeletionEvent.MarkingSelfSelfDeletionEndDate(
                         message,
                         expirationData,
-                        deletionStartMark
+                        deletionEndDate
                     )
                 )
             }
 
             val delayWaitingTime = timeLeftForDeletion()
 
-            SelfDeletionEventLogger.log(
+            logger.log(
                 LoggingSelfDeletionEvent.WaitingForSelfDeletion(
                     message,
                     expirationData,
@@ -223,7 +230,8 @@ internal class EphemeralMessageDeletionHandlerImpl(
     }
 
     override suspend fun enqueuePendingSelfDeletionMessages() {
-        messageRepository.getEphemeralMessagesMarkedForDeletion()
+        kaliumLogger.d("Enqueueing pending message with self-deletion")
+        messageRepository.getAllPendingEphemeralMessages()
             .onSuccess { ephemeralMessages ->
                 ephemeralMessages.forEach { ephemeralMessage ->
                     ephemeralMessage.expirationData?.let { expirationData ->
@@ -233,6 +241,22 @@ internal class EphemeralMessageDeletionHandlerImpl(
                         )
                     }
                 }
+            }
+    }
+
+    override suspend fun deleteAlreadyEndedSelfDeletionMessages() {
+        kaliumLogger.d("Deleting already ended self-deleting messages")
+        messageRepository.getAllAlreadyEndedEphemeralMessages()
+            .onSuccess { ephemeralMessages ->
+                ephemeralMessages.forEach { ephemeralMessage ->
+                    ephemeralMessage.expirationData?.let { expirationData ->
+                        deleteMessage(
+                            message = ephemeralMessage,
+                            expirationData = expirationData
+                        )
+                    }
+                }
+
             }
     }
 }

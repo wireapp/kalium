@@ -38,18 +38,22 @@ import kotlin.time.toDuration
 @Suppress("TooManyFunctions")
 @OptIn(ExperimentalUnsignedTypes::class)
 class MLSClientImpl(
-    private val coreCrypto: CoreCrypto
+    private val coreCrypto: CoreCrypto,
+    private val defaultCipherSuite: UShort
 ) : MLSClient {
 
     private val keyRotationDuration: Duration = 30.toDuration(DurationUnit.DAYS)
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration, MlsWirePolicy.PLAINTEXT)
+    override fun getDefaultCipherSuite(): UShort {
+        return defaultCipherSuite
+    }
 
     @Suppress("EmptyFunctionBlock")
     override suspend fun close() {
     }
 
-    override suspend fun getPublicKey(): ByteArray {
-        return coreCrypto.clientPublicKey().toUByteArray().asByteArray()
+    override suspend fun getPublicKey(): Pair<ByteArray, UShort> {
+        return coreCrypto.clientPublicKey().toUByteArray().asByteArray() to defaultCipherSuite
     }
 
     override suspend fun generateKeyPackages(amount: Int): List<ByteArray> {
@@ -96,11 +100,11 @@ class MLSClientImpl(
 
     override suspend fun createConversation(
         groupId: MLSGroupId,
-        externalSenders: List<Ed22519Key>
+        externalSenders: ByteArray
     ) {
         val conf = ConversationConfiguration(
             CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519,
-            externalSenders.map { toUByteList(it.value) },
+            listOf(toUByteList(externalSenders)),
             defaultGroupConfiguration
         )
 
@@ -108,13 +112,17 @@ class MLSClientImpl(
         coreCrypto.createConversation(groupIdAsBytes, conf)
     }
 
+    override suspend fun getExternalSenders(groupId: MLSGroupId): ExternalSenderKey {
+        TODO("Not yet implemented")
+    }
+
     override suspend fun wipeConversation(groupId: MLSGroupId) {
         coreCrypto.wipeConversation(toUByteList(groupId.decodeBase64Bytes()))
     }
 
-    override suspend fun processWelcomeMessage(message: WelcomeMessage): MLSGroupId {
+    override suspend fun processWelcomeMessage(message: WelcomeMessage): WelcomeBundle {
         val conversationId = coreCrypto.processWelcomeMessage(toUByteList(message), defaultGroupConfiguration)
-        return toByteArray(conversationId).encodeBase64()
+        return WelcomeBundle(groupId = toByteArray(conversationId).encodeBase64(), null)
     }
 
     override suspend fun encryptMessage(groupId: MLSGroupId, message: PlainMessage): ApplicationMessage {
@@ -175,19 +183,11 @@ class MLSClientImpl(
         return toByteArray(coreCrypto.exportSecretKey(toUByteList(groupId.decodeBase64Bytes()), keyLength))
     }
 
-    override suspend fun newAcmeEnrollment(
-        clientId: CryptoQualifiedClientId,
-        displayName: String,
-        handle: String,
-        teamId: String?
-    ): E2EIClient {
-        TODO("Not yet implemented")
-    }
-
     override suspend fun e2eiNewActivationEnrollment(
         displayName: String,
         handle: String,
-        teamId: String?
+        teamId: String?,
+        expiry: Duration
     ): E2EIClient {
         TODO("Not yet implemented")
     }
@@ -195,12 +195,13 @@ class MLSClientImpl(
     override suspend fun e2eiNewRotateEnrollment(
         displayName: String?,
         handle: String?,
-        teamId: String?
+        teamId: String?,
+        expiry: Duration
     ): E2EIClient {
         TODO("Not yet implemented")
     }
 
-    override suspend fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain) {
+    override suspend fun e2eiMlsInitOnly(enrollment: E2EIClient, certificateChain: CertificateChain): List<String>? {
         TODO("Not yet implemented")
     }
 
@@ -232,18 +233,6 @@ class MLSClientImpl(
         TODO("Not yet implemented")
     }
 
-    override suspend fun registerTrustAnchors(pem: CertificateChain) {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun registerCrl(url: String, crl: JsonRawData): CrlRegistration {
-        TODO("Not yet implemented")
-    }
-
-    override suspend fun registerIntermediateCa(pem: String) {
-        TODO("Not yet implemented")
-    }
-
     companion object {
         fun toUByteList(value: ByteArray): List<UByte> = value.asUByteArray().asList()
         fun toUByteList(value: String): List<UByte> = value.encodeToByteArray().asUByteArray().asList()
@@ -252,19 +241,22 @@ class MLSClientImpl(
         fun toCommitBundle(value: com.wire.crypto.MemberAddedMessages) = CommitBundle(
             toByteArray(value.commit),
             toByteArray(value.welcome),
-            toPublicGroupStateBundle(value.publicGroupState)
+            toPublicGroupStateBundle(value.publicGroupState),
+            null
         )
 
         fun toCommitBundle(value: com.wire.crypto.CommitBundle) = CommitBundle(
             toByteArray(value.commit),
             value.welcome?.let { toByteArray(it) },
-            toPublicGroupStateBundle(value.publicGroupState)
+            toPublicGroupStateBundle(value.publicGroupState),
+            null
         )
 
         fun toCommitBundle(value: com.wire.crypto.ConversationInitBundle) = CommitBundle(
             toByteArray(value.commit),
             null,
-            toPublicGroupStateBundle(value.publicGroupState)
+            toPublicGroupStateBundle(value.publicGroupState),
+            null
         )
 
         fun toPublicGroupStateBundle(value: com.wire.crypto.PublicGroupStateBundle) = GroupInfoBundle(
@@ -289,7 +281,8 @@ class MLSClientImpl(
             value.commitDelay?.toLong(),
             value.senderClientId?.let { CryptoQualifiedClientId.fromEncodedString((toByteArray(it).commonToUtf8String())) },
             value.hasEpochChanged,
-            identity = null
+            identity = null,
+            crlNewDistributionPoints = null
         )
     }
 
