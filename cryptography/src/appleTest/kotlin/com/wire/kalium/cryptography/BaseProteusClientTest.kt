@@ -24,8 +24,6 @@ import platform.Foundation.NSURL
 
 actual open class BaseProteusClientTest actual constructor() {
 
-    private val testCoroutineScheduler = TestCoroutineScheduler()
-
     actual fun createProteusStoreRef(userId: CryptoUserID): ProteusStoreRef {
         val rootDir = NSURL.fileURLWithPath(NSTemporaryDirectory() + "proteus/${userId.value}", isDirectory = true)
         return ProteusStoreRef(rootDir.path!!)
@@ -35,7 +33,7 @@ actual open class BaseProteusClientTest actual constructor() {
         proteusStore: ProteusStoreRef,
         databaseKey: ProteusDBSecret?
     ): ProteusClient {
-            return coreCryptoCentral(proteusStore.value, "secret", emptyList(), null).proteusClient()
+            return coreCryptoCentral(proteusStore.value, "secret").proteusClient()
     }
 
 }

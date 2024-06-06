@@ -129,7 +129,7 @@ class CryptoUtilsTest {
     @IgnoreAndroidInstrumented
     fun givenSomeDummyFile_whenEncryptedAsDataAndDecryptedWithAES256AsAFile_returnsExpectedOriginalFileContent() {
         // Given
-        val input = readBinaryResource("dummy.zip")
+        val input = readBinaryResource("dummy.pdf")
         val randomAES256Key = generateRandomAES256Key()
         val fakeFileSystem = FakeFileSystem()
         val rootPath = "/Users/me".toPath()

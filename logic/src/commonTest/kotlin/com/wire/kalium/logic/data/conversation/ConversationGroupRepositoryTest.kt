@@ -32,6 +32,7 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.legalhold.ListUsersLegalHoldConsent
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConversation
@@ -636,7 +637,11 @@ class ConversationGroupRepositoryTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(eq(GROUP_ID), eq(listOf(TestConversation.USER_1)))
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                eq(GROUP_ID),
+                eq(listOf(TestConversation.USER_1)),
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
     }
 
@@ -662,7 +667,11 @@ class ConversationGroupRepositoryTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(eq(GROUP_ID), eq(listOf(TestConversation.USER_1)))
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                eq(GROUP_ID),
+                eq(listOf(TestConversation.USER_1)),
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
     }
 
@@ -888,7 +897,11 @@ class ConversationGroupRepositoryTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(eq(GroupID(MLS_PROTOCOL_INFO.groupId)), eq(listOf(TestUser.SELF.id)))
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                eq(GroupID(MLS_PROTOCOL_INFO.groupId)),
+                eq(listOf(TestUser.SELF.id)),
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
     }
 
@@ -931,7 +944,8 @@ class ConversationGroupRepositoryTest {
         coVerify {
             arrangement.mlsConversationRepository.addMemberToMLSGroup(
                 eq(GroupID(MIXED_PROTOCOL_INFO.groupId)),
-                eq(listOf(TestUser.SELF.id))
+                eq(listOf(TestUser.SELF.id)),
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
             )
         }.wasInvoked(exactly = once)
     }
@@ -1384,15 +1398,21 @@ class ConversationGroupRepositoryTest {
         val expectedFullUserIdsForRequestCount = 2
         val expectedValidUsersWithKeyPackagesCount = 1
         coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), matches {
-                it.size == expectedFullUserIdsForRequestCount
-            })
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                any(), matches {
+                    it.size == expectedFullUserIdsForRequestCount
+                },
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), matches {
-                it.size == expectedValidUsersWithKeyPackagesCount && it.first() == TestConversation.USER_1
-            })
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                any(), matches {
+                    it.size == expectedValidUsersWithKeyPackagesCount && it.first() == TestConversation.USER_1
+                },
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -1427,15 +1447,21 @@ class ConversationGroupRepositoryTest {
         val expectedFullUserIdsForRequestCount = 2
         val expectedValidUsersWithKeyPackagesCount = 1
         coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), matches {
-                it.size == expectedFullUserIdsForRequestCount
-            })
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                any(), matches {
+                    it.size == expectedFullUserIdsForRequestCount
+                },
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), matches {
-                it.size == expectedValidUsersWithKeyPackagesCount && it.first() == TestConversation.USER_1
-            })
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                any(), matches {
+                    it.size == expectedValidUsersWithKeyPackagesCount && it.first() == TestConversation.USER_1
+                },
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -1468,21 +1494,30 @@ class ConversationGroupRepositoryTest {
         // then
         val initialCountUsers = expectedInitialUsers.size
         coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), matches {
-                it.size == initialCountUsers
-            })
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                any(), matches {
+                    it.size == initialCountUsers
+                },
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), matches {
-                it.size == initialCountUsers - 1 // removed 1 failed users with key packages
-            })
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                any(), matches {
+                    it.size == initialCountUsers - 1 // removed 1 failed users with key packages
+                },
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(any(), matches {
-                it.size == initialCountUsers - 2  // removed 1 failed user with commit bundle federated error
-            })
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                any(), matches {
+                    it.size == initialCountUsers - 2  // removed 1 failed user with commit bundle federated error
+                },
+                eq(CipherSuite.fromTag(CIPHER_SUITE.cipherSuiteTag))
+            )
         }.wasInvoked(exactly = once)
 
         coVerify {
@@ -1842,7 +1877,7 @@ class ConversationGroupRepositoryTest {
 
         suspend fun withSuccessfulAddMemberToMLSGroup() = apply {
             coEvery {
-                mlsConversationRepository.addMemberToMLSGroup(any(), any())
+                mlsConversationRepository.addMemberToMLSGroup(any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 
@@ -1851,7 +1886,7 @@ class ConversationGroupRepositoryTest {
          */
         suspend fun withAddingMemberToMlsGroupResults(vararg results: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                mlsConversationRepository.addMemberToMLSGroup(any(), any())
+                mlsConversationRepository.addMemberToMLSGroup(any(), any(), any())
             }.thenReturnSequentially(*results)
         }
 
@@ -2006,7 +2041,8 @@ class ConversationGroupRepositoryTest {
         fun arrange() = this to conversationGroupRepository
     }
 
-    companion object {
+    private companion object {
+        val CIPHER_SUITE = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
         private const val RAW_GROUP_ID = "mlsGroupId"
         val GROUP_ID = GroupID(RAW_GROUP_ID)
         val PROTEUS_PROTOCOL_INFO = ConversationEntity.ProtocolInfo.Proteus
@@ -2016,7 +2052,7 @@ class ConversationGroupRepositoryTest {
                 groupState = ConversationEntity.GroupState.ESTABLISHED,
                 0UL,
                 Instant.parse("2021-03-30T15:36:00.000Z"),
-                cipherSuite = ConversationEntity.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                cipherSuite = CIPHER_SUITE
             )
         val MIXED_PROTOCOL_INFO = ConversationEntity.ProtocolInfo
             .Mixed(

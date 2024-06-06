@@ -23,18 +23,31 @@ import com.wire.kalium.network.utils.NetworkResponse
 
 interface KeyPackageApi {
 
-    sealed class Param(open val user: UserId) {
+    sealed class Param {
+
+        abstract val user: UserId
+        abstract val cipherSuite: Int
+        abstract val selfClientId: String?
 
         /**
          * @param user user ID to claim key packages from.
          * @param selfClientId to skip selfClient key package.
          */
-        data class SkipOwnClient(override val user: UserId, val selfClientId: String) : Param(user)
+        data class SkipOwnClient(
+            override val user: UserId,
+            override val selfClientId: String,
+            override val cipherSuite: Int
+        ) : Param()
 
         /**
          * @param user user ID to claim key packages from.
          */
-        data class IncludeOwnClient(override val user: UserId) : Param(user)
+        data class IncludeOwnClient(
+            override val user: UserId,
+            override val cipherSuite: Int,
+        ) : Param() {
+            override val selfClientId: String? = null
+        }
     }
 
     /**
