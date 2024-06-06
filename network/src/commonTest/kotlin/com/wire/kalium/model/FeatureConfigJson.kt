@@ -132,7 +132,7 @@ object FeatureConfigJson {
                 MLSConfigDTO(SupportedProtocolDTO.PROTEUS, listOf(SupportedProtocolDTO.PROTEUS), listOf(1), 1),
                 FeatureFlagStatusDTO.ENABLED
             ),
-            FeatureConfigData.E2EI(E2EIConfigDTO("url", 0L), FeatureFlagStatusDTO.ENABLED),
+            FeatureConfigData.E2EI(E2EIConfigDTO("url", null, false, 0L), FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.MLSMigration(
                 MLSMigrationConfigDTO(Instant.DISTANT_FUTURE, Instant.DISTANT_FUTURE),
                 FeatureFlagStatusDTO.ENABLED

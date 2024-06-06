@@ -23,11 +23,13 @@ import kotlinx.datetime.Instant
 data class E2EISettings(
     val isRequired: Boolean,
     val discoverUrl: String?,
-    val gracePeriodEnd: Instant?
+    val gracePeriodEnd: Instant?,
+    val shouldUseProxy: Boolean,
+    val crlProxy: String?,
 ) {
 
     fun toEntity() = E2EISettingsEntity(
-        isRequired, discoverUrl, gracePeriodEnd?.toEpochMilliseconds()
+        isRequired, discoverUrl, gracePeriodEnd?.toEpochMilliseconds(), shouldUseProxy, crlProxy
     )
 
     companion object {
@@ -35,6 +37,8 @@ data class E2EISettings(
             entity.status,
             entity.discoverUrl,
             entity.gracePeriodEndMs?.let { Instant.fromEpochMilliseconds(it) },
+            entity.shouldUseProxy == true,
+            entity.crlProxy
         )
     }
 }
