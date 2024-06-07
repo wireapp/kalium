@@ -35,7 +35,6 @@ import com.wire.kalium.logic.data.legalhold.ids
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.service.ServiceId
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE
