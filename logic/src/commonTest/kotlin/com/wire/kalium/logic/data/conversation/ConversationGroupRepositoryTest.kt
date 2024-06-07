@@ -1346,7 +1346,7 @@ class ConversationGroupRepositoryTest {
             }.wasInvoked(once)
 
             coVerify {
-                newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any())
+                newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
             }.wasInvoked(once)
         }
     }
@@ -1942,7 +1942,7 @@ class ConversationGroupRepositoryTest {
 
         suspend fun withSuccessfulNewConversationGroupStartedHandled() = apply {
             coEvery {
-                newGroupConversationSystemMessagesCreator.conversationStarted(any(), any())
+                newGroupConversationSystemMessagesCreator.conversationStarted(any(), any(), any())
             }.returns(Either.Right(Unit))
             coEvery {
                 newGroupConversationSystemMessagesCreator.conversationStarted(any())
@@ -1997,7 +1997,7 @@ class ConversationGroupRepositoryTest {
 
         suspend fun withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled() = apply {
             coEvery {
-                newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any())
+                newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
             }.returns(Either.Right(Unit))
         }
 
