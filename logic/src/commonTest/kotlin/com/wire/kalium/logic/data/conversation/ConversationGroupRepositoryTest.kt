@@ -37,11 +37,13 @@ import com.wire.kalium.logic.data.service.ServiceId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE
+import com.wire.kalium.logic.framework.TestConversation.ADD_SERVICE_TO_CONVERSATION_SUCCESSFUL_RESPONSE
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
@@ -103,6 +105,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+            .withSuccessfulLegalHoldHandleConversationMembersChanged()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -134,6 +137,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+            .withSuccessfulLegalHoldHandleConversationMembersChanged()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -156,6 +160,32 @@ class ConversationGroupRepositoryTest {
     }
 
     @Test
+    fun givenSuccess_whenCallingCreateGroupConversation_thenHandleLegalHoldConversationMembersChanged() = runTest {
+        val (arrangement, conversationGroupRepository) = Arrangement()
+            .withCreateNewConversationAPIResponses(arrayOf(NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201)))
+            .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
+            .withInsertConversationSuccess()
+            .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
+            .withSuccessfulNewConversationGroupStartedHandled()
+            .withSuccessfulNewConversationMemberHandled()
+            .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+            .withSuccessfulLegalHoldHandleConversationMembersChanged()
+            .arrange()
+
+        val result = conversationGroupRepository.createGroupConversation(
+            GROUP_NAME,
+            listOf(TestUser.USER_ID),
+            ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
+        )
+
+        result.shouldSucceed()
+
+        coVerify {
+            arrangement.legalHoldHandler.handleConversationMembersChanged(any())
+        }.wasInvoked(once)
+    }
+
+    @Test
     fun givenCreatingAGroupConversation_whenThereIsAnUnreachableError_thenRetryIsExecutedWithValidUsersOnly() = runTest {
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withCreateNewConversationAPIResponses(
@@ -170,6 +200,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+            .withSuccessfulLegalHoldHandleConversationMembersChanged()
             .withInsertFailedToAddSystemMessageSuccess()
             .arrange()
 
@@ -270,6 +301,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
             .withInsertFailedToAddSystemMessageSuccess()
             .withSuccessfulFetchUsersLegalHoldConsent(ListUsersLegalHoldConsent(usersWithConsent, usersWithoutConsent, usersFailed))
+            .withSuccessfulLegalHoldHandleConversationMembersChanged()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -361,6 +393,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+            .withSuccessfulLegalHoldHandleConversationMembersChanged()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -402,6 +435,7 @@ class ConversationGroupRepositoryTest {
                 .withSuccessfulNewConversationGroupStartedHandled()
                 .withSuccessfulNewConversationMemberHandled()
                 .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+                .withSuccessfulLegalHoldHandleConversationMembersChanged()
                 .withInsertFailedToAddSystemMessageSuccess()
                 .arrange()
 
@@ -1319,6 +1353,7 @@ class ConversationGroupRepositoryTest {
             .withSuccessfulNewConversationGroupStartedHandled()
             .withSuccessfulNewConversationMemberHandled()
             .withSuccessfulNewConversationGroupStartedUnverifiedWarningHandled()
+            .withSuccessfulLegalHoldHandleConversationMembersChanged()
             .arrange()
 
         val result = conversationGroupRepository.createGroupConversation(
@@ -1644,6 +1679,9 @@ class ConversationGroupRepositoryTest {
         @Mock
         val joinExistingMLSConversation: JoinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
 
+        @Mock
+        val legalHoldHandler: LegalHoldHandler = mock(LegalHoldHandler::class)
+
         val conversationGroupRepository =
             ConversationGroupRepositoryImpl(
                 mlsConversationRepository,
@@ -1657,7 +1695,8 @@ class ConversationGroupRepositoryTest {
                 userRepository,
                 lazy { newGroupConversationSystemMessagesCreator },
                 TestUser.SELF.id,
-                selfTeamIdProvider
+                selfTeamIdProvider,
+                legalHoldHandler
             )
 
         suspend fun withMlsConversationEstablished(additionResult: MLSAdditionResult): Arrangement {
@@ -1737,7 +1776,7 @@ class ConversationGroupRepositoryTest {
                 conversationApi.addMember(any(), any())
             }.returns(
                 NetworkResponse.Success(
-                    TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
+                    ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
                     mapOf(),
                     HttpStatusCode.OK.value
                 )
@@ -1749,7 +1788,7 @@ class ConversationGroupRepositoryTest {
                 conversationApi.addService(any(), any())
             }.returns(
                 NetworkResponse.Success(
-                    TestConversation.ADD_SERVICE_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
+                    ADD_SERVICE_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
                     mapOf(),
                     HttpStatusCode.OK.value
                 )
@@ -1992,6 +2031,13 @@ class ConversationGroupRepositoryTest {
             }.returns(Either.Right(result))
         }
 
+        suspend fun withSuccessfulLegalHoldHandleConversationMembersChanged() = apply {
+            coEvery {
+                legalHoldHandler.handleConversationMembersChanged(any())
+            }.returns(Either.Right(Unit))
+        }
+
+
         fun arrange() = this to conversationGroupRepository
     }
 
@@ -2071,7 +2117,7 @@ class ConversationGroupRepositoryTest {
         )
 
         val API_SUCCESS_MEMBER_ADDED = NetworkResponse.Success(
-            TestConversation.ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
+            ADD_MEMBER_TO_CONVERSATION_SUCCESSFUL_RESPONSE,
             mapOf(),
             HttpStatusCode.OK.value
         )

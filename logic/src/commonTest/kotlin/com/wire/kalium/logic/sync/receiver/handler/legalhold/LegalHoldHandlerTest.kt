@@ -497,7 +497,7 @@ class LegalHoldHandlerTest {
         val failure = CoreFailure.Unknown(null)
         val timestampIso = "2022-03-30T15:36:00.000Z"
         val handleFailure: () -> Either<CoreFailure, Unit> = { Either.Left(failure) }
-        val (arrangement, handler) = Arrangement()
+        val (_, handler) = Arrangement()
             .arrange()
         // when
         val result = handler.handleMessageSendFailure(conversationId, timestampIso, handleFailure)
@@ -569,7 +569,7 @@ class LegalHoldHandlerTest {
             .withUpdateLegalHoldStatusSuccess(true)
             .arrange()
         // when
-        val result = handler.handleMessageSendFailure(conversationId, timestampIso, handleFailure)
+        handler.handleMessageSendFailure(conversationId, timestampIso, handleFailure)
         // then
         coVerify {
             arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(
@@ -649,6 +649,7 @@ class LegalHoldHandlerTest {
             .withMembersHavingLegalHoldClientSuccess(membersHavingLegalHoldClient)
             .withObserveConversationLegalHoldStatus(conversationLegalHoldStatusBefore)
             .withUpdateLegalHoldStatusSuccess(isChanged = legalHoldStatusForConversationChanged)
+            .withObserveIsUserMember(TestUser.SELF.id, true)
             .arrange()
         // when
         val result = handler.handleConversationMembersChanged(conversationId)
@@ -699,6 +700,29 @@ class LegalHoldHandlerTest {
             handleEnabledForConversationInvoked = false,
             handleDisabledForConversationInvoked = false,
         )
+
+    @Test
+    fun givenSelfUserIsRemovedFromGroup_whenHandlingMembersChanged_thenResetConversationLegalHoldState() = runTest {
+        // given
+        val conversationId = TestConversation.CONVERSATION.id
+        val selfUserId = TestUser.SELF.id
+        val otherUserId = TestUser.OTHER_USER_ID
+        val membersHavingLegalHoldClient =  listOf(otherUserId)
+        val conversationLegalHoldStatusBefore = Conversation.LegalHoldStatus.ENABLED
+        val (arrangement, handler) = Arrangement()
+            .withMembersHavingLegalHoldClientSuccess(membersHavingLegalHoldClient)
+            .withObserveConversationLegalHoldStatus(conversationLegalHoldStatusBefore)
+            .withUpdateLegalHoldStatusSuccess(isChanged = false)
+            .withObserveIsUserMember(selfUserId, false)
+            .arrange()
+        // when
+        val result = handler.handleConversationMembersChanged(conversationId)
+        // then
+        result.shouldSucceed()
+        coVerify {
+            arrangement.conversationRepository.updateLegalHoldStatus(eq(conversationId), eq(Conversation.LegalHoldStatus.UNKNOWN))
+        }.wasInvoked(exactly = 1)
+    }
 
     private fun testHandlingNewConnection(
         userLegalHoldStatus: LegalHoldState,
@@ -1021,6 +1045,12 @@ class LegalHoldHandlerTest {
             every {
                 observeSyncState.invoke()
             }.returns(syncStates)
+        }
+
+        suspend fun withObserveIsUserMember(userId: UserId, isMember: Boolean) = apply {
+            coEvery {
+                conversationRepository.observeIsUserMember(any(), eq(userId))
+            }.returns(flowOf(Either.Right(isMember)))
         }
     }
 

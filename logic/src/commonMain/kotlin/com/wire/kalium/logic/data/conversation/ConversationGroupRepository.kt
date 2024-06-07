@@ -43,6 +43,7 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapNullableFlowStorageRequest
 import com.wire.kalium.logic.wrapStorageRequest
@@ -106,6 +107,7 @@ internal class ConversationGroupRepositoryImpl(
     private val newGroupConversationSystemMessagesCreator: Lazy<NewGroupConversationSystemMessagesCreator>,
     private val selfUserId: UserId,
     private val teamIdProvider: SelfTeamIdProvider,
+    private val legalHoldHandler: LegalHoldHandler,
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
     private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
@@ -195,6 +197,8 @@ internal class ConversationGroupRepositoryImpl(
                     conversationEntity.id.toModel()
                 )
             }
+        }.onSuccess {
+            legalHoldHandler.handleConversationMembersChanged(conversationEntity.id.toModel())
         }.flatMap {
             wrapStorageRequest {
                 conversationDAO.getConversationByQualifiedID(conversationEntity.id)?.let {
