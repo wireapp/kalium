@@ -523,7 +523,7 @@ internal class UserDataSource internal constructor(
                 .partition { it.legalHoldStatus != LegalHoldStatusDTO.NO_CONSENT }
                 .let { (usersWithConsent, usersWithoutConsent) ->
                     ListUsersLegalHoldConsent(
-                        usersWithConsent = usersWithConsent.map { it.id.toModel() },
+                        usersWithConsent = usersWithConsent.map { it.id.toModel() to it.teamId?.let { TeamId(it) } },
                         usersWithoutConsent = usersWithoutConsent.map { it.id.toModel() },
                         usersFailed = listUsersDTO.usersFailed.map { it.toModel() }
                     )

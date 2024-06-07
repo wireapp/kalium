@@ -22,6 +22,7 @@ import app.cash.turbine.test
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.legalhold.ListUsersLegalHoldConsent
@@ -755,7 +756,7 @@ class UserRepositoryTest {
         val userIdFailed = TestUser.OTHER_USER_ID.copy(value = "idFailed")
         val requestedUserIds = setOf(userIdWithConsent, userIdWithoutConsent, userIdFailed)
         val expectedResult = ListUsersLegalHoldConsent(
-            usersWithConsent = listOf(userIdWithConsent),
+            usersWithConsent = listOf(userIdWithConsent to TeamId("teamId")),
             usersWithoutConsent = listOf(userIdWithoutConsent),
             usersFailed = listOf(userIdFailed),
         )

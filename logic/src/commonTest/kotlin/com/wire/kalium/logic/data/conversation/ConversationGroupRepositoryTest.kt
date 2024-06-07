@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.legalhold.ListUsersLegalHoldConsent
+import com.wire.kalium.logic.data.legalhold.ids
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.service.ServiceId
@@ -286,14 +287,19 @@ class ConversationGroupRepositoryTest {
 
     @Test
     fun givenCreatingAGroupConversation_whenThereIsAMissingLegalHoldConsentError_thenRetryIsExecutedWithValidUsersOnly() = runTest {
-        val usersWithConsent = listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID.copy(value = "idWithConsent"))
+        val validUsers = listOf(
+            TestUser.SELF.id to TestUser.SELF.teamId,
+            TestUser.OTHER.id.copy(value = "idWithConsentSameTeam") to TestUser.SELF.teamId,
+        )
+        val usersWithConsentFromOtherTeams = listOf(TestUser.OTHER.id.copy(value = "idWithConsentOtherTeam") to TestUser.OTHER.teamId)
+        val usersWithConsent = validUsers + usersWithConsentFromOtherTeams
         val usersWithoutConsent = listOf(TestUser.OTHER_USER_ID.copy(value = "idWithoutConsent"))
         val usersFailed = listOf(TestUser.OTHER_USER_ID.copy(value = "idFailed"))
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withCreateNewConversationAPIResponses(
                 arrayOf(ERROR_MISSING_LEGALHOLD_CONSENT, NetworkResponse.Success(CONVERSATION_RESPONSE, emptyMap(), 201))
             )
-            .withSelfTeamId(Either.Right(null))
+            .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
             .withInsertConversationSuccess()
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
@@ -306,7 +312,7 @@ class ConversationGroupRepositoryTest {
 
         val result = conversationGroupRepository.createGroupConversation(
             GROUP_NAME,
-            usersWithConsent + usersWithoutConsent + usersFailed,
+            usersWithConsent.ids() + usersWithoutConsent + usersFailed,
             ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
         )
 
@@ -314,7 +320,7 @@ class ConversationGroupRepositoryTest {
 
         with(arrangement) {
             coVerify {
-                conversationApi.createNewConversation(matches { it.qualifiedUsers?.size == 4 })
+                conversationApi.createNewConversation(matches { it.qualifiedUsers?.size == 5 })
             }.wasInvoked(once)
 
             coVerify {
@@ -332,7 +338,7 @@ class ConversationGroupRepositoryTest {
             coVerify {
                 newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                     any(),
-                    userIdList = eq(usersWithoutConsent + usersFailed),
+                    userIdList = eq(usersWithConsentFromOtherTeams.ids() + usersWithoutConsent + usersFailed),
                     eq(MessageContent.MemberChange.FailedToAdd.Type.LegalHold)
                 )
             }.wasInvoked(once)
@@ -341,12 +347,17 @@ class ConversationGroupRepositoryTest {
 
     @Test
     fun givenCreatingAGroupConversation_whenThereIsAMissingLegalHoldConsentError_thenRetryIsExecutedWithValidUsersOnlyOnce() = runTest {
-        val usersWithConsent = listOf(TestUser.USER_ID, TestUser.OTHER_USER_ID.copy(value = "idWithConsent"))
+        val validUsers = listOf(
+            TestUser.SELF.id to TestUser.SELF.teamId,
+            TestUser.OTHER.id.copy(value = "idWithConsentSameTeam") to TestUser.SELF.teamId,
+        )
+        val usersWithConsentFromOtherTeams = listOf(TestUser.OTHER.id.copy(value = "idWithConsentOtherTeam") to TestUser.OTHER.teamId)
+        val usersWithConsent = validUsers + usersWithConsentFromOtherTeams
         val usersWithoutConsent = listOf(TestUser.OTHER_USER_ID.copy(value = "idWithoutConsent"))
         val usersFailed = listOf(TestUser.OTHER_USER_ID.copy(value = "idFailed"))
         val (arrangement, conversationGroupRepository) = Arrangement()
             .withCreateNewConversationAPIResponses(arrayOf(ERROR_MISSING_LEGALHOLD_CONSENT, ERROR_MISSING_LEGALHOLD_CONSENT))
-            .withSelfTeamId(Either.Right(null))
+            .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
             .withInsertConversationSuccess()
             .withConversationDetailsById(TestConversation.GROUP_VIEW_ENTITY(PROTEUS_PROTOCOL_INFO))
             .withSuccessfulNewConversationGroupStartedHandled()
@@ -356,7 +367,7 @@ class ConversationGroupRepositoryTest {
 
         val result = conversationGroupRepository.createGroupConversation(
             GROUP_NAME,
-            usersWithConsent + usersWithoutConsent + usersFailed,
+            usersWithConsent.ids() + usersWithoutConsent + usersFailed,
             ConversationOptions(protocol = ConversationOptions.Protocol.PROTEUS)
         )
 
@@ -1533,11 +1544,17 @@ class ConversationGroupRepositoryTest {
     fun givenAConversationAndAPIFailsWithMissingLHConsent_whenAddingMembersToConversation_thenShouldRetryWithValidUsers() =
         runTest {
             // given
-            val usersWithConsent = listOf(TestUser.OTHER_USER_ID.copy(value = "idWithConsent"))
+            val validUsers = listOf(
+                TestUser.SELF.id to TestUser.SELF.teamId,
+                TestUser.OTHER.id.copy(value = "idWithConsentSameTeam") to TestUser.SELF.teamId,
+            )
+            val usersWithConsentFromOtherTeams = listOf(TestUser.OTHER.id.copy(value = "idWithConsentOtherTeam") to TestUser.OTHER.teamId)
+            val usersWithConsent = validUsers + usersWithConsentFromOtherTeams
             val usersWithoutConsent = listOf(TestUser.OTHER_USER_ID.copy(value = "idWithoutConsent"))
             val usersFailed = listOf(TestUser.OTHER_USER_ID.copy(value = "idFailed"))
-            val expectedInitialUsers = usersWithConsent + usersWithoutConsent + usersFailed
+            val expectedInitialUsers = usersWithConsent.ids() + usersWithoutConsent + usersFailed
             val (arrangement, conversationGroupRepository) = Arrangement()
+                .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
                 .withConversationDetailsById(TestConversation.CONVERSATION)
                 .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
                 .withFetchUsersIfUnknownByIdsSuccessful()
@@ -1556,7 +1573,7 @@ class ConversationGroupRepositoryTest {
                 )
             }.wasInvoked(exactly = once)
             coVerify {
-                arrangement.conversationApi.addMember(matches { it.users == usersWithConsent.map { it.toApi() } }, any())
+                arrangement.conversationApi.addMember(matches { it.users == validUsers.ids().map { it.toApi() } }, any())
             }.wasInvoked(exactly = once)
             coVerify {
                 arrangement.memberJoinEventHandler.handle(any())
@@ -1564,7 +1581,7 @@ class ConversationGroupRepositoryTest {
             coVerify {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationFailedToAddMembers(
                     conversationId = any(),
-                    userIdList = eq(usersWithoutConsent + usersFailed),
+                    userIdList = eq(usersWithConsentFromOtherTeams.ids() + usersWithoutConsent + usersFailed),
                     type = any()
                 )
             }.wasInvoked(exactly = once)
@@ -1574,11 +1591,17 @@ class ConversationGroupRepositoryTest {
     fun givenAConversationAndAPIFailsWithMissingLHConsent_whenAddingMembersToConversation_thenRetryIsExecutedWithValidUsersOnlyOnce() =
         runTest {
             // given
-            val usersWithConsent = listOf(TestUser.OTHER_USER_ID.copy(value = "idWithConsent"))
+            val validUsers = listOf(
+                TestUser.SELF.id to TestUser.SELF.teamId,
+                TestUser.OTHER.id.copy(value = "idWithConsentSameTeam") to TestUser.SELF.teamId,
+            )
+            val usersWithConsentFromOtherTeams = listOf(TestUser.OTHER.id.copy(value = "idWithConsentOtherTeam") to TestUser.OTHER.teamId)
+            val usersWithConsent = validUsers + usersWithConsentFromOtherTeams
             val usersWithoutConsent = listOf(TestUser.OTHER_USER_ID.copy(value = "idWithoutConsent"))
             val usersFailed = listOf(TestUser.OTHER_USER_ID.copy(value = "idFailed"))
-            val expectedInitialUsers = usersWithConsent + usersWithoutConsent + usersFailed
+            val expectedInitialUsers = usersWithConsent.ids() + usersWithoutConsent + usersFailed
             val (arrangement, conversationGroupRepository) = Arrangement()
+                .withSelfTeamId(Either.Right(TestUser.SELF.teamId))
                 .withConversationDetailsById(TestConversation.CONVERSATION)
                 .withProtocolInfoById(PROTEUS_PROTOCOL_INFO)
                 .withFetchUsersIfUnknownByIdsSuccessful()

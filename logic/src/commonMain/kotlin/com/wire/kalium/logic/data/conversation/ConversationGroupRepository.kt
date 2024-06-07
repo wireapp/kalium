@@ -653,13 +653,23 @@ internal class ConversationGroupRepositoryImpl(
     }
 
     /**
-     * Filter the initial [userIdList] into valid and invalid users where valid users are only team members.
+     * Filter the initial [userIdList] into valid and invalid users where valid users are only team members and people with consent.
      */
     private suspend fun fetchAndExtractValidUsersForRetryableLegalHoldError(
         userIdList: List<UserId>
     ): Either<CoreFailure, ValidToInvalidUsers> =
-        userRepository.fetchUsersLegalHoldConsent(userIdList.toSet()).map {
-            ValidToInvalidUsers(it.usersWithConsent, it.usersWithoutConsent + it.usersFailed, FailedToAdd.Type.LegalHold)
+        teamIdProvider().flatMap { selfTeamId ->
+            userRepository.fetchUsersLegalHoldConsent(userIdList.toSet()).map {
+                it.usersWithConsent
+                    .partition { (_, teamId) -> teamId == selfTeamId }
+                    .let { (validUsers, membersFromOtherTeam) ->
+                        ValidToInvalidUsers(
+                            validUsers = validUsers.map { (userId, _) -> userId },
+                            failedUsers = membersFromOtherTeam.map { (userId, _) -> userId } + it.usersWithoutConsent + it.usersFailed,
+                            failType = FailedToAdd.Type.LegalHold
+                        )
+                    }
+            }
         }
 
     /**
