@@ -17,10 +17,12 @@
  */
 package com.wire.kalium.logic.data.legalhold
 
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.user.UserId
 
 data class ListUsersLegalHoldConsent(
-    val usersWithConsent: List<UserId>,
+    val usersWithConsent: List<Pair<UserId, TeamId?>>,
     val usersWithoutConsent: List<UserId>,
     val usersFailed: List<UserId>,
 )
+fun List<Pair<UserId, TeamId?>>.ids() = map { (id, _) -> id }
