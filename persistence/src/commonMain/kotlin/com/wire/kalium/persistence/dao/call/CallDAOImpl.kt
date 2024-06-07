@@ -92,6 +92,12 @@ internal class CallDAOImpl(
             .flowOn(queriesContext)
             .mapToList()
 
+    override suspend fun observeOutgoingCalls(): Flow<List<CallEntity>> =
+        callsQueries.selectOutgoingCalls(mapper = mapper::fromCalls)
+            .asFlow()
+            .flowOn(queriesContext)
+            .mapToList()
+
     override suspend fun observeEstablishedCalls(): Flow<List<CallEntity>> =
         callsQueries.selectEstablishedCalls(mapper = mapper::fromCalls)
             .asFlow()

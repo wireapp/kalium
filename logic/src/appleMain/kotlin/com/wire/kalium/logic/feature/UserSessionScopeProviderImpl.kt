@@ -34,7 +34,7 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.logic.sync.UserSessionWorkSchedulerImpl
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 @Suppress("LongParameterList")
@@ -45,7 +45,7 @@ internal actual class UserSessionScopeProviderImpl(
     private val kaliumConfigs: KaliumConfigs,
     private val globalPreferences: GlobalPrefProvider,
     private val globalCallManager: GlobalCallManager,
-    private val globalDatabaseProvider: GlobalDatabaseProvider,
+    private val globalDatabaseBuilder: GlobalDatabaseBuilder,
     private val userStorageProvider: UserStorageProvider,
     private val networkStateObserver: NetworkStateObserver,
     private val logoutCallback: LogoutCallback,
@@ -65,7 +65,7 @@ internal actual class UserSessionScopeProviderImpl(
             globalScope,
             globalCallManager,
             globalPreferences,
-            globalDatabaseProvider,
+            globalDatabaseBuilder,
             authenticationScopeProvider,
             userSessionWorkScheduler,
             rootPathsProvider,

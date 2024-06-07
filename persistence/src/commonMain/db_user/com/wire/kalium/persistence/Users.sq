@@ -264,3 +264,6 @@ FROM Conversation c
 INNER JOIN Member m ON c.qualified_id = m.conversation
 WHERE m.user = :userId
   AND c.type = 'GROUP';
+
+selectOneOnOnConversationId:
+SELECT active_one_on_one_conversation_id FROM User WHERE qualified_id = :userId;

@@ -18,21 +18,39 @@
 package com.wire.kalium.logic.feature.e2ei
 
 import com.wire.kalium.cryptography.WireIdentity
+import com.wire.kalium.logic.di.MapperProvider
 import kotlinx.datetime.Instant
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class E2eiCertificate(
+    @SerialName("userHandle")
+    var userHandle: String,
+    @SerialName("status")
     val status: CertificateStatus,
+    @SerialName("serialNumber")
     val serialNumber: String,
+    @SerialName("certificateDetail")
     val certificateDetail: String,
+    @SerialName("thumbprint")
+    val thumbprint: String,
+    @SerialName("endAt")
     val endAt: Instant
 ) {
     companion object {
-        fun fromWireIdentity(identity: WireIdentity, certificateStatusMapper: CertificateStatusMapper): E2eiCertificate =
-            E2eiCertificate(
-                status = certificateStatusMapper.toCertificateStatus(identity.status),
-                serialNumber = identity.serialNumber,
-                certificateDetail = identity.certificate,
-                endAt = Instant.fromEpochSeconds(identity.endTimestampSeconds)
-            )
+        private val certificateStatusMapper = MapperProvider.certificateStatusMapper()
+
+        fun fromWireIdentity(identity: WireIdentity): E2eiCertificate? =
+            identity.certificate?.let {
+                E2eiCertificate(
+                    userHandle = it.handle.handle,
+                    status = certificateStatusMapper.toCertificateStatus(identity.status),
+                    serialNumber = it.serialNumber,
+                    certificateDetail = it.certificate,
+                    thumbprint = it.thumbprint,
+                    endAt = Instant.fromEpochSeconds(it.endTimestampSeconds)
+                )
+            }
     }
 }

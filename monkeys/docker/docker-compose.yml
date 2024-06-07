@@ -15,6 +15,8 @@ services:
         entrypoint:
             - /opt/app/bin/monkeys
         command:
+            # comment-delete below line (--sequential-warmup) when kalium fixes concurrency issue for global db and sever config
+            - --sequential-warmup
             - /config/${CONFIG:-config.json}
     postgres:
         image: postgres

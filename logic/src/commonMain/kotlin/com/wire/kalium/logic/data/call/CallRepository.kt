@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.call
 
+import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.obfuscateDomain
@@ -96,6 +97,7 @@ interface CallRepository {
     fun getCallMetadataProfile(): CallMetadataProfile
     suspend fun callsFlow(): Flow<List<Call>>
     suspend fun incomingCallsFlow(): Flow<List<Call>>
+    suspend fun outgoingCallsFlow(): Flow<List<Call>>
     suspend fun ongoingCallsFlow(): Flow<List<Call>>
     suspend fun establishedCallsFlow(): Flow<List<Call>>
     fun getEstablishedCall(): Call
@@ -154,8 +156,8 @@ internal class CallDataSource(
 
     private val job = SupervisorJob() // TODO(calling): clear job method
     private val scope = CoroutineScope(job + kaliumDispatchers.io)
-    private val callJobs = mutableMapOf<ConversationId, Job>()
-    private val staleParticipantJobs = mutableMapOf<QualifiedClientID, Job>()
+    private val callJobs = ConcurrentMutableMap<ConversationId, Job>()
+    private val staleParticipantJobs = ConcurrentMutableMap<QualifiedClientID, Job>()
 
     override suspend fun getCallConfigResponse(limit: Int?): Either<CoreFailure, String> = wrapApiRequest {
         callApi.getCallConfig(limit = limit)
@@ -174,6 +176,7 @@ internal class CallDataSource(
     override suspend fun callsFlow(): Flow<List<Call>> = callDAO.observeCalls().combineWithCallsMetadata()
 
     override suspend fun incomingCallsFlow(): Flow<List<Call>> = callDAO.observeIncomingCalls().combineWithCallsMetadata()
+    override suspend fun outgoingCallsFlow(): Flow<List<Call>> = callDAO.observeOutgoingCalls().combineWithCallsMetadata()
 
     override suspend fun ongoingCallsFlow(): Flow<List<Call>> = callDAO.observeOngoingCalls().combineWithCallsMetadata()
 

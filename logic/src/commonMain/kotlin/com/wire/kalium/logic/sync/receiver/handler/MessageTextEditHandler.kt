@@ -24,7 +24,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
-import com.wire.kalium.logic.feature.message.EphemeralEventsNotificationManager
+import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.kaliumLogger
@@ -40,7 +40,7 @@ internal interface MessageTextEditHandler {
 
 internal class MessageTextEditHandlerImpl internal constructor(
     private val messageRepository: MessageRepository,
-    private val editMessageNotificationsManager: EphemeralEventsNotificationManager,
+    private val notificationEventsManager: NotificationEventsManager,
 ) : MessageTextEditHandler {
 
     override suspend fun handle(
@@ -74,7 +74,7 @@ internal class MessageTextEditHandlerImpl internal constructor(
                     editTimeStamp = currentMessage.editStatus.lastTimeStamp
                 )
             } else {
-                editMessageNotificationsManager.scheduleEditMessageNotification(message, messageContent)
+                notificationEventsManager.scheduleEditMessageNotification(message, messageContent)
                 // incoming edit from the backend is newer than the one we have locally so we update the whole message and change the status
                 messageRepository.updateTextMessage(
                     conversationId = message.conversationId,
@@ -90,7 +90,7 @@ internal class MessageTextEditHandlerImpl internal constructor(
                 }
             }
         } else {
-            editMessageNotificationsManager.scheduleEditMessageNotification(message, messageContent)
+            notificationEventsManager.scheduleEditMessageNotification(message, messageContent)
             messageRepository.updateTextMessage(
                 conversationId = message.conversationId,
                 messageContent = messageContent,

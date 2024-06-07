@@ -18,15 +18,11 @@
 
 package com.wire.kalium.logic.sync.receiver.conversation
 
-import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation.Member
-import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
-import com.wire.kalium.logic.data.message.PersistMessageUseCase
-import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestEvent
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -38,6 +34,16 @@ import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.matches
 import io.mockative.mock
+import com.wire.kalium.logic.functional.left
+import com.wire.kalium.logic.functional.right
+import com.wire.kalium.logic.util.arrangement.eventHandler.LegalHoldHandlerArrangement
+import com.wire.kalium.logic.util.arrangement.eventHandler.LegalHoldHandlerArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
+import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -45,39 +51,14 @@ import kotlin.test.Test
 class MemberJoinEventHandlerTest {
 
     @Test
-    fun givenMemberJoinEventWithoutSelfUser_whenHandlingIt_thenShouldFetchConversationIfUnknown() = runTest {
-        val newMembers = listOf(Member(TestUser.OTHER_FEDERATED_USER_ID, Member.Role.Member))
-        val event = TestEvent.memberJoin(members = newMembers)
-
-        val (arrangement, eventHandler) = Arrangement()
-            .withPersistingMessageReturning(Either.Right(Unit))
-            .withFetchConversationIfUnknownSucceeding()
-            .withPersistMembersSucceeding()
-            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
-            .arrange()
-
-        eventHandler.handle(event)
-
-        coVerify {
-            arrangement.conversationRepository.fetchConversationIfUnknown(eq(event.conversationId))
-        }.wasInvoked(exactly = once)
-
-        coVerify {
-            arrangement.conversationRepository.fetchConversation(eq(event.conversationId))
-        }.wasNotInvoked()
-    }
-
-    @Test
     fun givenMemberJoinEventWithSelfUser_whenHandlingIt_thenShouldFetchConversation() = runTest {
         val newMembers = listOf(Member(TestUser.SELF.id, Member.Role.Member))
         val event = TestEvent.memberJoin(members = newMembers)
 
-        val (arrangement, eventHandler) = Arrangement()
-            .withPersistingMessageReturning(Either.Right(Unit))
-            .withFetchConversationIfUnknownSucceeding()
-            .withPersistMembersSucceeding()
-            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
-            .arrange()
+        val (arrangement, eventHandler) = arrange {
+            withFetchConversationSucceeding()
+            withConversationDetailsByIdReturning(TestConversation.CONVERSATION.right())
+        }
 
         eventHandler.handle(event)
 
@@ -95,12 +76,10 @@ class MemberJoinEventHandlerTest {
         val newMembers = listOf(Member(TestUser.USER_ID, Member.Role.Member))
         val event = TestEvent.memberJoin(members = newMembers)
 
-        val (arrangement, eventHandler) = Arrangement()
-            .withPersistingMessageReturning(Either.Right(Unit))
-            .withFetchConversationIfUnknownSucceeding()
-            .withPersistMembersSucceeding()
-            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
-            .arrange()
+        val (arrangement, eventHandler) = arrange {
+            withFetchConversationSucceeding()
+            withConversationDetailsByIdReturning(TestConversation.CONVERSATION.right())
+        }
 
         eventHandler.handle(event)
 
@@ -114,12 +93,11 @@ class MemberJoinEventHandlerTest {
         val newMembers = listOf(Member(TestUser.USER_ID, Member.Role.Member))
         val event = TestEvent.memberJoin(members = newMembers)
 
-        val (arrangement, eventHandler) = Arrangement()
-            .withPersistingMessageReturning(Either.Right(Unit))
-            .withFetchConversationIfUnknownFailing(NetworkFailure.NoNetworkConnection(null))
-            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
-            .withPersistMembersSucceeding()
-            .arrange()
+        val (arrangement, eventHandler) = arrange {
+            withFetchConversationIfUnknownFailingWith(NetworkFailure.NoNetworkConnection(null))
+            withFetchConversation(NetworkFailure.NoNetworkConnection(null).left())
+            withConversationDetailsByIdReturning(TestConversation.CONVERSATION.right())
+        }
 
         eventHandler.handle(event)
 
@@ -133,17 +111,15 @@ class MemberJoinEventHandlerTest {
         val newMembers = listOf(Member(TestUser.USER_ID, Member.Role.Admin))
         val event = TestEvent.memberJoin(members = newMembers)
 
-        val (arrangement, eventHandler) = Arrangement()
-            .withPersistingMessageReturning(Either.Right(Unit))
-            .withFetchConversationIfUnknownSucceeding()
-            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
-            .withPersistMembersSucceeding()
-            .arrange()
+        val (arrangement, eventHandler) = arrange {
+            withFetchConversationSucceeding()
+            withConversationDetailsByIdReturning(TestConversation.GROUP().right())
+        }
 
         eventHandler.handle(event)
 
         coVerify {
-            arrangement.persistMessage.invoke(
+            arrangement.persistMessageUseCase.invoke(
                 matches {
                     it is Message.System && it.content is MessageContent.MemberChange
                 }
@@ -152,21 +128,34 @@ class MemberJoinEventHandlerTest {
     }
 
     @Test
+    fun givenMemberJoinEventIn1o1Conversation_whenHandlingIt_thenShouldNotPersistSystemMessage() = runTest {
+        val newMembers = listOf(Member(TestUser.USER_ID, Member.Role.Admin))
+        val event = TestEvent.memberJoin(members = newMembers)
+
+        val (arrangement, eventHandler) = arrange {
+            withFetchConversationSucceeding()
+            withConversationDetailsByIdReturning(TestConversation.CONVERSATION.right())
+        }
+
+        eventHandler.handle(event)
+
+        coVerify { arrangement.persistMessageUseCase(any()) }.wasNotInvoked()
+    }
+
+    @Test
     fun givenMemberJoinEventWithEmptyId_whenHandlingIt_thenShouldPersistSystemMessage() = runTest {
         val newMembers = listOf(Member(TestUser.USER_ID, Member.Role.Admin))
         val event = TestEvent.memberJoin(members = newMembers).copy(id = "")
 
-        val (arrangement, eventHandler) = Arrangement()
-            .withPersistingMessageReturning(Either.Right(Unit))
-            .withFetchConversationIfUnknownSucceeding()
-            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
-            .withPersistMembersSucceeding()
-            .arrange()
+        val (arrangement, eventHandler) = arrange {
+            withFetchConversationSucceeding()
+            withConversationDetailsByIdReturning(TestConversation.GROUP().right())
+        }
 
         eventHandler.handle(event)
 
         coVerify {
-            arrangement.persistMessage.invoke(
+            arrangement.persistMessageUseCase.invoke(
                 matches {
                     it is Message.System && it.content is MessageContent.MemberChange && it.id.isNotEmpty()
                 }
@@ -179,12 +168,13 @@ class MemberJoinEventHandlerTest {
         // given
         val newMembers = listOf(Member(TestUser.USER_ID, Member.Role.Admin))
         val event = TestEvent.memberJoin(members = newMembers)
-        val (arrangement, eventHandler) = Arrangement()
-            .withPersistingMessageReturning(Either.Right(Unit))
-            .withFetchConversationIfUnknownSucceeding()
-            .withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
-            .withPersistMembersSucceeding()
-            .arrange()
+        val (arrangement, eventHandler) = arrange {
+            withPersistingMessage(Either.Right(Unit))
+            withFetchConversationSucceeding()
+            withConversationDetailsByIdReturning(TestConversation.GROUP().right())
+            withFetchUsersIfUnknownByIdsReturning(Either.Right(Unit))
+            withPersistMembers(Unit.right())
+        }
         // when
         eventHandler.handle(event)
         // then
@@ -193,69 +183,31 @@ class MemberJoinEventHandlerTest {
         }.wasInvoked(exactly = once)
     }
 
-    private class Arrangement {
-        @Mock
-        val persistMessage = mock(PersistMessageUseCase::class)
+    private class Arrangement(
+        private val block: suspend Arrangement.() -> Unit
+    ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
+        UserRepositoryArrangement by UserRepositoryArrangementImpl(),
+        PersistMessageUseCaseArrangement by PersistMessageUseCaseArrangementImpl(),
+        LegalHoldHandlerArrangement by LegalHoldHandlerArrangementImpl() {
 
-        @Mock
-        val conversationRepository = mock(ConversationRepository::class)
-
-        @Mock
-        private val userRepository = mock(UserRepository::class)
-
-        @Mock
-        val legalHoldHandler = mock(LegalHoldHandler::class)
-
-        private val memberJoinEventHandler: MemberJoinEventHandler = MemberJoinEventHandlerImpl(
-            conversationRepository = conversationRepository,
-            userRepository = userRepository,
-            persistMessage = persistMessage,
-            legalHoldHandler = legalHoldHandler,
-            selfUserId = TestUser.SELF.id
-        )
-
-        suspend fun withPersistingMessageReturning(result: Either<CoreFailure, Unit>) = apply {
-            coEvery {
-                persistMessage.invoke(any())
-            }.returns(result)
-        }
-
-        suspend fun withFetchConversationIfUnknownSucceeding() = apply {
-            coEvery {
-                conversationRepository.fetchConversationIfUnknown(any())
-            }.returns(Either.Right(Unit))
-            coEvery {
-                conversationRepository.fetchConversation(any())
-            }.returns(Either.Right(Unit))
-        }
-
-        suspend fun withFetchConversationIfUnknownFailing(coreFailure: CoreFailure) = apply {
-            coEvery {
-                conversationRepository.fetchConversationIfUnknown(any())
-            }.returns(Either.Left(coreFailure))
-            coEvery {
-                conversationRepository.fetchConversation(any())
-            }.returns(Either.Left(coreFailure))
-        }
-
-        suspend fun withPersistMembersSucceeding() = apply {
-            coEvery {
-                conversationRepository.persistMembers(any(), any())
-            }.returns(Either.Right(Unit))
-        }
-
-        suspend fun withFetchUsersIfUnknownByIdsReturning(result: Either<StorageFailure, Unit>) = apply {
-            coEvery {
-                userRepository.fetchUsersIfUnknownByIds(any())
-            }.returns(result)
+        suspend fun withFetchConversationSucceeding() = apply {
+            withFetchConversationIfUnknownSucceeding()
+            withFetchConversation(Unit.right())
         }
 
         suspend fun arrange() = run {
-            coEvery {
-                legalHoldHandler.handleConversationMembersChanged(any())
-            }.returns(Either.Right(Unit))
-            this to memberJoinEventHandler
+            block()
+
+            withPersistingMessage(Unit.right())
+            withFetchUsersIfUnknownByIdsReturning(Unit.right())
+            withPersistMembers(Unit.right())
+            withHandleConversationMembersChanged(Unit.right())
+
+            this to MemberJoinEventHandlerImpl(conversationRepository, userRepository, persistMessageUseCase, legalHoldHandler)
         }
     }
 
+    private companion object {
+        suspend fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
+    }
 }

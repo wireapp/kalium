@@ -33,7 +33,7 @@ import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.sync.UserSessionWorkScheduler
 import com.wire.kalium.network.NetworkStateObserver
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 
 @Suppress("LongParameterList")
@@ -43,7 +43,7 @@ internal fun UserSessionScope(
     globalScope: GlobalKaliumScope,
     globalCallManager: GlobalCallManager,
     globalPreferences: GlobalPrefProvider,
-    globalDatabaseProvider: GlobalDatabaseProvider,
+    globalDatabaseBuilder: GlobalDatabaseBuilder,
     authenticationScopeProvider: AuthenticationScopeProvider,
     userSessionWorkScheduler: UserSessionWorkScheduler,
     rootPathsProvider: RootPathsProvider,
@@ -63,7 +63,7 @@ internal fun UserSessionScope(
         userId,
         globalScope,
         globalCallManager,
-        globalDatabaseProvider,
+        globalDatabaseBuilder,
         globalPreferences,
         authenticationScopeProvider,
         userSessionWorkScheduler,
