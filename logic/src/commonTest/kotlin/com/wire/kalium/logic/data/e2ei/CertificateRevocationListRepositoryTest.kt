@@ -30,15 +30,11 @@ import com.wire.kalium.persistence.config.CRLWithExpiration
 import com.wire.kalium.persistence.dao.MetadataDAO
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
-<<<<<<< HEAD
-import io.mockative.coEvery
-import io.mockative.coVerify
-=======
 import io.mockative.any
 import io.mockative.classOf
-import io.mockative.eq
-import io.mockative.given
->>>>>>> 06c66ee1a6 (feat: CRL proxy [WPB-8793] (#2800))
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
@@ -128,11 +124,9 @@ class CertificateRevocationListRepositoryTest {
 
         crlRepository.getClientDomainCRL(DUMMY_URL2)
 
-        verify(arrangement.userConfigRepository).coroutine { getE2EISettings() }.wasInvoked(once)
+        coVerify { arrangement.userConfigRepository.getE2EISettings() }.wasInvoked(once)
 
-        verify(arrangement.acmeApi).coroutine {
-            getClientDomainCRL(DUMMY_URL2, DUMMY_URL)
-        }.wasInvoked(once)
+        coVerify { arrangement.acmeApi.getClientDomainCRL(DUMMY_URL2, DUMMY_URL) }.wasInvoked(once)
     }
 
     @Test
@@ -144,10 +138,10 @@ class CertificateRevocationListRepositoryTest {
 
         crlRepository.getClientDomainCRL(DUMMY_URL2)
 
-        verify(arrangement.userConfigRepository).coroutine { getE2EISettings() }.wasInvoked(once)
+        coVerify { arrangement.userConfigRepository.getE2EISettings() }.wasInvoked(once)
 
-        verify(arrangement.acmeApi).coroutine {
-            getClientDomainCRL(DUMMY_URL2, null)
+        coVerify {
+            arrangement.acmeApi.getClientDomainCRL(DUMMY_URL2, null)
         }.wasInvoked(once)
     }
 
@@ -160,10 +154,10 @@ class CertificateRevocationListRepositoryTest {
 
         crlRepository.getClientDomainCRL(DUMMY_URL2)
 
-        verify(arrangement.userConfigRepository).coroutine { getE2EISettings() }.wasInvoked(once)
+        coVerify { arrangement.userConfigRepository.getE2EISettings() }.wasInvoked(once)
 
-        verify(arrangement.acmeApi).coroutine {
-            getClientDomainCRL(DUMMY_URL2, null)
+        coVerify {
+            arrangement.acmeApi.getClientDomainCRL(DUMMY_URL2, null)
         }.wasInvoked(once)
     }
 
@@ -208,19 +202,13 @@ class CertificateRevocationListRepositoryTest {
         }
 
         suspend fun withE2EISettings(result: Either<StorageFailure, E2EISettings> = E2EI_SETTINGS.right()) = apply {
-            given(userConfigRepository).function(userConfigRepository::getE2EISettings)
-                .whenInvoked()
-                .thenReturn(result)
+            every { userConfigRepository.getE2EISettings() }
+                .returns(result)
         }
 
         suspend fun withClientDomainCRL() = apply {
-            given(acmeApi).suspendFunction(acmeApi::getClientDomainCRL)
-                .whenInvokedWith(any(), any<String?>())
-                .thenReturn(NetworkResponse.Success("some_response".toByteArray(), mapOf(), 200))
-        }.apply {
-            given(acmeApi).suspendFunction(acmeApi::getClientDomainCRL)
-                .whenInvokedWith(any(), eq(null))
-                .thenReturn(NetworkResponse.Success("some_response".toByteArray(), mapOf(), 200))
+            coEvery { acmeApi.getClientDomainCRL(any(), any<String?>()) }
+                .returns(NetworkResponse.Success("some_response".toByteArray(), mapOf(), 200))
         }
     }
 
