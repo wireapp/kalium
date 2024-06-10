@@ -17,11 +17,21 @@
  */
 package com.wire.kalium.logic.data.message.linkpreview
 
-data class MessageLinkPreview(
-    val url: String,
-    val urlOffset: Int,
-    val permanentUrl: String? = null,
-    val title: String? = null,
-    val summary: String? = null,
-    val image: LinkPreviewAsset? = null,
+import com.wire.kalium.cryptography.utils.AES256Key
+import com.wire.kalium.cryptography.utils.SHA256Key
+import com.wire.kalium.logic.data.asset.UploadedAssetId
+import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata
+import okio.Path
+
+data class LinkPreviewAsset(
+    val name: String? = null,
+    val mimeType: String,
+    val metadata: AssetMetadata? = null,
+    val assetDataPath: Path,
+    val assetDataSize: Long,
+    val assetWidth: Int?,
+    val assetHeight: Int?,
+    val assetId: UploadedAssetId?,
+    val otrKey: AES256Key,
+    val sha256Key: SHA256Key,
 )

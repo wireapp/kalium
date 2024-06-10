@@ -420,15 +420,7 @@ class ConversationResources(private val instanceService: InstanceService) {
         return with(sendTextRequest) {
             val linkPreviews = when (linkPreview) {
                 null -> emptyList()
-                else -> listOf(
-                    MessageLinkPreview(
-                        linkPreview.url,
-                        linkPreview.urlOffset,
-                        linkPreview.summary,
-                        linkPreview.title,
-                        linkPreview.permanentUrl
-                    )
-                )
+                else -> listOf(linkPreview)
             }
             runBlocking {
                 ConversationRepository.sendTextMessage(

@@ -560,7 +560,7 @@ class ProtoContentMapperImpl(
         expectsReadConfirmation: Boolean,
         legalHoldStatus: Conversation.LegalHoldStatus
     ): GenericMessage.Content.Text {
-        val linkPreview = readableContent.linkPreview.map { linkPreviewMapper.fromModelToProto(it) }
+        val linkPreview = readableContent.linkPreviews.map { linkPreviewMapper.fromModelToProto(it) }
         val mentions = readableContent.mentions.map { messageMentionMapper.fromModelToProto(it) }
         val quote = readableContent.quotedMessageReference?.let {
             Quote(it.quotedMessageId, it.quotedMessageSha256?.let { hash -> ByteArr(hash) })
@@ -591,7 +591,7 @@ class ProtoContentMapperImpl(
 
     private fun unpackText(protoContent: Text) = MessageContent.Text(
         value = protoContent.content,
-        linkPreview = protoContent.linkPreview.mapNotNull { linkPreviewMapper.fromProtoToModel(it) },
+        linkPreviews = protoContent.linkPreview.mapNotNull { linkPreviewMapper.fromProtoToModel(it) },
         mentions = protoContent.mentions.mapNotNull { messageMentionMapper.fromProtoToModel(it) },
         quotedMessageReference = protoContent.quote?.let {
             MessageContent.QuoteReference(

@@ -204,6 +204,7 @@ class MessageScope internal constructor(
             persistMessage = persistMessage,
             selfUserId = selfUserId,
             provideClientId = currentClientIdProvider,
+            assetDataSource = assetRepository,
             slowSyncRepository = slowSyncRepository,
             messageSender = messageSender,
             messageSendFailureHandler = messageSendFailureHandler,

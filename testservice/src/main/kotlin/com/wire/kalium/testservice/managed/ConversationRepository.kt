@@ -18,6 +18,8 @@
 
 package com.wire.kalium.testservice.managed
 
+import com.wire.kalium.cryptography.utils.AES256Key
+import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationOptions
@@ -30,6 +32,7 @@ import com.wire.kalium.logic.feature.conversation.ClearConversationContentUseCas
 import com.wire.kalium.logic.feature.debug.BrokenState
 import com.wire.kalium.logic.feature.debug.SendBrokenAssetMessageResult
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewAsset
 import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
 import com.wire.kalium.logic.data.message.receipt.DetailedReceipt
 import com.wire.kalium.logic.data.user.UserId
@@ -40,6 +43,8 @@ import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.testservice.models.Instance
+import com.wire.kalium.testservice.models.LinkPreview
+import com.wire.kalium.testservice.models.LinkPreviewImage
 import com.wire.kalium.testservice.models.SendTextResponse
 import kotlinx.coroutines.flow.first
 import okio.Path.Companion.toOkioPath
@@ -254,7 +259,7 @@ sealed class ConversationRepository {
             instance: Instance,
             conversationId: ConversationId,
             text: String?,
-            linkPreviews: List<MessageLinkPreview> = emptyList(),
+            linkPreviews: List<LinkPreview> = emptyList(),
             mentions: List<MessageMention>,
             messageTimer: Int?,
             quotedMessageId: String?,
@@ -267,8 +272,33 @@ sealed class ConversationRepository {
                             setMessageTimer(instance, conversationId, messageTimer)
                             log.info("Instance ${instance.instanceId}: Send text message '$text'")
                             val result = if (buttons.isEmpty()) {
+                                val previews = linkPreviews.map {
+                                    val image = it.image?.let { image ->
+                                        val temp: File = Files.createTempFile("asset", ".data").toFile()
+                                        val byteArray = Base64.getDecoder().decode(image.data)
+                                        FileOutputStream(temp).use { outputStream -> outputStream.write(byteArray) }
+                                        LinkPreviewAsset(
+                                            mimeType = image.type,
+                                            assetDataPath = temp.toOkioPath(),
+                                            assetDataSize = byteArray.size.toLong(),
+                                            assetWidth = image.width,
+                                            assetHeight = image.height,
+                                            assetId = null,
+                                            otrKey = AES256Key(data = ByteArray(0)),
+                                            sha256Key = SHA256Key(data = ByteArray(0))
+                                        )
+                                    }
+                                    MessageLinkPreview(
+                                        url = it.url,
+                                        urlOffset = it.urlOffset,
+                                        permanentUrl = it.permanentUrl,
+                                        title = it.title,
+                                        summary = it.summary,
+                                        image = image
+                                    )
+                                }
                                 messages.sendTextMessage(
-                                    conversationId, text, linkPreviews, mentions, quotedMessageId
+                                    conversationId, text, previews, mentions, quotedMessageId
                                 )
                             } else {
                                 messages.sendButtonMessage(
