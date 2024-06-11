@@ -27,6 +27,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.id.toDao
@@ -37,8 +39,6 @@ import com.wire.kalium.logic.data.user.SelfUser
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.data.id.SelfTeamIdProvider
-import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
@@ -95,14 +95,13 @@ import com.wire.kalium.util.DateTimeUtil
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.EqualsMatcher
 import io.mockative.matchers.Matcher
-import io.mockative.matchers.PredicateMatcher
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
@@ -121,7 +120,6 @@ import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import com.wire.kalium.network.api.base.model.ConversationId as APIConversationId
-import com.wire.kalium.network.api.base.model.ConversationId as ConversationIdDTO
 import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 
 @Suppress("LargeClass")
@@ -562,7 +560,6 @@ class ConversationRepositoryTest {
 
             val (arrange, conversationRepository) = Arrangement()
                 .withApiUpdateAccessRoleReturns(NetworkResponse.Success(newAccess, mapOf(), 200))
-                .withDaoUpdateAccessSuccess()
                 .arrange()
 
             conversationRepository.updateAccessInfo(
@@ -1156,12 +1153,18 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenNoChange_whenUpdatingProtocolToMls_thenShouldNotUpdateLocally() = runTest {
+    fun givenNoChange_whenUpdatingProtocolToMls_thenShouldUpdateLocally() = runTest {
         // given
         val protocol = Conversation.Protocol.MLS
-
+        val conversationResponse = NetworkResponse.Success(
+            TestConversation.CONVERSATION_RESPONSE,
+            emptyMap(),
+            HttpStatusCode.OK.value
+        )
         val (arrange, conversationRepository) = Arrangement()
+            .withDaoUpdateProtocolSuccess()
             .withUpdateProtocolResponse(UPDATE_PROTOCOL_UNCHANGED)
+            .withFetchConversationsDetails(conversationResponse)
             .arrange()
 
         // when
@@ -1171,8 +1174,13 @@ class ConversationRepositoryTest {
         with(result) {
             shouldSucceed()
             coVerify {
-                arrange.conversationDAO.updateConversationProtocol(eq(CONVERSATION_ID.toDao()), eq(protocol.toDao()))
-            }.wasNotInvoked()
+                arrange.conversationDAO.updateConversationProtocolAndCipherSuite(
+                    eq(CONVERSATION_ID.toDao()),
+                    eq(conversationResponse.value.groupId),
+                    eq(protocol.toDao()),
+                    eq(ConversationEntity.CipherSuite.fromTag(conversationResponse.value.mlsCipherSuiteTag))
+                )
+            }.wasInvoked(exactly = once)
         }
     }
 
@@ -1227,7 +1235,12 @@ class ConversationRepositoryTest {
         with(result) {
             shouldSucceed()
             coVerify {
-                arrange.conversationDAO.updateConversationProtocol(eq(CONVERSATION_ID.toDao()), eq(protocol.toDao()))
+                arrange.conversationDAO.updateConversationProtocolAndCipherSuite(
+                    eq(CONVERSATION_ID.toDao()),
+                    eq(conversationResponse.value.groupId),
+                    eq(protocol.toDao()),
+                    eq(ConversationEntity.CipherSuite.fromTag(conversationResponse.value.mlsCipherSuiteTag))
+                )
             }.wasInvoked(exactly = once)
         }
     }
@@ -1254,7 +1267,12 @@ class ConversationRepositoryTest {
         with(result) {
             shouldSucceed()
             coVerify {
-                arrange.conversationDAO.updateConversationProtocol(eq(CONVERSATION_ID.toDao()), eq(protocol.toDao()))
+                arrange.conversationDAO.updateConversationProtocolAndCipherSuite(
+                    eq(CONVERSATION_ID.toDao()),
+                    eq(conversationResponse.value.groupId),
+                    eq(protocol.toDao()),
+                    eq(ConversationEntity.CipherSuite.fromTag(conversationResponse.value.mlsCipherSuiteTag))
+                )
             }.wasInvoked(exactly = once)
         }
     }
@@ -1274,9 +1292,8 @@ class ConversationRepositoryTest {
         // then
         with(result) {
             shouldFail()
-            coVerify {
-                arrange.conversationDAO.updateConversationProtocol(eq(CONVERSATION_ID.toDao()), eq(protocol.toDao()))
-            }.wasNotInvoked()
+            coVerify { arrange.conversationDAO.updateConversationProtocolAndCipherSuite(any(), any(), any(), any()) }
+                .wasNotInvoked()
         }
     }
 
@@ -1511,16 +1528,9 @@ class ConversationRepositoryTest {
             }.returns(response)
         }
 
-        suspend fun withDaoUpdateAccessSuccess() = apply {
-            coEvery {
-                conversationDAO.updateAccess(any(), any(), any())
-            }.returns(Unit)
-        }
-
         suspend fun withDaoUpdateProtocolSuccess() = apply {
-            coEvery {
-                conversationDAO.updateConversationProtocol(any(), any())
-            }.returns(true)
+            coEvery { conversationDAO.updateConversationProtocolAndCipherSuite(any(), any(), any(), any()) }
+                .returns(true)
         }
 
         suspend fun withGetConversationProtocolInfoReturns(result: ConversationEntity.ProtocolInfo) = apply {
