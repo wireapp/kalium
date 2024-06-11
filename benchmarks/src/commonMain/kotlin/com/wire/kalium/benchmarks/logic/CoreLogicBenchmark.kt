@@ -34,7 +34,6 @@ import kotlinx.coroutines.runBlocking
 import java.nio.file.Files
 import java.util.concurrent.TimeUnit
 
-
 @State(Scope.Benchmark)
 @Warmup(iterations = 3)
 @BenchmarkMode(Mode.AverageTime)
