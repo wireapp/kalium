@@ -69,9 +69,9 @@ class LinkPreviewMapperImpl(
                     mimeType = linkPreview.image.mimeType,
                     size = linkPreview.image.assetDataSize,
                     remote = Asset.RemoteData(
-                        assetId = linkPreview.image.assetId?.key,
-                        assetToken = linkPreview.image.assetId?.assetToken,
-                        assetDomain = linkPreview.image.assetId?.domain,
+                        assetId = linkPreview.image.assetId.key,
+                        assetToken = linkPreview.image.assetId.assetToken,
+                        assetDomain = linkPreview.image.assetId.domain,
                         otrKey = ByteArr(linkPreview.image.otrKey.data),
                         sha256 = ByteArr(linkPreview.image.sha256Key.data)
                     )

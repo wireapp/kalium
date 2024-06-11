@@ -32,12 +32,11 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewAsset
 import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
@@ -85,26 +84,24 @@ class SendTextMessageUseCase internal constructor(
             .duration
 
         val previews = linkPreviews.map { linkPreview ->
-            val imageCopy = linkPreview.image?.let { image ->
-                // Create a temporary asset key and domain
-                val (generatedAssetUuid, tempAssetDomain) = uuid4().toString() to ""
+            val imageCopy = linkPreview.image?.let {
                 // Generate the otr asymmetric key that will be used to encrypt the data
-                image.otrKey = generateRandomAES256Key()
+                it.otrKey = generateRandomAES256Key()
                 // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
                 assetDataSource.uploadAndPersistPrivateAsset(
-                    image.mimeType,
-                    image.assetDataPath,
-                    image.otrKey!!,
+                    it.mimeType,
+                    it.assetDataPath,
+                    it.otrKey,
                     null
-                ).fold(
-                    { failure -> kaliumLogger.e("Upload asset failed: $failure") }, { (assetId, sha256) ->
-                        image.sha256Key = sha256
-                        image.assetId = assetId
-                        image
-                    }
-                )
+                ).onFailure { failure ->
+                    kaliumLogger.e("Upload of link preview asset failed: " + failure)
+                }.getOrNull()?.let { (assetId, sha256Key) ->
+                    it.assetId = assetId
+                    it.sha256Key = sha256Key
+                    it
+                }
             }
-            linkPreview.copy(image = imageCopy as LinkPreviewAsset?)
+            linkPreview.copy(image = imageCopy)
         }
 
         previews.forEach {
