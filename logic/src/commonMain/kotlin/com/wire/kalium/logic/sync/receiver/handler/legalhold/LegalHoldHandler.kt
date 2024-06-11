@@ -47,6 +47,7 @@ import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -189,6 +190,16 @@ internal class LegalHoldHandlerImpl internal constructor(
         membersHavingLegalHoldClient(conversationId)
             .map { if (it.isEmpty()) Conversation.LegalHoldStatus.DISABLED else Conversation.LegalHoldStatus.ENABLED }
             .map { newLegalHoldStatusAfterMembersChange -> handleForConversation(conversationId, newLegalHoldStatusAfterMembersChange) }
+            .flatMap {
+                conversationRepository.observeIsUserMember(conversationId, selfUserId).first()
+                    .flatMap { isSelfUserStillAMember ->
+                        if (!isSelfUserStillAMember) {
+                            // if self user has left the conversation, set its legal hold status to unknown because from now on this user
+                            // won't receive conversation events and updates so it won't be known if the conversation is under legal hold
+                            conversationRepository.updateLegalHoldStatus(conversationId, Conversation.LegalHoldStatus.UNKNOWN).map { Unit }
+                        } else Either.Right(Unit)
+                    }
+            }
 
     private suspend fun processEvent(selfUserId: UserId, userId: UserId) {
         if (selfUserId == userId) {
