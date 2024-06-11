@@ -34,25 +34,26 @@ actual class FlowManagerServiceImpl(
 ) : FlowManagerService {
 
     @Suppress("UNUSED_ANONYMOUS_PARAMETER")
-    private val flowManager: FlowManager = FlowManager(
-        appContext.context
-    ) { manager, path, method, ctype, content, ctx ->
-        // TODO(Calling) Not yet implemented
-        callingLogger.i("FlowManager -> RequestHandler -> $path : $method")
-        0
-    }.also {
-        it.setEnableLogging(true)
-        it.setLogHandler(object : LogHandler {
-            override fun append(msg: String?) {
-                callingLogger.i("FlowManager -> Logger -> Append -> $msg")
-            }
+    private val flowManager: FlowManager by lazy {
+        FlowManager(
+            appContext.context
+        ) { manager, path, method, ctype, content, ctx ->
+            // TODO(Calling) Not yet implemented
+            callingLogger.i("FlowManager -> RequestHandler -> $path : $method")
+            0
+        }.also {
+            it.setEnableLogging(true)
+            it.setLogHandler(object : LogHandler {
+                override fun append(msg: String?) {
+                    callingLogger.i("FlowManager -> Logger -> Append -> $msg")
+                }
 
-            override fun upload() {
-                callingLogger.i("FlowManager -> Logger -> upload")
-            }
-        })
+                override fun upload() {
+                    callingLogger.i("FlowManager -> Logger -> upload")
+                }
+            })
+        }
     }
-
     override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {
         withContext(dispatcher) {
             flowManager.setVideoPreview(conversationId.toString(), view.view)

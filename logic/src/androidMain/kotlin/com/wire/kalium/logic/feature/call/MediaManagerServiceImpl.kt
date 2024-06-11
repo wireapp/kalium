@@ -22,24 +22,35 @@ import com.waz.media.manager.MediaManager
 import com.waz.media.manager.MediaManagerListener
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.PlatformContext
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withContext
 
 actual class MediaManagerServiceImpl(
-    platformContext: PlatformContext
+    platformContext: PlatformContext,
 ) : MediaManagerService {
 
-    private val mediaManager: MediaManager = MediaManager.getInstance(platformContext.context).apply {
-        addListener(object : MediaManagerListener {
-            override fun onPlaybackRouteChanged(route: Int) {
-                _isLoudSpeakerOnFlow.value = this@apply.isLoudSpeakerOn
-                kaliumLogger.w("onPlaybackRouteChanged called with route = $route..") // Nothing to do for now
+    private val mediaManager: MediaManager by lazy {
+        runBlocking {
+            withContext(Dispatchers.Default) {
+                MediaManager.getInstance(platformContext.context).apply {
+                    addListener(object : MediaManagerListener {
+                        override fun onPlaybackRouteChanged(route: Int) {
+                            _isLoudSpeakerOnFlow.value = this@apply.isLoudSpeakerOn
+                            kaliumLogger.w("onPlaybackRouteChanged called with route = $route..") // Nothing to do for now
+                        }
+                        override fun mediaCategoryChanged(
+                            conversationId: String?,
+                            category: Int
+                        ): Int =
+                            category
+                    })
+                }
             }
-
-            // we don't need to do anything in here, I guess, and the return value gets ignored anyway
-            override fun mediaCategoryChanged(conversationId: String?, category: Int): Int = category
-        })
+        }
     }
 
     private val _isLoudSpeakerOnFlow = MutableStateFlow(mediaManager.isLoudSpeakerOn)
