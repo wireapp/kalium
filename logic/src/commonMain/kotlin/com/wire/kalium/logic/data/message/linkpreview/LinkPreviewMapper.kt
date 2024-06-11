@@ -20,7 +20,9 @@ package com.wire.kalium.logic.data.message.linkpreview
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.LinkPreview
@@ -34,7 +36,7 @@ interface LinkPreviewMapper {
 }
 
 class LinkPreviewMapperImpl(
-    private val idMapper: IdMapper,
+    private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper(),
     private val selfUserId: UserId
 ) : LinkPreviewMapper {
 
@@ -65,15 +67,18 @@ class LinkPreviewMapperImpl(
         summary = linkPreview.summary,
         image = linkPreview.image?.let {
             Asset(
-                preview = Asset.Preview(
+                original = Asset.Original(
                     mimeType = linkPreview.image.mimeType,
                     size = linkPreview.image.assetDataSize,
-                    remote = Asset.RemoteData(
+                ),
+                status = Asset.Status.Uploaded(
+                    uploaded = Asset.RemoteData(
+                        otrKey = ByteArr(linkPreview.image.otrKey.data),
+                        sha256 = ByteArr(linkPreview.image.sha256Key.data),
                         assetId = linkPreview.image.assetId.key,
                         assetToken = linkPreview.image.assetId.assetToken,
                         assetDomain = linkPreview.image.assetId.domain,
-                        otrKey = ByteArr(linkPreview.image.otrKey.data),
-                        sha256 = ByteArr(linkPreview.image.sha256Key.data)
+                        encryption = encryptionAlgorithmMapper.toProtoBufModel(linkPreview.image.encryptionAlgorithm)
                     )
                 )
             )

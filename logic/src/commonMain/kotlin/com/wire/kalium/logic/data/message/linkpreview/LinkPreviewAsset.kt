@@ -21,6 +21,7 @@ import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata
+import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import okio.Path
 
 data class LinkPreviewAsset(
@@ -35,4 +36,5 @@ data class LinkPreviewAsset(
     var assetId: UploadedAssetId = UploadedAssetId("", "", ""),
     var otrKey: AES256Key = AES256Key(ByteArray(0)),
     var sha256Key: SHA256Key = SHA256Key(ByteArray(0)),
+    var encryptionAlgorithm: MessageEncryptionAlgorithm = MessageEncryptionAlgorithm.AES_CBC,
 )

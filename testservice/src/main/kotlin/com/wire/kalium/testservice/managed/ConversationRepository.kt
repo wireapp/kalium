@@ -269,35 +269,21 @@ sealed class ConversationRepository {
                             setMessageTimer(instance, conversationId, messageTimer)
                             log.info("Instance ${instance.instanceId}: Send text message '$text'")
                             val result = if (buttons.isEmpty()) {
-                                val previews = linkPreviews.map {
-                                    val image = it.image?.let { image ->
-                                        val temp: File = Files.createTempFile("asset", ".data").toFile()
-                                        val byteArray = Base64.getDecoder().decode(image.data)
-                                        FileOutputStream(temp).use { outputStream -> outputStream.write(byteArray) }
-                                        LinkPreviewAsset(
-                                            mimeType = image.type,
-                                            assetDataPath = temp.toOkioPath(),
-                                            assetDataSize = byteArray.size.toLong(),
-                                            assetWidth = image.width,
-                                            assetHeight = image.height,
-                                            assetName = image.type.split("/")[1]
-                                        )
-                                    }
-                                    MessageLinkPreview(
-                                        url = it.url,
-                                        urlOffset = it.urlOffset,
-                                        permanentUrl = it.permanentUrl,
-                                        title = it.title,
-                                        summary = it.summary,
-                                        image = image
-                                    )
-                                }
+                                val previews = mapLinkPreviews(linkPreviews)
                                 messages.sendTextMessage(
-                                    conversationId, text, previews, mentions, quotedMessageId
+                                    conversationId,
+                                    text,
+                                    previews,
+                                    mentions,
+                                    quotedMessageId
                                 )
                             } else {
                                 messages.sendButtonMessage(
-                                    conversationId, text, mentions, quotedMessageId, buttons
+                                    conversationId,
+                                    text,
+                                    mentions,
+                                    quotedMessageId,
+                                    buttons
                                 )
                             }
                             result.fold({
@@ -315,6 +301,32 @@ sealed class ConversationRepository {
                 is CurrentSessionResult.Failure -> {
                     Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Session failure").build()
                 }
+            }
+        }
+
+        private fun mapLinkPreviews(linkPreviews: List<LinkPreview>): List<MessageLinkPreview> {
+            return linkPreviews.map {
+                val image = it.image?.let { image ->
+                    val temp: File = Files.createTempFile("asset", ".data").toFile()
+                    val byteArray = Base64.getDecoder().decode(image.data)
+                    FileOutputStream(temp).use { outputStream -> outputStream.write(byteArray) }
+                    LinkPreviewAsset(
+                        mimeType = image.type,
+                        assetDataPath = temp.toOkioPath(),
+                        assetDataSize = byteArray.size.toLong(),
+                        assetWidth = image.width,
+                        assetHeight = image.height,
+                        assetName = image.type.split("/")[1]
+                    )
+                }
+                MessageLinkPreview(
+                    url = it.url,
+                    urlOffset = it.urlOffset,
+                    permanentUrl = it.permanentUrl,
+                    title = it.title,
+                    summary = it.summary,
+                    image = image
+                )
             }
         }
 

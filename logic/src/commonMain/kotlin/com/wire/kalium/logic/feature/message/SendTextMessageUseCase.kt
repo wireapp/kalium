@@ -83,31 +83,7 @@ class SendTextMessageUseCase internal constructor(
             .first()
             .duration
 
-        val previews = linkPreviews.map { linkPreview ->
-            val imageCopy = linkPreview.image?.let {
-                // Generate the otr asymmetric key that will be used to encrypt the data
-                it.otrKey = generateRandomAES256Key()
-                // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
-                assetDataSource.uploadAndPersistPrivateAsset(
-                    it.mimeType,
-                    it.assetDataPath,
-                    it.otrKey,
-                    null
-                ).onFailure { failure ->
-                    kaliumLogger.e("Upload of link preview asset failed: " + failure)
-                }.getOrNull()?.let { (assetId, sha256Key) ->
-                    it.assetId = assetId
-                    it.sha256Key = sha256Key
-                    it
-                }
-            }
-            linkPreview.copy(image = imageCopy)
-        }
-
-        previews.forEach {
-            kaliumLogger.i("sha256Key: " + it.image?.sha256Key?.data?.size)
-            kaliumLogger.i("assetToken: " + it.image?.assetId?.assetToken)
-        }
+        val previews = uploadLinkPreviewImages(linkPreviews)
 
         provideClientId().flatMap { clientId ->
             val message = Message.Regular(
@@ -149,5 +125,29 @@ class SendTextMessageUseCase internal constructor(
 
     companion object {
         const val TYPE = "Text"
+    }
+
+    private suspend fun uploadLinkPreviewImages(linkPreviews: List<MessageLinkPreview>): List<MessageLinkPreview> {
+        return linkPreviews.map { linkPreview ->
+            val imageCopy = linkPreview.image?.let {
+                // Generate the otr asymmetric key that will be used to encrypt the data
+                it.otrKey = generateRandomAES256Key()
+                // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
+                assetDataSource.uploadAndPersistPrivateAsset(
+                    it.mimeType,
+                    it.assetDataPath,
+                    it.otrKey,
+                    null
+                ).onFailure { failure ->
+                    // on upload failure we still want link previews being included without image
+                    kaliumLogger.e("Upload of link preview asset failed: $failure")
+                }.getOrNull()?.let { (assetId, sha256Key) ->
+                    it.assetId = assetId
+                    it.sha256Key = sha256Key
+                    it
+                }
+            }
+            linkPreview.copy(image = imageCopy)
+        }
     }
 }
