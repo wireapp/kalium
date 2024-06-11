@@ -108,8 +108,8 @@ class SendTextMessageUseCase internal constructor(
         }
 
         previews.forEach {
-            kaliumLogger.i("sha256Key: " + it?.image?.sha256Key?.data?.size)
-            kaliumLogger.i("assetToken: " + it?.image?.assetId?.assetToken)
+            kaliumLogger.i("sha256Key: " + it.image?.sha256Key?.data?.size)
+            kaliumLogger.i("assetToken: " + it.image?.assetId?.assetToken)
         }
 
         provideClientId().flatMap { clientId ->
