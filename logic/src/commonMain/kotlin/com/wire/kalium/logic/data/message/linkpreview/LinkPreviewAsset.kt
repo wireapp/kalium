@@ -31,7 +31,8 @@ data class LinkPreviewAsset(
     val assetDataSize: Long,
     val assetWidth: Int?,
     val assetHeight: Int?,
-    val assetId: UploadedAssetId?,
-    val otrKey: AES256Key,
-    val sha256Key: SHA256Key,
+    val assetName: String? = null,
+    var assetId: UploadedAssetId? = null,
+    var otrKey: AES256Key? = null,
+    var sha256Key: SHA256Key? = null,
 )

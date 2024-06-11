@@ -19,12 +19,9 @@
 package com.wire.kalium.logic.feature.message
 
 import com.benasher44.uuid.uuid4
-import com.wire.kalium.cryptography.utils.AES256Key
-import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
-import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
@@ -35,19 +32,13 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.data.message.AssetContent
-import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewAsset
 import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
-import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageResult
-import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase.Result
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
@@ -55,7 +46,6 @@ import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
-import okio.Path
 import kotlin.time.Duration
 
 @Suppress("LongParameterList")
@@ -99,36 +89,18 @@ class SendTextMessageUseCase internal constructor(
                 // Create a temporary asset key and domain
                 val (generatedAssetUuid, tempAssetDomain) = uuid4().toString() to ""
                 // Generate the otr asymmetric key that will be used to encrypt the data
-                val otrKey = generateRandomAES256Key()
-                val currentAssetMessageContent = LinkPreviewAssetMessageMetadata(
-                    mimeType = image.mimeType,
-                    assetDataPath = image.assetDataPath,
-                    assetDataSize = image.assetDataSize,
-                    assetName = image.name,
-                    assetWidth = when (image.metadata) {
-                        is AssetMetadata.Image -> image.metadata.width
-                        else -> null
-                    },
-                    assetHeight = when (image.metadata) {
-                        is AssetMetadata.Image -> image.metadata.height
-                        else -> null
-                    },
-                    otrKey = otrKey,
-                    // Sha256 will be replaced with right values after asset upload
-                    sha256Key = SHA256Key(byteArrayOf()),
-                    // Asset ID will be replaced with right value after asset upload
-                    assetId = UploadedAssetId(generatedAssetUuid, tempAssetDomain),
-                )
-
+                image.otrKey = generateRandomAES256Key()
                 // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
                 assetDataSource.uploadAndPersistPrivateAsset(
-                    currentAssetMessageContent.mimeType,
-                    currentAssetMessageContent.assetDataPath,
-                    currentAssetMessageContent.otrKey,
+                    image.mimeType,
+                    image.assetDataPath,
+                    image.otrKey!!,
                     null
                 ).fold(
                     { failure -> kaliumLogger.e("Upload asset failed: $failure") }, { (assetId, sha256) ->
-                        image.copy(assetId = assetId, sha256Key = sha256, otrKey = currentAssetMessageContent.otrKey)
+                        image.sha256Key = sha256
+                        image.assetId = assetId
+                        image
                     }
                 )
             }
@@ -137,6 +109,7 @@ class SendTextMessageUseCase internal constructor(
 
         previews.forEach {
             kaliumLogger.i("sha256Key: " + it?.image?.sha256Key?.data?.size)
+            kaliumLogger.i("assetToken: " + it?.image?.assetId?.assetToken)
         }
 
         provideClientId().flatMap { clientId ->
@@ -181,15 +154,3 @@ class SendTextMessageUseCase internal constructor(
         const val TYPE = "Text"
     }
 }
-
-private data class LinkPreviewAssetMessageMetadata(
-    val mimeType: String,
-    val assetId: UploadedAssetId,
-    val assetDataPath: Path,
-    val assetDataSize: Long,
-    val assetName: String?,
-    val assetWidth: Int?,
-    val assetHeight: Int?,
-    val otrKey: AES256Key,
-    val sha256Key: SHA256Key,
-)

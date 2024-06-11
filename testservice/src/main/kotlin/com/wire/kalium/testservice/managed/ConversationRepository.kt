@@ -18,8 +18,6 @@
 
 package com.wire.kalium.testservice.managed
 
-import com.wire.kalium.cryptography.utils.AES256Key
-import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationOptions
@@ -44,7 +42,6 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.testservice.models.Instance
 import com.wire.kalium.testservice.models.LinkPreview
-import com.wire.kalium.testservice.models.LinkPreviewImage
 import com.wire.kalium.testservice.models.SendTextResponse
 import kotlinx.coroutines.flow.first
 import okio.Path.Companion.toOkioPath
@@ -283,9 +280,7 @@ sealed class ConversationRepository {
                                             assetDataSize = byteArray.size.toLong(),
                                             assetWidth = image.width,
                                             assetHeight = image.height,
-                                            assetId = null,
-                                            otrKey = AES256Key(data = ByteArray(0)),
-                                            sha256Key = SHA256Key(data = ByteArray(0))
+                                            assetName = image.type.split("/")[1]
                                         )
                                     }
                                     MessageLinkPreview(
