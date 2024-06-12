@@ -1,0 +1,162 @@
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity;
+
+ALTER TABLE Conversation ADD COLUMN proteus_verification_status TEXT AS ConversationEntity.VerificationStatus NOT NULL DEFAULT 'NOT_VERIFIED';
+
+DROP VIEW IF EXISTS ConversationDetails;
+
+CREATE VIEW IF NOT EXISTS ConversationDetails AS
+SELECT
+Conversation.qualified_id AS qualifiedId,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.name
+    WHEN 'CONNECTION_PENDING' THEN connection_user.name
+    ELSE Conversation.name
+END AS name,
+Conversation.type,
+Call.status AS callStatus,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.preview_asset_id
+    WHEN 'CONNECTION_PENDING' THEN connection_user.preview_asset_id
+END AS previewAssetId,
+Conversation.muted_status AS mutedStatus,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN User.team
+    ELSE Conversation.team_id
+END AS teamId,
+CASE (Conversation.type)
+    WHEN 'CONNECTION_PENDING' THEN Connection.last_update_date
+    ELSE Conversation.last_modified_date
+END AS lastModifiedDate,
+Conversation.last_read_date AS lastReadDate,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.user_availability_status
+    WHEN 'CONNECTION_PENDING' THEN connection_user.user_availability_status
+END AS userAvailabilityStatus,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.user_type
+    WHEN 'CONNECTION_PENDING' THEN connection_user.user_type
+END AS userType,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.bot_service
+    WHEN 'CONNECTION_PENDING' THEN connection_user.bot_service
+END AS botService,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.deleted
+    WHEN 'CONNECTION_PENDING' THEN connection_user.deleted
+END AS userDeleted,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.defederated
+    WHEN 'CONNECTION_PENDING' THEN connection_user.defederated
+END AS userDefederated,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.supported_protocols
+    WHEN 'CONNECTION_PENDING' THEN connection_user.supported_protocols
+END AS userSupportedProtocols,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.connection_status
+    WHEN 'CONNECTION_PENDING' THEN connection_user.connection_status
+END AS connectionStatus,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN  User.qualified_id
+    WHEN 'CONNECTION_PENDING' THEN connection_user.qualified_id
+END AS otherUserId,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN User.active_one_on_one_conversation_id
+    WHEN 'CONNECTION_PENDING' THEN connection_user.active_one_on_one_conversation_id
+END AS otherUserActiveConversationId,
+CASE
+    WHEN ((SELECT id FROM SelfUser LIMIT 1) LIKE (Conversation.creator_id || '@%')) THEN 1
+    ELSE 0
+END AS isCreator,
+CASE (Conversation.type)
+    WHEN 'ONE_ON_ONE' THEN coalesce(User.active_one_on_one_conversation_id = Conversation.qualified_id, 0)
+    ELSE 1
+END AS isActive,
+Conversation.last_notified_date AS lastNotifiedMessageDate,
+memberRole. role AS selfRole,
+Conversation.protocol,
+Conversation.mls_cipher_suite,
+Conversation.mls_epoch,
+Conversation.mls_group_id,
+Conversation.mls_last_keying_material_update_date,
+Conversation.mls_group_state,
+Conversation.access_list,
+Conversation.access_role_list,
+Conversation.team_id,
+Conversation.mls_proposal_timer,
+Conversation.muted_time,
+Conversation.creator_id,
+Conversation.last_modified_date,
+Conversation.receipt_mode,
+Conversation.message_timer,
+Conversation.user_message_timer,
+Conversation.incomplete_metadata,
+Conversation.archived,
+Conversation.archived_date_time,
+Conversation.verification_status AS mls_verification_status,
+Conversation.proteus_verification_status
+FROM Conversation
+LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
+    AND Conversation.type IS 'ONE_ON_ONE'
+    AND Member.user IS NOT (SELECT SelfUser.id FROM SelfUser LIMIT 1)
+LEFT JOIN Member AS memberRole ON Conversation.qualified_id = memberRole.conversation
+    AND memberRole.user IS (SELECT SelfUser.id FROM SelfUser LIMIT 1)
+LEFT JOIN User ON User.qualified_id = Member.user
+LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualified_id
+    AND (Connection.status = 'SENT'
+         OR Connection.status = 'PENDING'
+         OR Connection.status = 'NOT_CONNECTED'
+         AND Conversation.type IS 'CONNECTION_PENDING')
+LEFT JOIN User AS connection_user ON Connection.qualified_to = connection_user.qualified_id
+LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = Conversation.qualified_id AND Call.status IS 'STILL_ONGOING' ORDER BY created_at DESC LIMIT 1);
+
+CREATE TRIGGER updateConversationProteusVerificationStatus
+AFTER UPDATE ON Client
+BEGIN
+    UPDATE Conversation SET proteus_verification_status = (CASE (new.is_verified) WHEN 1 THEN 'VERIFIED' ELSE 'DEGRADED' END)
+        WHERE qualified_id IN (
+            SELECT id FROM (SELECT conv.qualified_id AS id, conv.proteus_verification_status AS verificationStatus, (COUNT(*) = SUM(CASE WHEN client.is_verified = 1 THEN 1 ELSE 0 END)) AS isActuallyVerified
+                FROM Conversation AS conv
+                LEFT JOIN Member AS mem ON conv.qualified_id = mem.conversation
+                LEFT JOIN Client AS client ON client.user_id = mem.user
+                WHERE conv.qualified_id IN (SELECT Member.conversation FROM Member
+                                            LEFT JOIN Client ON Client.user_id = Member.user
+                                            WHERE Client.id = new.id)
+                AND mem.user IS NOT (SELECT SelfUser.id FROM SelfUser LIMIT 1)
+                GROUP BY conv.qualified_id)
+            WHERE (CASE (verificationStatus) WHEN 'VERIFIED' THEN 1 ELSE 0 END) != isActuallyVerified
+        );
+END;
+
+CREATE TRIGGER updateConversationProteusVerificationStatusAfterNewClient
+AFTER INSERT ON Client
+BEGIN
+    UPDATE Conversation SET proteus_verification_status = 'DEGRADED'
+    WHERE qualified_id IN (
+        SELECT Member.conversation FROM Member
+        LEFT JOIN Client ON Client.user_id = Member.user
+        WHERE Client.id = new.id
+    );
+END;
+
+CREATE TRIGGER addMessageAfterProteusVerificationStatusChange
+AFTER UPDATE ON Conversation
+WHEN new.proteus_verification_status != old.proteus_verification_status
+BEGIN
+    INSERT OR IGNORE INTO Message(id, content_type, conversation_id, creation_date, sender_user_id, sender_client_id, status, visibility)
+    VALUES(
+        (SELECT lower(hex(randomblob(4)) || '-' || lower(hex(randomblob(2))) || '-4' ||
+        substr(lower(hex(randomblob(2))),2) || '-a' || substr(lower(hex(randomblob(2))),2)
+        || '-' || lower(hex(randomblob(6))))),
+        (CASE (new.proteus_verification_status)
+            WHEN 'VERIFIED' THEN 'CONVERSATION_VERIFIED_PROTEUS'
+            ELSE 'CONVERSATION_DEGRADED_PROTEUS' END
+        ),
+        new.qualified_id,
+        (SELECT CAST((julianday('now') - 2440587.5) * 86400 * 1000 AS INTEGER)),
+        (SELECT SelfUser.id FROM SelfUser LIMIT 1),
+        (SELECT Client.id FROM Client WHERE Client.user_id = (SELECT SelfUser.id FROM SelfUser LIMIT 1) LIMIT 1),
+        'SENT',
+        'VISIBLE'
+    );
+END;

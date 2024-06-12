@@ -1,0 +1,231 @@
+
+dumpAllTables{
+INSERT INTO User SELECT * FROM local_db.User;
+INSERT INTO Conversation SELECT * FROM local_db.Conversation;
+INSERT INTO Message SELECT * FROM local_db.Message WHERE local_db.Message.expire_after_millis IS NULL;
+INSERT INTO Call SELECT * FROM local_db.Call;
+
+WITH selfdelete_message_id AS (
+    SELECT local_db.Message.id, local_db.Message.conversation_id
+        FROM local_db.Message
+        WHERE local_db.Message.expire_after_millis IS NOT NULL
+)
+INSERT INTO MessageAssetContent
+    SELECT local_db.MessageAssetContent.message_id,
+           local_db.MessageAssetContent.conversation_id,
+           local_db.MessageAssetContent.asset_size,
+           local_db.MessageAssetContent.asset_name,
+           local_db.MessageAssetContent.asset_mime_type,
+           local_db.MessageAssetContent.asset_otr_key,
+           local_db.MessageAssetContent.asset_sha256,
+           local_db.MessageAssetContent.asset_id,
+           local_db.MessageAssetContent.asset_token,
+           local_db.MessageAssetContent.asset_domain,
+           local_db.MessageAssetContent.asset_encryption_algorithm,
+           local_db.MessageAssetContent.asset_width,
+           local_db.MessageAssetContent.asset_height,
+           local_db.MessageAssetContent.asset_duration_ms,
+           local_db.MessageAssetContent.asset_normalized_loudness
+    FROM local_db.MessageAssetContent
+    LEFT JOIN selfdelete_message_id
+       ON local_db.MessageAssetContent.message_id = selfdelete_message_id.id
+      AND local_db.MessageAssetContent.conversation_id = selfdelete_message_id.conversation_id
+    WHERE selfdelete_message_id.id IS NULL
+       OR selfdelete_message_id.conversation_id IS NULL;
+
+WITH selfdelete_message_id AS (
+    SELECT local_db.Message.id, local_db.Message.conversation_id
+        FROM local_db.Message
+        WHERE local_db.Message.expire_after_millis IS NOT NULL
+)
+INSERT INTO MessageRestrictedAssetContent
+    SELECT local_db.MessageRestrictedAssetContent.message_id,
+           local_db.MessageRestrictedAssetContent.conversation_id,
+           local_db.MessageRestrictedAssetContent.asset_mime_type,
+           local_db.MessageRestrictedAssetContent.asset_size,
+           local_db.MessageRestrictedAssetContent.asset_name
+    FROM local_db.MessageRestrictedAssetContent
+        LEFT JOIN selfdelete_message_id
+           ON local_db.MessageRestrictedAssetContent.message_id = selfdelete_message_id.id
+          AND local_db.MessageRestrictedAssetContent.conversation_id = selfdelete_message_id.conversation_id
+        WHERE selfdelete_message_id.id IS NULL
+           OR selfdelete_message_id.conversation_id IS NULL;
+
+WITH selfdelete_message_id AS (
+    SELECT local_db.Message.id, local_db.Message.conversation_id
+        FROM local_db.Message
+        WHERE local_db.Message.expire_after_millis IS NOT NULL
+)
+INSERT INTO MessageConversationChangedContent
+    SELECT local_db.MessageConversationChangedContent.message_id,
+           local_db.MessageConversationChangedContent.conversation_id,
+           local_db.MessageConversationChangedContent.conversation_name
+    FROM local_db.MessageConversationChangedContent
+    LEFT JOIN selfdelete_message_id
+           ON local_db.MessageConversationChangedContent.message_id = selfdelete_message_id.id
+          AND local_db.MessageConversationChangedContent.conversation_id = selfdelete_message_id.conversation_id
+        WHERE selfdelete_message_id.id IS NULL
+           OR selfdelete_message_id.conversation_id IS NULL;
+
+WITH selfdelete_message_id AS (
+    SELECT local_db.Message.id, local_db.Message.conversation_id
+        FROM local_db.Message
+        WHERE local_db.Message.expire_after_millis IS NOT NULL
+)
+INSERT INTO MessageFailedToDecryptContent
+    SELECT local_db.MessageFailedToDecryptContent.message_id,
+           local_db.MessageFailedToDecryptContent.conversation_id,
+           local_db.MessageFailedToDecryptContent.unknown_encoded_data,
+           local_db.MessageFailedToDecryptContent.is_decryption_resolved
+    FROM local_db.MessageFailedToDecryptContent
+        LEFT JOIN selfdelete_message_id
+           ON local_db.MessageFailedToDecryptContent.message_id = selfdelete_message_id.id
+          AND local_db.MessageFailedToDecryptContent.conversation_id = selfdelete_message_id.conversation_id
+        WHERE selfdelete_message_id.id IS NULL
+           OR selfdelete_message_id.conversation_id IS NULL;
+
+WITH selfdelete_message_id AS (
+    SELECT local_db.Message.id, local_db.Message.conversation_id
+        FROM local_db.Message
+        WHERE local_db.Message.expire_after_millis IS NOT NULL
+)
+INSERT INTO MessageMemberChangeContent
+SELECT local_db.MessageMemberChangeContent.message_id,
+       local_db.MessageMemberChangeContent.conversation_id,
+       local_db.MessageMemberChangeContent.member_change_list,
+       local_db.MessageMemberChangeContent.member_change_type
+ FROM local_db.MessageMemberChangeContent
+        LEFT JOIN selfdelete_message_id
+           ON local_db.MessageMemberChangeContent.message_id = selfdelete_message_id.id
+          AND local_db.MessageMemberChangeContent.conversation_id = selfdelete_message_id.conversation_id
+        WHERE selfdelete_message_id.id IS NULL
+           OR selfdelete_message_id.conversation_id IS NULL;
+
+WITH selfdelete_message_id AS (
+    SELECT local_db.Message.id, local_db.Message.conversation_id
+        FROM local_db.Message
+        WHERE local_db.Message.expire_after_millis IS NOT NULL
+)
+INSERT INTO MessageMention
+ SELECT local_db.MessageMention.message_id,
+        local_db.MessageMention.conversation_id,
+        local_db.MessageMention.start,
+        local_db.MessageMention.length,
+        local_db.MessageMention.user_id
+ FROM local_db.MessageMention
+        LEFT JOIN selfdelete_message_id
+           ON local_db.MessageMention.message_id = selfdelete_message_id.id
+          AND local_db.MessageMention.conversation_id = selfdelete_message_id.conversation_id
+        WHERE selfdelete_message_id.id IS NULL
+           OR selfdelete_message_id.conversation_id IS NULL;
+
+WITH selfdelete_message_id AS (
+    SELECT local_db.Message.id, local_db.Message.conversation_id
+        FROM local_db.Message
+        WHERE local_db.Message.expire_after_millis IS NOT NULL
+)
+INSERT INTO MessageMissedCallContent
+    SELECT local_db.MessageMissedCallContent.message_id,
+           local_db.MessageMissedCallContent.conversation_id,
+           local_db.MessageMissedCallContent.caller_id
+    FROM local_db.MessageMissedCallContent
+        LEFT JOIN selfdelete_message_id
+           ON local_db.MessageMissedCallContent.message_id = selfdelete_message_id.id
+          AND local_db.MessageMissedCallContent.conversation_id = selfdelete_message_id.conversation_id
+        WHERE selfdelete_message_id.id IS NULL
+           OR selfdelete_message_id.conversation_id IS NULL;
+
+WITH selfdelete_message_id AS (
+    SELECT local_db.Message.id, local_db.Message.conversation_id
+        FROM local_db.Message
+        WHERE local_db.Message.expire_after_millis IS NOT NULL
+)
+INSERT INTO MessageTextContent
+    SELECT local_db.MessageTextContent.message_id,
+           local_db.MessageTextContent.conversation_id,
+           local_db.MessageTextContent.text_body,
+           local_db.MessageTextContent.quoted_message_id,
+           local_db.MessageTextContent.is_quote_verified,
+           local_db.MessageTextContent.is_quoting_self
+    FROM local_db.MessageTextContent
+        LEFT JOIN selfdelete_message_id
+           ON local_db.MessageTextContent.message_id = selfdelete_message_id.id
+          AND local_db.MessageTextContent.conversation_id = selfdelete_message_id.conversation_id
+        WHERE selfdelete_message_id.id IS NULL
+           OR selfdelete_message_id.conversation_id IS NULL;
+
+WITH selfdelete_message_id AS (
+    SELECT local_db.Message.id, local_db.Message.conversation_id
+        FROM local_db.Message
+        WHERE local_db.Message.expire_after_millis IS NOT NULL
+)
+INSERT INTO MessageUnknownContent
+ SELECT local_db.MessageUnknownContent.message_id,
+        local_db.MessageUnknownContent.conversation_id,
+        local_db.MessageUnknownContent.unknown_type_name,
+        local_db.MessageUnknownContent.unknown_encoded_data
+ FROM local_db.MessageUnknownContent
+        LEFT JOIN selfdelete_message_id
+           ON  local_db.MessageUnknownContent.message_id = selfdelete_message_id.id
+          AND  local_db.MessageUnknownContent.conversation_id = selfdelete_message_id.conversation_id
+        WHERE selfdelete_message_id.id IS NULL
+           OR selfdelete_message_id.conversation_id IS NULL;
+
+WITH selfdelete_message_id AS (
+    SELECT local_db.Message.id, local_db.Message.conversation_id
+        FROM local_db.Message
+        WHERE local_db.Message.expire_after_millis IS NOT NULL
+)
+INSERT INTO Reaction
+    SELECT local_db.Reaction.message_id,
+           local_db.Reaction.conversation_id,
+           local_db.Reaction.sender_id,
+           local_db.Reaction.emoji,
+           local_db.Reaction.date
+    FROM local_db.Reaction
+         LEFT JOIN selfdelete_message_id
+            ON  local_db.Reaction.message_id = selfdelete_message_id.id
+           AND  local_db.Reaction.conversation_id = selfdelete_message_id.conversation_id
+         WHERE selfdelete_message_id.id IS NULL
+            OR selfdelete_message_id.conversation_id IS NULL;
+
+WITH selfdelete_message_id AS (
+    SELECT local_db.Message.id, local_db.Message.conversation_id
+        FROM local_db.Message
+        WHERE local_db.Message.expire_after_millis IS NOT NULL
+)
+INSERT INTO Receipt
+    SELECT local_db.Receipt.message_id,
+           local_db.Receipt.conversation_id,
+           local_db.Receipt.user_id,
+           local_db.Receipt.type,
+           local_db.Receipt.date
+    FROM local_db.Receipt
+         LEFT JOIN selfdelete_message_id
+            ON  local_db.Receipt.message_id = selfdelete_message_id.id
+           AND  local_db.Receipt.conversation_id = selfdelete_message_id.conversation_id
+         WHERE selfdelete_message_id.id IS NULL
+            OR selfdelete_message_id.conversation_id IS NULL;
+
+INSERT INTO ButtonContent SELECT * FROM local_db.ButtonContent;
+
+WITH selfdelete_message_id AS (
+    SELECT local_db.Message.id, local_db.Message.conversation_id
+        FROM local_db.Message
+        WHERE local_db.Message.expire_after_millis IS NOT NULL
+)
+INSERT INTO MessageConversationLocationContent
+    SELECT local_db.MessageConversationLocationContent.message_id,
+           local_db.MessageConversationLocationContent.conversation_id,
+           local_db.MessageConversationLocationContent.latitude,
+           local_db.MessageConversationLocationContent.longitude,
+           local_db.MessageConversationLocationContent.name,
+           local_db.MessageConversationLocationContent.zoom
+    FROM local_db.MessageConversationLocationContent
+        LEFT JOIN selfdelete_message_id
+           ON local_db.MessageConversationLocationContent.message_id = selfdelete_message_id.id
+          AND local_db.MessageConversationLocationContent.conversation_id = selfdelete_message_id.conversation_id
+        WHERE selfdelete_message_id.id IS NULL
+           OR selfdelete_message_id.conversation_id IS NULL;
+           
+}

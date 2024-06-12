@@ -1,0 +1,477 @@
+import com.wire.kalium.persistence.dao.ConnectionEntity;
+import com.wire.kalium.persistence.dao.ConnectionEntity.State;
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity;
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity.Access;
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity.AccessRole;
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity.CipherSuite;
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity.GroupState;
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity.MutedStatus;
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity.Protocol;
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity.ReceiptMode;
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity.Type;
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import kotlin.Boolean;
+import kotlin.collections.List;
+import kotlinx.datetime.Instant;
+
+--
+-- Changes the most important fields that represent dates
+-- and standardises them by using Timestamp.
+-- The reasoning behind this consists of:
+-- * Improved performance. Currently we need to do things like
+--   ORDER BY strftime('%Y-%m-%dT%H:%M:%fZ', last_modified_date)
+--   instead of just ordering by last_modified_date.
+-- * Increased type-safety. As we become the full owners of the date format
+--
+-- Columns being migrated to Unix Milliseconds and their current format:
+--   * Conversation.last_modified_date TEXT (ISO date string)
+--   * Conversation.last_notified_message_date TEXT (ISO date string)
+--   * Conversation.last_read_date TEXT (ISO date string)
+--   * Conversation.mls_last_keying_material_update INTEGER (Unix Epoch Seconds)
+--   * Connection.last_update TEXT (ISO date string)
+--   * Message.date TEXT (ISO date string)
+--   * Message.last_edit_timestamp TEXT (ISO date string)
+--
+-- The Views based on the fore-mentioned columns need to be recreated as a consequence.
+--
+-- Migration approach:
+-- 0) Turn Off FK Constraints
+-- 1) Drop all affected views
+-- 2) For each affected table:
+--    * Create new temporary table which represents our target table schema
+--    * Create necessary indexes if needed
+--    * Select original data while mapping and inserting into the temporary table
+--    * Drop the original table
+--    * Rename the temporary table to match the original name
+-- 3) Recreate all affected views
+-- 4) Re-enable FK Constraints
+--
+
+-- 0)
+PRAGMA foreign_keys = 0;
+
+-- 1)
+DROP VIEW IF EXISTS MessageDetailsView;
+DROP VIEW IF EXISTS ConversationDetails;
+DROP VIEW IF EXISTS MessagePreview;
+DROP VIEW IF EXISTS MessageQuoteDetails;
+
+-- 2)
+-- ####### Conversations
+CREATE TABLE Conversation_temp (
+    qualified_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
+    name TEXT,
+    type TEXT AS ConversationEntity.Type NOT NULL,
+    team_id TEXT,
+    mls_group_id TEXT,
+    mls_group_state TEXT AS ConversationEntity.GroupState NOT NULL,
+    mls_epoch INTEGER DEFAULT 0 NOT NULL,
+    mls_proposal_timer TEXT,
+    protocol TEXT AS ConversationEntity.Protocol NOT NULL,
+    muted_status TEXT AS ConversationEntity.MutedStatus DEFAULT "ALL_ALLOWED" NOT NULL,
+    muted_time INTEGER DEFAULT 0 NOT NULL,
+    creator_id TEXT NOT NULL,
+    last_modified_date INTEGER AS Instant NOT NULL,
+    last_notified_date INTEGER AS Instant,
+    last_read_date INTEGER AS Instant DEFAULT 0 NOT NULL,
+    access_list TEXT AS List<ConversationEntity.Access> NOT NULL,
+    access_role_list TEXT AS List<ConversationEntity.AccessRole> NOT NULL,
+    mls_last_keying_material_update_date INTEGER AS Instant DEFAULT 0 NOT NULL,
+    mls_cipher_suite TEXT AS ConversationEntity.CipherSuite NOT NULL,
+    receipt_mode TEXT AS ConversationEntity.ReceiptMode DEFAULT "DISABLED" NOT NULL
+);
+-- Optimise comparisons and sorting by dates:
+CREATE INDEX conversation_modified_date_index ON Conversation_temp(last_modified_date);
+CREATE INDEX conversation_notified_date_index ON Conversation_temp(last_notified_date);
+CREATE INDEX conversation_read_date_index ON Conversation_temp(last_read_date);
+
+INSERT INTO
+    Conversation_temp(
+        qualified_id,
+        name,
+        type,
+        team_id,
+        mls_group_id,
+        mls_group_state,
+        mls_epoch,
+        mls_proposal_timer,
+        protocol,
+        muted_status,
+        muted_time,
+        creator_id,
+        last_modified_date,
+        last_notified_date,
+        last_read_date,
+        access_list,
+        access_role_list,
+        mls_last_keying_material_update_date,
+        mls_cipher_suite,
+        receipt_mode
+    )
+SELECT
+    qualified_id,
+    name,
+    type,
+    team_id,
+    mls_group_id,
+    mls_group_state,
+    mls_epoch,
+    mls_proposal_timer,
+    protocol,
+    muted_status,
+    muted_time,
+    creator_id,
+    strftime('%s', strftime('%Y-%m-%dT%H:%M:%fZ', last_modified_date)) * 1000,
+    strftime('%s', strftime('%Y-%m-%dT%H:%M:%fZ', last_notified_message_date)) * 1000,
+    strftime('%s', strftime('%Y-%m-%dT%H:%M:%fZ', last_read_date)) * 1000,
+    access_list,
+    access_role_list,
+    mls_last_keying_material_update * 1000,
+    mls_cipher_suite,
+    receipt_mode
+FROM Conversation;
+DROP TABLE Conversation;
+ALTER TABLE Conversation_temp RENAME TO Conversation;
+
+-- ####### Connections
+CREATE TABLE Connection_temp (
+    from_id TEXT NOT NULL,
+    conversation_id TEXT NOT NULL,
+    qualified_conversation TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY ,
+    to_id TEXT NOT NULL,
+    last_update_date INTEGER AS Instant NOT NULL,
+    qualified_to TEXT AS QualifiedIDEntity NOT NULL,
+    status TEXT AS ConnectionEntity.State NOT NULL DEFAULT 'NOT_CONNECTED',
+    should_notify INTEGER AS Boolean DEFAULT 1
+);
+-- Optimise comparisons and sorting by date:
+CREATE INDEX connection_update_date_index ON Connection_temp(last_update_date);
+
+INSERT INTO
+    Connection_temp(
+        from_id,
+        conversation_id,
+        qualified_conversation,
+        to_id,
+        last_update_date,
+        qualified_to,
+        status,
+        should_notify
+    )
+SELECT
+    from_id,
+    conversation_id,
+    qualified_conversation,
+    to_id,
+    strftime('%s', strftime('%Y-%m-%dT%H:%M:%fZ', last_update)) * 1000,
+    qualified_to,
+    status,
+    should_notify
+FROM Connection;
+DROP TABLE Connection;
+ALTER TABLE Connection_temp RENAME TO Connection;
+
+CREATE TABLE Message_temp (
+      id TEXT NOT NULL,
+      content_type TEXT AS ContentType NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+      creation_date INTEGER AS Instant NOT NULL,
+      sender_user_id TEXT AS QualifiedIDEntity NOT NULL,
+      sender_client_id TEXT,
+      status TEXT AS MessageEntity.Status NOT NULL,
+      last_edit_date INTEGER AS Instant,
+      visibility TEXT AS MessageEntity.Visibility NOT NULL DEFAULT 'visible',
+      expects_read_confirmation INTEGER AS Boolean NOT NULL DEFAULT(0),
+
+      FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE,
+      FOREIGN KEY (sender_user_id) REFERENCES User(qualified_id),
+      PRIMARY KEY (id, conversation_id)
+);
+CREATE INDEX message_creation_date_index ON Message_temp(creation_date);
+
+INSERT INTO
+    Message_temp (
+        id,
+        content_type,
+        conversation_id,
+        creation_date,
+        sender_user_id,
+        sender_client_id,
+        status,
+        last_edit_date,
+        visibility,
+        expects_read_confirmation
+    )
+SELECT
+    id,
+    content_type,
+    conversation_id,
+    strftime('%s', strftime('%Y-%m-%dT%H:%M:%fZ', date)) * 1000,
+    sender_user_id,
+    sender_client_id,
+    status,
+    strftime('%s', strftime('%Y-%m-%dT%H:%M:%fZ', last_edit_timestamp)) * 1000,
+    visibility,
+    expects_read_confirmation
+FROM Message;
+DROP TABLE Message;
+ALTER TABLE Message_temp RENAME TO Message;
+
+-- 3)
+-- ####### MessagePreview
+CREATE VIEW IF NOT EXISTS MessagePreview
+AS SELECT
+    Message.id AS id,
+    Message.conversation_id AS conversationId,
+    Message.content_type AS contentType,
+    Message.creation_date AS date,
+    Message.visibility AS visibility,
+    User.name AS senderName,
+    User.connection_status AS senderConnectionStatus,
+    User.deleted AS senderIsDeleted,
+    SelfUser.id AS selfUserId,
+    (Message.sender_user_id == SelfUser.id) AS isSelfMessage,
+    MemberChangeContent.member_change_list AS memberChangeList,
+    MemberChangeContent.member_change_type AS memberChangeType,
+    ConversationNameChangedContent.conversation_name AS updateConversationName,
+    Conversation.name AS conversationName,
+    (Mention.user_id IS NOT NULL) AS isMentioningSelfUser,
+    QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
+    TextContent.text_body AS text,
+    AssetContent.asset_mime_type AS assetMimeType,
+    (Message.creation_date > Conversation.last_read_date) AS isUnread,
+    IFNULL((Message.creation_date > IFNULL(Conversation.last_notified_date, 0)), FALSE) AS shouldNotify,
+    Conversation.muted_status AS mutedStatus,
+    Conversation.type AS conversationType
+FROM Message
+LEFT JOIN SelfUser
+LEFT JOIN User ON Message.sender_user_id = User.qualified_id
+LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
+LEFT JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id
+LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
+LEFT JOIN MessageMention AS Mention ON Message.id == Mention.message_id AND SelfUser.id == Mention.user_id
+LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
+LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
+LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id;
+
+-- ####### ConversationDetails
+CREATE VIEW IF NOT EXISTS ConversationDetails AS
+SELECT
+Conversation.qualified_id AS qualifiedId,
+CASE (Conversation.type)
+    WHEN "ONE_ON_ONE" THEN  User.name
+    WHEN "CONNECTION_PENDING" THEN connection_user.name
+    ELSE Conversation.name
+END AS name,
+Conversation.type,
+Call.status AS callStatus,
+CASE (Conversation.type)
+    WHEN "ONE_ON_ONE" THEN  User.preview_asset_id
+    WHEN "CONNECTION_PENDING" THEN connection_user.preview_asset_id
+END AS previewAssetId,
+Conversation.muted_status AS mutedStatus,
+CASE (Conversation.type)
+    WHEN "ONE_ON_ONE" THEN User.team
+    ELSE Conversation.team_id
+END AS teamId,
+CASE (Conversation.type)
+        WHEN "CONNECTION_PENDING" THEN Connection.last_update_date
+        ELSE Conversation.last_modified_date
+END AS lastModifiedDate,
+Conversation.last_read_date AS lastReadDate,
+CASE (Conversation.type)
+    WHEN "ONE_ON_ONE" THEN  User.user_availability_status
+    WHEN "CONNECTION_PENDING" THEN connection_user.user_availability_status
+END AS userAvailabilityStatus,
+CASE (Conversation.type)
+    WHEN "ONE_ON_ONE" THEN  User.user_type
+    WHEN "CONNECTION_PENDING" THEN connection_user.user_type
+END AS userType,
+CASE (Conversation.type)
+    WHEN "ONE_ON_ONE" THEN  User.bot_service
+    WHEN "CONNECTION_PENDING" THEN connection_user.bot_service
+END AS botService,
+CASE (Conversation.type)
+    WHEN "ONE_ON_ONE" THEN  User.deleted
+    WHEN "CONNECTION_PENDING" THEN connection_user.deleted
+END AS userDeleted,
+CASE (Conversation.type)
+    WHEN "ONE_ON_ONE" THEN  User.connection_status
+    WHEN "CONNECTION_PENDING" THEN connection_user.connection_status
+END AS connectionStatus,
+CASE (Conversation.type)
+    WHEN "ONE_ON_ONE" THEN  User.qualified_id
+    WHEN "CONNECTION_PENDING" THEN connection_user.qualified_id
+END AS otherUserId,
+CASE
+    WHEN ((SELECT id FROM SelfUser LIMIT 1) LIKE (Conversation.creator_id || '@%')) THEN 1
+    ELSE 0
+END AS isCreator,
+Conversation.last_notified_date AS lastNotifiedMessageDate,
+memberRole.role AS selfRole,
+Conversation.protocol,
+Conversation.mls_cipher_suite,
+Conversation.mls_epoch,
+Conversation.mls_group_id,
+Conversation.mls_last_keying_material_update_date,
+Conversation.mls_group_state,
+Conversation.access_list,
+Conversation.access_role_list,
+Conversation.team_id,
+Conversation.mls_proposal_timer,
+Conversation.muted_time,
+Conversation.creator_id,
+Conversation.last_modified_date,
+Conversation.receipt_mode
+FROM Conversation
+LEFT JOIN Member ON Conversation.qualified_id = Member.conversation
+    AND Conversation.type IS "ONE_ON_ONE"
+    AND Member.user IS NOT (SELECT SelfUser.id FROM SelfUser LIMIT 1)
+LEFT JOIN Member AS memberRole ON Conversation.qualified_id = memberRole.conversation
+    AND memberRole.user IS (SELECT SelfUser.id FROM SelfUser LIMIT 1)
+LEFT JOIN User ON User.qualified_id = Member.user
+LEFT JOIN Connection ON Connection.qualified_conversation = Conversation.qualified_id
+    AND (Connection.status = 'SENT'
+         OR Connection.status = 'PENDING'
+         OR Connection.status = "NOT_CONNECTED"
+         AND Conversation.type IS "CONNECTION_PENDING")
+LEFT JOIN User AS connection_user ON Connection.qualified_to = connection_user.qualified_id
+LEFT JOIN Call ON Call.id IS (SELECT id FROM Call WHERE Call.conversation_id = Conversation.qualified_id AND Call.status IS "STILL_ONGOING" ORDER BY created_at DESC LIMIT 1);
+
+-- ####### MessageQuoteDetails
+CREATE VIEW IF NOT EXISTS MessageQuoteDetails
+AS SELECT
+    MessageTextContent.message_id AS messageId,
+    MessageTextContent.conversation_id AS conversationId,
+    MessageTextContent.quoted_message_id AS quotedMessageId,
+    MessageTextContent.is_quote_verified AS isQuoteVerified,
+    QuotedSender.qualified_id AS quotedSenderId,
+    (qualified_id == SelfUser.id) AS isQuotingSelfUser,
+    QuotedSender.name AS quotedSenderName,
+    QuotedMessage.creation_date quotedMessageCreationInstant,
+    QuotedMessage.last_edit_date AS quotedMessageEditInstant,
+    QuotedMessage.visibility AS quotedMessageVisibility,
+    QuotedMessage.content_type AS quotedMessageContentType,
+    QuotedTextContent.text_body AS quotedTextBody,
+    QuotedAssetContent.asset_mime_type AS quotedAssetMimeType,
+    QuotedAssetContent.asset_name AS quotedAssetName
+FROM MessageTextContent
+LEFT JOIN Message AS QuotedMessage ON QuotedMessage.id = MessageTextContent.quoted_message_id AND QuotedMessage.conversation_id = MessageTextContent.conversation_id
+INNER JOIN User AS QuotedSender ON QuotedMessage.sender_user_id = QuotedSender.qualified_id
+INNER JOIN SelfUser AS SelfUser
+LEFT JOIN MessageTextContent AS QuotedTextContent ON QuotedTextContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = MessageTextContent.conversation_id
+LEFT JOIN MessageAssetContent AS QuotedAssetContent ON QuotedAssetContent.message_id = QuotedMessage.id AND QuotedMessage.conversation_id = MessageTextContent.conversation_id;
+
+-- ####### MessageDetailsView
+CREATE VIEW IF NOT EXISTS MessageDetailsView
+AS SELECT
+Message.id AS id,
+Message.conversation_id AS conversationId,
+Message.content_type AS contentType,
+Message.creation_date AS date,
+Message.sender_user_id AS senderUserId,
+Message.sender_client_id AS senderClientId,
+Message.status AS status,
+Message.last_edit_date AS lastEditTimestamp,
+Message.visibility AS visibility,
+Message.expects_read_confirmation AS expectsReadConfirmation,
+User.name AS senderName,
+User.handle AS senderHandle,
+User.email AS senderEmail,
+User.phone AS senderPhone,
+User.accent_id AS senderAccentId,
+User.team AS senderTeamId,
+User.connection_status AS senderConnectionStatus,
+User.preview_asset_id AS senderPreviewAssetId,
+User.complete_asset_id AS senderCompleteAssetId,
+User.user_availability_status AS senderAvailabilityStatus,
+User.user_type AS senderUserType,
+User.bot_service AS senderBotService,
+User.deleted AS senderIsDeleted,
+(Message.sender_user_id == SelfUser.id) AS isSelfMessage,
+TextContent.text_body AS text,
+AssetContent.asset_size AS assetSize,
+AssetContent.asset_name AS assetName,
+AssetContent.asset_mime_type AS assetMimeType,
+AssetContent.asset_upload_status AS assetUploadStatus,
+AssetContent.asset_download_status AS assetDownloadStatus,
+AssetContent.asset_otr_key AS assetOtrKey,
+AssetContent.asset_sha256 AS assetSha256,
+AssetContent.asset_id AS assetId,
+AssetContent.asset_token AS assetToken,
+AssetContent.asset_domain AS assetDomain,
+AssetContent.asset_encryption_algorithm AS assetEncryptionAlgorithm,
+AssetContent.asset_width AS assetWidth,
+AssetContent.asset_height AS assetHeight,
+AssetContent.asset_duration_ms AS assetDuration,
+AssetContent.asset_normalized_loudness AS assetNormalizedLoudness,
+MissedCallContent.caller_id AS callerId,
+MemberChangeContent.member_change_list AS memberChangeList,
+MemberChangeContent.member_change_type AS memberChangeType,
+UnknownContent.unknown_type_name AS unknownContentTypeName,
+UnknownContent.unknown_encoded_data AS unknownContentData,
+RestrictedAssetContent.asset_mime_type AS restrictedAssetMimeType,
+RestrictedAssetContent.asset_size AS restrictedAssetSize,
+RestrictedAssetContent.asset_name AS restrictedAssetName,
+FailedToDecryptContent.unknown_encoded_data AS failedToDecryptData,
+FailedToDecryptContent.is_decryption_resolved AS isDecryptionResolved,
+ConversationNameChangedContent.conversation_name AS conversationName,
+'{' || IFNULL(
+    (SELECT GROUP_CONCAT('"' || emoji || '":' || count)
+    FROM (
+        SELECT COUNT(*) count, Reaction.emoji emoji
+        FROM Reaction
+        WHERE Reaction.message_id = Message.id
+        AND Reaction.conversation_id = Message.conversation_id
+        GROUP BY Reaction.emoji
+    )),
+    '')
+|| '}' AS allReactionsJson,
+IFNULL(
+    (SELECT '[' || GROUP_CONCAT('"' || Reaction.emoji || '"') || ']'
+    FROM Reaction
+    WHERE Reaction.message_id = Message.id
+        AND Reaction.conversation_id = Message.conversation_id
+        AND Reaction.sender_id = SelfUser.id
+    ),
+    '[]'
+) AS selfReactionsJson,
+IFNULL(
+    (SELECT '[' || GROUP_CONCAT(
+        '{"start":' || start || ', "length":' || length ||
+        ', "userId":{"value":"' || replace(substr(user_id, 0, instr(user_id, '@')), '@', '') || '"' ||
+        ',"domain":"' || replace(substr(user_id, instr(user_id, '@')+1, length(user_id)), '@', '') || '"' ||
+        '}' || '}') || ']'
+    FROM MessageMention
+    WHERE MessageMention.message_id = Message.id
+        AND MessageMention.conversation_id = Message.conversation_id
+    ),
+    '[]'
+) AS mentions,
+QuotedMessage.quotedMessageId AS quotedMessageId,
+QuotedMessage.quotedSenderId AS quotedSenderId,
+QuotedMessage.isQuotingSelfUser AS isQuotingSelfUser,
+QuotedMessage.isQuoteVerified AS isQuoteVerified,
+QuotedMessage.quotedSenderName AS quotedSenderName,
+QuotedMessage.quotedMessageCreationInstant AS quotedMessageDateTime,
+QuotedMessage.quotedMessageEditInstant AS quotedMessageEditTimestamp,
+QuotedMessage.quotedMessageVisibility AS quotedMessageVisibility,
+QuotedMessage.quotedMessageContentType AS quotedMessageContentType,
+QuotedMessage.quotedTextBody AS quotedTextBody,
+QuotedMessage.quotedAssetMimeType AS quotedAssetMimeType,
+QuotedMessage.quotedAssetName AS quotedAssetName
+FROM Message
+LEFT JOIN User ON Message.sender_user_id = User.qualified_id
+LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
+LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
+LEFT JOIN MessageMissedCallContent AS MissedCallContent ON Message.id = MissedCallContent.message_id AND Message.conversation_id = MissedCallContent.conversation_id
+LEFT JOIN MessageMemberChangeContent AS MemberChangeContent ON Message.id = MemberChangeContent.message_id AND Message.conversation_id = MemberChangeContent.conversation_id
+LEFT JOIN MessageUnknownContent AS UnknownContent ON Message.id = UnknownContent.message_id AND Message.conversation_id = UnknownContent.conversation_id
+LEFT JOIN MessageRestrictedAssetContent AS RestrictedAssetContent ON Message.id = RestrictedAssetContent.message_id AND RestrictedAssetContent.conversation_id = RestrictedAssetContent.conversation_id
+LEFT JOIN MessageFailedToDecryptContent AS FailedToDecryptContent ON Message.id = FailedToDecryptContent.message_id AND Message.conversation_id = FailedToDecryptContent.conversation_id
+LEFT JOIN MessageConversationChangedContent AS ConversationNameChangedContent ON Message.id = ConversationNameChangedContent.message_id AND Message.conversation_id = ConversationNameChangedContent.conversation_id
+LEFT JOIN MessageQuoteDetails AS QuotedMessage ON Message.id = QuotedMessage.messageId AND Message.conversation_id = QuotedMessage.conversationId
+LEFT JOIN SelfUser;
+
+-- 4)
+PRAGMA foreign_keys = 1;

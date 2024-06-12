@@ -1,0 +1,1 @@
+CREATE INDEX message_expire_after_millis_index ON Message(expire_after_millis, self_deletion_start_date);

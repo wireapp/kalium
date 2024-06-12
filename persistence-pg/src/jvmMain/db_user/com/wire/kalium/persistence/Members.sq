@@ -1,0 +1,131 @@
+import com.wire.kalium.persistence.dao.member.MemberEntity.Role;
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+
+CREATE TABLE Member (
+    user TEXT AS QualifiedIDEntity NOT NULL,
+    conversation TEXT AS QualifiedIDEntity NOT NULL,
+    role TEXT AS Role NOT NULL,
+    CONSTRAINT member_conv PRIMARY KEY (user, conversation) ON CONFLICT IGNORE,
+    FOREIGN KEY (conversation) REFERENCES Conversation(qualified_id)  ON DELETE CASCADE,
+    FOREIGN KEY (user) REFERENCES User(qualified_id) ON DELETE CASCADE
+);
+
+CREATE INDEX member_conversation_index ON Member(conversation);
+
+insertMember:
+INSERT OR IGNORE INTO Member(user, conversation, role)
+VALUES (?, ?, ?);
+
+insertOrUpdateMember:
+INSERT INTO Member(user, conversation, role)
+VALUES (?, ?, ?)
+ON CONFLICT(user, conversation) DO UPDATE SET
+role = excluded.role;
+
+selectMembersNamesAndHandle:
+SELECT
+    mem.user,
+    usr.name,
+    usr.handle
+FROM Member AS mem
+JOIN User AS usr ON usr.qualified_id = mem.user
+WHERE mem.conversation = :conversationId;
+
+deleteMember:
+DELETE FROM Member WHERE conversation = :conversationId AND user = :userId;
+
+deleteMembers:
+DELETE FROM Member WHERE conversation = :conversationId AND user IN :userIds;
+
+deleteMembersFromConversation:
+DELETE FROM Member WHERE conversation = ?;
+
+selectAllMembersByConversation:
+SELECT * FROM Member WHERE conversation = :conversation;
+
+selectConversationsByMember:
+SELECT
+    qualified_id,
+    name,
+    type,
+    team_id,
+    mls_group_id,
+    mls_group_state,
+    mls_epoch,
+    mls_proposal_timer,
+    protocol,
+    muted_status,
+    muted_time,
+    creator_id,
+    last_modified_date,
+    last_notified_date,
+    last_read_date,
+    access_list,
+    access_role_list,
+    mls_last_keying_material_update_date,
+    mls_cipher_suite,
+    receipt_mode,
+    message_timer,
+    user_message_timer,
+    archived,
+    archived_date_time,
+    verification_status,
+    proteus_verification_status,
+    legal_hold_status
+FROM Member
+JOIN Conversation ON Conversation.qualified_id = Member.conversation
+WHERE Member.user = ?;
+
+updateMemberRole:
+UPDATE Member
+SET role = ?
+WHERE user = ? AND conversation = ?;
+
+isUserMember:
+SELECT user FROM Member WHERE conversation = :conversationId AND user = :userId;
+
+selectFederatedMembersWithOneOfDomainsFromGroupConversation:
+SELECT mem.* FROM Member AS mem
+JOIN Conversation AS con ON con.qualified_id = mem.conversation
+WHERE con.type == 'GROUP' AND (user LIKE ('%@' || :firstDomain) OR user LIKE ('%@' || :secondDomain));
+
+selectFederatedMembersFromOneOnOneConversations:
+SELECT mem.* FROM Member AS mem
+JOIN Conversation AS con ON con.qualified_id = mem.conversation
+JOIN User AS usr ON usr.qualified_id = mem.user
+WHERE con.type == 'ONE_ON_ONE' AND user LIKE ('%@' || :domain) AND usr.defederated == 0;
+
+CREATE TRIGGER updateConversationProteusVerificationStatusAfterMemeberChange
+AFTER INSERT ON Member
+BEGIN
+    UPDATE Conversation
+    SET proteus_verification_status =
+        (CASE (SELECT
+            (COUNT(*) = 1 + SUM(CASE WHEN client.is_verified = 1 THEN 1 ELSE 0 END) AND COUNT(*) > 1)
+            FROM Member AS mem
+            LEFT JOIN Client AS client ON client.user_id = mem.user
+            WHERE mem.conversation = new.conversation
+            GROUP BY mem.conversation)
+        WHEN 1 THEN 'VERIFIED'
+        ELSE 'DEGRADED' END)
+    WHERE qualified_id = new.conversation;
+END;
+
+CREATE TRIGGER updateConversationProteusVerificationStatusAfterMemeberDelete
+AFTER DELETE ON Member
+BEGIN
+    UPDATE Conversation
+    SET proteus_verification_status =
+        (CASE (SELECT
+            (COUNT(*) = 1 + SUM(CASE WHEN client.is_verified = 1 THEN 1 ELSE 0 END) AND COUNT(*) > 1)
+            FROM Member AS mem
+            LEFT JOIN Client AS client ON client.user_id = mem.user
+            WHERE mem.conversation = old.conversation
+            GROUP BY mem.conversation)
+        WHEN 1 THEN 'VERIFIED'
+        ELSE 'DEGRADED' END)
+    WHERE qualified_id = old.conversation;
+END;
+
+selectChanges:
+SELECT changes();

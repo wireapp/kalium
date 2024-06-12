@@ -1,0 +1,1 @@
+ALTER TABLE Conversation ADD COLUMN is_guest_password_protected INTEGER AS Boolean DEFAULT 0 NOT NULL;

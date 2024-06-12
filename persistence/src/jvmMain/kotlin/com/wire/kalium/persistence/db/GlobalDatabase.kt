@@ -23,7 +23,7 @@ import com.wire.kalium.persistence.GlobalDatabase
 import com.wire.kalium.persistence.util.FileNameUtil
 import kotlinx.coroutines.CoroutineDispatcher
 
-actual fun globalDatabaseProvider(
+actual fun sqliteGlobalDatabaseProvider(
     platformDatabaseData: PlatformDatabaseData,
     queriesContext: CoroutineDispatcher,
     passphrase: GlobalDatabaseSecret?,

@@ -1,0 +1,39 @@
+import com.wire.kalium.persistence.dao.BotIdEntity;
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import kotlin.Boolean;
+import kotlin.String;
+import kotlin.collections.List;
+
+CREATE TABLE Service (
+    id TEXT AS BotIdEntity PRIMARY KEY,
+    name TEXT NOT NULL,
+    description TEXT NOT NULL,
+    summary TEXT NOT NULL,
+    tags TEXT AS List<String> NOT NULL,
+    enabled INTEGER AS Boolean NOT NULL,
+    preview_asset_id TEXT AS QualifiedIDEntity,
+    complete_asset_id TEXT AS QualifiedIDEntity
+);
+
+insert:
+INSERT OR REPLACE INTO Service (id, name, description, summary, tags, enabled, preview_asset_id, complete_asset_id)
+VALUES (:id, :name, :description, :summary, :tags, :enabled, :preview_asset_id, :complete_asset_id);
+
+allServices:
+SELECT * FROM Service;
+
+byId:
+SELECT *
+FROM Service
+WHERE Service.id = :id;
+
+getUserIdFromMember:
+SELECT User.qualified_id
+FROM User
+JOIN Member ON Member.user = User.qualified_id AND Member.conversation = :conversation
+WHERE User.bot_service = :id;
+
+searchByName:
+SELECT *
+FROM Service
+WHERE Service.name LIKE ('%' || :query || '%');

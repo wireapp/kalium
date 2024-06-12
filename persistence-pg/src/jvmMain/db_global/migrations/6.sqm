@@ -1,0 +1,4 @@
+import com.wire.kalium.persistence.dao.ManagedByEntity;
+
+ALTER TABLE Accounts
+ADD COLUMN managed_by TEXT AS ManagedByEntity;

@@ -72,6 +72,7 @@ kotlin {
                 implementation(libs.sqldelight.androidxPaging)
 
                 implementation(project(":util"))
+                api(project(":persistence-api"))
                 api(project(":logger"))
             }
         }

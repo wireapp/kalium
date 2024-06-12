@@ -1,0 +1,9 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import kotlin.Boolean;
+
+CREATE TABLE ConversationLegalHoldStatusChangeNotified (
+    conversation_id TEXT AS QualifiedIDEntity NOT NULL PRIMARY KEY,
+    legal_hold_status_change_notified INTEGER AS Boolean NOT NULL DEFAULT 1,
+
+    FOREIGN KEY (conversation_id) REFERENCES Conversation(qualified_id) ON DELETE CASCADE ON UPDATE CASCADE
+);

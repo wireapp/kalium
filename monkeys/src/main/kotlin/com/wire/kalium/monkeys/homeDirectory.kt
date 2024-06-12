@@ -34,7 +34,7 @@ fun coreLogic(
             encryptProteusStorage = true,
             isMLSSupportEnabled = true,
             wipeOnDeviceRemoval = true,
-        ), userAgent = "Wire Infinite Monkeys", useInMemoryStorage = true
+        ), userAgent = "Wire Infinite Monkeys", usePg = true
     )
     coreLogic.updateApiVersionsScheduler.scheduleImmediateApiVersionUpdate()
     return coreLogic
