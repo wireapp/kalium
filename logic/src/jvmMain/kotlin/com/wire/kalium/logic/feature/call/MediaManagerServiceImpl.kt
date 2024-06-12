@@ -20,11 +20,14 @@ package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.PlatformContext
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
+@Suppress("UnusedPrivateProperty")
 actual class MediaManagerServiceImpl(
-    platformContext: PlatformContext
+    platformContext: PlatformContext,
+    scope: CoroutineScope,
 ) : MediaManagerService {
     override suspend fun turnLoudSpeakerOn() {
         kaliumLogger.w("turnLoudSpeakerOn for JVM but not supported yet.")
