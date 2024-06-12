@@ -489,6 +489,7 @@ com.wire.kalium.logic.feature.message
 com.wire.kalium.logic.feature.message.composite
 com.wire.kalium.logic.feature.message.draft
 com.wire.kalium.logic.feature.message.ephemeral
+com.wire.kalium.logic.feature.message.receipt
 com.wire.kalium.logic.feature.migration
 com.wire.kalium.logic.feature.mlsmigration
 com.wire.kalium.logic.feature.notificationToken
