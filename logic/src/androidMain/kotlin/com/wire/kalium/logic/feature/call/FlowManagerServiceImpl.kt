@@ -24,55 +24,67 @@ import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.PlatformView
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
 import kotlinx.coroutines.withContext
 
 actual class FlowManagerServiceImpl(
     appContext: PlatformContext,
-    private val dispatcher: CoroutineDispatcher = Dispatchers.Default
+    scope: CoroutineScope,
+    private val dispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : FlowManagerService {
 
     @Suppress("UNUSED_ANONYMOUS_PARAMETER")
-    private val flowManager: FlowManager by lazy {
-        FlowManager(
-            appContext.context
-        ) { manager, path, method, ctype, content, ctx ->
-            // TODO(Calling) Not yet implemented
-            callingLogger.i("FlowManager -> RequestHandler -> $path : $method")
-            0
-        }.also {
-            it.setEnableLogging(true)
-            it.setLogHandler(object : LogHandler {
-                override fun append(msg: String?) {
-                    callingLogger.i("FlowManager -> Logger -> Append -> $msg")
-                }
+    private val flowManager: Deferred<FlowManager> =
+        scope.async(
+            context = dispatchers.default,
+            start = CoroutineStart.LAZY,
+        ) {
+            FlowManager(
+                appContext.context
+            ) { manager, path, method, ctype, content, ctx ->
+                // TODO(Calling) Not yet implemented
+                callingLogger.i("FlowManager -> RequestHandler -> $path : $method")
+                0
+            }.also {
+                it.setEnableLogging(true)
+                it.setLogHandler(object : LogHandler {
+                    override fun append(msg: String?) {
+                        callingLogger.i("FlowManager -> Logger -> Append -> $msg")
+                    }
 
-                override fun upload() {
-                    callingLogger.i("FlowManager -> Logger -> upload")
-                }
-            })
+                    override fun upload() {
+                        callingLogger.i("FlowManager -> Logger -> upload")
+                    }
+                })
+            }
         }
-    }
+
     override suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView) {
-        withContext(dispatcher) {
-            flowManager.setVideoPreview(conversationId.toString(), view.view)
+        withContext(dispatchers.default) {
+            flowManager.await().setVideoPreview(conversationId.toString(), view.view)
         }
     }
 
     override suspend fun flipToFrontCamera(conversationId: ConversationId) {
-        withContext(dispatcher) {
-            flowManager.setVideoCaptureDevice(conversationId.toString(), "front")
+        withContext(dispatchers.default) {
+            flowManager.await().setVideoCaptureDevice(conversationId.toString(), "front")
         }
     }
 
     override suspend fun flipToBackCamera(conversationId: ConversationId) {
-        withContext(dispatcher) {
-            flowManager.setVideoCaptureDevice(conversationId.toString(), "back")
+        withContext(dispatchers.default) {
+            flowManager.await().setVideoCaptureDevice(conversationId.toString(), "back")
         }
     }
 
-    override fun setUIRotation(rotation: Int) {
-        flowManager.setUIRotation(rotation)
+    override suspend fun setUIRotation(rotation: Int) {
+        withContext(dispatchers.default) {
+            flowManager.await().setUIRotation(rotation)
+        }
     }
 }

@@ -30,12 +30,12 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
@@ -43,12 +43,20 @@ import com.wire.kalium.logic.util.CurrentPlatform
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.PlatformType
 import com.wire.kalium.network.NetworkStateObserver
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 
 actual class GlobalCallManager(
-    appContext: PlatformContext
+    appContext: PlatformContext,
+    kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) {
+
+    private val job = SupervisorJob()
+    private val scope = CoroutineScope(job + kaliumDispatchers.io)
 
     private val callManagerHolder: ConcurrentMap<QualifiedID, CallManager> by lazy {
         ConcurrentHashMap()
@@ -116,12 +124,12 @@ actual class GlobalCallManager(
     }
 
     // Initialize it eagerly, so it's already initialized when `calling` is initialized
-    private val flowManager = FlowManagerServiceImpl(appContext)
+    private val flowManager by lazy { FlowManagerServiceImpl(appContext, scope) }
 
     actual fun getFlowManager(): FlowManagerService = flowManager
 
     // Initialize it eagerly, so it's already initialized when `calling` is initialized
-    private val mediaManager = MediaManagerServiceImpl(appContext)
+    private val mediaManager by lazy { MediaManagerServiceImpl(appContext, scope) }
 
     actual fun getMediaManager(): MediaManagerService = mediaManager
 }

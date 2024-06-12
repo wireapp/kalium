@@ -38,7 +38,7 @@ actual class FlowManagerServiceImpl(
         TODO("Not yet implemented")
     }
 
-    override fun setUIRotation(rotation: Int) {
+    override suspend fun setUIRotation(rotation: Int) {
         kaliumLogger.w("setUIRotation for JVM but not supported yet.")
     }
 }
