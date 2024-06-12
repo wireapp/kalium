@@ -73,9 +73,12 @@ actual class CoreLogic(
         userSessionScopeProvider.value.delete(userId)
     }
 
-    override val globalCallManager: GlobalCallManager = GlobalCallManager(
-        appContext = PlatformContext(appContext)
-    )
+    override val globalCallManager: GlobalCallManager by lazy {
+        GlobalCallManager(
+            appContext = PlatformContext(appContext),
+            scope = getGlobalScope()
+        )
+    }
 
     override val globalWorkScheduler: GlobalWorkScheduler = GlobalWorkSchedulerImpl(
         appContext = appContext,

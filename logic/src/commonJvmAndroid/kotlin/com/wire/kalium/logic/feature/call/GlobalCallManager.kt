@@ -43,21 +43,14 @@ import com.wire.kalium.logic.util.CurrentPlatform
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.PlatformType
 import com.wire.kalium.network.NetworkStateObserver
-import com.wire.kalium.util.KaliumDispatcher
-import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentMap
 
 actual class GlobalCallManager(
     appContext: PlatformContext,
-    kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
+    scope: CoroutineScope
 ) {
-
-    private val job = SupervisorJob()
-    private val scope = CoroutineScope(job + kaliumDispatchers.io)
-
     private val callManagerHolder: ConcurrentMap<QualifiedID, CallManager> by lazy {
         ConcurrentHashMap()
     }
