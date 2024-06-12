@@ -70,7 +70,7 @@ class ProtoContentMapperImpl(
     private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val selfUserId: UserId,
-    private val linkPreviewMapper: LinkPreviewMapper = MapperProvider.linkPreviewMapper(selfUserId),
+    private val linkPreviewMapper: LinkPreviewMapper = MapperProvider.linkPreviewMapper(),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
 ) : ProtoContentMapper {
 

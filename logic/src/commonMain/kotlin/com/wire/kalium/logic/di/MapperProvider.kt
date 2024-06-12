@@ -148,7 +148,7 @@ internal object MapperProvider {
         receiptModeMapper(),
     )
 
-    fun linkPreviewMapper(selfUserId: UserId): LinkPreviewMapper = LinkPreviewMapperImpl(encryptionAlgorithmMapper(), selfUserId)
+    fun linkPreviewMapper(): LinkPreviewMapper = LinkPreviewMapperImpl(encryptionAlgorithmMapper())
     fun messageMentionMapper(selfUserId: UserId): MessageMentionMapper = MessageMentionMapperImpl(idMapper(), selfUserId)
 
     fun preyKeyMapper(): PreKeyMapper = PreKeyMapperImpl()

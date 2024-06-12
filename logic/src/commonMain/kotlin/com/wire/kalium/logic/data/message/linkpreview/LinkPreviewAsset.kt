@@ -19,7 +19,6 @@ package com.wire.kalium.logic.data.message.linkpreview
 
 import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.SHA256Key
-import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import okio.Path
@@ -30,10 +29,12 @@ data class LinkPreviewAsset(
     val metadata: AssetMetadata? = null,
     val assetDataPath: Path,
     val assetDataSize: Long,
-    val assetWidth: Int?,
-    val assetHeight: Int?,
+    val assetHeight: Int,
+    val assetWidth: Int,
     val assetName: String? = null,
-    var assetId: UploadedAssetId = UploadedAssetId("", "", ""),
+    var assetKey: String,
+    var assetToken: String,
+    var assetDomain: String,
     var otrKey: AES256Key = AES256Key(ByteArray(0)),
     var sha256Key: SHA256Key = SHA256Key(ByteArray(0)),
     var encryptionAlgorithm: MessageEncryptionAlgorithm = MessageEncryptionAlgorithm.AES_CBC,

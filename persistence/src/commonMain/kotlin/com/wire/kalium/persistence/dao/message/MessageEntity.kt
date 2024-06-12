@@ -214,6 +214,23 @@ sealed interface MessageEntity {
         @SerialName("length") val length: Int,
         @SerialName("userId") val userId: QualifiedIDEntity
     )
+
+    data class LinkPreview(
+        val url: String,
+        val urlOffset: Int,
+        val permanentUrl: String,
+        val title: String,
+        val summary: String,
+        val imageAssetKey: String?,
+        val imageAssetDomain: String?,
+        val imageAssetDataPath: String?,
+        val imageAssetDataSize: Long?,
+        val imageAssetToken: String?,
+        val imageAssetMimeType: String?,
+        val imageAssetHeight: Int?,
+        val imageAssetWidth: Int?,
+        val downloadedDate: Long?
+    )
 }
 
 sealed class MessageEntityContent {
@@ -226,6 +243,7 @@ sealed class MessageEntityContent {
     data class Text(
         val messageBody: String,
         val mentions: List<MessageEntity.Mention> = listOf(),
+        val linkPreview: List<MessageEntity.LinkPreview> = listOf(),
         /**
          * ID of a message being quoted.
          * When persisting the content, this is the ID that will be used for quotes.

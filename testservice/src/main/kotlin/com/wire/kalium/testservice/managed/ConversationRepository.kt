@@ -344,7 +344,7 @@ sealed class ConversationRepository {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
                         if (text != null) {
                             setMessageTimer(instance, conversationId, messageTimer)
-                            log.info("Instance ${instance.instanceId}: Send text message '$text'")
+                            log.info("Instance ${instance.instanceId}: Update text message '$text'")
                             messages.sendEditTextMessage(
                                 conversationId, firstMessageId, text, mentions
                             ).fold({
