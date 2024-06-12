@@ -19,7 +19,6 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.e2ei.CertificateStatus
 import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapper
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import com.wire.kalium.logic.functional.fold
@@ -28,7 +27,7 @@ import com.wire.kalium.logic.functional.fold
  * This use case is used to get the e2ei certificate status of specific user
  */
 interface GetUserE2eiCertificateStatusUseCase {
-    suspend operator fun invoke(userId: UserId): GetUserE2eiCertificateStatusResult
+    suspend operator fun invoke(userId: UserId): Boolean
 }
 
 class GetUserE2eiCertificateStatusUseCaseImpl internal constructor(
@@ -36,25 +35,23 @@ class GetUserE2eiCertificateStatusUseCaseImpl internal constructor(
     private val certificateStatusMapper: CertificateStatusMapper,
     private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase
 ) : GetUserE2eiCertificateStatusUseCase {
-    override suspend operator fun invoke(userId: UserId): GetUserE2eiCertificateStatusResult =
+    override suspend operator fun invoke(userId: UserId): Boolean =
         if (isE2EIEnabledUseCase()) {
             mlsConversationRepository.getUserIdentity(userId).fold(
                 {
-                    GetUserE2eiCertificateStatusResult.Failure.NotActivated
+                    false
                 },
                 { identities ->
-                    identities.getUserCertificateStatus()?.let {
-                        GetUserE2eiCertificateStatusResult.Success(it)
-                    } ?: GetUserE2eiCertificateStatusResult.Failure.NotActivated
+                    identities.isUserMLSVerified()
                 }
             )
         } else {
-            GetUserE2eiCertificateStatusResult.Failure.NotActivated
+            false
         }
 }
 
 sealed class GetUserE2eiCertificateStatusResult {
-    class Success(val status: CertificateStatus) : GetUserE2eiCertificateStatusResult()
+    data object Success : GetUserE2eiCertificateStatusResult()
     sealed class Failure : GetUserE2eiCertificateStatusResult() {
         data object NotActivated : Failure()
     }

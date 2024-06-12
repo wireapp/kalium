@@ -25,7 +25,7 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.e2ei.CertificateStatus
 import com.wire.kalium.logic.feature.e2ei.E2eiCertificate
 import com.wire.kalium.logic.feature.e2ei.usecase.GetE2EICertificateUseCaseResult
-import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCase
+import com.wire.kalium.logic.feature.e2ei.usecase.GetMLSClientIdentityUseCase
 import com.wire.kalium.logic.feature.user.E2EIRequiredResult
 import com.wire.kalium.logic.feature.user.ObserveE2EIRequiredUseCase
 import com.wire.kalium.logic.feature.user.ObserveE2EIRequiredUseCaseImpl
@@ -324,7 +324,7 @@ class ObserveE2EIRequiredUseCaseTest {
         val featureSupport = mock(FeatureSupport::class)
 
         @Mock
-        val e2eiCertificate = mock(GetE2eiCertificateUseCase::class)
+        val e2eiCertificate = mock(GetMLSClientIdentityUseCase::class)
 
         @Mock
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)

@@ -17,12 +17,12 @@
  */
 package com.wire.kalium.logic.feature.e2ei.usecase
 
+import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.CertificateStatus
-import com.wire.kalium.logic.feature.e2ei.E2eiCertificate
 import com.wire.kalium.logic.functional.fold
 
 /**
@@ -30,40 +30,26 @@ import com.wire.kalium.logic.functional.fold
  * Return [Map] where keys are [UserId] and values - nullable [CertificateStatus] of corresponding user.
  */
 interface GetMembersE2EICertificateStatusesUseCase {
-    suspend operator fun invoke(conversationId: ConversationId, userIds: List<UserId>): Map<UserId, CertificateStatus?>
+    suspend operator fun invoke(conversationId: ConversationId, userIds: List<UserId>): Map<UserId, Boolean>
 }
 
 class GetMembersE2EICertificateStatusesUseCaseImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository
 ) : GetMembersE2EICertificateStatusesUseCase {
-    override suspend operator fun invoke(conversationId: ConversationId, userIds: List<UserId>): Map<UserId, CertificateStatus?> =
+    override suspend operator fun invoke(conversationId: ConversationId, userIds: List<UserId>): Map<UserId, Boolean> =
         mlsConversationRepository.getMembersIdentities(conversationId, userIds).fold(
             { mapOf() },
             {
                 it.mapValues { (_, identities) ->
-                    identities.getUserCertificateStatus()
+                    identities.isUserMLSVerified()
                 }
             }
         )
 }
 
 /**
- * @return null if list is empty;
- * [CertificateStatus.REVOKED] if any certificate is revoked;
- * [CertificateStatus.EXPIRED] if any certificate is expired;
- * [CertificateStatus.VALID] otherwise.
+ * @return if given user is verified or not
  */
-fun List<WireIdentity>.getUserCertificateStatus(): CertificateStatus? {
-    val certificates = this.map {
-        E2eiCertificate.fromWireIdentity(it)
-    }
-    return if (certificates.isEmpty() || certificates.any { it == null }) {
-        null
-    } else if (certificates.any { it!!.status == CertificateStatus.REVOKED }) {
-        CertificateStatus.REVOKED
-    } else if (certificates.any { it!!.status == CertificateStatus.EXPIRED }) {
-        CertificateStatus.EXPIRED
-    } else {
-        CertificateStatus.VALID
-    }
+fun List<WireIdentity>.isUserMLSVerified() = this.isEmpty() || this.any {
+    it.x509Identity != null && it.status == CryptoCertificateStatus.VALID
 }

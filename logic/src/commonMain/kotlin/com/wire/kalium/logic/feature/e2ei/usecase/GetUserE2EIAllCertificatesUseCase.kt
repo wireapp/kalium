@@ -22,6 +22,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapper
 import com.wire.kalium.logic.feature.e2ei.E2eiCertificate
+import com.wire.kalium.logic.feature.e2ei.MLSClientIdentity
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
@@ -31,7 +32,7 @@ import com.wire.kalium.logic.functional.map
  * Returns Map<String, E2eiCertificate> where key is value of [ClientId] and [E2eiCertificate] is certificate itself
  */
 interface GetUserE2eiCertificatesUseCase {
-    suspend operator fun invoke(userId: UserId): Map<String, E2eiCertificate>
+    suspend operator fun invoke(userId: UserId): Map<String, MLSClientIdentity>
 }
 
 class GetUserE2eiCertificatesUseCaseImpl internal constructor(
@@ -39,14 +40,13 @@ class GetUserE2eiCertificatesUseCaseImpl internal constructor(
     private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase,
     private val certificateStatusMapper: CertificateStatusMapper
 ) : GetUserE2eiCertificatesUseCase {
-    override suspend operator fun invoke(userId: UserId): Map<String, E2eiCertificate> =
+    override suspend operator fun invoke(userId: UserId): Map<String, MLSClientIdentity> =
         if (isE2EIEnabledUseCase()) {
             mlsConversationRepository.getUserIdentity(userId).map { identities ->
-                val result = mutableMapOf<String, E2eiCertificate>()
+                val result = mutableMapOf<String, MLSClientIdentity>()
                 identities.forEach {
-                    E2eiCertificate.fromWireIdentity(it)?.let { certificate ->
-                        result[it.clientId.value] = certificate
-                    }
+                        result[it.clientId.value] = MLSClientIdentity.fromWireIdentity(it)
+
                 }
                 result
             }.getOrElse(mapOf())

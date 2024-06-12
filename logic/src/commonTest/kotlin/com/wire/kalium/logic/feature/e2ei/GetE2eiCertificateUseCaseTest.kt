@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.usecase.GetE2EICertificateUseCaseResult
-import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCaseImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.GetMLSClientIdentityUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
@@ -38,7 +38,6 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -124,7 +123,7 @@ class GetE2eiCertificateUseCaseTest {
         @Mock
         val certificateStatusMapper = mock(classOf<CertificateStatusMapper>())
 
-        fun arrange() = this to GetE2eiCertificateUseCaseImpl(
+        fun arrange() = this to GetMLSClientIdentityUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository
         )
 

@@ -17,8 +17,9 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
+import com.wire.kalium.cryptography.CredentialType
+import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.WireIdentity
-import com.wire.kalium.logic.di.MapperProvider
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -37,20 +38,68 @@ data class E2eiCertificate(
     val thumbprint: String,
     @SerialName("endAt")
     val endAt: Instant
+)
+
+@Serializable
+data class MLSClientIdentity(
+    // val clientId: ClientId,
+    @SerialName("e2eiStatus") val e2eiStatus: MLSClientE2EIStatus,
+    @SerialName("thumbprint") val thumbprint: String,
+    @SerialName("credentialType") val credentialType: MLSCredentialsType,
+    @SerialName("x509Identity") val x509Identity: X509Identity?
 ) {
     companion object {
-        val certificateStatusMapper = MapperProvider.certificateStatusMapper()
+        fun fromWireIdentity(identity: WireIdentity): MLSClientIdentity =
+            MLSClientIdentity(e2eiStatus = MLSClientE2EIStatus.fromCryptoStatus(identity),
+                thumbprint = identity.thumbprint,
+                credentialType = MLSCredentialsType.fromCrypto(identity.credentialType),
+                x509Identity = identity.x509Identity?.let {
+                    X509Identity(
+                        //  handle = it.handle,
+                        displayName = it.displayName,
+                        domain = it.domain,
+                        serialNumber = it.serialNumber,
+                        certificateDetail = it.certificate,
+                        notBefore = Instant.fromEpochSeconds(it.notBefore),
+                        notAfter = Instant.fromEpochSeconds(it.notAfter)
+                    )
+                })
+    }
+}
 
-        fun fromWireIdentity(identity: WireIdentity): E2eiCertificate? =
-            identity.certificate?.let {
-                E2eiCertificate(
-                    userHandle = it.handle.handle,
-                    status = certificateStatusMapper.toCertificateStatus(identity.status),
-                    serialNumber = it.serialNumber,
-                    certificateDetail = it.certificate,
-                    thumbprint = it.thumbprint,
-                    endAt = Instant.fromEpochSeconds(it.endTimestampSeconds)
-                )
+@Serializable
+data class X509Identity(
+    // @SerialName("handle") val handle: Handle,
+    @SerialName("displayName") val displayName: String,
+    @SerialName("domain") val domain: String,
+    @SerialName("serialNumber") val serialNumber: String,
+    @SerialName("certificateDetail") val certificateDetail: String,
+    @SerialName("notBefore") val notBefore: Instant,
+    @SerialName("notAfter") val notAfter: Instant
+)
+
+enum class MLSClientE2EIStatus {
+    REVOKED, EXPIRED, VALID, NOT_ACTIVATED;
+
+    companion object {
+        fun fromCryptoStatus(identity: WireIdentity) =
+            if (identity.credentialType == CredentialType.Basic || identity.x509Identity == null)
+                NOT_ACTIVATED
+            else when (identity.status) {
+                CryptoCertificateStatus.REVOKED -> REVOKED
+                CryptoCertificateStatus.EXPIRED -> EXPIRED
+                CryptoCertificateStatus.VALID -> VALID
             }
+    }
+}
+
+enum class MLSCredentialsType {
+    X509, BASIC;
+
+    companion object {
+        fun fromCrypto(value: CredentialType) = when (value) {
+            CredentialType.Basic -> BASIC
+            CredentialType.X509 -> X509
+        }
     }
 }

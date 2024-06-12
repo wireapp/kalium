@@ -20,13 +20,11 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.configuration.E2EISettings
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
-import com.wire.kalium.logic.feature.e2ei.CertificateStatus
-import com.wire.kalium.logic.feature.e2ei.E2eiCertificate
-import com.wire.kalium.logic.feature.e2ei.usecase.GetE2EICertificateUseCaseResult
-import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCase
+import com.wire.kalium.logic.feature.e2ei.MLSClientE2EIStatus
+import com.wire.kalium.logic.feature.e2ei.X509Identity
+import com.wire.kalium.logic.feature.e2ei.usecase.GetMLSClientIdentityUseCase
 import com.wire.kalium.logic.featureFlags.FeatureSupport
-import com.wire.kalium.logic.functional.getOrElse
-import com.wire.kalium.logic.functional.map
+import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onlyRight
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -58,7 +56,7 @@ interface ObserveE2EIRequiredUseCase {
 internal class ObserveE2EIRequiredUseCaseImpl(
     private val userConfigRepository: UserConfigRepository,
     private val featureSupport: FeatureSupport,
-    private val e2eiCertificate: GetE2eiCertificateUseCase,
+    private val mlsClientIdentity: GetMLSClientIdentityUseCase,
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val dispatcher: CoroutineDispatcher = KaliumDispatcherImpl.io,
     private val renewCertificateRandomDelay: Duration = RENEW_RANDOM_DELAY
@@ -76,18 +74,26 @@ internal class ObserveE2EIRequiredUseCaseImpl(
                 observeE2EISettings().map { setting ->
                     if (!setting.isRequired) return@map E2EIRequiredResult.NotRequired
 
-                    return@map currentClientIdProvider().map { clientId ->
-                        when (val certificateResult = e2eiCertificate(clientId)) {
-                            is GetE2EICertificateUseCaseResult.Failure -> E2EIRequiredResult.NotRequired
-
-                            is GetE2EICertificateUseCaseResult.Success -> onUserHasCertificate(certificateResult.certificate)
-
-                            is GetE2EICertificateUseCaseResult.NotActivated -> onUserHasNoCertificate(setting)
+                    return@map currentClientIdProvider().fold(
+                        {
+                            E2EIRequiredResult.NotRequired
+                        },
+                        { clientId ->
+                            E2EIRequiredResult.NotRequired
+                            return@map mlsClientIdentity(clientId).fold({
+                                E2EIRequiredResult.NotRequired
+                            }, { clientIdentity ->
+                                when (clientIdentity.e2eiStatus) {
+                                    MLSClientE2EIStatus.REVOKED -> E2EIRequiredResult.NotRequired
+                                    MLSClientE2EIStatus.NOT_ACTIVATED -> onUserHasNoCertificate(setting)
+                                    MLSClientE2EIStatus.EXPIRED -> onUserHasValidCertificate(clientIdentity.x509Identity!!)
+                                    MLSClientE2EIStatus.VALID -> onUserHasValidCertificate(clientIdentity.x509Identity!!)
+                                }
+                            })
                         }
-                    }.getOrElse { E2EIRequiredResult.NotRequired }
+                    )
                 }
-            }
-            .flowOn(dispatcher)
+            }.flowOn(dispatcher)
     }
 
     private fun onUserHasNoCertificate(setting: E2EISettings) =
@@ -95,11 +101,10 @@ internal class ObserveE2EIRequiredUseCaseImpl(
             E2EIRequiredResult.WithGracePeriod.Create(timeLeft)
         } ?: E2EIRequiredResult.NoGracePeriod.Create
 
-    private fun onUserHasCertificate(certificate: E2eiCertificate) =
-        if (certificate.status == CertificateStatus.EXPIRED) {
-            E2EIRequiredResult.NoGracePeriod.Renew
-        } else if (certificate.status == CertificateStatus.VALID && certificate.shouldRenew()) {
-            E2EIRequiredResult.WithGracePeriod.Renew(certificate.renewGracePeriodLeft())
+    private fun onUserHasValidCertificate(identity: X509Identity) =
+        if (identity.shouldRenew()
+        ) {
+            E2EIRequiredResult.WithGracePeriod.Renew(identity.renewGracePeriodLeft())
         } else {
             E2EIRequiredResult.NotRequired
         }
@@ -119,13 +124,13 @@ internal class ObserveE2EIRequiredUseCaseImpl(
         else gracePeriodEnd.minus(DateTimeUtil.currentInstant())
     }
 
-    private fun E2eiCertificate.shouldRenew(): Boolean =
-        endAt.minus(DateTimeUtil.currentInstant())
+    private fun X509Identity.shouldRenew(): Boolean =
+        notAfter.minus(DateTimeUtil.currentInstant())
             .minus(RENEW_CONSTANT_DELAY)
             .minus(renewCertificateRandomDelay)
             .inWholeMilliseconds <= 0
 
-    private fun E2eiCertificate.renewGracePeriodLeft(): Duration = endAt.minus(DateTimeUtil.currentInstant())
+    private fun X509Identity.renewGracePeriodLeft(): Duration = notAfter.minus(DateTimeUtil.currentInstant())
 
     companion object {
         private const val NO_DELAY_MS = 0L
