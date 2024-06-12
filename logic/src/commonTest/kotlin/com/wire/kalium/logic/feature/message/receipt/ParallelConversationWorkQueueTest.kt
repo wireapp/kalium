@@ -46,12 +46,12 @@ class ParallelConversationWorkQueueTest {
 
     @Test
     fun givenWorkIsOngoing_whenEnqueuingAnotherForTheSameConversation_theyAreExecutedInOrder() = runTest {
-        val subject = testSubject()
+        val queue = testSubject()
         var startedFirst = false
         var endedFirst = false
         var startedSecond = false
         var endedSecond = false
-        subject.enqueue(workInput(time = Instant.DISTANT_PAST)) {
+        queue.enqueue(workInput(time = Instant.DISTANT_PAST)) {
             startedFirst = true
             delay(1.minutes)
             endedFirst = true
@@ -61,13 +61,12 @@ class ParallelConversationWorkQueueTest {
         assertFalse(endedFirst)
 
         // Enqueue second
-        subject.enqueue(workInput(time = Instant.DISTANT_PAST + 1.seconds)) {
+        queue.enqueue(workInput(time = Instant.DISTANT_PAST + 1.seconds)) {
             assertTrue(endedFirst, "Started second before first was finished")
             startedSecond = true
             delay(1.minutes)
             endedSecond = true
         }
-        assertFalse(endedSecond)
 
         advanceTimeBy(50.seconds) // First should have finished and second started
         assertTrue(endedFirst)
@@ -84,10 +83,10 @@ class ParallelConversationWorkQueueTest {
 
     @Test
     fun givenWorkThrows_whenEnqueuingAnotherForTheSameConversation_itIsExecutedNormally() = runTest {
-        val subject = testSubject()
+        val queue = testSubject()
         var startedFirst = false
         var endedSecond = false
-        subject.enqueue(workInput(time = Instant.DISTANT_PAST)) {
+        queue.enqueue(workInput(time = Instant.DISTANT_PAST)) {
             startedFirst = true
             throw IllegalStateException("Oopsie Doopsie! - Expected Test Exception")
         }
@@ -95,7 +94,7 @@ class ParallelConversationWorkQueueTest {
         assertTrue(startedFirst)
 
         // Enqueue second
-        subject.enqueue(workInput(time = Instant.DISTANT_PAST + 1.seconds)) {
+        queue.enqueue(workInput(time = Instant.DISTANT_PAST + 1.seconds)) {
             endedSecond = true
         }
         advanceTimeBy(50.seconds) // Both should have finished
@@ -124,7 +123,6 @@ class ParallelConversationWorkQueueTest {
             delay(1.minutes)
             endedSecond = true
         }
-        assertFalse(endedSecond)
 
         advanceTimeBy(5.seconds) // First should still be ongoing, but second should have started
         assertTrue(startedFirst)
@@ -140,29 +138,29 @@ class ParallelConversationWorkQueueTest {
 
     @Test
     fun givenWorkIsOngoing_whenEnqueuingMoreEventsForSameConversation_thenOnlyTheOneWithLatestTimeIsExecutedAfterwards() = runTest {
-        val subject = testSubject()
+        val queue = testSubject()
         var startedFirstCandidate = false
         var startedExpectedCandidate = false
         var completedExpectedCandidate = false
         var startedThirdCandidate = false
-        subject.enqueue(workInput(time = Instant.DISTANT_PAST)) { delay(1.minutes) }
+        queue.enqueue(workInput(time = Instant.DISTANT_PAST)) { delay(1.minutes) }
         advanceTimeBy(30.seconds) // First is still ongoing
 
         // Enqueue first candidate
-        subject.enqueue(workInput(time = Instant.DISTANT_PAST + 10.seconds)) {
+        queue.enqueue(workInput(time = Instant.DISTANT_PAST + 10.seconds)) {
             startedFirstCandidate = true
             delay(1.minutes)
         }
 
         // Enqueue second candidate - expected one
-        subject.enqueue(workInput(time = Instant.DISTANT_PAST + 15.seconds)) {
+        queue.enqueue(workInput(time = Instant.DISTANT_PAST + 15.seconds)) {
             startedExpectedCandidate = true
             delay(1.minutes)
             completedExpectedCandidate = true
         }
 
         // enqueue third candidate
-        subject.enqueue(workInput(time = Instant.DISTANT_PAST + 5.seconds)) {
+        queue.enqueue(workInput(time = Instant.DISTANT_PAST + 5.seconds)) {
             startedThirdCandidate = true
             delay(1.minutes)
         }

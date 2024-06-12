@@ -20,11 +20,22 @@ package com.wire.kalium.logic.feature.message.receipt
 import com.wire.kalium.logic.data.id.ConversationId
 import kotlinx.datetime.Instant
 
+/**
+ * The input of a conversation time-event.
+ * Used to schedule [ConversationTimeEventWork] through the [ConversationWorkQueue].
+ * @property eventTime that says when the event in question happened.
+ */
 internal data class ConversationTimeEventInput(
     val conversationId: ConversationId,
-    val time: Instant,
+    val eventTime: Instant
 )
 
+/**
+ * Represents a conversation time-event work, consisting of the input and the worker.
+ *
+ * @property conversationTimeEventInput The input of a conversation time-event.
+ * @property worker The responsible for performing the work.
+ */
 internal data class ConversationTimeEventWork(
     val conversationTimeEventInput: ConversationTimeEventInput,
     val worker: ConversationTimeEventWorker

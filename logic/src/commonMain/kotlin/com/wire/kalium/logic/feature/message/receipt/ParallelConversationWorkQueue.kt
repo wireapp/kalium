@@ -42,7 +42,7 @@ internal interface ConversationWorkQueue {
  *
  * If work is being performed for a conversation, allows enqueuing up to _one_ extra work to be done afterward.
  * When attempting to enqueue multiple works for the same [ConversationTimeEventInput.conversationId],
- * only the work with most recent [ConversationTimeEventInput.time] parameter will be scheduled.
+ * only the work with most recent [ConversationTimeEventInput.eventTime] parameter will be scheduled.
  *
  * This is aimed at things like handling Delivery or Read Receipts.
  * For Read Receipts, for example, the user may navigate to an unread conversation, and the client might want to mark as read multiple
@@ -65,7 +65,7 @@ internal class ParallelConversationWorkQueue(
     /**
      * Enqueues new work parameters for the provided [input].
      * Will **only** emit a new entry / replacing an existing one for the [ConversationTimeEventInput.conversationId] if
-     * the [ConversationTimeEventInput.time] is more recent than the existing one.
+     * the [ConversationTimeEventInput.eventTime] is more recent than the existing one.
      * If there's an existing work being done for the same [ConversationTimeEventInput.conversationId], it will wait until it's over.
      * After that, will start working as soon as the [dispatcher] allows it, while the [scope] is alive.
      */
@@ -74,12 +74,12 @@ internal class ParallelConversationWorkQueue(
         worker: ConversationTimeEventWorker
     ): Unit = mutex.withLock {
         val conversationId = input.conversationId
-        val time = input.time
+        val time = input.eventTime
         logger.v("Attempting to enqueue receipt work for conversation '${conversationId.toLogString()}', with time '$time'")
         val work = ConversationTimeEventWork(input, worker)
         val existingConversationQueue = conversationQueueMap[conversationId]
         existingConversationQueue?.let {
-            val isNewWorkMoreRecent = time > it.value.conversationTimeEventInput.time
+            val isNewWorkMoreRecent = time > it.value.conversationTimeEventInput.eventTime
             if (isNewWorkMoreRecent) {
                 it.value = work
             }
@@ -92,9 +92,9 @@ internal class ParallelConversationWorkQueue(
         MutableStateFlow(initialWork).also {
             scope.launch(dispatcher) {
                 @Suppress("TooGenericExceptionCaught")
-                it.collect { work ->
+                it.collect { (conversationTimeEventInput, worker) ->
                     try {
-                        work.worker.doWork(work.conversationTimeEventInput)
+                        worker.doWork(conversationTimeEventInput)
                     } catch (t: Throwable) {
                         logger.w("Failure in conversation work queue", t)
                     }
