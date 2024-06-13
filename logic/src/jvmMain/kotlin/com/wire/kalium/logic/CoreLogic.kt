@@ -35,6 +35,7 @@ import com.wire.kalium.persistence.db.StorageData
 import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
 import java.io.File
 
@@ -76,7 +77,7 @@ actual class CoreLogic(
         userSessionScopeProvider.value.delete(userId)
     }
 
-    override val globalCallManager: GlobalCallManager = GlobalCallManager(PlatformContext(), getGlobalScope())
+    override val globalCallManager: GlobalCallManager = GlobalCallManager(PlatformContext(), CoroutineScope(KaliumDispatcherImpl.io))
     override val globalWorkScheduler: GlobalWorkScheduler = GlobalWorkSchedulerImpl(this)
     override val networkStateObserver: NetworkStateObserver = kaliumConfigs.mockNetworkStateObserver ?: NetworkStateObserverImpl()
     override val userSessionScopeProvider: Lazy<UserSessionScopeProvider> = lazy {
