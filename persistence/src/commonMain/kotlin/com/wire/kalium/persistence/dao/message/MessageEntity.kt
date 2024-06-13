@@ -242,8 +242,8 @@ sealed class MessageEntityContent {
 
     data class Text(
         val messageBody: String,
-        val mentions: List<MessageEntity.Mention> = listOf(),
         val linkPreview: List<MessageEntity.LinkPreview> = listOf(),
+        val mentions: List<MessageEntity.Mention> = listOf(),
         /**
          * ID of a message being quoted.
          * When persisting the content, this is the ID that will be used for quotes.

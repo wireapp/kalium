@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.user.UserId
@@ -260,6 +261,7 @@ internal class MessageDataSource internal constructor(
     private val messageDAO: MessageDAO,
     private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper(),
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
+    private val linkPreviewMapper: LinkPreviewMapper = MapperProvider.linkPreviewMapper(),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
     private val sendMessagePartialFailureMapper: SendMessagePartialFailureMapper = MapperProvider.sendMessagePartialFailureMapper(),
@@ -550,6 +552,7 @@ internal class MessageDataSource internal constructor(
                 currentMessageId = messageContent.editMessageId,
                 newTextContent = MessageEntityContent.Text(
                     messageContent.newContent,
+                    messageContent.newLinkPreviews.map { linkPreviewMapper.fromModelToDao(it) },
                     messageContent.newMentions.map { messageMentionMapper.fromModelToDao(it) }
                 ),
                 newMessageId = newMessageId

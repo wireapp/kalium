@@ -185,6 +185,7 @@ sealed class MessageContent {
     data class TextEdited(
         val editMessageId: String,
         val newContent: String,
+        val newLinkPreviews: List<MessageLinkPreview> = listOf(),
         val newMentions: List<MessageMention> = listOf()
     ) : Signaling()
 
