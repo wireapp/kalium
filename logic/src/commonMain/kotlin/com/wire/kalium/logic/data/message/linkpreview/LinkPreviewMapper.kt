@@ -18,6 +18,8 @@
 package com.wire.kalium.logic.data.message.linkpreview
 
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
+import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_CBC
+import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_GCM
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.protobuf.messages.Asset
@@ -54,6 +56,11 @@ class LinkPreviewMapperImpl(
                     assetHeight = linkPreview.imageAssetHeight!!,
                     assetWidth = linkPreview.imageAssetWidth!!,
                     mimeType = linkPreview.imageAssetMimeType!!,
+                    encryptionAlgorithm = when {
+                        linkPreview.imageAssetEncryptionAlgorithm?.contains("CBC") == true -> AES_CBC
+                        linkPreview.imageAssetEncryptionAlgorithm?.contains("GCM") == true -> AES_GCM
+                        else -> AES_CBC
+                    }
                 )
             } else null
         )
@@ -75,6 +82,7 @@ class LinkPreviewMapperImpl(
             imageAssetHeight = linkPreview.image?.assetHeight,
             imageAssetWidth = linkPreview.image?.assetWidth,
             imageAssetMimeType = linkPreview.image?.mimeType,
+            imageAssetEncryptionAlgorithm = linkPreview.image?.encryptionAlgorithm.toString(),
             downloadedDate = DateTimeUtil.currentInstant().toEpochMilliseconds()
         )
     }
@@ -130,5 +138,6 @@ class LinkPreviewMapperImpl(
                 && imageAssetHeight != null
                 && imageAssetWidth != null
                 && imageAssetMimeType != null
+                && imageAssetEncryptionAlgorithm != null
     }
 }

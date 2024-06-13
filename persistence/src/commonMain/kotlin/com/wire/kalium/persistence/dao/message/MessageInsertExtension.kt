@@ -132,6 +132,27 @@ internal class MessageInsertExtensionImpl(
                     quoted_message_id = content.quotedMessageId,
                     is_quote_verified = content.isQuoteVerified
                 )
+                /* TODO: Implement
+                content.linkPreview.forEach {
+                    messagesQueries.insertMessageLinkPreview(
+                        message_id = message.id,
+                        conversation_id = message.conversationId,
+                        url = it.url,
+                        url_offset = it.urlOffset,
+                        permanent_url = it.permanentUrl,
+                        summary = it.summary,
+                        title = it.title,
+                        image_asset_mime_type = it.imageAssetMimeType,
+                        image_asset_otr_key = it.imageAssetOtrKey,
+                        image_asset_sha256 = it.imageAssetSha256Key,
+                        image_asset_id = it.imageAssetId,
+                        image_asset_token = it.imageAssetToken,
+                        image_asset_domain = it.imageAssetDomain,
+                        image_asset_encryption_algorithm = it.imageAssetEncryptionAlgorithm,
+                        image_asset_width = it.imageAssetWidth,
+                        image_asset_height = it.imageAssetHeight,
+                    )
+                }*/
                 content.mentions.forEach {
                     messagesQueries.insertMessageMention(
                         message_id = message.id,

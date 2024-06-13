@@ -229,6 +229,7 @@ sealed interface MessageEntity {
         val imageAssetMimeType: String?,
         val imageAssetHeight: Int?,
         val imageAssetWidth: Int?,
+        val imageAssetEncryptionAlgorithm: String?,
         val downloadedDate: Long?
     )
 }

@@ -335,8 +335,10 @@ internal class MessageDAOImpl internal constructor(
             queries.markMessageAsEdited(editTimeStamp.toInstant(), currentMessageId, conversationId)
             reactionsQueries.deleteAllReactionsForMessage(currentMessageId, conversationId)
             queries.deleteMessageMentions(currentMessageId, conversationId)
+            queries.deleteMessageLinkPreviews(currentMessageId, conversationId)
             queries.updateMessageTextContent(newTextContent.messageBody, currentMessageId, conversationId)
             newTextContent.mentions.forEach {
+                // TODO: Implement insertMessageLinkPreview here
                 queries.insertMessageMention(
                     message_id = currentMessageId,
                     conversation_id = conversationId,
