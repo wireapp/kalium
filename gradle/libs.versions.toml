@@ -1,5 +1,5 @@
 [versions]
-kotlin = "1.9.23"
+kotlin = "2.0.0"
 activity-compose = "1.9.0"
 app-compat = "1.6.1"
 android-paging3 = "3.2.1"
@@ -43,7 +43,7 @@ core-crypto-multiplatform = "0.6.0-rc.3-multiplatform-pre1"
 completeKotlin = "1.1.0"
 desugar-jdk = "2.0.4"
 kermit = "2.0.3"
-detekt = "1.23.6"
+detekt = "main-SNAPSHOT"
 agp = "8.3.2"
 dokka = "1.8.20"
 carthage = "0.0.1"
@@ -73,12 +73,13 @@ kalium-library = { id = "kalium.library" }
 android-library = { id = "com.android.library", version.ref = "agp" }
 android-application = { id = "com.android.application", version.ref = "agp" }
 completeKotlin = { id = "com.louiscad.complete-kotlin", version.ref = "completeKotlin" }
+compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 moduleGraph = { id = "dev.iurysouza.modulegraph", version.ref = "moduleGraph" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 kover = { id = "org.jetbrains.kotlinx.kover", version.ref = "kover" }
-ksp = { id = "com.google.devtools.ksp", version = "1.9.23-1.0.20" }
+ksp = { id = "com.google.devtools.ksp", version = "2.0.0-1.0.22" }
 carthage = { id = "com.wire.carthage-gradle-plugin", version.ref = "carthage" }
 sqldelight = { id = "app.cash.sqldelight", version.ref = "sqldelight" }
 protobuf = { id = "com.google.protobuf", version.ref = "protobufCodegen" }

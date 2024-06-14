@@ -20,6 +20,7 @@
 plugins {
     id(libs.plugins.android.application.get().pluginId)
     id(libs.plugins.kotlin.android.get().pluginId)
+    alias(libs.plugins.compose.compiler)
 }
 
 android {

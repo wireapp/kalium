@@ -43,6 +43,7 @@ repositories {
     wireDetektRulesRepo()
     google()
     mavenCentral()
+    maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
 }
 
 plugins {
@@ -52,6 +53,7 @@ plugins {
     id("scripts.detekt")
     alias(libs.plugins.moduleGraph)
     alias(libs.plugins.completeKotlin)
+    alias(libs.plugins.compose.compiler) apply false
 }
 
 dependencies {
