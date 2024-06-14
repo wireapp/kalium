@@ -89,6 +89,60 @@ internal class CallApiV0Test : ApiTest() {
         )
     }
 
+    @Test
+    fun givenSftUrlWithHttpProtocol_whenConnecting_thenReplaceItWithHttps() = runTest {
+        val sftConnectionURL = "http://sft.connection.url1/test/endpoint?param1=value1"
+        val sftConnectionData = """
+            |{
+            |   "sft":"connection"
+            |}
+        """.trimIndent()
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = GET_CALL_SFT.rawJson,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertJson()
+                assertPost()
+                assertUrlEqual("https://sft.connection.url1/test/endpoint?param1=value1")
+                assertJsonBodyContent(sftConnectionData)
+            }
+        )
+
+        val callApi: CallApi = CallApiV0(networkClient)
+        callApi.connectToSFT(
+            url = sftConnectionURL,
+            data = sftConnectionData
+        )
+    }
+
+    @Test
+    fun givenSftUrlWithNotProtocol_whenConnecting_thenAddHttps() = runTest {
+        val sftConnectionURL = "sft.connection.url1/test/endpoint?param1=value1"
+        val sftConnectionData = """
+            |{
+            |   "sft":"connection"
+            |}
+        """.trimIndent()
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = GET_CALL_SFT.rawJson,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertJson()
+                assertPost()
+                assertUrlEqual("https://sft.connection.url1/test/endpoint?param1=value1")
+                assertJsonBodyContent(sftConnectionData)
+            }
+        )
+
+        val callApi: CallApi = CallApiV0(networkClient)
+        callApi.connectToSFT(
+            url = sftConnectionURL,
+            data = sftConnectionData
+        )
+    }
+
     private companion object {
 
         const val PATH_CALLS = "calls"
