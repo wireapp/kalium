@@ -26,6 +26,7 @@ buildscript {
         google()
         mavenCentral()
         maven(url = "https://raw.githubusercontent.com/wireapp/wire-maven/main/releases")
+        maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
     }
 
     dependencies {
@@ -46,6 +47,7 @@ repositories {
     wireDetektRulesRepo()
     google()
     mavenCentral()
+    maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
 }
 
 plugins {
@@ -55,6 +57,7 @@ plugins {
     id("scripts.detekt")
     alias(libs.plugins.moduleGraph)
     alias(libs.plugins.completeKotlin)
+    alias(libs.plugins.compose.compiler) apply false
 }
 
 dependencies {
