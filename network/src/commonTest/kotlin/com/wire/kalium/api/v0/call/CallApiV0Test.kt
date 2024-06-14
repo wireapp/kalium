@@ -143,6 +143,33 @@ internal class CallApiV0Test : ApiTest() {
         )
     }
 
+    @Test
+    fun givenSftUrlWithHttpsProtocol_whenConnecting_thenDoNotChangeIt() = runTest {
+        val sftConnectionURL = "https://sft.connection.url1/test/endpoint?param1=value1"
+        val sftConnectionData = """
+            |{
+            |   "sft":"connection"
+            |}
+        """.trimIndent()
+
+        val networkClient = mockAuthenticatedNetworkClient(
+            responseBody = GET_CALL_SFT.rawJson,
+            statusCode = HttpStatusCode.OK,
+            assertion = {
+                assertJson()
+                assertPost()
+                assertUrlEqual("https://sft.connection.url1/test/endpoint?param1=value1")
+                assertJsonBodyContent(sftConnectionData)
+            }
+        )
+
+        val callApi: CallApi = CallApiV0(networkClient)
+        callApi.connectToSFT(
+            url = sftConnectionURL,
+            data = sftConnectionData
+        )
+    }
+
     private companion object {
 
         const val PATH_CALLS = "calls"
