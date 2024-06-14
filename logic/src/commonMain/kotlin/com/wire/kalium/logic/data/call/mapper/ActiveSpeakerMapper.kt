@@ -38,7 +38,7 @@ class ActiveSpeakerMapperImpl : ActiveSpeakerMapper {
                 activeSpeaker.userId == participant.id.toString() && activeSpeaker.clientId == participant.clientId
             }?.let {
                 this[indexOf(it)] = it.copy(
-                    isSpeaking = activeSpeaker.audioLevel > 0 && activeSpeaker.audioLevelNow > 0
+                    isSpeaking = activeSpeaker.audioLevel > 0 || activeSpeaker.audioLevelNow > 0
                 )
             }
         }
