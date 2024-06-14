@@ -144,6 +144,14 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.updateConversationGroupState(groupState, groupId)
         }
 
+    override suspend fun updateMlsGroupStateAndCipherSuite(
+        groupState: ConversationEntity.GroupState,
+        cipherSuite: ConversationEntity.CipherSuite,
+        groupId: String
+    ) = withContext(coroutineContext) {
+        conversationQueries.updateMlsGroupStateAndCipherSuite(groupState, cipherSuite, groupId)
+    }
+
     override suspend fun updateConversationModifiedDate(qualifiedID: QualifiedIDEntity, date: Instant) = withContext(coroutineContext) {
         conversationQueries.updateConversationModifiedDate(date, qualifiedID)
     }
@@ -343,9 +351,19 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.updateConversationType(type, conversationID)
         }
 
-    override suspend fun updateConversationProtocol(conversationId: QualifiedIDEntity, protocol: ConversationEntity.Protocol): Boolean {
+    override suspend fun updateConversationProtocolAndCipherSuite(
+        conversationId: QualifiedIDEntity,
+        groupID: String?,
+        protocol: ConversationEntity.Protocol,
+        cipherSuite: ConversationEntity.CipherSuite
+    ): Boolean {
         return withContext(coroutineContext) {
-            conversationQueries.updateConversationProtocol(protocol, conversationId).executeAsOne() > 0
+            conversationQueries.updateConversationGroupIdAndProtocolInfo(
+                groupID,
+                protocol,
+                cipherSuite,
+                conversationId
+            ).executeAsOne() > 0
         }
     }
 

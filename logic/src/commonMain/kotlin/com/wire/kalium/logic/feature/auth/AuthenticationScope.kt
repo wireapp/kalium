@@ -45,7 +45,7 @@ import com.wire.kalium.logic.feature.register.RegisterScope
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 
 class AuthenticationScopeProvider internal constructor(
     private val userAgent: String
@@ -61,7 +61,7 @@ class AuthenticationScopeProvider internal constructor(
         serverConfig: ServerConfig,
         proxyCredentials: ProxyCredentials?,
         networkStateObserver: NetworkStateObserver,
-        globalDatabase: GlobalDatabaseProvider,
+        globalDatabase: GlobalDatabaseBuilder,
         kaliumConfigs: KaliumConfigs
     ): AuthenticationScope =
         authenticationScopeStorage.computeIfAbsent(serverConfig to proxyCredentials) {
@@ -81,7 +81,7 @@ class AuthenticationScope internal constructor(
     private val serverConfig: ServerConfig,
     private val proxyCredentials: ProxyCredentials?,
     private val networkStateObserver: NetworkStateObserver,
-    private val globalDatabase: GlobalDatabaseProvider,
+    private val globalDatabase: GlobalDatabaseBuilder,
     private val kaliumConfigs: KaliumConfigs,
 ) {
 

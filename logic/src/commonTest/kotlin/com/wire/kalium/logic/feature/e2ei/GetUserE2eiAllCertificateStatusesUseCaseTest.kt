@@ -25,17 +25,14 @@ import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificatesUseCaseImpl
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.util.arrangement.mls.CertificateStatusMapperArrangement
-import com.wire.kalium.logic.util.arrangement.mls.CertificateStatusMapperArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
 import io.mockative.any
-import io.mockative.eq
-import io.mockative.verify
+import io.mockative.coVerify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
-import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -109,42 +106,26 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
                 mapOf(),
                 result
             )
-            verify(arrangement.mlsConversationRepository)
-                .suspendFunction(arrangement.mlsConversationRepository::getUserIdentity)
-                .with(any())
-                .wasNotInvoked()
+            coVerify {
+                arrangement.mlsConversationRepository.getUserIdentity(any())
+            }.wasNotInvoked()
         }
 
-    private class Arrangement(private val block: Arrangement.() -> Unit) :
+    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
-        CertificateStatusMapperArrangement by CertificateStatusMapperArrangementImpl(),
         IsE2EIEnabledUseCaseArrangement by IsE2EIEnabledUseCaseArrangementImpl() {
 
         fun arrange() = run {
-            withCertificateStatusMapperReturning(
-                CertificateStatus.VALID,
-                eq(CryptoCertificateStatus.VALID)
-            )
-            withCertificateStatusMapperReturning(
-                CertificateStatus.EXPIRED,
-                eq(CryptoCertificateStatus.EXPIRED)
-            )
-            withCertificateStatusMapperReturning(
-                CertificateStatus.REVOKED,
-                eq(CryptoCertificateStatus.REVOKED)
-            )
-
-            block()
+            runBlocking { block() }
             this@Arrangement to GetUserE2eiCertificatesUseCaseImpl(
                 mlsConversationRepository = mlsConversationRepository,
-                certificateStatusMapper = certificateStatusMapper,
                 isE2EIEnabledUseCase = isE2EIEnabledUseCase
             )
         }
     }
 
     private companion object {
-        fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+        fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
         private val USER_ID = UserId("value", "domain")
         private val CRYPTO_QUALIFIED_CLIENT_ID =

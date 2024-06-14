@@ -49,15 +49,16 @@ import com.wire.kalium.logic.util.arrangement.repository.IncrementalSyncReposito
 import com.wire.kalium.logic.util.arrangement.repository.IncrementalSyncRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangementImpl
+import com.wire.kalium.logic.util.arrangement.usecase.NotificationEventsManagerArrangement
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.every
 import io.mockative.once
-import io.mockative.verify
+import io.mockative.twice
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
@@ -73,45 +74,46 @@ class GetNotificationsUseCaseTest {
         val expectedMessages = listOf(notificationMessageText(), notificationMessageComment())
         val expectedConversations = listOf(localNotificationConversation(messages = expectedMessages))
         val (arrange, getNotifications) = arrange {
-            withLocalNotifications(Either.Right(flowOf(expectedConversations)))
+            withLocalNotifications(Either.Right(expectedConversations))
             withConnectionList(flowOf(listOf()))
             withIncrementalSyncState(syncStatusFlow)
             withEphemeralNotification()
+            withRegularNotificationsChecking(flowOf(Unit))
         }
 
         getNotifications().test {
             syncStatusFlow.emit(IncrementalSyncStatus.FetchingPendingEvents)
 
-            verify(arrange.messageRepository)
-                .suspendFunction(arrange.messageRepository::getNotificationMessage)
-                .with(any())
-                .wasNotInvoked()
+            coVerify {
+                arrange.messageRepository.getNotificationMessage(any())
+            }.wasNotInvoked()
 
-            verify(arrange.connectionRepository)
-                .suspendFunction(arrange.connectionRepository::observeConnectionRequestsForNotification)
-                .wasNotInvoked()
+            coVerify {
+                arrange.connectionRepository.observeConnectionRequestsForNotification()
+            }.wasNotInvoked()
 
-            verify(arrange.ephemeralNotifications)
-                .suspendFunction(arrange.ephemeralNotifications::observeEphemeralNotifications)
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrange.notificationEventsManager.observeEphemeralNotifications()
+            }.wasInvoked(exactly = once)
 
             syncStatusFlow.emit(IncrementalSyncStatus.Live)
 
-            verify(arrange.messageRepository)
-                .suspendFunction(arrange.messageRepository::getNotificationMessage)
-                .with(any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrange.messageRepository.getNotificationMessage(any())
+            }.wasInvoked(exactly = twice) // first onStart
 
-            verify(arrange.connectionRepository)
-                .suspendFunction(arrange.connectionRepository::observeConnectionRequestsForNotification)
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrange.connectionRepository.observeConnectionRequestsForNotification()
+            }.wasInvoked(exactly = once)
 
-            verify(arrange.ephemeralNotifications)
-                .suspendFunction(arrange.ephemeralNotifications::observeEphemeralNotifications)
-                .wasInvoked(atLeast = once)
+            coVerify {
+                arrange.notificationEventsManager.observeEphemeralNotifications()
+            }.wasInvoked(atLeast = once)
 
             val result = awaitItem()
             assertContentEquals(expectedConversations, result)
+
+            awaitItem()
         }
     }
 
@@ -121,42 +123,41 @@ class GetNotificationsUseCaseTest {
         val expectedMessages = listOf(notificationMessageText(), notificationMessageComment())
         val expectedConversations = listOf(localNotificationConversation(messages = expectedMessages))
         val (arrange, getNotifications) = arrange {
-            withLocalNotifications(Either.Right(flowOf(expectedConversations)))
+            withLocalNotifications(Either.Right(expectedConversations))
             withConnectionList(flowOf(listOf()))
             withIncrementalSyncState(syncStatusFlow)
             withEphemeralNotification()
+            withRegularNotificationsChecking(flowOf())
         }
 
         getNotifications().test {
             syncStatusFlow.emit(IncrementalSyncStatus.FetchingPendingEvents)
 
-            verify(arrange.messageRepository)
-                .suspendFunction(arrange.messageRepository::getNotificationMessage)
-                .with(any())
-                .wasNotInvoked()
+            coVerify {
+                arrange.messageRepository.getNotificationMessage(any())
+            }.wasNotInvoked()
 
-            verify(arrange.connectionRepository)
-                .suspendFunction(arrange.connectionRepository::observeConnectionRequestsForNotification)
-                .wasNotInvoked()
+            coVerify {
+                arrange.connectionRepository.observeConnectionRequestsForNotification()
+            }.wasNotInvoked()
 
-            verify(arrange.ephemeralNotifications)
-                .suspendFunction(arrange.ephemeralNotifications::observeEphemeralNotifications)
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrange.notificationEventsManager.observeEphemeralNotifications()
+            }.wasInvoked(exactly = once)
 
             syncStatusFlow.emit(IncrementalSyncStatus.Pending)
 
-            verify(arrange.messageRepository)
-                .suspendFunction(arrange.messageRepository::getNotificationMessage)
-                .with(any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrange.messageRepository.getNotificationMessage(any())
+            }.wasInvoked(exactly = once)
 
-            verify(arrange.connectionRepository)
-                .suspendFunction(arrange.connectionRepository::observeConnectionRequestsForNotification)
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrange.connectionRepository.observeConnectionRequestsForNotification()
+            }.wasInvoked(exactly = once)
 
-            verify(arrange.ephemeralNotifications)
-                .suspendFunction(arrange.ephemeralNotifications::observeEphemeralNotifications)
-                .wasInvoked(atLeast = once)
+            coVerify {
+                arrange.notificationEventsManager.observeEphemeralNotifications()
+            }.wasInvoked(atLeast = once)
 
             val result = awaitItem()
             assertContentEquals(expectedConversations, result)
@@ -169,52 +170,53 @@ class GetNotificationsUseCaseTest {
         val expectedMessages = listOf(notificationMessageText(), notificationMessageComment())
         val expectedConversations = listOf(localNotificationConversation(messages = expectedMessages))
         val (arrange, getNotifications) = arrange {
-            withLocalNotifications(Either.Right(flowOf(expectedConversations)))
+            withLocalNotifications(Either.Right(expectedConversations))
             withConnectionList(flowOf(listOf()))
             withIncrementalSyncState(syncStatusFlow)
             withEphemeralNotification()
+            withRegularNotificationsChecking(flowOf(Unit))
         }
 
         getNotifications().test {
             syncStatusFlow.emit(IncrementalSyncStatus.FetchingPendingEvents)
 
-            verify(arrange.messageRepository)
-                .suspendFunction(arrange.messageRepository::getNotificationMessage)
-                .with(any())
-                .wasNotInvoked()
+            coVerify {
+                arrange.messageRepository.getNotificationMessage(any())
+            }.wasNotInvoked()
 
-            verify(arrange.connectionRepository)
-                .suspendFunction(arrange.connectionRepository::observeConnectionRequestsForNotification)
-                .wasNotInvoked()
+            coVerify {
+                arrange.connectionRepository.observeConnectionRequestsForNotification()
+            }.wasNotInvoked()
 
-            verify(arrange.ephemeralNotifications)
-                .suspendFunction(arrange.ephemeralNotifications::observeEphemeralNotifications)
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrange.notificationEventsManager.observeEphemeralNotifications()
+            }.wasInvoked(exactly = once)
 
             syncStatusFlow.emit(IncrementalSyncStatus.Failed(CoreFailure.Unknown(null)))
 
-            verify(arrange.messageRepository)
-                .suspendFunction(arrange.messageRepository::getNotificationMessage)
-                .with(any())
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrange.messageRepository.getNotificationMessage(any())
+            }.wasInvoked(exactly = twice) // first onStart
 
-            verify(arrange.connectionRepository)
-                .suspendFunction(arrange.connectionRepository::observeConnectionRequestsForNotification)
-                .wasInvoked(exactly = once)
+            coVerify {
+                arrange.connectionRepository.observeConnectionRequestsForNotification()
+            }.wasInvoked(exactly = once)
 
-            verify(arrange.ephemeralNotifications)
-                .suspendFunction(arrange.ephemeralNotifications::observeEphemeralNotifications)
-                .wasInvoked(atLeast = once)
+            coVerify {
+                arrange.notificationEventsManager.observeEphemeralNotifications()
+            }.wasInvoked(atLeast = once)
 
             val result = awaitItem()
             assertContentEquals(expectedConversations, result)
+
+            awaitItem()
         }
     }
 
     @Test
     fun givenEmptyConversationList_thenNoItemsAreEmitted() = runTest {
         val (_, getNotifications) = arrange {
-            withLocalNotifications(Either.Right(flowOf(listOf())))
+            withLocalNotifications(Either.Right(listOf()))
             withConnectionList(flowOf(listOf()))
             withEphemeralNotification(
                 flowOf(
@@ -223,6 +225,7 @@ class GetNotificationsUseCaseTest {
                     )
                 )
             )
+            withRegularNotificationsChecking(flowOf())
         }
 
         getNotifications().test {
@@ -233,7 +236,7 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenConversationWithEmptyMessageList_thenNoItemsAreEmitted() = runTest {
         val (_, getNotifications) = arrange {
-            withLocalNotifications(Either.Right(flowOf(listOf(localNotificationConversation()))))
+            withLocalNotifications(Either.Right(listOf(localNotificationConversation())))
             withConnectionList(flowOf(listOf()))
             withEphemeralNotification(
                 flowOf(
@@ -242,6 +245,7 @@ class GetNotificationsUseCaseTest {
                     )
                 )
             )
+            withRegularNotificationsChecking(flowOf(Unit))
         }
 
         getNotifications().test {
@@ -252,9 +256,10 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenUpdateMessageFromEphemeralManager_thenCorrespondingItemsAreEmitted() = runTest {
         val (_, getNotifications) = arrange {
-            withLocalNotifications(Either.Right(flowOf(listOf())))
+            withLocalNotifications(Either.Right(listOf()))
             withConnectionList(flowOf(listOf()))
             withEphemeralNotification(flowOf(localNotificationUpdateMessage()))
+            withRegularNotificationsChecking(flowOf(Unit))
         }
 
         getNotifications().test {
@@ -269,9 +274,10 @@ class GetNotificationsUseCaseTest {
             action = LocalNotificationUpdateMessageAction.Edit("updated text", "newId")
         )
         val (_, getNotifications) = arrange {
-            withLocalNotifications(Either.Right(flowOf()))
+            withLocalNotifications(Either.Right(listOf()))
             withConnectionList(flowOf(listOf()))
             withEphemeralNotification(flowOf(ephemeralNotification))
+            withRegularNotificationsChecking(flowOf())
         }
 
         getNotifications().test {
@@ -283,9 +289,10 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenConnectionRequests_thenNotificationListWithConnectionRequestMessage() = runTest {
         val (_, getNotifications) = arrange {
-            withLocalNotifications(Either.Right(emptyFlow()))
+            withLocalNotifications(Either.Right(listOf()))
             withConnectionList(flowOf(listOf(connectionRequest())))
             withEphemeralNotification()
+            withRegularNotificationsChecking(flowOf())
         }
 
         getNotifications().test {
@@ -306,11 +313,12 @@ class GetNotificationsUseCaseTest {
     }
 
     @Test
-    fun givenNoNewNotifications_thenShouldNotEmitAnything() = runTest {
+    fun givenNoNewNotifications_thenShouldNotEmitAny() = runTest {
         val (_, getNotifications) = arrange {
-            withLocalNotifications(Either.Right(emptyFlow()))
+            withLocalNotifications(Either.Right(listOf()))
             withConnectionList(flowOf(listOf()))
             withEphemeralNotification()
+            withRegularNotificationsChecking(flowOf())
         }
 
         getNotifications().test {
@@ -318,39 +326,35 @@ class GetNotificationsUseCaseTest {
         }
     }
 
-    private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
+    private suspend fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
 
     private class Arrangement(
-        private val block: Arrangement.() -> Unit
+        private val block: suspend Arrangement.() -> Unit
     ) : ConversationRepositoryArrangement by ConversationRepositoryArrangementImpl(),
         MessageRepositoryArrangement by MessageRepositoryArrangementImpl(),
         IncrementalSyncRepositoryArrangement by IncrementalSyncRepositoryArrangementImpl(),
-        EphemeralEventsNotificationManagerArrangement by EphemeralEventsNotificationManagerArrangementImpl(),
+        NotificationEventsManagerArrangement by EphemeralEventsNotificationManagerArrangementImpl(),
         ConnectionRepositoryArrangement by ConnectionRepositoryArrangementImpl() {
 
-        init {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateConversationNotificationDate)
-                .whenInvokedWith(any())
-                .then { _ -> Either.Right(Unit) }
-
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::updateAllConversationsNotificationDate)
-                .whenInvoked()
-                .then { Either.Right(Unit) }
-            given(incrementalSyncRepository)
-                .getter(incrementalSyncRepository::incrementalSyncState)
-                .whenInvoked()
-                .then { flowOf(IncrementalSyncStatus.Live) }
-        }
-
-        fun arrange() = block().run {
+        suspend fun arrange() = run {
             this@Arrangement to GetNotificationsUseCaseImpl(
                 connectionRepository = connectionRepository,
                 messageRepository = messageRepository,
-                deleteConversationNotificationsManager = ephemeralNotifications,
+                notificationEventsManager = notificationEventsManager,
                 incrementalSyncRepository = incrementalSyncRepository
             )
+        }.also {
+            coEvery {
+                conversationRepository.updateConversationNotificationDate(any())
+            }.returns(Either.Right(Unit))
+
+            coEvery {
+                conversationRepository.updateAllConversationsNotificationDate()
+            }.returns(Either.Right(Unit))
+            every { incrementalSyncRepository.incrementalSyncState }
+                .returns(flowOf(IncrementalSyncStatus.Live))
+
+            block()
         }
     }
 

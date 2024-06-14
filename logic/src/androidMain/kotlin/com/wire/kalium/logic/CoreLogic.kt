@@ -31,8 +31,11 @@ import com.wire.kalium.logic.sync.GlobalWorkSchedulerImpl
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.logic.util.SecurityHelperImpl
 import com.wire.kalium.network.NetworkStateObserver
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
+import com.wire.kalium.persistence.db.PlatformDatabaseData
+import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.cancel
 
 /**
@@ -51,16 +54,21 @@ actual class CoreLogic(
         kaliumConfigs.shouldEncryptData
     )
 
-    override val globalDatabase: GlobalDatabaseProvider = GlobalDatabaseProvider(
-        appContext,
-        SecurityHelperImpl(globalPreferences.passphraseStorage).globalDBSecret(),
-        kaliumConfigs.shouldEncryptData
+    override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
+        platformDatabaseData = PlatformDatabaseData(appContext),
+        queriesContext = KaliumDispatcherImpl.io,
+        passphrase = if (kaliumConfigs.shouldEncryptData) {
+            SecurityHelperImpl(globalPreferences.passphraseStorage).globalDBSecret()
+        } else {
+            null
+        },
+        enableWAL = true
     )
 
     override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
 
-    override fun deleteSessionScope(userId: UserId) {
+    override suspend fun deleteSessionScope(userId: UserId) {
         userSessionScopeProvider.value.get(userId)?.cancel()
         userSessionScopeProvider.value.delete(userId)
     }
@@ -83,7 +91,7 @@ actual class CoreLogic(
             rootPathsProvider,
             appContext,
             getGlobalScope(),
-            globalDatabase,
+            globalDatabaseBuilder,
             kaliumConfigs,
             globalPreferences,
             globalCallManager,

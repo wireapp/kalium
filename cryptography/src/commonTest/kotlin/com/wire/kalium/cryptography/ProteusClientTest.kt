@@ -1,4 +1,4 @@
-/*
+ /*
  * Wire
  * Copyright (C) 2024 Wire Swiss GmbH
  *
@@ -39,7 +39,7 @@ class ProteusClientTest : BaseProteusClientTest() {
     private val alice = SampleUser(CryptoUserID("aliceId", "aliceDomain"), "Alice")
     private val bob = SampleUser(CryptoUserID("bobId", "bobDomain"), "Bob")
     private val aliceSessionId = CryptoSessionId(alice.id, CryptoClientId("aliceClient"))
-    private val bobSessionId = CryptoSessionId(alice.id, CryptoClientId("aliceClient"))
+    private val bobSessionId = CryptoSessionId(bob.id, CryptoClientId("bobClient"))
 
     @BeforeTest
     fun before() {

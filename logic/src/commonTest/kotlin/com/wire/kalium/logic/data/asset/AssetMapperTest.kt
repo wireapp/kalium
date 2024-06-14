@@ -25,7 +25,6 @@ import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.LegalHoldStatus
 import com.wire.kalium.util.KaliumDispatcher
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -80,7 +79,7 @@ class AssetMapperTest {
     private class Arrangement {
 
         @Mock
-        val dispatcher = mock(classOf<KaliumDispatcher>())
+        val dispatcher = mock(KaliumDispatcher::class)
 
         val mapper = AssetMapperImpl(
             encryptionAlgorithmMapper = EncryptionAlgorithmMapper(),

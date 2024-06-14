@@ -23,24 +23,22 @@ import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.feature.TimestampKeyRepository
 import com.wire.kalium.logic.feature.TimestampKeys
-import com.wire.kalium.logic.featureFlags.FeatureSupport
+import com.wire.kalium.logic.feature.user.IsMLSEnabledUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
-import io.mockative.anything
-import io.mockative.classOf
+import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import kotlin.test.Test
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MLSMigrationManagerTest {
 
     @Test
@@ -57,9 +55,9 @@ class MLSMigrationManagerTest {
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
-            verify(arrangement.mlsMigrationWorker)
-                .suspendFunction(arrangement.mlsMigrationWorker::runMigration)
-                .wasInvoked(once)
+            coVerify {
+                arrangement.mlsMigrationWorker.runMigration()
+            }.wasInvoked(once)
         }
 
     @Test
@@ -75,9 +73,9 @@ class MLSMigrationManagerTest {
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
-            verify(arrangement.mlsMigrationWorker)
-                .suspendFunction(arrangement.mlsMigrationWorker::runMigration)
-                .wasNotInvoked()
+            coVerify {
+                arrangement.mlsMigrationWorker.runMigration()
+            }.wasNotInvoked()
         }
 
     @Test
@@ -91,9 +89,9 @@ class MLSMigrationManagerTest {
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
-            verify(arrangement.mlsMigrationWorker)
-                .suspendFunction(arrangement.mlsMigrationWorker::runMigration)
-                .wasNotInvoked()
+            coVerify {
+                arrangement.mlsMigrationWorker.runMigration()
+            }.wasNotInvoked()
         }
 
     @Test
@@ -108,9 +106,9 @@ class MLSMigrationManagerTest {
             arrangement.incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Live)
             yield()
 
-            verify(arrangement.mlsMigrationWorker)
-                .suspendFunction(arrangement.mlsMigrationWorker::runMigration)
-                .wasNotInvoked()
+            coVerify {
+                arrangement.mlsMigrationWorker.runMigration()
+            }.wasNotInvoked()
         }
 
     private class Arrangement {
@@ -120,54 +118,51 @@ class MLSMigrationManagerTest {
         val kaliumConfigs = KaliumConfigs()
 
         @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
+        val clientRepository = mock(ClientRepository::class)
 
         @Mock
-        val featureSupport = mock(classOf<FeatureSupport>())
+        val isMLSEnabledUseCase = mock(IsMLSEnabledUseCase::class)
 
         @Mock
-        val timestampKeyRepository = mock(classOf<TimestampKeyRepository>())
+        val timestampKeyRepository = mock(TimestampKeyRepository::class)
 
         @Mock
-        val mlsMigrationWorker = mock(classOf<MLSMigrationWorker>())
+        val mlsMigrationWorker = mock(MLSMigrationWorker::class)
 
-        fun withRunMigrationSucceeds() = apply {
-            given(mlsMigrationWorker)
-                .suspendFunction(mlsMigrationWorker::runMigration)
-                .whenInvoked()
-                .thenReturn(Either.Right(Unit))
+        suspend fun withRunMigrationSucceeds() = apply {
+            coEvery {
+                mlsMigrationWorker.runMigration()
+            }.returns(Either.Right(Unit))
         }
 
-        fun withLastMLSMigrationCheck(hasPassed: Boolean) = apply {
-            given(timestampKeyRepository)
-                .suspendFunction(timestampKeyRepository::hasPassed)
-                .whenInvokedWith(eq(TimestampKeys.LAST_MLS_MIGRATION_CHECK), anything())
-                .thenReturn(Either.Right(hasPassed))
+        suspend fun withLastMLSMigrationCheck(hasPassed: Boolean) = apply {
+            coEvery {
+                timestampKeyRepository.hasPassed(eq(TimestampKeys.LAST_MLS_MIGRATION_CHECK), any())
+            }.returns(Either.Right(hasPassed))
         }
 
-        fun withLastMLSMigrationCheckResetSucceeds() = apply {
-            given(timestampKeyRepository)
-                .suspendFunction(timestampKeyRepository::reset)
-                .whenInvokedWith(eq(TimestampKeys.LAST_MLS_MIGRATION_CHECK))
-                .thenReturn(Either.Right(Unit))
+        suspend fun withLastMLSMigrationCheckResetSucceeds() = apply {
+            coEvery {
+                timestampKeyRepository.reset(eq(TimestampKeys.LAST_MLS_MIGRATION_CHECK))
+            }.returns(Either.Right(Unit))
         }
 
         fun withIsMLSSupported(supported: Boolean) = apply {
-            given(featureSupport)
-                .invocation { featureSupport.isMLSSupported }
-                .thenReturn(supported)
+            every {
+                isMLSEnabledUseCase()
+            }.returns(supported)
+
         }
 
-        fun withHasRegisteredMLSClient(result: Boolean) = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::hasRegisteredMLSClient)
-                .whenInvoked()
-                .thenReturn(Either.Right(result))
+        suspend fun withHasRegisteredMLSClient(result: Boolean) = apply {
+            coEvery {
+                clientRepository.hasRegisteredMLSClient()
+            }.returns(Either.Right(result))
         }
 
         fun arrange() = this to MLSMigrationManagerImpl(
             kaliumConfigs,
-            featureSupport,
+            isMLSEnabledUseCase,
             incrementalSyncRepository,
             lazy { clientRepository },
             lazy { timestampKeyRepository },

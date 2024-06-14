@@ -25,7 +25,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -54,20 +54,24 @@ class ObserveConversationUnderLegalHoldNotifiedUseCaseTest {
     @Test
     fun givenFailure_whenObserving_thenReturnTrue() =
         testObserving(Either.Left(StorageFailure.DataNotFound), true)
+
     @Test
     fun givenLegalHoldEnabledAndNotNotified_whenObserving_thenReturnFalse() =
         testObserving(Either.Right(Conversation.LegalHoldStatus.ENABLED to false), false)
+
     @Test
     fun givenLegalHoldEnabledAndNotified_whenObserving_thenReturnTrue() =
         testObserving(Either.Right(Conversation.LegalHoldStatus.ENABLED to true), true)
+
     @Test
     fun givenLegalHoldDisabledAndNotNotified_whenObserving_thenReturnFalse() =
         testObserving(Either.Right(Conversation.LegalHoldStatus.DISABLED to false), true)
+
     @Test
     fun givenLegalHoldDisabledAndNotified_whenObserving_thenReturnTrue() =
         testObserving(Either.Right(Conversation.LegalHoldStatus.DISABLED to true), true)
 
-    private class Arrangement() {
+    private class Arrangement {
         @Mock
         val conversationRepository = mock(ConversationRepository::class)
 
@@ -76,21 +80,20 @@ class ObserveConversationUnderLegalHoldNotifiedUseCaseTest {
         }
 
         fun arrange() = this to useCase
-        fun withObserveLegalHoldStatusForConversation(
+        suspend fun withObserveLegalHoldStatusForConversation(
             result: Either<StorageFailure, Conversation.LegalHoldStatus>
         ) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::observeLegalHoldStatus)
-                .whenInvokedWith(any())
-                .thenReturn(flowOf(result))
+            coEvery {
+                conversationRepository.observeLegalHoldStatus(any())
+            }.returns(flowOf(result))
         }
-        fun withObserveLegalHoldStatusChangeNotifiedForConversation(
+
+        suspend fun withObserveLegalHoldStatusChangeNotifiedForConversation(
             result: Either<StorageFailure, Boolean>
         ) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::observeLegalHoldStatusChangeNotified)
-                .whenInvokedWith(any())
-                .thenReturn(flowOf(result))
+            coEvery {
+                conversationRepository.observeLegalHoldStatusChangeNotified(any())
+            }.returns(flowOf(result))
         }
     }
 }

@@ -38,18 +38,22 @@ import kotlin.time.toDuration
 @Suppress("TooManyFunctions")
 @OptIn(ExperimentalUnsignedTypes::class)
 class MLSClientImpl(
-    private val coreCrypto: CoreCrypto
+    private val coreCrypto: CoreCrypto,
+    private val defaultCipherSuite: UShort
 ) : MLSClient {
 
     private val keyRotationDuration: Duration = 30.toDuration(DurationUnit.DAYS)
     private val defaultGroupConfiguration = CustomConfiguration(keyRotationDuration, MlsWirePolicy.PLAINTEXT)
+    override fun getDefaultCipherSuite(): UShort {
+        return defaultCipherSuite
+    }
 
     @Suppress("EmptyFunctionBlock")
     override suspend fun close() {
     }
 
-    override suspend fun getPublicKey(): ByteArray {
-        return coreCrypto.clientPublicKey().toUByteArray().asByteArray()
+    override suspend fun getPublicKey(): Pair<ByteArray, UShort> {
+        return coreCrypto.clientPublicKey().toUByteArray().asByteArray() to defaultCipherSuite
     }
 
     override suspend fun generateKeyPackages(amount: Int): List<ByteArray> {
@@ -96,11 +100,11 @@ class MLSClientImpl(
 
     override suspend fun createConversation(
         groupId: MLSGroupId,
-        externalSenders: List<Ed22519Key>
+        externalSenders: ByteArray
     ) {
         val conf = ConversationConfiguration(
             CiphersuiteName.MLS_128_DHKEMX25519_AES128GCM_SHA256_ED25519,
-            externalSenders.map { toUByteList(it.value) },
+            listOf(toUByteList(externalSenders)),
             defaultGroupConfiguration
         )
 

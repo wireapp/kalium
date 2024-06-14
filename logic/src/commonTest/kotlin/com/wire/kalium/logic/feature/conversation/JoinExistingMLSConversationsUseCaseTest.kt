@@ -28,6 +28,7 @@ import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCa
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.featureFlags.FeatureSupport
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
@@ -35,13 +36,12 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
-import io.mockative.anything
-import io.mockative.classOf
-import io.mockative.eq
-import io.mockative.given
+import io.mockative.any
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.twice
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -49,199 +49,150 @@ import kotlin.test.assertIs
 class JoinExistingMLSConversationsUseCaseTest {
 
     @Test
-    fun givenMLSSupportIsDisabled_whenInvokingUseCase_ThenRequestToJoinConversationIsNotCalled() =
-        runTest {
-            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
-                .withIsMLSSupported(false)
-                .withJoinExistingMLSConversationSuccessful()
-                .withGetConversationsByGroupStateSuccessful()
-                .arrange()
+    fun givenMLSSupportIsDisabled_whenInvokingUseCase_ThenRequestToJoinConversationIsNotCalled() = runTest {
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement().withIsMLSSupported(false)
+            .withJoinExistingMLSConversationSuccessful().withGetConversationsByGroupStateSuccessful().arrange()
 
-            joinExistingMLSConversationsUseCase().shouldSucceed()
+        joinExistingMLSConversationsUseCase().shouldSucceed()
 
-            verify(arrangement.mlsConversationRepository)
-                .suspendFunction(arrangement.mlsConversationRepository::joinGroupByExternalCommit)
-                .with(eq(Arrangement.MLS_CONVERSATION1), anything())
-                .wasNotInvoked()
+        coVerify {
+            arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), any())
+        }.wasNotInvoked()
 
-            verify(arrangement.joinExistingMLSConversationUseCase)
-                .suspendFunction(arrangement.joinExistingMLSConversationUseCase::invoke)
-                .with(anything())
-                .wasNotInvoked()
-        }
+        coVerify {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+        }.wasNotInvoked()
+    }
 
     @Test
-    fun givenNoMLSClientIsRegistered_whenInvokingUseCase_ThenRequestToJoinConversationIsNotCalled() =
-        runTest {
-            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
-                .withIsMLSSupported(true)
-                .withHasRegisteredMLSClient(false)
-                .withJoinExistingMLSConversationSuccessful()
-                .withGetConversationsByGroupStateSuccessful()
-                .arrange()
+    fun givenNoMLSClientIsRegistered_whenInvokingUseCase_ThenRequestToJoinConversationIsNotCalled() = runTest {
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement().withIsMLSSupported(true).withHasRegisteredMLSClient(false)
+            .withJoinExistingMLSConversationSuccessful().withGetConversationsByGroupStateSuccessful().arrange()
 
-            joinExistingMLSConversationsUseCase().shouldSucceed()
+        joinExistingMLSConversationsUseCase().shouldSucceed()
 
-            verify(arrangement.mlsConversationRepository)
-                .suspendFunction(arrangement.mlsConversationRepository::joinGroupByExternalCommit)
-                .with(eq(Arrangement.MLS_CONVERSATION1), anything())
-                .wasNotInvoked()
+        coVerify {
+            arrangement.mlsConversationRepository.joinGroupByExternalCommit(any(), any())
+        }.wasNotInvoked()
 
-            verify(arrangement.joinExistingMLSConversationUseCase)
-                .suspendFunction(arrangement.joinExistingMLSConversationUseCase::invoke)
-                .with(anything())
-                .wasNotInvoked()
-        }
+        coVerify {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+        }.wasNotInvoked()
+    }
 
     @Test
-    fun givenExistingConversations_whenInvokingUseCase_ThenRequestToJoinConversationIsCalledForAllConversations() =
-        runTest {
-            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
-                .withIsMLSSupported(true)
-                .withHasRegisteredMLSClient(true)
-                .withJoinExistingMLSConversationSuccessful()
-                .withGetConversationsByGroupStateSuccessful()
-                .arrange()
+    fun givenExistingConversations_whenInvokingUseCase_ThenRequestToJoinConversationIsCalledForAllConversations() = runTest {
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement().withIsMLSSupported(true).withHasRegisteredMLSClient(true)
+            .withJoinExistingMLSConversationSuccessful().withGetConversationsByGroupStateSuccessful().arrange()
 
-            joinExistingMLSConversationsUseCase().shouldSucceed()
+        joinExistingMLSConversationsUseCase().shouldSucceed()
 
-            verify(arrangement.joinExistingMLSConversationUseCase)
-                .suspendFunction(arrangement.joinExistingMLSConversationUseCase::invoke)
-                .with(anything())
-                .wasInvoked(twice)
-        }
+        coVerify {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+        }.wasInvoked(twice)
+    }
 
     @Test
-    fun givenNoKeyPackagesAvailable_WhenJoinExistingMLSConversationUseCase_ThenReturnUnit() =
-        runTest {
-            val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
-                .withIsMLSSupported(true)
-                .withHasRegisteredMLSClient(true)
-                .withGetConversationsByGroupStateSuccessful()
-                .withNoKeyPackagesAvailable()
-                .arrange()
+    fun givenNoKeyPackagesAvailable_WhenJoinExistingMLSConversationUseCase_ThenReturnUnit() = runTest {
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement().withIsMLSSupported(true).withHasRegisteredMLSClient(true)
+            .withGetConversationsByGroupStateSuccessful().withNoKeyPackagesAvailable().arrange()
 
-            joinExistingMLSConversationsUseCase().shouldSucceed()
+        joinExistingMLSConversationsUseCase().shouldSucceed()
 
-            verify(arrangement.joinExistingMLSConversationUseCase)
-                .suspendFunction(arrangement.joinExistingMLSConversationUseCase::invoke)
-                .with(anything())
-                .wasInvoked(twice)
-        }
+        coVerify {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+        }.wasInvoked(twice)
+    }
 
     @Test
     fun givenNetworkFailure_WhenJoinExistingMLSConversationUseCase_ThenPropagateFailure() = runTest {
-        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
-            .withIsMLSSupported(true)
-            .withHasRegisteredMLSClient(true)
-            .withGetConversationsByGroupStateSuccessful()
-            .withJoinExistingMLSConversationNetworkFailure()
-            .arrange()
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement().withIsMLSSupported(true).withHasRegisteredMLSClient(true)
+            .withGetConversationsByGroupStateSuccessful().withJoinExistingMLSConversationNetworkFailure().arrange()
 
         joinExistingMLSConversationsUseCase().shouldFail {
             assertIs<NetworkFailure>(it)
         }
-        verify(arrangement.joinExistingMLSConversationUseCase)
-            .suspendFunction(arrangement.joinExistingMLSConversationUseCase::invoke)
-            .with(anything())
-            .wasInvoked(twice)
+        coVerify {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+        }.wasInvoked(twice)
     }
 
     @Test
     fun givenOtherFailure_WhenJoinExistingMLSConversationUseCase_ThenReturnUnit() = runTest {
-        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement()
-            .withIsMLSSupported(true)
-            .withHasRegisteredMLSClient(true)
-            .withGetConversationsByGroupStateSuccessful()
-            .withJoinExistingMLSConversationFailure()
-            .arrange()
+        val (arrangement, joinExistingMLSConversationsUseCase) = Arrangement().withIsMLSSupported(true).withHasRegisteredMLSClient(true)
+            .withGetConversationsByGroupStateSuccessful().withJoinExistingMLSConversationFailure().arrange()
 
         joinExistingMLSConversationsUseCase().shouldSucceed()
 
-        verify(arrangement.joinExistingMLSConversationUseCase)
-            .suspendFunction(arrangement.joinExistingMLSConversationUseCase::invoke)
-            .with(anything())
-            .wasInvoked(twice)
+        coVerify {
+            arrangement.joinExistingMLSConversationUseCase.invoke(any())
+        }.wasInvoked(twice)
     }
 
     private class Arrangement {
 
         @Mock
-        val featureSupport = mock(classOf<FeatureSupport>())
+        val featureSupport = mock(FeatureSupport::class)
 
         @Mock
-        val clientRepository = mock(classOf<ClientRepository>())
+        val clientRepository = mock(ClientRepository::class)
 
         @Mock
-        val conversationRepository = mock(classOf<ConversationRepository>())
+        val conversationRepository = mock(ConversationRepository::class)
 
         @Mock
-        val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
+        val mlsConversationRepository = mock(MLSConversationRepository::class)
 
         @Mock
-        val joinExistingMLSConversationUseCase = mock(classOf<JoinExistingMLSConversationUseCase>())
+        val joinExistingMLSConversationUseCase = mock(JoinExistingMLSConversationUseCase::class)
 
         fun arrange() = this to JoinExistingMLSConversationsUseCaseImpl(
-            featureSupport,
-            clientRepository,
-            conversationRepository,
-            joinExistingMLSConversationUseCase
+            featureSupport, clientRepository, conversationRepository, joinExistingMLSConversationUseCase
         )
 
         @Suppress("MaxLineLength")
-        fun withGetConversationsByGroupStateSuccessful(
-            conversations: List<Conversation> = listOf(
-                MLS_CONVERSATION1,
-                MLS_CONVERSATION2
-            )
-        ) =
-            apply {
-                given(conversationRepository)
-                    .suspendFunction(conversationRepository::getConversationsByGroupState)
-                    .whenInvokedWith(anything())
-                    .then { Either.Right(conversations) }
-            }
-
-        fun withJoinExistingMLSConversationSuccessful() = apply {
-            given(joinExistingMLSConversationUseCase)
-                .suspendFunction(joinExistingMLSConversationUseCase::invoke)
-                .whenInvokedWith(anything())
-                .then { Either.Right(Unit) }
+        suspend fun withGetConversationsByGroupStateSuccessful(
+            conversations: List<Conversation> = listOf(MLS_CONVERSATION1, MLS_CONVERSATION2)
+        ) = apply {
+            coEvery {
+                conversationRepository.getConversationsByGroupState(any())
+            }.returns(Either.Right(conversations))
         }
 
-        fun withJoinExistingMLSConversationNetworkFailure() = apply {
-            given(joinExistingMLSConversationUseCase)
-                .suspendFunction(joinExistingMLSConversationUseCase::invoke)
-                .whenInvokedWith(anything())
-                .then { Either.Left(NetworkFailure.NoNetworkConnection(null)) }
+        suspend fun withJoinExistingMLSConversationSuccessful() = apply {
+            coEvery {
+                joinExistingMLSConversationUseCase.invoke(any())
+            }.returns(Either.Right(Unit))
         }
 
-        fun withJoinExistingMLSConversationFailure() = apply {
-            given(joinExistingMLSConversationUseCase)
-                .suspendFunction(joinExistingMLSConversationUseCase::invoke)
-                .whenInvokedWith(anything())
-                .then { Either.Left(CoreFailure.NotSupportedByProteus) }
+        suspend fun withJoinExistingMLSConversationNetworkFailure() = apply {
+            coEvery {
+                joinExistingMLSConversationUseCase.invoke(any())
+            }.returns(Either.Left(NetworkFailure.NoNetworkConnection(null)))
         }
 
-        fun withNoKeyPackagesAvailable() = apply {
-            given(joinExistingMLSConversationUseCase)
-                .suspendFunction(joinExistingMLSConversationUseCase::invoke)
-                .whenInvokedWith(anything())
-                .then { Either.Left(CoreFailure.MissingKeyPackages(setOf())) }
+        suspend fun withJoinExistingMLSConversationFailure() = apply {
+            coEvery {
+                joinExistingMLSConversationUseCase.invoke(any())
+            }.returns(Either.Left(CoreFailure.NotSupportedByProteus))
         }
 
+        suspend fun withNoKeyPackagesAvailable() = apply {
+            coEvery {
+                joinExistingMLSConversationUseCase.invoke(any())
+            }.returns(Either.Left(CoreFailure.MissingKeyPackages(setOf())))
+        }
 
         fun withIsMLSSupported(supported: Boolean) = apply {
-            given(featureSupport)
-                .invocation { featureSupport.isMLSSupported }
-                .thenReturn(supported)
+            every {
+                featureSupport.isMLSSupported
+            }.returns(supported)
         }
 
-        fun withHasRegisteredMLSClient(result: Boolean) = apply {
-            given(clientRepository)
-                .suspendFunction(clientRepository::hasRegisteredMLSClient)
-                .whenInvoked()
-                .thenReturn(Either.Right(result))
+        suspend fun withHasRegisteredMLSClient(result: Boolean) = apply {
+            coEvery {
+                clientRepository.hasRegisteredMLSClient()
+            }.returns(Either.Right(result))
         }
 
         companion object {
@@ -254,7 +205,7 @@ class JoinExistingMLSConversationsUseCaseTest {
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 1UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
-                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                    cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("id1", "domain"))
 
@@ -264,7 +215,7 @@ class JoinExistingMLSConversationsUseCaseTest {
                     Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                     epoch = 1UL,
                     keyingMaterialLastUpdate = DateTimeUtil.currentInstant(),
-                    cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                    cipherSuite = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
                 )
             ).copy(id = ConversationId("id2", "domain"))
         }

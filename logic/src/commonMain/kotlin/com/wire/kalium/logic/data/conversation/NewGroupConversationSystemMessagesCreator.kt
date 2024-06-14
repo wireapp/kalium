@@ -41,10 +41,14 @@ import com.wire.kalium.util.DateTimeUtil
  */
 internal interface NewGroupConversationSystemMessagesCreator {
     suspend fun conversationStarted(conversation: ConversationEntity): Either<CoreFailure, Unit>
-    suspend fun conversationStarted(creatorId: UserId, conversation: ConversationResponse): Either<CoreFailure, Unit>
+    suspend fun conversationStarted(creatorId: UserId, conversation: ConversationResponse, timestampIso: String): Either<CoreFailure, Unit>
     suspend fun conversationReadReceiptStatus(conversation: Conversation): Either<CoreFailure, Unit>
-    suspend fun conversationReadReceiptStatus(conversation: ConversationResponse): Either<CoreFailure, Unit>
-    suspend fun conversationResolvedMembersAdded(conversationId: ConversationIDEntity, validUsers: List<UserId>): Either<CoreFailure, Unit>
+    suspend fun conversationReadReceiptStatus(conversation: ConversationResponse, timestampIso: String): Either<CoreFailure, Unit>
+    suspend fun conversationResolvedMembersAdded(
+        conversationId: ConversationIDEntity,
+        validUsers: List<UserId>,
+        timestampIso: String = DateTimeUtil.currentIsoDateTimeString()
+    ): Either<CoreFailure, Unit>
 
     suspend fun conversationFailedToAddMembers(
         conversationId: ConversationId,
@@ -52,7 +56,10 @@ internal interface NewGroupConversationSystemMessagesCreator {
         type: MessageContent.MemberChange.FailedToAdd.Type,
     ): Either<CoreFailure, Unit>
 
-    suspend fun conversationStartedUnverifiedWarning(conversationId: ConversationId): Either<CoreFailure, Unit>
+    suspend fun conversationStartedUnverifiedWarning(
+        conversationId: ConversationId,
+        timestampIso: String = DateTimeUtil.currentIsoDateTimeString()
+    ): Either<CoreFailure, Unit>
 }
 
 internal class NewGroupConversationSystemMessagesCreatorImpl(
@@ -72,22 +79,27 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         )
     }
 
-    override suspend fun conversationStarted(creatorId: UserId, conversation: ConversationResponse) = run {
+    override suspend fun conversationStarted(creatorId: UserId, conversation: ConversationResponse, timestampIso: String) = run {
         if (conversation.type != ConversationResponse.Type.GROUP) {
             return Either.Right(Unit)
         }
         persistConversationStartedSystemMessage(
             creatorId,
-            conversation.id.toModel()
+            conversation.id.toModel(),
+            timestampIso
         )
     }
 
-    private suspend fun persistConversationStartedSystemMessage(creatorId: UserId, conversationId: ConversationId) = persistMessage(
+    private suspend fun persistConversationStartedSystemMessage(
+        creatorId: UserId,
+        conversationId: ConversationId,
+        timestampIso: String = DateTimeUtil.currentIsoDateTimeString()
+    ) = persistMessage(
         Message.System(
             id = uuid4().toString(),
             content = MessageContent.ConversationCreated,
             conversationId = conversationId,
-            date = DateTimeUtil.currentIsoDateTimeString(),
+            date = timestampIso,
             senderUserId = creatorId,
             status = Message.Status.Sent,
             visibility = Message.Visibility.VISIBLE,
@@ -107,7 +119,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         )
     }
 
-    override suspend fun conversationReadReceiptStatus(conversation: ConversationResponse) = run {
+    override suspend fun conversationReadReceiptStatus(conversation: ConversationResponse, timestampIso: String) = run {
         if (conversation.type != ConversationResponse.Type.GROUP || !isSelfATeamMember()) {
             return Either.Right(Unit)
         }
@@ -115,20 +127,22 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         persistReadReceiptSystemMessage(
             conversationId = conversation.id.toModel(),
             creatorId = conversation.creator?.let { qualifiedIdMapper.fromStringToQualifiedID(it) } ?: selfUserId,
-            receiptMode = conversation.receiptMode == ReceiptMode.ENABLED
+            receiptMode = conversation.receiptMode == ReceiptMode.ENABLED,
+            timestampIso = timestampIso
         )
     }
 
     private suspend fun persistReadReceiptSystemMessage(
         conversationId: ConversationId,
         creatorId: UserId,
-        receiptMode: Boolean
+        receiptMode: Boolean,
+        timestampIso: String = DateTimeUtil.currentIsoDateTimeString()
     ) = persistMessage(
         Message.System(
             id = uuid4().toString(),
             content = MessageContent.NewConversationReceiptMode(receiptMode = receiptMode),
             conversationId = conversationId,
-            date = DateTimeUtil.currentIsoDateTimeString(),
+            date = timestampIso,
             senderUserId = creatorId,
             status = Message.Status.Sent,
             visibility = Message.Visibility.VISIBLE,
@@ -139,6 +153,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
     override suspend fun conversationResolvedMembersAdded(
         conversationId: ConversationIDEntity,
         validUsers: List<UserId>,
+        timestampIso: String
     ): Either<CoreFailure, Unit> = run {
         if (validUsers.isNotEmpty()) {
             persistMessage(
@@ -146,7 +161,7 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
                     id = uuid4().toString(),
                     content = MessageContent.MemberChange.CreationAdded(validUsers.toList()),
                     conversationId = conversationId.toModel(),
-                    date = DateTimeUtil.currentIsoDateTimeString(),
+                    date = timestampIso,
                     senderUserId = selfUserId,
                     status = Message.Status.Sent,
                     visibility = Message.Visibility.VISIBLE,
@@ -179,13 +194,16 @@ internal class NewGroupConversationSystemMessagesCreatorImpl(
         Either.Right(Unit)
     }
 
-    override suspend fun conversationStartedUnverifiedWarning(conversationId: ConversationId): Either<CoreFailure, Unit> =
+    override suspend fun conversationStartedUnverifiedWarning(
+        conversationId: ConversationId,
+        timestampIso: String
+    ): Either<CoreFailure, Unit> =
         persistMessage(
             Message.System(
                 uuid4().toString(),
                 MessageContent.ConversationStartedUnverifiedWarning,
                 conversationId,
-                DateTimeUtil.currentIsoDateTimeString(),
+                timestampIso,
                 selfUserId,
                 Message.Status.Sent,
                 Message.Visibility.VISIBLE,

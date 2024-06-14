@@ -42,6 +42,7 @@ import com.wire.kalium.logic.data.message.SessionEstablisherImpl
 import com.wire.kalium.logic.data.message.draft.MessageDraftRepository
 import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
+import com.wire.kalium.logic.data.notification.NotificationEventsManagerImpl
 import com.wire.kalium.logic.data.prekey.PreKeyRepository
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
@@ -196,7 +197,7 @@ class MessageScope internal constructor(
         )
 
     val persistMessage: PersistMessageUseCase
-        get() = PersistMessageUseCaseImpl(messageRepository, selfUserId)
+        get() = PersistMessageUseCaseImpl(messageRepository, selfUserId, NotificationEventsManagerImpl)
 
     val sendTextMessage: SendTextMessageUseCase
         get() = SendTextMessageUseCase(
@@ -346,7 +347,7 @@ class MessageScope internal constructor(
             connectionRepository = connectionRepository,
             messageRepository = messageRepository,
             incrementalSyncRepository = incrementalSyncRepository,
-            deleteConversationNotificationsManager = EphemeralEventsNotificationManagerImpl
+            notificationEventsManager = NotificationEventsManagerImpl
         )
 
     internal val sendConfirmation: SendConfirmationUseCase

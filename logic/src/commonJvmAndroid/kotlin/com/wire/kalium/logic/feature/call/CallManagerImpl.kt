@@ -16,6 +16,8 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
+@file:Suppress("konsist.useCasesShouldNotAccessNetworkLayerDirectly")
+
 package com.wire.kalium.logic.feature.call
 
 import com.sun.jna.Pointer
@@ -73,6 +75,7 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.util.toInt
+import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.util.DateTimeUtil.toEpochMillis
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
@@ -84,6 +87,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -103,13 +107,14 @@ class CallManagerImpl internal constructor(
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val videoStateChecker: VideoStateChecker,
     private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
+    private val networkStateObserver: NetworkStateObserver,
     private val kaliumConfigs: KaliumConfigs,
     private val json: Json = Json { ignoreUnknownKeys = true },
     private val shouldRemoteMuteChecker: ShouldRemoteMuteChecker = ShouldRemoteMuteCheckerImpl(),
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : CallManager {
 
-    private val job = SupervisorJob() // TODO(calling): clear job method
+    private val job = SupervisorJob()
     private val scope = CoroutineScope(job + kaliumDispatchers.io)
     private val deferredHandle: Deferred<Handle> = startHandleAsync()
 
@@ -185,7 +190,7 @@ class CallManagerImpl internal constructor(
                     .keepingStrongReference(),
                 establishedCallHandler = OnEstablishedCall(callRepository, scope, qualifiedIdMapper)
                     .keepingStrongReference(),
-                closeCallHandler = OnCloseCall(callRepository, scope, qualifiedIdMapper)
+                closeCallHandler = OnCloseCall(callRepository, scope, qualifiedIdMapper, networkStateObserver)
                     .keepingStrongReference(),
                 metricsHandler = metricsHandler,
                 callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope)
@@ -613,6 +618,12 @@ class CallManagerImpl internal constructor(
         withCalling {
             wcall_process_notifications(it, isStarted)
         }
+    }
+
+    override suspend fun cancelJobs() {
+        deferredHandle.cancel()
+        scope.cancel()
+        job.cancel()
     }
 
     companion object {

@@ -18,7 +18,7 @@
 
 package com.wire.kalium.persistence
 
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestDispatcher
 
@@ -26,7 +26,7 @@ class TestGlobalDatabase(
     private val dispatcher: TestDispatcher = StandardTestDispatcher()
 ) {
 
-    val provider: GlobalDatabaseProvider
+    val provider: GlobalDatabaseBuilder
 
     init {
         deleteTestGlobalDatabase()
@@ -40,4 +40,4 @@ class TestGlobalDatabase(
 
 internal expect fun deleteTestGlobalDatabase()
 
-internal expect fun createTestGlobalDatabase(): GlobalDatabaseProvider
+internal expect fun createTestGlobalDatabase(): GlobalDatabaseBuilder

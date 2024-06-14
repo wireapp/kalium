@@ -23,7 +23,6 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.network.api.base.authenticated.conversation.MutedStatus
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.mockative.Mock
-import io.mockative.classOf
 import io.mockative.mock
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -31,7 +30,7 @@ import kotlin.test.assertEquals
 
 class ConversationStatusMapperTest {
     @Mock
-    val idMapper = mock(classOf<IdMapper>())
+    val idMapper = mock(IdMapper::class)
 
     private lateinit var conversationStatusMapper: ConversationStatusMapper
 

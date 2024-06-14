@@ -1,0 +1,2 @@
+CREATE INDEX conversation_archiverd_index ON Conversation(archived);
+CREATE INDEX conversation_muted_status_index ON Conversation(muted_status);

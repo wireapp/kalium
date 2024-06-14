@@ -60,6 +60,8 @@ CREATE INDEX conversation_notified_date_index ON Conversation(last_notified_date
 CREATE INDEX conversation_read_date_index ON Conversation(last_read_date);
 CREATE INDEX conversation_creator_index ON Conversation(creator_id);
 CREATE INDEX conversation_verification_status ON Conversation(verification_status);
+CREATE INDEX conversation_archiverd_index ON Conversation(archived);
+CREATE INDEX conversation_muted_status_index ON Conversation(muted_status);
 
 conversationIDByGroupId:
 SELECT qualified_id, verification_status FROM Conversation WHERE mls_group_id = :groupId;
@@ -106,6 +108,11 @@ updateConversationGroupState:
 UPDATE Conversation
 SET mls_group_state = ?
 WHERE mls_group_id = ?;
+
+updateMlsGroupStateAndCipherSuite:
+UPDATE Conversation
+SET mls_group_state = :mls_group_state, mls_cipher_suite = :mls_cipher_suite
+WHERE mls_group_id = :mls_group_id;
 
 updateConversationNotificationsDateWithTheLastMessage:
 UPDATE Conversation
@@ -367,10 +374,11 @@ UPDATE Conversation
 SET type = ?
 WHERE qualified_id = ?;
 
-updateConversationProtocol {
+updateConversationGroupIdAndProtocolInfo {
 UPDATE Conversation
-SET protocol = :protocol
-WHERE qualified_id = :qualified_id AND protocol != :protocol;
+SET mls_group_id = :groupId, protocol = :protocol, mls_cipher_suite = :mls_cipher_suite
+WHERE qualified_id = :qualified_id AND
+ protocol != :protocol;
 SELECT changes();
 }
 

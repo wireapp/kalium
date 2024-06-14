@@ -29,8 +29,12 @@ import com.wire.kalium.logic.sync.GlobalWorkScheduler
 import com.wire.kalium.logic.sync.GlobalWorkSchedulerImpl
 import com.wire.kalium.logic.util.PlatformContext
 import com.wire.kalium.network.NetworkStateObserver
-import com.wire.kalium.persistence.db.GlobalDatabaseProvider
+import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
+import com.wire.kalium.persistence.db.PlatformDatabaseData
+import com.wire.kalium.persistence.db.StorageData
+import com.wire.kalium.persistence.db.globalDatabaseProvider
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
+import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.cancel
 import java.io.File
 
@@ -52,13 +56,22 @@ actual class CoreLogic(
             shouldEncryptData = kaliumConfigs.shouldEncryptData
         )
 
-    override val globalDatabase: GlobalDatabaseProvider =
-        GlobalDatabaseProvider(File("$rootPath/global-storage"))
+    override val globalDatabaseBuilder: GlobalDatabaseBuilder = globalDatabaseProvider(
+        platformDatabaseData = PlatformDatabaseData(
+            storageData = if (useInMemoryStorage) {
+                StorageData.InMemory
+            } else {
+                StorageData.FileBacked(File("$rootPath/global-storage"))
+            }
+        ),
+        passphrase = null,
+        queriesContext = KaliumDispatcherImpl.io
+    )
 
     override fun getSessionScope(userId: UserId): UserSessionScope =
         userSessionScopeProvider.value.getOrCreate(userId)
 
-    override fun deleteSessionScope(userId: UserId) {
+    override suspend fun deleteSessionScope(userId: UserId) {
         userSessionScopeProvider.value.get(userId)?.cancel()
         userSessionScopeProvider.value.delete(userId)
     }
@@ -74,7 +87,7 @@ actual class CoreLogic(
             kaliumConfigs,
             globalPreferences,
             globalCallManager,
-            globalDatabase,
+            globalDatabaseBuilder,
             userStorageProvider,
             networkStateObserver,
             logoutCallbackManager,

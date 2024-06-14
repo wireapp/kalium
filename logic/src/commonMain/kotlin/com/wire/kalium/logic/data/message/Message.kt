@@ -555,7 +555,6 @@ data class MessagePreview(
     val id: String,
     val conversationId: ConversationId,
     val content: MessagePreviewContent,
-    val date: String,
     val visibility: Message.Visibility,
     val isSelfMessage: Boolean,
     val senderUserId: UserId

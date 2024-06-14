@@ -380,6 +380,7 @@ data class NotificationMessageEntity(
 
 sealed class MessagePreviewEntityContent {
 
+    data class Deleted(val senderName: String?) : MessagePreviewEntityContent()
     data class Text(val senderName: String?, val messageBody: String) : MessagePreviewEntityContent()
 
     data class Composite(val senderName: String?, val messageBody: String?) : MessagePreviewEntityContent()

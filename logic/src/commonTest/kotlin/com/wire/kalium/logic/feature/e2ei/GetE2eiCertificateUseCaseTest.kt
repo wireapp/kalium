@@ -32,8 +32,9 @@ import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCaseImpl
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.classOf
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.coVerify
+import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -52,10 +53,9 @@ class GetE2eiCertificateUseCaseTest {
 
         val result = getE2eiCertificateUseCase.invoke(CLIENT_ID)
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::getClientIdentity)
-            .with(any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.mlsConversationRepository.getClientIdentity(any())
+        }.wasInvoked(once)
 
         assertEquals(GetE2EICertificateUseCaseResult.Failure, result)
     }
@@ -68,10 +68,9 @@ class GetE2eiCertificateUseCaseTest {
 
         val result = getE2eiCertificateUseCase.invoke(CLIENT_ID)
 
-        verify(arrangement.mlsConversationRepository)
-            .suspendFunction(arrangement.mlsConversationRepository::getClientIdentity)
-            .with(any())
-            .wasInvoked(once)
+        coVerify {
+            arrangement.mlsConversationRepository.getClientIdentity(any())
+        }.wasInvoked(once)
 
         assertEquals(GetE2EICertificateUseCaseResult.Failure, result)
     }
@@ -81,20 +80,13 @@ class GetE2eiCertificateUseCaseTest {
         runTest {
             val (arrangement, getE2eiCertificateUseCase) = Arrangement()
                 .withRepositoryValidCertificate(IDENTITY)
-                .withMapperReturning(CertificateStatus.EXPIRED)
                 .arrange()
 
             val result = getE2eiCertificateUseCase.invoke(CLIENT_ID)
 
-            verify(arrangement.mlsConversationRepository)
-                .suspendFunction(arrangement.mlsConversationRepository::getClientIdentity)
-                .with(any())
-                .wasInvoked(once)
-
-            verify(arrangement.certificateStatusMapper)
-                .function(arrangement.certificateStatusMapper::toCertificateStatus)
-                .with(any())
-                .wasInvoked(once)
+            coVerify {
+                arrangement.mlsConversationRepository.getClientIdentity(any())
+            }.wasInvoked(once)
 
             assertEquals(true, result is GetE2EICertificateUseCaseResult.Success)
         }
@@ -108,15 +100,9 @@ class GetE2eiCertificateUseCaseTest {
 
             val result = getE2eiCertificateUseCase.invoke(CLIENT_ID)
 
-            verify(arrangement.mlsConversationRepository)
-                .suspendFunction(arrangement.mlsConversationRepository::getClientIdentity)
-                .with(any())
-                .wasInvoked(once)
-
-            verify(arrangement.certificateStatusMapper)
-                .function(arrangement.certificateStatusMapper::toCertificateStatus)
-                .with(any())
-                .wasNotInvoked()
+            coVerify {
+                arrangement.mlsConversationRepository.getClientIdentity(any())
+            }.wasInvoked(once)
 
             assertEquals(true, result is GetE2EICertificateUseCaseResult.NotActivated)
         }
@@ -124,35 +110,22 @@ class GetE2eiCertificateUseCaseTest {
     class Arrangement {
 
         @Mock
-        val mlsConversationRepository = mock(classOf<MLSConversationRepository>())
-
-        @Mock
-        val certificateStatusMapper = mock(classOf<CertificateStatusMapper>())
+        val mlsConversationRepository = mock(MLSConversationRepository::class)
 
         fun arrange() = this to GetE2eiCertificateUseCaseImpl(
-            mlsConversationRepository = mlsConversationRepository,
-            certificateStatusMapper = certificateStatusMapper
+            mlsConversationRepository = mlsConversationRepository
         )
 
-        fun withRepositoryFailure(failure: CoreFailure = E2EIFailure.Generic(Exception())) = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::getClientIdentity)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Left(failure))
+        suspend fun withRepositoryFailure(failure: CoreFailure = E2EIFailure.Generic(Exception())) = apply {
+            coEvery {
+                mlsConversationRepository.getClientIdentity(any())
+            }.returns(Either.Left(failure))
         }
 
-        fun withRepositoryValidCertificate(identity: WireIdentity?) = apply {
-            given(mlsConversationRepository)
-                .suspendFunction(mlsConversationRepository::getClientIdentity)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(identity))
-        }
-
-        fun withMapperReturning(status: CertificateStatus) = apply {
-            given(certificateStatusMapper)
-                .function(certificateStatusMapper::toCertificateStatus)
-                .whenInvokedWith(any())
-                .thenReturn(status)
+        suspend fun withRepositoryValidCertificate(identity: WireIdentity?) = apply {
+            coEvery {
+                mlsConversationRepository.getClientIdentity(any())
+            }.returns(Either.Right(identity))
         }
     }
 
@@ -163,7 +136,14 @@ class GetE2eiCertificateUseCaseTest {
             CryptoQualifiedClientId("clientId", USER_ID.toCrypto())
 
         val e2eiCertificate =
-            E2eiCertificate(CertificateStatus.EXPIRED, "serialNumber", "certificateDetail", Instant.DISTANT_FUTURE)
+            E2eiCertificate(
+                userHandle = "handle",
+                status = CertificateStatus.EXPIRED,
+                serialNumber = "serialNumber",
+                certificateDetail = "certificateDetail",
+                endAt = Instant.DISTANT_FUTURE,
+                thumbprint = "thumbprint"
+            )
         val IDENTITY = WireIdentity(
             CRYPTO_QUALIFIED_CLIENT_ID,
             handle = "alic_test",

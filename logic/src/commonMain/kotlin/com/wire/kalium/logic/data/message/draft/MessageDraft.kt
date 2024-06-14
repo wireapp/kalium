@@ -17,9 +17,11 @@
  */
 package com.wire.kalium.logic.data.message.draft
 
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.mention.MessageMention
 
 data class MessageDraft(
+    val conversationId: ConversationId,
     val text: String,
     val editMessageId: String?,
     val quotedMessageId: String?,

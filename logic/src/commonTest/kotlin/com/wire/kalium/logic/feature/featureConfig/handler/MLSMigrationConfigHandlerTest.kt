@@ -24,9 +24,10 @@ import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArr
 import com.wire.kalium.logic.util.arrangement.usecase.UpdateSupportedProtocolsAndResolveOneOnOnesArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.UpdateSupportedProtocolsAndResolveOneOnOnesArrangementImpl
 import io.mockative.any
+import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
-import io.mockative.verify
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
@@ -40,10 +41,9 @@ class MLSMigrationConfigHandlerTest {
 
         handler.handle(MIGRATION_CONFIG, duringSlowSync = false)
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::setMigrationConfiguration)
-            .with(eq(MIGRATION_CONFIG))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.userConfigRepository.setMigrationConfiguration(eq(MIGRATION_CONFIG))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -53,15 +53,16 @@ class MLSMigrationConfigHandlerTest {
             withSetMigrationConfigurationSuccessful()
         }
 
-        handler.handle(MIGRATION_CONFIG.copy(
-            startTime = Instant.DISTANT_PAST,
-            endTime = Instant.DISTANT_PAST
-        ), duringSlowSync = false)
+        handler.handle(
+            MIGRATION_CONFIG.copy(
+                startTime = Instant.DISTANT_PAST,
+                endTime = Instant.DISTANT_PAST
+            ), duringSlowSync = false
+        )
 
-        verify(arrangement.updateSupportedProtocolsAndResolveOneOnOnes)
-            .suspendFunction(arrangement.updateSupportedProtocolsAndResolveOneOnOnes::invoke)
-            .with(eq(true))
-            .wasInvoked(exactly = once)
+        coVerify {
+            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(eq(true))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -71,23 +72,23 @@ class MLSMigrationConfigHandlerTest {
             withSetMigrationConfigurationSuccessful()
         }
 
-        handler.handle(MIGRATION_CONFIG.copy(
-            startTime = Instant.DISTANT_PAST,
-            endTime = Instant.DISTANT_PAST
-        ), duringSlowSync = true)
+        handler.handle(
+            MIGRATION_CONFIG.copy(
+                startTime = Instant.DISTANT_PAST,
+                endTime = Instant.DISTANT_PAST
+            ), duringSlowSync = true
+        )
 
-        verify(arrangement.updateSupportedProtocolsAndResolveOneOnOnes)
-            .suspendFunction(arrangement.updateSupportedProtocolsAndResolveOneOnOnes::invoke)
-            .with(any())
-            .wasNotInvoked()
+        coVerify {
+            arrangement.updateSupportedProtocolsAndResolveOneOnOnes.invoke(any())
+        }.wasNotInvoked()
     }
 
-    private class Arrangement(private val block: Arrangement.() -> Unit) :
+    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         UserConfigRepositoryArrangement by UserConfigRepositoryArrangementImpl(),
-        UpdateSupportedProtocolsAndResolveOneOnOnesArrangement by UpdateSupportedProtocolsAndResolveOneOnOnesArrangementImpl()
-    {
+        UpdateSupportedProtocolsAndResolveOneOnOnesArrangement by UpdateSupportedProtocolsAndResolveOneOnOnesArrangementImpl() {
         fun arrange() = run {
-            block()
+            runBlocking { block() }
             this@Arrangement to MLSMigrationConfigHandler(
                 userConfigRepository = userConfigRepository,
                 updateSupportedProtocolsAndResolveOneOnOnes = updateSupportedProtocolsAndResolveOneOnOnes
@@ -96,7 +97,7 @@ class MLSMigrationConfigHandlerTest {
     }
 
     private companion object {
-        fun arrange(configuration: Arrangement.() -> Unit) = Arrangement(configuration).arrange()
+        fun arrange(configuration: suspend Arrangement.() -> Unit) = Arrangement(configuration).arrange()
 
         val MIGRATION_CONFIG = MLSMigrationModel(
             startTime = null,

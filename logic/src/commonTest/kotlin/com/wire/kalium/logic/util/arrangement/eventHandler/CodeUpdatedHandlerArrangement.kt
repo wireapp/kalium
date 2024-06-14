@@ -23,21 +23,23 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
+import io.mockative.fake.valueOf
+import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
+import io.mockative.matches
 import io.mockative.mock
 
 internal interface CodeUpdatedHandlerArrangement {
     val codeUpdatedHandler: CodeUpdatedHandler
 
-    fun withHandleCodeUpdatedEvent(
+    suspend fun withHandleCodeUpdatedEvent(
         result: Either<StorageFailure, Unit>,
-        event: Matcher<Event.Conversation.CodeUpdated> = any()
+        event: Matcher<Event.Conversation.CodeUpdated> = AnyMatcher(valueOf())
     ) {
-        given(codeUpdatedHandler)
-            .suspendFunction(codeUpdatedHandler::handle)
-            .whenInvokedWith(event)
-            .thenReturn(result)
+        coEvery {
+            codeUpdatedHandler.handle(matches { event.matches(it) })
+        }.returns(result)
     }
 }
 

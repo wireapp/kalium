@@ -20,6 +20,7 @@ package com.wire.kalium.testservice.managed
 
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.mention.MessageMention
@@ -29,7 +30,9 @@ import com.wire.kalium.logic.feature.conversation.ClearConversationContentUseCas
 import com.wire.kalium.logic.feature.debug.BrokenState
 import com.wire.kalium.logic.feature.debug.SendBrokenAssetMessageResult
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
+import com.wire.kalium.logic.data.message.receipt.DetailedReceipt
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.conversation.CreateGroupConversationUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
@@ -95,6 +98,40 @@ sealed class ConversationRepository {
                         }, {
                             Response.status(Response.Status.OK).build()
                         })
+                    }
+                }
+
+                is CurrentSessionResult.Failure -> {
+                    Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Session failure").build()
+                }
+            }
+        }
+
+        suspend fun createConversation(
+            instance: Instance,
+            name: String,
+            userIds: List<UserId>
+        ): Response = instance.coreLogic.globalScope {
+            when (val session = session.currentSession()) {
+                is CurrentSessionResult.Success -> {
+                    instance.coreLogic.sessionScope(session.accountInfo.userId) {
+                        log.info("Instance ${instance.instanceId}: Create conversation \"$name\" with ${
+                                    userIds.joinToString { user -> user.value + "@" + user.domain }
+                                }")
+                        when (val result = conversations.createGroupConversation(
+                            name,
+                            userIds,
+                            ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
+                        )) {
+                            is CreateGroupConversationUseCase.Result.Success -> {
+                                Response.status(Response.Status.OK).build()
+                            }
+
+                            else -> {
+                                Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                                    .entity("Instance ${instance.instanceId}: $result").build()
+                            }
+                        }
                     }
                 }
 
@@ -380,6 +417,30 @@ sealed class ConversationRepository {
                 }
             }
             throw WebApplicationException("Instance ${instance.instanceId}: Could not get recent messages")
+        }
+
+        suspend fun getMessageReceipts(
+            instance: Instance,
+            conversationId: ConversationId,
+            messageId: String,
+            type: ReceiptType
+        ): List<DetailedReceipt> {
+            instance.coreLogic.globalScope {
+                when (val session = session.currentSession()) {
+                    is CurrentSessionResult.Success -> {
+                        instance.coreLogic.sessionScope(session.accountInfo.userId) {
+                            log.info("Instance ${instance.instanceId}: Get receipts...")
+                            val receipts = messages.observeMessageReceipts(conversationId, messageId, type).first()
+                            return receipts
+                        }
+                    }
+
+                    is CurrentSessionResult.Failure -> {
+                        Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Session failure").build()
+                    }
+                }
+            }
+            throw WebApplicationException("Instance ${instance.instanceId}: Could not get receipts from message")
         }
 
         @Suppress("LongParameterList", "LongMethod", "ThrowsCount")

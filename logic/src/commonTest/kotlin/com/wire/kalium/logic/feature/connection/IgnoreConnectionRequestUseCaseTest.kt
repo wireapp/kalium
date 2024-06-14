@@ -26,11 +26,11 @@ import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
+import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -51,39 +51,35 @@ class IgnoreConnectionRequestUseCaseTest {
     @Test
     fun givenAConnectionRequest_whenInvokingIgnoreConnectionRequestAndOk_thenShouldReturnsASuccessResult() = runTest {
         // given
-        given(connectionRepository)
-            .suspendFunction(connectionRepository::updateConnectionStatus)
-            .whenInvokedWith(eq(userId), eq(ConnectionState.IGNORED))
-            .thenReturn(Either.Right(connection))
+        coEvery {
+            connectionRepository.ignoreConnectionRequest(userId)
+        }.returns(Either.Right(Unit))
 
         // when
         val resultOk = ignoreConnectionRequestUseCase(userId)
 
         // then
         assertEquals(IgnoreConnectionRequestUseCaseResult.Success, resultOk)
-        verify(connectionRepository)
-            .suspendFunction(connectionRepository::updateConnectionStatus)
-            .with(eq(userId), eq(ConnectionState.IGNORED))
-            .wasInvoked(once)
+        coVerify {
+            connectionRepository.ignoreConnectionRequest(eq(userId))
+        }.wasInvoked(once)
     }
 
     @Test
     fun givenAConnectionRequest_whenInvokingIgnoreConnectionRequestAndFails_thenShouldReturnsAFailureResult() = runTest {
         // given
-        given(connectionRepository)
-            .suspendFunction(connectionRepository::updateConnectionStatus)
-            .whenInvokedWith(eq(userId), eq(ConnectionState.IGNORED))
-            .thenReturn(Either.Left(CoreFailure.Unknown(RuntimeException("Some error"))))
+        coEvery {
+            connectionRepository.ignoreConnectionRequest(eq(userId))
+        }.returns(Either.Left(CoreFailure.Unknown(RuntimeException("Some error"))))
 
         // when
         val resultFailure = ignoreConnectionRequestUseCase(userId)
 
         // then
         assertEquals(IgnoreConnectionRequestUseCaseResult.Failure::class, resultFailure::class)
-        verify(connectionRepository)
-            .suspendFunction(connectionRepository::updateConnectionStatus)
-            .with(eq(userId), eq(ConnectionState.IGNORED))
-            .wasInvoked(once)
+        coVerify {
+            connectionRepository.ignoreConnectionRequest(eq(userId))
+        }.wasInvoked(once)
     }
 
     private companion object {

@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
+import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
@@ -50,8 +51,6 @@ import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollment
 import com.wire.kalium.logic.feature.conversation.GetAllContactsNotInConversationUseCase
 import com.wire.kalium.logic.feature.e2ei.CertificateRevocationListCheckWorker
 import com.wire.kalium.logic.feature.e2ei.CertificateRevocationListCheckWorkerImpl
-import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapperImpl
-import com.wire.kalium.logic.feature.e2ei.usecase.CheckRevocationListUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCase
@@ -109,7 +108,7 @@ class UserScope internal constructor(
     private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase,
     private val certificateRevocationListRepository: CertificateRevocationListRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
-    private val checkRevocationList: CheckRevocationListUseCase,
+    private val checkRevocationList: RevocationListChecker,
     private val syncFeatureConfigs: SyncFeatureConfigsUseCase,
     private val userScopedLogger: KaliumLogger
 ) {
@@ -119,7 +118,6 @@ class UserScope internal constructor(
     val observeUserInfo: ObserveUserInfoUseCase get() = ObserveUserInfoUseCaseImpl(userRepository, teamRepository)
     val uploadUserAvatar: UploadUserAvatarUseCase get() = UploadUserAvatarUseCaseImpl(userRepository, assetRepository)
 
-    private val certificateStatusMapper by lazy { CertificateStatusMapperImpl() }
     val getPublicAsset: GetAvatarAssetUseCase get() = GetAvatarAssetUseCaseImpl(assetRepository, userRepository)
     val enrollE2EI: EnrollE2EIUseCase get() = EnrollE2EIUseCaseImpl(e2EIRepository)
 
@@ -130,25 +128,21 @@ class UserScope internal constructor(
         )
     val getE2EICertificate: GetE2eiCertificateUseCase
         get() = GetE2eiCertificateUseCaseImpl(
-            mlsConversationRepository = mlsConversationRepository,
-            certificateStatusMapper = certificateStatusMapper
+            mlsConversationRepository = mlsConversationRepository
         )
     val getUserE2eiCertificateStatus: GetUserE2eiCertificateStatusUseCase
         get() = GetUserE2eiCertificateStatusUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,
-            certificateStatusMapper = certificateStatusMapper,
             isE2EIEnabledUseCase = isE2EIEnabledUseCase
         )
     val getUserE2eiCertificates: GetUserE2eiCertificatesUseCase
         get() = GetUserE2eiCertificatesUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,
-            certificateStatusMapper = certificateStatusMapper,
             isE2EIEnabledUseCase = isE2EIEnabledUseCase
         )
     val getMembersE2EICertificateStatuses: GetMembersE2EICertificateStatusesUseCase
         get() = GetMembersE2EICertificateStatusesUseCaseImpl(
-            mlsConversationRepository = mlsConversationRepository,
-            certificateStatusMapper = certificateStatusMapper
+            mlsConversationRepository = mlsConversationRepository
         )
     val deleteAsset: DeleteAssetUseCase get() = DeleteAssetUseCaseImpl(assetRepository)
     val setUserHandle: SetUserHandleUseCase get() = SetUserHandleUseCase(accountRepository, validateUserHandleUseCase, syncManager)
@@ -215,7 +209,7 @@ class UserScope internal constructor(
         CertificateRevocationListCheckWorkerImpl(
             certificateRevocationListRepository = certificateRevocationListRepository,
             incrementalSyncRepository = incrementalSyncRepository,
-            checkRevocationList = checkRevocationList,
+            revocationListChecker = checkRevocationList,
             kaliumLogger = userScopedLogger,
         )
     }

@@ -442,10 +442,18 @@ internal class ConversationMapperImpl(
         ConversationEntity.VerificationStatus.valueOf(verificationStatus.name)
 
     override fun legalHoldStatusToEntity(legalHoldStatus: Conversation.LegalHoldStatus): ConversationEntity.LegalHoldStatus =
-        ConversationEntity.LegalHoldStatus.valueOf(legalHoldStatus.name)
+        when (legalHoldStatus) {
+            Conversation.LegalHoldStatus.ENABLED -> ConversationEntity.LegalHoldStatus.ENABLED
+            Conversation.LegalHoldStatus.DEGRADED -> ConversationEntity.LegalHoldStatus.DEGRADED
+            else -> ConversationEntity.LegalHoldStatus.DISABLED
+        }
 
     override fun legalHoldStatusFromEntity(legalHoldStatus: ConversationEntity.LegalHoldStatus): Conversation.LegalHoldStatus =
-        Conversation.LegalHoldStatus.valueOf(legalHoldStatus.name)
+        when (legalHoldStatus) {
+            ConversationEntity.LegalHoldStatus.ENABLED -> Conversation.LegalHoldStatus.ENABLED
+            ConversationEntity.LegalHoldStatus.DEGRADED -> Conversation.LegalHoldStatus.DEGRADED
+            ConversationEntity.LegalHoldStatus.DISABLED -> Conversation.LegalHoldStatus.DISABLED
+        }
 }
 
 internal fun ConversationResponse.toConversationType(selfUserTeamId: TeamId?): ConversationEntity.Type {
