@@ -19,6 +19,8 @@
 package com.wire.kalium.testservice.managed
 
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.conversation.ConversationOptions
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.mention.MessageMention
@@ -28,6 +30,11 @@ import com.wire.kalium.logic.feature.conversation.ClearConversationContentUseCas
 import com.wire.kalium.logic.feature.debug.BrokenState
 import com.wire.kalium.logic.feature.debug.SendBrokenAssetMessageResult
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
+import com.wire.kalium.logic.data.message.receipt.DetailedReceipt
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.conversation.CreateGroupConversationUseCase
+import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
+import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.feature.session.CurrentSessionResult
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onFailure
@@ -48,6 +55,7 @@ import kotlin.time.toDuration
 
 sealed class ConversationRepository {
 
+    @Suppress("TooManyFunctions")
     companion object {
         private val log = LoggerFactory.getLogger(ConversationRepository::class.java.name)
 
@@ -99,6 +107,40 @@ sealed class ConversationRepository {
             }
         }
 
+        suspend fun createConversation(
+            instance: Instance,
+            name: String,
+            userIds: List<UserId>
+        ): Response = instance.coreLogic.globalScope {
+            when (val session = session.currentSession()) {
+                is CurrentSessionResult.Success -> {
+                    instance.coreLogic.sessionScope(session.accountInfo.userId) {
+                        log.info("Instance ${instance.instanceId}: Create conversation \"$name\" with ${
+                                    userIds.joinToString { user -> user.value + "@" + user.domain }
+                                }")
+                        when (val result = conversations.createGroupConversation(
+                            name,
+                            userIds,
+                            ConversationOptions(protocol = ConversationOptions.Protocol.MLS)
+                        )) {
+                            is CreateGroupConversationUseCase.Result.Success -> {
+                                Response.status(Response.Status.OK).build()
+                            }
+
+                            else -> {
+                                Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                                    .entity("Instance ${instance.instanceId}: $result").build()
+                            }
+                        }
+                    }
+                }
+
+                is CurrentSessionResult.Failure -> {
+                    Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Session failure").build()
+                }
+            }
+        }
+
         suspend fun sendConfirmation(instance: Instance, conversationId: ConversationId, type: ReceiptType, messageId: String): Response =
             instance.coreLogic.globalScope {
                 when (val session = session.currentSession()) {
@@ -119,6 +161,67 @@ sealed class ConversationRepository {
                     }
                 }
             }
+
+        suspend fun sendButtonAction(
+            instance: Instance,
+            conversationId: ConversationId,
+            referenceMessageId: String,
+            buttonId: String
+        ): Response = instance.coreLogic.globalScope {
+            when (val session = session.currentSession()) {
+                is CurrentSessionResult.Success -> {
+                    instance.coreLogic.sessionScope(session.accountInfo.userId) {
+                        log.info("Instance ${instance.instanceId}: Send button action for button $buttonId")
+                        when (val result = messages.sendButtonActionMessage(conversationId, referenceMessageId, buttonId)) {
+                            is SendButtonActionMessageUseCase.Result.Failure ->
+                                Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(result).build()
+
+                            else -> {
+                                Response.status(Response.Status.OK)
+                                    .entity(SendTextResponse(instance.instanceId, "", "")).build()
+                            }
+                        }
+                    }
+                }
+
+                is CurrentSessionResult.Failure -> {
+                    Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Session failure").build()
+                }
+            }
+        }
+
+        suspend fun sendButtonActionConfirmation(
+            instance: Instance,
+            conversationId: ConversationId,
+            referenceMessageId: String,
+            buttonId: String,
+            userIds: List<UserId>
+        ): Response = instance.coreLogic.globalScope {
+            when (val session = session.currentSession()) {
+                is CurrentSessionResult.Success -> {
+                    instance.coreLogic.sessionScope(session.accountInfo.userId) {
+                        log.info("Instance ${instance.instanceId}: Send button action confirmation for button $buttonId")
+                        when (val result = messages.sendButtonActionConfirmationMessage(
+                            conversationId,
+                            referenceMessageId,
+                            buttonId,
+                            userIds
+                        )) {
+                            is SendButtonActionConfirmationMessageUseCase.Result.Failure -> Response
+                                .status(Response.Status.INTERNAL_SERVER_ERROR).entity(result).build()
+
+                            else -> {
+                                Response.status(Response.Status.OK).entity(SendTextResponse(instance.instanceId, "", "")).build()
+                            }
+                        }
+                    }
+                }
+
+                is CurrentSessionResult.Failure -> {
+                    Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Session failure").build()
+                }
+            }
+        }
 
         suspend fun sendReaction(
             instance: Instance,
@@ -152,7 +255,8 @@ sealed class ConversationRepository {
             text: String?,
             mentions: List<MessageMention>,
             messageTimer: Int?,
-            quotedMessageId: String?
+            quotedMessageId: String?,
+            buttons: List<String> = listOf()
         ): Response = instance.coreLogic.globalScope {
             return when (val session = session.currentSession()) {
                 is CurrentSessionResult.Success -> {
@@ -160,9 +264,16 @@ sealed class ConversationRepository {
                         if (text != null) {
                             setMessageTimer(instance, conversationId, messageTimer)
                             log.info("Instance ${instance.instanceId}: Send text message '$text'")
-                            messages.sendTextMessage(
-                                conversationId, text, mentions, quotedMessageId
-                            ).fold({
+                            val result = if (buttons.isEmpty()) {
+                                messages.sendTextMessage(
+                                    conversationId, text, mentions, quotedMessageId
+                                )
+                            } else {
+                                messages.sendButtonMessage(
+                                    conversationId, text, mentions, quotedMessageId, buttons
+                                )
+                            }
+                            result.fold({
                                 Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity(it).build()
                             }, {
                                 Response.status(Response.Status.OK)
@@ -206,6 +317,30 @@ sealed class ConversationRepository {
                         } else {
                             Response.status(Response.Status.EXPECTATION_FAILED).entity("No text to send").build()
                         }
+                    }
+                }
+
+                is CurrentSessionResult.Failure -> {
+                    Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Session failure").build()
+                }
+            }
+        }
+
+        suspend fun sendTyping(
+            instance: Instance,
+            conversationId: ConversationId,
+            status: String
+        ): Response = instance.coreLogic.globalScope {
+            when (val session = session.currentSession()) {
+                is CurrentSessionResult.Success -> {
+                    instance.coreLogic.sessionScope(session.accountInfo.userId) {
+                        log.info("Instance ${instance.instanceId}: $status typing")
+                        if (status.equals("started")) {
+                            conversations.sendTypingEvent(conversationId, Conversation.TypingIndicatorMode.STARTED)
+                        } else {
+                            conversations.sendTypingEvent(conversationId, Conversation.TypingIndicatorMode.STOPPED)
+                        }
+                        Response.status(Response.Status.OK).build()
                     }
                 }
 
@@ -282,6 +417,30 @@ sealed class ConversationRepository {
                 }
             }
             throw WebApplicationException("Instance ${instance.instanceId}: Could not get recent messages")
+        }
+
+        suspend fun getMessageReceipts(
+            instance: Instance,
+            conversationId: ConversationId,
+            messageId: String,
+            type: ReceiptType
+        ): List<DetailedReceipt> {
+            instance.coreLogic.globalScope {
+                when (val session = session.currentSession()) {
+                    is CurrentSessionResult.Success -> {
+                        instance.coreLogic.sessionScope(session.accountInfo.userId) {
+                            log.info("Instance ${instance.instanceId}: Get receipts...")
+                            val receipts = messages.observeMessageReceipts(conversationId, messageId, type).first()
+                            return receipts
+                        }
+                    }
+
+                    is CurrentSessionResult.Failure -> {
+                        Response.status(Response.Status.INTERNAL_SERVER_ERROR).entity("Session failure").build()
+                    }
+                }
+            }
+            throw WebApplicationException("Instance ${instance.instanceId}: Could not get receipts from message")
         }
 
         @Suppress("LongParameterList", "LongMethod", "ThrowsCount")
