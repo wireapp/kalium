@@ -170,6 +170,9 @@ class MessageScope internal constructor(
         )
 
     internal val confirmationDeliveryHandler: ConfirmationDeliveryHandler = ConfirmationDeliveryHandlerImpl(
+        syncManager = syncManager,
+        selfUserId = selfUserId,
+        currentClientIdProvider = currentClientIdProvider,
         conversationRepository = conversationRepository,
         messageSender = messageSender,
         kaliumLogger = kaliumLogger,

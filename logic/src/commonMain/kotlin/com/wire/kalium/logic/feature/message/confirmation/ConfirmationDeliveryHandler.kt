@@ -17,14 +17,29 @@
  */
 package com.wire.kalium.logic.feature.message.confirmation
 
+import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.MessageId
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.receipt.ReceiptType
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.right
+import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -37,6 +52,9 @@ internal interface ConfirmationDeliveryHandler {
 }
 
 internal class ConfirmationDeliveryHandlerImpl(
+    private val syncManager: SyncManager,
+    private val selfUserId: UserId,
+    private val currentClientIdProvider: CurrentClientIdProvider,
     private val conversationRepository: ConversationRepository,
     private val messageSender: MessageSender,
     kaliumLogger: KaliumLogger,
@@ -58,13 +76,51 @@ internal class ConfirmationDeliveryHandlerImpl(
 
     @OptIn(FlowPreview::class)
     override suspend fun sendPendingConfirmations() {
-        holder.debounce(1000L)
+        holder.debounce(500L)
             .collect {
+                syncManager.waitUntilLive()
                 kaliumLogger.d("Collecting....")
-                pendingConfirmationMessages.values.forEach {
-                    kaliumLogger.d("Should send all pending and clear... current queue: $it")
-                    // call conversation dao and hold types (cache) only for one to one before sending...
+
+                val conversationIds = pendingConfirmationMessages.keys.iterator()
+                while (conversationIds.hasNext()) {
+                    val convoId = conversationIds.next()
+                    val messages = pendingConfirmationMessages[convoId]
+                    conversationRepository.observeCacheDetailsById(convoId)
+                        .flatMap { flow: Flow<Conversation?> ->
+                            flow.filter { it?.type == Conversation.Type.ONE_ON_ONE }
+                                .firstOrNull()?.let {
+                                    sendDeliveredSignal(it, messages?.toList().orEmpty()).fold({ error ->
+                                        kaliumLogger.e("Error on sending delivered signal $error for $convoId")
+                                    }, {
+                                        kaliumLogger.d("Delivered confirmation sent for $convoId and message count: ${messages?.size}")
+                                        safeDelete(convoId)
+                                        kaliumLogger.d("Current queue ${pendingConfirmationMessages.entries}")
+
+                                    })
+                                } ?: safeDelete(convoId)
+                            Unit.right()
+                        }
                 }
             }
     }
+
+    private suspend fun safeDelete(conversationId: ConversationId) = mutex.withLock {
+        pendingConfirmationMessages.remove(conversationId)
+    }
+
+    private suspend fun sendDeliveredSignal(conversation: Conversation, messages: List<MessageId>) =
+        currentClientIdProvider().flatMap { currentClientId ->
+            val message = Message.Signaling(
+                id = uuid4().toString(),
+                content = MessageContent.Receipt(ReceiptType.DELIVERED, messages),
+                conversationId = conversation.id,
+                date = DateTimeUtil.currentIsoDateTimeString(),
+                senderUserId = selfUserId,
+                senderClientId = currentClientId,
+                status = Message.Status.Pending,
+                isSelfMessage = true,
+                expirationData = null
+            )
+            messageSender.sendMessage(message)
+        }
 }
