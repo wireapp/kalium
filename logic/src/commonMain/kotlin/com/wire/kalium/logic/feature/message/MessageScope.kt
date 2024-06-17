@@ -63,6 +63,8 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCa
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonMessageUseCase
+import com.wire.kalium.logic.feature.message.confirmation.ConfirmationDeliveryHandler
+import com.wire.kalium.logic.feature.message.confirmation.ConfirmationDeliveryHandlerImpl
 import com.wire.kalium.logic.feature.message.draft.GetMessageDraftUseCase
 import com.wire.kalium.logic.feature.message.draft.GetMessageDraftUseCaseImpl
 import com.wire.kalium.logic.feature.message.draft.RemoveMessageDraftUseCase
@@ -166,6 +168,9 @@ class MessageScope internal constructor(
             selfUserId = selfUserId,
             kaliumLogger = kaliumLogger
         )
+
+    internal val confirmationDeliveryHandler: ConfirmationDeliveryHandler
+        get() = ConfirmationDeliveryHandlerImpl(messageSender)
 
     private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
         get() = DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl(messageRepository)

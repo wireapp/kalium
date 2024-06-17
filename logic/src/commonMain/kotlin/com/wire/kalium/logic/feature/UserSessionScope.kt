@@ -1338,6 +1338,9 @@ class UserSessionScope internal constructor(
             { conversationId, messageId ->
                 messages.ephemeralMessageDeletionHandler.startSelfDeletion(conversationId, messageId)
             },
+            { conversationId, messageId ->
+                messages.confirmationDeliveryHandler.enqueueConfirmationDelivery(conversationId, messageId)
+            },
             userId,
             staleEpochVerifier
         )

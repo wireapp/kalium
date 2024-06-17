@@ -363,6 +363,9 @@ class NewMessageEventHandlerTest {
                     messageId
                 )
             },
+            { conversationId, messageId ->
+                messages.confirmationDeliveryHandler.enqueueConfirmationDelivery(conversationId, messageId)
+            },
             SELF_USER_ID,
             staleEpochVerifier
         )

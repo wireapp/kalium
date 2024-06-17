@@ -51,6 +51,7 @@ internal class NewMessageEventHandlerImpl(
     private val applicationMessageHandler: ApplicationMessageHandler,
     private val legalHoldHandler: LegalHoldHandler,
     private val enqueueSelfDeletion: (conversationId: ConversationId, messageId: String) -> Unit,
+    private val enqueueConfirmationDelivery: (conversationId: ConversationId, messageId: String) -> Unit,
     private val selfUserId: UserId,
     private val staleEpochVerifier: StaleEpochVerifier
 ) : NewMessageEventHandler {
@@ -158,6 +159,10 @@ internal class NewMessageEventHandlerImpl(
     }
 
     private fun onMessageInserted(result: MessageUnpackResult.ApplicationMessage) {
+        if (result.senderUserId != selfUserId) {
+            enqueueConfirmationDelivery(result.conversationId, result.content.messageUid)
+        }
+
         if (result.senderUserId == selfUserId && result.content.expiresAfterMillis != null) {
             enqueueSelfDeletion(
                 result.conversationId,
