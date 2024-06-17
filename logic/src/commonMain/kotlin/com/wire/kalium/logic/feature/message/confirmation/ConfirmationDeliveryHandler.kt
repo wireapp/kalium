@@ -57,7 +57,7 @@ internal class ConfirmationDeliveryHandlerImpl(
     }
 
     @OptIn(FlowPreview::class)
-    override suspend fun sendPendingConfirmations() = mutex.withLock {
+    override suspend fun sendPendingConfirmations() {
         holder.debounce(1000L)
             .collect {
                 kaliumLogger.d("Collecting....")
