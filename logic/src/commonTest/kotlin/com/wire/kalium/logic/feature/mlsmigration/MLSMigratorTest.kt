@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.mlsmigration
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -34,6 +35,8 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.left
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.test_util.TestNetworkResponseError
 import com.wire.kalium.logic.util.arrangement.CallRepositoryArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
@@ -68,7 +71,7 @@ class MLSMigratorTest {
             .withFetchConversationSucceeding()
             .withGetConversationProtocolInfoReturning(Arrangement.MIXED_PROTOCOL_INFO)
             .withEstablishGroupSucceeds(Arrangement.SUCCESSFUL_ADDITION_RESULT)
-            .withGetConversationMembersReturning(Arrangement.MEMBERS)
+            .withGetConversationMembersReturning(Arrangement.MEMBERS.right())
             .withAddMembersSucceeds()
             .withoutAnyEstablishedCall()
             .arrange()
@@ -102,7 +105,7 @@ class MLSMigratorTest {
             .withFetchConversationSucceeding()
             .withGetConversationProtocolInfoReturning(Arrangement.MIXED_PROTOCOL_INFO)
             .withEstablishGroupSucceeds(Arrangement.SUCCESSFUL_ADDITION_RESULT)
-            .withGetConversationMembersReturning(Arrangement.MEMBERS)
+            .withGetConversationMembersReturning(Arrangement.MEMBERS.right())
             .withAddMembersSucceeds()
             .withEstablishedCall()
             .arrange()
@@ -143,6 +146,7 @@ class MLSMigratorTest {
             .withUpdateProtocolReturns()
             .withFetchConversationSucceeding()
             .withGetConversationProtocolInfoReturning(Arrangement.MIXED_PROTOCOL_INFO)
+            .withGetConversationMembersReturning(StorageFailure.DataNotFound.left())
             .withEstablishGroupFails()
             .withoutAnyEstablishedCall()
             .arrange()
@@ -244,11 +248,11 @@ class MLSMigratorTest {
                 .thenReturn(Either.Right(protocolInfo))
         }
 
-        fun withGetConversationMembersReturning(members: List<UserId>) = apply {
+        fun withGetConversationMembersReturning(result: Either<StorageFailure, List<UserId>>) = apply {
             given(conversationRepository)
                 .suspendFunction(conversationRepository::getConversationMembers)
                 .whenInvokedWith(anything())
-                .thenReturn(Either.Right(members))
+                .thenReturn(result)
         }
 
         fun withFetchConversationSucceeding() = apply {
