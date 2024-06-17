@@ -17,58 +17,54 @@
  */
 package com.wire.kalium.logic.feature.message.confirmation
 
-import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.util.KaliumDispatcher
-import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 /**
  * Internal: Handles the send of delivery confirmation of messages.
  */
 internal interface ConfirmationDeliveryHandler {
-    fun enqueueConfirmationDelivery(conversationId: ConversationId, messageId: MessageId)
+    suspend fun enqueueConfirmationDelivery(conversationId: ConversationId, messageId: MessageId)
     suspend fun sendPendingConfirmations()
 }
 
 internal class ConfirmationDeliveryHandlerImpl(
+    private val conversationRepository: ConversationRepository,
     private val messageSender: MessageSender,
     kaliumLogger: KaliumLogger,
-    private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ConfirmationDeliveryHandler {
-
     private val kaliumLogger = kaliumLogger.withTextTag("ConfirmationDeliveryHandler")
-    private val pendingConfirmationMessages = ConcurrentMutableMap<ConversationId, MutableSet<String>>()
+    private val pendingConfirmationMessages = mutableMapOf<ConversationId, MutableSet<String>>()
     private val holder = MutableSharedFlow<Unit>()
+    val mutex = Mutex()
 
-    override fun enqueueConfirmationDelivery(conversationId: ConversationId, messageId: String) {
-        pendingConfirmationMessages.block {
-            val conversationMessages = pendingConfirmationMessages[conversationId] ?: mutableSetOf()
-            val isNewMessage = conversationMessages.add(messageId)
-            if (isNewMessage) {
-                kaliumLogger.d("Adding new message to the confirmation queue")
-                pendingConfirmationMessages[conversationId] = conversationMessages
-                holder.tryEmit(Unit)
-            }
+    override suspend fun enqueueConfirmationDelivery(conversationId: ConversationId, messageId: String) = mutex.withLock {
+        val conversationMessages = pendingConfirmationMessages[conversationId] ?: mutableSetOf()
+        val isNewMessage = conversationMessages.add(messageId)
+        if (isNewMessage) {
+            kaliumLogger.d("Adding new message to the confirmation queue: $conversationId to $messageId")
+            pendingConfirmationMessages[conversationId] = conversationMessages
+            holder.emit(Unit)
         }
     }
 
     @OptIn(FlowPreview::class)
-    override suspend fun sendPendingConfirmations() {
-        holder.debounce(500L)
-            .distinctUntilChanged()
+    override suspend fun sendPendingConfirmations() = mutex.withLock {
+        holder.debounce(1000L)
             .collect {
+                kaliumLogger.d("Collecting....")
                 pendingConfirmationMessages.values.forEach {
                     kaliumLogger.d("Should send all pending and clear... current queue: $it")
+                    // call conversation dao and hold types (cache) only for one to one before sending...
                 }
             }
     }
-
 }
