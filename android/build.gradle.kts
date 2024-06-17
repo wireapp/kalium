@@ -63,7 +63,8 @@ android {
     packaging {
         resources.pickFirsts.add("google/protobuf/*.proto")
         jniLibs.pickFirsts.add("**/libsodium.so")
-    } }
+    }
+}
 
 dependencies {
     implementation(project(":network"))
