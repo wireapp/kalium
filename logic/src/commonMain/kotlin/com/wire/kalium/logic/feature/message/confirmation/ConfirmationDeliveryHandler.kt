@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.message.confirmation
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.MessageId
 import com.wire.kalium.logic.feature.message.MessageSender
@@ -39,9 +40,11 @@ internal interface ConfirmationDeliveryHandler {
 
 internal class ConfirmationDeliveryHandlerImpl(
     private val messageSender: MessageSender,
+    kaliumLogger: KaliumLogger,
     private val kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) : ConfirmationDeliveryHandler {
 
+    private val kaliumLogger = kaliumLogger.withTextTag("ConfirmationDeliveryHandler")
     private val pendingConfirmationMessages = ConcurrentMutableMap<ConversationId, MutableSet<String>>()
     private val holder = MutableSharedFlow<Unit>()
 

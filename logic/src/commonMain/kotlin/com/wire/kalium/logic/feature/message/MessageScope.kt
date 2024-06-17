@@ -170,7 +170,7 @@ class MessageScope internal constructor(
         )
 
     internal val confirmationDeliveryHandler: ConfirmationDeliveryHandler
-        get() = ConfirmationDeliveryHandlerImpl(messageSender)
+        get() = ConfirmationDeliveryHandlerImpl(messageSender, kaliumLogger)
 
     private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
         get() = DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl(messageRepository)
