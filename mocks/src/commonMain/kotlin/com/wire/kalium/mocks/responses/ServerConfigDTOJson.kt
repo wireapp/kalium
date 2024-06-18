@@ -15,15 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package util
-
-import com.wire.kalium.network.tools.ApiVersionDTO
-import com.wire.kalium.network.tools.ServerConfigDTO
-import io.ktor.websocket.Serializer
+package com.wire.kalium.mocks.responses
 
 object ServerConfigDTOJson {
 
-    private val jsonProviderServerConfig = { serializable: Serializer->
+    private val response =
         """
         |{
         |   "domain":"example.com",
@@ -34,10 +30,7 @@ object ServerConfigDTOJson {
         |   ]
         |}
         """.trimMargin()
-    }
 
-    val validServerConfigResponse = ValidJsonProvider(
-        Serializer(),
-        jsonProviderServerConfig
-    )
+    val valid = response;
+
 }

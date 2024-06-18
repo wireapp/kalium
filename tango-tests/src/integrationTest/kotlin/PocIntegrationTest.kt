@@ -25,27 +25,26 @@ import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
 import com.wire.kalium.logic.feature.auth.autoVersioningAuth.AutoVersionAuthScopeUseCase
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.logic.util.KaliumMockEngine
+import com.wire.kalium.mocks.requests.ACMERequests
+import com.wire.kalium.mocks.requests.ClientRequests
+import com.wire.kalium.mocks.requests.FeatureConfigRequests
+import com.wire.kalium.mocks.requests.LoginRequests
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.tools.ServerConfigDTO
-import io.ktor.client.engine.mock.MockEngine
+import com.wire.kalium.network.utils.MockUnboundNetworkClient
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Ignore
 import org.junit.Test
-import util.MockUnboundNetworkClient
-import util.MockUnboundNetworkClient.createMockEngine
 
 class PocIntegrationTest {
 
     @Ignore("needs to be checked and fix")
     @Test
     fun givenApiWhenGettingACMEDirectoriesThenReturnAsExpectedBasedOnNetworkState() = runTest {
-        val mockEngine = createMockEngine(
-            listOf(ACMEActions.acmeGetDirectoriesRequestSuccess)
-        )
+        val mockedRequests = listOf(ACMERequests.acmeGetDirectoriesSuccess)
 
-        val coreLogic = createCoreLogic(mockEngine)
+        val coreLogic = createCoreLogic(mockedRequests)
 
         launch {
             TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER.updateNetworkState(NetworkState.NotConnected)
@@ -68,17 +67,15 @@ class PocIntegrationTest {
         }
     }
 
-    @Ignore("needs to be checked and fix")
     @Test
     fun givenEmailAndPasswordWhenLoggingInThenRegisterClientAndLogout() = runTest {
-        val mockEngine = createMockEngine(
-            mutableListOf<MockUnboundNetworkClient.TestRequestHandler>().apply {
-                addAll(LoginActions.loginRequestResponseSuccess)
-                addAll(ClientActions.clientRequestResponseSuccess)
-            }
-        )
+        val mockedRequests = mutableListOf<MockUnboundNetworkClient.TestRequestHandler>().apply {
+            addAll(LoginRequests.loginRequestResponseSuccess)
+            addAll(ClientRequests.clientRequestResponseSuccess)
+            addAll(FeatureConfigRequests.responseSuccess)
+        }
 
-        val coreLogic = createCoreLogic(mockEngine)
+        val coreLogic = createCoreLogic(mockedRequests)
 
         TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER.updateNetworkState(NetworkState.ConnectedWithInternet)
 
@@ -130,16 +127,17 @@ class PocIntegrationTest {
         private val USER_EMAIL = "user@domain.com"
         private val USER_PASSWORD = "password"
 
-        fun createCoreLogic(mockEngine: MockEngine) = CoreLogic(
+        fun createCoreLogic(mockedRequests: List<MockUnboundNetworkClient.TestRequestHandler>) = CoreLogic(
             rootPath = "$HOME_DIRECTORY/.kalium/accounts-test",
             kaliumConfigs = KaliumConfigs(
                 developmentApiEnabled = true,
                 encryptProteusStorage = true,
                 isMLSSupportEnabled = true,
                 wipeOnDeviceRemoval = true,
-                kaliumMockEngine = KaliumMockEngine(mockEngine = mockEngine),
+                mockedRequests = mockedRequests,
                 mockNetworkStateObserver = TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER
-            ), "Wire Integration Tests"
+            ),
+            userAgent = "Wire Integration Tests"
         )
     }
 }

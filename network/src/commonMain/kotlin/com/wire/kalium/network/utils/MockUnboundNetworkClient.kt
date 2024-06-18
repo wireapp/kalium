@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package util
+package com.wire.kalium.network.utils
 
 import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
 import com.wire.kalium.network.tools.ApiVersionDTO
@@ -27,8 +27,8 @@ import io.ktor.http.HeadersImpl
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
+import io.ktor.http.URLBuilder
 import io.ktor.utils.io.ByteReadChannel
-import kotlin.test.fail
 
 /*
  * Wire
@@ -71,13 +71,15 @@ object MockUnboundNetworkClient {
     fun createMockEngine(
         expectedRequests: List<TestRequestHandler>
     ): MockEngine = MockEngine { currentRequest ->
+        val currentPath = currentRequest.url.encodedPath
         expectedRequests.forEach { request ->
+            val expectedPath = URLBuilder(request.path).build().encodedPath
             val head: Map<String, List<String>> = (request.headers?.let {
                 mutableMapOf(HttpHeaders.ContentType to "application/json").plus(request.headers).mapValues { listOf(it.value) }
             } ?: run {
                 mapOf(HttpHeaders.ContentType to "application/json").mapValues { listOf(it.value) }
             })
-            if (request.path == currentRequest.url.toString() && request.httpMethod == currentRequest.method) {
+            if (expectedPath == currentPath && request.httpMethod == currentRequest.method) {
                 return@MockEngine respond(
                     content = ByteReadChannel(request.responseBody),
                     status = request.statusCode,
@@ -85,7 +87,7 @@ object MockUnboundNetworkClient {
                 )
             }
         }
-        fail("no expected response was found for ${currentRequest.method.value}:${currentRequest.url}")
+        throw UnsupportedOperationException("no expected response was found for ${currentRequest.method.value}:${currentRequest.url}")
     }
 
     fun createMockEngine2(

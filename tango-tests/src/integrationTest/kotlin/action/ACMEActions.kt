@@ -18,13 +18,11 @@
 package action
 
 import com.wire.kalium.logic.CoreLogic
+import com.wire.kalium.mocks.requests.ACMERequests.ACME_BASE_URL
+import com.wire.kalium.mocks.responses.ACMEApiResponseJsonSample.ACME_DIRECTORIES_SAMPLE
 import com.wire.kalium.network.api.base.unbound.acme.AcmeDirectoriesResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
-import io.ktor.http.HttpMethod
-import io.ktor.http.HttpStatusCode
-import io.ktor.http.Url
-import util.MockUnboundNetworkClient
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 
@@ -50,27 +48,4 @@ object ACMEActions {
             assertIs<NetworkResponse.Error>(actual)
             assertIs<KaliumException.NoNetwork>(actual.kException.cause)
         }
-
-    /**
-     * URL Paths
-     */
-    private val ACME_BASE_URL = "https://balderdash.hogwash.work:9000/acme/google-android/"
-    private const val ACME_DIRECTORIES_PATH = "https://balderdash.hogwash.work:9000/acme/google-android/directory"
-
-    /**
-     * JSON Response
-     */
-    private val ACME_DIRECTORIES_RESPONSE = ACMEApiResponseJsonSample.validAcmeDirectoriesResponse
-    private val ACME_DIRECTORIES_SAMPLE = ACMEApiResponseJsonSample.ACME_DIRECTORIES_SAMPLE
-
-    /**
-     * Request / Responses
-     */
-
-    val acmeGetDirectoriesRequestSuccess = MockUnboundNetworkClient.TestRequestHandler(
-        path = ACME_DIRECTORIES_PATH,
-        httpMethod = HttpMethod.Get,
-        responseBody = ACME_DIRECTORIES_RESPONSE.rawJson,
-        statusCode = HttpStatusCode.OK
-    )
 }

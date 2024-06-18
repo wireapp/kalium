@@ -15,15 +15,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.mocks.responses
 
 import com.wire.kalium.network.api.base.unbound.acme.AcmeDirectoriesResponse
 import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
-import util.ValidJsonProvider
 
 object ACMEApiResponseJsonSample {
 
-    const val ACME_BASE_URL = "https://balderdash.hogwash.work:9000"
-
+    private const val ACME_BASE_URL = "https://balderdash.hogwash.work:9000"
 
     val ACME_DIRECTORIES_SAMPLE = AcmeDirectoriesResponse(
         newNonce = "$ACME_BASE_URL/acme/wire/new-nonce",
@@ -71,23 +70,5 @@ object ACMEApiResponseJsonSample {
         nonce = "random-nonce",
         target = "random-target"
     )
-
-    private val jsonProviderAcmeChallenge = { serializable: ChallengeResponse ->
-        """
-        |{
-        |  "type": "${serializable.type}",
-        |  "url": "${serializable.url}",
-        |  "status": "${serializable.status}",
-        |  "token": "${serializable.token}"
-        |  "nonce": "${serializable.nonce}"
-        |}
-        """.trimMargin()
-    }
-
-    val jsonProviderAcmeChallengeResponse = ValidJsonProvider(
-        ACME_CHALLENGE_RESPONSE_SAMPLE,
-        jsonProviderAcmeChallenge
-    )
-
 
 }

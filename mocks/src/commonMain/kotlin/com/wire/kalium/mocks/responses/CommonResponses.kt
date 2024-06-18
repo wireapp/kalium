@@ -15,11 +15,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package action
+package com.wire.kalium.mocks.responses
 
 import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.QualifiedID
-import util.AccessTokenDTOJson
+import com.wire.kalium.network.tools.KtxSerializer
+import kotlinx.serialization.encodeToString
 
 /*
  * Wire
@@ -62,5 +63,5 @@ object CommonResponses {
      * JSON Response
      */
     const val REFRESH_TOKEN = "415a5306-a476-41bc-af36-94ab075fd881"
-    val VALID_ACCESS_TOKEN_RESPONSE = AccessTokenDTOJson.createValid(accessTokenDTO)
+    val VALID_ACCESS_TOKEN_RESPONSE = KtxSerializer.json.encodeToString(accessTokenDTO)
 }

@@ -16,7 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package util
+package com.wire.kalium.mocks.responses
 
 import com.wire.kalium.network.api.base.unauthenticated.LoginApi
 import kotlinx.serialization.json.buildJsonObject

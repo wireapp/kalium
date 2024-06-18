@@ -53,6 +53,9 @@ kotlin {
                 implementation(libs.ktor.contentNegotiation)
                 implementation(libs.ktor.encoding)
 
+                // mock engine
+                implementation(libs.ktor.mock)
+
                 // KTX
                 implementation(libs.ktxDateTime)
                 implementation(libs.ktx.atomicfu)

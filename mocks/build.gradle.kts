@@ -18,46 +18,36 @@
 
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
-    kotlin("jvm")
+    id(libs.plugins.android.library.get().pluginId)
+    id(libs.plugins.kotlin.multiplatform.get().pluginId)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ksp)
+    id(libs.plugins.kalium.library.get().pluginId)
+}
+
+kaliumLibrary {
+    multiplatform {
+        enableJs.set(false)
+    }
 }
 
 kotlin {
     sourceSets {
-        val test by getting {
-            kotlin.srcDir("src/integrationTest/kotlin")
+        val commonMain by getting {
             dependencies {
                 implementation(project(":network"))
-                implementation(project(":logic"))
-                implementation(project(":persistence"))
-                implementation(project(":mocks"))
-                implementation(libs.kotlin.test)
-                implementation(libs.settings.kmpTest)
 
                 implementation(libs.ktor.utils)
                 implementation(libs.coroutines.core)
                 implementation(libs.ktxDateTime)
-                // coroutines
-                implementation(libs.coroutines.test)
-                implementation(libs.turbine)
                 implementation(libs.ktxSerialization)
                 implementation(libs.ktor.serialization)
-                implementation(libs.ktor.okHttp)
-                implementation(libs.ktor.contentNegotiation)
-                implementation(libs.ktor.json)
-                implementation(libs.ktor.authClient)
-                implementation(libs.okhttp.loggingInterceptor)
 
                 implementation(libs.faker)
 
                 // ktor test
                 implementation(libs.ktor.mock)
             }
-        }
-
-        tasks.withType<JavaExec> {
-            jvmArgs = listOf("-Djava.library.path=/usr/local/lib/:./native/libs")
         }
     }
 }
