@@ -40,6 +40,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -77,35 +78,29 @@ internal class ConfirmationDeliveryHandlerImpl(
     @OptIn(FlowPreview::class)
     override suspend fun sendPendingConfirmations() {
         holder.debounce(500L)
-            .collect {
+            .onEach {
                 syncManager.waitUntilLive()
+            }.collect {
                 kaliumLogger.d("Collecting....")
-
-                val conversationIds = pendingConfirmationMessages.keys.iterator()
-                while (conversationIds.hasNext()) {
-                    val convoId = conversationIds.next()
-                    val messages = pendingConfirmationMessages[convoId]
-                    conversationRepository.observeCacheDetailsById(convoId)
-                        .flatMap { flow: Flow<Conversation?> ->
-                            flow.filter { it?.type == Conversation.Type.ONE_ON_ONE }
+                with(pendingConfirmationMessages.iterator()) {
+                    forEach { (conversationId, messages) ->
+                        conversationRepository.observeCacheDetailsById(conversationId).flatMap { conversation: Flow<Conversation?> ->
+                            conversation.filter { it?.type == Conversation.Type.ONE_ON_ONE }
                                 .firstOrNull()?.let {
-                                    sendDeliveredSignal(it, messages?.toList().orEmpty()).fold({ error ->
-                                        kaliumLogger.e("Error on sending delivered signal $error for $convoId")
+                                    sendDeliveredSignal(it, messages.toList()).fold({ error ->
+                                        kaliumLogger.e("Error on sending delivered signal $error for $conversationId")
                                     }, {
-                                        kaliumLogger.d("Delivered confirmation sent for $convoId and message count: ${messages?.size}")
-                                        safeDelete(convoId)
+                                        kaliumLogger.d("Delivered confirmation sent for $conversation and message count: ${messages.size}")
+                                        remove()
                                         kaliumLogger.d("Current queue ${pendingConfirmationMessages.entries}")
 
                                     })
-                                } ?: safeDelete(convoId)
+                                } ?: remove()
                             Unit.right()
                         }
+                    }
                 }
             }
-    }
-
-    private suspend fun safeDelete(conversationId: ConversationId) = mutex.withLock {
-        pendingConfirmationMessages.remove(conversationId)
     }
 
     private suspend fun sendDeliveredSignal(conversation: Conversation, messages: List<MessageId>) =
