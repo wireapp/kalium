@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -61,6 +62,7 @@ internal class ConfirmationDeliveryHandlerImpl(
     private val messageSender: MessageSender,
     kaliumLogger: KaliumLogger,
 ) : ConfirmationDeliveryHandler {
+
     private val kaliumLogger = kaliumLogger.withTextTag("ConfirmationDeliveryHandler")
     private val pendingConfirmationMessages = mutableMapOf<ConversationId, MutableSet<String>>()
     private val holder = MutableSharedFlow<Unit>()
@@ -78,25 +80,22 @@ internal class ConfirmationDeliveryHandlerImpl(
 
     @OptIn(FlowPreview::class)
     override suspend fun sendPendingConfirmations() {
-        holder.debounce(500L).collectLatest {
-            kaliumLogger.d("Collecting....")
+        holder.debounce(DEBOUNCE_SEND_CONFIRMATION_TIME).onEach { syncManager.waitUntilLive() }.collectLatest {
+            kaliumLogger.d("Started collecting pending messages for delivery confirmation")
             with(pendingConfirmationMessages.iterator()) {
                 forEach { (conversationId, messages) ->
-                    conversationRepository.observeCacheDetailsById(conversationId).flatMap { conversation: Flow<Conversation?> ->
-                        conversation.firstOrNull()?.let {
-                            if (it.type == Conversation.Type.ONE_ON_ONE) {
-                                kaliumLogger.d("one to one $it")
-                                sendDeliveredSignal(it, messages.toList()).fold({ error ->
-                                    kaliumLogger.e("Error on sending delivered signal $error for $conversationId")
-                                }, {
-                                    kaliumLogger.d("Delivered confirmation sent for $conversation and message count: ${messages.size}")
-                                    kaliumLogger.d("Current queue ${pendingConfirmationMessages.entries}")
-                                })
-                            } else {
-                                kaliumLogger.d("group convo $it")
-                            }
-                            remove()
-                        } ?: kaliumLogger.e("Convo is null")
+                    conversationRepository.observeCacheDetailsById(conversationId).flatMap { conversationFlow: Flow<Conversation?> ->
+                        val conversation = conversationFlow.firstOrNull()
+                        if (conversation != null && conversation.type == Conversation.Type.ONE_ON_ONE) {
+                            sendDeliveredSignal(conversation, messages.toList()).fold({ error ->
+                                kaliumLogger.e("Error while sending delivery confirmation $error for ${conversationId.toLogString()}")
+                            }, {
+                                kaliumLogger.d("Delivery confirmation sent for ${conversation.name} and message count: ${messages.size}")
+                            })
+                        } else {
+                            kaliumLogger.d("Skipping group conversation: ${conversation?.name}")
+                        }
+                        remove() // safely clean the entry [conversationId to messages]
                         Unit.right()
                     }
                 }
@@ -105,7 +104,6 @@ internal class ConfirmationDeliveryHandlerImpl(
     }
 
     private suspend fun sendDeliveredSignal(conversation: Conversation, messages: List<MessageId>): Either<CoreFailure, Unit> {
-        syncManager.waitUntilLive()
         return currentClientIdProvider().flatMap { currentClientId ->
             val message = Message.Signaling(
                 id = uuid4().toString(),
@@ -120,5 +118,9 @@ internal class ConfirmationDeliveryHandlerImpl(
             )
             messageSender.sendMessage(message)
         }
+    }
+
+    companion object {
+        const val DEBOUNCE_SEND_CONFIRMATION_TIME = 500L
     }
 }
