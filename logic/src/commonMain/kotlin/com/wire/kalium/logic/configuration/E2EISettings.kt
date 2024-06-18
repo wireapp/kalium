@@ -29,7 +29,11 @@ data class E2EISettings(
 ) {
 
     fun toEntity() = E2EISettingsEntity(
-        isRequired, discoverUrl, gracePeriodEnd?.toEpochMilliseconds(), shouldUseProxy, crlProxy
+        isRequired,
+        discoverUrl,
+        gracePeriodEnd?.toEpochMilliseconds(),
+        shouldUseProxy,
+        crlProxy
     )
 
     companion object {
