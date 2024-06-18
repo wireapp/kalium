@@ -18,8 +18,9 @@
 package com.wire.kalium.logic.feature.message.confirmation
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -30,10 +31,11 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
-import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.right
+import com.wire.kalium.logic.logStructuredJson
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.FlowPreview
@@ -87,13 +89,20 @@ internal class ConfirmationDeliveryHandlerImpl(
                     conversationRepository.observeCacheDetailsById(conversationId).flatMap { conversationFlow: Flow<Conversation?> ->
                         val conversation = conversationFlow.firstOrNull()
                         if (conversation != null && conversation.type == Conversation.Type.ONE_ON_ONE) {
-                            sendDeliveredSignal(conversation, messages.toList()).fold({ error ->
-                                kaliumLogger.e("Error while sending delivery confirmation $error for ${conversationId.toLogString()}")
-                            }, {
-                                kaliumLogger.d("Delivery confirmation sent for ${conversation.name} and message count: ${messages.size}")
-                            })
+                            sendDeliveredSignal(
+                                conversation = conversation,
+                                messages = messages.toList()
+                            )
                         } else {
-                            kaliumLogger.d("Skipping group conversation: ${conversation?.name}")
+                            kaliumLogger.logStructuredJson(
+                                level = KaliumLogLevel.DEBUG,
+                                leadingMessage = "Skipping group conversation: ${conversation?.id?.toLogString()}",
+                                jsonStringKeyValues = mapOf(
+                                    "conversationId" to conversation?.id?.toLogString(),
+                                    "messages" to messages.joinToString { it.obfuscateId() },
+                                    "messageCount" to messages.size
+                                )
+                            )
                         }
                         remove() // safely clean the entry [conversationId to messages]
                         Unit.right()
@@ -103,8 +112,8 @@ internal class ConfirmationDeliveryHandlerImpl(
         }
     }
 
-    private suspend fun sendDeliveredSignal(conversation: Conversation, messages: List<MessageId>): Either<CoreFailure, Unit> {
-        return currentClientIdProvider().flatMap { currentClientId ->
+    private suspend fun sendDeliveredSignal(conversation: Conversation, messages: List<MessageId>) {
+        currentClientIdProvider().flatMap { currentClientId ->
             val message = Message.Signaling(
                 id = uuid4().toString(),
                 content = MessageContent.Receipt(ReceiptType.DELIVERED, messages),
@@ -117,6 +126,27 @@ internal class ConfirmationDeliveryHandlerImpl(
                 expirationData = null
             )
             messageSender.sendMessage(message)
+                .onFailure { error ->
+                    kaliumLogger.logStructuredJson(
+                        level = KaliumLogLevel.ERROR,
+                        leadingMessage = "Error while sending delivery confirmation for ${conversation.id.toLogString()}",
+                        jsonStringKeyValues = mapOf(
+                            "conversationId" to conversation.id.toLogString(),
+                            "messages" to messages.joinToString { it.obfuscateId() },
+                            "error" to error.toString()
+                        )
+                    )
+                }.onSuccess {
+                    kaliumLogger.logStructuredJson(
+                        level = KaliumLogLevel.DEBUG,
+                        leadingMessage = "Delivery confirmation sent for ${conversation.name} and message count: ${messages.size}",
+                        jsonStringKeyValues = mapOf(
+                            "conversationId" to conversation.id.toLogString(),
+                            "messages" to messages.joinToString { it.obfuscateId() },
+                            "messageCount" to messages.size
+                        )
+                    )
+                }
         }
     }
 
