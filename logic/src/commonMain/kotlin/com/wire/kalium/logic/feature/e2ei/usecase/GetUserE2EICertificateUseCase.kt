@@ -19,40 +19,25 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapper
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import com.wire.kalium.logic.functional.fold
 
 /**
  * This use case is used to get the e2ei certificate status of specific user
  */
-interface GetUserE2eiCertificateStatusUseCase {
+interface IsOtherUserE2EIVerifiedUseCase {
     suspend operator fun invoke(userId: UserId): Boolean
 }
 
-class GetUserE2eiCertificateStatusUseCaseImpl internal constructor(
+class IsOtherUserE2EIVerifiedUseCaseImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
-    private val certificateStatusMapper: CertificateStatusMapper,
     private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase
-) : GetUserE2eiCertificateStatusUseCase {
+) : IsOtherUserE2EIVerifiedUseCase {
     override suspend operator fun invoke(userId: UserId): Boolean =
         if (isE2EIEnabledUseCase()) {
-            mlsConversationRepository.getUserIdentity(userId).fold(
-                {
-                    false
-                },
-                { identities ->
-                    identities.isUserMLSVerified()
-                }
+            mlsConversationRepository.getUserIdentity(userId).fold({ false }, { it.isUserMLSVerified() }
             )
         } else {
             false
         }
-}
-
-sealed class GetUserE2eiCertificateStatusResult {
-    data object Success : GetUserE2eiCertificateStatusResult()
-    sealed class Failure : GetUserE2eiCertificateStatusResult() {
-        data object NotActivated : Failure()
-    }
 }

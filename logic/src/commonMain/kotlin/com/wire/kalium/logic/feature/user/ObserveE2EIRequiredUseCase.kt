@@ -86,7 +86,7 @@ internal class ObserveE2EIRequiredUseCaseImpl(
                                 when (clientIdentity.e2eiStatus) {
                                     MLSClientE2EIStatus.REVOKED -> E2EIRequiredResult.NotRequired
                                     MLSClientE2EIStatus.NOT_ACTIVATED -> onUserHasNoCertificate(setting)
-                                    MLSClientE2EIStatus.EXPIRED -> onUserHasValidCertificate(clientIdentity.x509Identity!!)
+                                    MLSClientE2EIStatus.EXPIRED -> E2EIRequiredResult.NoGracePeriod.Renew
                                     MLSClientE2EIStatus.VALID -> onUserHasValidCertificate(clientIdentity.x509Identity!!)
                                 }
                             })

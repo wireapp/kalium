@@ -99,8 +99,6 @@ import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapperImpl
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapper
 import com.wire.kalium.logic.data.user.type.UserEntityTypeMapperImpl
-import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapper
-import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapperImpl
 
 internal object MapperProvider {
     fun apiVersionMapper(): ApiVersionMapper = ApiVersionMapperImpl()
@@ -176,5 +174,4 @@ internal object MapperProvider {
     fun serviceMapper(): ServiceMapper = ServiceMapper()
     fun legalHoldStatusMapper(): LegalHoldStatusMapper = LegalHoldStatusMapperImpl
     fun acmeMapper(): AcmeMapper = AcmeMapperImpl()
-    fun certificateStatusMapper(): CertificateStatusMapper = CertificateStatusMapperImpl()
 }

@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
+import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.WireIdentity
@@ -25,16 +26,14 @@ import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificatesUseCaseImpl
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.util.arrangement.mls.CertificateStatusMapperArrangement
-import com.wire.kalium.logic.util.arrangement.mls.CertificateStatusMapperArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -87,9 +86,9 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
             val result = getUserE2eiAllCertificateStatuses(USER_ID)
 
             assertEquals(3, result.size)
-            assertEquals(CertificateStatus.VALID, result[identity1.clientId.value]?.status)
-            assertEquals(CertificateStatus.EXPIRED, result[identity2.clientId.value]?.status)
-            assertEquals(CertificateStatus.REVOKED, result[identity3.clientId.value]?.status)
+            assertEquals(MLSClientE2EIStatus.VALID, result[identity1.clientId.value]?.e2eiStatus)
+            assertEquals(MLSClientE2EIStatus.EXPIRED, result[identity2.clientId.value]?.e2eiStatus)
+            assertEquals(MLSClientE2EIStatus.REVOKED, result[identity3.clientId.value]?.e2eiStatus)
         }
 
     @Test
@@ -116,27 +115,12 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
 
     private class Arrangement(private val block: Arrangement.() -> Unit) :
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
-        CertificateStatusMapperArrangement by CertificateStatusMapperArrangementImpl(),
         IsE2EIEnabledUseCaseArrangement by IsE2EIEnabledUseCaseArrangementImpl() {
 
         fun arrange() = run {
-            withCertificateStatusMapperReturning(
-                CertificateStatus.VALID,
-                eq(CryptoCertificateStatus.VALID)
-            )
-            withCertificateStatusMapperReturning(
-                CertificateStatus.EXPIRED,
-                eq(CryptoCertificateStatus.EXPIRED)
-            )
-            withCertificateStatusMapperReturning(
-                CertificateStatus.REVOKED,
-                eq(CryptoCertificateStatus.REVOKED)
-            )
-
             block()
             this@Arrangement to GetUserE2eiCertificatesUseCaseImpl(
                 mlsConversationRepository = mlsConversationRepository,
-                certificateStatusMapper = certificateStatusMapper,
                 isE2EIEnabledUseCase = isE2EIEnabledUseCase
             )
         }
@@ -148,17 +132,22 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
         private val USER_ID = UserId("value", "domain")
         private val CRYPTO_QUALIFIED_CLIENT_ID =
             CryptoQualifiedClientId("clientId", USER_ID.toCrypto())
-        private val WIRE_IDENTITY =
-            WireIdentity(
-                CRYPTO_QUALIFIED_CLIENT_ID,
-                "user_handle",
-                "User Test",
-                "domain.com",
-                "certificate",
-                CryptoCertificateStatus.VALID,
-                "thumbprint",
-                serialNumber = "serialNumber",
-                endTimestampSeconds = 1899105093
+        private val WIRE_IDENTITY = WireIdentity(
+            CRYPTO_QUALIFIED_CLIENT_ID,
+            status = CryptoCertificateStatus.VALID,
+            thumbprint = "thumbprint",
+            credentialType = CredentialType.X509,
+            x509Identity = WireIdentity.X509Identity(
+                WireIdentity.Handle(
+                    scheme = "wireapp", handle = "userHandle", domain = "domain1"
+                ),
+                displayName = "user displayName",
+                domain = "domain.com",
+                certificate = "cert1",
+                serialNumber = "serial1",
+                notBefore = Instant.DISTANT_PAST.epochSeconds,
+                notAfter = Instant.DISTANT_FUTURE.epochSeconds
             )
+        )
     }
 }

@@ -116,7 +116,7 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
                     val persistedMemberInfo = dbData.members[userId]
                     val isUserVerified = wireIdentity.firstOrNull {
                         it.status != CryptoCertificateStatus.VALID ||
-                                it.credentialType != CredentialType.X509
+                                it.credentialType != CredentialType.X509 ||
                                 it.x509Identity == null ||
                                 it.x509Identity?.displayName != persistedMemberInfo?.name ||
                                 it.x509Identity?.handle?.handle != persistedMemberInfo?.handle

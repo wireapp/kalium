@@ -20,7 +20,6 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.e2ei.CertificateStatusMapper
 import com.wire.kalium.logic.feature.e2ei.E2eiCertificate
 import com.wire.kalium.logic.feature.e2ei.MLSClientIdentity
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
@@ -37,8 +36,7 @@ interface GetUserE2eiCertificatesUseCase {
 
 class GetUserE2eiCertificatesUseCaseImpl internal constructor(
     private val mlsConversationRepository: MLSConversationRepository,
-    private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase,
-    private val certificateStatusMapper: CertificateStatusMapper
+    private val isE2EIEnabledUseCase: IsE2EIEnabledUseCase
 ) : GetUserE2eiCertificatesUseCase {
     override suspend operator fun invoke(userId: UserId): Map<String, MLSClientIdentity> =
         if (isE2EIEnabledUseCase()) {
@@ -46,7 +44,6 @@ class GetUserE2eiCertificatesUseCaseImpl internal constructor(
                 val result = mutableMapOf<String, MLSClientIdentity>()
                 identities.forEach {
                         result[it.clientId.value] = MLSClientIdentity.fromWireIdentity(it)
-
                 }
                 result
             }.getOrElse(mapOf())

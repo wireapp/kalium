@@ -59,7 +59,7 @@ data class MLSClientIdentity(
                         displayName = it.displayName,
                         domain = it.domain,
                         serialNumber = it.serialNumber,
-                        certificateDetail = it.certificate,
+                        certificate = it.certificate,
                         notBefore = Instant.fromEpochSeconds(it.notBefore),
                         notAfter = Instant.fromEpochSeconds(it.notAfter)
                     )
@@ -73,7 +73,7 @@ data class X509Identity(
     @SerialName("displayName") val displayName: String,
     @SerialName("domain") val domain: String,
     @SerialName("serialNumber") val serialNumber: String,
-    @SerialName("certificateDetail") val certificateDetail: String,
+    @SerialName("certificateDetail") val certificate: String,
     @SerialName("notBefore") val notBefore: Instant,
     @SerialName("notAfter") val notAfter: Instant
 )

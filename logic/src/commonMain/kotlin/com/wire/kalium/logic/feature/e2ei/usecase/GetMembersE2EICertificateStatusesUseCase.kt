@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.e2ei.usecase
 
+import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -41,6 +42,7 @@ class GetMembersE2EICertificateStatusesUseCaseImpl internal constructor(
             { mapOf() },
             {
                 it.mapValues { (_, identities) ->
+                    // todo: we need to check the user name and details!
                     identities.isUserMLSVerified()
                 }
             }
@@ -50,6 +52,6 @@ class GetMembersE2EICertificateStatusesUseCaseImpl internal constructor(
 /**
  * @return if given user is verified or not
  */
-fun List<WireIdentity>.isUserMLSVerified() = this.isEmpty() || this.any {
-    it.x509Identity != null && it.status == CryptoCertificateStatus.VALID
+fun List<WireIdentity>.isUserMLSVerified() = this.isNotEmpty() && this.all {
+    it.x509Identity != null && it.credentialType == CredentialType.X509 && it.status == CryptoCertificateStatus.VALID
 }
