@@ -2031,7 +2031,7 @@ class UserSessionScope internal constructor(
         )
 
     /**
-     * This block will start subscribers of observable work per use session.
+     * This block will start subscribers of observable work per user session.
      */
     init {
         launch {
