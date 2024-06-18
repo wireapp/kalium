@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.message.confirmation
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -29,6 +30,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageSender
+import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.right
@@ -37,10 +39,9 @@ import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -77,34 +78,35 @@ internal class ConfirmationDeliveryHandlerImpl(
 
     @OptIn(FlowPreview::class)
     override suspend fun sendPendingConfirmations() {
-        holder.debounce(500L)
-            .onEach {
-                syncManager.waitUntilLive()
-            }.collect {
-                kaliumLogger.d("Collecting....")
-                with(pendingConfirmationMessages.iterator()) {
-                    forEach { (conversationId, messages) ->
-                        conversationRepository.observeCacheDetailsById(conversationId).flatMap { conversation: Flow<Conversation?> ->
-                            conversation.filter { it?.type == Conversation.Type.ONE_ON_ONE }
-                                .firstOrNull()?.let {
-                                    sendDeliveredSignal(it, messages.toList()).fold({ error ->
-                                        kaliumLogger.e("Error on sending delivered signal $error for $conversationId")
-                                    }, {
-                                        kaliumLogger.d("Delivered confirmation sent for $conversation and message count: ${messages.size}")
-                                        remove()
-                                        kaliumLogger.d("Current queue ${pendingConfirmationMessages.entries}")
-
-                                    })
-                                } ?: remove()
-                            Unit.right()
-                        }
+        holder.debounce(500L).collectLatest {
+            kaliumLogger.d("Collecting....")
+            with(pendingConfirmationMessages.iterator()) {
+                forEach { (conversationId, messages) ->
+                    conversationRepository.observeCacheDetailsById(conversationId).flatMap { conversation: Flow<Conversation?> ->
+                        conversation.firstOrNull()?.let {
+                            if (it.type == Conversation.Type.ONE_ON_ONE) {
+                                kaliumLogger.d("one to one $it")
+                                sendDeliveredSignal(it, messages.toList()).fold({ error ->
+                                    kaliumLogger.e("Error on sending delivered signal $error for $conversationId")
+                                }, {
+                                    kaliumLogger.d("Delivered confirmation sent for $conversation and message count: ${messages.size}")
+                                    kaliumLogger.d("Current queue ${pendingConfirmationMessages.entries}")
+                                })
+                            } else {
+                                kaliumLogger.d("group convo $it")
+                            }
+                            remove()
+                        } ?: kaliumLogger.e("Convo is null")
+                        Unit.right()
                     }
                 }
             }
+        }
     }
 
-    private suspend fun sendDeliveredSignal(conversation: Conversation, messages: List<MessageId>) =
-        currentClientIdProvider().flatMap { currentClientId ->
+    private suspend fun sendDeliveredSignal(conversation: Conversation, messages: List<MessageId>): Either<CoreFailure, Unit> {
+        syncManager.waitUntilLive()
+        return currentClientIdProvider().flatMap { currentClientId ->
             val message = Message.Signaling(
                 id = uuid4().toString(),
                 content = MessageContent.Receipt(ReceiptType.DELIVERED, messages),
@@ -118,4 +120,5 @@ internal class ConfirmationDeliveryHandlerImpl(
             )
             messageSender.sendMessage(message)
         }
+    }
 }
