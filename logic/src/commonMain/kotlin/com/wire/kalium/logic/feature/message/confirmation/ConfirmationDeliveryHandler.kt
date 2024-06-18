@@ -74,7 +74,15 @@ internal class ConfirmationDeliveryHandlerImpl(
         val conversationMessages = pendingConfirmationMessages[conversationId] ?: mutableSetOf()
         val isNewMessage = conversationMessages.add(messageId)
         if (isNewMessage) {
-            kaliumLogger.d("Adding new message to the confirmation queue: $conversationId to $messageId")
+            kaliumLogger.logStructuredJson(
+                level = KaliumLogLevel.DEBUG,
+                leadingMessage = "Adding new message to the confirmation queue: ${conversationId.toLogString()}",
+                jsonStringKeyValues = mapOf(
+                    "conversationId" to conversationId.toLogString(),
+                    "message" to messageId.obfuscateId(),
+                    "queueCount" to pendingConfirmationMessages.size
+                )
+            )
             pendingConfirmationMessages[conversationId] = conversationMessages
             holder.emit(Unit)
         }
