@@ -31,6 +31,6 @@ object ServerConfigDTOJson {
         |}
         """.trimMargin()
 
-    val valid = response;
+    val valid = response
 
 }

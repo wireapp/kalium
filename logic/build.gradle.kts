@@ -32,6 +32,7 @@ kaliumLibrary {
     }
 }
 
+@Suppress("UnusedPrivateProperty")
 kotlin {
     sourceSets {
         val commonMain by getting {

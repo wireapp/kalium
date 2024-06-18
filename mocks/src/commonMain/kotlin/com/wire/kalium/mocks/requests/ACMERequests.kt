@@ -22,7 +22,7 @@ import com.wire.kalium.network.utils.MockUnboundNetworkClient
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 
-object ACMERequests  {
+object ACMERequests {
 
     /**
      * URL Paths

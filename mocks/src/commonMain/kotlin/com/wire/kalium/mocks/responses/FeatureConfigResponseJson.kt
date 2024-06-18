@@ -32,6 +32,8 @@ import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString
 
 object FeatureConfigResponseJson {
+    private const val VERIFICATION_EXPIRATION = 1_000_000L
+
     /**
      * JSON Response
      */
@@ -60,10 +62,11 @@ object FeatureConfigResponseJson {
                 listOf(SupportedProtocolDTO.MLS),
                 emptyList(),
                 1
-            ), FeatureFlagStatusDTO.ENABLED
+            ),
+            FeatureFlagStatusDTO.ENABLED
         ),
         FeatureConfigData.E2EI(
-            E2EIConfigDTO("url", 1_000_000L),
+            E2EIConfigDTO("url", VERIFICATION_EXPIRATION),
             FeatureFlagStatusDTO.ENABLED
         ),
         FeatureConfigData.MLSMigration(
