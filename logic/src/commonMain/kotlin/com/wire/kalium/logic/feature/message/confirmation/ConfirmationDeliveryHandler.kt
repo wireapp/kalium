@@ -76,7 +76,7 @@ internal class ConfirmationDeliveryHandlerImpl(
         if (isNewMessage) {
             kaliumLogger.logStructuredJson(
                 level = KaliumLogLevel.DEBUG,
-                leadingMessage = "Adding new message to the confirmation queue: ${conversationId.toLogString()}",
+                leadingMessage = "Adding new message to the confirmation queue: ${messageId.obfuscateId()}",
                 jsonStringKeyValues = mapOf(
                     "conversationId" to conversationId.toLogString(),
                     "message" to messageId.obfuscateId(),
