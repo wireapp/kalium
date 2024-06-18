@@ -157,7 +157,7 @@ class FeatureConfigMapperTest {
                 MLSConfigDTO(
                     SupportedProtocolDTO.MLS,
                     listOf(SupportedProtocolDTO.MLS),
-                    emptyList(),
+                    listOf(1),
                     1
                 ), FeatureFlagStatusDTO.ENABLED
             ),

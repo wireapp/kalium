@@ -257,7 +257,10 @@ class UserEventReceiverTest {
             eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
             // then
             coVerify {
-                arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(eq(event.connection.qualifiedConversationId))
+                arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
+                    eq(event.connection.qualifiedConversationId),
+                    any()
+                )
             }.wasInvoked(exactly = once)
         }
 
@@ -276,7 +279,10 @@ class UserEventReceiverTest {
             eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
             // then
             coVerify {
-                arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(eq(event.connection.qualifiedConversationId))
+                arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
+                    eq(event.connection.qualifiedConversationId),
+                    any()
+                )
             }.wasNotInvoked()
         }
 
@@ -321,7 +327,7 @@ class UserEventReceiverTest {
         eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
         // then
         coVerify {
-            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any())
+            arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
         }.wasNotInvoked()
     }
 
@@ -341,7 +347,8 @@ class UserEventReceiverTest {
         // then
         coVerify {
             arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
-                eq(event.connection.qualifiedConversationId)
+                eq(event.connection.qualifiedConversationId),
+                any()
             )
         }.wasInvoked(exactly = once)
     }
@@ -391,7 +398,7 @@ class UserEventReceiverTest {
 
         suspend fun withPersistUnverifiedWarningMessageSuccess() = apply {
             coEvery {
-                newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any())
+                newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
             }.returns(Either.Right(Unit))
         }
 

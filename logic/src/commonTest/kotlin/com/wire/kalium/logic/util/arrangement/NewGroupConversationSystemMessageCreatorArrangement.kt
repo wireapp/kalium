@@ -40,7 +40,7 @@ internal class NewGroupConversationSystemMessageCreatorArrangementImpl : NewGrou
 
     override suspend fun withPersistUnverifiedWarningMessageSuccess() = apply {
         coEvery {
-            newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any())
+            newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(any(), any())
         }.returns(Either.Right(Unit))
     }
 

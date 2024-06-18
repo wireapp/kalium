@@ -27,8 +27,10 @@ import com.wire.kalium.logic.data.conversation.mls.MLSAdditionResult
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.message.SystemMessageInserter
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.mlsmigration.MLSMigratorTest.Arrangement.Companion.CIPHER_SUITE
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
@@ -81,7 +83,11 @@ class MLSMigratorTest {
         }
 
         coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(eq(Arrangement.MIXED_PROTOCOL_INFO.groupId), eq(Arrangement.MEMBERS))
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                eq(Arrangement.MIXED_PROTOCOL_INFO.groupId),
+                eq(Arrangement.MEMBERS),
+                eq(CIPHER_SUITE)
+            )
         }
     }
 
@@ -114,7 +120,11 @@ class MLSMigratorTest {
         }
 
         coVerify {
-            arrangement.mlsConversationRepository.addMemberToMLSGroup(eq(Arrangement.MIXED_PROTOCOL_INFO.groupId), eq(Arrangement.MEMBERS))
+            arrangement.mlsConversationRepository.addMemberToMLSGroup(
+                eq(Arrangement.MIXED_PROTOCOL_INFO.groupId),
+                eq(Arrangement.MEMBERS),
+                eq(CIPHER_SUITE)
+            )
         }
 
         coVerify {
@@ -245,6 +255,7 @@ class MLSMigratorTest {
                 conversationRepository.fetchConversation(any())
             }.returns(Either.Right(Unit))
         }
+
         suspend fun withUpdateProtocolReturns(result: Either<CoreFailure, Boolean> = Either.Right(true)) = apply {
             coEvery {
                 conversationRepository.updateProtocolRemotely(any(), any())
@@ -265,7 +276,7 @@ class MLSMigratorTest {
 
         suspend fun withAddMembersSucceeds() = apply {
             coEvery {
-                mlsConversationRepository.addMemberToMLSGroup(any(), any())
+                mlsConversationRepository.addMemberToMLSGroup(any(), any(), any())
             }.returns(Either.Right(Unit))
         }
 
@@ -296,6 +307,7 @@ class MLSMigratorTest {
         }
 
         companion object {
+            val CIPHER_SUITE = CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
             val MLS_STALE_MESSAGE_ERROR = KaliumException.InvalidRequestError(
                 ErrorResponse(409, "", "mls-stale-message")
             )
@@ -306,14 +318,14 @@ class MLSMigratorTest {
                 Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                 0UL,
                 Instant.parse("2021-03-30T15:36:00.000Z"),
-                cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                cipherSuite = CIPHER_SUITE
             )
             val MLS_PROTOCOL_INFO = Conversation.ProtocolInfo.MLS(
                 TestConversation.GROUP_ID,
                 Conversation.ProtocolInfo.MLSCapable.GroupState.PENDING_JOIN,
                 0UL,
                 Instant.parse("2021-03-30T15:36:00.000Z"),
-                cipherSuite = Conversation.CipherSuite.MLS_128_DHKEMX25519_AES128GCM_SHA256_Ed25519
+                cipherSuite = CIPHER_SUITE
             )
         }
     }
