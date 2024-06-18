@@ -90,7 +90,6 @@ class GlobalKaliumScope internal constructor(
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>,
     private val authenticationScopeProvider: AuthenticationScopeProvider,
-    private val networkStateObserver: NetworkStateObserver,
     val logoutCallbackManager: LogoutCallbackManager,
 ) : CoroutineScope {
 

@@ -66,7 +66,6 @@ abstract class CoreLogicCommon internal constructor(
             kaliumConfigs,
             userSessionScopeProvider,
             authenticationScopeProvider,
-            networkStateObserver,
             logoutCallbackManager,
         )
     }
