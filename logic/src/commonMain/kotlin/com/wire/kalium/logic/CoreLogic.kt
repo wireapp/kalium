@@ -80,7 +80,6 @@ abstract class CoreLogicCommon internal constructor(
         authenticationScopeProvider.provide(
             serverConfig,
             proxyCredentials,
-            networkStateObserver,
             globalDatabaseBuilder,
             kaliumConfigs
         )

@@ -98,7 +98,6 @@ class GlobalKaliumScope internal constructor(
 
     val unboundNetworkContainer: UnboundNetworkContainer by lazy {
         UnboundNetworkContainerCommon(
-            networkStateObserver,
             userAgent,
             kaliumConfigs.ignoreSSLCertificatesForUnboundCalls,
             kaliumConfigs.certPinningConfig,
@@ -147,9 +146,8 @@ class GlobalKaliumScope internal constructor(
             globalPreferences.authTokenStorage,
             { serverConfig, proxyCredentials ->
                 authenticationScopeProvider.provide(
-                    serverConfig,
-                    proxyCredentials,
-                    networkStateObserver,
+                    serverConfig = serverConfig,
+                    proxyCredentials = proxyCredentials,
                     globalDatabase = globalDatabase,
                     kaliumConfigs = kaliumConfigs,
                 ).serverConfigRepository
@@ -175,7 +173,6 @@ class GlobalKaliumScope internal constructor(
             customServerConfigRepository,
             authenticationScopeProvider,
             userSessionScopeProvider.value,
-            networkStateObserver,
             globalDatabase,
             kaliumConfigs
         )

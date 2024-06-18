@@ -59,7 +59,6 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
     private val customServerConfigRepository: CustomServerConfigRepository,
     private val authenticationScopeProvider: AuthenticationScopeProvider,
     private val userSessionScopeProvider: UserSessionScopeProvider,
-    private val networkStateObserver: NetworkStateObserver,
     private val globalDatabaseBuilder: GlobalDatabaseBuilder,
     private val kaliumConfigs: KaliumConfigs
 ) : ObserveIfAppUpdateRequiredUseCase {
@@ -107,7 +106,6 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
                                     .provide(
                                         serverConfig = serverConfig,
                                         proxyCredentials = proxyCredentials,
-                                        networkStateObserver = networkStateObserver,
                                         globalDatabase = globalDatabaseBuilder,
                                         kaliumConfigs = kaliumConfigs,
                                     )

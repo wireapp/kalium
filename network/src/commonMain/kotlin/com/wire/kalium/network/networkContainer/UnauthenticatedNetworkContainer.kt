@@ -18,7 +18,6 @@
 
 package com.wire.kalium.network.networkContainer
 
-import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.unauthenticated.DomainLookupApi
@@ -52,7 +51,6 @@ interface UnauthenticatedNetworkContainer {
     @Suppress("LongMethod")
     companion object {
         fun create(
-            networkStateObserver: NetworkStateObserver,
             serverConfigDTO: ServerConfigDTO,
             proxyCredentials: ProxyCredentialsDTO?,
             userAgent: String,
@@ -65,9 +63,8 @@ interface UnauthenticatedNetworkContainer {
 
             return when (serverConfigDTO.metaData.commonApiVersion.version) {
                 0 -> UnauthenticatedNetworkContainerV0(
-                    developmentApiEnabled,
-                    networkStateObserver,
-                    serverConfigDTO,
+                    developmentApiEnabled = developmentApiEnabled,
+                    backendLinks = serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
                     mockEngine
@@ -75,7 +72,6 @@ interface UnauthenticatedNetworkContainer {
 
                 1 -> UnauthenticatedNetworkContainerV0(
                     developmentApiEnabled,
-                    networkStateObserver,
                     serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
@@ -83,46 +79,41 @@ interface UnauthenticatedNetworkContainer {
                 )
 
                 2 -> UnauthenticatedNetworkContainerV2(
-                    developmentApiEnabled,
-                    networkStateObserver,
-                    serverConfigDTO,
+                    developmentApiEnabled = developmentApiEnabled,
+                    backendLinks = serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
-                    mockEngine
+                    mockEngine = mockEngine
                 )
 
                 // this is intentional since we should drop support for api v3
                 // and we default back to v2
                 3 -> UnauthenticatedNetworkContainerV2(
-                    developmentApiEnabled,
-                    networkStateObserver,
-                    serverConfigDTO,
+                    developmentApiEnabled = developmentApiEnabled,
+                    backendLinks = serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
                     mockEngine = mockEngine,
                 )
 
                 4 -> UnauthenticatedNetworkContainerV4(
-                    developmentApiEnabled,
-                    networkStateObserver,
-                    serverConfigDTO,
+                    developmentApiEnabled = developmentApiEnabled,
+                    backendLinks = serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
                     mockEngine = mockEngine,
                 )
 
                 5 -> UnauthenticatedNetworkContainerV5(
-                    developmentApiEnabled,
-                    networkStateObserver,
-                    serverConfigDTO,
+                    developmentApiEnabled = developmentApiEnabled,
+                    backendLinks = serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
                     mockEngine = mockEngine,
                 )
 
                 6 -> UnauthenticatedNetworkContainerV6(
-                    networkStateObserver,
-                    serverConfigDTO,
+                    backendLinks = serverConfigDTO,
                     proxyCredentials = proxyCredentials,
                     certificatePinning = certificatePinning,
                     mockEngine = mockEngine,
@@ -140,11 +131,10 @@ internal interface UnauthenticatedNetworkClientProvider {
 }
 
 internal class UnauthenticatedNetworkClientProviderImpl internal constructor(
-    networkStateObserver: NetworkStateObserver,
     backendLinks: ServerConfigDTO,
     engine: HttpClientEngine
 ) : UnauthenticatedNetworkClientProvider {
     override val unauthenticatedNetworkClient by lazy {
-        UnauthenticatedNetworkClient(networkStateObserver, engine, backendLinks)
+        UnauthenticatedNetworkClient(engine, backendLinks)
     }
 }
