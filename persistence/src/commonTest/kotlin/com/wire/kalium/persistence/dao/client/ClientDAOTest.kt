@@ -389,6 +389,75 @@ class ClientDAOTest : BaseDatabaseTest() {
         }
     }
 
+
+    @Test
+    fun givenClientWithNonNullValuesIsStored_whenInsertingTheSameClientWithNullValues_thenValuesAreNotOverwrittenWithNulls() = runTest {
+        val insertClientWithNonNullValues = insertedClient1.copy(
+            deviceType = DeviceTypeEntity.Tablet,
+            clientType = ClientTypeEntity.Permanent,
+            label = "label",
+            registrationDate = "2022-03-30T15:36:00.000Z".toInstant(),
+            lastActive = "2022-03-30T15:36:00.000Z".toInstant(),
+            model = "model",
+        )
+        val insertClientWithNullValues = insertedClient1.copy(
+            deviceType = null,
+            clientType = null,
+            label = null,
+            registrationDate = null,
+            lastActive = null,
+            model = null,
+        )
+        val clientWithNonNullValues = insertClientWithNonNullValues.toClient()
+
+        userDAO.upsertUser(user)
+        clientDAO.insertClients(listOf(insertClientWithNonNullValues))
+        clientDAO.getClientsOfUserByQualifiedIDFlow(userId).first().also { resultList ->
+            assertEquals(listOf(clientWithNonNullValues), resultList)
+        }
+
+        clientDAO.insertClients(listOf(insertClientWithNullValues))
+
+        // values should not be overwritten with nulls
+        clientDAO.getClientsOfUserByQualifiedIDFlow(userId).first().also { resultList ->
+            assertEquals(listOf(clientWithNonNullValues), resultList)
+        }
+    }
+
+    @Test
+    fun givenClientWithNullValuesIsStored_whenInsertingTheSameClientWithNonNullValues_thenNullValuesAreOverwritten() = runTest {
+        val insertClientWithNonNullValues = insertedClient1.copy(
+            deviceType = DeviceTypeEntity.Tablet,
+            clientType = ClientTypeEntity.Permanent,
+            label = "label",
+            registrationDate = "2022-03-30T15:36:00.000Z".toInstant(),
+            lastActive = "2022-03-30T15:36:00.000Z".toInstant(),
+            model = "model",
+        )
+        val insertClientWithNullValues = insertedClient1.copy(
+            deviceType = null,
+            clientType = null,
+            label = null,
+            registrationDate = null,
+            lastActive = null,
+            model = null,
+        )
+        val clientWithNonNullValues = insertClientWithNonNullValues.toClient()
+
+        userDAO.upsertUser(user)
+        clientDAO.insertClients(listOf(insertClientWithNonNullValues))
+        clientDAO.getClientsOfUserByQualifiedIDFlow(userId).first().also { resultList ->
+            assertEquals(listOf(clientWithNonNullValues), resultList)
+        }
+
+        clientDAO.insertClients(listOf(insertClientWithNullValues))
+
+        // null values should not be overwritten with proper ones
+        clientDAO.getClientsOfUserByQualifiedIDFlow(userId).first().also { resultList ->
+            assertEquals(listOf(clientWithNonNullValues), resultList)
+        }
+    }
+
     private companion object {
         val userId = QualifiedIDEntity("test", "domain")
         val user = newUserEntity(userId)
