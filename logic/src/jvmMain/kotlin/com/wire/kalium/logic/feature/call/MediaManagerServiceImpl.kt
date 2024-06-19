@@ -20,21 +20,24 @@ package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.PlatformContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
 
+@Suppress("UnusedPrivateProperty")
 actual class MediaManagerServiceImpl(
-    platformContext: PlatformContext
+    platformContext: PlatformContext,
+    scope: CoroutineScope,
 ) : MediaManagerService {
-    override fun turnLoudSpeakerOn() {
+    override suspend fun turnLoudSpeakerOn() {
         kaliumLogger.w("turnLoudSpeakerOn for JVM but not supported yet.")
     }
 
-    override fun turnLoudSpeakerOff() {
+    override suspend fun turnLoudSpeakerOff() {
         kaliumLogger.w("turnLoudSpeakerOff for JVM but not supported yet.")
     }
 
-    override fun observeSpeaker(): StateFlow<Boolean> {
+    override fun observeSpeaker(): Flow<Boolean> {
         kaliumLogger.w("observeSpeaker for JVM but not supported yet.")
         return MutableStateFlow(false)
     }

@@ -152,7 +152,7 @@ class MessageEnvelopeCreatorImpl(
         val encryptedMessageSizeEstimate = encodedContent.data.size + ENCRYPTED_MESSAGE_OVERHEAD
         val totalClients = recipients.sumOf { recipient -> recipient.clients.size }
 
-        val totalEstimatedSize = encryptedMessageSizeEstimate + totalClients
+        val totalEstimatedSize = encryptedMessageSizeEstimate * totalClients
 
         return if (totalEstimatedSize <= MAX_CONTENT_SIZE) {
             kaliumLogger.withFeatureId(MESSAGES).v("External message is not needed")
@@ -187,6 +187,6 @@ class MessageEnvelopeCreatorImpl(
         /**
          * Maximum size of the messages payload accepted by the servers without [ProtoContent.ExternalMessageInstructions].
          */
-        const val MAX_CONTENT_SIZE = 256 * 1024
+        const val MAX_CONTENT_SIZE = 200 * 1024
     }
 }

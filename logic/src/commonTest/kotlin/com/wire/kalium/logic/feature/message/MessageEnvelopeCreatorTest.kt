@@ -96,9 +96,7 @@ class MessageEnvelopeCreatorTest {
         }.returns(flowOf(Either.Right(Conversation.LegalHoldStatus.DISABLED)))
 
         every {
-
             legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
-
         }.returns(Conversation.LegalHoldStatus.DISABLED)
     }
 
@@ -124,12 +122,10 @@ class MessageEnvelopeCreatorTest {
         messageEnvelopeCreator.createOutgoingEnvelope(recipients, TestMessage.TEXT_MESSAGE)
 
         coVerify {
-
             proteusClient.encryptBatched(
                 eq(plainData),
                 eq(sessionIds)
             )
-
         }
 
         coVerify {
@@ -145,7 +141,7 @@ class MessageEnvelopeCreatorTest {
     fun givenMessageContentIsTooBig_whenCreatingAnEnvelope_thenShouldCreateExternalMessageInstructions() = runTest {
         // Given
         // A big byte array as the readable content
-        val plainData = ByteArray(SUPER_BIG_CONTENT_SIZE) { it.toByte() }
+        val plainData = ByteArray(NON_EXTERNAL_CONTENT_SIZE_LIMIT) { it.toByte() }
 
         val recipients = TEST_RECIPIENTS
         val externalInstructionsArray = byteArrayOf(0x42, 0x13)
@@ -162,15 +158,11 @@ class MessageEnvelopeCreatorTest {
         }.returns(sessionIds.associateWith { encryptedData })
 
         every {
-
             protoContentMapper.encodeToProtobuf(matches { it is ProtoContent.Readable })
-
         }.returns(PlainMessageBlob(plainData))
 
         every {
-
             protoContentMapper.encodeToProtobuf(matches { it is ProtoContent.ExternalMessageInstructions })
-
         }.returns(PlainMessageBlob(externalInstructionsArray))
 
         // When
@@ -178,8 +170,61 @@ class MessageEnvelopeCreatorTest {
 
         // Then
         envelope.shouldSucceed {
-            assertTrue { it.dataBlob!!.data.size >= SUPER_BIG_CONTENT_SIZE }
+            assertTrue { it.dataBlob!!.data.size >= NON_EXTERNAL_CONTENT_SIZE_LIMIT }
 
+            it.recipients.forEach { recipientEntry ->
+                recipientEntry.clientPayloads.forEach { clientPayload ->
+                    assertEquals(encryptedData, clientPayload.payload.data)
+                }
+            }
+        }
+
+        coVerify {
+            conversationRepository.observeLegalHoldStatus(any())
+        }.wasInvoked(once)
+
+        verify {
+            legalHoldStatusMapper.mapLegalHoldConversationStatus(any(), any())
+        }.wasInvoked(once)
+    }
+
+    @Test
+    fun givenMessageIsTooBigDueToTooManyRecipientClients_whenCreatingAnEnvelope_thenShouldCreateExternalMessageInstructions() = runTest {
+        // Given
+        val recipients = listOf(
+            Recipient(TEST_MEMBER_1, listOf(ClientId("c1"), ClientId("c2"), ClientId("c3"))),
+            Recipient(TEST_MEMBER_2, listOf(ClientId("c4"), ClientId("c5"), ClientId("c6"))),
+        )
+        val numberOfClients = recipients.sumOf { it.clients.size }
+        // A big byte array as the readable content
+        val plainData = ByteArray(NON_EXTERNAL_CONTENT_SIZE_LIMIT / numberOfClients) { it.toByte() }
+
+        val externalInstructionsArray = byteArrayOf(0x42, 0x13)
+        val encryptedData = byteArrayOf(0x66)
+        val sessionIds = recipients.flatMap { recipient ->
+            recipient.clients.map {
+                CryptoSessionId(recipient.id.toCrypto(), CryptoClientId((it.value)))
+            }
+        }
+
+        // Should only attempt to E2EE the external instructions, not the content itself
+        coEvery {
+            proteusClient.encryptBatched(matches { it.contentEquals(externalInstructionsArray) }, any())
+        }.returns(sessionIds.associateWith { encryptedData })
+
+        every {
+            protoContentMapper.encodeToProtobuf(matches { it is ProtoContent.Readable })
+        }.returns(PlainMessageBlob(plainData))
+
+        every {
+            protoContentMapper.encodeToProtobuf(matches { it is ProtoContent.ExternalMessageInstructions })
+        }.returns(PlainMessageBlob(externalInstructionsArray))
+
+        // When
+        val envelope = messageEnvelopeCreator.createOutgoingEnvelope(recipients, TestMessage.TEXT_MESSAGE)
+
+        // Then
+        envelope.shouldSucceed {
             it.recipients.forEach { recipientEntry ->
                 recipientEntry.clientPayloads.forEach { clientPayload ->
                     assertEquals(encryptedData, clientPayload.payload.data)
@@ -215,9 +260,7 @@ class MessageEnvelopeCreatorTest {
         }.returns(sessionIds.associateWith { encryptedData })
 
         every {
-
             protoContentMapper.encodeToProtobuf(matches { it is ProtoContent.Readable })
-
         }.returns(PlainMessageBlob(plainData))
 
         // When
@@ -370,12 +413,10 @@ class MessageEnvelopeCreatorTest {
         messageEnvelopeCreator.createOutgoingBroadcastEnvelope(recipients, TestMessage.BROADCAST_MESSAGE)
 
         coVerify {
-
             proteusClient.encryptBatched(
                 eq(plainData),
                 eq(sessionIds)
             )
-
         }
     }
 
@@ -383,7 +424,7 @@ class MessageEnvelopeCreatorTest {
     fun givenMessageContentIsTooBig_whenCreatingBroadcastEnvelope_thenShouldCreateExternalMessageInstructions() = runTest {
         // Given
         // A big byte array as the readable content
-        val plainData = ByteArray(SUPER_BIG_CONTENT_SIZE) { it.toByte() }
+        val plainData = ByteArray(NON_EXTERNAL_CONTENT_SIZE_LIMIT) { it.toByte() }
 
         val recipients = TEST_RECIPIENTS
         val externalInstructionsArray = byteArrayOf(0x42, 0x13)
@@ -400,15 +441,11 @@ class MessageEnvelopeCreatorTest {
         }.returns(sessionIds.associateWith { encryptedData })
 
         every {
-
             protoContentMapper.encodeToProtobuf(matches { it is ProtoContent.Readable })
-
         }.returns(PlainMessageBlob(plainData))
 
         every {
-
             protoContentMapper.encodeToProtobuf(matches { it is ProtoContent.ExternalMessageInstructions })
-
         }.returns(PlainMessageBlob(externalInstructionsArray))
 
         // When
@@ -416,7 +453,7 @@ class MessageEnvelopeCreatorTest {
 
         // Then
         envelope.shouldSucceed {
-            assertTrue { it.dataBlob!!.data.size >= SUPER_BIG_CONTENT_SIZE }
+            assertTrue { it.dataBlob!!.data.size >= NON_EXTERNAL_CONTENT_SIZE_LIMIT }
 
             it.recipients.forEach { recipientEntry ->
                 recipientEntry.clientPayloads.forEach { clientPayload ->
@@ -425,6 +462,52 @@ class MessageEnvelopeCreatorTest {
             }
         }
     }
+
+    @Test
+    fun givenMessageIsTooBigDueToTooManyRecipientClients_whenCreatingBroadcastEnvelope_thenShouldCreateExternalMessageInstructions() =
+        runTest {
+            // Given
+            // A big byte array as the readable content
+            val recipients = listOf(
+                Recipient(TEST_MEMBER_1, listOf(ClientId("c1"), ClientId("c2"), ClientId("c3"))),
+                Recipient(TEST_MEMBER_2, listOf(ClientId("c4"), ClientId("c5"), ClientId("c6"))),
+            )
+            val numberOfClients = recipients.sumOf { it.clients.size }
+            val plainData = ByteArray(NON_EXTERNAL_CONTENT_SIZE_LIMIT / numberOfClients) { it.toByte() }
+
+            val externalInstructionsArray = byteArrayOf(0x42, 0x13)
+            val encryptedData = byteArrayOf(0x66)
+            val sessionIds = recipients.flatMap { recipient ->
+                recipient.clients.map {
+                    CryptoSessionId(recipient.id.toCrypto(), CryptoClientId((it.value)))
+                }
+            }
+
+            // Should only attempt to E2EE the external instructions, not the content itself
+            coEvery {
+                proteusClient.encryptBatched(matches { it.contentEquals(externalInstructionsArray) }, any())
+            }.returns(sessionIds.associateWith { encryptedData })
+
+            every {
+                protoContentMapper.encodeToProtobuf(matches { it is ProtoContent.Readable })
+            }.returns(PlainMessageBlob(plainData))
+
+            every {
+                protoContentMapper.encodeToProtobuf(matches { it is ProtoContent.ExternalMessageInstructions })
+            }.returns(PlainMessageBlob(externalInstructionsArray))
+
+            // When
+            val envelope = messageEnvelopeCreator.createOutgoingBroadcastEnvelope(recipients, TestMessage.BROADCAST_MESSAGE)
+
+            // Then
+            envelope.shouldSucceed {
+                it.recipients.forEach { recipientEntry ->
+                    recipientEntry.clientPayloads.forEach { clientPayload ->
+                        assertEquals(encryptedData, clientPayload.payload.data)
+                    }
+                }
+            }
+        }
 
     @Test
     fun givenMessageContentIsSmall_whenCreatingBroadcastEnvelope_thenShouldNotCreateExternalMessageInstructions() = runTest {
@@ -445,9 +528,7 @@ class MessageEnvelopeCreatorTest {
         }.returns(sessionIds.associateWith { encryptedData })
 
         every {
-
             protoContentMapper.encodeToProtobuf(matches { it is ProtoContent.Readable })
-
         }.returns(PlainMessageBlob(plainData))
 
         // When
@@ -515,9 +596,7 @@ class MessageEnvelopeCreatorTest {
         }.throws(exception)
 
         every {
-
             protoContentMapper.encodeToProtobuf(any())
-
         }.returns(PlainMessageBlob(byteArrayOf()))
 
         messageEnvelopeCreator.createOutgoingBroadcastEnvelope(TEST_RECIPIENTS, TestMessage.BROADCAST_MESSAGE)
@@ -534,9 +613,7 @@ class MessageEnvelopeCreatorTest {
         }.throws(ProteusException("OOPS", ProteusException.Code.PANIC))
 
         every {
-
             protoContentMapper.encodeToProtobuf(any())
-
         }.returns(PlainMessageBlob(byteArrayOf()))
 
         messageEnvelopeCreator.createOutgoingBroadcastEnvelope(TEST_RECIPIENTS, TestMessage.BROADCAST_MESSAGE)
@@ -548,9 +625,9 @@ class MessageEnvelopeCreatorTest {
 
     private companion object {
         /**
-         * A content size so big it would alone go over the 256KB limit in the backend
+         * Maximum envelope size before a message becomes so big that it would be sent as an external message
          */
-        const val SUPER_BIG_CONTENT_SIZE = 260 * 1024
+        const val NON_EXTERNAL_CONTENT_SIZE_LIMIT = 200 * 1024
         val TEST_CONTACT_CLIENT_1 = ClientId("clientId1")
         val TEST_CONTACT_CLIENT_2 = ClientId("clientId2")
         val TEST_MEMBER_1 = UserId("value1", "domain1")
