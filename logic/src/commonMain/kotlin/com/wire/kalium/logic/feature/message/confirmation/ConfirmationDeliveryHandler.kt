@@ -68,7 +68,7 @@ internal class ConfirmationDeliveryHandlerImpl(
     private val kaliumLogger = kaliumLogger.withTextTag("ConfirmationDeliveryHandler")
     private val pendingConfirmationMessages = mutableMapOf<ConversationId, MutableSet<String>>()
     private val holder = MutableSharedFlow<Unit>()
-    val mutex = Mutex()
+    private val mutex = Mutex()
 
     override suspend fun enqueueConfirmationDelivery(conversationId: ConversationId, messageId: String) = mutex.withLock {
         val conversationMessages = pendingConfirmationMessages[conversationId] ?: mutableSetOf()
