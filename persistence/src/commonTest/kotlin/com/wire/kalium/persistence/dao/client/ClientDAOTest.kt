@@ -443,14 +443,15 @@ class ClientDAOTest : BaseDatabaseTest() {
             model = null,
         )
         val clientWithNonNullValues = insertClientWithNonNullValues.toClient()
+        val clientWithNullValues = insertClientWithNullValues.toClient()
 
         userDAO.upsertUser(user)
-        clientDAO.insertClients(listOf(insertClientWithNonNullValues))
+        clientDAO.insertClients(listOf(insertClientWithNullValues))
         clientDAO.getClientsOfUserByQualifiedIDFlow(userId).first().also { resultList ->
-            assertEquals(listOf(clientWithNonNullValues), resultList)
+            assertEquals(listOf(clientWithNullValues), resultList)
         }
 
-        clientDAO.insertClients(listOf(insertClientWithNullValues))
+        clientDAO.insertClients(listOf(insertClientWithNonNullValues))
 
         // null values should not be overwritten with proper ones
         clientDAO.getClientsOfUserByQualifiedIDFlow(userId).first().also { resultList ->
