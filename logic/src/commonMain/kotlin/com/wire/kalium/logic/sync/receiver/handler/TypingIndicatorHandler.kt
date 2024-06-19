@@ -23,10 +23,12 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
+import com.wire.kalium.logic.data.event.EventProcessingPerformanceData
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
+import kotlinx.datetime.Clock
 
 internal interface TypingIndicatorHandler {
     suspend fun handle(event: Event.Conversation.TypingIndicator): Either<StorageFailure, Unit>
@@ -37,8 +39,16 @@ internal class TypingIndicatorHandlerImpl(
     private val typingIndicatorIncomingRepository: TypingIndicatorIncomingRepository
 ) : TypingIndicatorHandler {
     override suspend fun handle(event: Event.Conversation.TypingIndicator): Either<StorageFailure, Unit> {
+        val initialTime = Clock.System.now()
         if (event.senderUserId == selfUserId) {
-            kaliumLogger.withFeatureId(EVENT_RECEIVER).logEventProcessing(EventLoggingStatus.SKIPPED, event)
+            kaliumLogger.withFeatureId(EVENT_RECEIVER).logEventProcessing(
+                EventLoggingStatus.SKIPPED,
+                event,
+                "isForSelfUser" to true,
+                performanceData = EventProcessingPerformanceData.TimeTaken(
+                    duration = (Clock.System.now() - initialTime)
+                )
+            )
             return Either.Right(Unit)
         }
 
@@ -53,7 +63,16 @@ internal class TypingIndicatorHandlerImpl(
                 event.senderUserId
             )
         }.also {
-            kaliumLogger.withFeatureId(EVENT_RECEIVER).logEventProcessing(EventLoggingStatus.SUCCESS, event)
+            kaliumLogger
+                .withFeatureId(EVENT_RECEIVER)
+                .logEventProcessing(
+                    status = EventLoggingStatus.SUCCESS,
+                    event = event,
+                    "isForSelfUser" to false,
+                    performanceData = EventProcessingPerformanceData.TimeTaken(
+                        duration = (Clock.System.now() - initialTime),
+                    )
+                )
         }
 
         return Either.Right(Unit)

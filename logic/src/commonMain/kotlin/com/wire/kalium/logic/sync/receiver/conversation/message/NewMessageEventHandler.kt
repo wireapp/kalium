@@ -26,9 +26,11 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.event.EventLoggingStatus
+import com.wire.kalium.logic.data.event.EventProcessingPerformanceData
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.typeDescription
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.functional.onFailure
@@ -37,6 +39,7 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.util.serialization.toJsonElement
+import kotlinx.datetime.Clock
 import kotlinx.datetime.toInstant
 
 internal interface NewMessageEventHandler {
@@ -58,6 +61,7 @@ internal class NewMessageEventHandlerImpl(
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
     override suspend fun handleNewProteusMessage(event: Event.Conversation.NewMessage, deliveryInfo: EventDeliveryInfo) {
+        val initialTime = Clock.System.now()
         proteusMessageUnpacker.unpackProteusMessage(event)
             .onFailure {
                 val logMap = mapOf(
@@ -88,21 +92,22 @@ internal class NewMessageEventHandlerImpl(
                 )
             }.onSuccess {
                 if (it is MessageUnpackResult.ApplicationMessage) {
-                    if (it.content.legalHoldStatus != Conversation.LegalHoldStatus.UNKNOWN) {
-                        legalHoldHandler.handleNewMessage(it, isLive = deliveryInfo.source == EventSource.LIVE)
-                    }
-                    handleSuccessfulResult(it)
-                    onMessageInserted(it)
+                    processApplicationMessage(it, deliveryInfo)
                 }
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.SUCCESS,
-                        event
+                kaliumLogger.logEventProcessing(
+                    status = EventLoggingStatus.SUCCESS,
+                    event = event,
+                    "protocol" to "Proteus",
+                    "messageType" to it.messageTypeDescription,
+                    performanceData = EventProcessingPerformanceData.TimeTaken(
+                        duration = (Clock.System.now() - initialTime)
                     )
+                )
             }
     }
 
     override suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage, deliveryInfo: EventDeliveryInfo) {
+        var initialTime = Clock.System.now()
         mlsMessageUnpacker.unpackMlsMessage(event)
             .onFailure {
                 val logMap = mapOf(
@@ -139,23 +144,44 @@ internal class NewMessageEventHandlerImpl(
                         )
                     }
                 }
-            }.onSuccess {
-                it.forEach {
-                    if (it is MessageUnpackResult.ApplicationMessage) {
-                        if (it.content.legalHoldStatus != Conversation.LegalHoldStatus.UNKNOWN) {
-                            legalHoldHandler.handleNewMessage(it, isLive = deliveryInfo.source == EventSource.LIVE)
-                        }
-                        handleSuccessfulResult(it)
-                        onMessageInserted(it)
+            }.onSuccess { batchResult ->
+                batchResult.forEach { message ->
+                    if (message is MessageUnpackResult.ApplicationMessage) {
+                        processApplicationMessage(message, deliveryInfo)
                     }
-                }
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.SUCCESS,
-                        event
+                    kaliumLogger.logEventProcessing(
+                        status = EventLoggingStatus.SUCCESS,
+                        event = event,
+                        "protocol" to "MLS",
+                        "isPartOfMLSBatch" to (batchResult.size > 1),
+                        "messageType" to message.messageTypeDescription,
+                        performanceData = EventProcessingPerformanceData.TimeTaken(
+                            duration = (Clock.System.now() - initialTime)
+                        )
                     )
+                    // reset the time for next messages, if this is a batch
+                    initialTime = Clock.System.now()
+                }
             }
     }
+
+    private suspend fun processApplicationMessage(
+        it: MessageUnpackResult.ApplicationMessage,
+        deliveryInfo: EventDeliveryInfo
+    ) {
+        if (it.content.legalHoldStatus != Conversation.LegalHoldStatus.UNKNOWN) {
+            legalHoldHandler.handleNewMessage(it, isLive = deliveryInfo.source == EventSource.LIVE)
+        }
+        handleSuccessfulResult(it)
+        onMessageInserted(it)
+    }
+
+    private val MessageUnpackResult.messageTypeDescription
+        get() = if (this is MessageUnpackResult.ApplicationMessage) {
+            content.messageContent.typeDescription()
+        } else {
+            "Handshake"
+        }
 
     private fun onMessageInserted(result: MessageUnpackResult.ApplicationMessage) {
         if (result.senderUserId == selfUserId && result.content.expiresAfterMillis != null) {
