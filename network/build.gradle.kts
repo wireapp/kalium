@@ -75,6 +75,8 @@ kotlin {
                 implementation(libs.coroutines.test)
                 // ktor test
                 implementation(libs.ktor.mock)
+                // mocks
+                implementation(project(":mocks"))
             }
         }
 

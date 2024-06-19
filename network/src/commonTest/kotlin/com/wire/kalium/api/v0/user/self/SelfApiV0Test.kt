@@ -20,7 +20,7 @@ package com.wire.kalium.api.v0.user.self
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.ErrorResponseJson
-import com.wire.kalium.model.UserDTOJson
+import com.wire.kalium.mocks.responses.UserDTOJson
 import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.v0.authenticated.SelfApiV0
 import com.wire.kalium.network.exceptions.KaliumException

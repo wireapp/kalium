@@ -43,7 +43,7 @@ object VersionInfoDTOJson {
     val valid404Result = VersionInfoDTO(null, null, false, listOf(0))
 
     val valid = ValidJsonProvider(
-        VersionInfoDTO(listOf(1), "test.api.com", true, listOf(0, 1)),
+        VersionInfoDTO(listOf(2), "wire.com", true, listOf(0, 1)),
         defaultParametersJson
     )
 }

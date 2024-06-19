@@ -20,8 +20,8 @@ package com.wire.kalium.api.v0.teams
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.ErrorResponseJson
-import com.wire.kalium.model.ServiceDetailsResponseJson
-import com.wire.kalium.model.TeamsResponsesJson
+import com.wire.kalium.mocks.responses.ServiceDetailsResponseJson
+import com.wire.kalium.mocks.responses.TeamsResponsesJson
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.model.NonQualifiedUserId

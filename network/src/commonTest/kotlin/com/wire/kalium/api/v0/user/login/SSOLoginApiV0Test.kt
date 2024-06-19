@@ -20,8 +20,8 @@ package com.wire.kalium.api.v0.user.login
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.TEST_BACKEND
-import com.wire.kalium.model.AccessTokenDTOJson
-import com.wire.kalium.model.UserDTOJson
+import com.wire.kalium.mocks.responses.AccessTokenDTOJson
+import com.wire.kalium.mocks.responses.UserDTOJson
 import com.wire.kalium.network.api.base.model.AuthenticationResultDTO
 import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
 import com.wire.kalium.network.api.v0.unauthenticated.SSOLoginApiV0

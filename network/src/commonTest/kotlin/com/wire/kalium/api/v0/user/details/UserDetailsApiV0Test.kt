@@ -21,7 +21,7 @@ package com.wire.kalium.api.v0.user.details
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.QualifiedHandleSample
 import com.wire.kalium.api.json.model.QualifiedIDSamples
-import com.wire.kalium.model.ListUsersResponseJson
+import com.wire.kalium.mocks.responses.ListUsersResponseJson
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi

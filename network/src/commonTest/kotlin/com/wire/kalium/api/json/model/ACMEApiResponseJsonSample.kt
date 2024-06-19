@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.api.json.model
 
-import com.wire.kalium.api.json.ValidJsonProvider
+import com.wire.kalium.mocks.responses.ValidJsonProvider
 import com.wire.kalium.network.api.base.unbound.acme.AcmeDirectoriesResponse
 import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
 

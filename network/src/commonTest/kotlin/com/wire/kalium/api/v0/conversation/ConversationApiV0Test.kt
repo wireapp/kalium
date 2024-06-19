@@ -19,16 +19,16 @@
 package com.wire.kalium.api.v0.conversation
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.model.AddServiceResponseJson
-import com.wire.kalium.model.EventContentDTOJson
-import com.wire.kalium.model.EventContentDTOJson.validGenerateGuestRoomLink
-import com.wire.kalium.model.conversation.ConversationDetailsResponse
-import com.wire.kalium.model.conversation.ConversationListIdsResponseJson
-import com.wire.kalium.model.conversation.ConversationResponseJson
-import com.wire.kalium.model.conversation.CreateConversationRequestJson
-import com.wire.kalium.model.conversation.MemberUpdateRequestJson
-import com.wire.kalium.model.conversation.SendTypingStatusNotificationRequestJson
-import com.wire.kalium.model.conversation.UpdateConversationAccessRequestJson
+import com.wire.kalium.mocks.responses.AddServiceResponseJson
+import com.wire.kalium.mocks.responses.EventContentDTOJson
+import com.wire.kalium.mocks.responses.EventContentDTOJson.validGenerateGuestRoomLink
+import com.wire.kalium.mocks.responses.conversation.ConversationDetailsResponse
+import com.wire.kalium.mocks.responses.conversation.ConversationListIdsResponseJson
+import com.wire.kalium.mocks.responses.conversation.ConversationResponseJson
+import com.wire.kalium.mocks.responses.conversation.CreateConversationRequestJson
+import com.wire.kalium.mocks.responses.conversation.MemberUpdateRequestJson
+import com.wire.kalium.mocks.responses.conversation.SendTypingStatusNotificationRequestJson
+import com.wire.kalium.mocks.responses.conversation.UpdateConversationAccessRequestJson
 import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.AddServiceRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
@@ -261,7 +261,7 @@ internal class ConversationApiV0Test : ApiTest() {
         val serviceId = AddServiceRequest("service_id", "service_provider")
 
         val networkClient = mockAuthenticatedNetworkClient(
-            AddServiceResponseJson.valid.rawJson, statusCode = HttpStatusCode.Created,
+            AddServiceResponseJson.valid, statusCode = HttpStatusCode.Created,
             assertion = {
                 assertPost()
                 assertPathEqual("conversations/${conversationId.value}/bots")

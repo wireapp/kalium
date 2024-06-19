@@ -18,7 +18,7 @@
 
 package com.wire.kalium.api.json.model
 
-import com.wire.kalium.api.json.ValidJsonProvider
+import com.wire.kalium.mocks.responses.ValidJsonProvider
 import com.wire.kalium.network.api.base.authenticated.keypackage.ClaimedKeyPackageList
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageCountDTO
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO

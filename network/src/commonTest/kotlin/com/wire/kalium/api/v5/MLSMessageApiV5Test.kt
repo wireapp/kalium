@@ -20,8 +20,8 @@ package com.wire.kalium.api.v5
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.ErrorResponseJson
-import com.wire.kalium.model.EventContentDTOJson
-import com.wire.kalium.model.SendMLSMessageResponseJson
+import com.wire.kalium.mocks.responses.EventContentDTOJson
+import com.wire.kalium.mocks.responses.SendMLSMessageResponseJson
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.model.FederationConflictResponse

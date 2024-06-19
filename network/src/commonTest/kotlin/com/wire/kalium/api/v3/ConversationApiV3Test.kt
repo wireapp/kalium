@@ -19,10 +19,10 @@
 package com.wire.kalium.api.v3
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.model.EventContentDTOJson
-import com.wire.kalium.model.conversation.ConversationResponseJson
-import com.wire.kalium.model.conversation.CreateConversationRequestJson
-import com.wire.kalium.model.conversation.UpdateConversationAccessRequestJson
+import com.wire.kalium.mocks.responses.EventContentDTOJson
+import com.wire.kalium.mocks.responses.conversation.ConversationResponseJson
+import com.wire.kalium.mocks.responses.conversation.CreateConversationRequestJson
+import com.wire.kalium.mocks.responses.conversation.UpdateConversationAccessRequestJson
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse

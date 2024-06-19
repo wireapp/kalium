@@ -18,7 +18,7 @@
 
 package com.wire.kalium.api.base.authenticated.notification
 
-import com.wire.kalium.model.EventContentDTOJson
+import com.wire.kalium.mocks.responses.EventContentDTOJson
 import com.wire.kalium.network.api.base.authenticated.conversation.model.JsonCorrectingSerializer
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO

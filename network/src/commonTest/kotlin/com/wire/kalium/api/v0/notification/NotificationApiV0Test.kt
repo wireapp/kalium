@@ -21,7 +21,7 @@ package com.wire.kalium.api.v0.notification
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.TEST_BACKEND_CONFIG
 import com.wire.kalium.api.json.model.ErrorResponseJson
-import com.wire.kalium.model.NotificationEventsResponseJson
+import com.wire.kalium.mocks.responses.NotificationEventsResponseJson
 import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.base.authenticated.notification.EventResponse

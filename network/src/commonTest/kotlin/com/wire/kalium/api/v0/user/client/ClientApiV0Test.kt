@@ -20,10 +20,10 @@ package com.wire.kalium.api.v0.user.client
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.ErrorResponseJson
-import com.wire.kalium.model.ClientResponseJson
-import com.wire.kalium.model.RegisterClientRequestJson
-import com.wire.kalium.model.RegisterTokenJson
-import com.wire.kalium.model.UpdateClientRequestJson
+import com.wire.kalium.mocks.responses.ClientResponseJson
+import com.wire.kalium.mocks.responses.RegisterClientRequestJson
+import com.wire.kalium.mocks.responses.RegisterTokenJson
+import com.wire.kalium.mocks.responses.UpdateClientRequestJson
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.client.ClientCapabilityDTO
 import com.wire.kalium.network.api.base.authenticated.client.UpdateClientCapabilitiesRequest
