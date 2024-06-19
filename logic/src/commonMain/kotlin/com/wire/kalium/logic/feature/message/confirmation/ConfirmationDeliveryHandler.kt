@@ -62,11 +62,11 @@ internal class ConfirmationDeliveryHandlerImpl(
     private val currentClientIdProvider: CurrentClientIdProvider,
     private val conversationRepository: ConversationRepository,
     private val messageSender: MessageSender,
+    private val pendingConfirmationMessages: MutableMap<ConversationId, MutableSet<String>> = mutableMapOf(),
     kaliumLogger: KaliumLogger,
 ) : ConfirmationDeliveryHandler {
 
     private val kaliumLogger = kaliumLogger.withTextTag("ConfirmationDeliveryHandler")
-    private val pendingConfirmationMessages = mutableMapOf<ConversationId, MutableSet<String>>()
     private val holder = MutableSharedFlow<Unit>()
     private val mutex = Mutex()
 

@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.message.confirmation
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.framework.TestClient
@@ -32,6 +33,7 @@ import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertTrue
 
 class ConfirmationDeliveryHandlerTest {
 
@@ -43,7 +45,8 @@ class ConfirmationDeliveryHandlerTest {
 
         sut.enqueueConfirmationDelivery(TestConversation.ID, TestMessage.TEST_MESSAGE_ID)
 
-        
+        assertTrue(arrangement.pendingConfirmationMessages.containsKey(TestConversation.ID))
+        assertTrue(arrangement.pendingConfirmationMessages.values.flatten().contains(TestMessage.TEST_MESSAGE_ID))
     }
 
     private class Arrangement {
@@ -60,6 +63,8 @@ class ConfirmationDeliveryHandlerTest {
         @Mock
         private val conversationRepository = mock(ConversationRepository::class)
 
+        val pendingConfirmationMessages: MutableMap<ConversationId, MutableSet<String>> = mutableMapOf()
+
         suspend fun withCurrentClientIdProvider() = apply {
             coEvery { currentClientIdProvider.invoke() }.returns(Either.Right(TestClient.CLIENT_ID))
         }
@@ -70,7 +75,8 @@ class ConfirmationDeliveryHandlerTest {
             currentClientIdProvider = currentClientIdProvider,
             conversationRepository = conversationRepository,
             messageSender = messageSender,
-            kaliumLogger = kaliumLogger
+            kaliumLogger = kaliumLogger,
+            pendingConfirmationMessages = pendingConfirmationMessages
         )
     }
 
