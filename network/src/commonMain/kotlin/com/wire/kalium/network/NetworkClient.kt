@@ -19,7 +19,7 @@
 package com.wire.kalium.network
 
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigDTO
+import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
 import com.wire.kalium.network.serialization.mls
 import com.wire.kalium.network.serialization.xprotobuf

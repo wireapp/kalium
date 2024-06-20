@@ -50,10 +50,10 @@ import com.wire.kalium.logic.wrapFlowStorageRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
-import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
-import com.wire.kalium.network.api.base.authenticated.message.Parameters
-import com.wire.kalium.network.api.base.authenticated.message.QualifiedMessageOption
-import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
+import com.wire.kalium.network.api.authenticated.message.MessagePriority
+import com.wire.kalium.network.api.authenticated.message.Parameters
+import com.wire.kalium.network.api.authenticated.message.QualifiedMessageOption
+import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.InsertMessageResult

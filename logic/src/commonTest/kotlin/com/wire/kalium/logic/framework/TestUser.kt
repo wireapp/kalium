@@ -27,14 +27,14 @@ import com.wire.kalium.logic.data.user.UserAssetId
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
-import com.wire.kalium.network.api.base.model.AssetSizeDTO
-import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
-import com.wire.kalium.network.api.base.model.SelfUserDTO
-import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
-import com.wire.kalium.network.api.base.model.UserAssetDTO
-import com.wire.kalium.network.api.base.model.UserAssetTypeDTO
-import com.wire.kalium.network.api.base.model.UserProfileDTO
+import com.wire.kalium.network.api.authenticated.userDetails.ListUsersDTO
+import com.wire.kalium.network.api.model.AssetSizeDTO
+import com.wire.kalium.network.api.model.LegalHoldStatusDTO
+import com.wire.kalium.network.api.model.SelfUserDTO
+import com.wire.kalium.network.api.model.SupportedProtocolDTO
+import com.wire.kalium.network.api.model.UserAssetDTO
+import com.wire.kalium.network.api.model.UserAssetTypeDTO
+import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.SupportedProtocolEntity
@@ -53,7 +53,7 @@ object TestUser {
     val OTHER_FEDERATED_USER_ID = USER_ID.copy(value = "otherValue", "otherDomain")
     val OTHER_FEDERATED_USER_ID_2 = USER_ID.copy(value = "otherValue2", "otherDomain2")
     val ENTITY_ID = QualifiedIDEntity(value, domain)
-    val NETWORK_ID = com.wire.kalium.network.api.base.model.UserId(
+    val NETWORK_ID = com.wire.kalium.network.api.model.UserId(
         value = value,
         domain = domain
     )

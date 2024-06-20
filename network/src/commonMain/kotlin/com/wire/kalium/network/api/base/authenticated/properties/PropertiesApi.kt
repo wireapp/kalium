@@ -18,6 +18,7 @@
 
 package com.wire.kalium.network.api.base.authenticated.properties
 
+import com.wire.kalium.network.api.authenticated.properties.PropertyKey
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface PropertiesApi {

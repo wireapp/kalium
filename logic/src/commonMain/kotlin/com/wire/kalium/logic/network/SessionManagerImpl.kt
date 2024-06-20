@@ -36,9 +36,9 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
-import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
-import com.wire.kalium.network.api.base.model.SessionDTO
-import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigDTO
+import com.wire.kalium.network.api.model.ProxyCredentialsDTO
+import com.wire.kalium.network.api.model.SessionDTO
+import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isUnknownClient
 import com.wire.kalium.network.session.FailureToRefreshTokenException

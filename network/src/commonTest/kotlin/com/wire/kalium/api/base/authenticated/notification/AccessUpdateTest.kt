@@ -19,9 +19,9 @@
 package com.wire.kalium.api.base.authenticated.notification
 
 import com.wire.kalium.mocks.responses.EventContentDTOJson
-import com.wire.kalium.network.api.base.authenticated.conversation.model.JsonCorrectingSerializer
-import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
-import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.authenticated.conversation.model.JsonCorrectingSerializer
+import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.tools.KtxSerializer
 import kotlin.test.Test
 import kotlin.test.assertEquals

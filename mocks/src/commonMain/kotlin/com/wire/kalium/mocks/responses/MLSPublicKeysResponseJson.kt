@@ -18,7 +18,7 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeysDTO
+import com.wire.kalium.network.api.authenticated.serverpublickey.MLSPublicKeysDTO
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.encodeToJsonElement

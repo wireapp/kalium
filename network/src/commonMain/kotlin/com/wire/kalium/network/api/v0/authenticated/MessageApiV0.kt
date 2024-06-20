@@ -21,11 +21,11 @@ package com.wire.kalium.network.api.v0.authenticated
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.message.EnvelopeProtoMapper
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
-import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
-import com.wire.kalium.network.api.base.authenticated.message.Parameters
-import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
-import com.wire.kalium.network.api.base.authenticated.message.UserToClientToEncMsgMap
-import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.authenticated.message.MessagePriority
+import com.wire.kalium.network.api.authenticated.message.Parameters
+import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
+import com.wire.kalium.network.api.authenticated.message.UserToClientToEncMsgMap
+import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.network.serialization.XProtoBuf
 import com.wire.kalium.network.utils.NetworkResponse

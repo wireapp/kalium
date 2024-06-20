@@ -29,7 +29,7 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.BackendMetaDataUtil
 import com.wire.kalium.network.BackendMetaDataUtilImpl
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
-import com.wire.kalium.network.api.base.unbound.versioning.VersionInfoDTO
+import com.wire.kalium.network.api.unbound.versioning.VersionInfoDTO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map

@@ -17,15 +17,12 @@
  */
 package com.wire.kalium.network.utils
 
-import com.wire.kalium.network.api.base.unbound.configuration.ApiVersionDTO
-import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData
 import io.ktor.http.HeadersImpl
 import io.ktor.http.HttpHeaders
-import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLBuilder
 import io.ktor.utils.io.ByteReadChannel
@@ -52,30 +49,14 @@ object MockUnboundNetworkClient {
         KaliumUserAgentProvider.setUserAgent("test/useragent")
     }
 
-    /**
-     * Creates a mock Ktor Http client
-     * @param responseBody the response body as a ByteArray
-     * @param statusCode the response http status code
-     * @param assertion lambda function to apply assertions to the request
-     * @return mock Ktor http client
-     */
-    class TestRequestHandler(
-        val path: String,
-        val responseBody: String,
-        val statusCode: HttpStatusCode,
-        val assertion: (HttpRequestData.() -> Unit) = {},
-        val headers: Map<String, String>? = null,
-        val httpMethod: HttpMethod? = null
-    )
-
     fun createMockEngine(
         expectedRequests: List<TestRequestHandler>
     ): MockEngine = MockEngine { currentRequest ->
         val currentPath = currentRequest.url.encodedPath
         expectedRequests.forEach { request ->
             val expectedPath = URLBuilder(request.path).build().encodedPath
-            val head: Map<String, List<String>> = (request.headers?.let {
-                mutableMapOf(HttpHeaders.ContentType to "application/json").plus(request.headers).mapValues { listOf(it.value) }
+            val head: Map<String, List<String>> = (request.headers?.let { headers ->
+                mutableMapOf(HttpHeaders.ContentType to "application/json").plus(headers).mapValues { listOf(it.value) }
             } ?: run {
                 mapOf(HttpHeaders.ContentType to "application/json").mapValues { listOf(it.value) }
             })
@@ -113,48 +94,4 @@ object MockUnboundNetworkClient {
         }
     }
 
-    val TEST_BACKEND_CONFIG =
-        ServerConfigDTO(
-            id = "id",
-            ServerConfigDTO.Links(
-                "https://test.api.com",
-                "https://test.account.com",
-                "https://test.ws.com",
-                "https://test.blacklist",
-                "https://test.teams.com",
-                "https://test.wire.com",
-                "Test Title",
-                false,
-                null
-            ),
-            ServerConfigDTO.MetaData(
-                false,
-                ApiVersionDTO.Valid(1),
-                null
-            )
-        )
-
-    val TEST_BACKEND_LINKS =
-        ServerConfigDTO.Links(
-            "https://test.api.com",
-            "https://test.account.com",
-            "https://test.ws.com",
-            "https://test.blacklist",
-            "https://test.teams.com",
-            "https://test.wire.com",
-            "Test Title",
-            false,
-            null
-        )
-
-    val TEST_BACKEND =
-        ServerConfigDTO(
-            id = "id",
-            links = TEST_BACKEND_LINKS,
-            metaData = ServerConfigDTO.MetaData(
-                false,
-                ApiVersionDTO.Valid(0),
-                domain = null
-            )
-        )
 }

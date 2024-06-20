@@ -19,8 +19,8 @@
 package com.wire.kalium.mocks.responses.asset
 
 import com.wire.kalium.mocks.responses.ValidJsonProvider
-import com.wire.kalium.network.api.base.authenticated.asset.AssetResponse
-import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.authenticated.asset.AssetResponse
+import com.wire.kalium.network.api.model.ErrorResponse
 
 object AssetUploadResponseJson {
     private val validJsonProvider = { serializable: AssetResponse ->

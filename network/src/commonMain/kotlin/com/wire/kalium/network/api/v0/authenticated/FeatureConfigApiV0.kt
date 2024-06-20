@@ -20,7 +20,7 @@ package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigResponse
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigResponse
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.get

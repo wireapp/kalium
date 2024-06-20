@@ -20,7 +20,7 @@ package com.wire.kalium.logic.data.prekey
 
 import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.data.id.QualifiedID
-import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
+import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq

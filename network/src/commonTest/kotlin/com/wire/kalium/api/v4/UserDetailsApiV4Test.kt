@@ -20,10 +20,9 @@ package com.wire.kalium.api.v4
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.QualifiedIDSamples
 import com.wire.kalium.mocks.responses.ListUsersResponseJson
-import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
-import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
-import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
-import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
+import com.wire.kalium.network.api.authenticated.userDetails.ListUsersDTO
+import com.wire.kalium.network.api.authenticated.userDetails.qualifiedIds
 import com.wire.kalium.network.api.v4.authenticated.UserDetailsApiV4
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.NetworkResponse
@@ -32,7 +31,6 @@ import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue

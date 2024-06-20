@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.network.api.base.unauthenticated.domainLookup
 
+import com.wire.kalium.network.api.unauthenticated.domainLookup.DomainLookupResponse
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface DomainLookupApi {

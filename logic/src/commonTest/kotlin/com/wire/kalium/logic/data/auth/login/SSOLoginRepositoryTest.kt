@@ -23,8 +23,8 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.stubs.newServerConfig
 import com.wire.kalium.network.api.base.unauthenticated.domainLookup.DomainLookupApi
-import com.wire.kalium.network.api.base.unauthenticated.domainLookup.DomainLookupResponse
-import com.wire.kalium.network.api.base.unauthenticated.sso.InitiateParam
+import com.wire.kalium.network.api.unauthenticated.domainLookup.DomainLookupResponse
+import com.wire.kalium.network.api.unauthenticated.sso.InitiateParam
 import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse

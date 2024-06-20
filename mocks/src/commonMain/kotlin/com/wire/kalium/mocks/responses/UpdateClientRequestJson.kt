@@ -18,8 +18,8 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.authenticated.client.MLSPublicKeyTypeDTO
-import com.wire.kalium.network.api.base.authenticated.client.UpdateClientMlsPublicKeysRequest
+import com.wire.kalium.network.api.authenticated.client.MLSPublicKeyTypeDTO
+import com.wire.kalium.network.api.authenticated.client.UpdateClientMlsPublicKeysRequest
 import io.ktor.util.encodeBase64
 
 object UpdateClientRequestJson {

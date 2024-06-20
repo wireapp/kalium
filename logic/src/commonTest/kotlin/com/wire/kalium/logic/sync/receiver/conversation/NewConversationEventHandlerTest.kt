@@ -38,8 +38,8 @@ import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery

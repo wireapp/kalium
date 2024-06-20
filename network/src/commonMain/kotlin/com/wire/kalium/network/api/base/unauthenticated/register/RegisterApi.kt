@@ -18,8 +18,11 @@
 
 package com.wire.kalium.network.api.base.unauthenticated.register
 
-import com.wire.kalium.network.api.base.model.SelfUserDTO
-import com.wire.kalium.network.api.base.model.SessionDTO
+import com.wire.kalium.network.api.model.SelfUserDTO
+import com.wire.kalium.network.api.model.SessionDTO
+import com.wire.kalium.network.api.unauthenticated.register.ActivationParam
+import com.wire.kalium.network.api.unauthenticated.register.RegisterParam
+import com.wire.kalium.network.api.unauthenticated.register.RequestActivationCodeParam
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface RegisterApi {

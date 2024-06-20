@@ -18,6 +18,8 @@
 
 package com.wire.kalium.network.api.base.authenticated.logout
 
+import com.wire.kalium.network.api.authenticated.logout.RemoveCookiesByIdsRequest
+import com.wire.kalium.network.api.authenticated.logout.RemoveCookiesByLabels
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface LogoutApi {

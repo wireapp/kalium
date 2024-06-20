@@ -18,9 +18,10 @@
 
 package com.wire.kalium.network.api.base.authenticated.self
 
-import com.wire.kalium.network.api.base.model.SelfUserDTO
-import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
+import com.wire.kalium.network.api.model.SelfUserDTO
+import com.wire.kalium.network.api.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.base.authenticated.BaseApi
+import com.wire.kalium.network.api.authenticated.self.UserUpdateRequest
 import com.wire.kalium.network.utils.NetworkResponse
 import kotlinx.serialization.SerialName
 

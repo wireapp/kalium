@@ -20,7 +20,7 @@ package action
 import com.wire.kalium.logic.CoreLogic
 import com.wire.kalium.mocks.requests.ACMERequests.ACME_BASE_URL
 import com.wire.kalium.mocks.responses.ACMEApiResponseJsonSample.ACME_DIRECTORIES_SAMPLE
-import com.wire.kalium.network.api.base.unbound.acme.AcmeDirectoriesResponse
+import com.wire.kalium.network.api.unbound.acme.AcmeDirectoriesResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import kotlin.test.assertEquals

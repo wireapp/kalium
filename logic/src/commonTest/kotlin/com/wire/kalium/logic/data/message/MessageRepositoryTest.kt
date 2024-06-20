@@ -37,9 +37,9 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
-import com.wire.kalium.network.api.base.authenticated.message.QualifiedMessageOption
-import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
-import com.wire.kalium.network.api.base.authenticated.message.SendMLSMessageResponse
+import com.wire.kalium.network.api.authenticated.message.QualifiedMessageOption
+import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
+import com.wire.kalium.network.api.authenticated.message.SendMLSMessageResponse
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity

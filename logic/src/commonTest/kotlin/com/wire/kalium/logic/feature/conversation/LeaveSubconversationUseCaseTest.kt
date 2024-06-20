@@ -31,8 +31,8 @@ import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
-import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
+import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
 import io.mockative.any

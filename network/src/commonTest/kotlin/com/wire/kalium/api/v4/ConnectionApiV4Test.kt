@@ -21,8 +21,8 @@ package com.wire.kalium.api.v4
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.ErrorResponseJson
 import com.wire.kalium.mocks.responses.connection.ConnectionResponsesJson
-import com.wire.kalium.network.api.base.model.ErrorResponse
-import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v4.authenticated.ConnectionApiV4
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.isSuccessful

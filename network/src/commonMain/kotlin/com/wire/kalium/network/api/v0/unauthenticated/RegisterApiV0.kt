@@ -19,14 +19,14 @@
 package com.wire.kalium.network.api.v0.unauthenticated
 
 import com.wire.kalium.network.UnauthenticatedNetworkClient
-import com.wire.kalium.network.api.base.model.AccessTokenDTO
-import com.wire.kalium.network.api.base.model.RefreshTokenProperties
-import com.wire.kalium.network.api.base.model.SelfUserDTO
-import com.wire.kalium.network.api.base.model.SessionDTO
-import com.wire.kalium.network.api.base.unauthenticated.register.ActivationParam
+import com.wire.kalium.network.api.model.AccessTokenDTO
+import com.wire.kalium.network.api.model.RefreshTokenProperties
+import com.wire.kalium.network.api.model.SelfUserDTO
+import com.wire.kalium.network.api.model.SessionDTO
+import com.wire.kalium.network.api.unauthenticated.register.ActivationParam
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
-import com.wire.kalium.network.api.base.unauthenticated.register.RegisterParam
-import com.wire.kalium.network.api.base.unauthenticated.register.RequestActivationCodeParam
+import com.wire.kalium.network.api.unauthenticated.register.RegisterParam
+import com.wire.kalium.network.api.unauthenticated.register.RequestActivationCodeParam
 import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap

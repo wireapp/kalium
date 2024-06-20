@@ -18,7 +18,7 @@
 
 package com.wire.kalium.network.utils
 
-import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.NetworkErrorLabel
 

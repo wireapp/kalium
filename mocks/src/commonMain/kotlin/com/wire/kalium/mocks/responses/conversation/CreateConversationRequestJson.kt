@@ -20,12 +20,12 @@ package com.wire.kalium.mocks.responses.conversation
 
 import com.wire.kalium.mocks.responses.ValidJsonProvider
 import com.wire.kalium.mocks.responses.samples.QualifiedIDSamples
-import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
-import com.wire.kalium.network.api.base.authenticated.conversation.ConvTeamInfo
-import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
-import com.wire.kalium.network.api.base.model.ConversationAccessDTO
-import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.authenticated.conversation.ConvTeamInfo
+import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
+import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.model.ConversationAccessDTO
+import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 
 object CreateConversationRequestJson {
 

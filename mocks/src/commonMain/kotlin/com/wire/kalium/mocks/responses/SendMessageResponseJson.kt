@@ -18,7 +18,7 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.authenticated.message.SendMessageResponse
+import com.wire.kalium.network.api.authenticated.message.SendMessageResponse
 
 object SendMessageResponseJson {
 

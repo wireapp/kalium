@@ -18,7 +18,7 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.unauthenticated.login.LoginParam
+import com.wire.kalium.network.api.unauthenticated.login.LoginParam
 import kotlinx.serialization.json.buildJsonObject
 
 object LoginWithEmailRequestJson {

@@ -18,7 +18,9 @@
 
 package com.wire.kalium.network.api.base.authenticated.message
 
-import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.authenticated.message.Parameters
+import com.wire.kalium.network.api.model.ConversationId
+import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface MessageApi {

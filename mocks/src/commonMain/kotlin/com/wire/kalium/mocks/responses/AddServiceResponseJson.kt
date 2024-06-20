@@ -18,13 +18,13 @@
 package com.wire.kalium.mocks.responses
 
 import com.wire.kalium.mocks.extensions.toJsonString
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembers
-import com.wire.kalium.network.api.base.authenticated.conversation.ServiceReferenceDTO
-import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
-import com.wire.kalium.network.api.base.model.AddServiceResponse
-import com.wire.kalium.network.api.base.model.ConversationId
-import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMembers
+import com.wire.kalium.network.api.authenticated.conversation.ServiceReferenceDTO
+import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.model.AddServiceResponse
+import com.wire.kalium.network.api.model.ConversationId
+import com.wire.kalium.network.api.model.UserId
 
 object AddServiceResponseJson {
 

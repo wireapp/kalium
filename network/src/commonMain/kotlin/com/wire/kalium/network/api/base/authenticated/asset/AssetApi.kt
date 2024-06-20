@@ -18,6 +18,8 @@
 
 package com.wire.kalium.network.api.base.authenticated.asset
 
+import com.wire.kalium.network.api.authenticated.asset.AssetMetadataRequest
+import com.wire.kalium.network.api.authenticated.asset.AssetResponse
 import com.wire.kalium.network.utils.NetworkResponse
 import okio.Sink
 import okio.Source

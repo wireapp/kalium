@@ -27,10 +27,10 @@ import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.network.api.base.unauthenticated.register.ActivationParam
+import com.wire.kalium.network.api.unauthenticated.register.ActivationParam
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
-import com.wire.kalium.network.api.base.unauthenticated.register.RegisterParam
-import com.wire.kalium.network.api.base.unauthenticated.register.RequestActivationCodeParam
+import com.wire.kalium.network.api.unauthenticated.register.RegisterParam
+import com.wire.kalium.network.api.unauthenticated.register.RequestActivationCodeParam
 
 internal interface RegisterAccountRepository {
     suspend fun requestEmailActivationCode(email: String): Either<NetworkFailure, Unit>

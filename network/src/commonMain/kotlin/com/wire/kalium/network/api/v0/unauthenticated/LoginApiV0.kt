@@ -19,13 +19,13 @@
 package com.wire.kalium.network.api.v0.unauthenticated
 
 import com.wire.kalium.network.UnauthenticatedNetworkClient
-import com.wire.kalium.network.api.base.model.AccessTokenDTO
-import com.wire.kalium.network.api.base.model.RefreshTokenProperties
-import com.wire.kalium.network.api.base.model.SelfUserDTO
-import com.wire.kalium.network.api.base.model.SessionDTO
-import com.wire.kalium.network.api.base.model.toSessionDto
 import com.wire.kalium.network.api.base.unauthenticated.login.LoginApi
-import com.wire.kalium.network.api.base.unauthenticated.login.LoginParam
+import com.wire.kalium.network.api.model.AccessTokenDTO
+import com.wire.kalium.network.api.model.RefreshTokenProperties
+import com.wire.kalium.network.api.model.SelfUserDTO
+import com.wire.kalium.network.api.model.SessionDTO
+import com.wire.kalium.network.api.model.toSessionDto
+import com.wire.kalium.network.api.unauthenticated.login.LoginParam
 import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
@@ -62,6 +62,7 @@ internal open class LoginApiV0 internal constructor(
                 label = label,
                 verificationCode = verificationCode
             )
+
             is LoginParam.LoginWithHandle -> LoginRequest(
                 handle = handle,
                 password = password,

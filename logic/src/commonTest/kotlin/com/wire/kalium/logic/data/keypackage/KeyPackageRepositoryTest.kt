@@ -31,12 +31,12 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.keypackage.ClaimedKeyPackageList
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackage
+import com.wire.kalium.network.api.authenticated.keypackage.ClaimedKeyPackageList
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackage
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageCountDTO
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageRef
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageDTO
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageRef
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.util.encodeBase64
 import io.mockative.Mock

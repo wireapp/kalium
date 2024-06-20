@@ -22,11 +22,11 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.network.api.base.model.AuthenticationResultDTO
+import com.wire.kalium.network.api.model.AuthenticationResultDTO
 import com.wire.kalium.network.api.base.unauthenticated.domainLookup.DomainLookupApi
-import com.wire.kalium.network.api.base.unauthenticated.sso.InitiateParam
+import com.wire.kalium.network.api.unauthenticated.sso.InitiateParam
 import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
-import com.wire.kalium.network.api.base.unauthenticated.sso.SSOSettingsResponse
+import com.wire.kalium.network.api.unauthenticated.sso.SSOSettingsResponse
 
 interface SSOLoginRepository {
 

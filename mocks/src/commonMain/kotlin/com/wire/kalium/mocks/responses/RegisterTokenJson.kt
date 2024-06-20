@@ -18,7 +18,7 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.model.PushTokenBody
+import com.wire.kalium.network.api.model.PushTokenBody
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 

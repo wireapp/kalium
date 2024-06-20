@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
+import com.wire.kalium.network.api.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
 import io.ktor.http.URLBuilder
 
 private fun generateGuestLink(

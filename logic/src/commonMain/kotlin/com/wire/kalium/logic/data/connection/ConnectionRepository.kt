@@ -53,8 +53,8 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
-import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
-import com.wire.kalium.network.api.base.authenticated.connection.ConnectionStateDTO
+import com.wire.kalium.network.api.authenticated.connection.ConnectionDTO
+import com.wire.kalium.network.api.authenticated.connection.ConnectionStateDTO
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.UserDAO

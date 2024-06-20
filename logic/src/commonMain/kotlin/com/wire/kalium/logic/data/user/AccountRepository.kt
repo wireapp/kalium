@@ -28,7 +28,7 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.self.ChangeHandleRequest
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
-import com.wire.kalium.network.api.base.authenticated.self.UserUpdateRequest
+import com.wire.kalium.network.api.authenticated.self.UserUpdateRequest
 import com.wire.kalium.persistence.dao.UserDAO
 
 internal interface AccountRepository {

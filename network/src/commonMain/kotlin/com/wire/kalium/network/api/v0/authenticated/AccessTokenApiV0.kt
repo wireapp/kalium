@@ -19,9 +19,9 @@
 package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
-import com.wire.kalium.network.api.base.model.AccessTokenDTO
-import com.wire.kalium.network.api.base.model.RefreshTokenDTO
-import com.wire.kalium.network.api.base.model.RefreshTokenProperties
+import com.wire.kalium.network.api.model.AccessTokenDTO
+import com.wire.kalium.network.api.model.RefreshTokenDTO
+import com.wire.kalium.network.api.model.RefreshTokenProperties
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.wrapKaliumResponse
