@@ -762,27 +762,31 @@ internal enum class EventLoggingStatus {
 internal fun KaliumLogger.logEventProcessing(
     status: EventLoggingStatus,
     event: Event,
-    vararg extraInfo: Pair<String, Any>
+    vararg extraInfo: Pair<String, Any>,
+    performanceData: EventProcessingPerformanceData = EventProcessingPerformanceData.None,
 ) {
-    val logMap = mapOf("event" to event.toLogMap()) + extraInfo.toMap()
+    val logMap = event.toLogMap().toMutableMap()
+    logMap += extraInfo
+
+    val performanceEntry = performanceData.logData
+    if (performanceEntry != null) {
+        logMap["eventPerformanceData"] = performanceEntry
+    }
 
     when (status) {
         EventLoggingStatus.SUCCESS -> {
-            val finalMap = logMap.toMutableMap()
-            finalMap["outcome"] = "success"
-            logStructuredJson(KaliumLogLevel.INFO, "Success handling event", finalMap)
+            logMap["outcome"] = "success"
+            logStructuredJson(KaliumLogLevel.INFO, "Success handling event", logMap)
         }
 
         EventLoggingStatus.FAILURE -> {
-            val finalMap = logMap.toMutableMap()
-            finalMap["outcome"] = "failure"
-            logStructuredJson(KaliumLogLevel.ERROR, "Failure handling event", finalMap)
+            logMap["outcome"] = "failure"
+            logStructuredJson(KaliumLogLevel.ERROR, "Failure handling event", logMap)
         }
 
         EventLoggingStatus.SKIPPED -> {
-            val finalMap = logMap.toMutableMap()
-            finalMap["outcome"] = "skipped"
-            logStructuredJson(KaliumLogLevel.WARN, "Skipped handling event", finalMap)
+            logMap["outcome"] = "skipped"
+            logStructuredJson(KaliumLogLevel.WARN, "Skipped handling event", logMap)
         }
     }
 }
