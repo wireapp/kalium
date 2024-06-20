@@ -32,6 +32,7 @@ import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.confirmation.ConfirmationDeliveryHandler
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
 import com.wire.kalium.logic.framework.TestEvent
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.util.DateTimeUtil
@@ -242,6 +243,34 @@ class NewMessageEventHandlerTest {
         verify {
             arrangement.ephemeralMessageDeletionHandler.startSelfDeletion(any(), any())
         }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenAMessage_whenHandlingSelfMessage_thenEnqueueDeliveryConfirmationShouldNotHappen() = runTest {
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withHandleLegalHoldSuccess()
+            .withProteusUnpackerReturning(Either.Right(applicationMessage)).arrange()
+
+        val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
+        newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
+
+        coVerify { arrangement.proteusMessageUnpacker.unpackProteusMessage(eq(newMessageEvent)) }.wasInvoked(exactly = once)
+        coVerify { arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any()) }.wasNotInvoked()
+        coVerify { arrangement.confirmationDeliveryHandler.enqueueConfirmationDelivery(any(), any()) }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenAMessage_whenHandling_thenEnqueueDeliveryConfirmation() = runTest {
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withHandleLegalHoldSuccess()
+            .withProteusUnpackerReturning(Either.Right(applicationMessage.copy(senderUserId = TestUser.OTHER_USER_ID_2))).arrange()
+
+        val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
+        newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
+
+        coVerify { arrangement.proteusMessageUnpacker.unpackProteusMessage(eq(newMessageEvent)) }.wasInvoked(exactly = once)
+        coVerify { arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any()) }.wasNotInvoked()
+        coVerify { arrangement.confirmationDeliveryHandler.enqueueConfirmationDelivery(any(), any()) }.wasInvoked(exactly = once)
     }
 
     @Test
