@@ -74,7 +74,7 @@ jobs:
                     cores: 4
                     ram-size: 4096M
                     heap-size: 2048M
-                    script: ./gradlew --no-daemon connectedAndroidOnlyAffectedTest
+                    script: ./gradlew connectedAndroidOnlyAffectedTest
                 env:
                     GITHUB_USER: ${{ github.actor }}
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
