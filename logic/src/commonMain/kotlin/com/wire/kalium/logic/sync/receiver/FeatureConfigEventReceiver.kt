@@ -21,9 +21,6 @@ package com.wire.kalium.logic.sync.receiver
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
-import com.wire.kalium.logic.data.event.EventLoggingStatus
-import com.wire.kalium.logic.data.event.EventProcessingPerformanceData
-import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ConferenceCallingConfigHandler
@@ -37,7 +34,8 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import kotlinx.datetime.Clock
+import com.wire.kalium.logic.util.EventLoggingStatus
+import com.wire.kalium.logic.util.createEventProcessingLogger
 
 internal interface FeatureConfigEventReceiver : EventReceiver<Event.FeatureConfig>
 
@@ -55,24 +53,10 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
 ) : FeatureConfigEventReceiver {
 
     override suspend fun onEvent(event: Event.FeatureConfig, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
-        val initialTime = Clock.System.now()
+        val logger = kaliumLogger.createEventProcessingLogger(event)
         return handleFeatureConfigEvent(event)
-            .onSuccess {
-                kaliumLogger.logEventProcessing(
-                    EventLoggingStatus.SUCCESS,
-                    event,
-                    performanceData = EventProcessingPerformanceData.TimeTaken(
-                        (Clock.System.now() - initialTime)
-                    )
-                )
-            }
-            .onFailure {
-                kaliumLogger.logEventProcessing(
-                    EventLoggingStatus.FAILURE,
-                    event,
-                    Pair("error", it)
-                )
-            }
+            .onSuccess { logger.logSuccess() }
+            .onFailure { logger.logFailure(it) }
     }
 
 @Suppress("LongMethod", "ComplexMethod")
@@ -88,10 +72,9 @@ private suspend fun handleFeatureConfigEvent(event: Event.FeatureConfig): Either
         is Event.FeatureConfig.MLSE2EIUpdated -> e2EIConfigHandler.handle(event.model)
         is Event.FeatureConfig.AppLockUpdated -> appLockConfigHandler.handle(event.model)
         is Event.FeatureConfig.UnknownFeatureUpdated -> {
-            kaliumLogger.logEventProcessing(
+            kaliumLogger.createEventProcessingLogger(event).logComplete(
                 EventLoggingStatus.SKIPPED,
-                event,
-                Pair("info", "Ignoring unknown feature config update")
+                arrayOf("info" to "Ignoring unknown feature config update")
             )
 
             Either.Right(Unit)

@@ -23,9 +23,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.event.EventEnvelope
-import com.wire.kalium.logic.data.event.EventLoggingStatus
 import com.wire.kalium.logic.data.event.EventRepository
-import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -35,6 +33,8 @@ import com.wire.kalium.logic.sync.receiver.FederationEventReceiver
 import com.wire.kalium.logic.sync.receiver.TeamEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserEventReceiver
 import com.wire.kalium.logic.sync.receiver.UserPropertiesEventReceiver
+import com.wire.kalium.logic.util.EventLoggingStatus
+import com.wire.kalium.logic.util.createEventProcessingLogger
 
 /**
  * Handles incoming events from remote.
@@ -90,11 +90,8 @@ internal class EventProcessorImpl(
             is Event.User -> userEventReceiver.onEvent(event, deliveryInfo)
             is Event.FeatureConfig -> featureConfigEventReceiver.onEvent(event, deliveryInfo)
             is Event.Unknown -> {
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.SKIPPED,
-                        event
-                    )
+                kaliumLogger.createEventProcessingLogger(event)
+                    .logComplete(EventLoggingStatus.SKIPPED)
                 // Skipping event = success
                 Either.Right(Unit)
             }
