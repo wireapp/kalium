@@ -21,7 +21,7 @@ import com.wire.kalium.mocks.responses.AppVersionBlackListResponseDTOJson
 import com.wire.kalium.mocks.responses.ClientResponseJson
 import com.wire.kalium.mocks.responses.CommonResponses
 import com.wire.kalium.mocks.responses.ListOfClientsResponseJson
-import com.wire.kalium.network.utils.MockUnboundNetworkClient
+import com.wire.kalium.network.utils.TestRequestHandler
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 
@@ -37,26 +37,26 @@ object ClientRequests {
     /**
      * Request / Responses
      */
-    private val registerClientsRequestSuccess = MockUnboundNetworkClient.TestRequestHandler(
+    private val registerClientsRequestSuccess = TestRequestHandler(
         path = PATH_CLIENTS,
         httpMethod = HttpMethod.Post,
         responseBody = ClientResponseJson.valid.rawJson,
         statusCode = HttpStatusCode.OK,
     )
-    private val getClientsRequestSuccess = MockUnboundNetworkClient.TestRequestHandler(
+    private val getClientsRequestSuccess = TestRequestHandler(
         path = PATH_CLIENTS,
         httpMethod = HttpMethod.Get,
         responseBody = ListOfClientsResponseJson.valid.rawJson,
         statusCode = HttpStatusCode.OK,
     )
-    private val accessApiRequestSuccess = MockUnboundNetworkClient.TestRequestHandler(
+    private val accessApiRequestSuccess = TestRequestHandler(
         path = PATH_ACCESS,
         httpMethod = HttpMethod.Post,
         responseBody = CommonResponses.VALID_ACCESS_TOKEN_RESPONSE,
         statusCode = HttpStatusCode.OK,
     )
 
-    private val appVersionApiRequestSuccess = MockUnboundNetworkClient.TestRequestHandler(
+    private val appVersionApiRequestSuccess = TestRequestHandler(
         path = PATH_ANDROID,
         httpMethod = HttpMethod.Get,
         responseBody = AppVersionBlackListResponseDTOJson.validAndroid,

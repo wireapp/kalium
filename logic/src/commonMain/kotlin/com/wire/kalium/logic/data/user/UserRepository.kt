@@ -59,6 +59,8 @@ import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
+import com.wire.kalium.network.api.base.authenticated.teams.TeamMemberDTO
+import com.wire.kalium.network.api.base.authenticated.teams.TeamMemberIdList
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
@@ -320,7 +322,7 @@ internal class UserDataSource internal constructor(
     override suspend fun fetchUsersByIds(qualifiedUserIdList: Set<UserId>): Either<CoreFailure, Unit> =
         fetchUsersByIdsReturningListUsersDTO(qualifiedUserIdList).map { }
 
-    private suspend fun fetchTeamMembersByIds(userProfileList: List<UserProfileDTO>): Either<CoreFailure, List<TeamsApi.TeamMemberDTO>> {
+    private suspend fun fetchTeamMembersByIds(userProfileList: List<UserProfileDTO>): Either<CoreFailure, List<TeamMemberDTO>> {
         val selfUserDomain = selfUserId.domain
         val selfUserTeamId = selfTeamIdProvider().getOrNull()
         val teamMemberIds = userProfileList.filter { it.isTeamMember(selfUserTeamId?.value, selfUserDomain) }.map { it.id.value }
@@ -330,7 +332,7 @@ internal class UserDataSource internal constructor(
             .foldToEitherWhileRight(emptyList()) { chunk, acc ->
                 wrapApiRequest {
                     kaliumLogger.d("Fetching ${chunk.size} team members")
-                    teamsApi.getTeamMembersByIds(selfUserTeamId.value, TeamsApi.TeamMemberIdList(chunk))
+                    teamsApi.getTeamMembersByIds(selfUserTeamId.value, TeamMemberIdList(chunk))
                 }.map {
                     kaliumLogger.d("Found ${it.members.size} team members")
                     (acc + it.members).distinct()
@@ -344,7 +346,7 @@ internal class UserDataSource internal constructor(
 
     private suspend fun persistUsers(
         listUserProfileDTO: List<UserProfileDTO>,
-        listTeamMemberDTO: List<TeamsApi.TeamMemberDTO>,
+        listTeamMemberDTO: List<TeamMemberDTO>,
     ): Either<CoreFailure, Unit> {
         val mapTeamMemberDTO = listTeamMemberDTO.associateBy { it.nonQualifiedUserId }
         val selfUserTeamId = selfTeamIdProvider().getOrNull()?.value

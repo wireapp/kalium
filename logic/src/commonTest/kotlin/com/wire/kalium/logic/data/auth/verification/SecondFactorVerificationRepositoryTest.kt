@@ -21,7 +21,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.unauthenticated.VerificationCodeApi
+import com.wire.kalium.network.api.base.unauthenticated.verification.VerificationCodeApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpStatusCode

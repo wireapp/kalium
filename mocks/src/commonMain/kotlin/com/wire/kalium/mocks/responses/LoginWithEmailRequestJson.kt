@@ -18,36 +18,38 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.unauthenticated.LoginApi
+import com.wire.kalium.network.api.base.unauthenticated.login.LoginParam
 import kotlinx.serialization.json.buildJsonObject
 
 object LoginWithEmailRequestJson {
-    private val jsonProvider = { serializable: LoginApi.LoginParam ->
+    private val jsonProvider = { serializable: LoginParam ->
         buildJsonObject {
             "password" to serializable.password
             "label" to serializable.label
             when (serializable) {
-                is LoginApi.LoginParam.LoginWithEmail -> "email" to serializable.email
-                is LoginApi.LoginParam.LoginWithHandle -> "handle" to serializable.handle
+                is LoginParam.LoginWithEmail -> "email" to serializable.email
+                is LoginParam.LoginWithHandle -> "handle" to serializable.handle
             }
         }.toString()
     }
 
     val validLoginWithEmail = ValidJsonProvider(
-        LoginApi.LoginParam.LoginWithEmail(
+        LoginParam.LoginWithEmail(
             email = "user@email.de",
             label = "label",
             password = "password",
             verificationCode = "verificationCode"
-        ), jsonProvider
+        ),
+        jsonProvider
     )
 
     val validLoginWithHandle = ValidJsonProvider(
-        LoginApi.LoginParam.LoginWithHandle(
+        LoginParam.LoginWithHandle(
             handle = "cool_user_name",
             label = "label",
             password = "password",
-        ), jsonProvider
+        ),
+        jsonProvider
     )
 
     val missingEmailAndHandel = FaultyJsonProvider(

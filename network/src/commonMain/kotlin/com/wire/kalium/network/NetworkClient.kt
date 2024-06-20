@@ -19,13 +19,13 @@
 package com.wire.kalium.network
 
 import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
 import com.wire.kalium.network.serialization.mls
 import com.wire.kalium.network.serialization.xprotobuf
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.session.installAuth
 import com.wire.kalium.network.tools.KtxSerializer
-import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.KaliumKtorNoNetworkHandler
 import com.wire.kalium.network.utils.installWireDefaultRequest
 import io.ktor.client.HttpClient

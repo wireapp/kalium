@@ -17,9 +17,9 @@
  */
 package com.wire.kalium.network.utils
 
+import com.wire.kalium.network.api.base.unbound.configuration.ApiVersionDTO
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
-import com.wire.kalium.network.tools.ApiVersionDTO
-import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.HttpRequestData

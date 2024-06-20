@@ -21,7 +21,7 @@ import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.network.api.base.unauthenticated.VerificationCodeApi
+import com.wire.kalium.network.api.base.unauthenticated.verification.VerificationCodeApi
 
 interface SecondFactorVerificationRepository {
 

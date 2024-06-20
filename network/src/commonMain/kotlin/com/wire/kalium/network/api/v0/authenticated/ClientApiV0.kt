@@ -23,11 +23,11 @@ import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.client.ClientDTO
 import com.wire.kalium.network.api.base.authenticated.client.ClientsOfUsersResponse
 import com.wire.kalium.network.api.base.authenticated.client.ListClientsOfUsersRequest
-import com.wire.kalium.network.api.base.authenticated.client.PasswordRequest
 import com.wire.kalium.network.api.base.authenticated.client.RegisterClientRequest
 import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
 import com.wire.kalium.network.api.base.authenticated.client.UpdateClientCapabilitiesRequest
 import com.wire.kalium.network.api.base.authenticated.client.UpdateClientMlsPublicKeysRequest
+import com.wire.kalium.network.api.base.authenticated.teams.PasswordRequest
 import com.wire.kalium.network.api.base.model.PushTokenBody
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.UserId

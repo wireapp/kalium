@@ -23,6 +23,7 @@ import com.wire.kalium.api.json.model.ErrorResponseJson
 import com.wire.kalium.mocks.responses.ServiceDetailsResponseJson
 import com.wire.kalium.mocks.responses.TeamsResponsesJson
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.base.authenticated.teams.PasswordRequest
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.api.base.model.NonQualifiedUserId
 import com.wire.kalium.network.api.base.model.ServiceDetailResponse
@@ -144,7 +145,7 @@ internal class TeamsApiV0Test : ApiTest() {
         }
 
     private fun testApprovingLegalHold(teamId: TeamId, userId: NonQualifiedUserId, password: String?) = runTest {
-        val expectedRequestBody = KtxSerializer.json.encodeToString(TeamsApi.PasswordRequest(password))
+        val expectedRequestBody = KtxSerializer.json.encodeToString(PasswordRequest(password))
         val networkClient = mockAuthenticatedNetworkClient(
             "",
             statusCode = HttpStatusCode.OK,

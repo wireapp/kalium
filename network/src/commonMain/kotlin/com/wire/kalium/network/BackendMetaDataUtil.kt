@@ -20,9 +20,9 @@
 
 package com.wire.kalium.network
 
+import com.wire.kalium.network.api.base.unbound.configuration.ApiVersionDTO
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.base.unbound.versioning.VersionInfoDTO
-import com.wire.kalium.network.tools.ApiVersionDTO
-import com.wire.kalium.network.tools.ServerConfigDTO
 
 val SupportedApiVersions = setOf(0, 1, 2, 4, 5)
 val DevelopmentApiVersions = setOf(6)
@@ -60,8 +60,8 @@ object BackendMetaDataUtilImpl : BackendMetaDataUtil {
     }
 
     private fun commonApiVersion(serverVersion: VersionInfoDTO, supportedApiVersions: Set<Int>, developmentAPIEnabled: Boolean): Int? {
-        val serverSupportedApiVersions = if (developmentAPIEnabled && serverVersion.developmentSupported != null) {
-            serverVersion.supported + serverVersion.developmentSupported
+        val serverSupportedApiVersions: List<Int> = if (developmentAPIEnabled && serverVersion.developmentSupported != null) {
+            serverVersion.supported + serverVersion.developmentSupported!!
         } else {
             serverVersion.supported
         }

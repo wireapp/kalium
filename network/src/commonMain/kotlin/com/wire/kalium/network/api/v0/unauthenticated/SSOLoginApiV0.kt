@@ -24,8 +24,9 @@ import com.wire.kalium.network.api.base.model.AuthenticationResultDTO
 import com.wire.kalium.network.api.base.model.RefreshTokenProperties
 import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.toSessionDto
-import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
-import com.wire.kalium.network.api.base.unauthenticated.SSOSettingsResponse
+import com.wire.kalium.network.api.base.unauthenticated.sso.InitiateParam
+import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
+import com.wire.kalium.network.api.base.unauthenticated.sso.SSOSettingsResponse
 import com.wire.kalium.network.utils.CustomErrors.MISSING_REFRESH_TOKEN
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
@@ -51,9 +52,9 @@ internal open class SSOLoginApiV0 internal constructor(
 
     private val httpClient get() = unauthenticatedNetworkClient.httpClient
 
-    override suspend fun initiate(param: SSOLoginApi.InitiateParam): NetworkResponse<String> = HttpRequestBuilder().apply {
+    override suspend fun initiate(param: InitiateParam): NetworkResponse<String> = HttpRequestBuilder().apply {
         url.appendPathSegments(PATH_SSO, PATH_INITIATE, param.uuid)
-        if (param is SSOLoginApi.InitiateParam.WithRedirect) {
+        if (param is InitiateParam.WithRedirect) {
             parameter(QUERY_SUCCESS_REDIRECT, param.success)
             parameter(QUERY_ERROR_REDIRECT, param.error)
         }

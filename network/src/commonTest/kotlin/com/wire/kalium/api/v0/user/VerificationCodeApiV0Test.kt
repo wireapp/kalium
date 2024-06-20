@@ -18,7 +18,7 @@
 package com.wire.kalium.api.v0.user
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.network.api.base.unauthenticated.VerificationCodeApi
+import com.wire.kalium.network.api.base.unauthenticated.verification.VerificationCodeApi
 import com.wire.kalium.network.api.v0.unauthenticated.VerificationCodeApiV0
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode

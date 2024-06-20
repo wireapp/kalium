@@ -21,8 +21,8 @@ package com.wire.kalium.network.api.v3.authenticated
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationResponse
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.v2.authenticated.NotificationApiV2
-import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.get

@@ -21,7 +21,7 @@ package com.wire.kalium.network.api.base.unbound.versioning
 import com.wire.kalium.network.BackendMetaDataUtil
 import com.wire.kalium.network.BackendMetaDataUtilImpl
 import com.wire.kalium.network.UnauthenticatedNetworkClient
-import com.wire.kalium.network.tools.ServerConfigDTO
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.setUrl

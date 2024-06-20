@@ -21,9 +21,9 @@
 package com.wire.kalium.network
 
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigDTO
+import com.wire.kalium.network.api.base.unbound.configuration.isProxyRequired
 import com.wire.kalium.network.session.CertificatePinning
-import com.wire.kalium.network.tools.ServerConfigDTO
-import com.wire.kalium.network.tools.isProxyRequired
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp
 import okhttp3.CertificatePinner

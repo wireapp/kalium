@@ -22,8 +22,8 @@ package com.wire.kalium.logic.configuration.server
 
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.tools.ApiVersionDTO
-import com.wire.kalium.network.tools.ServerConfigDTO
+import com.wire.kalium.network.api.base.unbound.configuration.ApiVersionDTO
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
 import com.wire.kalium.persistence.model.ServerConfigWithUserIdEntity
 import io.ktor.http.URLBuilder

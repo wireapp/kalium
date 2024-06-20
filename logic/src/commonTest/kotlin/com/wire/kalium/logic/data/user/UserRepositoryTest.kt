@@ -46,6 +46,8 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
 import com.wire.kalium.network.api.base.authenticated.self.SelfApi
+import com.wire.kalium.network.api.base.authenticated.teams.TeamMemberDTO
+import com.wire.kalium.network.api.base.authenticated.teams.TeamMemberListNonPaginated
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.QualifiedUserIdListRequest
@@ -885,10 +887,10 @@ class UserRepositoryTest {
             }.returns(NetworkResponse.Error(TestNetworkException.generic))
         }
 
-        suspend fun withSuccessfulFetchTeamMembersByIds(result: List<TeamsApi.TeamMemberDTO>) = apply {
+        suspend fun withSuccessfulFetchTeamMembersByIds(result: List<TeamMemberDTO>) = apply {
             coEvery {
                 teamsApi.getTeamMembersByIds(any(), any())
-            }.returns(NetworkResponse.Success(TeamsApi.TeamMemberListNonPaginated(false, result), mapOf(), 200))
+            }.returns(NetworkResponse.Success(TeamMemberListNonPaginated(false, result), mapOf(), 200))
         }
 
         suspend fun withSuccessfulGetUsersByQualifiedIdList(knownUserEntities: List<UserDetailsEntity>) = apply {
@@ -1020,7 +1022,7 @@ class UserRepositoryTest {
             }.returns(Unit)
         }
 
-        suspend fun withGetTeamMemberSuccess(result: TeamsApi.TeamMemberDTO) = apply {
+        suspend fun withGetTeamMemberSuccess(result: TeamMemberDTO) = apply {
             coEvery {
                 teamsApi.getTeamMember(any(), any())
             }.returns(NetworkResponse.Success(result, mapOf(), 200))

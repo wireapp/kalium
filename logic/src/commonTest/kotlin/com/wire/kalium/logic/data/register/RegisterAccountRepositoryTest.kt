@@ -28,7 +28,10 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
+import com.wire.kalium.network.api.base.unauthenticated.register.ActivationParam
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
+import com.wire.kalium.network.api.base.unauthenticated.register.RegisterParam
+import com.wire.kalium.network.api.base.unauthenticated.register.RequestActivationCodeParam
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
 import io.mockative.any
@@ -69,7 +72,7 @@ class RegisterAccountRepositoryTest {
         val expected = Unit
         val email = "user@domain.de"
         coEvery {
-            registerApi.requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email))
+            registerApi.requestActivationCode(RequestActivationCodeParam.Email(email))
         }.returns(NetworkResponse.Success(expected, mapOf(), 200))
 
         val actual = registerAccountRepository.requestEmailActivationCode(email)
@@ -78,7 +81,7 @@ class RegisterAccountRepositoryTest {
         assertEquals(expected, actual.value)
 
         coVerify {
-            registerApi.requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email))
+            registerApi.requestActivationCode(RequestActivationCodeParam.Email(email))
         }.wasInvoked(exactly = once)
     }
 
@@ -87,7 +90,7 @@ class RegisterAccountRepositoryTest {
         val expected = TestNetworkException.generic
         val email = "user@domain.de"
         coEvery {
-            registerApi.requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email))
+            registerApi.requestActivationCode(RequestActivationCodeParam.Email(email))
         }.returns(NetworkResponse.Error(expected))
 
         val actual = registerAccountRepository.requestEmailActivationCode(email)
@@ -95,7 +98,7 @@ class RegisterAccountRepositoryTest {
         assertIs<Either.Left<NetworkFailure.ServerMiscommunication>>(actual)
         assertEquals(expected, actual.value.kaliumException)
         coVerify {
-            registerApi.requestActivationCode(RegisterApi.RequestActivationCodeParam.Email(email))
+            registerApi.requestActivationCode(RequestActivationCodeParam.Email(email))
         }.wasInvoked(exactly = once)
     }
 
@@ -105,7 +108,7 @@ class RegisterAccountRepositoryTest {
         val email = "user@domain.de"
         val code = "123456"
         coEvery {
-            registerApi.activate(RegisterApi.ActivationParam.Email(email, code))
+            registerApi.activate(ActivationParam.Email(email, code))
         }.returns(NetworkResponse.Success(expected, mapOf(), 200))
 
         val actual = registerAccountRepository.verifyActivationCode(email, code)
@@ -114,7 +117,7 @@ class RegisterAccountRepositoryTest {
         assertEquals(expected, actual.value)
 
         coVerify {
-            registerApi.activate(RegisterApi.ActivationParam.Email(email, code))
+            registerApi.activate(ActivationParam.Email(email, code))
         }.wasInvoked(exactly = once)
     }
 
@@ -124,7 +127,7 @@ class RegisterAccountRepositoryTest {
         val email = "user@domain.de"
         val code = "123456"
         coEvery {
-            registerApi.activate(RegisterApi.ActivationParam.Email(email, code))
+            registerApi.activate(ActivationParam.Email(email, code))
         }.returns(NetworkResponse.Error(expected))
 
         val actual = registerAccountRepository.verifyActivationCode(email, code)
@@ -133,7 +136,7 @@ class RegisterAccountRepositoryTest {
         assertEquals(expected, actual.value.kaliumException)
 
         coVerify {
-            registerApi.activate(RegisterApi.ActivationParam.Email(email, code))
+            registerApi.activate(ActivationParam.Email(email, code))
         }.wasInvoked(exactly = once)
     }
 
@@ -160,7 +163,7 @@ class RegisterAccountRepositoryTest {
 
         coEvery {
             registerApi.register(
-                RegisterApi.RegisterParam.PersonalAccount(
+                RegisterParam.PersonalAccount(
                     email = email,
                     emailCode = code,
                     name = name,
@@ -189,7 +192,7 @@ class RegisterAccountRepositoryTest {
 
         coVerify {
             registerApi.register(
-                RegisterApi.RegisterParam.PersonalAccount(
+                RegisterParam.PersonalAccount(
                     email = email,
                     emailCode = code,
                     name = name,
@@ -233,7 +236,7 @@ class RegisterAccountRepositoryTest {
 
         coEvery {
             registerApi.register(
-                RegisterApi.RegisterParam.TeamAccount(
+                RegisterParam.TeamAccount(
                     email = email,
                     emailCode = code,
                     name = name,
@@ -268,7 +271,7 @@ class RegisterAccountRepositoryTest {
 
         coVerify {
             registerApi.register(
-                RegisterApi.RegisterParam.TeamAccount(
+                RegisterParam.TeamAccount(
                     email = email,
                     emailCode = code,
                     name = name,
@@ -293,7 +296,7 @@ class RegisterAccountRepositoryTest {
         val cookieLabel = "COOKIE_LABEL"
         coEvery {
             registerApi.register(
-                RegisterApi.RegisterParam.PersonalAccount(
+                RegisterParam.PersonalAccount(
                     email = email,
                     emailCode = code,
                     name = name,
@@ -316,7 +319,7 @@ class RegisterAccountRepositoryTest {
 
         coVerify {
             registerApi.register(
-                RegisterApi.RegisterParam.PersonalAccount(
+                RegisterParam.PersonalAccount(
                     email = email,
                     emailCode = code,
                     name = name,

@@ -26,6 +26,7 @@ import com.wire.kalium.network.api.base.authenticated.notification.NotificationA
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.Hardcoded.NOTIFICATIONS_4O4_ERROR
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.CLIENT_QUERY_KEY
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.MINIMUM_QUERY_SIZE
@@ -37,7 +38,6 @@ import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0.V0.SIZE_QU
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.tools.KtxSerializer
-import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.deleteSensitiveItemsFromJson
 import com.wire.kalium.network.utils.mapSuccess

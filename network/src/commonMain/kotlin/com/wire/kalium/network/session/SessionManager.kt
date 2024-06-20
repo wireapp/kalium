@@ -21,7 +21,7 @@ package com.wire.kalium.network.session
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
-import com.wire.kalium.network.tools.ServerConfigDTO
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigDTO
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.call.HttpClientCall

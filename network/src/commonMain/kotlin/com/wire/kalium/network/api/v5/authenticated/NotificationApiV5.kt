@@ -20,8 +20,8 @@ package com.wire.kalium.network.api.v5.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.v4.authenticated.NotificationApiV4
-import com.wire.kalium.network.tools.ServerConfigDTO
 
 internal open class NotificationApiV5 internal constructor(
     private val authenticatedNetworkClient: AuthenticatedNetworkClient,

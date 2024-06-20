@@ -38,11 +38,11 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isUnknownClient
 import com.wire.kalium.network.session.FailureToRefreshTokenException
 import com.wire.kalium.network.session.SessionManager
-import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.http.HttpStatusCode

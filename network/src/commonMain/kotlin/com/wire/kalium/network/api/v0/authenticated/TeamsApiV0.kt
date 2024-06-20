@@ -20,7 +20,11 @@ package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
-import com.wire.kalium.network.api.base.authenticated.client.PasswordRequest
+import com.wire.kalium.network.api.base.authenticated.teams.PasswordRequest
+import com.wire.kalium.network.api.base.authenticated.teams.TeamMemberDTO
+import com.wire.kalium.network.api.base.authenticated.teams.TeamMemberIdList
+import com.wire.kalium.network.api.base.authenticated.teams.TeamMemberListNonPaginated
+import com.wire.kalium.network.api.base.authenticated.teams.TeamMemberListPaginated
 import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
 import com.wire.kalium.network.api.base.model.NonQualifiedConversationId
 import com.wire.kalium.network.api.base.model.NonQualifiedUserId
@@ -62,8 +66,8 @@ internal open class TeamsApiV0 internal constructor(
         teamId: TeamId,
         limitTo: Int?,
         pagingState: String?
-    ): NetworkResponse<TeamsApi.TeamMemberListPaginated> =
-        wrapKaliumResponse<TeamsApi.TeamMemberListPaginated> {
+    ): NetworkResponse<TeamMemberListPaginated> =
+        wrapKaliumResponse<TeamMemberListPaginated> {
             httpClient.get("$PATH_TEAMS/$teamId/$PATH_MEMBERS") {
                 limitTo?.let { parameter("maxResults", it) }
                 pagingState?.let { parameter("pagingState", it) }
@@ -72,14 +76,14 @@ internal open class TeamsApiV0 internal constructor(
 
     override suspend fun getTeamMembersByIds(
         teamId: TeamId,
-        teamMemberIdList: TeamsApi.TeamMemberIdList
-    ): NetworkResponse<TeamsApi.TeamMemberListNonPaginated> = wrapKaliumResponse {
+        teamMemberIdList: TeamMemberIdList
+    ): NetworkResponse<TeamMemberListNonPaginated> = wrapKaliumResponse {
         httpClient.post("$PATH_TEAMS/$teamId/$PATH_MEMBERS_BY_IDS") {
             setBody(teamMemberIdList)
         }
     }
 
-    override suspend fun getTeamMember(teamId: TeamId, userId: NonQualifiedUserId): NetworkResponse<TeamsApi.TeamMemberDTO> =
+    override suspend fun getTeamMember(teamId: TeamId, userId: NonQualifiedUserId): NetworkResponse<TeamMemberDTO> =
         wrapKaliumResponse {
             httpClient.get("$PATH_TEAMS/$teamId/$PATH_MEMBERS/$userId")
         }

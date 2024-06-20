@@ -18,8 +18,8 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
+import com.wire.kalium.network.api.base.authenticated.message.Parameters
 import com.wire.kalium.network.api.base.authenticated.message.UserToClientToEncMsgMap
 
 object SendMessageRequestJson {
@@ -51,7 +51,7 @@ object SendMessageRequestJson {
                 )
     )
 
-    private val defaultParametersJson = { serializable: MessageApi.Parameters.DefaultParameters ->
+    private val defaultParametersJson = { serializable: Parameters.DefaultParameters ->
         """
         |  "sender": ${serializable.sender},
         |  "data": "${serializable.data}",
@@ -79,7 +79,7 @@ object SendMessageRequestJson {
         """.trimMargin()
     }
 
-    private val defaultParametersProvider = { serializable: MessageApi.Parameters.DefaultParameters ->
+    private val defaultParametersProvider = { serializable: Parameters.DefaultParameters ->
         """
         |   {
         |   ${defaultParametersJson(serializable).replace("\\s".toRegex(), "")}
@@ -88,17 +88,18 @@ object SendMessageRequestJson {
     }
 
     val validDefaultParameters = ValidJsonProvider(
-        MessageApi.Parameters.DefaultParameters(
+        Parameters.DefaultParameters(
             sender = "sender-client-it",
             data = null,
             nativePush = true,
             recipients = recipients,
             transient = false,
             priority = MessagePriority.LOW
-        ), defaultParametersProvider
+        ),
+        defaultParametersProvider
     )
 
-    val validReportSomeJsonJson = { serializable: MessageApi.Parameters.DefaultParameters ->
+    val validReportSomeJsonJson = { serializable: Parameters.DefaultParameters ->
         """
         |   {
         |   ${

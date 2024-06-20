@@ -18,7 +18,7 @@
 package com.wire.kalium.mocks.requests
 
 import com.wire.kalium.mocks.responses.ACMEApiResponseJsonSample
-import com.wire.kalium.network.utils.MockUnboundNetworkClient
+import com.wire.kalium.network.utils.TestRequestHandler
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 
@@ -40,7 +40,7 @@ object ACMERequests {
      * Request / Responses
      */
 
-    val acmeGetDirectoriesSuccess = MockUnboundNetworkClient.TestRequestHandler(
+    val acmeGetDirectoriesSuccess = TestRequestHandler(
         path = ACME_DIRECTORIES_PATH,
         httpMethod = HttpMethod.Get,
         responseBody = ACME_DIRECTORIES_RESPONSE.rawJson,

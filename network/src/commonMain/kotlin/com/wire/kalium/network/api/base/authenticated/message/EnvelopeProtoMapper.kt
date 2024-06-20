@@ -31,7 +31,7 @@ import pbandk.ByteArr
 import pbandk.encodeToByteArray
 
 interface EnvelopeProtoMapper {
-    fun encodeToProtobuf(envelopeParameters: MessageApi.Parameters.QualifiedDefaultParameters): ByteArray
+    fun encodeToProtobuf(envelopeParameters: Parameters.QualifiedDefaultParameters): ByteArray
 }
 
 internal class EnvelopeProtoMapperImpl : EnvelopeProtoMapper {
@@ -39,7 +39,7 @@ internal class EnvelopeProtoMapperImpl : EnvelopeProtoMapper {
     private val otrClientEntryMapper = OtrClientEntryMapper()
 
     @OptIn(ExperimentalStdlibApi::class)
-    override fun encodeToProtobuf(envelopeParameters: MessageApi.Parameters.QualifiedDefaultParameters): ByteArray {
+    override fun encodeToProtobuf(envelopeParameters: Parameters.QualifiedDefaultParameters): ByteArray {
         val qualifiedEntries = envelopeParameters.recipients.entries.groupBy({ it.key.domain }) { userEntry ->
             val clientEntries = userEntry.value.entries.map(otrClientEntryMapper::toOtrClientEntry)
             UserEntry(
@@ -54,29 +54,31 @@ internal class EnvelopeProtoMapperImpl : EnvelopeProtoMapper {
         }
 
         val strategy = when (envelopeParameters.messageOption) {
-            is MessageApi.QualifiedMessageOption.IgnoreAll -> {
+            is QualifiedMessageOption.IgnoreAll -> {
                 QualifiedNewOtrMessage.ClientMismatchStrategy.IgnoreAll(ClientMismatchStrategy.IgnoreAll())
             }
 
-            is MessageApi.QualifiedMessageOption.ReportAll -> {
+            is QualifiedMessageOption.ReportAll -> {
                 QualifiedNewOtrMessage.ClientMismatchStrategy.ReportAll(ClientMismatchStrategy.ReportAll())
             }
 
-            is MessageApi.QualifiedMessageOption.IgnoreSome -> {
+            is QualifiedMessageOption.IgnoreSome -> {
                 QualifiedNewOtrMessage.ClientMismatchStrategy.IgnoreOnly(
                     ClientMismatchStrategy.IgnoreOnly(
-                        envelopeParameters.messageOption.userIDs.map {
+                        (envelopeParameters.messageOption as QualifiedMessageOption.IgnoreSome).userIDs.map { // TODO KBX
                             QualifiedUserId(it.value, it.domain)
-                        })
+                        }
+                    )
                 )
             }
 
-            is MessageApi.QualifiedMessageOption.ReportSome -> {
+            is QualifiedMessageOption.ReportSome -> {
                 QualifiedNewOtrMessage.ClientMismatchStrategy.ReportOnly(
                     ClientMismatchStrategy.ReportOnly(
-                        envelopeParameters.messageOption.userIDs.map {
+                        (envelopeParameters.messageOption as QualifiedMessageOption.ReportSome).userIDs.map {
                             QualifiedUserId(it.value, it.domain)
-                        })
+                        }
+                    )
                 )
             }
         }

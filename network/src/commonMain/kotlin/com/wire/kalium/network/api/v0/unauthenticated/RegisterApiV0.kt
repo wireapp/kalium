@@ -23,7 +23,10 @@ import com.wire.kalium.network.api.base.model.AccessTokenDTO
 import com.wire.kalium.network.api.base.model.RefreshTokenProperties
 import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.api.base.model.SessionDTO
+import com.wire.kalium.network.api.base.unauthenticated.register.ActivationParam
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
+import com.wire.kalium.network.api.base.unauthenticated.register.RegisterParam
+import com.wire.kalium.network.api.base.unauthenticated.register.RequestActivationCodeParam
 import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
@@ -47,7 +50,7 @@ internal open class RegisterApiV0 internal constructor(
     }
 
     override suspend fun register(
-        param: RegisterApi.RegisterParam
+        param: RegisterParam
     ): NetworkResponse<Pair<SelfUserDTO, SessionDTO>> = wrapKaliumResponse<SelfUserDTO> {
         httpClient.post(REGISTER_PATH) {
             setBody(param.toBody())
@@ -72,14 +75,14 @@ internal open class RegisterApiV0 internal constructor(
     }
 
     override suspend fun requestActivationCode(
-        param: RegisterApi.RequestActivationCodeParam
+        param: RequestActivationCodeParam
     ): NetworkResponse<Unit> = wrapKaliumResponse {
         httpClient.post("$ACTIVATE_PATH/$SEND_PATH") {
             setBody(param.toBody())
         }
     }
 
-    override suspend fun activate(param: RegisterApi.ActivationParam): NetworkResponse<Unit> = wrapKaliumResponse {
+    override suspend fun activate(param: ActivationParam): NetworkResponse<Unit> = wrapKaliumResponse {
         httpClient.post(ACTIVATE_PATH) {
             setBody(param.toBody())
         }

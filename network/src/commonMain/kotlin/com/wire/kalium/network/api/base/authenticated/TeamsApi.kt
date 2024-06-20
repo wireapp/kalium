@@ -18,7 +18,10 @@
 
 package com.wire.kalium.network.api.base.authenticated
 
-import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
+import com.wire.kalium.network.api.base.authenticated.teams.TeamMemberDTO
+import com.wire.kalium.network.api.base.authenticated.teams.TeamMemberIdList
+import com.wire.kalium.network.api.base.authenticated.teams.TeamMemberListNonPaginated
+import com.wire.kalium.network.api.base.authenticated.teams.TeamMemberListPaginated
 import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
 import com.wire.kalium.network.api.base.model.NonQualifiedConversationId
 import com.wire.kalium.network.api.base.model.NonQualifiedUserId
@@ -26,75 +29,8 @@ import com.wire.kalium.network.api.base.model.ServiceDetailResponse
 import com.wire.kalium.network.api.base.model.TeamDTO
 import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.utils.NetworkResponse
-import kotlinx.serialization.SerialName
-import kotlinx.serialization.Serializable
 
 interface TeamsApi {
-
-    @Serializable
-    data class TeamMemberListPaginated(
-        // Please note that this is intentionally cased differently form the has_more in TeamsResponse
-        // because the backend response contains a different casing
-        @SerialName("hasMore") val hasMore: Boolean,
-        val members: List<TeamMemberDTO>,
-        @SerialName("pagingState") val pagingState: String? = null
-    )
-
-    @Serializable
-    data class TeamMemberListNonPaginated(
-        // Please note that this is intentionally cased differently form the has_more in TeamsResponse
-        // because the backend response contains a different casing
-        @SerialName("hasMore") val hasMore: Boolean,
-        val members: List<TeamMemberDTO>
-    )
-
-    @Serializable
-    data class TeamMemberDTO(
-        @SerialName("user") val nonQualifiedUserId: NonQualifiedUserId,
-        @SerialName("created_by") val createdBy: NonQualifiedUserId?,
-        @SerialName("legalhold_status") val legalHoldStatus: LegalHoldStatusDTO?,
-        @SerialName("created_at") val createdAt: String?,
-        val permissions: Permissions?
-    )
-
-    @Serializable
-    data class Permissions(
-        val copy: Int,
-        @SerialName("self") val own: Int
-    )
-
-    @Serializable
-    data class TeamMemberIdList(
-        @SerialName("user_ids") val userIds: List<NonQualifiedUserId>
-    )
-    @Serializable
-    data class PasswordRequest(
-        @SerialName("password") val password: String?
-    )
-
-    sealed interface GetTeamsOptionsInterface
-
-    /**
-     *
-     * Represents the options that can be passed to [getTeams]
-     *
-     */
-
-    sealed class GetTeamsOption : GetTeamsOptionsInterface {
-
-        /**
-         * @constructor Creates a `StartFrom` option
-         * @property[teamId] the id of the team to continue the query from
-         */
-
-        data class StartFrom(val teamId: TeamId) : GetTeamsOption()
-
-        /**
-         * @constructor Creates a `LimitTo` option
-         * @property[teamIds] a list of *max 32* team ids used to limit the query
-         */
-        data class LimitTo(val teamIds: List<TeamId>) : GetTeamsOption()
-    }
 
     suspend fun deleteConversation(conversationId: NonQualifiedConversationId, teamId: TeamId): NetworkResponse<Unit>
     suspend fun getTeamMembers(teamId: TeamId, limitTo: Int?, pagingState: String? = null): NetworkResponse<TeamMemberListPaginated>

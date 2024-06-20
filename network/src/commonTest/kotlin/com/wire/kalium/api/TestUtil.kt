@@ -18,8 +18,8 @@
 
 package com.wire.kalium.api
 
-import com.wire.kalium.network.tools.ApiVersionDTO
-import com.wire.kalium.network.tools.ServerConfigDTO
+import com.wire.kalium.network.api.base.unbound.configuration.ApiVersionDTO
+import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigDTO
 
 val TEST_BACKEND_CONFIG =
     ServerConfigDTO(

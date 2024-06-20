@@ -22,9 +22,10 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.stubs.newServerConfig
-import com.wire.kalium.network.api.base.unauthenticated.DomainLookupApi
-import com.wire.kalium.network.api.base.unauthenticated.DomainLookupResponse
-import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
+import com.wire.kalium.network.api.base.unauthenticated.domainLookup.DomainLookupApi
+import com.wire.kalium.network.api.base.unauthenticated.domainLookup.DomainLookupResponse
+import com.wire.kalium.network.api.base.unauthenticated.sso.InitiateParam
+import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
@@ -59,7 +60,7 @@ class SSOLoginRepositoryTest {
     @Test
     fun givenApiRequestSuccess_whenInitiatingWithoutRedirects_thenSuccessIsPropagated() =
         givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
-            { initiate(SSOLoginApi.InitiateParam.WithoutRedirect(TEST_CODE)) },
+            { initiate(InitiateParam.WithoutRedirect(TEST_CODE)) },
             "wire/response",
             { ssoLoginRepository.initiate(TEST_CODE) }
         )
@@ -67,7 +68,7 @@ class SSOLoginRepositoryTest {
     @Test
     fun givenApiRequestSuccess_whenInitiatingWithRedirects_thenSuccessIsPropagated() =
         givenApiRequestSuccess_whenMakingRequest_thenSuccessIsPropagated(
-            { initiate(SSOLoginApi.InitiateParam.WithRedirect(TEST_SUCCESS, TEST_ERROR, TEST_CODE)) },
+            { initiate(InitiateParam.WithRedirect(TEST_SUCCESS, TEST_ERROR, TEST_CODE)) },
             "wire/response",
             { ssoLoginRepository.initiate(TEST_CODE, TEST_SUCCESS, TEST_ERROR) }
         )
@@ -75,7 +76,7 @@ class SSOLoginRepositoryTest {
     @Test
     fun givenApiRequestFail_whenInitiating_thenNetworkFailureIsPropagated() =
         givenApiRequestFail_whenMakingRequest_thenNetworkFailureIsPropagated(
-            { initiate(SSOLoginApi.InitiateParam.WithoutRedirect(TEST_CODE)) },
+            { initiate(InitiateParam.WithoutRedirect(TEST_CODE)) },
             expected = TestNetworkException.generic,
             { ssoLoginRepository.initiate(TEST_CODE) }
         )

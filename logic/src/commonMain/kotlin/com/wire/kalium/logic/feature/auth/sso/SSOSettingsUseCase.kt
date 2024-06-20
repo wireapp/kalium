@@ -22,7 +22,7 @@ package com.wire.kalium.logic.feature.auth.sso
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.network.api.base.unauthenticated.SSOSettingsResponse
+import com.wire.kalium.network.api.base.unauthenticated.sso.SSOSettingsResponse
 
 sealed class SSOSettingsResult {
     data class Success(val ssoSettings: SSOSettingsResponse) : SSOSettingsResult()

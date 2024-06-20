@@ -27,7 +27,10 @@ import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.network.api.base.unauthenticated.register.ActivationParam
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
+import com.wire.kalium.network.api.base.unauthenticated.register.RegisterParam
+import com.wire.kalium.network.api.base.unauthenticated.register.RequestActivationCodeParam
 
 internal interface RegisterAccountRepository {
     suspend fun requestEmailActivationCode(email: String): Either<NetworkFailure, Unit>
@@ -62,13 +65,13 @@ internal class RegisterAccountDataSource internal constructor(
     private val sessionMapper: SessionMapper = MapperProvider.sessionMapper()
 ) : RegisterAccountRepository {
     override suspend fun requestEmailActivationCode(email: String): Either<NetworkFailure, Unit> =
-        requestActivation(RegisterApi.RequestActivationCodeParam.Email(email))
+        requestActivation(RequestActivationCodeParam.Email(email))
 
     override suspend fun verifyActivationCode(
         email: String,
         code: String
     ): Either<NetworkFailure, Unit> =
-        activateUser(RegisterApi.ActivationParam.Email(email, code))
+        activateUser(ActivationParam.Email(email, code))
 
     override suspend fun registerPersonalAccountWithEmail(
         email: String,
@@ -78,7 +81,7 @@ internal class RegisterAccountDataSource internal constructor(
         cookieLabel: String?
     ): Either<NetworkFailure, Pair<SsoId?, AccountTokens>> =
         register(
-            RegisterApi.RegisterParam.PersonalAccount(
+            RegisterParam.PersonalAccount(
                 email = email,
                 emailCode = code,
                 name = name,
@@ -97,7 +100,7 @@ internal class RegisterAccountDataSource internal constructor(
         cookieLabel: String?
     ): Either<NetworkFailure, Pair<SsoId?, AccountTokens>> =
         register(
-            RegisterApi.RegisterParam.TeamAccount(
+            RegisterParam.TeamAccount(
                 email = email,
                 emailCode = code,
                 name = name,
@@ -109,13 +112,13 @@ internal class RegisterAccountDataSource internal constructor(
         )
 
     private suspend fun requestActivation(
-        param: RegisterApi.RequestActivationCodeParam
+        param: RequestActivationCodeParam
     ): Either<NetworkFailure, Unit> = wrapApiRequest { registerApi.requestActivationCode(param) }
 
-    private suspend fun activateUser(param: RegisterApi.ActivationParam): Either<NetworkFailure, Unit> =
+    private suspend fun activateUser(param: ActivationParam): Either<NetworkFailure, Unit> =
         wrapApiRequest { registerApi.activate(param) }
 
-    private suspend fun register(param: RegisterApi.RegisterParam): Either<NetworkFailure, Pair<SsoId?, AccountTokens>> =
+    private suspend fun register(param: RegisterParam): Either<NetworkFailure, Pair<SsoId?, AccountTokens>> =
         wrapApiRequest { registerApi.register(param) }.map {
             Pair(idMapper.toSsoId(it.first.ssoID), sessionMapper.fromSessionDTO(it.second))
         }

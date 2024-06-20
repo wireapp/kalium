@@ -22,6 +22,8 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.team.Team
 import com.wire.kalium.network.api.base.model.NonQualifiedUserId
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.base.authenticated.teams.TeamMemberDTO
+import com.wire.kalium.network.api.base.authenticated.teams.TeamPermissions
 import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.base.model.TeamDTO
 import com.wire.kalium.persistence.dao.TeamEntity
@@ -58,8 +60,8 @@ object TestTeam {
         createdBy: NonQualifiedUserId? = null,
         legalHoldStatus: LegalHoldStatusDTO? = null,
         createdAt: String? = null,
-        permissions: TeamsApi.Permissions? = null
-    ): TeamsApi.TeamMemberDTO = TeamsApi.TeamMemberDTO(
+        permissions: TeamPermissions? = null
+    ): TeamMemberDTO = TeamMemberDTO(
         nonQualifiedUserId = nonQualifiedUserId,
         createdBy = createdBy,
         legalHoldStatus = legalHoldStatus,

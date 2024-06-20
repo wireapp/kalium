@@ -84,6 +84,3 @@ interface KeyPackageApi {
      */
     suspend fun getAvailableKeyPackageCount(clientId: String): NetworkResponse<KeyPackageCountDTO>
 }
-
-typealias KeyPackage = String
-typealias KeyPackageRef = String

@@ -22,7 +22,6 @@ import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.tools.KtxSerializer
-import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
 import com.wire.kalium.network.utils.mapSuccess

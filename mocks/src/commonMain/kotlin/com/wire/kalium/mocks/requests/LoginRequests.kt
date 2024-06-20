@@ -22,7 +22,7 @@ import com.wire.kalium.mocks.responses.ListUsersResponseJson
 import com.wire.kalium.mocks.responses.ServerConfigDTOJson
 import com.wire.kalium.network.api.base.model.SelfUserDTO
 import com.wire.kalium.network.tools.KtxSerializer
-import com.wire.kalium.network.utils.MockUnboundNetworkClient
+import com.wire.kalium.network.utils.TestRequestHandler
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import kotlinx.serialization.encodeToString
@@ -63,7 +63,7 @@ object LoginRequests {
     /**
      * Requests / Responses
      */
-    private val loginRequestSuccess = MockUnboundNetworkClient.TestRequestHandler(
+    private val loginRequestSuccess = TestRequestHandler(
         path = PATH_LOGIN,
         responseBody = CommonResponses.VALID_ACCESS_TOKEN_RESPONSE,
         statusCode = HttpStatusCode.OK,
@@ -71,21 +71,21 @@ object LoginRequests {
         headers = mapOf("set-cookie" to "zuid=${CommonResponses.REFRESH_TOKEN}")
     )
 
-    private val selfRequestSuccess = MockUnboundNetworkClient.TestRequestHandler(
+    private val selfRequestSuccess = TestRequestHandler(
         path = PATH_SELF,
         responseBody = VALID_SELF_RESPONSE,
         httpMethod = HttpMethod.Get,
         statusCode = HttpStatusCode.OK,
     )
 
-    private val userDetailsRequestSuccess = MockUnboundNetworkClient.TestRequestHandler(
+    private val userDetailsRequestSuccess = TestRequestHandler(
         path = PATH_LOGOUT,
         responseBody = listUsersResponseJson.rawJson,
         httpMethod = HttpMethod.Post,
         statusCode = HttpStatusCode.Forbidden,
     )
 
-    private val apiVersionRequestSuccess = MockUnboundNetworkClient.TestRequestHandler(
+    private val apiVersionRequestSuccess = TestRequestHandler(
         path = PATH_API_VERSION,
         responseBody = ServerConfigDTOJson.valid,
         httpMethod = HttpMethod.Get,
