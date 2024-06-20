@@ -19,12 +19,9 @@
 package com.wire.kalium.logic.sync.receiver.conversation
 
 import com.benasher44.uuid.uuid4
-import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ReceiptModeMapper
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.event.EventLoggingStatus
-import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -33,6 +30,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.util.DateTimeUtil
@@ -47,9 +45,8 @@ internal class ReceiptModeUpdateEventHandlerImpl(
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper()
 ) : ReceiptModeUpdateEventHandler {
 
-    private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
-
     override suspend fun handle(event: Event.Conversation.ConversationReceiptMode) {
+        val eventLogger = kaliumLogger.createEventProcessingLogger(event)
         updateReceiptMode(event)
             .onSuccess {
                 val message = Message.System(
@@ -66,20 +63,9 @@ internal class ReceiptModeUpdateEventHandlerImpl(
                 )
 
                 persistMessage(message)
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.SUCCESS,
-                        event
-                    )
+                eventLogger.logSuccess()
             }
-            .onFailure { coreFailure ->
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.FAILURE,
-                        event,
-                        Pair("errorInfo", "$coreFailure")
-                    )
-            }
+            .onFailure { eventLogger.logFailure(it) }
     }
 
     private suspend fun updateReceiptMode(event: Event.Conversation.ConversationReceiptMode) = wrapStorageRequest {

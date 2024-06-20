@@ -24,14 +24,13 @@ import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.event.EventLoggingStatus
-import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.message.SystemMessageInserter
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.createEventProcessingLogger
 import kotlinx.coroutines.flow.first
 
 interface ProtocolUpdateEventHandler {
@@ -46,8 +45,9 @@ internal class ProtocolUpdateEventHandlerImpl(
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
-    override suspend fun handle(event: Event.Conversation.ConversationProtocol): Either<CoreFailure, Unit> =
-        conversationRepository.updateProtocolLocally(event.conversationId, event.protocol)
+    override suspend fun handle(event: Event.Conversation.ConversationProtocol): Either<CoreFailure, Unit> {
+        val eventLogger = logger.createEventProcessingLogger(event)
+        return conversationRepository.updateProtocolLocally(event.conversationId, event.protocol)
             .onSuccess { updated ->
                 if (updated) {
                     systemMessageInserter.insertProtocolChangedSystemMessage(
@@ -64,18 +64,9 @@ internal class ProtocolUpdateEventHandlerImpl(
                         )
                     }
                 }
-                logger
-                    .logEventProcessing(
-                        EventLoggingStatus.SUCCESS,
-                        event
-                    )
+                eventLogger.logSuccess()
             }
-            .onFailure { coreFailure ->
-                logger
-                    .logEventProcessing(
-                        EventLoggingStatus.FAILURE,
-                        event,
-                        Pair("errorInfo", "$coreFailure")
-                    )
-            }.map { }
+            .onFailure { eventLogger.logFailure(it) }
+            .map { }
+    }
 }
