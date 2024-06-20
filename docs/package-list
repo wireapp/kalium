@@ -487,6 +487,7 @@ com.wire.kalium.logic.feature.keypackage
 com.wire.kalium.logic.feature.legalhold
 com.wire.kalium.logic.feature.message
 com.wire.kalium.logic.feature.message.composite
+com.wire.kalium.logic.feature.message.confirmation
 com.wire.kalium.logic.feature.message.draft
 com.wire.kalium.logic.feature.message.ephemeral
 com.wire.kalium.logic.feature.message.receipt
