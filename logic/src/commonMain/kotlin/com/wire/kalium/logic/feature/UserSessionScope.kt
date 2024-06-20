@@ -474,7 +474,7 @@ class UserSessionScope internal constructor(
 ) : CoroutineScope {
 
     init {
-        onSessionCreated()
+        onUserSessionScopeCreated()
     }
 
     private val userStorage = userStorageProvider.getOrCreate(
@@ -2037,7 +2037,7 @@ class UserSessionScope internal constructor(
      * This will start subscribers of observable work per user session, as long as the user is logged in.
      * When the user logs out, this work will be canceled.
      */
-    private fun onSessionCreated() {
+    private fun onUserSessionScopeCreated() {
         launch {
             apiMigrationManager.performMigrations()
             // TODO: Add a public start function to the Managers
