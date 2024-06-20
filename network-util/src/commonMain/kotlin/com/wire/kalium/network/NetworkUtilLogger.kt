@@ -28,5 +28,5 @@ object NetworkUtilLogger {
         kaliumUtilLogger = KaliumLogger(config = config, tag = "NetworkUtil")
     }
 
-    val isRequestLoggingEnabled: Boolean get() = kaliumUtilLogger.logLevel() in setOf(KaliumLogLevel.VERBOSE, KaliumLogLevel.DEBUG)
+    val isRequestLoggingEnabled: Boolean get() = kaliumUtilLogger.logLevel in setOf(KaliumLogLevel.VERBOSE, KaliumLogLevel.DEBUG)
 }
