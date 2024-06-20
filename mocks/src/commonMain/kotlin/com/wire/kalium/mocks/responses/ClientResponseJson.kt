@@ -18,11 +18,11 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.authenticated.client.Capabilities
-import com.wire.kalium.network.api.base.authenticated.client.ClientCapabilityDTO
-import com.wire.kalium.network.api.base.authenticated.client.ClientDTO
-import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
-import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
+import com.wire.kalium.network.api.authenticated.client.Capabilities
+import com.wire.kalium.network.api.authenticated.client.ClientCapabilityDTO
+import com.wire.kalium.network.api.authenticated.client.ClientDTO
+import com.wire.kalium.network.api.authenticated.client.ClientTypeDTO
+import com.wire.kalium.network.api.authenticated.client.DeviceTypeDTO
 
 object ClientResponseJson {
     private val jsonProvider = { serializable: ClientDTO ->
@@ -50,8 +50,8 @@ object ClientResponseJson {
             clientId = "defkrr8e7grgsoufhg8",
             type = ClientTypeDTO.Permanent,
             deviceType = DeviceTypeDTO.Phone,
-            registrationTime = "2023-05-12T10:52:02.671Z",
-            lastActive = "2023-05-12T10:52:02.671Z",
+            registrationTime = "2021-05-12T10:52:02.671Z",
+            lastActive = "2021-05-12T10:52:02.671Z",
             label = "label",
             cookie = "sldkfmdeklmwldwlek23kl44mntiuepfojfndkjd",
             capabilities = Capabilities(listOf(ClientCapabilityDTO.LegalHoldImplicitConsent)),

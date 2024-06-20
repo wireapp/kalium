@@ -18,10 +18,10 @@
 
 package com.wire.kalium.logic.data.id
 
-import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
-import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
-import com.wire.kalium.network.api.base.model.UserAssetDTO
-import com.wire.kalium.network.api.base.model.UserAssetTypeDTO
+import com.wire.kalium.network.api.authenticated.client.DeviceTypeDTO
+import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
+import com.wire.kalium.network.api.model.UserAssetDTO
+import com.wire.kalium.network.api.model.UserAssetTypeDTO
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
 import kotlin.test.Test
 import kotlin.test.assertEquals

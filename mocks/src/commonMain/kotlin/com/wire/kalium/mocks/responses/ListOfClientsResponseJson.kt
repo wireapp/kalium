@@ -18,11 +18,11 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.authenticated.client.Capabilities
-import com.wire.kalium.network.api.base.authenticated.client.ClientCapabilityDTO
-import com.wire.kalium.network.api.base.authenticated.client.ClientDTO
-import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
-import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
+import com.wire.kalium.network.api.authenticated.client.Capabilities
+import com.wire.kalium.network.api.authenticated.client.ClientCapabilityDTO
+import com.wire.kalium.network.api.authenticated.client.ClientDTO
+import com.wire.kalium.network.api.authenticated.client.ClientTypeDTO
+import com.wire.kalium.network.api.authenticated.client.DeviceTypeDTO
 
 object ListOfClientsResponseJson {
     private val jsonProvider = { serializable: ClientDTO ->

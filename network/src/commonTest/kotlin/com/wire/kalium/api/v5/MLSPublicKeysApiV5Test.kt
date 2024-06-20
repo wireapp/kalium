@@ -19,7 +19,7 @@
 package com.wire.kalium.api.v5
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.model.MLSPublicKeysResponseJson
+import com.wire.kalium.mocks.responses.MLSPublicKeysResponseJson
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
 import com.wire.kalium.network.api.v5.authenticated.MLSPublicKeyApiV5
 import com.wire.kalium.network.utils.isSuccessful

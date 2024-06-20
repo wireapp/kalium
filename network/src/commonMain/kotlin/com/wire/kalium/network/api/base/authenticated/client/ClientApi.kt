@@ -18,8 +18,13 @@
 
 package com.wire.kalium.network.api.base.authenticated.client
 
-import com.wire.kalium.network.api.base.model.UserId
-import com.wire.kalium.network.api.base.model.PushTokenBody
+import com.wire.kalium.network.api.authenticated.client.ClientDTO
+import com.wire.kalium.network.api.model.UserId
+import com.wire.kalium.network.api.model.PushTokenBody
+import com.wire.kalium.network.api.authenticated.client.RegisterClientRequest
+import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
+import com.wire.kalium.network.api.authenticated.client.UpdateClientCapabilitiesRequest
+import com.wire.kalium.network.api.authenticated.client.UpdateClientMlsPublicKeysRequest
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface ClientApi {

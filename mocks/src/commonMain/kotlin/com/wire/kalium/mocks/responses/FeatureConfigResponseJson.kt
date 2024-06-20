@@ -17,16 +17,16 @@
  */
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.AppLockConfigDTO
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.E2EIConfigDTO
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigResponse
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSConfigDTO
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSMigrationConfigDTO
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
-import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
+import com.wire.kalium.network.api.authenticated.featureConfigs.AppLockConfigDTO
+import com.wire.kalium.network.api.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
+import com.wire.kalium.network.api.authenticated.featureConfigs.E2EIConfigDTO
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigResponse
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureFlagStatusDTO
+import com.wire.kalium.network.api.authenticated.featureConfigs.MLSConfigDTO
+import com.wire.kalium.network.api.authenticated.featureConfigs.MLSMigrationConfigDTO
+import com.wire.kalium.network.api.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
+import com.wire.kalium.network.api.model.SupportedProtocolDTO
 import com.wire.kalium.network.tools.KtxSerializer
 import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString

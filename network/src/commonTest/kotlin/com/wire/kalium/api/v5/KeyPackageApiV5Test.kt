@@ -21,7 +21,7 @@ package com.wire.kalium.api.v5
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.KeyPackageJson
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
-import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v5.authenticated.KeyPackageApiV5
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode

@@ -15,9 +15,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.model.AccessTokenDTO
+import com.wire.kalium.network.api.model.AccessTokenDTO
 
 object AccessTokenDTOJson {
     private val jsonProvider = { serializable: AccessTokenDTO ->
@@ -30,6 +31,8 @@ object AccessTokenDTOJson {
         |}
         """.trimMargin()
     }
+
+    fun createValid(accessTokenDTO: AccessTokenDTO) = ValidJsonProvider(accessTokenDTO, jsonProvider)
 
     val valid = ValidJsonProvider(
         AccessTokenDTO(

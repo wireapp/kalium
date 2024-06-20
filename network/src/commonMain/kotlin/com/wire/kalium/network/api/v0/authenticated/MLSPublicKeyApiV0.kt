@@ -19,7 +19,7 @@
 package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeyApi
-import com.wire.kalium.network.api.base.authenticated.serverpublickey.MLSPublicKeysDTO
+import com.wire.kalium.network.api.authenticated.serverpublickey.MLSPublicKeysDTO
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.NetworkResponse
 

@@ -19,7 +19,7 @@
 package com.wire.kalium.api.v0.call
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.api.json.AnyResponseProvider
+import com.wire.kalium.mocks.responses.AnyResponseProvider
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.api.v0.authenticated.CallApiV0
 import io.ktor.http.HttpStatusCode

@@ -50,8 +50,10 @@ import com.wire.kalium.logic.wrapFlowStorageRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
-import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
-import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
+import com.wire.kalium.network.api.authenticated.message.MessagePriority
+import com.wire.kalium.network.api.authenticated.message.Parameters
+import com.wire.kalium.network.api.authenticated.message.QualifiedMessageOption
+import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
@@ -430,7 +432,7 @@ internal class MessageDataSource internal constructor(
         return wrapApiRequest {
             messageApi.qualifiedSendMessage(
                 // TODO(messaging): Handle other MessageOptions, native push, transient and priorities
-                MessageApi.Parameters.QualifiedDefaultParameters(
+                Parameters.QualifiedDefaultParameters(
                     envelope.senderClientId.value,
                     recipientMap,
                     true,
@@ -456,15 +458,15 @@ internal class MessageDataSource internal constructor(
     }
 
     private fun MessageTarget.toOption() = when (this) {
-        is MessageTarget.Client -> MessageApi.QualifiedMessageOption.IgnoreAll
+        is MessageTarget.Client -> QualifiedMessageOption.IgnoreAll
 
         is MessageTarget.Conversation -> if (this.usersToIgnore.isNotEmpty()) {
-            MessageApi.QualifiedMessageOption.IgnoreSome(this.usersToIgnore.map { it.toApi() })
+            QualifiedMessageOption.IgnoreSome(this.usersToIgnore.map { it.toApi() })
         } else {
-            MessageApi.QualifiedMessageOption.ReportAll
+            QualifiedMessageOption.ReportAll
         }
 
-        is MessageTarget.Users -> MessageApi.QualifiedMessageOption.ReportSome(this.userId.map { it.toApi() })
+        is MessageTarget.Users -> QualifiedMessageOption.ReportSome(this.userId.map { it.toApi() })
     }
 
     override suspend fun broadcastEnvelope(
@@ -479,15 +481,15 @@ internal class MessageDataSource internal constructor(
             }
 
         val option = when (messageOption) {
-            is BroadcastMessageOption.IgnoreSome -> MessageApi.QualifiedMessageOption.IgnoreSome(messageOption.userIDs.map { it.toApi() })
-            is BroadcastMessageOption.ReportSome -> MessageApi.QualifiedMessageOption.ReportSome(messageOption.userIDs.map { it.toApi() })
-            is BroadcastMessageOption.ReportAll -> MessageApi.QualifiedMessageOption.ReportAll
-            is BroadcastMessageOption.IgnoreAll -> MessageApi.QualifiedMessageOption.IgnoreAll
+            is BroadcastMessageOption.IgnoreSome -> QualifiedMessageOption.IgnoreSome(messageOption.userIDs.map { it.toApi() })
+            is BroadcastMessageOption.ReportSome -> QualifiedMessageOption.ReportSome(messageOption.userIDs.map { it.toApi() })
+            is BroadcastMessageOption.ReportAll -> QualifiedMessageOption.ReportAll
+            is BroadcastMessageOption.IgnoreAll -> QualifiedMessageOption.IgnoreAll
         }
 
         return wrapApiRequest {
             messageApi.qualifiedBroadcastMessage(
-                MessageApi.Parameters.QualifiedDefaultParameters(
+                Parameters.QualifiedDefaultParameters(
                     envelope.senderClientId.value,
                     recipientMap,
                     true,

@@ -19,7 +19,7 @@ package com.wire.kalium.mocks.requests
 
 import com.wire.kalium.mocks.responses.CommonResponses
 import com.wire.kalium.mocks.responses.FeatureConfigResponseJson
-import com.wire.kalium.network.utils.MockUnboundNetworkClient
+import com.wire.kalium.network.utils.TestRequestHandler
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 
@@ -32,7 +32,7 @@ object FeatureConfigRequests {
     /**
      * Requests / Responses
      */
-    private val featureConfigsSuccess = MockUnboundNetworkClient.TestRequestHandler(
+    private val featureConfigsSuccess = TestRequestHandler(
         path = PATH_FEATURE_CONFIGS,
         responseBody = FeatureConfigResponseJson.valid,
         httpMethod = HttpMethod.Get,

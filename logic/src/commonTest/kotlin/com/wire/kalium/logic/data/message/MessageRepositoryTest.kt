@@ -37,8 +37,9 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
-import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
-import com.wire.kalium.network.api.base.authenticated.message.SendMLSMessageResponse
+import com.wire.kalium.network.api.authenticated.message.QualifiedMessageOption
+import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
+import com.wire.kalium.network.api.authenticated.message.SendMLSMessageResponse
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
@@ -228,7 +229,7 @@ class MessageRepositoryTest {
         coVerify {
             arrangement.messageApi.qualifiedSendMessage(
                 matches {
-                    it.recipients.isEmpty() && it.messageOption == MessageApi.QualifiedMessageOption.IgnoreAll
+                    it.recipients.isEmpty() && it.messageOption == QualifiedMessageOption.IgnoreAll
                 }, any()
             )
         }.wasInvoked()
@@ -252,7 +253,7 @@ class MessageRepositoryTest {
         coVerify {
             arrangement.messageApi.qualifiedSendMessage(
                 matches {
-                    it.recipients.isEmpty() && it.messageOption == MessageApi.QualifiedMessageOption.ReportAll
+                    it.recipients.isEmpty() && it.messageOption == QualifiedMessageOption.ReportAll
                 }, any()
             )
         }.wasInvoked()
@@ -311,7 +312,7 @@ class MessageRepositoryTest {
 
         coVerify {
             arrangement.messageApi.qualifiedBroadcastMessage(
-                matches { it.recipients.isEmpty() && it.messageOption == MessageApi.QualifiedMessageOption.IgnoreSome(listOf()) }
+                matches { it.recipients.isEmpty() && it.messageOption == QualifiedMessageOption.IgnoreSome(listOf()) }
             )
         }.wasInvoked()
     }
@@ -362,7 +363,7 @@ class MessageRepositoryTest {
             arrangement.messageApi.qualifiedSendMessage(
                 matches {
                     val messageOption = it.messageOption
-                    assertIs<MessageApi.QualifiedMessageOption.ReportSome>(messageOption)
+                    assertIs<QualifiedMessageOption.ReportSome>(messageOption)
                     val expected = recipient.map { recipient -> recipient.id.toApi() }
                     assertContentEquals(expected, messageOption.userIDs)
                     true

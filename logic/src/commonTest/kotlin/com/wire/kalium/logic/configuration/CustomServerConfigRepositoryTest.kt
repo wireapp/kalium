@@ -27,7 +27,7 @@ import com.wire.kalium.logic.util.stubs.newServerConfigDTO
 import com.wire.kalium.logic.util.stubs.newServerConfigEntity
 import com.wire.kalium.network.BackendMetaDataUtil
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
-import com.wire.kalium.network.tools.ServerConfigDTO
+import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.persistence.model.ServerConfigEntity

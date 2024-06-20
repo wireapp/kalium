@@ -20,7 +20,7 @@ package com.wire.kalium.mocks.requests
 import com.wire.kalium.mocks.extensions.toJsonString
 import com.wire.kalium.mocks.responses.CommonResponses
 import com.wire.kalium.mocks.responses.NotificationEventsResponseJson
-import com.wire.kalium.network.utils.MockUnboundNetworkClient
+import com.wire.kalium.network.utils.TestRequestHandler
 import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 
@@ -35,7 +35,7 @@ object NotificationRequests {
     /**
      * Request / Responses
      */
-    private val lastNotificationsApiRequestSuccess = MockUnboundNetworkClient.TestRequestHandler(
+    private val lastNotificationsApiRequestSuccess = TestRequestHandler(
         path = PATH_LAST_NOTIFICATIONS,
         httpMethod = HttpMethod.Get,
         responseBody = NotificationEventsResponseJson.mostRecentEvent.toJsonString(),
@@ -51,7 +51,7 @@ object NotificationRequests {
                 }
             """.trimIndent()
 
-    private val pushTokenApiRequestSuccess = MockUnboundNetworkClient.TestRequestHandler(
+    private val pushTokenApiRequestSuccess = TestRequestHandler(
         path = PATH_PUSH_TOKENS,
         httpMethod = HttpMethod.Post,
         responseBody = registerTokenResponse,
