@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
+import com.wire.kalium.logic.data.event.EventProcessingPerformanceData
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -36,6 +37,7 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.util.serialization.toJsonElement
+import kotlinx.datetime.Clock
 
 interface MemberJoinEventHandler {
     suspend fun handle(event: Event.Conversation.MemberJoin): Either<CoreFailure, Unit>
@@ -49,12 +51,13 @@ internal class MemberJoinEventHandlerImpl(
 ) : MemberJoinEventHandler {
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
-    override suspend fun handle(event: Event.Conversation.MemberJoin) =
+    override suspend fun handle(event: Event.Conversation.MemberJoin): Either<CoreFailure, Unit> {
+        val initialTime = Clock.System.now()
         // the group info need to be fetched for the following cases:
         // 1. self user is added/re-added to a group and we need to update the group info in case something changed form last time
         // 2. the new member is a bot in that case we need to make the group a bot 1:1
         // 3. fetch group info in case it is not stored in the first place
-        conversationRepository.fetchConversation(event.conversationId)
+        return conversationRepository.fetchConversation(event.conversationId)
             .run {
                 onSuccess {
                     val logMap = mapOf(
@@ -80,7 +83,10 @@ internal class MemberJoinEventHandlerImpl(
                 kaliumLogger
                     .logEventProcessing(
                         EventLoggingStatus.SUCCESS,
-                        event
+                        event,
+                        performanceData = EventProcessingPerformanceData.TimeTaken(
+                            duration = (Clock.System.now() - initialTime),
+                        )
                     )
             }.onFailure {
                 kaliumLogger
@@ -90,6 +96,7 @@ internal class MemberJoinEventHandlerImpl(
                         Pair("errorInfo", "$it")
                     )
             }
+    }
 
     private suspend fun addSystemMessage(event: Event.Conversation.MemberJoin) {
         val message = Message.System(

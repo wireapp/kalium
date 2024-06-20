@@ -21,6 +21,7 @@ package com.wire.kalium.logic.sync.receiver.conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
+import com.wire.kalium.logic.data.event.EventProcessingPerformanceData
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.notification.EphemeralConversationNotification
@@ -29,6 +30,7 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.firstOrNull
+import kotlinx.datetime.Clock
 
 interface DeletedConversationEventHandler {
     suspend fun handle(event: Event.Conversation.DeletedConversation)
@@ -41,6 +43,7 @@ internal class DeletedConversationEventHandlerImpl(
 ) : DeletedConversationEventHandler {
 
     override suspend fun handle(event: Event.Conversation.DeletedConversation) {
+        val initialTime = Clock.System.now()
         val conversation = conversationRepository.getConversationById(event.conversationId)
         if (conversation != null) {
             conversationRepository.deleteConversation(event.conversationId)
@@ -57,8 +60,11 @@ internal class DeletedConversationEventHandlerImpl(
                     notificationEventsManager.scheduleDeleteConversationNotification(dataNotification)
                     kaliumLogger
                         .logEventProcessing(
-                            EventLoggingStatus.SUCCESS,
-                            event
+                            status = EventLoggingStatus.SUCCESS,
+                            event = event,
+                            performanceData = EventProcessingPerformanceData.TimeTaken(
+                                duration = (Clock.System.now() - initialTime),
+                            )
                         )
                 }
         } else {

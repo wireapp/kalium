@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessage
 import com.wire.kalium.logic.data.conversation.toConversationType
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
+import com.wire.kalium.logic.data.event.EventProcessingPerformanceData
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
@@ -39,6 +40,7 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
+import kotlinx.datetime.Clock
 
 interface NewConversationEventHandler {
     suspend fun handle(event: Event.Conversation.NewConversation)
@@ -53,6 +55,7 @@ internal class NewConversationEventHandlerImpl(
 ) : NewConversationEventHandler {
 
     override suspend fun handle(event: Event.Conversation.NewConversation) {
+        val initialTime = Clock.System.now()
         val selfUserTeamId = selfTeamIdProvider().getOrNull()
         conversationRepository
             .persistConversation(event.conversation, selfUserTeamId?.value, true)
@@ -67,7 +70,13 @@ internal class NewConversationEventHandlerImpl(
                     .map { isNewUnhandledConversation }
             }.onSuccess { isNewUnhandledConversation ->
                 createSystemMessagesForNewConversation(isNewUnhandledConversation, event)
-                kaliumLogger.logEventProcessing(EventLoggingStatus.SUCCESS, event)
+                kaliumLogger.logEventProcessing(
+                    status = EventLoggingStatus.SUCCESS,
+                    event = event,
+                    performanceData = EventProcessingPerformanceData.TimeTaken(
+                        duration = (Clock.System.now() - initialTime),
+                    )
+                )
             }.onFailure {
                 kaliumLogger.logEventProcessing(EventLoggingStatus.FAILURE, event, Pair("errorInfo", "$it"))
             }

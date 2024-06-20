@@ -32,64 +32,21 @@ data class BroadcastMessage(
     val senderClientId: ClientId,
 ) {
 
-    @Suppress("LongMethod")
     fun toLogString(): String {
-        val typeKey = "type"
-
-        val properties: MutableMap<String, Any> = when (content) {
-            is MessageContent.TextEdited -> mutableMapOf(
-                typeKey to "textEdit"
-            )
-
-            is MessageContent.Calling -> mutableMapOf(
-                typeKey to "calling"
-            )
-
-            is MessageContent.ClientAction -> mutableMapOf(
-                typeKey to "clientAction"
-            )
-
-            is MessageContent.DeleteMessage -> mutableMapOf(
-                typeKey to "delete"
-            )
-
+        val extraProperties: MutableMap<String, Any> = when (content) {
             is MessageContent.DeleteForMe -> mutableMapOf(
-                typeKey to "deleteForMe",
                 "messageId" to content.messageId.obfuscateId(),
             )
 
             is MessageContent.LastRead -> mutableMapOf(
-                typeKey to "lastRead",
                 "time" to "${content.time}",
             )
 
-            is MessageContent.Availability -> mutableMapOf(
-                typeKey to "availability",
-            )
-
-            is MessageContent.Cleared -> mutableMapOf(
-                typeKey to "cleared",
-            )
-
-            is MessageContent.Reaction -> mutableMapOf(
-                typeKey to "reaction",
-            )
-
             is MessageContent.Receipt -> mutableMapOf(
-                typeKey to "receipt",
                 "content" to content.toLogMap(),
             )
 
-            MessageContent.Ignored -> mutableMapOf(
-                typeKey to "ignored"
-            )
-
-            is MessageContent.ButtonAction -> mutableMapOf(
-                typeKey to "buttonAction",
-            )
-            is MessageContent.ButtonActionConfirmation -> mutableMapOf(
-                typeKey to "buttonActionConfirmation",
-            )
+            else -> mutableMapOf()
         }
 
         val standardProperties = mapOf(
@@ -98,10 +55,11 @@ data class BroadcastMessage(
             "senderUserId" to senderUserId.value.obfuscateId(),
             "status" to "$status",
             "senderClientId" to senderClientId.value.obfuscateId(),
+            "type" to content.typeDescription(),
         )
 
-        properties.putAll(standardProperties)
+        extraProperties.putAll(standardProperties)
 
-        return "${properties.toMap().toJsonElement()}"
+        return "${extraProperties.toMap().toJsonElement()}"
     }
 }
