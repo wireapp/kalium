@@ -20,15 +20,14 @@ package com.wire.kalium.logic.feature.e2ei.usecase
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.e2ei.E2eiCertificate
 import com.wire.kalium.logic.feature.e2ei.MLSClientIdentity
 import com.wire.kalium.logic.feature.user.IsE2EIEnabledUseCase
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
 
 /**
- * This use case is used to get all e2ei certificates of the user.
- * Returns Map<String, E2eiCertificate> where key is value of [ClientId] and [E2eiCertificate] is certificate itself
+ * This use case is used to get all MLSClientIdentities of the user.
+ * Returns Map<String, MLSClientIdentity> where key is value of [ClientId] and [MLSClientIdentity] is certificate itself
  */
 interface GetUserE2eiCertificatesUseCase {
     suspend operator fun invoke(userId: UserId): Map<String, MLSClientIdentity>

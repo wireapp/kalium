@@ -1,3 +1,4 @@
+
 /*
  * Wire
  * Copyright (C) 2024 Wire Swiss GmbH
@@ -20,42 +21,29 @@ package com.wire.kalium.logic.feature.e2ei
 import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.WireIdentity
+import com.wire.kalium.logic.data.id.QualifiedClientID
+import com.wire.kalium.logic.data.id.toModel
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class E2eiCertificate(
-    @SerialName("userHandle")
-    var userHandle: String,
-    @SerialName("status")
-    val status: CertificateStatus,
-    @SerialName("serialNumber")
-    val serialNumber: String,
-    @SerialName("certificateDetail")
-    val certificateDetail: String,
-    @SerialName("thumbprint")
-    val thumbprint: String,
-    @SerialName("endAt")
-    val endAt: Instant
-)
-
-@Serializable
 data class MLSClientIdentity(
-    // val clientId: ClientId,
+    @SerialName("clientId") val clientId: QualifiedClientID,
     @SerialName("e2eiStatus") val e2eiStatus: MLSClientE2EIStatus,
     @SerialName("thumbprint") val thumbprint: String,
     @SerialName("credentialType") val credentialType: MLSCredentialsType,
     @SerialName("x509Identity") val x509Identity: X509Identity?
 ) {
     companion object {
-        fun fromWireIdentity(identity: WireIdentity): MLSClientIdentity =
-            MLSClientIdentity(e2eiStatus = MLSClientE2EIStatus.fromCryptoStatus(identity),
+        fun fromWireIdentity(identity: WireIdentity): MLSClientIdentity = MLSClientIdentity(
+            clientId = identity.clientId.toModel(),
+            e2eiStatus = MLSClientE2EIStatus.fromCryptoStatus(identity),
                 thumbprint = identity.thumbprint,
                 credentialType = MLSCredentialsType.fromCrypto(identity.credentialType),
                 x509Identity = identity.x509Identity?.let {
                     X509Identity(
-                        //  handle = it.handle,
+                        handle = Handle.fromWireIdentity(it.handle),
                         displayName = it.displayName,
                         domain = it.domain,
                         serialNumber = it.serialNumber,
@@ -69,7 +57,7 @@ data class MLSClientIdentity(
 
 @Serializable
 data class X509Identity(
-    // @SerialName("handle") val handle: Handle,
+    @SerialName("handle") val handle: Handle,
     @SerialName("displayName") val displayName: String,
     @SerialName("domain") val domain: String,
     @SerialName("serialNumber") val serialNumber: String,
@@ -77,6 +65,18 @@ data class X509Identity(
     @SerialName("notBefore") val notBefore: Instant,
     @SerialName("notAfter") val notAfter: Instant
 )
+
+@Serializable
+data class Handle(
+    @SerialName("scheme") val scheme: String,
+    @SerialName("handle") val handle: String,
+    @SerialName("domain") val domain: String
+) {
+    companion object {
+        fun fromWireIdentity(handle: WireIdentity.Handle) =
+            Handle(handle.scheme, handle.handle, handle.domain)
+    }
+}
 
 enum class MLSClientE2EIStatus {
     REVOKED, EXPIRED, VALID, NOT_ACTIVATED;
