@@ -18,9 +18,10 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.authenticated.message.MessageApi
-import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
-import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.authenticated.message.MessagePriority
+import com.wire.kalium.network.api.authenticated.message.Parameters
+import com.wire.kalium.network.api.authenticated.message.QualifiedMessageOption
+import com.wire.kalium.network.api.model.QualifiedID
 import io.ktor.utils.io.core.toByteArray
 
 object QualifiedSendMessageRequestJson {
@@ -50,7 +51,7 @@ object QualifiedSendMessageRequestJson {
         )
     )
 
-    private val defaultParametersJson = { serializable: MessageApi.Parameters.QualifiedDefaultParameters ->
+    private val defaultParametersJson = { serializable: Parameters.QualifiedDefaultParameters ->
         """
         |  "sender": ${serializable.sender},
         |  "data": "${serializable.externalBlob}",
@@ -78,7 +79,7 @@ object QualifiedSendMessageRequestJson {
         """.trimMargin()
     }
 
-    private val defaultParametersProvider = { serializable: MessageApi.Parameters.QualifiedDefaultParameters ->
+    private val defaultParametersProvider = { serializable: Parameters.QualifiedDefaultParameters ->
         """
         |   {
         |   ${defaultParametersJson(serializable).replace("\\s".toRegex(), "")}
@@ -87,18 +88,19 @@ object QualifiedSendMessageRequestJson {
     }
 
     val validDefaultParameters = ValidJsonProvider(
-        MessageApi.Parameters.QualifiedDefaultParameters(
+        Parameters.QualifiedDefaultParameters(
             sender = USER_1_CLIENT_1,
             externalBlob = "blob-id".toByteArray(),
             nativePush = true,
             recipients = mapOf(),
             transient = false,
             priority = MessagePriority.HIGH,
-            messageOption = MessageApi.QualifiedMessageOption.IgnoreAll
-        ), defaultParametersProvider
+            messageOption = QualifiedMessageOption.IgnoreAll
+        ),
+        defaultParametersProvider
     )
 
-    val validReportSomeJsonJson = { serializable: MessageApi.Parameters.QualifiedDefaultParameters ->
+    val validReportSomeJsonJson = { serializable: Parameters.QualifiedDefaultParameters ->
         """
         |   {
         |   ${

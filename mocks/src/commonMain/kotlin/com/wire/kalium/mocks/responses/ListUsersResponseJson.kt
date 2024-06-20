@@ -18,11 +18,11 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
-import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
-import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
-import com.wire.kalium.network.api.base.model.UserId
-import com.wire.kalium.network.api.base.model.UserProfileDTO
+import com.wire.kalium.network.api.authenticated.userDetails.ListUsersDTO
+import com.wire.kalium.network.api.model.LegalHoldStatusDTO
+import com.wire.kalium.network.api.model.SupportedProtocolDTO
+import com.wire.kalium.network.api.model.UserId
+import com.wire.kalium.network.api.model.UserProfileDTO
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 

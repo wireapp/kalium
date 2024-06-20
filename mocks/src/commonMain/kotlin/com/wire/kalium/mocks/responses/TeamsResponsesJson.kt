@@ -18,14 +18,14 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.authenticated.teams.GetTeamsOption
 
 object TeamsResponsesJson {
 
     object GetTeams {
-        private val jsonProvider = { option: TeamsApi.GetTeamsOption ->
+        private val jsonProvider = { option: GetTeamsOption ->
             when (option) {
-                is TeamsApi.GetTeamsOption.LimitTo ->
+                is GetTeamsOption.LimitTo ->
                     """
                 |{
                 |  "has_more": false,
@@ -41,7 +41,7 @@ object TeamsResponsesJson {
                 |}
                 """.trimMargin()
 
-                is TeamsApi.GetTeamsOption.StartFrom ->
+                is GetTeamsOption.StartFrom ->
                     """
                 |{
                 |   "has_more": false,
@@ -52,11 +52,11 @@ object TeamsResponsesJson {
         }
 
         val validGetTeamsLimitTo = { listOfTeamIds: List<String> ->
-            AnyResponseProvider(data = TeamsApi.GetTeamsOption.LimitTo(listOfTeamIds), jsonProvider)
+            AnyResponseProvider(data = GetTeamsOption.LimitTo(listOfTeamIds), jsonProvider)
         }
 
         val validGetTeamsStartFrom = { startFromTeamId: String ->
-            AnyResponseProvider(data = TeamsApi.GetTeamsOption.StartFrom(startFromTeamId), jsonProvider)
+            AnyResponseProvider(data = GetTeamsOption.StartFrom(startFromTeamId), jsonProvider)
         }
     }
 

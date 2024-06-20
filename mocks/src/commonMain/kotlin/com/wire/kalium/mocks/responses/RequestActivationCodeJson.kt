@@ -18,16 +18,16 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
+import com.wire.kalium.network.api.unauthenticated.register.RequestActivationCodeParam
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 object RequestActivationCodeJson {
 
-    private val jsonProvider = { serializable: RegisterApi.RequestActivationCodeParam ->
+    private val jsonProvider = { serializable: RequestActivationCodeParam ->
         buildJsonObject {
             when (serializable) {
-                is RegisterApi.RequestActivationCodeParam.Email -> {
+                is RequestActivationCodeParam.Email -> {
                     put("email", serializable.email)
                 }
             }
@@ -35,6 +35,7 @@ object RequestActivationCodeJson {
     }
 
     val validActivateEmail = ValidJsonProvider(
-        RegisterApi.RequestActivationCodeParam.Email(email = "user@domain.de"), jsonProvider
+        RequestActivationCodeParam.Email(email = "user@domain.de"),
+        jsonProvider
     )
 }

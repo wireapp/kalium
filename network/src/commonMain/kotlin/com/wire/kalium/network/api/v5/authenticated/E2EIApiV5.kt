@@ -18,7 +18,7 @@
 package com.wire.kalium.network.api.v5.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.base.authenticated.e2ei.AccessTokenResponse
+import com.wire.kalium.network.api.authenticated.e2ei.AccessTokenResponse
 import com.wire.kalium.network.api.v4.authenticated.E2EIApiV4
 import com.wire.kalium.network.serialization.JoseJson
 import com.wire.kalium.network.utils.CustomErrors

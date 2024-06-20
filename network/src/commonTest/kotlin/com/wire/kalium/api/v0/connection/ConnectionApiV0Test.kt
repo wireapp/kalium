@@ -22,8 +22,8 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.mocks.responses.connection.ConnectionRequestsJson
 import com.wire.kalium.mocks.responses.connection.ConnectionResponsesJson
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
-import com.wire.kalium.network.api.base.authenticated.connection.ConnectionStateDTO
-import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.authenticated.connection.ConnectionStateDTO
+import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v0.authenticated.ConnectionApiV0
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode

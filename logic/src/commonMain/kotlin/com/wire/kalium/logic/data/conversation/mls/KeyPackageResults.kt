@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.data.conversation.mls
 
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageDTO
 
 data class KeyPackageClaimResult(
     val successfullyFetchedKeyPackages: List<KeyPackageDTO>,

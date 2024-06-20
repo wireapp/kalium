@@ -36,10 +36,10 @@ import com.wire.kalium.logic.util.arrangement.dao.SearchDAOArrangementImpl
 import com.wire.kalium.logic.util.arrangement.provider.SelfTeamIdProviderArrangement
 import com.wire.kalium.logic.util.arrangement.provider.SelfTeamIdProviderArrangementImpl
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.search.ContactDTO
-import com.wire.kalium.network.api.base.authenticated.search.SearchPolicyDTO
-import com.wire.kalium.network.api.base.authenticated.search.UserSearchResponse
-import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
+import com.wire.kalium.network.api.authenticated.search.ContactDTO
+import com.wire.kalium.network.api.authenticated.search.SearchPolicyDTO
+import com.wire.kalium.network.api.authenticated.search.UserSearchResponse
+import com.wire.kalium.network.api.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConnectionEntity
@@ -63,7 +63,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
-import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
+import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
 class SearchUserRepositoryTest {
 

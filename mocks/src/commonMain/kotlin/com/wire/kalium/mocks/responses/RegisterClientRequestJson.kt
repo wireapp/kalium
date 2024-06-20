@@ -18,11 +18,11 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.authenticated.client.ClientCapabilityDTO
-import com.wire.kalium.network.api.base.authenticated.client.ClientTypeDTO
-import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
-import com.wire.kalium.network.api.base.authenticated.client.RegisterClientRequest
-import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
+import com.wire.kalium.network.api.authenticated.client.ClientCapabilityDTO
+import com.wire.kalium.network.api.authenticated.client.ClientTypeDTO
+import com.wire.kalium.network.api.authenticated.client.DeviceTypeDTO
+import com.wire.kalium.network.api.authenticated.client.RegisterClientRequest
+import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject

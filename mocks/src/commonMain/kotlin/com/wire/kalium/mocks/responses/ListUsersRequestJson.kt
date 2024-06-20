@@ -18,9 +18,9 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.authenticated.userDetails.QualifiedHandleListRequest
-import com.wire.kalium.network.api.base.authenticated.userDetails.QualifiedUserIdListRequest
-import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.authenticated.userDetails.QualifiedHandleListRequest
+import com.wire.kalium.network.api.authenticated.userDetails.QualifiedUserIdListRequest
+import com.wire.kalium.network.api.model.QualifiedID
 
 object ListUsersRequestJson {
 

@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.logic.data.conversation
 
-import com.wire.kalium.network.api.base.authenticated.conversation.TypingIndicatorStatus
-import com.wire.kalium.network.api.base.authenticated.conversation.TypingIndicatorStatusDTO
+import com.wire.kalium.network.api.authenticated.conversation.TypingIndicatorStatus
+import com.wire.kalium.network.api.authenticated.conversation.TypingIndicatorStatusDTO
 
 fun TypingIndicatorStatus.toModel(): Conversation.TypingIndicatorMode = when (this) {
     TypingIndicatorStatus.STARTED -> Conversation.TypingIndicatorMode.STARTED

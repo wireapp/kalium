@@ -19,9 +19,9 @@
 package com.wire.kalium.mocks.responses.conversation
 
 import com.wire.kalium.mocks.responses.ValidJsonProvider
-import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
-import com.wire.kalium.network.api.base.model.ConversationAccessDTO
-import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
+import com.wire.kalium.network.api.model.ConversationAccessDTO
+import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 
 object UpdateConversationAccessRequestJson {
 

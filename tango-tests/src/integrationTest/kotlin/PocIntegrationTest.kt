@@ -30,8 +30,9 @@ import com.wire.kalium.mocks.requests.ClientRequests
 import com.wire.kalium.mocks.requests.FeatureConfigRequests
 import com.wire.kalium.mocks.requests.LoginRequests
 import com.wire.kalium.network.NetworkState
-import com.wire.kalium.network.tools.ServerConfigDTO
-import com.wire.kalium.network.utils.MockUnboundNetworkClient
+import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
+import com.wire.kalium.network.utils.TestRequestHandler
+import com.wire.kalium.network.utils.TestRequestHandler.Companion.TEST_BACKEND_CONFIG
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest
 import org.junit.Ignore
@@ -70,7 +71,7 @@ class PocIntegrationTest {
     @Ignore("needs to be checked and fix")
     @Test
     fun givenEmailAndPasswordWhenLoggingInThenRegisterClientAndLogout() = runTest {
-        val mockedRequests = mutableListOf<MockUnboundNetworkClient.TestRequestHandler>().apply {
+        val mockedRequests = mutableListOf<TestRequestHandler>().apply {
             addAll(LoginRequests.loginRequestResponseSuccess)
             addAll(ClientRequests.clientRequestResponseSuccess)
             addAll(FeatureConfigRequests.responseSuccess)
@@ -81,7 +82,7 @@ class PocIntegrationTest {
         TestNetworkStateObserver.DEFAULT_TEST_NETWORK_STATE_OBSERVER.updateNetworkState(NetworkState.ConnectedWithInternet)
 
         launch {
-            val authScope = getAuthScope(coreLogic, MockUnboundNetworkClient.TEST_BACKEND_CONFIG.links)
+            val authScope = getAuthScope(coreLogic, TEST_BACKEND_CONFIG.links)
 
             val loginAuthToken = LoginActions.loginAndAddAuthenticatedUser(
                 email = USER_EMAIL,
@@ -128,7 +129,7 @@ class PocIntegrationTest {
         private val USER_EMAIL = "user@domain.com"
         private val USER_PASSWORD = "password"
 
-        fun createCoreLogic(mockedRequests: List<MockUnboundNetworkClient.TestRequestHandler>) = CoreLogic(
+        fun createCoreLogic(mockedRequests: List<TestRequestHandler>) = CoreLogic(
             rootPath = "$HOME_DIRECTORY/.kalium/accounts-test",
             kaliumConfigs = KaliumConfigs(
                 developmentApiEnabled = true,

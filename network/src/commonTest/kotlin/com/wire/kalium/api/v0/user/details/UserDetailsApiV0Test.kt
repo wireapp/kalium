@@ -22,11 +22,11 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.QualifiedHandleSample
 import com.wire.kalium.api.json.model.QualifiedIDSamples
 import com.wire.kalium.mocks.responses.ListUsersResponseJson
-import com.wire.kalium.network.api.base.authenticated.userDetails.ListUserRequest
-import com.wire.kalium.network.api.base.authenticated.userDetails.ListUsersDTO
+import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
+import com.wire.kalium.network.api.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
-import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedHandles
-import com.wire.kalium.network.api.base.authenticated.userDetails.qualifiedIds
+import com.wire.kalium.network.api.authenticated.userDetails.qualifiedHandles
+import com.wire.kalium.network.api.authenticated.userDetails.qualifiedIds
 import com.wire.kalium.network.api.v0.authenticated.UserDetailsApiV0
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.NetworkResponse

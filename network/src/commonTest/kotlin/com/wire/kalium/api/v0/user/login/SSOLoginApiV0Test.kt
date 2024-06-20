@@ -22,8 +22,9 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.TEST_BACKEND
 import com.wire.kalium.mocks.responses.AccessTokenDTOJson
 import com.wire.kalium.mocks.responses.UserDTOJson
-import com.wire.kalium.network.api.base.model.AuthenticationResultDTO
-import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
+import com.wire.kalium.network.api.model.AuthenticationResultDTO
+import com.wire.kalium.network.api.unauthenticated.sso.InitiateParam
+import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
 import com.wire.kalium.network.api.v0.unauthenticated.SSOLoginApiV0
 import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
@@ -43,7 +44,7 @@ internal class SSOLoginApiV0Test : ApiTest() {
     @Test
     fun givenBEResponseSuccess_whenCallingInitiateSSOEndpointWithNoRedirect_thenRequestConfiguredCorrectly() = runTest {
         val uuid = "uuid"
-        val param = SSOLoginApi.InitiateParam.WithoutRedirect(uuid)
+        val param = InitiateParam.WithoutRedirect(uuid)
         val expectedPath = "$PATH_SSO_INITIATE/$uuid"
         val networkClient = mockUnauthenticatedNetworkClient(
             "",
@@ -66,7 +67,7 @@ internal class SSOLoginApiV0Test : ApiTest() {
     fun givenBEResponseSuccess_whenCallingInitiateSSOEndpointWithRedirect_thenRequestConfiguredCorrectly() = runTest {
         val uuid = "uuid"
         val param =
-            SSOLoginApi.InitiateParam.WithRedirect(uuid = uuid, success = "wire://success", error = "wire://error")
+            InitiateParam.WithRedirect(uuid = uuid, success = "wire://success", error = "wire://error")
         val expectedPathAndQuery =
             "$PATH_SSO_INITIATE/$uuid?success_redirect=wire%3A%2F%2Fsuccess&error_redirect=wire%3A%2F%2Ferror"
         val networkClient = mockUnauthenticatedNetworkClient(

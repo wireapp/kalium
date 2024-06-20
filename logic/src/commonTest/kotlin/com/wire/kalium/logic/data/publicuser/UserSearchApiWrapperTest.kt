@@ -28,10 +28,10 @@ import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement
 import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
-import com.wire.kalium.network.api.base.authenticated.search.ContactDTO
-import com.wire.kalium.network.api.base.authenticated.search.SearchPolicyDTO
+import com.wire.kalium.network.api.authenticated.search.ContactDTO
+import com.wire.kalium.network.api.authenticated.search.SearchPolicyDTO
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
-import com.wire.kalium.network.api.base.authenticated.search.UserSearchResponse
+import com.wire.kalium.network.api.authenticated.search.UserSearchResponse
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
@@ -45,7 +45,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertTrue
-import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
+import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
 class UserSearchApiWrapperTest {
 

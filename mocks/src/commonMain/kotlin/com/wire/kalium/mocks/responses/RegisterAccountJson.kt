@@ -18,12 +18,12 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
+import com.wire.kalium.network.api.unauthenticated.register.RegisterParam
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 object RegisterAccountJson {
-    private val jsonProvider = { serializable: RegisterApi.RegisterParam.PersonalAccount ->
+    private val jsonProvider = { serializable: RegisterParam.PersonalAccount ->
         buildJsonObject {
             put("name", serializable.name)
             put("password", serializable.password)
@@ -34,7 +34,7 @@ object RegisterAccountJson {
     }
 
     val validPersonalAccountRegister = ValidJsonProvider(
-        serializableData = RegisterApi.RegisterParam.PersonalAccount(
+        serializableData = RegisterParam.PersonalAccount(
             "test@email.com",
             "123456",
             "private user",

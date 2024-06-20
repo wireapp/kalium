@@ -18,8 +18,8 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.model.SelfUserDTO
-import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.model.SelfUserDTO
+import com.wire.kalium.network.api.model.UserId
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put

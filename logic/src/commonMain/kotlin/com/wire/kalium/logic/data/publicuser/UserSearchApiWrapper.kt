@@ -26,8 +26,8 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
-import com.wire.kalium.network.api.base.authenticated.search.UserSearchRequest
-import com.wire.kalium.network.api.base.authenticated.search.UserSearchResponse
+import com.wire.kalium.network.api.authenticated.search.UserSearchRequest
+import com.wire.kalium.network.api.authenticated.search.UserSearchResponse
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import kotlinx.coroutines.flow.firstOrNull
 

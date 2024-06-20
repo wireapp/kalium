@@ -19,9 +19,9 @@
 package com.wire.kalium.network.api.v2.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.base.authenticated.asset.AssetMetadataRequest
-import com.wire.kalium.network.api.base.authenticated.asset.AssetResponse
-import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.authenticated.asset.AssetMetadataRequest
+import com.wire.kalium.network.api.authenticated.asset.AssetResponse
+import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v0.authenticated.AssetApiV0
 import com.wire.kalium.network.api.v0.authenticated.StreamAssetContent
 import com.wire.kalium.network.utils.NetworkResponse

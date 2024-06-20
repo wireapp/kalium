@@ -38,6 +38,7 @@ kotlin {
                 implementation(project(":protobuf"))
                 implementation(project(":util"))
                 implementation(project(":network-util"))
+                api(project(":network-model"))
                 api(project(":logger"))
 
                 // coroutines

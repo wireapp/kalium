@@ -18,8 +18,8 @@
 package com.wire.kalium.network.api.v0.unauthenticated
 
 import com.wire.kalium.network.UnauthenticatedNetworkClient
-import com.wire.kalium.network.api.base.unauthenticated.VerificationCodeApi
-import com.wire.kalium.network.api.base.unauthenticated.VerificationCodeApi.ActionToBeVerified
+import com.wire.kalium.network.api.base.unauthenticated.verification.VerificationCodeApi
+import com.wire.kalium.network.api.base.unauthenticated.verification.VerificationCodeApi.ActionToBeVerified
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.post

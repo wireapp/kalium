@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.network.api.base.authenticated.e2ei
 
+import com.wire.kalium.network.api.authenticated.e2ei.AccessTokenResponse
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.NetworkResponse
 

@@ -27,7 +27,8 @@ import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
-import com.wire.kalium.network.api.base.unauthenticated.LoginApi
+import com.wire.kalium.network.api.base.unauthenticated.login.LoginApi
+import com.wire.kalium.network.api.unauthenticated.login.LoginParam
 
 internal interface LoginRepository {
     suspend fun loginWithEmail(
@@ -60,7 +61,7 @@ internal class LoginRepositoryImpl internal constructor(
         secondFactorVerificationCode: String?,
     ): Either<NetworkFailure, Pair<AccountTokens, SsoId?>> =
         login(
-            LoginApi.LoginParam.LoginWithEmail(email, password, label, secondFactorVerificationCode),
+            LoginParam.LoginWithEmail(email, password, label, secondFactorVerificationCode),
             shouldPersistClient
         )
 
@@ -71,12 +72,12 @@ internal class LoginRepositoryImpl internal constructor(
         shouldPersistClient: Boolean,
     ): Either<NetworkFailure, Pair<AccountTokens, SsoId?>> =
         login(
-            LoginApi.LoginParam.LoginWithHandle(handle, password, label),
+            LoginParam.LoginWithHandle(handle, password, label),
             shouldPersistClient
         )
 
     private suspend fun login(
-        loginParam: LoginApi.LoginParam,
+        loginParam: LoginParam,
         persistClient: Boolean
     ): Either<NetworkFailure, Pair<AccountTokens, SsoId?>> = wrapApiRequest {
         loginApi.login(param = loginParam, persist = persistClient)

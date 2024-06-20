@@ -25,8 +25,8 @@ import com.wire.kalium.mocks.responses.RegisterClientRequestJson
 import com.wire.kalium.mocks.responses.RegisterTokenJson
 import com.wire.kalium.mocks.responses.UpdateClientRequestJson
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
-import com.wire.kalium.network.api.base.authenticated.client.ClientCapabilityDTO
-import com.wire.kalium.network.api.base.authenticated.client.UpdateClientCapabilitiesRequest
+import com.wire.kalium.network.api.authenticated.client.ClientCapabilityDTO
+import com.wire.kalium.network.api.authenticated.client.UpdateClientCapabilitiesRequest
 import com.wire.kalium.network.api.v0.authenticated.ClientApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse

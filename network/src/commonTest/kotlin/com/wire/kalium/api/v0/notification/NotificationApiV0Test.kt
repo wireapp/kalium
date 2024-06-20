@@ -23,9 +23,9 @@ import com.wire.kalium.api.TEST_BACKEND_CONFIG
 import com.wire.kalium.api.json.model.ErrorResponseJson
 import com.wire.kalium.mocks.responses.NotificationEventsResponseJson
 import com.wire.kalium.network.AuthenticatedWebSocketClient
-import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
-import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
-import com.wire.kalium.network.api.base.authenticated.notification.NotificationResponse
+import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.authenticated.notification.EventResponse
+import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
 import com.wire.kalium.network.api.base.authenticated.notification.WebSocketEvent
 import com.wire.kalium.network.api.v0.authenticated.NotificationApiV0
 import com.wire.kalium.network.exceptions.KaliumException
