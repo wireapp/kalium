@@ -415,7 +415,7 @@ internal class ConversationMapperImpl(
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
         return when (protocol) {
-            com.wire.kalium.network.api.authenticated.conversation.ConvProtocol.MLS -> ProtocolInfo.MLS(
+            ConvProtocol.MLS -> ProtocolInfo.MLS(
                 groupId ?: "",
                 mlsGroupState ?: GroupState.PENDING_JOIN,
                 epoch ?: 0UL,
@@ -423,7 +423,7 @@ internal class ConversationMapperImpl(
                 ConversationEntity.CipherSuite.fromTag(mlsCipherSuiteTag)
             )
 
-            com.wire.kalium.network.api.authenticated.conversation.ConvProtocol.MIXED -> ProtocolInfo.Mixed(
+            ConvProtocol.MIXED -> ProtocolInfo.Mixed(
                 groupId ?: "",
                 mlsGroupState ?: GroupState.PENDING_JOIN,
                 epoch ?: 0UL,
@@ -431,7 +431,7 @@ internal class ConversationMapperImpl(
                 ConversationEntity.CipherSuite.fromTag(mlsCipherSuiteTag)
             )
 
-            com.wire.kalium.network.api.authenticated.conversation.ConvProtocol.PROTEUS -> ProtocolInfo.Proteus
+            ConvProtocol.PROTEUS -> ProtocolInfo.Proteus
         }
     }
 
