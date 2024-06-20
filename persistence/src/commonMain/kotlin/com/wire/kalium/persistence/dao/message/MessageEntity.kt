@@ -220,17 +220,7 @@ sealed interface MessageEntity {
         val urlOffset: Int,
         val permanentUrl: String,
         val title: String,
-        val summary: String,
-        val imageAssetKey: String?,
-        val imageAssetDomain: String?,
-        val imageAssetDataPath: String?,
-        val imageAssetDataSize: Long?,
-        val imageAssetToken: String?,
-        val imageAssetMimeType: String?,
-        val imageAssetHeight: Int?,
-        val imageAssetWidth: Int?,
-        val imageAssetEncryptionAlgorithm: String?,
-        val downloadedDate: Long?
+        val summary: String
     )
 }
 

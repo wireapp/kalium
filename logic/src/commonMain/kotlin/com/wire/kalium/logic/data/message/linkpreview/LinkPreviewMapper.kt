@@ -17,14 +17,12 @@
  */
 package com.wire.kalium.logic.data.message.linkpreview
 
+import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
-import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_CBC
-import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_GCM
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.LinkPreview
-import com.wire.kalium.util.DateTimeUtil
 import okio.Path.Companion.toPath
 import pbandk.ByteArr
 
@@ -45,24 +43,7 @@ class LinkPreviewMapperImpl(
             urlOffset = linkPreview.urlOffset,
             permanentUrl = linkPreview.permanentUrl,
             title = linkPreview.title,
-            summary = linkPreview.summary,
-            image = if (isAllImageAssetPropertiesNotNull(linkPreview)) {
-                LinkPreviewAsset(
-                    assetKey = linkPreview.imageAssetKey!!,
-                    assetToken = linkPreview.imageAssetToken!!,
-                    assetDomain = linkPreview.imageAssetDomain!!,
-                    assetDataPath = linkPreview.imageAssetDataPath!!.toPath(),
-                    assetDataSize = linkPreview.imageAssetDataSize!!,
-                    assetHeight = linkPreview.imageAssetHeight!!,
-                    assetWidth = linkPreview.imageAssetWidth!!,
-                    mimeType = linkPreview.imageAssetMimeType!!,
-                    encryptionAlgorithm = when {
-                        linkPreview.imageAssetEncryptionAlgorithm?.contains("CBC") == true -> AES_CBC
-                        linkPreview.imageAssetEncryptionAlgorithm?.contains("GCM") == true -> AES_GCM
-                        else -> AES_CBC
-                    }
-                )
-            } else null
+            summary = linkPreview.summary
         )
     }
 
@@ -73,27 +54,44 @@ class LinkPreviewMapperImpl(
             // TODO: Check if ?: "" is a good idea here
             permanentUrl = linkPreview.permanentUrl ?: "",
             title = linkPreview.title ?: "",
-            summary = linkPreview.summary ?: "",
-            imageAssetKey = linkPreview.image?.assetKey,
-            imageAssetToken = linkPreview.image?.assetToken,
-            imageAssetDomain = linkPreview.image?.assetDomain,
-            imageAssetDataPath = linkPreview.image?.assetDataPath.toString(),
-            imageAssetDataSize = linkPreview.image?.assetDataSize,
-            imageAssetHeight = linkPreview.image?.assetHeight,
-            imageAssetWidth = linkPreview.image?.assetWidth,
-            imageAssetMimeType = linkPreview.image?.mimeType,
-            imageAssetEncryptionAlgorithm = linkPreview.image?.encryptionAlgorithm.toString(),
-            downloadedDate = DateTimeUtil.currentInstant().toEpochMilliseconds()
+            summary = linkPreview.summary ?: ""
         )
     }
 
     override fun fromProtoToModel(linkPreview: LinkPreview): MessageLinkPreview = linkPreview.let {
+        val defaultRemoteData = AssetContent.RemoteData(
+            otrKey = ByteArray(0),
+            sha256 = ByteArray(0),
+            assetId = "",
+            assetDomain = null,
+            assetToken = null,
+            encryptionAlgorithm = null
+        )
         MessageLinkPreview(
             url = linkPreview.url,
             urlOffset = linkPreview.urlOffset,
             permanentUrl = linkPreview.permanentUrl,
             title = linkPreview.title,
-            summary = linkPreview.summary
+            summary = linkPreview.summary,
+            image = linkPreview.image?.let {
+                LinkPreviewAsset(
+                    assetDataSize = linkPreview.image?.original?.size ?: 0,
+                    mimeType = linkPreview.image?.original?.mimeType ?: "*/*",
+                    assetName = linkPreview.image?.original?.name,
+                    assetHeight = when (val metadataType = linkPreview.image?.original?.metaData) {
+                        is Asset.Original.MetaData.Image -> metadataType.value.height
+                        else -> 0
+                    },
+                    assetWidth = when (val metadataType = linkPreview.image?.original?.metaData) {
+                        is Asset.Original.MetaData.Image -> metadataType.value.width
+                        else -> 0
+                    },
+                    assetDataPath = "".toPath(),
+                    assetToken = linkPreview.image?.uploaded?.assetToken,
+                    assetDomain = linkPreview.image?.uploaded?.assetDomain,
+                    assetKey = linkPreview.image?.uploaded?.assetId
+                )
+            }
         )
     }
 
@@ -128,16 +126,4 @@ class LinkPreviewMapperImpl(
             )
         }
     )
-
-    private fun isAllImageAssetPropertiesNotNull(linkPreview: MessageEntity.LinkPreview) = with(linkPreview) {
-        imageAssetKey != null
-                && imageAssetToken != null
-                && imageAssetDomain != null
-                && imageAssetDataPath != null
-                && imageAssetDataSize != null
-                && imageAssetHeight != null
-                && imageAssetWidth != null
-                && imageAssetMimeType != null
-                && imageAssetEncryptionAlgorithm != null
-    }
 }
