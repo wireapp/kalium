@@ -19,7 +19,6 @@
 package com.wire.kalium.network.api.v3.authenticated.networkContainer
 
 import com.wire.kalium.logger.KaliumLogger
-import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
@@ -73,7 +72,6 @@ import io.ktor.client.engine.HttpClientEngine
 
 @Suppress("LongParameterList")
 internal class AuthenticatedNetworkContainerV3 internal constructor(
-    private val networkStateObserver: NetworkStateObserver,
     private val sessionManager: SessionManager,
     private val selfUserId: UserId,
     certificatePinning: CertificatePinning,
@@ -87,7 +85,6 @@ internal class AuthenticatedNetworkContainerV3 internal constructor(
 ) : AuthenticatedNetworkContainer,
     AuthenticatedHttpClientProvider by AuthenticatedHttpClientProviderImpl(
         sessionManager = sessionManager,
-        networkStateObserver = networkStateObserver,
         accessTokenApi = { httpClient -> AccessTokenApiV3(httpClient) },
         engine = engine,
         kaliumLogger = kaliumLogger

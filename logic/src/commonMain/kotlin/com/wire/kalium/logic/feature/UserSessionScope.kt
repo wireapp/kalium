@@ -574,10 +574,9 @@ class UserSessionScope internal constructor(
         logout = { logoutReason -> logout(reason = logoutReason, waitUntilCompletes = true) }
     )
     private val authenticatedNetworkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(
-        networkStateObserver,
-        sessionManager,
-        UserIdDTO(userId.value, userId.domain),
-        userAgent,
+        sessionManager = sessionManager,
+        selfUserId = UserIdDTO(userId.value, userId.domain),
+        userAgent = userAgent,
         certificatePinning = kaliumConfigs.certPinningConfig,
         mockEngine = kaliumConfigs.kaliumMockEngine?.mockEngine,
         kaliumLogger = userScopedLogger
@@ -589,9 +588,8 @@ class UserSessionScope internal constructor(
 
     val authenticationScope: AuthenticationScope by lazy {
         authenticationScopeProvider.provide(
-            sessionManager.getServerConfig(),
-            sessionManager.getProxyCredentials(),
-            networkStateObserver,
+            serverConfig = sessionManager.getServerConfig(),
+            proxyCredentials = sessionManager.getProxyCredentials(),
             globalDatabase = globalDatabaseBuilder,
             kaliumConfigs = kaliumConfigs,
         )
