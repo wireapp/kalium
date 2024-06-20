@@ -18,8 +18,8 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
-import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
+import com.wire.kalium.network.api.authenticated.client.DeviceTypeDTO
+import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
 
 object SimpleClientResponseJson {
     private val missingClassJsonProvider = { serializable: SimpleClientResponse ->

@@ -19,7 +19,7 @@
 package com.wire.kalium.network.api.v3.unauthenticated.networkContainer
 
 import com.wire.kalium.network.NetworkStateObserver
-import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
+import com.wire.kalium.network.api.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.unauthenticated.domainLookup.DomainLookupApi
 import com.wire.kalium.network.api.base.unauthenticated.login.LoginApi
 import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
@@ -29,7 +29,7 @@ import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersion
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApiImpl
-import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigDTO
+import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApiImpl
 import com.wire.kalium.network.api.v3.unauthenticated.DomainLookupApiV3

@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.unbound.acme.AcmeDirectoriesResponse
-import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
+import com.wire.kalium.network.api.unbound.acme.AcmeDirectoriesResponse
+import com.wire.kalium.network.api.unbound.acme.ChallengeResponse
 
 object ACMEApiResponseJsonSample {
 

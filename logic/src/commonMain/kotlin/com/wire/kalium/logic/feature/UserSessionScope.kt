@@ -452,7 +452,7 @@ import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
 import kotlin.coroutines.CoroutineContext
-import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
+import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
 @Suppress("LongParameterList", "LargeClass")
 class UserSessionScope internal constructor(

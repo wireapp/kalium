@@ -20,7 +20,7 @@ package com.wire.kalium.network.api.v6.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
-import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigDTO
+import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.v5.authenticated.NotificationApiV5
 
 internal open class NotificationApiV6 internal constructor(

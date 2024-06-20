@@ -22,7 +22,7 @@ import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.auth.login.SSOLoginRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
-import com.wire.kalium.network.api.base.unauthenticated.sso.SSOSettingsResponse
+import com.wire.kalium.network.api.unauthenticated.sso.SSOSettingsResponse
 import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.mock

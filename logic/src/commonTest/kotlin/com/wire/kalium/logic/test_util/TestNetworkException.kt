@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.test_util
 
 import com.wire.kalium.logic.NetworkFailure
-import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.AuthenticationCodeFailure
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse

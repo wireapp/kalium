@@ -20,9 +20,9 @@
 
 package com.wire.kalium.network
 
-import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
-import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigDTO
-import com.wire.kalium.network.api.base.unbound.configuration.isProxyRequired
+import com.wire.kalium.network.api.model.ProxyCredentialsDTO
+import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
+import com.wire.kalium.network.api.unbound.configuration.isProxyRequired
 import com.wire.kalium.network.session.CertificatePinning
 import io.ktor.client.engine.HttpClientEngine
 import io.ktor.client.engine.okhttp.OkHttp

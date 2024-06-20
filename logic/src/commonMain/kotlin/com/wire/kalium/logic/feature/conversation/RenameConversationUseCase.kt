@@ -29,7 +29,7 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRenameResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
 import com.wire.kalium.persistence.dao.message.LocalId
 
 /**

@@ -22,8 +22,8 @@ import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.TEST_BACKEND
 import com.wire.kalium.mocks.responses.AccessTokenDTOJson
 import com.wire.kalium.mocks.responses.UserDTOJson
-import com.wire.kalium.network.api.base.model.AuthenticationResultDTO
-import com.wire.kalium.network.api.base.unauthenticated.sso.InitiateParam
+import com.wire.kalium.network.api.model.AuthenticationResultDTO
+import com.wire.kalium.network.api.unauthenticated.sso.InitiateParam
 import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
 import com.wire.kalium.network.api.v0.unauthenticated.SSOLoginApiV0
 import com.wire.kalium.network.utils.CustomErrors

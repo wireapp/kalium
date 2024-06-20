@@ -25,7 +25,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
-import com.wire.kalium.network.api.base.authenticated.properties.PropertyKey
+import com.wire.kalium.network.api.authenticated.properties.PropertyKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 

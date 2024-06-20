@@ -18,9 +18,9 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
-import com.wire.kalium.network.api.base.authenticated.message.Parameters
-import com.wire.kalium.network.api.base.authenticated.message.UserToClientToEncMsgMap
+import com.wire.kalium.network.api.authenticated.message.MessagePriority
+import com.wire.kalium.network.api.authenticated.message.Parameters
+import com.wire.kalium.network.api.authenticated.message.UserToClientToEncMsgMap
 
 object SendMessageRequestJson {
 

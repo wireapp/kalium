@@ -20,7 +20,7 @@ package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
-import com.wire.kalium.network.api.base.authenticated.properties.PropertyKey
+import com.wire.kalium.network.api.authenticated.properties.PropertyKey
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.delete

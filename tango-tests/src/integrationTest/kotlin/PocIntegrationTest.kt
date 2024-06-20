@@ -30,7 +30,7 @@ import com.wire.kalium.mocks.requests.ClientRequests
 import com.wire.kalium.mocks.requests.FeatureConfigRequests
 import com.wire.kalium.mocks.requests.LoginRequests
 import com.wire.kalium.network.NetworkState
-import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigDTO
+import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.utils.MockUnboundNetworkClient
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.runTest

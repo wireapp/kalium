@@ -19,8 +19,8 @@
 package com.wire.kalium.network.api.v5.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.base.authenticated.self.UpdateSupportedProtocolsRequest
-import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
+import com.wire.kalium.network.api.authenticated.self.UpdateSupportedProtocolsRequest
+import com.wire.kalium.network.api.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.v4.authenticated.SelfApiV4
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.NetworkResponse

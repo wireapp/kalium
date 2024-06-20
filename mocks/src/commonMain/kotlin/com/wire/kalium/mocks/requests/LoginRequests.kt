@@ -20,7 +20,7 @@ package com.wire.kalium.mocks.requests
 import com.wire.kalium.mocks.responses.CommonResponses
 import com.wire.kalium.mocks.responses.ListUsersResponseJson
 import com.wire.kalium.mocks.responses.ServerConfigDTOJson
-import com.wire.kalium.network.api.base.model.SelfUserDTO
+import com.wire.kalium.network.api.model.SelfUserDTO
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.TestRequestHandler
 import io.ktor.http.HttpMethod

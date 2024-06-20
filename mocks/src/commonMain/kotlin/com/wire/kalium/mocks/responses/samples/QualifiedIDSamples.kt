@@ -18,7 +18,7 @@
 
 package com.wire.kalium.mocks.responses.samples
 
-import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.model.QualifiedID
 object QualifiedIDSamples {
     val one = QualifiedID("someValue", "someDomain")
     val two = QualifiedID("anotherValue", "anotherDomain")

@@ -26,12 +26,12 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
-import com.wire.kalium.network.api.base.model.SelfUserDTO
-import com.wire.kalium.network.api.base.model.SessionDTO
-import com.wire.kalium.network.api.base.unauthenticated.register.ActivationParam
+import com.wire.kalium.network.api.model.SelfUserDTO
+import com.wire.kalium.network.api.model.SessionDTO
+import com.wire.kalium.network.api.unauthenticated.register.ActivationParam
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
-import com.wire.kalium.network.api.base.unauthenticated.register.RegisterParam
-import com.wire.kalium.network.api.base.unauthenticated.register.RequestActivationCodeParam
+import com.wire.kalium.network.api.unauthenticated.register.RegisterParam
+import com.wire.kalium.network.api.unauthenticated.register.RequestActivationCodeParam
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
 import io.mockative.any
@@ -47,7 +47,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
+import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RegisterAccountRepositoryTest {

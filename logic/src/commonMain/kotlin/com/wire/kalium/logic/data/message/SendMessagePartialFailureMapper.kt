@@ -20,9 +20,9 @@ package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
+import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedUserIdToClientMap
-import com.wire.kalium.network.api.base.authenticated.message.SendMLSMessageResponse
+import com.wire.kalium.network.api.authenticated.message.SendMLSMessageResponse
 
 /**
  * Maps the [QualifiedSendMessageResponse] to a [MessageSent] object.

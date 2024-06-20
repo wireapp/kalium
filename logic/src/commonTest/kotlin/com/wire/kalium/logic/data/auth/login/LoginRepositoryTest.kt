@@ -19,11 +19,11 @@
 package com.wire.kalium.logic.data.auth.login
 
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.network.api.base.model.SelfUserDTO
-import com.wire.kalium.network.api.base.model.SessionDTO
-import com.wire.kalium.network.api.base.model.UserDTO
+import com.wire.kalium.network.api.model.SelfUserDTO
+import com.wire.kalium.network.api.model.SessionDTO
+import com.wire.kalium.network.api.model.UserDTO
 import com.wire.kalium.network.api.base.unauthenticated.login.LoginApi
-import com.wire.kalium.network.api.base.unauthenticated.login.LoginParam
+import com.wire.kalium.network.api.unauthenticated.login.LoginParam
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock

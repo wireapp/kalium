@@ -20,9 +20,9 @@
 
 package com.wire.kalium.network
 
-import com.wire.kalium.network.api.base.unbound.configuration.ApiVersionDTO
-import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigDTO
-import com.wire.kalium.network.api.base.unbound.versioning.VersionInfoDTO
+import com.wire.kalium.network.api.unbound.configuration.ApiVersionDTO
+import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
+import com.wire.kalium.network.api.unbound.versioning.VersionInfoDTO
 
 val SupportedApiVersions = setOf(0, 1, 2, 4, 5)
 val DevelopmentApiVersions = setOf(6)

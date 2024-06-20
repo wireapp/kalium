@@ -18,7 +18,9 @@
 
 package com.wire.kalium.network.api.base.unauthenticated.sso
 
-import com.wire.kalium.network.api.base.model.AuthenticationResultDTO
+import com.wire.kalium.network.api.model.AuthenticationResultDTO
+import com.wire.kalium.network.api.unauthenticated.sso.InitiateParam
+import com.wire.kalium.network.api.unauthenticated.sso.SSOSettingsResponse
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface SSOLoginApi {

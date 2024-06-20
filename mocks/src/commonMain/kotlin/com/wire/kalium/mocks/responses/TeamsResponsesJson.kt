@@ -18,7 +18,7 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.authenticated.teams.GetTeamsOption
+import com.wire.kalium.network.api.authenticated.teams.GetTeamsOption
 
 object TeamsResponsesJson {
 

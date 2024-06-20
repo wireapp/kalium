@@ -18,7 +18,7 @@
 
 package com.wire.kalium.network.utils
 
-import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigDTO
+import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.shouldAddApiVersion
 import io.ktor.client.HttpClientConfig
 import io.ktor.client.plugins.defaultRequest

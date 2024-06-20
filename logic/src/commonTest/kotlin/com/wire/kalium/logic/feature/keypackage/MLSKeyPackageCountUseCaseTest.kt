@@ -30,7 +30,7 @@ import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Ar
 import com.wire.kalium.logic.feature.keypackage.MLSKeyPackageCountUseCaseTest.Arrangement.Companion.NETWORK_FAILURE
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageCountDTO
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery

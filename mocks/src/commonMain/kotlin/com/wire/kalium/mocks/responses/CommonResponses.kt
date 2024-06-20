@@ -17,8 +17,8 @@
  */
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.model.AccessTokenDTO
-import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.model.AccessTokenDTO
+import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.tools.KtxSerializer
 import kotlinx.serialization.encodeToString
 

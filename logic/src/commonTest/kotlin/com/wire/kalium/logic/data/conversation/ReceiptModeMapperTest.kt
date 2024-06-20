@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.logic.data.id.IdMapper
-import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.mockative.Mock
 import io.mockative.mock

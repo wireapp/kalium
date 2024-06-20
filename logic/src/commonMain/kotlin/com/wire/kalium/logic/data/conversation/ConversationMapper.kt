@@ -35,13 +35,13 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
-import com.wire.kalium.network.api.base.authenticated.conversation.ConvTeamInfo
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
-import com.wire.kalium.network.api.base.model.ConversationAccessDTO
-import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.authenticated.conversation.ConvTeamInfo
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
+import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.model.ConversationAccessDTO
+import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.Protocol
@@ -415,7 +415,7 @@ internal class ConversationMapperImpl(
 
     private fun ConversationResponse.getProtocolInfo(mlsGroupState: GroupState?): ProtocolInfo {
         return when (protocol) {
-            ConvProtocol.MLS -> ProtocolInfo.MLS(
+            com.wire.kalium.network.api.authenticated.conversation.ConvProtocol.MLS -> ProtocolInfo.MLS(
                 groupId ?: "",
                 mlsGroupState ?: GroupState.PENDING_JOIN,
                 epoch ?: 0UL,
@@ -423,7 +423,7 @@ internal class ConversationMapperImpl(
                 ConversationEntity.CipherSuite.fromTag(mlsCipherSuiteTag)
             )
 
-            ConvProtocol.MIXED -> ProtocolInfo.Mixed(
+            com.wire.kalium.network.api.authenticated.conversation.ConvProtocol.MIXED -> ProtocolInfo.Mixed(
                 groupId ?: "",
                 mlsGroupState ?: GroupState.PENDING_JOIN,
                 epoch ?: 0UL,
@@ -431,7 +431,7 @@ internal class ConversationMapperImpl(
                 ConversationEntity.CipherSuite.fromTag(mlsCipherSuiteTag)
             )
 
-            ConvProtocol.PROTEUS -> ProtocolInfo.Proteus
+            com.wire.kalium.network.api.authenticated.conversation.ConvProtocol.PROTEUS -> ProtocolInfo.Proteus
         }
     }
 

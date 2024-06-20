@@ -18,7 +18,7 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.authenticated.conversation.ServiceReferenceDTO
+import com.wire.kalium.network.api.authenticated.conversation.ServiceReferenceDTO
 
 object ServiceReferenceDTOJson {
     val valid = ValidJsonProvider(

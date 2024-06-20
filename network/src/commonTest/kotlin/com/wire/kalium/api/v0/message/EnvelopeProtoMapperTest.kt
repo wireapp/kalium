@@ -20,19 +20,17 @@ package com.wire.kalium.api.v0.message
 
 import com.wire.kalium.network.api.base.authenticated.message.EnvelopeProtoMapper
 import com.wire.kalium.network.api.base.authenticated.message.EnvelopeProtoMapperImpl
-import com.wire.kalium.network.api.base.authenticated.message.MessageApi
-import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
-import com.wire.kalium.network.api.base.authenticated.message.Parameters
-import com.wire.kalium.network.api.base.authenticated.message.QualifiedMessageOption
-import com.wire.kalium.network.api.base.authenticated.message.QualifiedUserToClientToEncMsgMap
-import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.authenticated.message.MessagePriority
+import com.wire.kalium.network.api.authenticated.message.Parameters
+import com.wire.kalium.network.api.authenticated.message.QualifiedMessageOption
+import com.wire.kalium.network.api.authenticated.message.QualifiedUserToClientToEncMsgMap
+import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.otr.QualifiedNewOtrMessage
 import com.wire.kalium.protobuf.otr.QualifiedUserId
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class EnvelopeProtoMapperTest {
 

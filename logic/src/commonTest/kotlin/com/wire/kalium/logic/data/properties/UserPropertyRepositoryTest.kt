@@ -23,7 +23,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
-import com.wire.kalium.network.api.base.authenticated.properties.PropertyKey
+import com.wire.kalium.network.api.authenticated.properties.PropertyKey
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
 import io.mockative.any

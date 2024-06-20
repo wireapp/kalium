@@ -23,10 +23,10 @@ import com.wire.kalium.api.json.model.ErrorResponseJson
 import com.wire.kalium.mocks.responses.AccessTokenDTOJson
 import com.wire.kalium.mocks.responses.LoginWithEmailRequestJson
 import com.wire.kalium.mocks.responses.UserDTOJson
-import com.wire.kalium.network.api.base.model.AccessTokenDTO
-import com.wire.kalium.network.api.base.model.QualifiedID
-import com.wire.kalium.network.api.base.model.SelfUserDTO
-import com.wire.kalium.network.api.base.model.SessionDTO
+import com.wire.kalium.network.api.model.AccessTokenDTO
+import com.wire.kalium.network.api.model.QualifiedID
+import com.wire.kalium.network.api.model.SelfUserDTO
+import com.wire.kalium.network.api.model.SessionDTO
 import com.wire.kalium.network.api.base.unauthenticated.login.LoginApi
 import com.wire.kalium.network.api.v0.unauthenticated.LoginApiV0
 import com.wire.kalium.network.exceptions.KaliumException

@@ -20,8 +20,8 @@ package com.wire.kalium.logic.util.stubs
 
 import com.wire.kalium.logic.configuration.server.CommonApiVersionType
 import com.wire.kalium.logic.configuration.server.ServerConfig
-import com.wire.kalium.network.api.base.unbound.configuration.ApiVersionDTO
-import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigDTO
+import com.wire.kalium.network.api.unbound.configuration.ApiVersionDTO
+import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.persistence.model.ServerConfigEntity
 
 internal fun newTestServer(id: Int) = ServerConfig(

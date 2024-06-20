@@ -45,13 +45,13 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.e2ei.E2EIApi
-import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
-import com.wire.kalium.network.api.base.unbound.acme.ACMEAuthorizationResponse
-import com.wire.kalium.network.api.base.unbound.acme.ACMEResponse
-import com.wire.kalium.network.api.base.unbound.acme.AcmeDirectoriesResponse
-import com.wire.kalium.network.api.base.unbound.acme.ChallengeResponse
-import com.wire.kalium.network.api.base.unbound.acme.DtoAuthorizationChallengeType
+import com.wire.kalium.network.api.unbound.acme.ACMEAuthorizationResponse
+import com.wire.kalium.network.api.unbound.acme.ACMEResponse
+import com.wire.kalium.network.api.unbound.acme.AcmeDirectoriesResponse
+import com.wire.kalium.network.api.unbound.acme.ChallengeResponse
+import com.wire.kalium.network.api.unbound.acme.DtoAuthorizationChallengeType
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.util.DateTimeUtil
@@ -67,7 +67,6 @@ import io.mockative.time
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
-import pbandk.ByteArr
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs

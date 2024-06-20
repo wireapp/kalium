@@ -18,30 +18,30 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.AppLockConfigDTO
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.AppLock
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.ClassifiedDomains
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.ConferenceCalling
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.ConversationGuestLinks
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.DigitalSignatures
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.FileSharing
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.Legalhold
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.MLS
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.SSO
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.SearchVisibility
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.SecondFactorPasswordChallenge
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.SelfDeletingMessages
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.ValidateSAMLEmails
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigResponse
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSConfigDTO
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.E2EIConfigDTO
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSMigrationConfigDTO
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
-import com.wire.kalium.network.api.base.model.ErrorResponse
-import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
+import com.wire.kalium.network.api.authenticated.featureConfigs.AppLockConfigDTO
+import com.wire.kalium.network.api.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData.AppLock
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData.ClassifiedDomains
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData.ConferenceCalling
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData.ConversationGuestLinks
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData.DigitalSignatures
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData.FileSharing
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData.Legalhold
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData.MLS
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData.SSO
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData.SearchVisibility
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData.SecondFactorPasswordChallenge
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData.SelfDeletingMessages
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData.ValidateSAMLEmails
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigResponse
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureFlagStatusDTO
+import com.wire.kalium.network.api.authenticated.featureConfigs.MLSConfigDTO
+import com.wire.kalium.network.api.authenticated.featureConfigs.E2EIConfigDTO
+import com.wire.kalium.network.api.authenticated.featureConfigs.MLSMigrationConfigDTO
+import com.wire.kalium.network.api.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
+import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.SupportedProtocolDTO
 import kotlinx.datetime.Instant
 
 object FeatureConfigJson {

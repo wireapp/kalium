@@ -18,7 +18,7 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.unauthenticated.register.RegisterParam
+import com.wire.kalium.network.api.unauthenticated.register.RegisterParam
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 

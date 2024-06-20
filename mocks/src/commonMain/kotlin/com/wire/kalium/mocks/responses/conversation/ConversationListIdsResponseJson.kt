@@ -20,7 +20,7 @@ package com.wire.kalium.mocks.responses.conversation
 
 import com.wire.kalium.mocks.responses.AnyResponseProvider
 import com.wire.kalium.mocks.responses.ValidJsonProvider
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationsDetailsRequest
+import com.wire.kalium.network.api.authenticated.conversation.ConversationsDetailsRequest
 
 object ConversationListIdsResponseJson {
 

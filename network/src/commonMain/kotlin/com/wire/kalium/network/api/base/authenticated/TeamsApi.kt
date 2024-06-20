@@ -18,16 +18,16 @@
 
 package com.wire.kalium.network.api.base.authenticated
 
-import com.wire.kalium.network.api.base.authenticated.teams.TeamMemberDTO
-import com.wire.kalium.network.api.base.authenticated.teams.TeamMemberIdList
-import com.wire.kalium.network.api.base.authenticated.teams.TeamMemberListNonPaginated
-import com.wire.kalium.network.api.base.authenticated.teams.TeamMemberListPaginated
-import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
-import com.wire.kalium.network.api.base.model.NonQualifiedConversationId
-import com.wire.kalium.network.api.base.model.NonQualifiedUserId
-import com.wire.kalium.network.api.base.model.ServiceDetailResponse
-import com.wire.kalium.network.api.base.model.TeamDTO
-import com.wire.kalium.network.api.base.model.TeamId
+import com.wire.kalium.network.api.authenticated.teams.TeamMemberDTO
+import com.wire.kalium.network.api.authenticated.teams.TeamMemberIdList
+import com.wire.kalium.network.api.authenticated.teams.TeamMemberListNonPaginated
+import com.wire.kalium.network.api.authenticated.teams.TeamMemberListPaginated
+import com.wire.kalium.network.api.model.LegalHoldStatusResponse
+import com.wire.kalium.network.api.model.NonQualifiedConversationId
+import com.wire.kalium.network.api.model.NonQualifiedUserId
+import com.wire.kalium.network.api.model.ServiceDetailResponse
+import com.wire.kalium.network.api.model.TeamDTO
+import com.wire.kalium.network.api.model.TeamId
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface TeamsApi {

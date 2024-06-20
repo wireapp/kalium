@@ -19,15 +19,15 @@
 package com.wire.kalium.network.api.v3.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseV3
-import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
-import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
-import com.wire.kalium.network.api.base.model.ApiModelMapper
-import com.wire.kalium.network.api.base.model.ApiModelMapperImpl
-import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseV3
+import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
+import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
+import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessResponse
+import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.model.ApiModelMapper
+import com.wire.kalium.network.api.model.ApiModelMapperImpl
+import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.v2.authenticated.ConversationApiV2
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse

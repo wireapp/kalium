@@ -21,6 +21,8 @@ package com.wire.kalium.network.api.base.authenticated.message
 import com.wire.kalium.protobuf.otr.ClientId
 import com.benasher44.uuid.bytes
 import com.benasher44.uuid.uuidFrom
+import com.wire.kalium.network.api.authenticated.message.Parameters
+import com.wire.kalium.network.api.authenticated.message.QualifiedMessageOption
 import com.wire.kalium.protobuf.otr.ClientMismatchStrategy
 import com.wire.kalium.protobuf.otr.QualifiedNewOtrMessage
 import com.wire.kalium.protobuf.otr.QualifiedUserEntry

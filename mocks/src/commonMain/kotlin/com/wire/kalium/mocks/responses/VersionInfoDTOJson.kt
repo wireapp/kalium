@@ -18,7 +18,7 @@
 
 package com.wire.kalium.mocks.responses
 
-import com.wire.kalium.network.api.base.unbound.versioning.VersionInfoDTO
+import com.wire.kalium.network.api.unbound.versioning.VersionInfoDTO
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put

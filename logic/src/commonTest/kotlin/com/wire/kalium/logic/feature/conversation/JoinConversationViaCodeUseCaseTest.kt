@@ -25,9 +25,9 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
-import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberAddedResponse
+import com.wire.kalium.network.api.authenticated.conversation.model.ConversationCodeInfo
+import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.any
 import io.mockative.coEvery

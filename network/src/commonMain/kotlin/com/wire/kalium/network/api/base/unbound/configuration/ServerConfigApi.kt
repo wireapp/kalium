@@ -20,6 +20,8 @@ package com.wire.kalium.network.api.base.unbound.configuration
 
 import com.wire.kalium.network.UnauthenticatedNetworkClient
 import com.wire.kalium.network.UnboundNetworkClient
+import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
+import com.wire.kalium.network.api.unbound.configuration.ServerConfigResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.tools.KtxSerializer
 import com.wire.kalium.network.utils.NetworkResponse
