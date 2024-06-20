@@ -22,12 +22,14 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventLoggingStatus
+import com.wire.kalium.logic.data.event.EventProcessingPerformanceData
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.serialization.toJsonElement
+import kotlinx.datetime.Clock
 
 interface MemberChangeEventHandler {
     suspend fun handle(event: Event.Conversation.MemberChanged)
@@ -39,6 +41,7 @@ internal class MemberChangeEventHandlerImpl(
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
     override suspend fun handle(event: Event.Conversation.MemberChanged) {
+        val initialTime = Clock.System.now()
         when (event) {
             is Event.Conversation.MemberChanged.MemberMutedStatusChanged -> {
                 conversationRepository.updateMutedStatusLocally(
@@ -49,7 +52,10 @@ internal class MemberChangeEventHandlerImpl(
                 kaliumLogger
                     .logEventProcessing(
                         EventLoggingStatus.SUCCESS,
-                        event
+                        event,
+                        performanceData = EventProcessingPerformanceData.TimeTaken(
+                            duration = (Clock.System.now() - initialTime),
+                        )
                     )
             }
 
@@ -61,7 +67,10 @@ internal class MemberChangeEventHandlerImpl(
                 )
                 kaliumLogger.logEventProcessing(
                     EventLoggingStatus.SUCCESS,
-                    event
+                    event,
+                    performanceData = EventProcessingPerformanceData.TimeTaken(
+                        duration = (Clock.System.now() - initialTime),
+                    )
                 )
             }
 
@@ -81,6 +90,7 @@ internal class MemberChangeEventHandlerImpl(
     }
 
     private suspend fun handleMemberChangedRoleEvent(event: Event.Conversation.MemberChanged.MemberChangedRole) {
+        val initialTime = Clock.System.now()
         // Attempt to fetch conversation details if needed, as this might be an unknown conversation
         conversationRepository.fetchConversationIfUnknown(event.conversationId)
             .run {
@@ -109,7 +119,10 @@ internal class MemberChangeEventHandlerImpl(
                 kaliumLogger
                     .logEventProcessing(
                         EventLoggingStatus.SUCCESS,
-                        event
+                        event,
+                        performanceData = EventProcessingPerformanceData.TimeTaken(
+                            duration = (Clock.System.now() - initialTime),
+                        )
                     )
             }
     }

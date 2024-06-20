@@ -26,6 +26,7 @@ import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessage
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.event.EventLoggingStatus
+import com.wire.kalium.logic.data.event.EventProcessingPerformanceData
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.logout.LogoutReason
@@ -45,6 +46,7 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHandler
+import kotlinx.datetime.Clock
 import kotlin.time.Duration.Companion.ZERO
 import kotlin.time.Duration.Companion.seconds
 
@@ -77,13 +79,17 @@ internal class UserEventReceiverImpl internal constructor(
         }
     }
 
-    private suspend fun handleUserUpdate(event: Event.User.Update) =
-        userRepository.updateUserFromEvent(event)
+    private suspend fun handleUserUpdate(event: Event.User.Update): Either<CoreFailure, Unit> {
+        val initialTime = Clock.System.now()
+        return userRepository.updateUserFromEvent(event)
             .onSuccess {
                 kaliumLogger
                     .logEventProcessing(
                         EventLoggingStatus.SUCCESS,
-                        event
+                        event,
+                        performanceData = EventProcessingPerformanceData.TimeTaken(
+                            duration = (Clock.System.now() - initialTime)
+                        )
                     )
             }
             .onFailure {
@@ -103,9 +109,11 @@ internal class UserEventReceiverImpl internal constructor(
                     Either.Left(it)
                 }
             }
+    }
 
-    private suspend fun handleNewConnection(event: Event.User.NewConnection, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> =
-        userRepository.fetchUserInfo(event.connection.qualifiedToId)
+    private suspend fun handleNewConnection(event: Event.User.NewConnection, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
+        val initialTime = Clock.System.now()
+        return userRepository.fetchUserInfo(event.connection.qualifiedToId)
             .flatMap {
                 val previousStatus = connectionRepository.getConnection(event.connection.qualifiedConversationId)
                     .map { it.connection.status }.getOrNull()
@@ -131,7 +139,10 @@ internal class UserEventReceiverImpl internal constructor(
                 kaliumLogger
                     .logEventProcessing(
                         EventLoggingStatus.SUCCESS,
-                        event
+                        event,
+                        performanceData = EventProcessingPerformanceData.TimeTaken(
+                            duration = (Clock.System.now() - initialTime)
+                        )
                     )
             }
             .onFailure {
@@ -139,18 +150,23 @@ internal class UserEventReceiverImpl internal constructor(
                     .logEventProcessing(
                         EventLoggingStatus.FAILURE,
                         event,
-                        Pair("errorInfo", "$it")
+                        Pair("errorInfo", "$it"),
                     )
             }
+    }
 
-    private suspend fun handleClientRemove(event: Event.User.ClientRemove): Either<CoreFailure, Unit> =
-        currentClientIdProvider().map { currentClientId ->
+    private suspend fun handleClientRemove(event: Event.User.ClientRemove): Either<CoreFailure, Unit> {
+        val initialTime = Clock.System.now()
+        return currentClientIdProvider().map { currentClientId ->
             if (currentClientId == event.clientId) {
                 kaliumLogger
                     .logEventProcessing(
                         EventLoggingStatus.SUCCESS,
                         event,
-                        Pair("info", "CURRENT_CLIENT")
+                        Pair("info", "CURRENT_CLIENT"),
+                        performanceData = EventProcessingPerformanceData.TimeTaken(
+                            duration = (Clock.System.now() - initialTime)
+                        )
                     )
                 logout(LogoutReason.REMOVED_CLIENT)
             } else {
@@ -158,18 +174,26 @@ internal class UserEventReceiverImpl internal constructor(
                     .logEventProcessing(
                         EventLoggingStatus.SUCCESS,
                         event,
-                        Pair("info", "OTHER_CLIENT")
+                        Pair("info", "OTHER_CLIENT"),
+                        performanceData = EventProcessingPerformanceData.TimeTaken(
+                            (Clock.System.now() - initialTime)
+                        )
                     )
             }
         }
+    }
 
-    private suspend fun handleNewClient(event: Event.User.NewClient): Either<CoreFailure, Unit> =
-        clientRepository.saveNewClientEvent(event)
+    private suspend fun handleNewClient(event: Event.User.NewClient): Either<CoreFailure, Unit> {
+        val initialTime = Clock.System.now()
+        return clientRepository.saveNewClientEvent(event)
             .onSuccess {
                 kaliumLogger
                     .logEventProcessing(
                         EventLoggingStatus.SUCCESS,
-                        event
+                        event,
+                        performanceData = EventProcessingPerformanceData.TimeTaken(
+                            duration = (Clock.System.now() - initialTime)
+                        )
                     )
             }
             .onFailure {
@@ -180,6 +204,7 @@ internal class UserEventReceiverImpl internal constructor(
                         Pair("errorInfo", "$it")
                     )
             }
+    }
 
     private suspend fun handleUserDelete(event: Event.User.UserDelete): Either<CoreFailure, Unit> =
         if (selfUserId == event.userId) {
