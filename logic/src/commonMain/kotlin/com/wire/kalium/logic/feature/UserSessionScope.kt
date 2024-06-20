@@ -444,7 +444,6 @@ import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.firstOrNull
@@ -473,6 +472,10 @@ class UserSessionScope internal constructor(
     networkStateObserver: NetworkStateObserver,
     private val logoutCallback: LogoutCallback,
 ) : CoroutineScope {
+
+    init {
+        onSessionCreated()
+    }
 
     private val userStorage = userStorageProvider.getOrCreate(
         userId, platformUserStorageProperties, kaliumConfigs.shouldEncryptData
@@ -2031,9 +2034,10 @@ class UserSessionScope internal constructor(
         )
 
     /**
-     * This block will start subscribers of observable work per user session.
+     * This will start subscribers of observable work per user session, as long as the user is logged in.
+     * When the user logs out, this work will be canceled.
      */
-    init {
+    private fun onSessionCreated() {
         launch {
             apiMigrationManager.performMigrations()
             // TODO: Add a public start function to the Managers
@@ -2089,10 +2093,6 @@ class UserSessionScope internal constructor(
         launch {
             messages.confirmationDeliveryHandler.sendPendingConfirmations()
         }
-    }
-
-    fun onDestroy() {
-        cancel()
     }
 }
 

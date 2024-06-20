@@ -17,6 +17,8 @@
  */
 package com.wire.kalium.logic.feature.message.confirmation
 
+import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -26,13 +28,22 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.coEvery
+import io.mockative.coVerify
 import io.mockative.mock
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 class ConfirmationDeliveryHandlerTest {
@@ -49,6 +60,61 @@ class ConfirmationDeliveryHandlerTest {
         assertTrue(arrangement.pendingConfirmationMessages.values.flatten().contains(TestMessage.TEST_MESSAGE_ID))
     }
 
+    @Test
+    fun givenANewMessage_whenEnqueuingDuplicated_thenShouldNotBeAddedToTheConversationKey() = runTest {
+        val (arrangement, sut) = Arrangement()
+            .withCurrentClientIdProvider()
+            .arrange()
+
+        sut.enqueueConfirmationDelivery(TestConversation.ID, TestMessage.TEST_MESSAGE_ID)
+        sut.enqueueConfirmationDelivery(TestConversation.ID, TestMessage.TEST_MESSAGE_ID)
+
+        assertTrue(arrangement.pendingConfirmationMessages.containsKey(TestConversation.ID))
+        assertEquals(1, arrangement.pendingConfirmationMessages.values.flatten().filter { it == TestMessage.TEST_MESSAGE_ID }.size)
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun givenMessagesEnqueued_whenCollectingThem_thenShouldSendOnlyForOneToOneConversations() = runTest {
+        val (arrangement, sut) = Arrangement()
+            .withCurrentClientIdProvider()
+            .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION).right())
+            .withMessageSender()
+            .arrange()
+
+        val job = launch { sut.sendPendingConfirmations() }
+        advanceUntilIdle()
+
+        sut.enqueueConfirmationDelivery(TestConversation.ID, TestMessage.TEST_MESSAGE_ID)
+        advanceUntilIdle()
+        job.cancel()
+
+        coVerify { arrangement.conversationRepository.observeCacheDetailsById(any()) }.wasInvoked()
+        coVerify { arrangement.messageSender.sendMessage(any(), any()) }.wasInvoked()
+        assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun givenMessagesEnqueued_whenCollectingThemAndNoSession_thenShouldStopCollecting() = runTest {
+        val (arrangement, sut) = Arrangement()
+            .withCurrentClientIdProvider()
+            .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION).right())
+            .withMessageSender()
+            .arrange()
+
+        val job = launch { sut.sendPendingConfirmations() }
+        advanceUntilIdle()
+
+        job.cancel()
+
+        sut.enqueueConfirmationDelivery(TestConversation.ID, TestMessage.TEST_MESSAGE_ID)
+        advanceUntilIdle()
+
+        coVerify { arrangement.conversationRepository.observeCacheDetailsById(any()) }.wasNotInvoked()
+        coVerify { arrangement.messageSender.sendMessage(any(), any()) }.wasNotInvoked()
+    }
+
     private class Arrangement {
 
         @Mock
@@ -61,12 +127,20 @@ class ConfirmationDeliveryHandlerTest {
         val messageSender = mock(MessageSender::class)
 
         @Mock
-        private val conversationRepository = mock(ConversationRepository::class)
+        val conversationRepository = mock(ConversationRepository::class)
 
         val pendingConfirmationMessages: MutableMap<ConversationId, MutableSet<String>> = mutableMapOf()
 
         suspend fun withCurrentClientIdProvider() = apply {
             coEvery { currentClientIdProvider.invoke() }.returns(Either.Right(TestClient.CLIENT_ID))
+        }
+
+        suspend fun withConversationDetailsResult(result: Either<StorageFailure, Flow<Conversation?>>) = apply {
+            coEvery { conversationRepository.observeCacheDetailsById(any()) }.returns(result)
+        }
+
+        suspend fun withMessageSender() = apply {
+            coEvery { messageSender.sendMessage(any(), any()) }.returns(Unit.right())
         }
 
         fun arrange() = this to ConfirmationDeliveryHandlerImpl(
