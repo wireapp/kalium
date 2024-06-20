@@ -44,4 +44,8 @@ actual class FlowManagerServiceImpl(
     override suspend fun setUIRotation(rotation: Int) {
         kaliumLogger.w("setUIRotation for JVM but not supported yet.")
     }
+
+    override suspend fun startFlowManager() {
+        kaliumLogger.w("FlowManager not fully supported on JVM.")
+    }
 }

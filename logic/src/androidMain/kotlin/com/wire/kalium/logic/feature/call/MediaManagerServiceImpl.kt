@@ -59,6 +59,10 @@ actual class MediaManagerServiceImpl(
         }
     }
 
+    override suspend fun startMediaManager() {
+        mediaManager.await()
+    }
+
     private val _isLoudSpeakerOnFlow = MutableStateFlow(false)
     private val isLoudSpeakerOnFlow = _isLoudSpeakerOnFlow.asStateFlow().onStart {
         _isLoudSpeakerOnFlow.value = mediaManager.await().isLoudSpeakerOn
