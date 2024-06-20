@@ -335,7 +335,9 @@ class MLSClientImpl(
                     toDeviceStatus(value.status),
                     value.thumbprint,
                     toCredentialType(value.credentialType),
-                    if (value.credentialType == MlsCredentialType.X509) toX509Identity(value.x509Identity!!) else null
+                    value.x509Identity?.let {
+                        toX509Identity(it)
+                    }
                 )
             }
         }
