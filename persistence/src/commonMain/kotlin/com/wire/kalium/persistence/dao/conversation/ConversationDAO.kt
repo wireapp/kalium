@@ -18,7 +18,6 @@
 
 package com.wire.kalium.persistence.dao.conversation
 
-import com.wire.kalium.persistence.ConversationDetails
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlinx.coroutines.flow.Flow

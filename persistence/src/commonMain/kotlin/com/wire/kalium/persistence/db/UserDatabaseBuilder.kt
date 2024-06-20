@@ -185,7 +185,8 @@ class UserDatabaseBuilder internal constructor(
             queriesContext
         )
 
-    private val conversationCache = LRUCache<ConversationIDEntity, Flow<ConversationViewEntity?>>(CONVERSATION_CACHE_SIZE)
+    private val conversationCache =
+        LRUCache<ConversationIDEntity, Flow<ConversationViewEntity?>>(CONVERSATION_CACHE_SIZE)
     val conversationDAO: ConversationDAO
         get() = ConversationDAOImpl(
             conversationCache,

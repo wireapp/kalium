@@ -56,6 +56,7 @@ internal interface ConfirmationDeliveryHandler {
     suspend fun sendPendingConfirmations()
 }
 
+@Suppress("LongParameterList")
 internal class ConfirmationDeliveryHandlerImpl(
     private val syncManager: SyncManager,
     private val selfUserId: UserId,
