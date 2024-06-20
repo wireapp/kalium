@@ -27,7 +27,7 @@ import kotlin.test.fail
 @OptIn(ExperimentalContracts::class)
 inline infix fun <L, R> Either<L, R>.shouldSucceed(crossinline successAssertion: (R) -> Unit) {
     contract { returns() implies (this@shouldSucceed is Either.Right<R>) }
-    this.fold({ fail("Expected a Right value but got Left") }) { successAssertion(it) }
+    this.fold({ fail("Expected a Right value but got Left: $it") }) { successAssertion(it) }
 }
 
 @OptIn(ExperimentalContracts::class)

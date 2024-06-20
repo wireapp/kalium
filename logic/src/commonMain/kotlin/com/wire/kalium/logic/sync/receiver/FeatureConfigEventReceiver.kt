@@ -22,6 +22,7 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
 import com.wire.kalium.logic.data.event.EventLoggingStatus
+import com.wire.kalium.logic.data.event.EventProcessingPerformanceData
 import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
 import com.wire.kalium.logic.feature.featureConfig.handler.ClassifiedDomainsConfigHandler
@@ -36,6 +37,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import kotlinx.datetime.Clock
 
 internal interface FeatureConfigEventReceiver : EventReceiver<Event.FeatureConfig>
 
@@ -52,12 +54,16 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
     private val appLockConfigHandler: AppLockConfigHandler
 ) : FeatureConfigEventReceiver {
 
-    override suspend fun onEvent(event: Event.FeatureConfig, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> =
-        handleFeatureConfigEvent(event)
+    override suspend fun onEvent(event: Event.FeatureConfig, deliveryInfo: EventDeliveryInfo): Either<CoreFailure, Unit> {
+        val initialTime = Clock.System.now()
+        return handleFeatureConfigEvent(event)
             .onSuccess {
                 kaliumLogger.logEventProcessing(
                     EventLoggingStatus.SUCCESS,
-                    event
+                    event,
+                    performanceData = EventProcessingPerformanceData.TimeTaken(
+                        (Clock.System.now() - initialTime)
+                    )
                 )
             }
             .onFailure {
@@ -67,6 +73,7 @@ internal class FeatureConfigEventReceiverImpl internal constructor(
                     Pair("error", it)
                 )
             }
+    }
 
 @Suppress("LongMethod", "ComplexMethod")
 private suspend fun handleFeatureConfigEvent(event: Event.FeatureConfig): Either<CoreFailure, Unit> =

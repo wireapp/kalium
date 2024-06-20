@@ -19,20 +19,20 @@
 package com.wire.kalium.logic.feature.call
 
 import com.wire.kalium.logic.util.PlatformContext
-import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.Flow
 
 actual class MediaManagerServiceImpl(
     platformContext: PlatformContext
 ) : MediaManagerService {
-    override fun turnLoudSpeakerOn() {
+    override suspend fun turnLoudSpeakerOn() {
         TODO("Not yet implemented")
     }
 
-    override fun turnLoudSpeakerOff() {
+    override suspend fun turnLoudSpeakerOff() {
         TODO("Not yet implemented")
     }
 
-    override fun observeSpeaker(): StateFlow<Boolean> {
+    override fun observeSpeaker(): Flow<Boolean> {
         TODO("Not yet implemented")
     }
 }

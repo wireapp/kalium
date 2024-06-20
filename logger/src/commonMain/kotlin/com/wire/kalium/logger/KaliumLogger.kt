@@ -23,6 +23,8 @@ import co.touchlab.kermit.LoggerConfig
 import co.touchlab.kermit.MutableLoggerConfig
 import co.touchlab.kermit.Severity
 import co.touchlab.kermit.platformLogWriter
+import com.wire.kalium.logger.KaliumLogger.Config
+import com.wire.kalium.logger.KaliumLogger.Tag
 import co.touchlab.kermit.Logger as KermitLogger
 
 /**
@@ -82,27 +84,29 @@ fun Severity.toKaliumLogLevel(): KaliumLogLevel = when (this) {
 
 /**
  * Custom logger writer which uses multiplatform [KermitLogger] underneath to allow to customize log message or tag.
- * @param config the [Config] object which contains the configuration of the logger
+ * @param config the [Config] object which contains the configuration of the logger.
  * @param tag the [Tag] object which identifies the source of the log message. Can combine multiple data and turns it
  * into structured String used by the [KermitLogger] so that it can be parsed back again to the [Tag] object.
  * To know more how it behaves and what are the possibilities, take a look at the [Tag] sealed class and its subtypes.
  */
 class KaliumLogger(
-    private val config: Config = Config.DEFAULT,
+    private val config: Config = Config.DISABLED,
     private val tag: Tag = Tag.Text("KaliumLogger")
 ) {
 
     constructor(
-        config: Config = Config.DEFAULT,
+        config: Config = Config.DISABLED,
         tag: String = "KaliumLogger"
     ) : this(config, Tag.Text(tag))
+
     private val kermitLogger: KermitLogger = KermitLogger(
-        config = config.kermitConfig()
+        config = config.kermitConfig
     )
 
     private fun tag(): String = tag.tagString()
 
-    fun logLevel(): KaliumLogLevel = config.logLevel()
+    val logLevel: KaliumLogLevel
+        get() = config.logLevel
 
     /**
      * Creates a new logger with custom tag that replaces the old tag and allows to specify which specific app flow,
@@ -166,32 +170,32 @@ class KaliumLogger(
     fun e(message: String, throwable: Throwable? = null, tag: String = this.tag()) =
         kermitLogger.e(message, throwable, tag)
 
-    class Config(
+    /**
+     * Represents the configuration for the [KaliumLogger].
+     *
+     * @property initialLevel The initial log level for the logger.
+     * @property initialLogWriterList The initial list of log writers for the logger.
+     */
+    data class Config(
         val initialLevel: KaliumLogLevel,
-        val initialLogWriterList: List<LogWriter> = listOf(platformLogWriter())
+        val initialLogWriterList: List<LogWriter> = listOf(platformLogWriter()),
     ) {
         private val mutableKermitConfig = object : MutableLoggerConfig {
             override var logWriterList: List<LogWriter> = initialLogWriterList
             override var minSeverity: Severity = initialLevel.toMinSeverity()
         }
 
-        fun logLevel(): KaliumLogLevel = mutableKermitConfig.minSeverity.toKaliumLogLevel()
+        var logLevel: KaliumLogLevel
+            get() = mutableKermitConfig.minSeverity.toKaliumLogLevel()
+            set(value) {
+                mutableKermitConfig.minSeverity = value.toMinSeverity()
+            }
 
-        fun kermitConfig(): LoggerConfig = mutableKermitConfig
-
-        @Suppress("unused")
-        fun setLogLevel(level: KaliumLogLevel) {
-            mutableKermitConfig.minSeverity = level.toMinSeverity()
-        }
-
-        @Suppress("unused")
-        fun setLogWriterList(logWriterList: List<LogWriter>) {
-            mutableKermitConfig.logWriterList = logWriterList
-        }
+        val kermitConfig: LoggerConfig
+            get() = mutableKermitConfig
 
         companion object {
-            val DEFAULT = disabled()
-            fun disabled(): Config = Config(
+            val DISABLED = Config(
                 initialLevel = KaliumLogLevel.DISABLED,
                 initialLogWriterList = listOf(platformLogWriter()),
             )
@@ -249,7 +253,7 @@ class KaliumLogger(
 
     companion object {
         fun disabled(): KaliumLogger = KaliumLogger(
-            config = Config.disabled(),
+            config = Config.DISABLED,
             tag = "KaliumLogger"
         )
 
