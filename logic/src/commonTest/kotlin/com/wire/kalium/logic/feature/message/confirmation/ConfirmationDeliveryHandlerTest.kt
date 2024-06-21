@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.message.confirmation
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
@@ -79,7 +80,7 @@ class ConfirmationDeliveryHandlerTest {
         val (arrangement, sut) = Arrangement()
             .withCurrentClientIdProvider()
             .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION).right())
-            .withMessageSender()
+            .withMessageSenderResult()
             .arrange()
 
         val job = launch { sut.sendPendingConfirmations() }
@@ -100,7 +101,7 @@ class ConfirmationDeliveryHandlerTest {
         val (arrangement, sut) = Arrangement()
             .withCurrentClientIdProvider()
             .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION).right())
-            .withMessageSender()
+            .withMessageSenderResult()
             .arrange()
 
         val job = launch { sut.sendPendingConfirmations() }
@@ -113,6 +114,28 @@ class ConfirmationDeliveryHandlerTest {
 
         coVerify { arrangement.conversationRepository.observeCacheDetailsById(any()) }.wasNotInvoked()
         coVerify { arrangement.messageSender.sendMessage(any(), any()) }.wasNotInvoked()
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun givenMessagesEnqueued_whenSendingConfirmationsAndError_thenShouldNotFail() = runTest {
+        val (arrangement, sut) = Arrangement()
+            .withCurrentClientIdProvider()
+            .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION).right())
+            .withMessageSenderResult(Either.Left(CoreFailure.Unknown(RuntimeException("Something went wrong"))))
+            .arrange()
+
+        val job = launch { sut.sendPendingConfirmations() }
+        advanceUntilIdle()
+
+        sut.enqueueConfirmationDelivery(TestConversation.ID, TestMessage.TEST_MESSAGE_ID)
+        advanceUntilIdle()
+
+        job.cancel()
+
+        coVerify { arrangement.conversationRepository.observeCacheDetailsById(any()) }.wasInvoked()
+        coVerify { arrangement.messageSender.sendMessage(any(), any()) }.wasInvoked()
+        assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
     }
 
     private class Arrangement {
@@ -139,8 +162,8 @@ class ConfirmationDeliveryHandlerTest {
             coEvery { conversationRepository.observeCacheDetailsById(any()) }.returns(result)
         }
 
-        suspend fun withMessageSender() = apply {
-            coEvery { messageSender.sendMessage(any(), any()) }.returns(Unit.right())
+        suspend fun withMessageSenderResult(result: Either<CoreFailure, Unit> = Unit.right()) = apply {
+            coEvery { messageSender.sendMessage(any(), any()) }.returns(result)
         }
 
         fun arrange() = this to ConfirmationDeliveryHandlerImpl(
