@@ -109,6 +109,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     private val selfDeleteTimer: ObserveSelfDeletionTimerSettingsForConversationUseCase,
     private val scope: CoroutineScope,
     private val observeFileSharingStatus: ObserveFileSharingStatusUseCase,
+    private val validateAssetMimeTypeUseCase: ValidateAssetMimeTypeUseCase,
     private val dispatcher: KaliumDispatcher,
 ) : ScheduleNewAssetMessageUseCase {
 
@@ -129,7 +130,9 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
             when(it.state) {
                 FileSharingStatus.Value.Disabled -> return ScheduleNewAssetMessageResult.Failure.DisabledByTeam
                 FileSharingStatus.Value.EnabledAll -> { /* no-op*/ }
-                is FileSharingStatus.Value.EnabledSome -> return ScheduleNewAssetMessageResult.Failure.RestrictedFileType
+                is FileSharingStatus.Value.EnabledSome -> if(!validateAssetMimeTypeUseCase(assetMimeType, it.state.allowedType)) {
+                    return  ScheduleNewAssetMessageResult.Failure.RestrictedFileType
+                }
             }
         }
 
