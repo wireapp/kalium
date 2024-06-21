@@ -115,7 +115,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
 
     private var outGoingAssetUploadJob: Job? = null
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "ReturnCount")
     override suspend fun invoke(
         conversationId: ConversationId,
         assetDataPath: Path,
@@ -127,11 +127,14 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         audioLengthInMs: Long
     ): ScheduleNewAssetMessageResult {
         observeFileSharingStatus().first().also {
-            when(it.state) {
+            when (it.state) {
                 FileSharingStatus.Value.Disabled -> return ScheduleNewAssetMessageResult.Failure.DisabledByTeam
-                FileSharingStatus.Value.EnabledAll -> { /* no-op*/ }
-                is FileSharingStatus.Value.EnabledSome -> if(!validateAssetMimeTypeUseCase(assetMimeType, it.state.allowedType)) {
-                    return  ScheduleNewAssetMessageResult.Failure.RestrictedFileType
+                FileSharingStatus.Value.EnabledAll -> { /* no-op*/
+                }
+
+                is FileSharingStatus.Value.EnabledSome -> if (!validateAssetMimeTypeUseCase(assetMimeType, it.state.allowedType)) {
+                    kaliumLogger.e("The asset message trying to be processed has invalid content data")
+                    return ScheduleNewAssetMessageResult.Failure.RestrictedFileType
                 }
             }
         }
@@ -363,8 +366,8 @@ sealed interface ScheduleNewAssetMessageResult {
     data class Success(val messageId: String) : ScheduleNewAssetMessageResult
     sealed interface Failure : ScheduleNewAssetMessageResult {
         data class Generic(val coreFailure: CoreFailure) : Failure
-        data object DisabledByTeam: Failure
-        data object RestrictedFileType: Failure
+        data object DisabledByTeam : Failure
+        data object RestrictedFileType : Failure
     }
 }
 
