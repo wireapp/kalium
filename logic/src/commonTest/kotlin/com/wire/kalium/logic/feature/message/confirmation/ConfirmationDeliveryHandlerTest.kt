@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.message.confirmation
 
+import com.benasher44.uuid.uuid4
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -41,6 +42,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -130,6 +132,31 @@ class ConfirmationDeliveryHandlerTest {
 
         sut.enqueueConfirmationDelivery(TestConversation.ID, TestMessage.TEST_MESSAGE_ID)
         advanceUntilIdle()
+
+        job.cancel()
+
+        coVerify { arrangement.conversationRepository.observeCacheDetailsById(any()) }.wasInvoked()
+        coVerify { arrangement.messageSender.sendMessage(any(), any()) }.wasInvoked()
+        assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    @Test
+    fun givenABigLoadOfMessagesEnqueued_whenSendingConfirmations_thenShouldAddAndRemoveSecurely() = runTest {
+        val (arrangement, sut) = Arrangement()
+            .withCurrentClientIdProvider()
+            .withConversationDetailsResult(flowOf(TestConversation.CONVERSATION).right())
+            .withMessageSenderResult()
+            .arrange()
+
+        val job = launch { sut.sendPendingConfirmations() }
+        advanceUntilIdle()
+
+        val messagesCount = 500
+        launch { repeat(messagesCount) { sut.enqueueConfirmationDelivery(TestConversation.ID, uuid4().toString()) } }
+        advanceTimeBy(1000L)
+        launch { repeat(messagesCount) { sut.enqueueConfirmationDelivery(TestConversation.ID, uuid4().toString()) } }
+        advanceTimeBy(2000L)
 
         job.cancel()
 
