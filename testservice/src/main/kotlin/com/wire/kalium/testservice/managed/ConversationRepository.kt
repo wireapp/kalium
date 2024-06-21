@@ -269,7 +269,7 @@ sealed class ConversationRepository {
             throw WebApplicationException("Instance ${instance.instanceId}: Could not get recent messages")
         }
 
-        @Suppress("LongParameterList", "LongMethod", "ThrowsCount")
+        @Suppress("LongParameterList", "LongMethod", "ThrowsCount", "ComplexMethod")
         suspend fun sendFile(
             instance: Instance,
             conversationId: ConversationId,
@@ -335,10 +335,12 @@ sealed class ConversationRepository {
                                     // first check kotlin version
                                     // if version < 2 then casting is necessary
                                     // if version >= 2 then casting is unnecessary
-                                    when(val result = sendResult as ScheduleNewAssetMessageResult.Failure) {
+                                    when (val result = sendResult as ScheduleNewAssetMessageResult.Failure) {
                                         ScheduleNewAssetMessageResult.Failure.RestrictedFileType,
                                         ScheduleNewAssetMessageResult.Failure.DisabledByTeam -> {
-                                            throw WebApplicationException("Instance ${instance.instanceId}: Sending failed with $sendResult")
+                                            throw WebApplicationException(
+                                                "Instance ${instance.instanceId}: Sending failed with $sendResult"
+                                            )
                                         }
 
                                         is ScheduleNewAssetMessageResult.Failure.Generic -> {
@@ -376,7 +378,7 @@ sealed class ConversationRepository {
             }
         }
 
-        @Suppress("LongParameterList")
+        @Suppress("LongParameterList", "ThrowsCount")
         suspend fun sendImage(
             instance: Instance,
             conversationId: ConversationId,
