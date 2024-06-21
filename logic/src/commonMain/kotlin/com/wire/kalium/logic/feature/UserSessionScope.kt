@@ -472,11 +472,6 @@ class UserSessionScope internal constructor(
     networkStateObserver: NetworkStateObserver,
     private val logoutCallback: LogoutCallback,
 ) : CoroutineScope {
-
-    init {
-        onUserSessionScopeCreated()
-    }
-
     private val userStorage = userStorageProvider.getOrCreate(
         userId, platformUserStorageProperties, kaliumConfigs.shouldEncryptData
     )
@@ -2035,7 +2030,7 @@ class UserSessionScope internal constructor(
      * This will start subscribers of observable work per user session, as long as the user is logged in.
      * When the user logs out, this work will be canceled.
      */
-    private fun onUserSessionScopeCreated() {
+    init {
         launch {
             apiMigrationManager.performMigrations()
             // TODO: Add a public start function to the Managers
