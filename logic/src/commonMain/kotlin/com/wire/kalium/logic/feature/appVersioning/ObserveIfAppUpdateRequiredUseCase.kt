@@ -30,7 +30,6 @@ import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.intervalFlow
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -59,7 +58,6 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
     private val customServerConfigRepository: CustomServerConfigRepository,
     private val authenticationScopeProvider: AuthenticationScopeProvider,
     private val userSessionScopeProvider: UserSessionScopeProvider,
-    private val networkStateObserver: NetworkStateObserver,
     private val globalDatabaseBuilder: GlobalDatabaseBuilder,
     private val kaliumConfigs: KaliumConfigs
 ) : ObserveIfAppUpdateRequiredUseCase {
@@ -107,7 +105,6 @@ class ObserveIfAppUpdateRequiredUseCaseImpl internal constructor(
                                     .provide(
                                         serverConfig = serverConfig,
                                         proxyCredentials = proxyCredentials,
-                                        networkStateObserver = networkStateObserver,
                                         globalDatabase = globalDatabaseBuilder,
                                         kaliumConfigs = kaliumConfigs,
                                     )

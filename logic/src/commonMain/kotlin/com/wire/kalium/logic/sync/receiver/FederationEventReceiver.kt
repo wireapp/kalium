@@ -25,8 +25,6 @@ import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
-import com.wire.kalium.logic.data.event.EventLoggingStatus
-import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.Message
@@ -39,6 +37,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.util.DateTimeUtil
@@ -69,6 +68,7 @@ class FederationEventReceiverImpl internal constructor(
     }
 
     private suspend fun handleDeleteEvent(event: Event.Federation.Delete) = withContext(dispatchers.io) {
+        val eventLogger = kaliumLogger.createEventProcessingLogger(event)
         // remove pending and sent connections from federated users
         connectionRepository.getConnections()
             .map { it.firstOrNull() }
@@ -110,70 +110,47 @@ class FederationEventReceiverImpl internal constructor(
                 }
             }
             .onSuccess {
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.SUCCESS,
-                        event
-                    )
+                eventLogger.logSuccess()
             }
-            .onFailure {
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.FAILURE,
-                        event,
-                        Pair("errorInfo", "$it")
-                    )
-            }
+            .onFailure(eventLogger::logFailure)
     }
 
-    private suspend fun handleConnectionRemovedEvent(event: Event.Federation.ConnectionRemoved) =
-        withContext(dispatchers.io) {
-            if (event.domains.size != EXPECTED_DOMAIN_LIST_SIZE) {
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.FAILURE,
-                        event,
-                        Pair("errorInfo", "Expected $EXPECTED_DOMAIN_LIST_SIZE domains, got ${event.domains.size}")
-                    )
-                return@withContext
-            }
-            val firstDomain = event.domains.first()
-            val secondDomain = event.domains.last()
+    private suspend fun handleConnectionRemovedEvent(event: Event.Federation.ConnectionRemoved) {
+        val eventLogger = kaliumLogger.createEventProcessingLogger(event)
+        if (event.domains.size != EXPECTED_DOMAIN_LIST_SIZE) {
+            eventLogger.logFailure(
+                extraInfo = arrayOf(
+                    "errorInfo" to "Expected $EXPECTED_DOMAIN_LIST_SIZE domains, got ${event.domains.size}"
+                )
+            )
+            return
+        }
+        val firstDomain = event.domains.first()
+        val secondDomain = event.domains.last()
 
-            conversationRepository.getGroupConversationsWithMembersWithBothDomains(firstDomain, secondDomain)
-                .onSuccess { conversationsWithMembers ->
-                    conversationsWithMembers.forEach { (conversationId, userIds) ->
-                        handleFederationConnectionRemovedEvent(conversationId, event.domains)
-                        when (conversationId.domain) {
-                            // remove secondDomain users from firstDomain conversation
-                            firstDomain ->
-                                removeMembersFromConversation(conversationId, userIds.filter { it.domain == secondDomain })
+        conversationRepository.getGroupConversationsWithMembersWithBothDomains(firstDomain, secondDomain)
+            .onSuccess { conversationsWithMembers ->
+                conversationsWithMembers.forEach { (conversationId, userIds) ->
+                    handleFederationConnectionRemovedEvent(conversationId, event.domains)
+                    when (conversationId.domain) {
+                        // remove secondDomain users from firstDomain conversation
+                        firstDomain ->
+                            removeMembersFromConversation(conversationId, userIds.filter { it.domain == secondDomain })
 
-                            // remove firstDomain users from secondDomain conversation
-                            secondDomain ->
-                                removeMembersFromConversation(conversationId, userIds.filter { it.domain == firstDomain })
+                        // remove firstDomain users from secondDomain conversation
+                        secondDomain ->
+                            removeMembersFromConversation(conversationId, userIds.filter { it.domain == firstDomain })
 
-                            // remove firstDomain and secondDomain users from rest conversations
-                            else -> removeMembersFromConversation(conversationId, userIds)
-                        }
+                        // remove firstDomain and secondDomain users from rest conversations
+                        else -> removeMembersFromConversation(conversationId, userIds)
                     }
                 }
-                .onSuccess {
-                    kaliumLogger
-                        .logEventProcessing(
-                            EventLoggingStatus.SUCCESS,
-                            event
-                        )
-                }
-                .onFailure {
-                    kaliumLogger
-                        .logEventProcessing(
-                            EventLoggingStatus.FAILURE,
-                            event,
-                            Pair("errorInfo", "$it")
-                        )
-                }
-        }
+            }
+            .onSuccess {
+                eventLogger.logSuccess()
+            }
+            .onFailure(eventLogger::logFailure)
+    }
 
     private suspend fun removeMembersFromConversation(conversationID: ConversationId, userIDList: List<UserId>) {
         deleteMembers(userIDList, conversationID)

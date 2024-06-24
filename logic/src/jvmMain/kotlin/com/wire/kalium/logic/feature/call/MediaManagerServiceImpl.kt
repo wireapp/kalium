@@ -41,4 +41,8 @@ actual class MediaManagerServiceImpl(
         kaliumLogger.w("observeSpeaker for JVM but not supported yet.")
         return MutableStateFlow(false)
     }
+
+    override suspend fun startMediaManager() {
+        kaliumLogger.w("Media Manager is not supported on JVM.")
+    }
 }

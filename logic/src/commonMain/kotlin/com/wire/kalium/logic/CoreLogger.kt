@@ -26,7 +26,7 @@ import com.wire.kalium.network.NetworkUtilLogger
 import com.wire.kalium.persistence.PersistenceLogger
 import com.wire.kalium.util.serialization.toJsonElement
 
-private var kaliumLoggerConfig = KaliumLogger.Config.disabled()
+private var kaliumLoggerConfig = KaliumLogger.Config.DISABLED
 internal var kaliumLogger = KaliumLogger.disabled()
 internal var callingLogger = KaliumLogger.disabled()
 
@@ -43,7 +43,7 @@ object CoreLogger {
     }
 
     fun setLoggingLevel(level: KaliumLogLevel) {
-        kaliumLoggerConfig.setLogLevel(level)
+        kaliumLoggerConfig.logLevel = level
     }
 }
 

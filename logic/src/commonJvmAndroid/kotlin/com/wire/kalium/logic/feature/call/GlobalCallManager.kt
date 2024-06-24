@@ -106,6 +106,8 @@ actual class GlobalCallManager(
                 videoStateChecker = videoStateChecker,
                 conversationClientsInCallUpdater = conversationClientsInCallUpdater,
                 networkStateObserver = networkStateObserver,
+                mediaManagerService = mediaManager,
+                flowManagerService = flowManager,
                 kaliumConfigs = kaliumConfigs
             )
         }
