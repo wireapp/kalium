@@ -38,6 +38,7 @@ import com.wire.kalium.logic.logStructuredJson
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -66,7 +67,7 @@ internal class ConfirmationDeliveryHandlerImpl(
 ) : ConfirmationDeliveryHandler {
 
     private val kaliumLogger = kaliumLogger.withTextTag("ConfirmationDeliveryHandler")
-    private val holder = MutableSharedFlow<Unit>()
+    private val holder = MutableSharedFlow<Unit>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
     private val mutex = Mutex()
 
     override suspend fun enqueueConfirmationDelivery(conversationId: ConversationId, messageId: String) = mutex.withLock {
