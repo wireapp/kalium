@@ -1320,7 +1320,6 @@ class UserSessionScope internal constructor(
             conversationRepository,
             userRepository,
             logout,
-            oneOnOneResolver,
             userId,
             clientIdProvider,
             lazy { conversations.newGroupConversationSystemMessagesCreator }
@@ -1541,6 +1540,7 @@ class UserSessionScope internal constructor(
             protoContentMapper,
             observeSelfDeletingMessages,
             messageMetadataRepository,
+            observeFileSharingStatus,
             staleEpochVerifier,
             this
         )
@@ -1564,7 +1564,7 @@ class UserSessionScope internal constructor(
             e2eiRepository,
             mlsConversationRepository,
             team.isSelfATeamMember,
-            updateSupportedProtocols
+            e2eiRepository
         )
     private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(userStorage)
 
