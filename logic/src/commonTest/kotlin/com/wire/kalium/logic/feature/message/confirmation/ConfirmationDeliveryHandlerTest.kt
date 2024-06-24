@@ -38,7 +38,9 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
+import io.mockative.twice
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
@@ -153,15 +155,20 @@ class ConfirmationDeliveryHandlerTest {
         advanceUntilIdle()
 
         val messagesCount = 500
-        launch { repeat(messagesCount) { sut.enqueueConfirmationDelivery(TestConversation.ID, uuid4().toString()) } }
+        launch {
+            repeat(messagesCount) { sut.enqueueConfirmationDelivery(TestConversation.ID, uuid4().toString()) }
+            delay(2000)
+        }
         advanceTimeBy(1000L)
-        launch { repeat(messagesCount) { sut.enqueueConfirmationDelivery(TestConversation.ID, uuid4().toString()) } }
+        launch {
+            repeat(messagesCount) { sut.enqueueConfirmationDelivery(TestConversation.ID, uuid4().toString()) }
+            delay(2000)
+        }
         advanceTimeBy(2000L)
-
         job.cancel()
 
         coVerify { arrangement.conversationRepository.observeCacheDetailsById(any()) }.wasInvoked()
-        coVerify { arrangement.messageSender.sendMessage(any(), any()) }.wasInvoked()
+        coVerify { arrangement.messageSender.sendMessage(any(), any()) }.wasInvoked(twice)
         assertTrue(arrangement.pendingConfirmationMessages.isEmpty())
     }
 
