@@ -260,7 +260,7 @@ class NewMessageEventHandlerTest {
     }
 
     @Test
-    fun givenAMessage_whenHandling_thenEnqueueDeliveryConfirmation() = runTest {
+    fun givenAProteusMessage_whenHandling_thenEnqueueDeliveryConfirmation() = runTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
             .withHandleLegalHoldSuccess()
             .withProteusUnpackerReturning(Either.Right(applicationMessage.copy(senderUserId = TestUser.OTHER_USER_ID_2))).arrange()
@@ -270,6 +270,20 @@ class NewMessageEventHandlerTest {
 
         coVerify { arrangement.proteusMessageUnpacker.unpackProteusMessage(eq(newMessageEvent)) }.wasInvoked(exactly = once)
         coVerify { arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any()) }.wasNotInvoked()
+        coVerify { arrangement.confirmationDeliveryHandler.enqueueConfirmationDelivery(any(), any()) }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAMLSMessage_whenHandling_thenEnqueueDeliveryConfirmation() = runTest {
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withHandleLegalHoldSuccess()
+            .withMLSUnpackerReturning(Either.Right(listOf(applicationMessage.copy(senderUserId = TestUser.OTHER_USER_ID_2))))
+            .arrange()
+
+        val newMessageEvent = TestEvent.newMLSMessageEvent(DateTimeUtil.currentInstant())
+        newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
+
+        coVerify { arrangement.mlsMessageUnpacker.unpackMlsMessage(eq(newMessageEvent)) }.wasInvoked(exactly = once)
         coVerify { arrangement.confirmationDeliveryHandler.enqueueConfirmationDelivery(any(), any()) }.wasInvoked(exactly = once)
     }
 
