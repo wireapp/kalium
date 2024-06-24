@@ -52,7 +52,8 @@ internal class OneOnOneProtocolSelectorImpl(
             return when {
                 commonProtocols.contains(SupportedProtocol.MLS) -> Either.Right(SupportedProtocol.MLS)
                 commonProtocols.contains(SupportedProtocol.PROTEUS) -> Either.Right(SupportedProtocol.PROTEUS)
-                else -> Either.Left(CoreFailure.NoCommonProtocolFound)
+                selfUserProtocols.contains(SupportedProtocol.MLS) -> Either.Left(CoreFailure.NoCommonProtocolFound.OtherNeedToUpdate)
+                else -> Either.Left(CoreFailure.NoCommonProtocolFound.SelfNeedToUpdate)
             }
         }
 }

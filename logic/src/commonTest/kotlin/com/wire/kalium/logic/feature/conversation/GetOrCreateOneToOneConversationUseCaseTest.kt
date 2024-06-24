@@ -71,7 +71,7 @@ class GetOrCreateOneToOneConversationUseCaseTest {
         val (_, useCase) = arrange {
             withObserveOneToOneConversationWithOtherUserReturning(Either.Left(StorageFailure.DataNotFound))
             withUserByIdReturning(OTHER_USER.right())
-            withResolveOneOnOneConversationWithUserReturning(Either.Left(CoreFailure.NoCommonProtocolFound))
+            withResolveOneOnOneConversationWithUserReturning(Either.Left(CoreFailure.NoCommonProtocolFound.SelfNeedToUpdate))
         }
 
         // when
