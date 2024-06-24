@@ -18,7 +18,6 @@
 
 package com.wire.kalium.network.api.v6.unauthenticated.networkContainer
 
-import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.api.model.ProxyCredentialsDTO
 import com.wire.kalium.network.api.base.unauthenticated.domainLookup.DomainLookupApi
 import com.wire.kalium.network.api.base.unauthenticated.login.LoginApi
@@ -46,7 +45,6 @@ import io.ktor.client.engine.HttpClientEngine
 
 @Suppress("LongParameterList")
 class UnauthenticatedNetworkContainerV6 internal constructor(
-    networkStateObserver: NetworkStateObserver,
     backendLinks: ServerConfigDTO,
     proxyCredentials: ProxyCredentialsDTO?,
     certificatePinning: CertificatePinning,
@@ -59,7 +57,6 @@ class UnauthenticatedNetworkContainerV6 internal constructor(
     private val developmentApiEnabled: Boolean
 ) : UnauthenticatedNetworkContainer,
     UnauthenticatedNetworkClientProvider by UnauthenticatedNetworkClientProviderImpl(
-        networkStateObserver,
         backendLinks,
         engine
     ) {

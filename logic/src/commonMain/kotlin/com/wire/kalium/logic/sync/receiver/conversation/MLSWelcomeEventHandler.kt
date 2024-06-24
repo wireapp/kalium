@@ -26,8 +26,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.event.EventLoggingStatus
-import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
@@ -39,6 +37,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.logic.wrapMLSRequest
 import io.ktor.util.decodeBase64Bytes
 import kotlinx.coroutines.flow.first
@@ -55,8 +54,9 @@ internal class MLSWelcomeEventHandlerImpl(
     val revocationListChecker: RevocationListChecker,
     private val certificateRevocationListRepository: CertificateRevocationListRepository
 ) : MLSWelcomeEventHandler {
-    override suspend fun handle(event: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit> =
-        conversationRepository.fetchConversationIfUnknown(event.conversationId)
+    override suspend fun handle(event: Event.Conversation.MLSWelcome): Either<CoreFailure, Unit> {
+        val eventLogger = kaliumLogger.createEventProcessingLogger(event)
+        return conversationRepository.fetchConversationIfUnknown(event.conversationId)
             .flatMap {
                 mlsClientProvider.getMLSClient()
             }
@@ -84,21 +84,13 @@ internal class MLSWelcomeEventHandlerImpl(
                         true
                     }
                 }
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.SUCCESS,
-                        event,
-                        "info" to "Established mls conversation from welcome message",
-                        "didSucceedRefillingKeypackages" to didSucceedRefillingKeyPackages
-                    )
-            }.onFailure {
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.FAILURE,
-                        event,
-                        Pair("failure", it)
-                    )
+                eventLogger.logSuccess(
+                    "info" to "Established mls conversation from welcome message",
+                    "didSucceedRefillingKeypackages" to didSucceedRefillingKeyPackages
+                )
             }
+            .onFailure { eventLogger.logFailure(it) }
+    }
 
     private suspend fun markConversationAsEstablished(groupID: GroupID): Either<CoreFailure, Unit> =
         conversationRepository.updateConversationGroupState(groupID, Conversation.ProtocolInfo.MLSCapable.GroupState.ESTABLISHED)
@@ -112,6 +104,7 @@ internal class MLSWelcomeEventHandlerImpl(
             }
         }
     }
+
     private suspend fun resolveConversationIfOneOnOne(conversationId: ConversationId): Either<CoreFailure, Unit> =
         conversationRepository.observeConversationDetailsById(conversationId)
             .first()

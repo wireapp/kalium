@@ -19,7 +19,6 @@
 package com.wire.kalium.api.common
 
 import com.wire.kalium.api.TEST_BACKEND_CONFIG
-import com.wire.kalium.api.TestNetworkStateObserver.Companion.DEFAULT_TEST_NETWORK_STATE_OBSERVER
 import com.wire.kalium.api.json.model.testCredentials
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
@@ -186,7 +185,6 @@ class SessionManagerIntegrationTest {
         }
 
         val client = AuthenticatedNetworkClient(
-            DEFAULT_TEST_NETWORK_STATE_OBSERVER,
             mockEngine,
             sessionManager.serverConfig(),
             bearerAuthProvider,
@@ -226,7 +224,6 @@ class SessionManagerIntegrationTest {
         }
 
         val client = AuthenticatedNetworkClient(
-            DEFAULT_TEST_NETWORK_STATE_OBSERVER,
             mockEngine,
             sessionManager.serverConfig(),
             bearerAuthProvider,

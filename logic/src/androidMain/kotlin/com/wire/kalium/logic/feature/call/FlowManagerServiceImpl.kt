@@ -87,4 +87,6 @@ actual class FlowManagerServiceImpl(
             flowManager.await().setUIRotation(rotation)
         }
     }
+
+    override suspend fun startFlowManager() { flowManager.await() }
 }

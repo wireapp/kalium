@@ -19,8 +19,6 @@
 package com.wire.kalium.logic.data.event
 
 import com.wire.kalium.cryptography.utils.EncryptedData
-import com.wire.kalium.logger.KaliumLogLevel
-import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.obfuscateDomain
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.client.Client
@@ -44,7 +42,6 @@ import com.wire.kalium.logic.data.legalhold.LastPreKey
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.logStructuredJson
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.DateTimeUtil
@@ -745,48 +742,6 @@ sealed class Event(open val id: String) {
                 idKey to id.obfuscateId(),
                 "domains" to domains
             )
-        }
-    }
-}
-
-internal enum class EventLoggingStatus {
-    SUCCESS,
-    FAILURE,
-    SKIPPED
-}
-
-/**
- * Logs event processing.
- * Underlying implementation detail is using the common [KaliumLogger.logStructuredJson] to log structured JSON.
- */
-internal fun KaliumLogger.logEventProcessing(
-    status: EventLoggingStatus,
-    event: Event,
-    vararg extraInfo: Pair<String, Any>,
-    performanceData: EventProcessingPerformanceData = EventProcessingPerformanceData.None,
-) {
-    val logMap = event.toLogMap().toMutableMap()
-    logMap += extraInfo
-
-    val performanceEntry = performanceData.logData
-    if (performanceEntry != null) {
-        logMap["eventPerformanceData"] = performanceEntry
-    }
-
-    when (status) {
-        EventLoggingStatus.SUCCESS -> {
-            logMap["outcome"] = "success"
-            logStructuredJson(KaliumLogLevel.INFO, "Success handling event", logMap)
-        }
-
-        EventLoggingStatus.FAILURE -> {
-            logMap["outcome"] = "failure"
-            logStructuredJson(KaliumLogLevel.ERROR, "Failure handling event", logMap)
-        }
-
-        EventLoggingStatus.SKIPPED -> {
-            logMap["outcome"] = "skipped"
-            logStructuredJson(KaliumLogLevel.WARN, "Skipped handling event", logMap)
         }
     }
 }

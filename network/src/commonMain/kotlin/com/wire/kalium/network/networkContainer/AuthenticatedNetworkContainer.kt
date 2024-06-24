@@ -21,7 +21,6 @@ package com.wire.kalium.network.networkContainer
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
-import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
 import com.wire.kalium.network.api.base.authenticated.CallApi
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
@@ -110,7 +109,6 @@ interface AuthenticatedNetworkContainer {
 
         @Suppress("LongParameterList", "LongMethod")
         fun create(
-            networkStateObserver: NetworkStateObserver,
             sessionManager: SessionManager,
             selfUserId: UserId,
             userAgent: String,
@@ -123,7 +121,6 @@ interface AuthenticatedNetworkContainer {
 
             return when (val version = sessionManager.serverConfig().metaData.commonApiVersion.version) {
                 0 -> AuthenticatedNetworkContainerV0(
-                    networkStateObserver,
                     sessionManager,
                     certificatePinning,
                     mockEngine,
@@ -131,7 +128,6 @@ interface AuthenticatedNetworkContainer {
                 )
 
                 1 -> AuthenticatedNetworkContainerV0(
-                    networkStateObserver,
                     sessionManager,
                     certificatePinning,
                     mockEngine,
@@ -139,7 +135,6 @@ interface AuthenticatedNetworkContainer {
                 )
 
                 2 -> AuthenticatedNetworkContainerV2(
-                    networkStateObserver,
                     sessionManager,
                     selfUserId,
                     certificatePinning,
@@ -150,7 +145,6 @@ interface AuthenticatedNetworkContainer {
                 // this is intentional since we should drop support for api v3
                 // and we default back to v2
                 3 -> AuthenticatedNetworkContainerV2(
-                    networkStateObserver,
                     sessionManager,
                     selfUserId,
                     certificatePinning,
@@ -159,7 +153,6 @@ interface AuthenticatedNetworkContainer {
                 )
 
                 4 -> AuthenticatedNetworkContainerV4(
-                    networkStateObserver,
                     sessionManager,
                     selfUserId,
                     certificatePinning,
@@ -168,7 +161,6 @@ interface AuthenticatedNetworkContainer {
                 )
 
                 5 -> AuthenticatedNetworkContainerV5(
-                    networkStateObserver,
                     sessionManager,
                     selfUserId,
                     certificatePinning,
@@ -177,7 +169,6 @@ interface AuthenticatedNetworkContainer {
                 )
 
                 6 -> AuthenticatedNetworkContainerV6(
-                    networkStateObserver,
                     sessionManager,
                     selfUserId,
                     certificatePinning,
@@ -201,7 +192,6 @@ internal interface AuthenticatedHttpClientProvider {
 
 internal class AuthenticatedHttpClientProviderImpl(
     private val sessionManager: SessionManager,
-    private val networkStateObserver: NetworkStateObserver,
     private val accessTokenApi: (httpClient: HttpClient) -> AccessTokenApi,
     private val engine: HttpClientEngine,
     private val kaliumLogger: KaliumLogger,
@@ -240,7 +230,6 @@ internal class AuthenticatedHttpClientProviderImpl(
 
     override val networkClient by lazy {
         AuthenticatedNetworkClient(
-            networkStateObserver,
             engine,
             sessionManager.serverConfig(),
             bearerAuthProvider,
@@ -249,7 +238,6 @@ internal class AuthenticatedHttpClientProviderImpl(
     }
     override val websocketClient by lazy {
         AuthenticatedWebSocketClient(
-            networkStateObserver,
             engine,
             bearerAuthProvider,
             sessionManager.serverConfig(),
@@ -258,7 +246,6 @@ internal class AuthenticatedHttpClientProviderImpl(
     }
     override val networkClientWithoutCompression by lazy {
         AuthenticatedNetworkClient(
-            networkStateObserver,
             engine,
             sessionManager.serverConfig(),
             bearerAuthProvider,

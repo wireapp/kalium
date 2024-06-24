@@ -47,7 +47,6 @@ import io.ktor.serialization.kotlinx.json.json
  * necessary Authentication headers, and refresh tokens as they expire.
  */
 internal class AuthenticatedNetworkClient(
-    networkStateObserver: NetworkStateObserver,
     engine: HttpClientEngine,
     serverConfigDTO: ServerConfigDTO,
     bearerAuthProvider: BearerAuthProvider,
@@ -55,7 +54,6 @@ internal class AuthenticatedNetworkClient(
     installCompression: Boolean = true
 ) {
     val httpClient: HttpClient = provideBaseHttpClient(
-        networkStateObserver,
         engine,
         kaliumLogger,
         installCompression
@@ -75,11 +73,10 @@ internal class AuthenticatedNetworkClient(
  * Serialization, and Content Negotiation.
  */
 internal class UnauthenticatedNetworkClient(
-    networkStateObserver: NetworkStateObserver,
     engine: HttpClientEngine,
     backendLinks: ServerConfigDTO
 ) {
-    val httpClient: HttpClient = provideBaseHttpClient(networkStateObserver, engine, kaliumLogger) {
+    val httpClient: HttpClient = provideBaseHttpClient(engine, kaliumLogger) {
         installWireDefaultRequest(backendLinks)
     }
 }
@@ -91,10 +88,9 @@ internal class UnauthenticatedNetworkClient(
  * Unlike others, this one has no strict ties with any API version nor default Base Url
  */
 internal class UnboundNetworkClient(
-    networkStateObserver: NetworkStateObserver,
     engine: HttpClientEngine
 ) {
-    val httpClient: HttpClient = provideBaseHttpClient(networkStateObserver, engine, kaliumLogger)
+    val httpClient: HttpClient = provideBaseHttpClient(engine, kaliumLogger)
 }
 
 /**
@@ -103,7 +99,6 @@ internal class UnboundNetworkClient(
  * necessary Authentication headers, and refresh tokens as they expire.
  */
 internal class AuthenticatedWebSocketClient(
-    private val networkStateObserver: NetworkStateObserver,
     private val engine: HttpClientEngine,
     private val bearerAuthProvider: BearerAuthProvider,
     private val serverConfigDTO: ServerConfigDTO,
@@ -116,7 +111,7 @@ internal class AuthenticatedWebSocketClient(
      * as the old one can be dead.
      */
     fun createDisposableHttpClient(): HttpClient =
-        provideBaseHttpClient(networkStateObserver, engine, kaliumLogger) {
+        provideBaseHttpClient(engine, kaliumLogger) {
             installWireDefaultRequest(serverConfigDTO)
             installAuth(bearerAuthProvider)
             install(ContentNegotiation) {
@@ -132,7 +127,6 @@ internal class AuthenticatedWebSocketClient(
 }
 
 internal fun provideBaseHttpClient(
-    networkStateObserver: NetworkStateObserver,
     engine: HttpClientEngine,
     kaliumLogger: KaliumLogger,
     installCompression: Boolean = true,
@@ -158,10 +152,6 @@ internal fun provideBaseHttpClient(
 
     install(ContentNegotiation) {
         json(KtxSerializer.json)
-    }
-
-    install(KaliumKtorNoNetworkHandler) {
-        this.networkStateObserver = networkStateObserver
     }
 
     expectSuccess = false

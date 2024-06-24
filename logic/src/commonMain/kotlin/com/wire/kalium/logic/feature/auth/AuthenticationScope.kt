@@ -43,7 +43,6 @@ import com.wire.kalium.logic.feature.auth.sso.SSOLoginScope
 import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerificationCodeUseCase
 import com.wire.kalium.logic.feature.register.RegisterScope
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.utils.MockUnboundNetworkClient
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
@@ -61,7 +60,6 @@ class AuthenticationScopeProvider internal constructor(
     internal fun provide(
         serverConfig: ServerConfig,
         proxyCredentials: ProxyCredentials?,
-        networkStateObserver: NetworkStateObserver,
         globalDatabase: GlobalDatabaseBuilder,
         kaliumConfigs: KaliumConfigs
     ): AuthenticationScope =
@@ -70,7 +68,6 @@ class AuthenticationScopeProvider internal constructor(
                 userAgent,
                 serverConfig,
                 proxyCredentials,
-                networkStateObserver,
                 kaliumConfigs = kaliumConfigs,
                 globalDatabase = globalDatabase
             )
@@ -81,14 +78,12 @@ class AuthenticationScope internal constructor(
     private val userAgent: String,
     private val serverConfig: ServerConfig,
     private val proxyCredentials: ProxyCredentials?,
-    private val networkStateObserver: NetworkStateObserver,
     private val globalDatabase: GlobalDatabaseBuilder,
     private val kaliumConfigs: KaliumConfigs,
 ) {
 
     private val unauthenticatedNetworkContainer: UnauthenticatedNetworkContainer by lazy {
         UnauthenticatedNetworkContainer.create(
-            networkStateObserver,
             serverConfigDTO = MapperProvider.serverConfigMapper().toDTO(serverConfig),
             proxyCredentials = proxyCredentials?.let { MapperProvider.sessionMapper().fromModelToProxyCredentialsDTO(it) },
             userAgent = userAgent,

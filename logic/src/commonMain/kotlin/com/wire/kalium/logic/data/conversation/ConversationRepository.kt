@@ -134,6 +134,7 @@ interface ConversationRepository {
     suspend fun fetchConversationIfUnknown(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun observeById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>>
     suspend fun getConversationById(conversationId: ConversationId): Conversation?
+    suspend fun observeCacheDetailsById(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation?>>
     suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun baseInfoById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
@@ -619,6 +620,14 @@ internal class ConversationDataSource internal constructor(
             .map { conversationEntity ->
                 conversationEntity?.let { conversationMapper.fromDaoModel(it) }
             }.firstOrNull()
+
+    override suspend fun observeCacheDetailsById(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation?>> =
+        wrapStorageRequest {
+            conversationDAO.observeConversationDetailsById(conversationId.toDao())
+                .map { conversationViewEntity ->
+                    conversationViewEntity?.let { conversationMapper.fromDaoModel(it) }
+                }
+        }
 
     override suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation> = wrapStorageRequest {
         conversationDAO.getConversationByQualifiedID(conversationId.toDao())?.let {
