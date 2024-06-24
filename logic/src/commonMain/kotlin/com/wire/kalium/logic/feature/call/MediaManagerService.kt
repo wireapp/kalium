@@ -24,6 +24,12 @@ interface MediaManagerService {
     suspend fun turnLoudSpeakerOn()
     suspend fun turnLoudSpeakerOff()
     fun observeSpeaker(): Flow<Boolean>
+
+    /**
+     * Suspends the execution of the current coroutine until the media manager is started.
+     * If it is already started, then it returns instantly.
+     */
+    suspend fun startMediaManager()
 }
 
 expect class MediaManagerServiceImpl : MediaManagerService

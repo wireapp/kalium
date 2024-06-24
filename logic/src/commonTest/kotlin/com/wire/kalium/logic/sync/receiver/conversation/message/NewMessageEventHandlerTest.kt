@@ -29,17 +29,19 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
+import com.wire.kalium.logic.feature.message.confirmation.ConfirmationDeliveryHandler
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
 import com.wire.kalium.logic.framework.TestEvent
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -244,6 +246,34 @@ class NewMessageEventHandlerTest {
     }
 
     @Test
+    fun givenAMessage_whenHandlingSelfMessage_thenEnqueueDeliveryConfirmationShouldNotHappen() = runTest {
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withHandleLegalHoldSuccess()
+            .withProteusUnpackerReturning(Either.Right(applicationMessage)).arrange()
+
+        val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
+        newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
+
+        coVerify { arrangement.proteusMessageUnpacker.unpackProteusMessage(eq(newMessageEvent)) }.wasInvoked(exactly = once)
+        coVerify { arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any()) }.wasNotInvoked()
+        coVerify { arrangement.confirmationDeliveryHandler.enqueueConfirmationDelivery(any(), any()) }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenAMessage_whenHandling_thenEnqueueDeliveryConfirmation() = runTest {
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withHandleLegalHoldSuccess()
+            .withProteusUnpackerReturning(Either.Right(applicationMessage.copy(senderUserId = TestUser.OTHER_USER_ID_2))).arrange()
+
+        val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
+        newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
+
+        coVerify { arrangement.proteusMessageUnpacker.unpackProteusMessage(eq(newMessageEvent)) }.wasInvoked(exactly = once)
+        coVerify { arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any()) }.wasNotInvoked()
+        coVerify { arrangement.confirmationDeliveryHandler.enqueueConfirmationDelivery(any(), any()) }.wasInvoked(exactly = once)
+    }
+
+    @Test
     fun givenAMessageWithUnknownLegalHoldStatus_whenHandlingIt_thenDoNotUpdateCurrentLegalHold() = runTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
             .withHandleLegalHoldSuccess()
@@ -350,6 +380,9 @@ class NewMessageEventHandlerTest {
         val ephemeralMessageDeletionHandler = mock(EphemeralMessageDeletionHandler::class)
 
         @Mock
+        val confirmationDeliveryHandler = mock(ConfirmationDeliveryHandler::class)
+
+        @Mock
         val legalHoldHandler = mock(LegalHoldHandler::class)
 
         private val newMessageEventHandler: NewMessageEventHandler = NewMessageEventHandlerImpl(
@@ -362,6 +395,9 @@ class NewMessageEventHandlerTest {
                     conversationId,
                     messageId
                 )
+            },
+            { conversationId, messageId ->
+                confirmationDeliveryHandler.enqueueConfirmationDelivery(conversationId, messageId)
             },
             SELF_USER_ID,
             staleEpochVerifier

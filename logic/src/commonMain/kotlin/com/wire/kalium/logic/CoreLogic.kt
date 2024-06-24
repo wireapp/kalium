@@ -66,7 +66,6 @@ abstract class CoreLogicCommon internal constructor(
             kaliumConfigs,
             userSessionScopeProvider,
             authenticationScopeProvider,
-            networkStateObserver,
             logoutCallbackManager,
         )
     }
@@ -80,7 +79,6 @@ abstract class CoreLogicCommon internal constructor(
         authenticationScopeProvider.provide(
             serverConfig,
             proxyCredentials,
-            networkStateObserver,
             globalDatabaseBuilder,
             kaliumConfigs
         )

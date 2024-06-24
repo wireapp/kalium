@@ -35,4 +35,8 @@ actual class MediaManagerServiceImpl(
     override fun observeSpeaker(): Flow<Boolean> {
         TODO("Not yet implemented")
     }
+
+    override suspend fun startMediaManager() {
+        TODO("Not yet implemented")
+    }
 }

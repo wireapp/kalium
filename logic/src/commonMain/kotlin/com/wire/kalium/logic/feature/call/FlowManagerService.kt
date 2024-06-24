@@ -26,6 +26,12 @@ interface FlowManagerService {
     suspend fun flipToFrontCamera(conversationId: ConversationId)
     suspend fun flipToBackCamera(conversationId: ConversationId)
     suspend fun setUIRotation(rotation: Int)
+
+    /**
+     * Suspends the execution of the current coroutine and starts the flow manager.
+     * If the FlowManager has already started, will return immediately.
+     */
+    suspend fun startFlowManager()
 }
 
 expect class FlowManagerServiceImpl : FlowManagerService

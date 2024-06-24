@@ -18,7 +18,6 @@
 
 package com.wire.kalium.api
 
-import com.wire.kalium.api.TestNetworkStateObserver.Companion.DEFAULT_TEST_NETWORK_STATE_OBSERVER
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.AuthenticatedWebSocketClient
 import com.wire.kalium.network.NetworkStateObserver
@@ -95,17 +94,14 @@ internal abstract class ApiTest {
         statusCode: HttpStatusCode,
         assertion: suspend (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String> = mutableMapOf(),
-        networkStateObserver: NetworkStateObserver = DEFAULT_TEST_NETWORK_STATE_OBSERVER
     ): AuthenticatedNetworkClient =
-        mockAuthenticatedNetworkClient(ByteReadChannel(responseBody), statusCode, assertion, headers, networkStateObserver)
+        mockAuthenticatedNetworkClient(ByteReadChannel(responseBody), statusCode, assertion, headers)
 
     fun mockAuthenticatedNetworkClient(
         responseBody: ByteReadChannel,
         statusCode: HttpStatusCode,
         assertion: suspend (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>?,
-
-        networkStateObserver: NetworkStateObserver = DEFAULT_TEST_NETWORK_STATE_OBSERVER,
     ): AuthenticatedNetworkClient {
         val head: Map<String, List<String>> = (headers?.let {
             mutableMapOf(HttpHeaders.ContentType to "application/json").plus(headers).mapValues { listOf(it.value) }
@@ -123,23 +119,19 @@ internal abstract class ApiTest {
         return AuthenticatedNetworkContainerV0(
             engine = mockEngine,
             sessionManager = TEST_SESSION_MANAGER,
-            networkStateObserver = networkStateObserver,
             certificatePinning = emptyMap(),
             mockEngine = null,
             kaliumLogger = kaliumLogger
         ).networkClient
     }
 
-    fun mockWebsocketClient(
-        networkStateObserver: NetworkStateObserver = DEFAULT_TEST_NETWORK_STATE_OBSERVER,
-    ): AuthenticatedWebSocketClient {
+    fun mockWebsocketClient(): AuthenticatedWebSocketClient {
         val mockEngine = MockEngine {
             TODO("It's not yet possible to mock WebSockets from the client side")
         }
         return AuthenticatedNetworkContainerV0(
             engine = mockEngine,
             sessionManager = TEST_SESSION_MANAGER,
-            networkStateObserver = networkStateObserver,
             certificatePinning = emptyMap(),
             mockEngine = null,
             kaliumLogger = kaliumLogger
@@ -151,15 +143,12 @@ internal abstract class ApiTest {
         statusCode: HttpStatusCode,
         assertion: (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>? = null,
-
-        networkStateObserver: NetworkStateObserver = DEFAULT_TEST_NETWORK_STATE_OBSERVER,
     ): AuthenticatedNetworkClient {
         val mockEngine = createMockEngine(responseBody, statusCode, assertion, headers)
         return AuthenticatedNetworkClient(
             engine = mockEngine,
             serverConfigDTO = TEST_SESSION_MANAGER.serverConfig(),
             bearerAuthProvider = TEST_BEARER_AUTH_PROVIDER,
-            networkStateObserver = networkStateObserver,
             kaliumLogger = kaliumLogger
         )
     }
@@ -177,7 +166,6 @@ internal abstract class ApiTest {
         assertion: (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>? = null,
         developmentApiEnabled: Boolean = false,
-        networkStateObserver: NetworkStateObserver = DEFAULT_TEST_NETWORK_STATE_OBSERVER,
     ): UnauthenticatedNetworkClient =
         mockUnauthenticatedNetworkClient(
             ByteReadChannel(responseBody),
@@ -185,7 +173,6 @@ internal abstract class ApiTest {
             assertion,
             headers,
             developmentApiEnabled,
-            networkStateObserver
         )
 
     private fun mockUnauthenticatedNetworkClient(
@@ -194,7 +181,6 @@ internal abstract class ApiTest {
         assertion: (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>?,
         developmentApiEnabled: Boolean = false,
-        networkStateObserver: NetworkStateObserver = DEFAULT_TEST_NETWORK_STATE_OBSERVER,
     ): UnauthenticatedNetworkClient {
 
         val mockEngine = createMockEngine(responseBody, statusCode, assertion, headers)
@@ -203,7 +189,6 @@ internal abstract class ApiTest {
             backendLinks = TEST_BACKEND,
             engine = mockEngine,
             proxyCredentials = null,
-            networkStateObserver = networkStateObserver,
             certificatePinning = emptyMap(),
             mockEngine = null,
             developmentApiEnabled = developmentApiEnabled
@@ -221,7 +206,6 @@ internal abstract class ApiTest {
     fun mockUnauthenticatedNetworkClient(
         expectedRequests: List<TestRequestHandler>,
         developmentApiEnabled: Boolean = false,
-        networkStateObserver: NetworkStateObserver = DEFAULT_TEST_NETWORK_STATE_OBSERVER,
     ): UnauthenticatedNetworkClient {
         val mockEngine = MockEngine { currentRequest ->
             expectedRequests.forEach { request ->
@@ -244,7 +228,6 @@ internal abstract class ApiTest {
             backendLinks = TEST_BACKEND,
             engine = mockEngine,
             proxyCredentials = null,
-            networkStateObserver = networkStateObserver,
             developmentApiEnabled = developmentApiEnabled,
             certificatePinning = emptyMap(),
             mockEngine = null
@@ -263,9 +246,7 @@ internal abstract class ApiTest {
         statusCode: HttpStatusCode,
         assertion: (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>? = null,
-
-        networkStateObserver: NetworkStateObserver = DEFAULT_TEST_NETWORK_STATE_OBSERVER,
-    ): AuthenticatedNetworkClient {
+        ): AuthenticatedNetworkClient {
         val mockEngine = createMockEngine(
             ByteReadChannel(responseBody),
             statusCode,
@@ -275,7 +256,6 @@ internal abstract class ApiTest {
         return AuthenticatedNetworkContainerV0(
             engine = mockEngine,
             sessionManager = TEST_SESSION_MANAGER,
-            networkStateObserver = networkStateObserver,
             certificatePinning = emptyMap(),
             mockEngine = null,
             kaliumLogger = kaliumLogger
@@ -294,8 +274,6 @@ internal abstract class ApiTest {
         statusCode: HttpStatusCode,
         assertion: (HttpRequestData.() -> Unit) = {},
         headers: Map<String, String>? = null,
-
-        networkStateObserver: NetworkStateObserver = DEFAULT_TEST_NETWORK_STATE_OBSERVER,
     ): UnboundNetworkClient {
         val mockEngine = createMockEngine(
             ByteReadChannel(responseBody),
@@ -305,7 +283,6 @@ internal abstract class ApiTest {
         )
         return UnboundNetworkClient(
             engine = mockEngine,
-            networkStateObserver = networkStateObserver
         )
     }
 

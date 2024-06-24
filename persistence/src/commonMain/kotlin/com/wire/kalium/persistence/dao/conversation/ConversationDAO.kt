@@ -132,6 +132,11 @@ interface ConversationDAO {
     suspend fun getEstablishedSelfMLSGroupId(): String?
 
     suspend fun selectGroupStatusMembersNamesAndHandles(groupID: String): EpochChangesDataEntity?
+
+    /**
+     * TODO: Remove later when implementing general conversation cache in the app.
+     */
+    suspend fun observeConversationDetailsById(conversationId: QualifiedIDEntity): Flow<ConversationViewEntity?>
 }
 
 data class NameAndHandleEntity(
