@@ -23,6 +23,7 @@ import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.asset.isAudioMimeType
@@ -42,6 +43,7 @@ import com.wire.kalium.logic.feature.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
+import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -106,12 +108,14 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     private val userPropertyRepository: UserPropertyRepository,
     private val selfDeleteTimer: ObserveSelfDeletionTimerSettingsForConversationUseCase,
     private val scope: CoroutineScope,
+    private val observeFileSharingStatus: ObserveFileSharingStatusUseCase,
+    private val validateAssetMimeTypeUseCase: ValidateAssetMimeTypeUseCase,
     private val dispatcher: KaliumDispatcher,
 ) : ScheduleNewAssetMessageUseCase {
 
     private var outGoingAssetUploadJob: Job? = null
 
-    @Suppress("LongMethod")
+    @Suppress("LongMethod", "ReturnCount")
     override suspend fun invoke(
         conversationId: ConversationId,
         assetDataPath: Path,
@@ -122,6 +126,19 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
         assetHeight: Int?,
         audioLengthInMs: Long
     ): ScheduleNewAssetMessageResult {
+        observeFileSharingStatus().first().also {
+            when (it.state) {
+                FileSharingStatus.Value.Disabled -> return ScheduleNewAssetMessageResult.Failure.DisabledByTeam
+                FileSharingStatus.Value.EnabledAll -> { /* no-op*/
+                }
+
+                is FileSharingStatus.Value.EnabledSome -> if (!validateAssetMimeTypeUseCase(assetMimeType, it.state.allowedType)) {
+                    kaliumLogger.e("The asset message trying to be processed has invalid content data")
+                    return ScheduleNewAssetMessageResult.Failure.RestrictedFileType
+                }
+            }
+        }
+
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
@@ -174,7 +191,7 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
                 }
             }
         }.fold({
-            ScheduleNewAssetMessageResult.Failure(it)
+            ScheduleNewAssetMessageResult.Failure.Generic(it)
         }, { (_, message) ->
             ScheduleNewAssetMessageResult.Success(message.id)
         })
@@ -345,9 +362,13 @@ internal class ScheduleNewAssetMessageUseCaseImpl(
     }
 }
 
-sealed class ScheduleNewAssetMessageResult {
-    class Success(val messageId: String) : ScheduleNewAssetMessageResult()
-    class Failure(val coreFailure: CoreFailure) : ScheduleNewAssetMessageResult()
+sealed interface ScheduleNewAssetMessageResult {
+    data class Success(val messageId: String) : ScheduleNewAssetMessageResult
+    sealed interface Failure : ScheduleNewAssetMessageResult {
+        data class Generic(val coreFailure: CoreFailure) : Failure
+        data object DisabledByTeam : Failure
+        data object RestrictedFileType : Failure
+    }
 }
 
 private data class AssetMessageMetadata(

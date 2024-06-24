@@ -1383,6 +1383,7 @@ class UserSessionScope internal constructor(
             protoContentMapper,
             observeSelfDeletingMessages,
             messageMetadataRepository,
+            observeFileSharingStatus,
             this
         )
     val users: UserScope

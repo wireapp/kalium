@@ -48,6 +48,8 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCa
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCaseImpl
+import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCase
+import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCaseImpl
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
@@ -58,6 +60,7 @@ import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionH
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCaseImpl
+import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.KaliumDispatcher
@@ -89,6 +92,7 @@ class MessageScope internal constructor(
     private val protoContentMapper: ProtoContentMapper,
     private val observeSelfDeletingMessages: ObserveSelfDeletionTimerSettingsForConversationUseCase,
     private val messageMetadataRepository: MessageMetadataRepository,
+    private val observeFileSharingStatusUseCase: ObserveFileSharingStatusUseCase,
     private val scope: CoroutineScope,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
 ) {
@@ -112,6 +116,9 @@ class MessageScope internal constructor(
             selfUserId = selfUserId,
             protoContentMapper = protoContentMapper
         )
+
+    private val validateAssetMimeTypeUseCase: ValidateAssetMimeTypeUseCase
+        get() = ValidateAssetMimeTypeUseCaseImpl()
 
     private val messageContentEncoder = MessageContentEncoder()
     private val messageSendingInterceptor: MessageSendingInterceptor
@@ -204,6 +211,8 @@ class MessageScope internal constructor(
             userPropertyRepository,
             observeSelfDeletingMessages,
             scope,
+            observeFileSharingStatusUseCase,
+            validateAssetMimeTypeUseCase,
             dispatcher
         )
 
