@@ -26,7 +26,6 @@ import com.wire.kalium.network.serialization.xprotobuf
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.session.installAuth
 import com.wire.kalium.network.tools.KtxSerializer
-import com.wire.kalium.network.utils.KaliumKtorNoNetworkHandler
 import com.wire.kalium.network.utils.installWireDefaultRequest
 import io.ktor.client.HttpClient
 import io.ktor.client.HttpClientConfig
