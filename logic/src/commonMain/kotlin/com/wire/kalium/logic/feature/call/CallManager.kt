@@ -41,7 +41,7 @@ interface CallManager {
     suspend fun endCall(conversationId: ConversationId)
     suspend fun rejectCall(conversationId: ConversationId)
     suspend fun muteCall(shouldMute: Boolean)
-    suspend fun updateVideoState(conversationId: ConversationId, videoState: VideoState)
+    suspend fun setVideoSendState(conversationId: ConversationId, videoState: VideoState)
     suspend fun requestVideoStreams(conversationId: ConversationId, callClients: CallClientList)
     suspend fun updateEpochInfo(conversationId: ConversationId, epochInfo: EpochInfo)
     suspend fun updateConversationClients(conversationId: ConversationId, clients: String)

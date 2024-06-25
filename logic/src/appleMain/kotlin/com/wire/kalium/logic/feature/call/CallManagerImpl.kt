@@ -56,7 +56,7 @@ class CallManagerImpl : CallManager {
         TODO("Not yet implemented")
     }
 
-    override suspend fun updateVideoState(conversationId: ConversationId, videoState: VideoState) {
+    override suspend fun setVideoSendState(conversationId: ConversationId, videoState: VideoState) {
         TODO("Not yet implemented")
     }
 
