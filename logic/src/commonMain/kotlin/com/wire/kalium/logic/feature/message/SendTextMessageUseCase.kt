@@ -133,20 +133,22 @@ class SendTextMessageUseCase internal constructor(
                 // Generate the otr asymmetric key that will be used to encrypt the data
                 it.otrKey = generateRandomAES256Key()
                 // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
-                assetDataSource.uploadAndPersistPrivateAsset(
-                    it.mimeType,
-                    it.assetDataPath,
-                    it.otrKey,
-                    null
-                ).onFailure { failure ->
-                    // on upload failure we still want link previews being included without image
-                    kaliumLogger.e("Upload of link preview asset failed: $failure")
-                }.getOrNull()?.let { (assetId, sha256Key) ->
-                    it.assetToken = assetId.assetToken ?: ""
-                    it.assetKey = assetId.key
-                    it.assetDomain = assetId.domain
-                    it.sha256Key = sha256Key
-                    it
+                it.assetDataPath?.let { assetDataPath ->
+                    assetDataSource.uploadAndPersistPrivateAsset(
+                        it.mimeType,
+                        assetDataPath,
+                        it.otrKey,
+                        null
+                    ).onFailure { failure ->
+                        // on upload failure we still want link previews being included without image
+                        kaliumLogger.e("Upload of link preview asset failed: $failure")
+                    }.getOrNull()?.let { (assetId, sha256Key) ->
+                        it.assetToken = assetId.assetToken ?: ""
+                        it.assetKey = assetId.key
+                        it.assetDomain = assetId.domain
+                        it.sha256Key = sha256Key
+                        it
+                    }
                 }
             }
             linkPreview.copy(image = imageCopy)

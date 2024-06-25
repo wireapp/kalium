@@ -337,8 +337,18 @@ internal class MessageDAOImpl internal constructor(
             queries.deleteMessageMentions(currentMessageId, conversationId)
             queries.deleteMessageLinkPreviews(currentMessageId, conversationId)
             queries.updateMessageTextContent(newTextContent.messageBody, currentMessageId, conversationId)
+            newTextContent.linkPreview.forEach {
+                queries.insertMessageLinkPreview(
+                    message_id = currentMessageId,
+                    conversation_id = conversationId,
+                    url = it.url,
+                    url_offset = it.urlOffset,
+                    permanent_url = it.permanentUrl,
+                    title = it.title,
+                    summary = it.summary
+                )
+            }
             newTextContent.mentions.forEach {
-                // TODO: Implement insertMessageLinkPreview here
                 queries.insertMessageMention(
                     message_id = currentMessageId,
                     conversation_id = conversationId,

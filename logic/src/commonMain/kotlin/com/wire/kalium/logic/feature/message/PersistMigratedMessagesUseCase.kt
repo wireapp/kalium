@@ -149,19 +149,15 @@ internal class PersistMigratedMessagesUseCaseImpl(
                 // mapped from migratedMessage content to MessageEntityContent
                 content = MessageEntityContent.Text(
                     protoContent.newContent,
-                    emptyList(),
-                    /*
-                    TODO: For now deleting all previous link previews
                     protoContent.newLinkPreviews.map {
                         MessageEntity.LinkPreview(
                             it.url,
                             it.urlOffset,
-                            it.permanentUrl,
-                            it.title,
-                            it.summary,
-                            it.image,
+                            it.permanentUrl ?: "",
+                            it.title ?: "",
+                            it.summary ?: ""
                         )
-                    },*/
+                    },
                     protoContent.newMentions.map {
                         MessageEntity.Mention(
                             it.start,

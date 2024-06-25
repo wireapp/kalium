@@ -27,7 +27,7 @@ data class LinkPreviewAsset(
     val name: String? = null,
     val mimeType: String,
     val metadata: AssetMetadata? = null,
-    val assetDataPath: Path,
+    val assetDataPath: Path?,
     val assetDataSize: Long,
     val assetHeight: Int,
     val assetWidth: Int,

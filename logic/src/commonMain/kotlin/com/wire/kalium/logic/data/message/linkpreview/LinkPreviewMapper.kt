@@ -17,13 +17,11 @@
  */
 package com.wire.kalium.logic.data.message.linkpreview
 
-import com.wire.kalium.logic.data.message.AssetContent
 import com.wire.kalium.logic.data.message.EncryptionAlgorithmMapper
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.protobuf.messages.Asset
 import com.wire.kalium.protobuf.messages.LinkPreview
-import okio.Path.Companion.toPath
 import pbandk.ByteArr
 
 interface LinkPreviewMapper {
@@ -51,7 +49,6 @@ class LinkPreviewMapperImpl(
         return MessageEntity.LinkPreview(
             url = linkPreview.url,
             urlOffset = linkPreview.urlOffset,
-            // TODO: Check if ?: "" is a good idea here
             permanentUrl = linkPreview.permanentUrl ?: "",
             title = linkPreview.title ?: "",
             summary = linkPreview.summary ?: ""
@@ -59,14 +56,6 @@ class LinkPreviewMapperImpl(
     }
 
     override fun fromProtoToModel(linkPreview: LinkPreview): MessageLinkPreview = linkPreview.let {
-        val defaultRemoteData = AssetContent.RemoteData(
-            otrKey = ByteArray(0),
-            sha256 = ByteArray(0),
-            assetId = "",
-            assetDomain = null,
-            assetToken = null,
-            encryptionAlgorithm = null
-        )
         MessageLinkPreview(
             url = linkPreview.url,
             urlOffset = linkPreview.urlOffset,
@@ -86,7 +75,7 @@ class LinkPreviewMapperImpl(
                         is Asset.Original.MetaData.Image -> metadataType.value.width
                         else -> 0
                     },
-                    assetDataPath = "".toPath(),
+                    assetDataPath = null,
                     assetToken = linkPreview.image?.uploaded?.assetToken,
                     assetDomain = linkPreview.image?.uploaded?.assetDomain,
                     assetKey = linkPreview.image?.uploaded?.assetId
