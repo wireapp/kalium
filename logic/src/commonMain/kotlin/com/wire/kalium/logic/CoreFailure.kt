@@ -117,7 +117,17 @@ sealed interface CoreFailure {
      * No common Protocol found in order to establish a conversation between parties.
      * Could be, for example, that the desired user only supports Proteus, but we only support MLS.
      */
-    data object NoCommonProtocolFound : FeatureFailure()
+    sealed class NoCommonProtocolFound : FeatureFailure() {
+        /**
+         * SelfClient needs to update to support MLS
+         */
+        data object SelfNeedToUpdate : NoCommonProtocolFound()
+
+        /**
+         * Other User needs to update to support MLS
+         */
+        data object OtherNeedToUpdate : NoCommonProtocolFound()
+    }
 }
 
 sealed class NetworkFailure : CoreFailure {

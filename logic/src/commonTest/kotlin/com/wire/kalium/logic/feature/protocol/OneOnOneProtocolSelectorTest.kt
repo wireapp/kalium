@@ -147,7 +147,22 @@ class OneOnOneProtocolSelectorTest {
 
         oneOnOneProtocolSelector.getProtocolForUser(TestUser.USER_ID)
             .shouldFail {
-                assertIs<CoreFailure.NoCommonProtocolFound>(it)
+                assertIs<CoreFailure.NoCommonProtocolFound.OtherNeedToUpdate>(it)
+            }
+    }
+
+    @Test
+    fun givenUsersHaveNoProtocolInCommon_thenShouldReturnNoCommonProtocol_2() = runTest {
+        val failure = StorageFailure.DataNotFound
+        val (_, oneOnOneProtocolSelector) = arrange {
+            withSelfUserReturning(TestUser.SELF.copy(supportedProtocols = setOf(SupportedProtocol.PROTEUS)))
+            withUserByIdReturning(Either.Right(TestUser.OTHER.copy(supportedProtocols = setOf(SupportedProtocol.MLS))))
+            withGetDefaultProtocolReturning(failure.left())
+        }
+
+        oneOnOneProtocolSelector.getProtocolForUser(TestUser.USER_ID)
+            .shouldFail {
+                assertIs<CoreFailure.NoCommonProtocolFound.SelfNeedToUpdate>(it)
             }
     }
 
