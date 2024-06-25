@@ -16,20 +16,17 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.call.usecase
+package com.wire.kalium.logic.feature.call.usecase.video
 
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.feature.call.CallManager
-import kotlinx.coroutines.flow.first
 
 /**
- * This use case is responsible for updating the video state of a call.
+ * This use case is responsible for updating and caching the video state of a call.
  * @see [VideoState]
  */
 class UpdateVideoStateUseCase(
-    private val callManager: Lazy<CallManager>,
     private val callRepository: CallRepository
 ) {
     /**
@@ -42,12 +39,5 @@ class UpdateVideoStateUseCase(
     ) {
         if (videoState != VideoState.PAUSED)
             callRepository.updateIsCameraOnById(conversationId, videoState == VideoState.STARTED)
-
-        // updateVideoState should be called only when the call is established
-        callRepository.establishedCallsFlow().first().find { call ->
-            call.conversationId == conversationId
-        }?.let {
-            callManager.value.updateVideoState(conversationId, videoState)
-        }
     }
 }
