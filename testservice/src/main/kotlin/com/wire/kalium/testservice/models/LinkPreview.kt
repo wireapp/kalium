@@ -23,7 +23,6 @@ data class LinkPreview(
     val permanentUrl: String = "",
     val summary: String = "",
     val title: String = "",
-    // val tweet = { author: String, username: String }
     val url: String = "",
     val urlOffset: Int = 0,
 )
