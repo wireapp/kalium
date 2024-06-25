@@ -17,7 +17,7 @@ jobs:
         runs-on: buildjet-4vcpu-ubuntu-2204
         strategy:
             matrix:
-                api-level: [ 33 ]
+                api-level: [ 34 ]
 
         steps:
             -   name: Checkout
@@ -62,7 +62,8 @@ jobs:
                 with:
                     api-level: ${{ matrix.api-level }}
                     force-avd-creation: false
-                    target: google_apis
+                    target: aosp_atd
+                    arch: x86_64
                     emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
                     cores: 4
                     ram-size: 4096M
@@ -82,7 +83,8 @@ jobs:
                 with:
                     api-level: ${{ matrix.api-level }}
                     force-avd-creation: false
-                    target: google_apis
+                    target: aosp_atd
+                    arch: x86_64
                     emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
                     cores: 4
                     ram-size: 4096M
