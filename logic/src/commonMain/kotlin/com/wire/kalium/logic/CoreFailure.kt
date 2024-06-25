@@ -122,6 +122,7 @@ sealed interface CoreFailure {
          * SelfClient needs to update to support MLS
          */
         data object SelfNeedToUpdate : NoCommonProtocolFound()
+
         /**
          * Other User needs to update to support MLS
          */
