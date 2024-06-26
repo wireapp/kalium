@@ -248,18 +248,10 @@ class MLSMigratorTest {
             }.returns(Either.Right(protocolInfo))
         }
 
-<<<<<<< HEAD
-        suspend fun withGetConversationMembersReturning(members: List<UserId>) = apply {
+        suspend fun withGetConversationMembersReturning(result: Either<StorageFailure, List<UserId>>) = apply {
             coEvery {
                 conversationRepository.getConversationMembers(any())
-            }.returns(Either.Right(members))
-=======
-        fun withGetConversationMembersReturning(result: Either<StorageFailure, List<UserId>>) = apply {
-            given(conversationRepository)
-                .suspendFunction(conversationRepository::getConversationMembers)
-                .whenInvokedWith(anything())
-                .thenReturn(result)
->>>>>>> b303b85bf8 (fix(mls-migration): setting correct CS when Kalium start the migration (#2815))
+            }.returns(result)
         }
 
         suspend fun withFetchConversationSucceeding() = apply {
