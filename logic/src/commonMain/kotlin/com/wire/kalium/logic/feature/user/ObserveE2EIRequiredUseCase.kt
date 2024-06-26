@@ -79,7 +79,6 @@ internal class ObserveE2EIRequiredUseCaseImpl(
                             E2EIRequiredResult.NotRequired
                         },
                         { clientId ->
-                            E2EIRequiredResult.NotRequired
                             return@map mlsClientIdentity(clientId).fold({
                                 E2EIRequiredResult.NotRequired
                             }, { clientIdentity ->
@@ -101,13 +100,11 @@ internal class ObserveE2EIRequiredUseCaseImpl(
             E2EIRequiredResult.WithGracePeriod.Create(timeLeft)
         } ?: E2EIRequiredResult.NoGracePeriod.Create
 
-    private fun onUserHasValidCertificate(identity: X509Identity) =
-        if (identity.shouldRenew()
-        ) {
-            E2EIRequiredResult.WithGracePeriod.Renew(identity.renewGracePeriodLeft())
-        } else {
-            E2EIRequiredResult.NotRequired
-        }
+    private fun onUserHasValidCertificate(identity: X509Identity) = if (identity.shouldRenew()) {
+        E2EIRequiredResult.WithGracePeriod.Renew(identity.renewGracePeriodLeft())
+    } else {
+        E2EIRequiredResult.NotRequired
+    }
 
     private fun observeE2EISettings() = userConfigRepository.observeE2EISettings().onlyRight().flowOn(dispatcher)
 
