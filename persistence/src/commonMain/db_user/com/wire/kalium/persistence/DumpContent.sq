@@ -106,18 +106,38 @@ WITH selfdelete_message_id AS (
         FROM local_db.Message
         WHERE local_db.Message.expire_after_millis IS NOT NULL
 )
-INSERT INTO MessageMention
- SELECT local_db.MessageMention.message_id,
-        local_db.MessageMention.conversation_id,
-        local_db.MessageMention.start,
-        local_db.MessageMention.length,
-        local_db.MessageMention.user_id
- FROM local_db.MessageMention
+INSERT INTO MessageLinkPreview
+ SELECT local_db.MessageLinkPreview.message_id,
+        local_db.MessageLinkPreview.conversation_id,
+        local_db.MessageLinkPreview.url,
+        local_db.MessageLinkPreview.url_offset,
+        local_db.MessageLinkPreview.permanent_url,
+        local_db.MessageLinkPreview.title,
+        local_db.MessageLinkPreview.summary
+ FROM local_db.MessageLinkPreview
         LEFT JOIN selfdelete_message_id
-           ON local_db.MessageMention.message_id = selfdelete_message_id.id
-          AND local_db.MessageMention.conversation_id = selfdelete_message_id.conversation_id
+           ON local_db.MessageLinkPreview.message_id = selfdelete_message_id.id
+          AND local_db.MessageLinkPreview.conversation_id = selfdelete_message_id.conversation_id
         WHERE selfdelete_message_id.id IS NULL
            OR selfdelete_message_id.conversation_id IS NULL;
+
+ WITH selfdelete_message_id AS (
+     SELECT local_db.Message.id, local_db.Message.conversation_id
+         FROM local_db.Message
+         WHERE local_db.Message.expire_after_millis IS NOT NULL
+ )
+ INSERT INTO MessageMention
+  SELECT local_db.MessageMention.message_id,
+         local_db.MessageMention.conversation_id,
+         local_db.MessageMention.start,
+         local_db.MessageMention.length,
+         local_db.MessageMention.user_id
+  FROM local_db.MessageMention
+         LEFT JOIN selfdelete_message_id
+            ON local_db.MessageMention.message_id = selfdelete_message_id.id
+           AND local_db.MessageMention.conversation_id = selfdelete_message_id.conversation_id
+         WHERE selfdelete_message_id.id IS NULL
+            OR selfdelete_message_id.conversation_id IS NULL;
 
 WITH selfdelete_message_id AS (
     SELECT local_db.Message.id, local_db.Message.conversation_id

@@ -79,6 +79,9 @@ INSERT OR IGNORE INTO MessageFailedToDecryptContent SELECT * FROM backup_db.Mess
 importMessageMemberChangeContentTable:
 INSERT OR IGNORE INTO MessageMemberChangeContent SELECT * FROM backup_db.MessageMemberChangeContent;
 
+importMessageLinkPreviewTable:
+INSERT OR IGNORE INTO MessageLinkPreview SELECT * FROM backup_db.MessageLinkPreview;
+
 importMessageMentionTable:
 INSERT OR IGNORE INTO MessageMention SELECT * FROM backup_db.MessageMention;
 
