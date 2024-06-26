@@ -40,7 +40,6 @@ buildscript {
 }
 
 repositories {
-    mavenLocal()
     wireDetektRulesRepo()
     google()
     mavenCentral()
@@ -67,7 +66,6 @@ tasks.withType<Test> {
 
 allprojects {
     repositories {
-        mavenLocal()
         google()
         mavenCentral()
     }
