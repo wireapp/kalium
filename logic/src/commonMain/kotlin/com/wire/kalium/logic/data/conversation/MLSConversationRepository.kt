@@ -482,6 +482,7 @@ internal class MLSConversationDataSource(
         allowPartialMemberList: Boolean = false,
     ): Either<CoreFailure, MLSAdditionResult> = withContext(serialDispatcher) {
         commitPendingProposals(groupID).flatMap {
+            kaliumLogger.d("adding $userIdList to MLS group: $groupID")
             produceAndSendCommitWithRetryAndResult(groupID, retryOnStaleMessage = retryOnStaleMessage) {
                 keyPackageRepository.claimKeyPackages(userIdList, cipherSuite).flatMap { result ->
                     if (result.usersWithoutKeyPackagesAvailable.isNotEmpty() && !allowPartialMemberList) {
@@ -608,6 +609,7 @@ internal class MLSConversationDataSource(
         externalSenders: ByteArray,
         allowPartialMemberList: Boolean = false,
     ): Either<CoreFailure, MLSAdditionResult> = withContext(serialDispatcher) {
+        kaliumLogger.d("establish MLS group: $groupID")
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapMLSRequest {
                 mlsClient.createConversation(
