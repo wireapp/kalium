@@ -35,7 +35,7 @@ import kotlinx.serialization.Serializable
 
 typealias DomainToUserIdToClientsMap = Map<String, Map<String, List<String>>>
 
-sealed class MessageContent {
+sealed interface MessageContent {
 
     /**
      * Messages that are not sent between client, but
@@ -46,7 +46,7 @@ sealed class MessageContent {
      * from the backend (_e.g._ users added/removed from a conversation),
      * or our own logic (_e.g._ missed call).
      */
-    sealed class System : MessageContent()
+    sealed interface System : MessageContent
 
     /**
      * Content that can be serialized/deserialized using the
@@ -54,7 +54,7 @@ sealed class MessageContent {
      * other clients.
      * @see ProtoContentMapper
      */
-    sealed class FromProto : MessageContent()
+    sealed interface FromProto : MessageContent
 
     /**
      * Main content of messages created by users/bot,
@@ -64,7 +64,7 @@ sealed class MessageContent {
      *
      * Examples: [Text], [Asset], [Knock], Locations (coordinates).
      */
-    sealed class Regular : FromProto()
+    sealed class Regular : FromProto
 
     /**
      * Content that is transferred between clients, but
@@ -76,7 +76,7 @@ sealed class MessageContent {
      * [DeleteForMe], [TextEdited], [UserAvailabilityStatus],
      * [Calling], [ClientAction] etc.
      */
-    sealed class Signaling : FromProto()
+    sealed interface Signaling : FromProto
 
     // client message content types
     data class Text(
@@ -160,12 +160,12 @@ sealed class MessageContent {
     data class DeleteForMe(
         val messageId: String,
         val conversationId: ConversationId,
-    ) : Signaling()
+    ) : Signaling
 
     data class Calling(
         val value: String,
         val conversationId: ConversationId? = null
-    ) : Signaling() {
+    ) : Signaling {
         @Serializable
         data class CallingValue(
             val type: String,
@@ -180,14 +180,14 @@ sealed class MessageContent {
         )
     }
 
-    data class DeleteMessage(val messageId: String) : Signaling()
+    data class DeleteMessage(val messageId: String) : Signaling
 
     data class TextEdited(
         val editMessageId: String,
         val newContent: String,
         val newLinkPreviews: List<MessageLinkPreview> = listOf(),
         val newMentions: List<MessageMention> = listOf()
-    ) : Signaling()
+    ) : Signaling
 
     data class Knock(val hotKnock: Boolean) : Regular()
 
@@ -218,7 +218,7 @@ sealed class MessageContent {
          * ID of the button that was selected.
          */
         val buttonId: MessageButtonId
-    ) : Signaling()
+    ) : Signaling
 
     /**
      * Message sent by the author of a [Composite] to
@@ -237,7 +237,7 @@ sealed class MessageContent {
          * ID of the selected button. Null if no button should be marked as selected.
          */
         val buttonId: MessageButtonId?,
-    ) : Signaling()
+    ) : Signaling
 
     data class Unknown( // messages that aren't yet handled properly but stored in db in case
         val typeName: String? = null,
@@ -248,11 +248,11 @@ sealed class MessageContent {
     data class Cleared(
         val conversationId: ConversationId,
         val time: Instant
-    ) : Signaling()
+    ) : Signaling
 
     // server message content types
     // TODO: rename members to userList
-    sealed class MemberChange(open val members: List<UserId>) : System() {
+    sealed class MemberChange(open val members: List<UserId>) : System {
         /**
          * A member(s) was added to the conversation.
          */
@@ -292,50 +292,49 @@ sealed class MessageContent {
         val messageId: String,
         val conversationId: ConversationId,
         val time: Instant
-    ) : Signaling()
+    ) : Signaling
 
-    data class ConversationRenamed(val conversationName: String) : System()
+    data class ConversationRenamed(val conversationName: String) : System
 
     @Deprecated("Use MemberChange.RemovedFromTeam instead")
-    data class TeamMemberRemoved(val userName: String) : System()
+    data class TeamMemberRemoved(val userName: String) : System
 
-    data object MissedCall : System()
+    data object MissedCall : System
 
     data class Reaction(
         val messageId: String,
         val emojiSet: Set<String>
-    ) : Signaling()
+    ) : Signaling
 
-    data class Availability(val status: UserAvailabilityStatus) : Signaling()
+    data class Availability(val status: UserAvailabilityStatus) : Signaling
 
-    data class Receipt(val type: ReceiptType, val messageIds: List<String>) : Signaling() {
+    data class Receipt(val type: ReceiptType, val messageIds: List<String>) : Signaling {
         fun toLogMap(): Map<String, Any> = mapOf(
             "type" to "$type",
             "messageIds" to messageIds.map { it.obfuscateId() }
         )
-
     }
 
     data class NewConversationReceiptMode(
         val receiptMode: Boolean
-    ) : System()
+    ) : System
 
     data class ConversationReceiptModeChanged(
         val receiptMode: Boolean
-    ) : System()
+    ) : System
 
     data class ConversationMessageTimerChanged(
         val messageTimer: Long?
-    ) : System()
+    ) : System
 
     data class ConversationProtocolChanged(
         val protocol: Conversation.Protocol
-    ) : System()
+    ) : System
 
-    data object ConversationProtocolChangedDuringACall : System()
+    data object ConversationProtocolChangedDuringACall : System
 
     // we can add other types to be processed, but signaling ones shouldn't be persisted
-    data object Ignored : Signaling() // messages that aren't processed in any way
+    data object Ignored : Signaling // messages that aren't processed in any way
 
     data class FailedDecryption(
         val encodedData: ByteArray? = null,
@@ -351,27 +350,27 @@ sealed class MessageContent {
         val zoom: Int? = null,
     ) : Regular()
 
-    data object MLSWrongEpochWarning : System()
+    data object MLSWrongEpochWarning : System
 
-    data object ClientAction : Signaling()
+    data object ClientAction : Signaling
 
-    data object CryptoSessionReset : System()
+    data object CryptoSessionReset : System
 
-    data object HistoryLostProtocolChanged : System()
+    data object HistoryLostProtocolChanged : System
 
-    data object HistoryLost : System()
-    data object ConversationCreated : System()
-    data object ConversationStartedUnverifiedWarning : System()
-    data object ConversationDegradedMLS : System()
-    data object ConversationVerifiedMLS : System()
-    data object ConversationDegradedProteus : System()
-    data object ConversationVerifiedProteus : System()
-    sealed class FederationStopped : System() {
+    data object HistoryLost : System
+    data object ConversationCreated : System
+    data object ConversationStartedUnverifiedWarning : System
+    data object ConversationDegradedMLS : System
+    data object ConversationVerifiedMLS : System
+    data object ConversationDegradedProteus : System
+    data object ConversationVerifiedProteus : System
+    sealed class FederationStopped : System {
         data class Removed(val domain: String) : FederationStopped()
         data class ConnectionRemoved(val domainList: List<String>) : FederationStopped()
     }
 
-    sealed class LegalHold : System() {
+    sealed class LegalHold : System {
         sealed class ForMembers(open val members: List<UserId>) : LegalHold() {
             data class Enabled(override val members: List<UserId>) : ForMembers(members)
             data class Disabled(override val members: List<UserId>) : ForMembers(members)

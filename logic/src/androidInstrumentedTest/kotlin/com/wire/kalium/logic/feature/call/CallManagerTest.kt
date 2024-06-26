@@ -68,6 +68,12 @@ class CallManagerTest {
     private val currentClientIdProvider = mock(CurrentClientIdProvider::class)
 
     @Mock
+    private val mediaManagerService = mock(MediaManagerService::class)
+
+    @Mock
+    private val flowManagerService = mock(FlowManagerService::class)
+
+    @Mock
     private val selfConversationIdProvider = mock(SelfConversationIdProvider::class)
 
     @Mock
@@ -113,7 +119,9 @@ class CallManagerTest {
             callMapper = callMapper,
             conversationClientsInCallUpdater = conversationClientsInCallUpdater,
             networkStateObserver = networkStateObserver,
-            kaliumConfigs = kaliumConfigs
+            kaliumConfigs = kaliumConfigs,
+            mediaManagerService = mediaManagerService,
+            flowManagerService = flowManagerService,
         )
     }
 

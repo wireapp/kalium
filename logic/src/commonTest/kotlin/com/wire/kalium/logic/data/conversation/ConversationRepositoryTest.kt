@@ -105,7 +105,6 @@ import io.mockative.matchers.Matcher
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -1368,6 +1367,17 @@ class ConversationRepositoryTest {
         }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenConversationId_whenObservingFromCache_thenInvokeCorrectDao() = runTest {
+        val (arrange, conversationRepository) = Arrangement()
+            .withExpectedConversationView(TestConversation.VIEW_ENTITY)
+            .arrange()
+
+        conversationRepository.observeCacheDetailsById(CONVERSATION_ID)
+
+        coVerify { arrange.conversationDAO.observeConversationDetailsById(eq(CONVERSATION_ID.toDao())) }.wasInvoked(exactly = once)
+    }
+
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
 
@@ -1575,6 +1585,12 @@ class ConversationRepositoryTest {
             coEvery {
                 conversationDAO.getConversationByQualifiedID(any())
             }.returns(conversationEntity)
+        }
+
+        suspend fun withExpectedConversationView(conversationEntity: ConversationViewEntity?) = apply {
+            coEvery {
+                conversationDAO.observeConversationDetailsById(any())
+            }.returns(flowOf(conversationEntity))
         }
 
         suspend fun withExpectedConversationBase(conversationEntity: ConversationEntity?) = apply {

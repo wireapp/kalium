@@ -19,12 +19,20 @@
 package com.wire.kalium.logic.feature.call.usecase
 
 import com.wire.kalium.logic.feature.call.MediaManagerService
+import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.KaliumDispatcherImpl
+import kotlinx.coroutines.withContext
 
 /**
  * This use case is responsible for setting the speaker state to off.
  */
-class TurnLoudSpeakerOffUseCase(private val mediaManagerService: MediaManagerService) {
-    operator fun invoke() {
-        mediaManagerService.turnLoudSpeakerOff()
+class TurnLoudSpeakerOffUseCase(
+    private val mediaManagerService: MediaManagerService,
+    private val dispatcher: KaliumDispatcher = KaliumDispatcherImpl
+) {
+    suspend operator fun invoke() {
+        withContext(dispatcher.default) {
+            mediaManagerService.turnLoudSpeakerOff()
+        }
     }
 }

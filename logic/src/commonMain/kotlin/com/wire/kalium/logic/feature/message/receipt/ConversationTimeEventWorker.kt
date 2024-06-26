@@ -15,22 +15,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.api
+package com.wire.kalium.logic.feature.message.receipt
 
-import com.wire.kalium.network.NetworkState
-import com.wire.kalium.network.NetworkStateObserver
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-
-class TestNetworkStateObserver(initialState: NetworkState = NetworkState.ConnectedWithInternet) : NetworkStateObserver {
-
-    private val networkState = MutableStateFlow(initialState)
-
-    override fun observeNetworkState(): StateFlow<NetworkState> = networkState
-
-    suspend fun updateNetworkState(state: NetworkState) { networkState.emit(state) }
-
-    companion object {
-        val DEFAULT_TEST_NETWORK_STATE_OBSERVER = TestNetworkStateObserver()
-    }
+internal fun interface ConversationTimeEventWorker {
+    suspend fun doWork(workParameters: ConversationTimeEventInput)
 }

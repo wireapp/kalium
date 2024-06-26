@@ -29,7 +29,7 @@ class ActiveSpeakerMapperTest {
     private val activeSpeakerMapper = ActiveSpeakerMapperImpl()
 
     @Test
-    fun givenCallActiveSpeakers_whenMappingToParticipantsActiveSpeaker_thenReturnParticipantsActiveSpeaker() = runTest {
+    fun givenUserAudioLevelNot0AndaudioLevelNowNot0_whenMapping_thenUserIsSpeaking() = runTest {
         val dummyParticipantWithDifferentClientId = DUMMY_PARTICIPANT.copy(
             clientId = "anotherClientId"
         )
@@ -40,13 +40,110 @@ class ActiveSpeakerMapperTest {
                 dummyParticipantWithDifferentClientId
             ),
             activeSpeakers = CallActiveSpeakers(
-                activeSpeakers = listOf(DUMMY_CALL_ACTIVE_SPEAKER, DUMMY_CALL_ACTIVE_SPEAKER1)
+                activeSpeakers = listOf(
+                    DUMMY_CALL_ACTIVE_SPEAKER.copy(audioLevel = 1, audioLevelNow = 1),
+                    DUMMY_CALL_ACTIVE_SPEAKER1.copy(audioLevel = 1, audioLevelNow = 1)
+                )
             )
         )
 
         val expectedParticipantsActiveSpeaker = listOf(
             DUMMY_PARTICIPANT.copy(
                 isSpeaking = true
+            ),
+            dummyParticipantWithDifferentClientId.copy(
+                isSpeaking = true
+            )
+        )
+
+        assertEquals(expectedParticipantsActiveSpeaker, callActiveSpeakerMap)
+    }
+
+
+    @Test
+    fun givenUserAudioLevelIs0AndaudioLevelNowNot0_whenMapping_thenUserIsSpeaking() = runTest {
+        val dummyParticipantWithDifferentClientId = DUMMY_PARTICIPANT.copy(
+            clientId = "anotherClientId"
+        )
+
+        val callActiveSpeakerMap = activeSpeakerMapper.mapParticipantsActiveSpeaker(
+            participants = listOf(
+                DUMMY_PARTICIPANT,
+                dummyParticipantWithDifferentClientId
+            ),
+            activeSpeakers = CallActiveSpeakers(
+                activeSpeakers = listOf(
+                    DUMMY_CALL_ACTIVE_SPEAKER.copy(audioLevel = 0, audioLevelNow = 1),
+                    DUMMY_CALL_ACTIVE_SPEAKER1.copy(audioLevel = 0, audioLevelNow = 1)
+                )
+            )
+        )
+
+        val expectedParticipantsActiveSpeaker = listOf(
+            DUMMY_PARTICIPANT.copy(
+                isSpeaking = true
+            ),
+            dummyParticipantWithDifferentClientId.copy(
+                isSpeaking = true
+            )
+        )
+
+        assertEquals(expectedParticipantsActiveSpeaker, callActiveSpeakerMap)
+    }
+
+    @Test
+    fun givenUserAudioLevelNot0AndaudioLevelNowIs0_whenMapping_thenUserIsSpeaking() = runTest {
+        val dummyParticipantWithDifferentClientId = DUMMY_PARTICIPANT.copy(
+            clientId = "anotherClientId"
+        )
+
+        val callActiveSpeakerMap = activeSpeakerMapper.mapParticipantsActiveSpeaker(
+            participants = listOf(
+                DUMMY_PARTICIPANT,
+                dummyParticipantWithDifferentClientId
+            ),
+            activeSpeakers = CallActiveSpeakers(
+                activeSpeakers = listOf(
+                    DUMMY_CALL_ACTIVE_SPEAKER.copy(audioLevel = 1, audioLevelNow = 0),
+                    DUMMY_CALL_ACTIVE_SPEAKER1.copy(audioLevel = 1, audioLevelNow = 0)
+                )
+            )
+        )
+
+        val expectedParticipantsActiveSpeaker = listOf(
+            DUMMY_PARTICIPANT.copy(
+                isSpeaking = true
+            ),
+            dummyParticipantWithDifferentClientId.copy(
+                isSpeaking = true
+            )
+        )
+
+        assertEquals(expectedParticipantsActiveSpeaker, callActiveSpeakerMap)
+    }
+
+    @Test
+    fun givenUserAudioLevelIs0AndaudioLevelNowIs0_whenMapping_thenUserIsNotSpeaking() = runTest {
+        val dummyParticipantWithDifferentClientId = DUMMY_PARTICIPANT.copy(
+            clientId = "anotherClientId"
+        )
+
+        val callActiveSpeakerMap = activeSpeakerMapper.mapParticipantsActiveSpeaker(
+            participants = listOf(
+                DUMMY_PARTICIPANT,
+                dummyParticipantWithDifferentClientId
+            ),
+            activeSpeakers = CallActiveSpeakers(
+                activeSpeakers = listOf(
+                    DUMMY_CALL_ACTIVE_SPEAKER.copy(audioLevel = 0, audioLevelNow = 0),
+                    DUMMY_CALL_ACTIVE_SPEAKER1.copy(audioLevel = 0, audioLevelNow = 0)
+                )
+            )
+        )
+
+        val expectedParticipantsActiveSpeaker = listOf(
+            DUMMY_PARTICIPANT.copy(
+                isSpeaking = false
             ),
             dummyParticipantWithDifferentClientId.copy(
                 isSpeaking = false

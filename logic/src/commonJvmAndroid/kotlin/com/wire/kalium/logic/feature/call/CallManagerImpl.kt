@@ -38,8 +38,8 @@ import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.EpochInfo
-import com.wire.kalium.logic.data.call.TestVideoType
 import com.wire.kalium.logic.data.call.Participant
+import com.wire.kalium.logic.data.call.TestVideoType
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.CallMapper
@@ -89,6 +89,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 import java.util.Collections
@@ -109,6 +110,8 @@ class CallManagerImpl internal constructor(
     private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
     private val networkStateObserver: NetworkStateObserver,
     private val kaliumConfigs: KaliumConfigs,
+    private val mediaManagerService: MediaManagerService,
+    private val flowManagerService: FlowManagerService,
     private val json: Json = Json { ignoreUnknownKeys = true },
     private val shouldRemoteMuteChecker: ShouldRemoteMuteChecker = ShouldRemoteMuteCheckerImpl(),
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
@@ -155,6 +158,16 @@ class CallManagerImpl internal constructor(
 
     private fun startHandleAsync(): Deferred<Handle> {
         return scope.async(start = CoroutineStart.LAZY) {
+            val mediaManagerStartJob = launch {
+                callingLogger.i("$TAG: Starting MediaManager")
+                mediaManagerService.startMediaManager()
+            }
+            val flowManagerStartJob = launch {
+                callingLogger.i("$TAG: Starting FlowManager")
+                flowManagerService.startFlowManager()
+            }
+            joinAll(flowManagerStartJob, mediaManagerStartJob)
+            callingLogger.i("$TAG: Creating Handle")
             val selfUserId = federatedIdMapper.parseToFederatedId(userId.await())
             val selfClientId = clientId.await().value
 
@@ -386,6 +399,7 @@ class CallManagerImpl internal constructor(
                 kcall_set_wuser(handle)
 
             }
+
             TestVideoType.FAKE -> {
                 kcall_init(1)
                 kcall_set_local_user(selfUserId, selfClientId)

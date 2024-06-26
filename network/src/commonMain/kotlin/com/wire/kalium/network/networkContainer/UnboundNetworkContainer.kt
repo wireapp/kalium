@@ -18,7 +18,6 @@
 
 package com.wire.kalium.network.networkContainer
 
-import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.UnboundNetworkClient
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApi
 import com.wire.kalium.network.api.base.unbound.acme.ACMEApiImpl
@@ -43,7 +42,6 @@ private interface UnboundClearTextTrafficNetworkClientProvider {
 }
 
 internal class UnboundNetworkClientProviderImpl(
-    networkStateObserver: NetworkStateObserver,
     userAgent: String,
     engine: HttpClientEngine
 ) : UnboundNetworkClientProvider {
@@ -53,12 +51,11 @@ internal class UnboundNetworkClientProviderImpl(
     }
 
     override val unboundNetworkClient by lazy {
-        UnboundNetworkClient(networkStateObserver, engine)
+        UnboundNetworkClient(engine)
     }
 }
 
 internal class UnboundClearTextTrafficNetworkClientProviderImpl(
-    networkStateObserver: NetworkStateObserver,
     userAgent: String,
     engine: HttpClientEngine
 ) : UnboundClearTextTrafficNetworkClientProvider {
@@ -68,19 +65,17 @@ internal class UnboundClearTextTrafficNetworkClientProviderImpl(
     }
 
     override val unboundClearTextTrafficNetworkClient by lazy {
-        UnboundNetworkClient(networkStateObserver, engine)
+        UnboundNetworkClient(engine)
     }
 }
 
 class UnboundNetworkContainerCommon(
-    networkStateObserver: NetworkStateObserver,
     userAgent: String,
     ignoreSSLCertificates: Boolean,
     certificatePinning: CertificatePinning,
     mockEngine: HttpClientEngine?
 ) : UnboundNetworkContainer,
     UnboundNetworkClientProvider by UnboundNetworkClientProviderImpl(
-        networkStateObserver,
         userAgent,
         engine = mockEngine ?: defaultHttpEngine(
             certificatePinning = certificatePinning,
@@ -90,7 +85,6 @@ class UnboundNetworkContainerCommon(
         )
     ),
     UnboundClearTextTrafficNetworkClientProvider by UnboundClearTextTrafficNetworkClientProviderImpl(
-        networkStateObserver = networkStateObserver,
         userAgent = userAgent,
         engine = mockEngine ?: clearTextTrafficEngine()
     ) {

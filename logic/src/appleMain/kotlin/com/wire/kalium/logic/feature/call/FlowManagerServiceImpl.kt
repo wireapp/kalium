@@ -37,7 +37,11 @@ actual class FlowManagerServiceImpl(
         TODO("Not yet implemented")
     }
 
-    override fun setUIRotation(rotation: Int) {
+    override suspend fun setUIRotation(rotation: Int) {
+        TODO("Not yet implemented")
+    }
+
+    override suspend fun startFlowManager() {
         TODO("Not yet implemented")
     }
 }

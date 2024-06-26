@@ -34,6 +34,7 @@ import com.wire.kalium.network.api.base.authenticated.conversation.ConversationM
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -73,10 +74,12 @@ class NewGroupConversationSystemMessagesCreatorTest {
         val (arrangement, sysMessageCreator) = Arrangement()
             .withPersistMessageSuccess()
             .arrange()
+        val timestampIso = DateTimeUtil.currentIsoDateTimeString()
 
         val result = sysMessageCreator.conversationStarted(
             TestUser.USER_ID,
-            TestConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.GROUP)
+            TestConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.GROUP),
+            timestampIso
         )
 
         result.shouldSucceed()
@@ -84,7 +87,7 @@ class NewGroupConversationSystemMessagesCreatorTest {
         coVerify {
             arrangement.persistMessage.invoke(
                 matches {
-                    (it.content is MessageContent.System && it.content is MessageContent.ConversationCreated)
+                    (it.content is MessageContent.System && it.content is MessageContent.ConversationCreated && it.date == timestampIso)
                 }
             )
         }.wasInvoked(once)
@@ -115,14 +118,15 @@ class NewGroupConversationSystemMessagesCreatorTest {
             .withPersistMessageSuccess()
             .withIsASelfTeamMember()
             .arrange()
+        val timestampIso = DateTimeUtil.currentIsoDateTimeString()
 
-        val result = sysMessageCreator.conversationReadReceiptStatus(TestConversation.CONVERSATION_RESPONSE)
+        val result = sysMessageCreator.conversationReadReceiptStatus(TestConversation.CONVERSATION_RESPONSE, timestampIso)
 
         result.shouldSucceed()
 
         coVerify {
             arrangement.persistMessage.invoke(matches {
-                (it.content is MessageContent.System && it.content is MessageContent.NewConversationReceiptMode)
+                (it.content is MessageContent.System && it.content is MessageContent.NewConversationReceiptMode && it.date == timestampIso)
             })
         }.wasInvoked(once)
     }
@@ -133,15 +137,19 @@ class NewGroupConversationSystemMessagesCreatorTest {
             .withPersistMessageSuccess()
             .withIsASelfTeamMember()
             .arrange()
+        val timestampIso = DateTimeUtil.currentIsoDateTimeString()
 
         val result =
-            sysMessageCreator.conversationReadReceiptStatus(TestConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.ONE_TO_ONE))
+            sysMessageCreator.conversationReadReceiptStatus(
+                TestConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.ONE_TO_ONE),
+                timestampIso
+            )
 
         result.shouldSucceed()
 
         coVerify {
             arrangement.persistMessage.invoke(matches {
-                (it.content is MessageContent.System && it.content is MessageContent.NewConversationReceiptMode)
+                (it.content is MessageContent.System && it.content is MessageContent.NewConversationReceiptMode && it.date == timestampIso)
             })
         }.wasNotInvoked()
     }
@@ -188,16 +196,20 @@ class NewGroupConversationSystemMessagesCreatorTest {
             val (arrangement, sysMessageCreator) = Arrangement()
                 .withPersistMessageSuccess()
                 .arrange()
+            val timestampIso = DateTimeUtil.currentIsoDateTimeString()
 
             val result = sysMessageCreator.conversationReadReceiptStatus(
-                TestConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.ONE_TO_ONE)
+                TestConversation.CONVERSATION_RESPONSE.copy(type = ConversationResponse.Type.ONE_TO_ONE),
+                timestampIso
             )
 
             result.shouldSucceed()
 
             coVerify {
                 arrangement.persistMessage.invoke(matches {
-                    (it.content is MessageContent.System && it.content is MessageContent.NewConversationReceiptMode)
+                    (it.content is MessageContent.System
+                            && it.content is MessageContent.NewConversationReceiptMode
+                            && it.date == timestampIso)
                 })
             }.wasNotInvoked()
         }
@@ -209,14 +221,17 @@ class NewGroupConversationSystemMessagesCreatorTest {
                 .withIsASelfTeamMember(false)
                 .withPersistMessageSuccess()
                 .arrange()
+            val timestampIso = DateTimeUtil.currentIsoDateTimeString()
 
-            val result = sysMessageCreator.conversationReadReceiptStatus(TestConversation.CONVERSATION_RESPONSE)
+            val result = sysMessageCreator.conversationReadReceiptStatus(TestConversation.CONVERSATION_RESPONSE, timestampIso)
 
             result.shouldSucceed()
 
             coVerify {
                 arrangement.persistMessage.invoke(matches {
-                    (it.content is MessageContent.System && it.content is MessageContent.NewConversationReceiptMode)
+                    (it.content is MessageContent.System
+                            && it.content is MessageContent.NewConversationReceiptMode
+                            && it.date == timestampIso)
                 })
             }.wasNotInvoked()
         }
