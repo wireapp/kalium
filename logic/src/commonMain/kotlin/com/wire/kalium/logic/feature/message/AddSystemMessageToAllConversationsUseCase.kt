@@ -26,7 +26,7 @@ import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.kaliumLogger
 
-import com.wire.kalium.util.DateTimeUtil
+import kotlinx.datetime.Clock
 
 /**
  * persist a local system message to all conversations
@@ -47,7 +47,7 @@ class AddSystemMessageToAllConversationsUseCaseImpl internal constructor(
             content = MessageContent.HistoryLost,
             // the conversation id will be ignored in the repo level!
             conversationId = ConversationId("", ""),
-            date = DateTimeUtil.currentIsoDateTimeString(),
+            date = Clock.System.now(),
             senderUserId = selfUserId,
             status = Message.Status.Sent,
             expirationData = null

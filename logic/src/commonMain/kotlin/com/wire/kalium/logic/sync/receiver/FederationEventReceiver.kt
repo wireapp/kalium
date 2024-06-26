@@ -40,11 +40,11 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.member.MemberDAO
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 
 internal interface FederationEventReceiver : EventReceiver<Event.Federation>
 
@@ -175,7 +175,7 @@ class FederationEventReceiverImpl internal constructor(
             id = uuid4().toString(),
             content = MessageContent.MemberChange.FederationRemoved(members = userIDList),
             conversationId = conversationID,
-            date = DateTimeUtil.currentIsoDateTimeString(),
+            date = Clock.System.now(),
             senderUserId = selfUserId,
             status = Message.Status.Read(0),
             visibility = Message.Visibility.VISIBLE,
@@ -189,7 +189,7 @@ class FederationEventReceiverImpl internal constructor(
             id = uuid4().toString(),
             content = MessageContent.FederationStopped.Removed(domain),
             conversationId = conversationID,
-            date = DateTimeUtil.currentIsoDateTimeString(),
+            date = Clock.System.now(),
             senderUserId = selfUserId,
             status = Message.Status.Read(0),
             visibility = Message.Visibility.VISIBLE,
@@ -203,7 +203,7 @@ class FederationEventReceiverImpl internal constructor(
             id = uuid4().toString(),
             content = MessageContent.FederationStopped.ConnectionRemoved(domainList),
             conversationId = conversationID,
-            date = DateTimeUtil.currentIsoDateTimeString(),
+            date = Clock.System.now(),
             senderUserId = selfUserId,
             status = Message.Status.Read(0),
             visibility = Message.Visibility.VISIBLE,

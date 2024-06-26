@@ -43,7 +43,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.wrapMLSRequest
-import com.wire.kalium.util.DateTimeUtil
+import kotlinx.datetime.Clock
 
 typealias UserToWireIdentity = Map<UserId, List<WireIdentity>>
 
@@ -209,7 +209,7 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
             id = uuid4().toString(),
             content = content,
             conversationId = conversationId,
-            date = DateTimeUtil.currentIsoDateTimeString(),
+            date = Clock.System.now(),
             senderUserId = selfUserId,
             status = Message.Status.Sent,
             visibility = Message.Visibility.VISIBLE,

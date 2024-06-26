@@ -29,7 +29,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.dao.message.MessageEntity
-import com.wire.kalium.util.DateTimeUtil
 
 internal interface MessageTextEditHandler {
     suspend fun handle(
@@ -62,7 +61,7 @@ internal class MessageTextEditHandlerImpl internal constructor(
             && currentMessage.editStatus is Message.EditStatus.Edited
         ) {
             // if the locally stored message is also already edited, we check which one is newer
-            if (DateTimeUtil.calculateMillisDifference(currentMessage.editStatus.lastTimeStamp, message.date) < 0) {
+            if (currentMessage.editStatus.lastEditInstant < message.date) {
                 // our local pending or failed edit is newer than one we got from the backend so we update locally only message id and date
                 messageRepository.updateTextMessage(
                     conversationId = message.conversationId,
@@ -71,7 +70,7 @@ internal class MessageTextEditHandlerImpl internal constructor(
                         newMentions = currentMessage.content.mentions
                     ),
                     newMessageId = message.id,
-                    editTimeStamp = currentMessage.editStatus.lastTimeStamp
+                    editInstant = currentMessage.editStatus.lastEditInstant
                 )
             } else {
                 notificationEventsManager.scheduleEditMessageNotification(message, messageContent)
@@ -80,7 +79,7 @@ internal class MessageTextEditHandlerImpl internal constructor(
                     conversationId = message.conversationId,
                     messageContent = messageContent,
                     newMessageId = message.id,
-                    editTimeStamp = message.date
+                    editInstant = message.date
                 ).flatMap {
                     messageRepository.updateMessageStatus(
                         messageStatus = MessageEntity.Status.SENT,
@@ -95,7 +94,7 @@ internal class MessageTextEditHandlerImpl internal constructor(
                 conversationId = message.conversationId,
                 messageContent = messageContent,
                 newMessageId = message.id,
-                editTimeStamp = message.date
+                editInstant = message.date
             )
         }
     }

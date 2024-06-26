@@ -37,7 +37,7 @@ import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.util.DateTimeUtil
+import kotlinx.datetime.Clock
 
 /**
  * When the self user is receiver of the self deletion message,
@@ -97,7 +97,7 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
                 id = uuid4().toString(),
                 content = MessageContent.DeleteForMe(messageToDelete, conversationId),
                 conversationId = selfConversationId,
-                date = DateTimeUtil.currentIsoDateTimeString(),
+                date = Clock.System.now(),
                 senderUserId = selfUserId,
                 senderClientId = currentClientId,
                 status = Message.Status.Pending,
@@ -118,7 +118,7 @@ internal class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl(
         id = uuid4().toString(),
         content = MessageContent.DeleteMessage(messageToDelete),
         conversationId = conversationId,
-        date = DateTimeUtil.currentIsoDateTimeString(),
+        date = Clock.System.now(),
         senderUserId = selfUserId,
         senderClientId = currentClientId,
         status = Message.Status.Pending,
