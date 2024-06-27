@@ -12,12 +12,16 @@ concurrency:
 jobs:
   detekt:
     uses: ./.github/workflows/codestyle.yml
-    with:
-      runs-on: ubuntu-latest
   gradle-run-tests:
     needs: [ detekt ]
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java and Gradle
+        uses: ./.github/actions/setup-java-gradle
+
       - name: Build the samples
         env:
           GITHUB_USER: ${{ github.actor }}
