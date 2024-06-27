@@ -49,6 +49,7 @@ import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
+
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -164,16 +165,15 @@ class MessageRepositoryTest {
     fun givenAMessage_whenSendingReturnsSuccess_thenSuccessShouldBePropagatedWithServerTime() = runTest {
         val messageEnvelope = MessageEnvelope(TEST_CLIENT_ID, listOf())
         val mappedId: NetworkQualifiedId = TEST_NETWORK_QUALIFIED_ID_ENTITY
-        val timestamp = TEST_DATETIME
 
         val (_, messageRepository) = Arrangement()
-            .withSuccessfulMessageDelivery(timestamp)
+            .withSuccessfulMessageDelivery(TEST_DATETIME)
             .withFailedToSendMapping(emptyList())
             .arrange()
 
         messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation())
             .shouldSucceed {
-                assertSame(it.time, TEST_DATETIME)
+                assertEquals(TEST_DATETIME, it.time)
             }
     }
 
@@ -261,15 +261,14 @@ class MessageRepositoryTest {
     @Test
     fun givenABroadcastMessage_whenBroadcastingReturnsSuccess_thenSuccessShouldBePropagatedWithServerTime() = runTest {
         val messageEnvelope = MessageEnvelope(TEST_CLIENT_ID, listOf())
-        val timestamp = TEST_DATETIME
 
         val (_, messageRepository) = Arrangement()
-            .withSuccessfulMessageBroadcasting(timestamp)
+            .withSuccessfulMessageBroadcasting(TEST_DATETIME)
             .arrange()
 
         messageRepository.broadcastEnvelope(messageEnvelope, BroadcastMessageOption.IgnoreSome(listOf()))
             .shouldSucceed {
-                assertSame(it, TEST_DATETIME)
+                assertSame(TEST_DATETIME, it)
             }
     }
 
@@ -277,15 +276,14 @@ class MessageRepositoryTest {
     fun givenABroadcastMessageWithExternalBlob_whenBroadcasting_thenApiShouldBeCalledWithBlob() = runTest {
         val dataBlob = EncryptedMessageBlob(byteArrayOf(0x42, 0x13, 0x69))
         val messageEnvelope = MessageEnvelope(TEST_CLIENT_ID, listOf(), dataBlob)
-        val timestamp = TEST_DATETIME
 
         val (arrangement, messageRepository) = Arrangement()
-            .withSuccessfulMessageBroadcasting(timestamp)
+            .withSuccessfulMessageBroadcasting(TEST_DATETIME)
             .arrange()
 
         messageRepository.broadcastEnvelope(messageEnvelope, BroadcastMessageOption.IgnoreSome(listOf()))
             .shouldSucceed {
-                assertSame(it, TEST_DATETIME)
+                assertEquals(TEST_DATETIME, it)
             }
 
         with(arrangement) {
@@ -613,11 +611,11 @@ class MessageRepositoryTest {
             return this
         }
 
-        suspend fun withSuccessfulMessageDelivery(timestamp: String): Arrangement {
+        suspend fun withSuccessfulMessageDelivery(dateTime: Instant): Arrangement {
             coEvery { messageApi.qualifiedSendMessage(any(), any()) }
                 .returns(
                     NetworkResponse.Success(
-                        QualifiedSendMessageResponse.MessageSent(timestamp, mapOf(), mapOf(), mapOf()),
+                        QualifiedSendMessageResponse.MessageSent(dateTime, mapOf(), mapOf(), mapOf()),
                         emptyMap(),
                         201
                     )
@@ -657,11 +655,11 @@ class MessageRepositoryTest {
             return this
         }
 
-        suspend fun withSuccessfulMessageBroadcasting(timestamp: String): Arrangement {
+        suspend fun withSuccessfulMessageBroadcasting(dateTime: Instant): Arrangement {
             coEvery { messageApi.qualifiedBroadcastMessage(any()) }
                 .returns(
                     NetworkResponse.Success(
-                        QualifiedSendMessageResponse.MessageSent(timestamp, mapOf(), mapOf(), mapOf()),
+                        QualifiedSendMessageResponse.MessageSent(dateTime, mapOf(), mapOf(), mapOf()),
                         emptyMap(),
                         201
                     )
@@ -756,8 +754,7 @@ class MessageRepositoryTest {
         val TEST_CLIENT_ID = ClientId("clientId")
         val TEST_USER_ID = UserId("userId", "domain")
         val TEST_CONTENT = MessageContent.Text("Ciao!")
-        const val TEST_DATETIME = "2022-04-21T20:56:22.393Z"
-        val INSTANT_TEST_DATETIME = Instant.parse(TEST_DATETIME)
+        val TEST_DATETIME = Instant.parse("2022-04-21T20:56:22.393Z")
         val TEST_MESSAGE = Message.Regular(
             id = "uid",
             content = TEST_CONTENT,
@@ -770,7 +767,7 @@ class MessageRepositoryTest {
             isSelfMessage = false
         )
         val TEST_ASSET_MESSAGE = AssetMessage(
-            time = INSTANT_TEST_DATETIME,
+            time = TEST_DATETIME,
             conversationId = TEST_CONVERSATION_ID,
             username = "username",
             messageId = "messageId",

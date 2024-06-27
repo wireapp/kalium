@@ -25,7 +25,6 @@ import com.wire.kalium.logic.data.message.receipt.ReceiptRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptsMapper
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
-import kotlinx.datetime.Instant
 
 internal interface ReceiptMessageHandler {
     suspend fun handle(
@@ -55,7 +54,7 @@ internal class ReceiptMessageHandlerImpl(
         receiptRepository.persistReceipts(
             userId = message.senderUserId,
             conversationId = message.conversationId,
-            date = Instant.parse(message.date),
+            date = message.date,
             type = messageContent.type,
             messageIds = messageContent.messageIds
         )

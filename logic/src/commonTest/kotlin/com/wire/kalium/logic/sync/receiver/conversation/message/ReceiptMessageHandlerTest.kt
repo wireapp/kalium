@@ -198,7 +198,7 @@ class ReceiptMessageHandlerTest {
                 id = "signalingId",
                 content = content,
                 conversationId = CONVERSATION_ID,
-                date = date.toIsoDateTimeString(),
+                date = date,
                 senderUserId = senderUserId,
                 senderClientId = ClientId("SomeClientId"),
                 status = Message.Status.Sent,

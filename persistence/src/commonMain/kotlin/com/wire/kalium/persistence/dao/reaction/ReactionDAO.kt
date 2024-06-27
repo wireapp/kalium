@@ -24,10 +24,12 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.util.mapToList
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Instant
 import kotlin.coroutines.CoroutineContext
 
 interface ReactionDAO {
@@ -36,7 +38,7 @@ interface ReactionDAO {
         originalMessageId: String,
         conversationId: ConversationIDEntity,
         senderUserId: UserIDEntity,
-        date: String,
+        instant: Instant,
         reactions: UserReactionsEntity
     )
 
@@ -44,7 +46,7 @@ interface ReactionDAO {
         originalMessageId: String,
         conversationId: ConversationIDEntity,
         senderUserId: UserIDEntity,
-        date: String,
+        instant: Instant,
         emoji: String
     )
 
@@ -76,14 +78,14 @@ class ReactionDAOImpl(
         originalMessageId: String,
         conversationId: ConversationIDEntity,
         senderUserId: UserIDEntity,
-        date: String,
+        instant: Instant,
         reactions: UserReactionsEntity
     ) = withContext(queriesContext) {
         reactionsQueries.transaction {
             reactionsQueries.doesMessageExist(originalMessageId, conversationId).executeAsOneOrNull()?.let {
                 reactionsQueries.deleteAllReactionsOnMessageFromUser(originalMessageId, conversationId, senderUserId)
                 reactions.forEach {
-                    reactionsQueries.insertReaction(originalMessageId, conversationId, senderUserId, it, date)
+                    reactionsQueries.insertReaction(originalMessageId, conversationId, senderUserId, it, instant.toIsoDateTimeString())
                 }
             }
         }
@@ -93,11 +95,15 @@ class ReactionDAOImpl(
         originalMessageId: String,
         conversationId: ConversationIDEntity,
         senderUserId: UserIDEntity,
-        date: String,
+        instant: Instant,
         emoji: String
     ) = withContext(queriesContext) {
         reactionsQueries.insertReaction(
-            originalMessageId, conversationId, senderUserId, emoji, date
+            message_id = originalMessageId,
+            conversation_id = conversationId,
+            sender_id = senderUserId,
+            emoji = emoji,
+            date = instant.toIsoDateTimeString()
         )
     }
 

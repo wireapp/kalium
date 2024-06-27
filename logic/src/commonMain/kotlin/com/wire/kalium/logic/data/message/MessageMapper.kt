@@ -48,9 +48,7 @@ import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
-import kotlinx.datetime.toInstant
 import okio.Path.Companion.toPath
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -84,14 +82,14 @@ class MessageMapperImpl(
         id = message.id,
         content = toMessageEntityContent(message.content),
         conversationId = message.conversationId.toDao(),
-        date = message.date.toInstant(),
+        date = message.date,
         senderUserId = message.senderUserId.toDao(),
         senderClientId = message.senderClientId.value,
         status = message.status.toEntityStatus(),
         readCount = if (message.status is Message.Status.Read) message.status.readCount else 0,
         editStatus = when (message.editStatus) {
             is Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
-            is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp.toInstant())
+            is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastEditInstant)
         },
         expireAfterMs = message.expirationData?.expireAfter?.inWholeMilliseconds,
         selfDeletionEndDate = message.expirationData?.let {
@@ -112,7 +110,7 @@ class MessageMapperImpl(
         id = message.id,
         content = message.content.toMessageEntityContent(),
         conversationId = message.conversationId.toDao(),
-        date = message.date.toInstant(),
+        date = message.date,
         senderUserId = message.senderUserId.toDao(),
         status = message.status.toEntityStatus(),
         visibility = message.visibility.toEntityVisibility(),
@@ -152,13 +150,13 @@ class MessageMapperImpl(
         id = message.id,
         content = message.content.toMessageContent(message.visibility.toModel() == Message.Visibility.HIDDEN, selfUserId),
         conversationId = message.conversationId.toModel(),
-        date = message.date.toIsoDateTimeString(),
+        date = message.date,
         senderUserId = message.senderUserId.toModel(),
         senderClientId = ClientId(message.senderClientId),
         status = message.status.toModel(message.readCount),
         editStatus = when (val editStatus = message.editStatus) {
             MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
-            is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastDate.toIsoDateTimeString())
+            is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastDate)
         },
         expirationData = message.expireAfterMs?.let {
             Message.ExpirationData(
@@ -193,7 +191,7 @@ class MessageMapperImpl(
         id = message.id,
         content = message.content.toMessageContent(),
         conversationId = message.conversationId.toModel(),
-        date = message.date.toIsoDateTimeString(),
+        date = message.date,
         senderUserId = message.senderUserId.toModel(),
         status = message.status.toModel(message.readCount),
         visibility = message.visibility.toModel(),

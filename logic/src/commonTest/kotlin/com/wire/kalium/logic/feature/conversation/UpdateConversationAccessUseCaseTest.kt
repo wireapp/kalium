@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.SyncManager
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -41,6 +42,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import okio.IOException
 import kotlin.test.Test
 import kotlin.test.assertIs
@@ -400,7 +402,7 @@ class UpdateConversationAccessUseCaseTest {
                 Conversation.AccessRole.TEAM_MEMBER,
                 Conversation.AccessRole.GUEST
             ),
-            lastReadDate = "2022.01.02",
+            lastReadDate = Instant.UNIX_FIRST_DATE,
             creatorId = "someCreatorId",
             receiptMode = Conversation.ReceiptMode.DISABLED,
             messageTimer = null,

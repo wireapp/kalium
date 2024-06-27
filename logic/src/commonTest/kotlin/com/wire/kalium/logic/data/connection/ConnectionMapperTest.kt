@@ -95,7 +95,7 @@ class ConnectionMapperTest {
         val stubConnectionResponse = ConnectionDTO(
             "someId",
             "from",
-            UNIX_FIRST_DATE,
+            Instant.UNIX_FIRST_DATE,
             ConversationId("someId", "someDomain"),
             UserId("someId", "someDomain"),
             ConnectionStateDTO.ACCEPTED,
@@ -105,7 +105,7 @@ class ConnectionMapperTest {
         val stubConnection = Connection(
             "someId",
             "from",
-            UNIX_FIRST_DATE,
+            Instant.UNIX_FIRST_DATE,
             ModelConversationId("someId", "someDomain"),
             ModelConversationId("someId", "someDomain"),
             ConnectionState.ACCEPTED,

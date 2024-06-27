@@ -34,11 +34,12 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.flatMapLeft
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 
 /**
  * Toggles a reaction on a message.
@@ -68,7 +69,7 @@ class ToggleReactionUseCase internal constructor(
         slowSyncRepository.slowSyncStatus.first {
             it is SlowSyncStatus.Complete
         }
-        val date = DateTimeUtil.currentIsoDateTimeString()
+        val date = Clock.System.now()
 
         return@withContext reactionRepository.getSelfUserReactionsForMessage(messageId, conversationId)
             .flatMap { reactions ->
@@ -99,15 +100,15 @@ class ToggleReactionUseCase internal constructor(
             }
     }
 
+    @Suppress("LongParameterList")
     private suspend fun addReaction(
         clientId: ClientId,
         conversationId: ConversationId,
-        date: String,
+        date: Instant,
         messageId: String,
         currentReactions: UserReactions,
         newReaction: String
     ): Either<CoreFailure, Unit> {
-
         return reactionRepository
             .persistReaction(messageId, conversationId, userId, date, newReaction).flatMap {
                 val regularMessage = Message.Signaling(
@@ -128,10 +129,11 @@ class ToggleReactionUseCase internal constructor(
             }
     }
 
+    @Suppress("LongParameterList")
     private suspend fun removeReaction(
         clientId: ClientId,
         conversationId: ConversationId,
-        date: String,
+        date: Instant,
         messageId: String,
         removedReaction: String,
         currentReactions: UserReactions

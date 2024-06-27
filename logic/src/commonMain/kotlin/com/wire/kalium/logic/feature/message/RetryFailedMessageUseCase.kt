@@ -42,10 +42,10 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.fileExtension
 import com.wire.kalium.persistence.dao.message.MessageEntity
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 
 @Suppress("LongParameterList")
 class RetryFailedMessageUseCase internal constructor(
@@ -130,7 +130,7 @@ class RetryFailedMessageUseCase internal constructor(
                     id = generatedMessageUuid,
                     content = editContent,
                     conversationId = message.conversationId,
-                    date = DateTimeUtil.currentIsoDateTimeString(),
+                    date = Clock.System.now(),
                     senderUserId = message.senderUserId,
                     senderClientId = message.senderClientId,
                     status = Message.Status.Pending,

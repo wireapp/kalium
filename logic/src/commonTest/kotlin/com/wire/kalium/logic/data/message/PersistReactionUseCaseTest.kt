@@ -28,6 +28,7 @@ import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 
 class PersistReactionUseCaseTest {
@@ -43,7 +44,7 @@ class PersistReactionUseCaseTest {
             ),
             conversationId = TestConversation.ID,
             senderUserId = TestUser.USER_ID,
-            date = "date"
+            date = Instant.DISTANT_PAST
         )
 
         coVerify {

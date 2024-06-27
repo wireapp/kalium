@@ -29,13 +29,14 @@ import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.reaction.ReactionDAO
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.datetime.Instant
 
 interface ReactionRepository {
     suspend fun persistReaction(
         originalMessageId: String,
         conversationId: ConversationId,
         senderUserId: UserId,
-        date: String,
+        instant: Instant,
         emoji: String
     ): Either<StorageFailure, Unit>
 
@@ -55,7 +56,7 @@ interface ReactionRepository {
         originalMessageId: String,
         conversationId: ConversationId,
         senderUserId: UserId,
-        date: String,
+        instant: Instant,
         userReactions: UserReactions
     ): Either<StorageFailure, Unit>
 
@@ -75,14 +76,14 @@ class ReactionRepositoryImpl(
         originalMessageId: String,
         conversationId: ConversationId,
         senderUserId: UserId,
-        date: String,
+        instant: Instant,
         emoji: String
     ): Either<StorageFailure, Unit> = wrapStorageRequest {
         reactionsDAO.insertReaction(
             originalMessageId = originalMessageId,
             conversationId = conversationId.toDao(),
             senderUserId = senderUserId.toDao(),
-            date = date,
+            instant = instant,
             emoji = emoji
         )
     }
@@ -113,14 +114,14 @@ class ReactionRepositoryImpl(
         originalMessageId: String,
         conversationId: ConversationId,
         senderUserId: UserId,
-        date: String,
+        instant: Instant,
         userReactions: UserReactions
     ): Either<StorageFailure, Unit> = wrapStorageRequest {
         reactionsDAO.updateReactions(
             originalMessageId,
             conversationId.toDao(),
             senderUserId.toDao(),
-            date,
+            instant,
             userReactions
         )
     }

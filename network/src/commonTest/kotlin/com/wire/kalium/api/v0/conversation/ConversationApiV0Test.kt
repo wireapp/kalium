@@ -45,10 +45,8 @@ import com.wire.kalium.network.api.base.model.ConversationAccessDTO
 import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.JoinConversationRequestV0
-import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.api.v0.authenticated.ConversationApiV0
-import com.wire.kalium.network.api.v0.authenticated.SelfApiV0
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode
@@ -261,7 +259,8 @@ internal class ConversationApiV0Test : ApiTest() {
         val serviceId = AddServiceRequest("service_id", "service_provider")
 
         val networkClient = mockAuthenticatedNetworkClient(
-            AddServiceResponseJson.valid.rawJson, statusCode = HttpStatusCode.Created,
+            responseBody = AddServiceResponseJson.valid.rawJson,
+            statusCode = HttpStatusCode.Created,
             assertion = {
                 assertPost()
                 assertPathEqual("conversations/${conversationId.value}/bots")

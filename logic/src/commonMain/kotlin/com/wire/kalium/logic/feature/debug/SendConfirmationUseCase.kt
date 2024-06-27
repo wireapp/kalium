@@ -66,7 +66,7 @@ class SendConfirmationUseCase internal constructor(
                 id = generatedMessageUuid,
                 content = MessageContent.Receipt(type, listOf(firstMessageId) + moreMessageIds),
                 conversationId = conversationId,
-                date = Clock.System.now().toString(),
+                date = Clock.System.now(),
                 senderUserId = selfUser.id,
                 senderClientId = currentClientId,
                 status = Message.Status.Pending,
