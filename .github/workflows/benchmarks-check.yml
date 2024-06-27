@@ -17,16 +17,9 @@ jobs:
         runs-on: ubuntu-latest
         container: wirebot/cryptobox:1.4.0
         steps:
-            -   name: Checkout
-                uses: actions/checkout@v4
-            -   name: Set up JDK
-                uses: actions/setup-java@v4
+            -   uses: ./.github/workflows/shared/setup-java-gradle.yml
                 with:
-                    java-version: '17'
-                    distribution: 'temurin'
-                    cache: gradle
-            -   name: Validate Gradle wrapper
-                uses: gradle/actions/wrapper-validation@v3
+                   runs-on: ubuntu-latest
             -   name: Run Benchmarks
                 run: ./gradlew benchmark
             -   name: Generate HTML Report

@@ -10,20 +10,9 @@ jobs:
     publish:
         runs-on: ubuntu-latest
         steps:
-            - name: Checkout project
-              uses: actions/checkout@v4 
+            - uses: ./.github/workflows/shared/setup-java-gradle.yml
               with:
-                  fetch-depth: 0
-
-            - name: Set up JDK
-              uses: actions/setup-java@v4
-              with:
-                java-version: '17'
-                distribution: 'temurin'
-                cache: gradle
-
-            - name: Validate Gradle wrapper
-              uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
+                runs-on: ubuntu-latest
 
             - name: Generate Dokka docs
               run: make doc/generate-kdocs

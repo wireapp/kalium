@@ -14,70 +14,60 @@ jobs:
         uses: ./.github/workflows/codestyle.yml
     gradle-run-tests:
         needs: [ detekt ]
-        runs-on: buildjet-4vcpu-ubuntu-2204
+        runs-on: ubuntu-latest
         strategy:
             matrix:
-                api-level: [ 30 ]
+                api-level: [ 34 ]
 
         steps:
-            -   name: Checkout
-                uses: actions/checkout@v4
+            - uses: ./.github/workflows/shared/setup-java-gradle.yml
+              with:
+                runs-on: ubuntu-latest
+
+            -   name: AVD cache
+                uses: actions/cache@v4
+                id: avd-cache
                 with:
-                    fetch-depth: 0
+                    path: |
+                        ~/.android/avd/*
+                        ~/.android/adb*
+                    key: avd-${{ matrix.api-level }}
 
-            -   name: Set up JDK
-                uses: buildjet/setup-java@v3
-                with:
-                    java-version: '17'
-                    distribution: 'temurin'
-                    cache: gradle
-
-            -   name: Validate Gradle wrapper
-                uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
-
-            -   name: Build the samples
+            -   name: Create AVD and generate snapshot for caching
+                if: steps.avd-cache.outputs.cache-hit != 'true'
+                uses: reactivecircus/android-emulator-runner@v2.31.0
                 env:
                     GITHUB_USER: ${{ github.actor }}
                     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                with:
+                    api-level: ${{ matrix.api-level }}
+                    force-avd-creation: false
+                    target: aosp_atd
+                    arch: x86_64
+                    emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+                    cores: 4
+                    ram-size: 4096M
+                    heap-size: 2048M
+                    disable-animations: false
+                    script: echo "Generated AVD snapshot for caching."
+
+            -   name: Build the samples
                 run: |
                     ./gradlew :samples:compileDebugSources
 
-            # - name: AVD cache
-            #   uses: actions/cache@v3
-            #   id: avd-cache
-            #   with:
-            #       path: |
-            #           ~/.android/avd/*
-            #           ~/.android/adb*
-            #       key: avd-${{ matrix.api-level }}
-
-            # - name: Create AVD and generate snapshot for caching
-            #   if: steps.avd-cache.outputs.cache-hit != 'true'
-            #   uses: reactivecircus/android-emulator-runner@v2.27.0
-            #   with:
-            #       api-level: ${{ matrix.api-level }}
-            #       force-avd-creation: false
-            #       target: google_apis
-            #       emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-            #       cores: 4
-            #       ram-size: 4096M
-            #       heap-size: 2048M
-            #       disable-animations: false
-            #       script: echo "Generated AVD snapshot for caching."
-
             -   name: Android Instrumentation Tests
-                uses: reactivecircus/android-emulator-runner@v2.27.0
+                uses: reactivecircus/android-emulator-runner@v2.31.0
                 with:
                     api-level: ${{ matrix.api-level }}
-                    target: google_apis
+                    force-avd-creation: false
+                    target: aosp_atd
+                    arch: x86_64
                     emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
                     cores: 4
                     ram-size: 4096M
                     heap-size: 2048M
+                    disable-animations: true
                     script: ./gradlew connectedAndroidOnlyAffectedTest
-                env:
-                    GITHUB_USER: ${{ github.actor }}
-                    GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
             -   name: Archive Test Reports
                 if: always()

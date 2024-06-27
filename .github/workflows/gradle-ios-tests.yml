@@ -17,28 +17,14 @@ jobs:
     runs-on: macos-latest
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: ./.github/workflows/shared/setup-java-gradle.yml
         with:
-          fetch-depth: 0
-
-      - name: Set up JDK
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-#          cache: gradle # Cache disabled as we use Gradle Setup below
+          runs-on: macos-latest
 
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-
-      - name: Gradle Setup
-        uses: gradle/gradle-build-action@v3
-
-      - name: Validate Gradle wrapper
-        uses: gradle/wrapper-validation-action@e6e38bacfdf1a337459f332974bb2327a31aaf4b
 
       - name: Build the samples
         env:
