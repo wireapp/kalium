@@ -17,53 +17,49 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-          - uses: ./.github/workflows/shared/setup-java-gradle.yml
-            with:
-             runs-on: ubuntu-latest
+      - name: Build the samples
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          ./gradlew :samples:compileDebugSources
 
-          - name: Build the samples
-            env:
-              GITHUB_USER: ${{ github.actor }}
-              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            run: |
-              ./gradlew :samples:compileDebugSources
+      - name: Android Unit Tests
+        run: ./gradlew androidUnitOnlyAffectedTest
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          - name: Android Unit Tests
-            run: ./gradlew androidUnitOnlyAffectedTest
-            env:
-              GITHUB_USER: ${{ github.actor }}
-              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Archive Test Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: ./**/build/reports/tests/**
 
-          - name: Archive Test Reports
-            if: always()
-            uses: actions/upload-artifact@v4
-            with:
-              name: test-reports
-              path: ./**/build/reports/tests/**
+      - name: Archive Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            ./**/build/test-results/testDebugUnitTest/**/*.xml
+            ./**/build/test-results/**/*.xml
 
-          - name: Archive Test Results
-            if: always()
-            uses: actions/upload-artifact@v4
-            with:
-              name: test-results
-              path: |
-                ./**/build/test-results/testDebugUnitTest/**/*.xml
-                ./**/build/test-results/**/*.xml
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action/composite@v2.11.0
+        if: always()
+        with:
+          files: |
+            **/build/test-results/testDebugUnitTest/**/*.xml
+            **/build/test-results/**/*.xml
 
-          - name: Publish Unit Test Results
-            uses: EnricoMi/publish-unit-test-result-action/composite@v2.11.0
-            if: always()
-            with:
-              files: |
-                **/build/test-results/testDebugUnitTest/**/*.xml
-                **/build/test-results/**/*.xml
-
-          - name: Cleanup Gradle Cache
-            # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
-            # Restoring these files from a GitHub Actions cache might cause problems for future builds.
-            run: |
-              rm -f ~/.gradle/caches/modules-2/modules-2.lock
-              rm -f ~/.gradle/caches/modules-2/gc.properties
+      - name: Cleanup Gradle Cache
+        # Remove some files from the Gradle cache, so they aren't cached by GitHub Actions.
+        # Restoring these files from a GitHub Actions cache might cause problems for future builds.
+        run: |
+          rm -f ~/.gradle/caches/modules-2/modules-2.lock
+          rm -f ~/.gradle/caches/modules-2/gc.properties
 
   upload-test-results-datadadog:
     runs-on: ubuntu-latest

@@ -6,6 +6,8 @@ jobs:
   static-code-analysis:
     runs-on: ubuntu-latest
     uses: ./.github/workflows/shared/setup-java-gradle.yml
+    with:
+      runs-on: ubuntu-latest
     steps:
       - name: Run Detekt
         run: |
