@@ -10,7 +10,7 @@ on:
 
 jobs:
   java-gradle-setup:
-    uses: ./.github/workflows/shared/setup-java-gradle.yml
+    uses: ./.github/workflows/setup-java-gradle.yml
     with:
       runs-on: ubuntu-latest
   static-code-analysis:

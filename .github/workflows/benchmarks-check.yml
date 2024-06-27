@@ -17,9 +17,6 @@ jobs:
         runs-on: ubuntu-latest
         container: wirebot/cryptobox:1.4.0
         steps:
-            -   uses: ./.github/workflows/shared/setup-java-gradle.yml
-                with:
-                   runs-on: ubuntu-latest
             -   name: Run Benchmarks
                 run: ./gradlew benchmark
             -   name: Generate HTML Report
