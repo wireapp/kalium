@@ -1,13 +1,21 @@
 name: "Check Codestyle"
 
-on: [workflow_call]
+on:
+  workflow_call:
+    inputs:
+      runs-on:
+        description: 'Runner type'
+        required: true
+        type: string
 
 jobs:
-  static-code-analysis:
-    runs-on: ubuntu-latest
+  java-gradle-setup:
     uses: ./.github/workflows/shared/setup-java-gradle.yml
     with:
       runs-on: ubuntu-latest
+  static-code-analysis:
+    runs-on: ubuntu-latest
+    needs: [ java-gradle-setup ]
     steps:
       - name: Run Detekt
         run: |

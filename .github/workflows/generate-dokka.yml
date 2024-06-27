@@ -7,23 +7,25 @@ on:
   workflow_dispatch:
 
 jobs:
-    publish:
+    java-gradle-setup:
+      uses: ./.github/workflows/shared/setup-java-gradle.yml
+      with:
         runs-on: ubuntu-latest
-        steps:
-            - uses: ./.github/workflows/shared/setup-java-gradle.yml
-              with:
-                runs-on: ubuntu-latest
+    publish:
+      runs-on: ubuntu-latest
+      needs: [ java-gradle-setup ]
+      steps:
 
-            - name: Generate Dokka docs
-              run: make doc/generate-kdocs
-              env:
-                GITHUB_USER: ${{ github.actor }}
-                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        - name: Generate Dokka docs
+          run: make doc/generate-kdocs
+          env:
+            GITHUB_USER: ${{ github.actor }}
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-            - name: Deploy docs 🚀
-              uses: JamesIves/github-pages-deploy-action@v4.2.5
-              with:
-                  branch: gh-pages
-                  clean: false
-                  folder: build/dokka/htmlMultiModule
-                  target-folder: docs
+        - name: Deploy docs 🚀
+          uses: JamesIves/github-pages-deploy-action@v4.2.5
+          with:
+            branch: gh-pages
+            clean: false
+            folder: build/dokka/htmlMultiModule
+            target-folder: docs

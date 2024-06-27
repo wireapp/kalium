@@ -12,15 +12,13 @@ concurrency:
 jobs:
   detekt:
       uses: ./.github/workflows/codestyle.yml
+      with:
+        runs-on: macos-latest
   gradle-run-tests:
     needs: [detekt]
     runs-on: macos-latest
 
     steps:
-      - uses: ./.github/workflows/shared/setup-java-gradle.yml
-        with:
-          runs-on: macos-latest
-
       - name: Set up Python 3.11
         uses: actions/setup-python@v5
         with:

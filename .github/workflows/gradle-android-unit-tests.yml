@@ -12,10 +12,11 @@ concurrency:
 jobs:
   detekt:
     uses: ./.github/workflows/codestyle.yml
+    with:
+      runs-on: ubuntu-latest
   gradle-run-tests:
     needs: [ detekt ]
     runs-on: ubuntu-latest
-
     steps:
       - name: Build the samples
         env:
