@@ -21,8 +21,6 @@ jobs:
                 uses: actions/checkout@v4
             -   name: Setup Java and Gradle
                 uses: ./.github/actions/setup-java-gradle
-                with:
-                  enable-kvm: false # enable when we will not use wirebot container
             -   name: Run Benchmarks
                 run: ./gradlew benchmark
             -   name: Generate HTML Report

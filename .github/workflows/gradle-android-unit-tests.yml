@@ -21,6 +21,8 @@ jobs:
 
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
+        with:
+          enable-kvm: true
 
       - name: Build the samples
         env:

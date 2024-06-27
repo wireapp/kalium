@@ -4,7 +4,7 @@ inputs:
   enable-kvm:
     description: 'Whether to enable KVM'
     required: false
-    default: true
+    default: false
 runs:
   using: composite
   steps:
