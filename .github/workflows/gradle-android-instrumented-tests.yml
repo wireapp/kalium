@@ -58,6 +58,9 @@ jobs:
 
       - name: Android Instrumentation Tests
         uses: reactivecircus/android-emulator-runner@v2.31.0
+        env:
+          GITHUB_USER: ${{ github.actor }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           api-level: ${{ matrix.api-level }}
           force-avd-creation: false
