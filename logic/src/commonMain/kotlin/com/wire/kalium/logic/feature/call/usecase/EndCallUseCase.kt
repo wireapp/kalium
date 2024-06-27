@@ -55,8 +55,12 @@ internal class EndCallUseCaseImpl(
     override suspend operator fun invoke(conversationId: ConversationId) = withContext(dispatchers.default) {
         callRepository.callsFlow().first().find {
             // This use case can be invoked while joining the call or when the call is established.
-            it.conversationId == conversationId &&
-                    (it.status == CallStatus.STILL_ONGOING || it.status == CallStatus.ESTABLISHED)
+            it.conversationId == conversationId && it.status in listOf(
+                CallStatus.STARTED,
+                CallStatus.INCOMING,
+                CallStatus.STILL_ONGOING,
+                CallStatus.ESTABLISHED
+            )
         }?.let {
             if (it.conversationType == Conversation.Type.GROUP) {
                 callingLogger.d("[EndCallUseCase] -> Updating call status to CLOSED_INTERNALLY")
