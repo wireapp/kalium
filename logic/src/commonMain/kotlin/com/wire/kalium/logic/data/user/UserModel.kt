@@ -25,6 +25,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.VALUE_DOMAIN_SEPARATOR
 import com.wire.kalium.logic.data.user.type.UserType
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
@@ -53,7 +54,7 @@ sealed class User {
 data class Connection(
     val conversationId: String,
     val from: String,
-    val lastUpdate: String,
+    val lastUpdate: Instant,
     val qualifiedConversationId: ConversationId,
     val qualifiedToId: UserId,
     val status: ConnectionState,
@@ -69,7 +70,7 @@ data class Connection(
         return mapOf(
             "conversationId" to conversationId.obfuscateId(),
             "from" to from.obfuscateId(),
-            "lastUpdate" to lastUpdate,
+            "lastUpdate" to lastUpdate.toIsoDateTimeString(),
             "qualifiedConversationId" to "${qId.value.obfuscateId()}@${qId.domain.obfuscateDomain()}",
             "qualifiedToId" to "${qualifiedToId.value.obfuscateId()}@${qualifiedToId.domain.obfuscateDomain()}",
             "status" to status.name,

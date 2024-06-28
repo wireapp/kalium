@@ -23,13 +23,14 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.reaction.ReactionRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
+import kotlinx.datetime.Instant
 
 interface PersistReactionUseCase {
     suspend operator fun invoke(
         reaction: MessageContent.Reaction,
         conversationId: ConversationId,
         senderUserId: UserId,
-        date: String
+        date: Instant
     ): Either<CoreFailure, Unit>
 }
 
@@ -40,7 +41,7 @@ internal class PersistReactionUseCaseImpl(
         reaction: MessageContent.Reaction,
         conversationId: ConversationId,
         senderUserId: UserId,
-        date: String
+        date: Instant
     ): Either<CoreFailure, Unit> {
         val emojiSet = reaction.emojiSet.map {
             // If we receive the heavy black heart unicode, we convert it to the emoji version.

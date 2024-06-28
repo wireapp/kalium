@@ -32,6 +32,9 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.EpochChangesObserver
+import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
+import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -49,9 +52,6 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
-import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
-import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.getOrNull
@@ -84,6 +84,7 @@ import kotlinx.coroutines.flow.flattenConcat
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 import kotlin.math.max
 import kotlin.time.toDuration
 
@@ -113,6 +114,7 @@ interface CallRepository {
         isCameraOn: Boolean,
         isCbrEnabled: Boolean
     )
+
     suspend fun updateCallStatusById(conversationId: ConversationId, status: CallStatus)
     fun updateIsMutedById(conversationId: ConversationId, isMuted: Boolean)
     fun updateIsCbrEnabled(isCbrEnabled: Boolean)
@@ -126,6 +128,7 @@ interface CallRepository {
         conversationId: ConversationId,
         onEpochChange: suspend (ConversationId, EpochInfo) -> Unit
     ): Either<CoreFailure, Unit>
+
     suspend fun leaveMlsConference(conversationId: ConversationId)
     suspend fun observeEpochInfo(conversationId: ConversationId): Either<CoreFailure, Flow<EpochInfo>>
     suspend fun advanceEpoch(conversationId: ConversationId)
@@ -326,7 +329,7 @@ internal class CallDataSource(
                 this[conversationId] = call.copy(
                     establishedTime = establishedTime,
                     callStatus = status
-                    )
+                )
             }
 
             _callMetadataProfile.value = callMetadataProfile.copy(
@@ -348,7 +351,7 @@ internal class CallDataSource(
                 uuid4().toString(),
                 MessageContent.MissedCall,
                 conversationId,
-                DateTimeUtil.currentIsoDateTimeString(),
+                Clock.System.now(),
                 qualifiedUserId,
                 Message.Status.Sent,
                 Message.Visibility.VISIBLE,
@@ -654,6 +657,7 @@ internal class CallDataSource(
                         ).flattenConcat()
                     }
                 } ?: Either.Left(CoreFailure.NotSupportedByProteus)
+
                 is Conversation.ProtocolInfo.Proteus,
                 is Conversation.ProtocolInfo.Mixed -> Either.Left(CoreFailure.NotSupportedByProteus)
             }

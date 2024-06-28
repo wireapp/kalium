@@ -39,6 +39,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.network.api.base.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -49,6 +50,7 @@ import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import okio.Path
 import okio.Path.Companion.toPath
 import okio.fakefilesystem.FakeFileSystem
@@ -323,7 +325,7 @@ class GetMessageAssetUseCaseTest {
                 id = msgId,
                 content = MessageContent.Asset(mockedImageContent),
                 conversationId = convId,
-                date = "22-03-2022",
+                date = Instant.UNIX_FIRST_DATE,
                 senderUserId = userId,
                 senderClientId = clientId,
                 status = Message.Status.Sent,

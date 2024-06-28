@@ -69,7 +69,7 @@ object TestConversation {
         null,
         null,
         null,
-        lastReadDate = "2022-03-30T15:36:00.000Z",
+        lastReadDate = Instant.parse("2022-03-30T15:36:00.000Z"),
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
         creatorId = null,
@@ -93,7 +93,7 @@ object TestConversation {
         null,
         null,
         null,
-        lastReadDate = "2022-03-30T15:36:00.000Z",
+        lastReadDate = Instant.parse("2022-03-30T15:36:00.000Z"),
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
         creatorId = null,
@@ -117,7 +117,7 @@ object TestConversation {
         null,
         null,
         null,
-        lastReadDate = "2022-03-30T15:36:00.000Z",
+        lastReadDate = Instant.parse("2022-03-30T15:36:00.000Z"),
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
         creatorId = null,
@@ -188,7 +188,7 @@ object TestConversation {
         null,
         null,
         null,
-        lastReadDate = "2022-03-30T15:36:00.000Z",
+        lastReadDate = Instant.parse("2022-03-30T15:36:00.000Z"),
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
         creatorId = null,
@@ -243,7 +243,7 @@ object TestConversation {
             EventContentDTO.Conversation.MemberJoinDTO(
                 NETWORK_ID,
                 NETWORK_USER_ID1,
-                "2022-03-30T15:36:00.000Z",
+                Instant.UNIX_FIRST_DATE,
                 ConversationMembers(emptyList(), emptyList()),
                 NETWORK_ID.value
             )
@@ -254,7 +254,7 @@ object TestConversation {
             EventContentDTO.Conversation.MemberJoinDTO(
                 NETWORK_ID,
                 NETWORK_USER_ID1,
-                "2022-03-30T15:36:00.000Z",
+                Instant.UNIX_FIRST_DATE,
                 ConversationMembers(emptyList(), emptyList()),
                 NETWORK_ID.value
             )
@@ -265,7 +265,7 @@ object TestConversation {
             EventContentDTO.Conversation.MemberLeaveDTO(
                 NETWORK_ID,
                 NETWORK_USER_ID1,
-                "2022-03-30T15:36:00.000Z",
+                Instant.UNIX_FIRST_DATE,
                 ConversationMemberRemovedDTO(emptyList(), MemberLeaveReasonDTO.LEFT),
                 NETWORK_USER_ID1.value
             )
@@ -369,7 +369,7 @@ object TestConversation {
         null,
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
-        lastReadDate = "2022-03-30T15:36:00.000Z",
+        lastReadDate = Instant.parse("2022-03-30T15:36:00.000Z"),
         creatorId = null,
         receiptMode = Conversation.ReceiptMode.DISABLED,
         messageTimer = null,
@@ -393,7 +393,7 @@ object TestConversation {
         null,
         access = listOf(Conversation.Access.CODE, Conversation.Access.INVITE),
         accessRole = listOf(Conversation.AccessRole.NON_TEAM_MEMBER, Conversation.AccessRole.GUEST),
-        lastReadDate = "2022-03-30T15:36:00.000Z",
+        lastReadDate = Instant.parse("2022-03-30T15:36:00.000Z"),
         creatorId = null,
         receiptMode = Conversation.ReceiptMode.DISABLED,
         messageTimer = null,

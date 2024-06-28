@@ -108,7 +108,58 @@ class EndCallUseCaseTest {
         coVerify {
             callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED_INTERNALLY))
         }.wasInvoked(once)
+    }
 
+    @Test
+    fun givenStartedOutgoingCall_whenEndCallIsInvoked_thenUpdateStatusAndInvokeEndCallOnce() = runTest(TestKaliumDispatcher.main) {
+        val stillOngoingCall = call.copy(
+            status = CallStatus.STARTED,
+            conversationType = Conversation.Type.GROUP
+        )
+
+        coEvery {
+            callRepository.callsFlow()
+        }.returns(flowOf(listOf(stillOngoingCall)))
+
+        endCall.invoke(conversationId)
+
+        coVerify {
+            callManager.endCall(eq(conversationId))
+        }.wasInvoked(once)
+
+        verify {
+            callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
+        }.wasInvoked(once)
+
+        coVerify {
+            callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED_INTERNALLY))
+        }.wasInvoked(once)
+    }
+
+    @Test
+    fun givenIncomingCall_whenEndCallIsInvoked_thenUpdateStatusAndInvokeEndCallOnce() = runTest(TestKaliumDispatcher.main) {
+        val stillOngoingCall = call.copy(
+            status = CallStatus.INCOMING,
+            conversationType = Conversation.Type.GROUP
+        )
+
+        coEvery {
+            callRepository.callsFlow()
+        }.returns(flowOf(listOf(stillOngoingCall)))
+
+        endCall.invoke(conversationId)
+
+        coVerify {
+            callManager.endCall(eq(conversationId))
+        }.wasInvoked(once)
+
+        verify {
+            callRepository.updateIsCameraOnById(eq(conversationId), eq(false))
+        }.wasInvoked(once)
+
+        coVerify {
+            callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED_INTERNALLY))
+        }.wasInvoked(once)
     }
 
     @Test

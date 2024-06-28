@@ -794,7 +794,11 @@ class ConversationDAOTest : BaseDatabaseTest() {
         insertTeamUserAndMember(team, user1, conversationEntity3.id)
 
         // when
-        conversationDAO.updateConversationName(conversationEntity3.id, "NEW-NAME", "2023-11-22T15:36:00.000Z")
+        conversationDAO.updateConversationName(
+            conversationEntity3.id,
+            "NEW-NAME",
+            Instant.parse("2023-11-22T15:36:00.000Z")
+        )
         val updatedConversation = conversationDAO.getConversationByQualifiedID(conversationEntity3.id)
 
         // then

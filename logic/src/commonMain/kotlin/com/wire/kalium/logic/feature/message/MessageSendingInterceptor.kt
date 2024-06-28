@@ -49,7 +49,7 @@ internal class MessageSendingInterceptorImpl internal constructor(
         return messageRepository.getMessageById(originalMessage.conversationId, replyMessageContent.quotedMessageReference.quotedMessageId)
             .map { persistedMessage ->
                 val encodedMessageContent = messageContentEncoder.encodeMessageContent(
-                    messageDate = persistedMessage.date,
+                    messageInstant = persistedMessage.date,
                     messageContent = persistedMessage.content
                 )
 

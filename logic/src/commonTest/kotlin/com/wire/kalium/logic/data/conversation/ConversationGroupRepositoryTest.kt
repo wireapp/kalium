@@ -74,6 +74,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationGuestLinkEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
@@ -1140,7 +1141,7 @@ class ConversationGroupRepositoryTest {
             TestConversation.NETWORK_ID,
             ConversationMessageTimerDTO(messageTimer),
             TestConversation.NETWORK_USER_ID1,
-            "2022-03-30T15:36:00.000Z"
+            Instant.UNIX_FIRST_DATE,
         )
 
         val (arrangement, conversationGroupRepository) = Arrangement()

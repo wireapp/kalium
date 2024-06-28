@@ -35,10 +35,10 @@ import com.wire.kalium.logic.data.message.MessageTarget
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 
 internal class OnHttpRequest(
     private val handle: Deferred<Handle>,
@@ -111,7 +111,7 @@ internal class OnHttpRequest(
         selfConversationId: ConversationId? = null
     ): Either<CoreFailure, Unit> {
         val messageContent = MessageContent.Calling(data, conversationId)
-        val date = DateTimeUtil.currentIsoDateTimeString()
+        val date = Clock.System.now()
         val message = Message.Signaling(
             id = uuid4().toString(),
             content = messageContent,

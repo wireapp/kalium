@@ -89,7 +89,7 @@ interface MessageDAO {
 
     suspend fun getAllPendingMessagesFromUser(userId: UserIDEntity): List<MessageEntity>
     suspend fun updateTextMessageContent(
-        editTimeStamp: String,
+        editInstant: Instant,
         conversationId: QualifiedIDEntity,
         currentMessageId: String,
         newTextContent: MessageEntityContent.Text,

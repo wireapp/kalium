@@ -34,11 +34,11 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.persistence.dao.message.MessageEntity
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 
 @Suppress("LongParameterList")
 
@@ -87,7 +87,7 @@ class SendEditTextMessageUseCase internal constructor(
                 id = editedMessageId,
                 content = content,
                 conversationId = conversationId,
-                date = DateTimeUtil.currentIsoDateTimeString(),
+                date = Clock.System.now(),
                 senderUserId = selfUserId,
                 senderClientId = clientId,
                 status = Message.Status.Pending,
@@ -100,7 +100,7 @@ class SendEditTextMessageUseCase internal constructor(
                 conversationId = message.conversationId,
                 messageContent = content,
                 newMessageId = originalMessageId,
-                editTimeStamp = message.date
+                editInstant = message.date
             ).flatMap {
                     messageRepository.updateMessageStatus(
                         messageStatus = MessageEntity.Status.PENDING,
