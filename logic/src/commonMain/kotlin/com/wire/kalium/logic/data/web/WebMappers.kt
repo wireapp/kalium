@@ -30,7 +30,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MigratedMessage
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.utils.io.core.toByteArray
 import kotlinx.datetime.Instant
 import kotlin.time.DurationUnit
@@ -53,7 +53,7 @@ fun WebEventContent.toMigratedMessage(selfUserDomain: String): MigratedMessage? 
                     ),
                     data.expectsReadConfirmation ?: false,
                     legalHoldStatus = if (data.legalHoldStatus == 2) Conversation.LegalHoldStatus.ENABLED
-                        else Conversation.LegalHoldStatus.DISABLED
+                    else Conversation.LegalHoldStatus.DISABLED
                 ),
                 encryptedProto = null,
                 null,
@@ -132,17 +132,16 @@ private fun toQualifiedId(remoteId: String, domain: String?, selfUserId: UserId)
 
 fun WebConversationContent.toConversation(selfUserId: UserId): Conversation? {
     return mapConversationType(type)?.let {
-        val lastEventTime: String =
-            if (lastEventTimestamp == null || lastEventTimestamp == 0L) {
-                "1970-01-01T00:00:00.000Z"
-            } else {
-                DateTimeUtil.fromEpochMillisToIsoDateTimeString(lastEventTimestamp)
-            }
+        val lastEventTime = if (lastEventTimestamp == null || lastEventTimestamp == 0L) {
+            Instant.UNIX_FIRST_DATE
+        } else {
+            Instant.fromEpochMilliseconds(lastEventTimestamp)
+        }
 
         val conversationLastReadTime = if (lastReadTimestamp == null || lastReadTimestamp == 0L) {
-            "1970-01-01T00:00:00.000Z"
+            Instant.UNIX_FIRST_DATE
         } else {
-            DateTimeUtil.fromEpochMillisToIsoDateTimeString(lastReadTimestamp)
+            Instant.fromEpochMilliseconds(lastReadTimestamp)
         }
         val conversationArchivedTimestamp: Instant? = archivedTimestamp?.let { timestamp ->
             Instant.fromEpochMilliseconds(timestamp)
@@ -174,7 +173,7 @@ fun WebConversationContent.toConversation(selfUserId: UserId): Conversation? {
             mlsVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
             proteusVerificationStatus = Conversation.VerificationStatus.NOT_VERIFIED,
             legalHoldStatus = if (legalHoldStatus == 2) Conversation.LegalHoldStatus.ENABLED
-                else Conversation.LegalHoldStatus.DISABLED
+            else Conversation.LegalHoldStatus.DISABLED
         )
     }
 }

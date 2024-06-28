@@ -30,6 +30,7 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
+import kotlinx.datetime.Instant
 
 interface RenamedConversationEventHandler {
     suspend fun handle(event: Event.Conversation.RenamedConversation)
@@ -42,13 +43,13 @@ internal class RenamedConversationEventHandlerImpl(
 
     override suspend fun handle(event: Event.Conversation.RenamedConversation) {
         val logger = kaliumLogger.createEventProcessingLogger(event)
-        updateConversationName(event.conversationId, event.conversationName, event.timestampIso)
+        updateConversationName(event.conversationId, event.conversationName, event.dateTime)
             .onSuccess {
                 val message = Message.System(
                     id = event.id,
                     content = MessageContent.ConversationRenamed(event.conversationName),
                     conversationId = event.conversationId,
-                    date = event.timestampIso,
+                    date = event.dateTime,
                     senderUserId = event.senderUserId,
                     status = Message.Status.Sent,
                     expirationData = null
@@ -62,9 +63,9 @@ internal class RenamedConversationEventHandlerImpl(
     private suspend fun updateConversationName(
         conversationId: ConversationId,
         conversationName: String,
-        timestamp: String
+        dateTime: Instant
     ) =
         wrapStorageRequest {
-            conversationDAO.updateConversationName(conversationId.toDao(), conversationName, timestamp)
+            conversationDAO.updateConversationName(conversationId.toDao(), conversationName, dateTime)
         }
 }

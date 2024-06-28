@@ -85,7 +85,7 @@ class ApplicationMessageHandlerTest {
         val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent.decodeToString())
         messageHandler.handleContent(
             messageEvent.conversationId,
-            messageEvent.timestampIso,
+            messageEvent.messageInstant,
             messageEvent.senderUserId,
             messageEvent.senderClientId,
             protoContent
@@ -122,7 +122,7 @@ class ApplicationMessageHandlerTest {
         val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent.decodeToString())
         messageHandler.handleContent(
             messageEvent.conversationId,
-            messageEvent.timestampIso,
+            messageEvent.messageInstant,
             messageEvent.senderUserId,
             messageEvent.senderClientId,
             protoContent

@@ -149,7 +149,7 @@ internal interface MessageRepository {
     suspend fun broadcastEnvelope(
         envelope: MessageEnvelope,
         messageOption: BroadcastMessageOption
-    ): Either<CoreFailure, String>
+    ): Either<CoreFailure, Instant>
 
     suspend fun sendMLSMessage(
         conversationId: ConversationId,
@@ -166,7 +166,7 @@ internal interface MessageRepository {
         conversationId: ConversationId,
         messageContent: MessageContent.TextEdited,
         newMessageId: String,
-        editTimeStamp: String
+        editInstant: Instant
     ): Either<CoreFailure, Unit>
 
     suspend fun updateLegalHoldMessageMembers(
@@ -470,7 +470,7 @@ internal class MessageDataSource internal constructor(
     override suspend fun broadcastEnvelope(
         envelope: MessageEnvelope,
         messageOption: BroadcastMessageOption
-    ): Either<CoreFailure, String> {
+    ): Either<CoreFailure, Instant> {
         val recipientMap: Map<NetworkQualifiedId, Map<String, ByteArray>> =
             envelope.recipients.associate { recipientEntry ->
                 recipientEntry.userId.toApi() to recipientEntry.clientPayloads.associate { clientPayload ->
@@ -541,11 +541,11 @@ internal class MessageDataSource internal constructor(
         conversationId: ConversationId,
         messageContent: MessageContent.TextEdited,
         newMessageId: String,
-        editTimeStamp: String
+        editInstant: Instant
     ): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
             messageDAO.updateTextMessageContent(
-                editTimeStamp = editTimeStamp,
+                editInstant = editInstant,
                 conversationId = conversationId.toDao(),
                 currentMessageId = messageContent.editMessageId,
                 newTextContent = MessageEntityContent.Text(

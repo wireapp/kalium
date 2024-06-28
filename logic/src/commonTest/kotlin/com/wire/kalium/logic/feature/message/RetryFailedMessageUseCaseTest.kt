@@ -35,7 +35,7 @@ import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCa
 import com.wire.kalium.logic.feature.asset.UpdateTransferStatusResult
 import com.wire.kalium.logic.framework.TestAsset.mockedLongAssetData
 import com.wire.kalium.logic.framework.TestMessage.ASSET_CONTENT
-import com.wire.kalium.logic.framework.TestMessage.TEST_DATE_STRING
+import com.wire.kalium.logic.framework.TestMessage.TEST_DATE
 import com.wire.kalium.logic.framework.TestMessage.TEXT_MESSAGE
 import com.wire.kalium.logic.framework.TestMessage.assetMessage
 import com.wire.kalium.logic.functional.Either
@@ -47,16 +47,11 @@ import io.mockative.Mock
 import io.mockative.any
 
 import io.mockative.coEvery
-import io.mockative.every
 import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.coEvery
 import io.mockative.matches
-import io.mockative.coVerify
-import io.mockative.coEvery
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -140,7 +135,7 @@ class RetryFailedMessageUseCaseTest {
     fun givenAValidFailedEditedMessage_whenRetryingFailedMessage_thenShouldSendAsSignalingWithNewId() =
         runTest(testDispatcher.default) {
             // given
-            val message = TEXT_MESSAGE.copy(status = Message.Status.Failed, editStatus = Message.EditStatus.Edited(TEST_DATE_STRING))
+            val message = TEXT_MESSAGE.copy(status = Message.Status.Failed, editStatus = Message.EditStatus.Edited(TEST_DATE))
             val (arrangement, useCase) = Arrangement()
                 .withGetMessageById(Either.Right(message))
                 .withUpdateMessageStatus(Either.Right(Unit))

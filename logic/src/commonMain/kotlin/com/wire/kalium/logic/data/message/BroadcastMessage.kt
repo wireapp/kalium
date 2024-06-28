@@ -21,11 +21,12 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.util.serialization.toJsonElement
+import kotlinx.datetime.Instant
 
 data class BroadcastMessage(
     val id: String,
     val content: MessageContent.Signaling,
-    val date: String,
+    val date: Instant,
     val senderUserId: UserId,
     val status: Message.Status,
     val isSelfMessage: Boolean,

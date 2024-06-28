@@ -32,6 +32,7 @@ import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -87,7 +88,7 @@ class CancelConnectionRequestUseCaseTest {
         val connection = Connection(
             "someId",
             "from",
-            "lastUpdate",
+            Instant.DISTANT_PAST,
             ConversationId("someId", "someDomain"),
             ConversationId("someId", "someDomain"),
             ConnectionState.CANCELLED,

@@ -44,6 +44,7 @@ import com.wire.kalium.network.api.base.model.TeamId
 import com.wire.kalium.network.api.base.model.UserId
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.util.serialization.toJsonElement
+import kotlinx.datetime.Instant
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -139,7 +140,7 @@ sealed class EventContentDTO {
         data class NewConversationDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
-            @SerialName("time") val time: String,
+            @SerialName("time") val time: Instant,
             @SerialName("data") val data: ConversationResponse,
         ) : Conversation()
 
@@ -156,7 +157,7 @@ sealed class EventContentDTO {
         data class ConversationRenameDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
-            @SerialName("time") val time: String,
+            @SerialName("time") val time: Instant,
             @SerialName("data") val updateNameData: ConversationNameUpdateEvent,
         ) : Conversation()
 
@@ -165,7 +166,7 @@ sealed class EventContentDTO {
         data class MemberJoinDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
-            @SerialName("time") val time: String,
+            @SerialName("time") val time: Instant,
             @SerialName("data") val members: ConversationMembers,
             @Deprecated("use qualifiedFrom", replaceWith = ReplaceWith("this.qualifiedFrom")) @SerialName("from") val from: String
         ) : Conversation()
@@ -175,7 +176,7 @@ sealed class EventContentDTO {
         data class MemberLeaveDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
-            @SerialName("time") val time: String,
+            @SerialName("time") val time: Instant,
             @SerialName("data") val removedUsers: ConversationMemberRemovedDTO,
             @SerialName("from") val from: String
         ) : Conversation()
@@ -205,7 +206,7 @@ sealed class EventContentDTO {
         data class NewMessageDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
-            @SerialName("time") val time: String,
+            @SerialName("time") val time: Instant,
             @SerialName("data") val data: MessageEventData,
         ) : Conversation()
 
@@ -246,7 +247,7 @@ sealed class EventContentDTO {
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("data") val data: ConversationMessageTimerDTO,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
-            val time: String
+            @SerialName("time") val time: Instant
         ) : Conversation()
 
         @Serializable
@@ -254,7 +255,7 @@ sealed class EventContentDTO {
         data class NewMLSMessageDTO(
             @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
             @SerialName("qualified_from") val qualifiedFrom: UserId,
-            @SerialName("time") val time: String,
+            @SerialName("time") val time: Instant,
             @SerialName("data") val message: String,
             @SerialName("subconv") val subconversation: String?,
         ) : Conversation()
@@ -285,7 +286,7 @@ sealed class EventContentDTO {
         data class MemberLeave(
             @SerialName("data") val teamMember: TeamMemberIdData,
             @SerialName("team") val teamId: TeamId,
-            val time: String,
+            @SerialName("time") val time: Instant,
         ) : Team()
     }
 

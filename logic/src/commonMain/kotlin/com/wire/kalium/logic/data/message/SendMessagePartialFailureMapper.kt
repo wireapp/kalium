@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedUserIdToClientMap
 import com.wire.kalium.network.api.base.authenticated.message.SendMLSMessageResponse
+import kotlinx.datetime.Instant
 
 /**
  * Maps the [QualifiedSendMessageResponse] to a [MessageSent] object.
@@ -73,7 +74,7 @@ internal class SendMessagePartialFailureMapperImpl : SendMessagePartialFailureMa
 }
 
 data class MessageSent(
-    val time: String,
+    val time: Instant,
     val failedToConfirmClients: List<UserId> = listOf(),
     val missing: List<UserId> = listOf()
 )

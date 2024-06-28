@@ -30,7 +30,6 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
@@ -65,7 +64,7 @@ internal class StaleEpochVerifierImpl(
                 joinExistingMLSConversation(conversationId).flatMap {
                     systemMessageInserter.insertLostCommitSystemMessage(
                         conversationId,
-                        (timestamp ?: Clock.System.now()).toIsoDateTimeString()
+                        Clock.System.now()
                     )
                 }
             } else {

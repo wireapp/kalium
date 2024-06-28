@@ -59,7 +59,7 @@ class DeleteEphemeralMessageForSelfUserAsReceiverUseCaseTest {
             id = messageId,
             content = MessageContent.Text("text"),
             conversationId = conversationId,
-            date = Instant.DISTANT_FUTURE.toIsoDateTimeString(),
+            date = Instant.DISTANT_FUTURE,
             senderUserId = senderUserID,
             senderClientId = currentClientId,
             status = Message.Status.Pending,

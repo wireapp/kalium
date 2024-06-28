@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.util.DateTimeUtil
+import kotlinx.datetime.Clock
 
 /**
  * Internal UseCase that updates Group Conversation Receipt Mode value
@@ -75,7 +75,7 @@ internal class UpdateConversationReceiptModeUseCaseImpl(
                 receiptMode = receiptMode == Conversation.ReceiptMode.ENABLED
             ),
             conversationId,
-            DateTimeUtil.currentIsoDateTimeString(),
+            Clock.System.now(),
             selfUserId,
             Message.Status.Sent,
             Message.Visibility.VISIBLE,

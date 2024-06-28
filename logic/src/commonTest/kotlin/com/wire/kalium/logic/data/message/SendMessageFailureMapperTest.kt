@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -38,7 +39,7 @@ class SendMessageFailureMapperTest {
     companion object {
         private val ERROR_DTO = ProteusClientsChangedError(
             errorBody = QualifiedSendMessageResponse.MissingDevicesResponse(
-                time = "some_time",
+                time = Instant.DISTANT_PAST,
                 missing = mapOf("missing_domain" to mapOf(userId(0) to listOf(clientId(0, 0), clientId(0, 1)))),
                 redundant = mapOf("redundant_domain" to mapOf(userId(1) to listOf(clientId(1, 0), clientId(1, 1)))),
                 deleted = mapOf(

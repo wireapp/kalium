@@ -355,7 +355,7 @@ class NewMessageEventHandlerTest {
         newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
-            arrangement.staleEpochVerifier.verifyEpoch(eq(newMessageEvent.conversationId), eq(newMessageEvent.timestampIso.toInstant()))
+            arrangement.staleEpochVerifier.verifyEpoch(eq(newMessageEvent.conversationId), eq(newMessageEvent.messageInstant))
         }.wasInvoked(exactly = once)
     }
 
@@ -450,7 +450,7 @@ class NewMessageEventHandlerTest {
         val SELF_USER_ID = UserId("selfUserId", "selfDomain")
         val applicationMessage = MessageUnpackResult.ApplicationMessage(
             ConversationId("conversationID", "domain"),
-            Instant.DISTANT_PAST.toIsoDateTimeString(),
+            Instant.DISTANT_PAST,
             SELF_USER_ID,
             ClientId("clientID"),
             ProtoContent.Readable(

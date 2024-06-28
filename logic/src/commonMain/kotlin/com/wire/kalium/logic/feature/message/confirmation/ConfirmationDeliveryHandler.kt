@@ -36,7 +36,6 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.logStructuredJson
 import com.wire.kalium.logic.sync.SyncManager
-import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.flow.Flow
@@ -46,6 +45,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.datetime.Clock
 
 /**
  * Internal: Handles the send of delivery confirmation of messages.
@@ -129,7 +129,7 @@ internal class ConfirmationDeliveryHandlerImpl(
                 id = uuid4().toString(),
                 content = MessageContent.Receipt(ReceiptType.DELIVERED, messages),
                 conversationId = conversation.id,
-                date = DateTimeUtil.currentIsoDateTimeString(),
+                date = Clock.System.now(),
                 senderUserId = selfUserId,
                 senderClientId = currentClientId,
                 status = Message.Status.Pending,

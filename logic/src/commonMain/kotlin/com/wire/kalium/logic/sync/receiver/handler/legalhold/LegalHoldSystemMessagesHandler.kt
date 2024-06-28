@@ -28,13 +28,14 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.map
-import com.wire.kalium.util.DateTimeUtil
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 
 internal interface LegalHoldSystemMessagesHandler {
-    suspend fun handleEnabledForUser(userId: UserId, systemMessageTimestampIso: String)
-    suspend fun handleDisabledForUser(userId: UserId, systemMessageTimestampIso: String)
-    suspend fun handleEnabledForConversation(conversationId: ConversationId, systemMessageTimestampIso: String)
-    suspend fun handleDisabledForConversation(conversationId: ConversationId, systemMessageTimestampIso: String)
+    suspend fun handleEnabledForUser(userId: UserId, systemMessageInstant: Instant)
+    suspend fun handleDisabledForUser(userId: UserId, systemMessageInstant: Instant)
+    suspend fun handleEnabledForConversation(conversationId: ConversationId, systemMessageInstant: Instant)
+    suspend fun handleDisabledForConversation(conversationId: ConversationId, systemMessageInstant: Instant)
 }
 
 internal class LegalHoldSystemMessagesHandlerImpl(
@@ -44,38 +45,40 @@ internal class LegalHoldSystemMessagesHandlerImpl(
     private val messageRepository: MessageRepository,
 ) : LegalHoldSystemMessagesHandler {
 
-    override suspend fun handleEnabledForUser(userId: UserId, systemMessageTimestampIso: String) = handleSystemMessagesForUser(
+    override suspend fun handleEnabledForUser(userId: UserId, systemMessageInstant: Instant) = handleSystemMessagesForUser(
         userId = userId,
-        newSystemMessageTimestampIso = systemMessageTimestampIso,
+        systemMessageInstant = systemMessageInstant,
         update = { members -> (members + userId).distinct() },
         createNew = { MessageContent.LegalHold.ForMembers.Enabled(members = listOf(userId)) }
     )
 
-    override suspend fun handleDisabledForUser(userId: UserId, systemMessageTimestampIso: String) = handleSystemMessagesForUser(
+    override suspend fun handleDisabledForUser(userId: UserId, systemMessageInstant: Instant) = handleSystemMessagesForUser(
         userId = userId,
-        newSystemMessageTimestampIso = systemMessageTimestampIso,
+        systemMessageInstant = systemMessageInstant,
         update = { members -> (members + userId).distinct() },
         createNew = { MessageContent.LegalHold.ForMembers.Disabled(members = listOf(userId)) }
     )
 
-    override suspend fun handleEnabledForConversation(conversationId: ConversationId, systemMessageTimestampIso: String) =
-        handleSystemMessageForConversation(conversationId, Conversation.LegalHoldStatus.ENABLED, systemMessageTimestampIso)
+    override suspend fun handleEnabledForConversation(conversationId: ConversationId, systemMessageInstant: Instant) =
+        handleSystemMessageForConversation(conversationId, Conversation.LegalHoldStatus.ENABLED, systemMessageInstant)
 
-    override suspend fun handleDisabledForConversation(conversationId: ConversationId, systemMessageTimestampIso: String) =
-        handleSystemMessageForConversation(conversationId, Conversation.LegalHoldStatus.DISABLED, systemMessageTimestampIso)
+    override suspend fun handleDisabledForConversation(conversationId: ConversationId, systemMessageInstant: Instant) =
+        handleSystemMessageForConversation(conversationId, Conversation.LegalHoldStatus.DISABLED, systemMessageInstant)
 
     private suspend fun handleSystemMessageForConversation(
         conversationId: ConversationId,
         newStatus: Conversation.LegalHoldStatus,
-        systemMessageTimestampIso: String = DateTimeUtil.currentIsoDateTimeString()
+        instant: Instant = Clock.System.now()
     ) {
         when (newStatus) {
             Conversation.LegalHoldStatus.DISABLED -> persistMessage(
-                createSystemMessage(MessageContent.LegalHold.ForConversation.Disabled, conversationId, systemMessageTimestampIso)
+                createSystemMessage(MessageContent.LegalHold.ForConversation.Disabled, conversationId, instant)
             )
+
             Conversation.LegalHoldStatus.ENABLED -> persistMessage(
-                createSystemMessage(MessageContent.LegalHold.ForConversation.Enabled, conversationId, systemMessageTimestampIso)
+                createSystemMessage(MessageContent.LegalHold.ForConversation.Enabled, conversationId, instant)
             )
+
             else -> { /* do nothing */ }
         }
     }
@@ -90,7 +93,7 @@ internal class LegalHoldSystemMessagesHandlerImpl(
 
     private suspend inline fun <reified T : MessageContent.LegalHold.ForMembers> handleSystemMessagesForUser(
         userId: UserId,
-        newSystemMessageTimestampIso: String = DateTimeUtil.currentIsoDateTimeString(),
+        systemMessageInstant: Instant = Clock.System.now(),
         crossinline update: (List<UserId>) -> List<UserId>,
         crossinline createNew: () -> T,
     ) {
@@ -102,7 +105,7 @@ internal class LegalHoldSystemMessagesHandlerImpl(
                     // create or update system messages for members
                     lastMessagesMap[conversation.id]?.let { (lastMessageId, lastMessageContent) ->
                         messageRepository.updateLegalHoldMessageMembers(lastMessageId, conversation.id, update(lastMessageContent.members))
-                    } ?: persistMessage(createSystemMessage(createNew(), conversation.id, newSystemMessageTimestampIso))
+                    } ?: persistMessage(createSystemMessage(createNew(), conversation.id, systemMessageInstant))
                 }
             }
         }
@@ -111,7 +114,7 @@ internal class LegalHoldSystemMessagesHandlerImpl(
     private fun createSystemMessage(
         content: MessageContent.LegalHold,
         conversationId: ConversationId,
-        date: String = DateTimeUtil.currentIsoDateTimeString(),
+        date: Instant = Clock.System.now(),
     ): Message.System =
         Message.System(
             id = uuid4().toString(),

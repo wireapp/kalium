@@ -6,7 +6,7 @@ on:
         types: [ opened, synchronize ] # Don't rerun on `edited` to save time
 
 concurrency:
-    group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}
     cancel-in-progress: true
 
 jobs:
