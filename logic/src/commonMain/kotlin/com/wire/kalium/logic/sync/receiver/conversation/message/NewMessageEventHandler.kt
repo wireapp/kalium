@@ -166,7 +166,7 @@ internal class NewMessageEventHandlerImpl(
         }
 
     private suspend fun onMessageInserted(result: MessageUnpackResult.ApplicationMessage) {
-        if (result.senderUserId != selfUserId) {
+        if (result.senderUserId != selfUserId && result.content.messageContent is MessageContent.Regular) {
             enqueueConfirmationDelivery(result.conversationId, result.content.messageUid)
         }
 
