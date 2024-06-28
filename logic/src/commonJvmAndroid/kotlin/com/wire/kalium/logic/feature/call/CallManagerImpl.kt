@@ -76,7 +76,6 @@ import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.util.toInt
 import com.wire.kalium.network.NetworkStateObserver
-import com.wire.kalium.util.DateTimeUtil.toEpochMillis
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import io.ktor.util.encodeBase64
@@ -243,7 +242,6 @@ class CallManagerImpl internal constructor(
 
         if (callingValue.type != REMOTE_MUTE_TYPE || shouldRemoteMute) {
             val currTime = System.currentTimeMillis()
-            val msgTime = message.date.toEpochMillis()
 
             val targetConversationId = if (message.isSelfMessage) {
                 content.conversationId ?: message.conversationId
@@ -260,7 +258,7 @@ class CallManagerImpl internal constructor(
                 msg = msg,
                 len = msg.size,
                 curr_time = Uint32_t(value = currTime / 1000),
-                msg_time = Uint32_t(value = msgTime / 1000),
+                msg_time = Uint32_t(value = message.date.epochSeconds),
                 convId = federatedIdMapper.parseToFederatedId(targetConversationId),
                 userId = federatedIdMapper.parseToFederatedId(message.senderUserId),
                 clientId = message.senderClientId.value,

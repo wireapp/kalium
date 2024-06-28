@@ -348,9 +348,9 @@ internal class ConversationDAOImpl internal constructor(
             conversationQueries.whoDeletedMeInConversation(conversationId, selfUserIdString).executeAsOneOrNull()
         }
 
-    override suspend fun updateConversationName(conversationId: QualifiedIDEntity, conversationName: String, timestamp: String) =
+    override suspend fun updateConversationName(conversationId: QualifiedIDEntity, conversationName: String, dateTime: Instant) =
         withContext(coroutineContext) {
-            conversationQueries.updateConversationName(conversationName, timestamp.toInstant(), conversationId)
+            conversationQueries.updateConversationName(conversationName, dateTime, conversationId)
         }
 
     override suspend fun updateConversationType(conversationID: QualifiedIDEntity, type: ConversationEntity.Type) =

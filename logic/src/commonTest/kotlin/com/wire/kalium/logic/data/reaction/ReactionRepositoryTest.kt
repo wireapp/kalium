@@ -27,8 +27,8 @@ import com.wire.kalium.logic.util.IgnoreIOS
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.persistence.TestUserDatabase
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -53,7 +53,7 @@ class ReactionRepositoryTest {
     fun givenSelfUserReactionWasPersisted_whenGettingSelfUserReactions_thenShouldReturnPreviouslyStored() = runTest {
         insertInitialData()
         val emoji = "🫡"
-        reactionRepository.persistReaction(TEST_MESSAGE_ID, TEST_CONVERSATION_ID, SELF_USER_ID, "Date", emoji)
+        reactionRepository.persistReaction(TEST_MESSAGE_ID, TEST_CONVERSATION_ID, SELF_USER_ID, Instant.DISTANT_PAST, emoji)
 
         val result = reactionRepository.getSelfUserReactionsForMessage(TEST_MESSAGE_ID, TEST_CONVERSATION_ID)
 
@@ -64,13 +64,12 @@ class ReactionRepositoryTest {
     }
 
     @IgnoreIOS // TODO investigate why test is flaky
-    @OptIn(ExperimentalCoroutinesApi::class)
     @Test
     fun givenSelfUserReactionWasPersisted_whenObservingMessageReactions_thenShouldReturnReactionsPreviouslyStored() = runTest {
         insertInitialData()
 
-        reactionRepository.persistReaction(TEST_MESSAGE_ID, TEST_CONVERSATION_ID, SELF_USER_ID, "Date", "🤯")
-        reactionRepository.persistReaction(TEST_MESSAGE_ID, TEST_CONVERSATION_ID, SELF_USER_ID, "Date2", "❤️")
+        reactionRepository.persistReaction(TEST_MESSAGE_ID, TEST_CONVERSATION_ID, SELF_USER_ID, Instant.DISTANT_PAST, "🤯")
+        reactionRepository.persistReaction(TEST_MESSAGE_ID, TEST_CONVERSATION_ID, SELF_USER_ID, Instant.DISTANT_PAST, "❤️")
 
             reactionRepository.observeMessageReactions(
                 messageId = TEST_MESSAGE_ID,

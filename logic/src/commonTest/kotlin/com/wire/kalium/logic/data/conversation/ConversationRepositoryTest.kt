@@ -92,6 +92,7 @@ import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
@@ -130,7 +131,7 @@ class ConversationRepositoryTest {
             "id",
             TestConversation.ID,
             TestUser.SELF.id,
-            "time",
+            Instant.UNIX_FIRST_DATE,
             CONVERSATION_RESPONSE
         )
         val selfUserFlow = flowOf(TestUser.SELF)
@@ -158,7 +159,7 @@ class ConversationRepositoryTest {
                 "id",
                 TestConversation.ID,
                 TestUser.SELF.id,
-                "time",
+                Instant.UNIX_FIRST_DATE,
                 CONVERSATION_RESPONSE
             )
             val selfUserFlow = flowOf(TestUser.SELF)
@@ -187,7 +188,7 @@ class ConversationRepositoryTest {
                 "id",
                 TestConversation.ID,
                 TestUser.SELF.id,
-                "time",
+                Instant.UNIX_FIRST_DATE,
                 CONVERSATION_RESPONSE
             )
             val selfUserFlow = flowOf(TestUser.SELF)
@@ -216,7 +217,7 @@ class ConversationRepositoryTest {
                 "id",
                 TestConversation.ID,
                 TestUser.SELF.id,
-                "time",
+                Instant.UNIX_FIRST_DATE,
                 CONVERSATION_RESPONSE.copy(
                     groupId = RAW_GROUP_ID,
                     protocol = MLS,
@@ -1813,7 +1814,7 @@ class ConversationRepositoryTest {
             EventContentDTO.Conversation.ConversationRenameDTO(
                 CONVERSATION_ID.toApi(),
                 USER_ID.toApi(),
-                DateTimeUtil.currentIsoDateTimeString(),
+                Clock.System.now(),
                 ConversationNameUpdateEvent("newName")
             )
         )

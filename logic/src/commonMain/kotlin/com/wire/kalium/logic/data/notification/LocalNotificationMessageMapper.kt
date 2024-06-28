@@ -53,7 +53,7 @@ class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
             "",
             author,
             // TODO: change time to Instant
-            connection.lastModifiedDate.toInstant(),
+            connection.lastModifiedDate,
             connection.connection.qualifiedToId
         )
         return LocalNotification.Conversation(

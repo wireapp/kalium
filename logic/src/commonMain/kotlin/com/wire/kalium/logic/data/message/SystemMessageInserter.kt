@@ -23,7 +23,8 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.util.DateTimeUtil
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 
 internal interface SystemMessageInserter {
     suspend fun insertProtocolChangedSystemMessage(
@@ -31,15 +32,17 @@ internal interface SystemMessageInserter {
         senderUserId: UserId,
         protocol: Conversation.Protocol
     )
+
     suspend fun insertProtocolChangedDuringACallSystemMessage(
         conversationId: ConversationId,
         senderUserId: UserId
     )
+
     suspend fun insertHistoryLostProtocolChangedSystemMessage(
         conversationId: ConversationId
     )
 
-    suspend fun insertLostCommitSystemMessage(conversationId: ConversationId, dateIso: String): Either<CoreFailure, Unit>
+    suspend fun insertLostCommitSystemMessage(conversationId: ConversationId, instant: Instant): Either<CoreFailure, Unit>
 }
 
 internal class SystemMessageInserterImpl(
@@ -57,7 +60,7 @@ internal class SystemMessageInserterImpl(
                 protocol = protocol
             ),
             conversationId,
-            DateTimeUtil.currentIsoDateTimeString(),
+            Clock.System.now(),
             senderUserId,
             Message.Status.Sent,
             Message.Visibility.VISIBLE,
@@ -75,7 +78,7 @@ internal class SystemMessageInserterImpl(
             uuid4().toString(),
             MessageContent.ConversationProtocolChangedDuringACall,
             conversationId,
-            DateTimeUtil.currentIsoDateTimeString(),
+            Clock.System.now(),
             senderUserId,
             Message.Status.Sent,
             Message.Visibility.VISIBLE,
@@ -90,7 +93,7 @@ internal class SystemMessageInserterImpl(
             uuid4().toString(),
             MessageContent.HistoryLostProtocolChanged,
             conversationId,
-            DateTimeUtil.currentIsoDateTimeString(),
+            Clock.System.now(),
             selfUserId,
             Message.Status.Sent,
             Message.Visibility.VISIBLE,
@@ -100,12 +103,12 @@ internal class SystemMessageInserterImpl(
         persistMessage(message)
     }
 
-    override suspend fun insertLostCommitSystemMessage(conversationId: ConversationId, dateIso: String): Either<CoreFailure, Unit> {
+    override suspend fun insertLostCommitSystemMessage(conversationId: ConversationId, instant: Instant): Either<CoreFailure, Unit> {
         val mlsEpochWarningMessage = Message.System(
             id = uuid4().toString(),
             content = MessageContent.MLSWrongEpochWarning,
             conversationId = conversationId,
-            date = dateIso,
+            date = instant,
             senderUserId = selfUserId,
             status = Message.Status.Read(0),
             visibility = Message.Visibility.VISIBLE,
