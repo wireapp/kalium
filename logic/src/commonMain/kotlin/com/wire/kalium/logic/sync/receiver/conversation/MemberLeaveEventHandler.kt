@@ -80,7 +80,7 @@ internal class MemberLeaveEventHandlerImpl(
                         id = event.id,
                         content = content,
                         conversationId = event.conversationId,
-                        date = event.timestampIso,
+                        date = event.dateTime,
                         senderUserId = event.removedBy,
                         status = Message.Status.Sent,
                         visibility = Message.Visibility.VISIBLE,

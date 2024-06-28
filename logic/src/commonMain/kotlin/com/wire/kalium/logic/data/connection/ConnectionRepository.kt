@@ -64,7 +64,6 @@ import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.toInstant
 
 interface ConnectionRepository {
     suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit>
@@ -238,8 +237,8 @@ internal class ConnectionDataSource(
                         protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
                         creatorId = connection.from,
                         lastNotificationDate = null,
-                        lastModifiedDate = connection.lastUpdate.toInstant(),
-                        lastReadDate = connection.lastUpdate.toInstant(),
+                        lastModifiedDate = connection.lastUpdate,
+                        lastReadDate = connection.lastUpdate,
                         access = emptyList(),
                         accessRole = emptyList(),
                         receiptMode = ConversationEntity.ReceiptMode.DISABLED,

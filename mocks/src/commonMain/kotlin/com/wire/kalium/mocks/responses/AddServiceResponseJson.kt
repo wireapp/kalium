@@ -25,6 +25,7 @@ import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.model.AddServiceResponse
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.UserId
+import kotlinx.datetime.Instant
 
 object AddServiceResponseJson {
 
@@ -38,7 +39,7 @@ object AddServiceResponseJson {
                     value = "value2",
                     domain = "domain2"
                 ),
-                time = "some_time",
+                time = Instant.fromEpochMilliseconds(0L),
                 members = ConversationMembers(
                     userIds = listOf("value3@domain3"),
                     users = listOf(

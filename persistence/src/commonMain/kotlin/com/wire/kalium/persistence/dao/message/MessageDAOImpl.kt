@@ -325,14 +325,14 @@ internal class MessageDAOImpl internal constructor(
         }
 
     override suspend fun updateTextMessageContent(
-        editTimeStamp: String,
+        editInstant: Instant,
         conversationId: QualifiedIDEntity,
         currentMessageId: String,
         newTextContent: MessageEntityContent.Text,
         newMessageId: String
     ): Unit = withContext(coroutineContext) {
         queries.transaction {
-            queries.markMessageAsEdited(editTimeStamp.toInstant(), currentMessageId, conversationId)
+            queries.markMessageAsEdited(editInstant, currentMessageId, conversationId)
             reactionsQueries.deleteAllReactionsForMessage(currentMessageId, conversationId)
             queries.deleteMessageMentions(currentMessageId, conversationId)
             queries.updateMessageTextContent(newTextContent.messageBody, currentMessageId, conversationId)

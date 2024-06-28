@@ -32,6 +32,7 @@ import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.QualifiedID
 import com.wire.kalium.network.api.model.UserId
+import kotlinx.datetime.Instant
 
 object EventContentDTOJson {
 
@@ -191,7 +192,7 @@ object EventContentDTOJson {
             qualifiedConversation = ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
             qualifiedFrom = UserId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
             from = "ebafd3d4-1548-49f2-ac4e-b2757e6ca44b",
-            time = "2021-05-31T10:52:02.671Z",
+            time = Instant.parse("2021-05-31T10:52:02.671Z"),
             members = ConversationMembers(emptyList(), emptyList())
         ),
         jsonProviderMemberJoin
@@ -202,7 +203,7 @@ object EventContentDTOJson {
             qualifiedConversation = ConversationId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
             qualifiedFrom = UserId("ebafd3d4-1548-49f2-ac4e-b2757e6ca44b", "anta.wire.link"),
             from = "ebafd3d4-1548-49f2-ac4e-b2757e6ca44b",
-            time = "2021-05-31T10:52:02.671Z",
+            time = Instant.parse("2021-05-31T10:52:02.671Z"),
             removedUsers = ConversationMemberRemovedDTO(emptyList(), MemberLeaveReasonDTO.LEFT)
         ),
         jsonProviderMemberLeave

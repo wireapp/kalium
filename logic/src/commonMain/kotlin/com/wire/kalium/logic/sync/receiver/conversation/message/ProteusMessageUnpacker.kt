@@ -93,7 +93,7 @@ internal class ProteusMessageUnpackerImpl(
             }.map { readableContent ->
                 MessageUnpackResult.ApplicationMessage(
                     conversationId = event.conversationId,
-                    timestampIso = event.timestampIso,
+                    instant = event.messageInstant,
                     senderUserId = event.senderUserId,
                     senderClientId = event.senderClientId,
                     content = readableContent

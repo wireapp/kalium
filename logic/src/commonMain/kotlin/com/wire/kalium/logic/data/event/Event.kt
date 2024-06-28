@@ -45,7 +45,9 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement
+import kotlinx.datetime.Instant
 import kotlinx.serialization.json.JsonNull
 
 /**
@@ -139,7 +141,7 @@ sealed class Event(open val id: String) {
             override val conversationId: ConversationId,
             val senderUserId: UserId,
             val senderClientId: ClientId,
-            val timestampIso: String,
+            val messageInstant: Instant,
             val content: String,
             val encryptedExternalContent: EncryptedData?
         ) : Conversation(id, conversationId) {
@@ -150,7 +152,7 @@ sealed class Event(open val id: String) {
                 conversationIdKey to conversationId.toLogString(),
                 senderUserIdKey to senderUserId.toLogString(),
                 "senderClientId" to senderClientId.value.obfuscateId(),
-                timestampIsoKey to timestampIso
+                timestampIsoKey to messageInstant
             )
         }
 
@@ -159,7 +161,7 @@ sealed class Event(open val id: String) {
             override val conversationId: ConversationId,
             val subconversationId: SubconversationId?,
             val senderUserId: UserId,
-            val timestampIso: String,
+            val messageInstant: Instant,
             val content: String
         ) : Conversation(id, conversationId) {
 
@@ -168,7 +170,7 @@ sealed class Event(open val id: String) {
                 idKey to id.obfuscateId(),
                 conversationIdKey to conversationId.toLogString(),
                 senderUserIdKey to senderUserId.toLogString(),
-                timestampIsoKey to timestampIso
+                timestampIsoKey to messageInstant.toIsoDateTimeString()
             )
         }
 
@@ -176,7 +178,7 @@ sealed class Event(open val id: String) {
             override val id: String,
             override val conversationId: ConversationId,
             val senderUserId: UserId,
-            val timestampIso: String,
+            val dateTime: Instant,
             val conversation: ConversationResponse
         ) : Conversation(id, conversationId) {
 
@@ -184,7 +186,7 @@ sealed class Event(open val id: String) {
                 typeKey to "Conversation.NewConversation",
                 idKey to id.obfuscateId(),
                 conversationIdKey to conversationId.toLogString(),
-                timestampIsoKey to timestampIso
+                timestampIsoKey to dateTime
             )
         }
 
@@ -193,7 +195,7 @@ sealed class Event(open val id: String) {
             override val conversationId: ConversationId,
             val addedBy: UserId,
             val members: List<Member>,
-            val timestampIso: String
+            val dateTime: Instant
         ) : Conversation(id, conversationId) {
 
             override fun toLogMap(): Map<String, Any?> = mapOf(
@@ -202,7 +204,7 @@ sealed class Event(open val id: String) {
                 conversationIdKey to conversationId.toLogString(),
                 "addedBy" to addedBy.toLogString(),
                 "members" to members.map { it.toMap() },
-                timestampIsoKey to timestampIso
+                timestampIsoKey to dateTime.toIsoDateTimeString()
             )
         }
 
@@ -211,7 +213,7 @@ sealed class Event(open val id: String) {
             override val conversationId: ConversationId,
             val removedBy: UserId,
             val removedList: List<UserId>,
-            val timestampIso: String,
+            val dateTime: Instant,
             val reason: MemberLeaveReason
         ) : Conversation(id, conversationId) {
 
@@ -220,7 +222,7 @@ sealed class Event(open val id: String) {
                 idKey to id.obfuscateId(),
                 conversationIdKey to conversationId.toLogString(),
                 "removedBy" to removedBy.toLogString(),
-                timestampIsoKey to timestampIso
+                timestampIsoKey to dateTime
             )
         }
 
@@ -331,7 +333,7 @@ sealed class Event(open val id: String) {
             override val conversationId: ConversationId,
             val conversationName: String,
             val senderUserId: UserId,
-            val timestampIso: String,
+            val dateTime: Instant,
         ) : Conversation(id, conversationId) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Conversation.RenamedConversation",
@@ -339,7 +341,7 @@ sealed class Event(open val id: String) {
                 conversationIdKey to conversationId.toLogString(),
                 senderUserIdKey to senderUserId.toLogString(),
                 "conversationName" to conversationName,
-                timestampIsoKey to timestampIso,
+                timestampIsoKey to dateTime.toIsoDateTimeString(),
             )
         }
 
@@ -364,7 +366,7 @@ sealed class Event(open val id: String) {
             override val conversationId: ConversationId,
             val messageTimer: Long?,
             val senderUserId: UserId,
-            val timestampIso: String
+            val dateTime: Instant
         ) : Conversation(id, conversationId) {
 
             override fun toLogMap() = mapOf(
@@ -373,7 +375,7 @@ sealed class Event(open val id: String) {
                 conversationIdKey to conversationId.toLogString(),
                 "messageTime" to messageTimer,
                 senderUserIdKey to senderUserId.toLogString(),
-                timestampIsoKey to timestampIso
+                timestampIsoKey to dateTime.toIsoDateTimeString()
             )
         }
 
@@ -436,13 +438,13 @@ sealed class Event(open val id: String) {
             override val id: String,
             override val teamId: String,
             val memberId: String,
-            val timestampIso: String,
+            val dateTime: Instant,
         ) : Team(id, teamId) {
             override fun toLogMap(): Map<String, Any?> = mapOf(
                 typeKey to "Team.MemberLeave",
                 idKey to id.obfuscateId(),
                 teamIdKey to teamId.obfuscateId(),
-                timestampIsoKey to timestampIso,
+                timestampIsoKey to dateTime.toIsoDateTimeString(),
                 memberIdKey to memberId.obfuscateId(),
             )
         }

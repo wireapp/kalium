@@ -35,7 +35,6 @@ import com.wire.kalium.logic.data.user.User
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.util.serialization.toJsonElement
-import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.datetime.Instant
 import kotlin.time.Duration
 
@@ -66,9 +65,9 @@ data class Conversation(
     val protocol: ProtocolInfo,
     val mutedStatus: MutedConversationStatus,
     val removedBy: UserId?,
-    val lastNotificationDate: String?,
-    val lastModifiedDate: String?,
-    val lastReadDate: String,
+    val lastNotificationDate: Instant?,
+    val lastModifiedDate: Instant?,
+    val lastReadDate: Instant,
     val access: List<Access>,
     val accessRole: List<AccessRole>,
     val creatorId: String?,
@@ -310,27 +309,27 @@ sealed class ConversationDetails(open val conversation: Conversation) {
         val conversationId: ConversationId,
         val otherUser: OtherUser?,
         val userType: UserType,
-        val lastModifiedDate: String,
+        val lastModifiedDate: Instant,
         val connection: com.wire.kalium.logic.data.user.Connection,
-        val protocolInfo: Conversation.ProtocolInfo,
-        val access: List<Conversation.Access>,
-        val accessRole: List<Conversation.AccessRole>
+        val protocolInfo: ProtocolInfo,
+        val access: List<Access>,
+        val accessRole: List<AccessRole>
     ) : ConversationDetails(
         Conversation(
             id = conversationId,
             name = otherUser?.name,
-            type = Conversation.Type.CONNECTION_PENDING,
+            type = Type.CONNECTION_PENDING,
             teamId = otherUser?.teamId,
             protocol = protocolInfo,
             mutedStatus = MutedConversationStatus.AllAllowed,
             removedBy = null,
             lastNotificationDate = null,
             lastModifiedDate = lastModifiedDate,
-            lastReadDate = UNIX_FIRST_DATE,
+            lastReadDate = Instant.DISTANT_PAST,
             access = access,
             accessRole = accessRole,
             creatorId = null,
-            receiptMode = Conversation.ReceiptMode.DISABLED,
+            receiptMode = ReceiptMode.DISABLED,
             messageTimer = null,
             userMessageTimer = null,
             archived = false,

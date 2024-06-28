@@ -20,6 +20,7 @@ package com.wire.kalium.network.api.authenticated.connection
 
 import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.api.model.UserId
+import kotlinx.datetime.Instant
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -34,7 +35,7 @@ data class ConnectionResponse(
 data class ConnectionDTO(
     @SerialName("conversation") val conversationId: String,
     @SerialName("from") val from: String,
-    @SerialName("last_update") val lastUpdate: String,
+    @SerialName("last_update") val lastUpdate: Instant,
     @SerialName("qualified_conversation") val qualifiedConversationId: ConversationId,
     @SerialName("qualified_to") val qualifiedToId: UserId,
     @SerialName("status") val status: ConnectionStateDTO,

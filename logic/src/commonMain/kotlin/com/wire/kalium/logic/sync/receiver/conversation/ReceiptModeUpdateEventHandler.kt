@@ -33,7 +33,7 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
-import com.wire.kalium.util.DateTimeUtil
+import kotlinx.datetime.Clock
 
 interface ReceiptModeUpdateEventHandler {
     suspend fun handle(event: Event.Conversation.ConversationReceiptMode)
@@ -55,7 +55,7 @@ internal class ReceiptModeUpdateEventHandlerImpl(
                         receiptMode = event.receiptMode == Conversation.ReceiptMode.ENABLED
                     ),
                     event.conversationId,
-                    DateTimeUtil.currentIsoDateTimeString(),
+                    Clock.System.now(),
                     event.senderUserId,
                     Message.Status.Sent,
                     Message.Visibility.VISIBLE,

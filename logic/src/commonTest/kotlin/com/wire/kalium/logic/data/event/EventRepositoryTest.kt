@@ -37,6 +37,7 @@ import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
@@ -47,6 +48,7 @@ import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -58,7 +60,7 @@ class EventRepositoryTest {
         val pendingEventPayload = EventContentDTO.Conversation.NewMessageDTO(
             TestConversation.NETWORK_ID,
             UserId("value", "domain"),
-            "eventTime",
+            Instant.UNIX_FIRST_DATE,
             MessageEventData("text", "senderId", "recipient")
         )
         val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))

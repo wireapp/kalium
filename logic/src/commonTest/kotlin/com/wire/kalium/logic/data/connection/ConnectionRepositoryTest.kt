@@ -432,7 +432,7 @@ class ConnectionRepositoryTest {
         val stubConnectionOne = ConnectionDTO(
             conversationId = "conversationId1",
             from = "fromId",
-            lastUpdate = UNIX_FIRST_DATE,
+            lastUpdate = Instant.UNIX_FIRST_DATE,
             qualifiedConversationId = ConversationId("conversationId1", "domain"),
             qualifiedToId = NetworkUserId("connectionId1", "domain"),
             status = ConnectionStateDTO.ACCEPTED,
@@ -441,7 +441,7 @@ class ConnectionRepositoryTest {
         val stubConnectionTwo = ConnectionDTO(
             conversationId = "conversationId2",
             from = "fromId",
-            lastUpdate = UNIX_FIRST_DATE,
+            lastUpdate = Instant.UNIX_FIRST_DATE,
             qualifiedConversationId = ConversationId("conversationId2", "domain"),
             qualifiedToId = NetworkUserId("connectionId2", "domain"),
             status = ConnectionStateDTO.ACCEPTED,
@@ -470,7 +470,7 @@ class ConnectionRepositoryTest {
         val stubConnectionEntity = ConnectionEntity(
             conversationId = "conversationId1",
             from = "fromId",
-            lastUpdateDate = UNIX_FIRST_DATE.toInstant(),
+            lastUpdateDate = Instant.UNIX_FIRST_DATE,
             qualifiedConversationId = ConversationIDEntity("conversationId", "domain"),
             qualifiedToId = ConversationIDEntity("userId", "domain"),
             status = ConnectionEntity.State.ACCEPTED,

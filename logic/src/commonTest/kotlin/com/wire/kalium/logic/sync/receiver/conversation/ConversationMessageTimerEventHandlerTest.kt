@@ -57,7 +57,7 @@ class ConversationMessageTimerEventHandlerTest {
                         messageTimer = event.messageTimer
                     ),
                     event.conversationId,
-                    event.timestampIso,
+                    event.dateTime,
                     event.senderUserId,
                     Message.Status.Sent,
                     Message.Visibility.VISIBLE,

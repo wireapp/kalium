@@ -59,7 +59,7 @@ internal class TeamEventReceiverImpl(
                         id = uuid4().toString(), // We generate a random uuid for this new system message
                         content = MessageContent.MemberChange.RemovedFromTeam(listOf(removedUser)),
                         conversationId = conversationId,
-                        date = event.timestampIso,
+                        date = event.dateTime,
                         senderUserId = removedUser,
                         status = Message.Status.Sent,
                         visibility = Message.Visibility.VISIBLE,

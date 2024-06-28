@@ -19,10 +19,11 @@
 package com.wire.kalium.mocks.responses
 
 import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
+import kotlinx.datetime.Instant
 
 object QualifiedSendMessageResponseJson {
 
-    private const val TIME = "2021-05-31T10:52:02.671Z"
+    private val TIME = Instant.parse("2021-05-31T10:52:02.671Z")
 
     private const val USER_1 = "user10d0-000b-9c1a-000d-a4130002c221"
     private const val USER_1_client_1 = "60f85e4b15ad3786"

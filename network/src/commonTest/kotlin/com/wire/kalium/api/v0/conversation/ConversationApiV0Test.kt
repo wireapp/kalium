@@ -259,7 +259,8 @@ internal class ConversationApiV0Test : ApiTest() {
         val serviceId = AddServiceRequest("service_id", "service_provider")
 
         val networkClient = mockAuthenticatedNetworkClient(
-            AddServiceResponseJson.valid, statusCode = HttpStatusCode.Created,
+            responseBody = AddServiceResponseJson.valid,
+            statusCode = HttpStatusCode.Created,
             assertion = {
                 assertPost()
                 assertPathEqual("conversations/${conversationId.value}/bots")

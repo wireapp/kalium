@@ -39,6 +39,7 @@ import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertIs
 
@@ -111,7 +112,7 @@ class RenameConversationUseCaseTest {
             EventContentDTO.Conversation.ConversationRenameDTO(
                 ConversationRepositoryTest.CONVERSATION_ID.toApi(),
                 ConversationRepositoryTest.USER_ID.toApi(),
-                DateTimeUtil.currentIsoDateTimeString(),
+                Instant.DISTANT_PAST,
                 ConversationNameUpdateEvent("newName")
             )
         )

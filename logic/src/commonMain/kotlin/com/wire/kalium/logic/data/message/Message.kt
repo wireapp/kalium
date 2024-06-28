@@ -38,7 +38,7 @@ sealed interface Message {
     val id: String
     val content: MessageContent
     val conversationId: ConversationId
-    val date: String
+    val date: Instant
     val senderUserId: UserId
     val status: Status
     val expirationData: ExpirationData?
@@ -76,7 +76,7 @@ sealed interface Message {
         override val id: String,
         override val content: MessageContent.Regular,
         override val conversationId: ConversationId,
-        override val date: String,
+        override val date: Instant,
         override val senderUserId: UserId,
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
@@ -166,7 +166,7 @@ sealed interface Message {
         override val id: String,
         override val content: MessageContent.Signaling,
         override val conversationId: ConversationId,
-        override val date: String,
+        override val date: Instant,
         override val senderUserId: UserId,
         override val senderClientId: ClientId,
         override val status: Status,
@@ -260,7 +260,7 @@ sealed interface Message {
         override val id: String,
         override val content: MessageContent.System,
         override val conversationId: ConversationId,
-        override val date: String,
+        override val date: Instant,
         override val senderUserId: UserId,
         override val status: Status,
         override val visibility: Visibility = Visibility.VISIBLE,
@@ -388,7 +388,7 @@ sealed interface Message {
             val standardProperties = mapOf(
                 "id" to id.obfuscateId(),
                 "conversationId" to conversationId.toLogString(),
-                "date" to date,
+                "date" to date.toIsoDateTimeString(),
                 "senderUserId" to senderUserId.value.obfuscateId(),
                 "status" to "$status",
                 "visibility" to "$visibility",
@@ -443,11 +443,11 @@ sealed interface Message {
 
     sealed class EditStatus {
         data object NotEdited : EditStatus()
-        data class Edited(val lastTimeStamp: String) : EditStatus()
+        data class Edited(val lastEditInstant: Instant) : EditStatus()
 
         override fun toString(): String = when (this) {
             is NotEdited -> "NOT_EDITED"
-            is Edited -> "EDITED_$lastTimeStamp"
+            is Edited -> "EDITED_${lastEditInstant.toIsoDateTimeString()}"
         }
 
         fun toLogString(): String {
@@ -462,7 +462,7 @@ sealed interface Message {
 
             is Edited -> mutableMapOf(
                 "value" to "EDITED",
-                "time" to this.lastTimeStamp
+                "time" to this.lastEditInstant.toIsoDateTimeString()
             )
         }
     }
