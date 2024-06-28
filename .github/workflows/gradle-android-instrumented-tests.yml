@@ -6,7 +6,7 @@ on:
     types: [ opened, synchronize ] # Don't rerun on `edited` to save time
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}
   cancel-in-progress: true
 
 jobs:
@@ -27,32 +27,33 @@ jobs:
       - name: Setup Java and Gradle
         uses: ./.github/actions/setup-java-gradle
 
-#      - name: AVD cache
-#        uses: actions/cache@v4
-#        id: avd-cache
-#        with:
-#          path: |
-#            ~/.android/avd/*
-#            ~/.android/adb*
-#          key: avd-${{ matrix.api-level }}
-#
-#      - name: Create AVD and generate snapshot for caching
-#        if: steps.avd-cache.outputs.cache-hit != 'true'
-#        uses: reactivecircus/android-emulator-runner@v2.31.0
-#        env:
-#          GITHUB_USER: ${{ github.actor }}
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#        with:
-#          api-level: ${{ matrix.api-level }}
-#          force-avd-creation: false
-#          target: aosp_atd
-#          arch: x86_64
-#          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
-#          cores: 4
-#          ram-size: 4096M
-#          heap-size: 2048M
-#          disable-animations: false
-#          script: echo "Generated AVD snapshot for caching."
+      # - name: AVD cache
+      #      - name: AVD cache
+      #        uses: actions/cache@v4
+      #        id: avd-cache
+      #        with:
+      #          path: |
+      #            ~/.android/avd/*
+      #            ~/.android/adb*
+      #          key: avd-${{ matrix.api-level }}
+      #
+      #      - name: Create AVD and generate snapshot for caching
+      #        if: steps.avd-cache.outputs.cache-hit != 'true'
+      #        uses: reactivecircus/android-emulator-runner@v2.31.0
+      #        env:
+      #          GITHUB_USER: ${{ github.actor }}
+      #          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #        with:
+      #          api-level: ${{ matrix.api-level }}
+      #          force-avd-creation: false
+      #          target: aosp_atd
+      #          arch: x86_64
+      #          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+      #          cores: 4
+      #          ram-size: 4096M
+      #          heap-size: 2048M
+      #          disable-animations: false
+      #          script: echo "Generated AVD snapshot for caching."
 
       - name: Build the samples
         run: |
