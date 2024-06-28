@@ -37,7 +37,6 @@ import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.util.serialization.toJsonElement
-import kotlinx.datetime.toInstant
 
 internal interface NewMessageEventHandler {
     suspend fun handleNewProteusMessage(event: Event.Conversation.NewMessage, deliveryInfo: EventDeliveryInfo)
@@ -78,7 +77,7 @@ internal class NewMessageEventHandlerImpl(
                 applicationMessageHandler.handleDecryptionError(
                     eventId = event.id,
                     conversationId = event.conversationId,
-                    timestampIso = event.timestampIso,
+                    messageInstant = event.messageInstant,
                     senderUserId = event.senderUserId,
                     senderClientId = event.senderClientId,
                     content = MessageContent.FailedDecryption(
@@ -114,7 +113,7 @@ internal class NewMessageEventHandlerImpl(
                         applicationMessageHandler.handleDecryptionError(
                             eventId = event.id,
                             conversationId = event.conversationId,
-                            timestampIso = event.timestampIso,
+                            messageInstant = event.messageInstant,
                             senderUserId = event.senderUserId,
                             senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
                             content = MessageContent.FailedDecryption(
@@ -128,7 +127,7 @@ internal class NewMessageEventHandlerImpl(
                         eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
                         staleEpochVerifier.verifyEpoch(
                             event.conversationId,
-                            event.timestampIso.toInstant()
+                            event.messageInstant
                         )
                     }
                 }
@@ -182,7 +181,7 @@ internal class NewMessageEventHandlerImpl(
     private suspend fun handleSuccessfulResult(result: MessageUnpackResult.ApplicationMessage) {
         applicationMessageHandler.handleContent(
             conversationId = result.conversationId,
-            timestampIso = result.timestampIso,
+            messageInstant = result.instant,
             senderUserId = result.senderUserId,
             senderClientId = result.senderClientId,
             content = result.content

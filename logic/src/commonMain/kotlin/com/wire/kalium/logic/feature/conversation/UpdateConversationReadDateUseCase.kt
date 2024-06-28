@@ -32,9 +32,9 @@ import com.wire.kalium.logic.feature.message.SendConfirmationUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 /**
@@ -87,7 +87,7 @@ class UpdateConversationReadDateUseCase internal constructor(
                     time = time
                 ),
                 conversationId = selfConversationId,
-                date = DateTimeUtil.currentIsoDateTimeString(),
+                date = Clock.System.now(),
                 senderUserId = selfUserId,
                 senderClientId = currentClientId,
                 status = Message.Status.Pending,

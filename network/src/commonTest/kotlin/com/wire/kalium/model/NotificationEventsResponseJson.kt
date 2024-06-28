@@ -39,6 +39,7 @@ import com.wire.kalium.network.api.base.authenticated.notification.NotificationR
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.QualifiedID
 import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
+import kotlinx.datetime.Instant
 import kotlinx.serialization.InternalSerializationApi
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -135,7 +136,7 @@ object NotificationEventsResponseJson {
         EventContentDTO.Conversation.NewMLSMessageDTO(
             ConversationId("e16babfa-308b-414e-b6e0-c59517f723db", "staging.zinfra.io"),
             QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf", "staging.zinfra.io"),
-            "2022-04-12T13:57:02.414Z",
+            Instant.parse("2022-04-12T13:57:02.414Z"),
             "AiDyKXJ/yTKaq4fIO2SXXkQIBVhU0uOiDHIfVP3Yb6HoWAAAAAAAAAABAQAAAAAo6sj3pAQr7tXmljXYG4+sRsn" +
                     "R2IKQVhhUIOSopJZ7N2wIVH3nh1Az0AAAAJBQsRZJea8cnIeR/DKmixvos3AHWHchXr5PvXModBjxTVx7wcbT4w" +
                     "CTBVXtZqcYJwySIoKxokYhUUE2+zMKGg96+CV7jdQvqYG/fxk/dSm4TdQypanbSuu7VsYXZSPKPV0E1wChqpLit" +
@@ -168,7 +169,7 @@ object NotificationEventsResponseJson {
         EventContentDTO.Conversation.NewConversationDTO(
             ConversationId("e16babfa-308b-414e-b6e0-c59517f723db", "staging.zinfra.io"),
             QualifiedID("76ebeb16-a849-4be4-84a7-157654b492cf", "staging.zinfra.io"),
-            "2022-04-12T13:57:02.414Z",
+            Instant.parse("2022-04-12T13:57:02.414Z"),
             ConversationResponseJson.v3.serializableData
         ),
         newConversationSerializer

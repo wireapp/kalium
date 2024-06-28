@@ -25,7 +25,10 @@ import com.wire.kalium.network.api.base.authenticated.notification.EventContentD
 import com.wire.kalium.network.api.base.model.AddServiceResponse
 import com.wire.kalium.network.api.base.model.ConversationId
 import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.serialization.toJsonElement
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
+import kotlinx.datetime.Instant
 import kotlinx.serialization.json.add
 import kotlinx.serialization.json.addJsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -45,7 +48,7 @@ object AddServiceResponseJson {
                     put("id", serializable.event.qualifiedFrom.value.toJsonElement())
                     put("domain", serializable.event.qualifiedFrom.domain.toJsonElement())
                 }
-                put("time", serializable.event.time.toJsonElement())
+                put("time", serializable.event.time.toIsoDateTimeString().toJsonElement())
                 putJsonObject("data") {
                     putJsonArray("user_ids") {
                         serializable.event.members.userIds.forEach {
@@ -86,7 +89,7 @@ object AddServiceResponseJson {
                     value = "value2",
                     domain = "domain2"
                 ),
-                time = "some_time",
+                time = Instant.UNIX_FIRST_DATE,
                 members = ConversationMembers(
                     userIds = listOf("value3@domain3"),
                     users = listOf(

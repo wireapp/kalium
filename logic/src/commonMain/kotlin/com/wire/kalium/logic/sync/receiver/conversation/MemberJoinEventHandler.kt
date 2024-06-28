@@ -88,7 +88,7 @@ internal class MemberJoinEventHandlerImpl(
             id = event.id.ifEmpty { uuid4().toString() },
             content = MessageContent.MemberChange.Added(members = event.members.map { it.id }),
             conversationId = event.conversationId,
-            date = event.timestampIso,
+            date = event.dateTime,
             senderUserId = event.addedBy,
             status = Message.Status.Sent,
             visibility = Message.Visibility.VISIBLE,

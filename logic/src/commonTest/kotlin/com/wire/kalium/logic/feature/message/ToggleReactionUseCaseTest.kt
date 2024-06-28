@@ -45,6 +45,7 @@ import io.mockative.matches
 import io.mockative.mock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -134,7 +135,7 @@ class ToggleReactionUseCaseTest {
                 originalMessageId: String,
                 conversationId: ConversationId,
                 senderUserId: UserId,
-                date: String,
+                instant: Instant,
                 emoji: String
             ): Either<StorageFailure, Unit> {
                 persistCallCount++

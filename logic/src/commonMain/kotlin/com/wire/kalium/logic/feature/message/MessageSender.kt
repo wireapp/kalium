@@ -62,7 +62,7 @@ import com.wire.kalium.network.exceptions.isMlsStaleMessage
 import com.wire.kalium.util.DateTimeUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.withContext
-import kotlinx.datetime.toInstant
+import kotlinx.datetime.Instant
 import kotlin.math.max
 
 /**
@@ -129,7 +129,7 @@ interface MessageSender {
     /**
      * Attempts to send the given Client Discovery [Message] to suitable recipients.
      */
-    suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String>
+    suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, Instant>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -184,9 +184,8 @@ internal class MessageSenderImpl internal constructor(
         messageSendingInterceptor
             .prepareMessage(message)
             .flatMap { processedMessage ->
-                attemptToSend(processedMessage, messageTarget).map { messageRemoteTime ->
-                    val serverDate = messageRemoteTime.toInstant()
-                    val localDate = message.date.toInstant()
+                attemptToSend(processedMessage, messageTarget).map { serverDate ->
+                    val localDate = message.date
                     val millis = DateTimeUtil.calculateMillisDifference(localDate, serverDate)
                     val isEditMessage = message.content is MessageContent.TextEdited
                     // If it was the "edit" message type, we need to update the id before we promote it to "sent"
@@ -195,7 +194,7 @@ internal class MessageSenderImpl internal constructor(
                             conversationId = processedMessage.conversationId,
                             messageContent = processedMessage.content as MessageContent.TextEdited,
                             newMessageId = processedMessage.id,
-                            editTimeStamp = processedMessage.date
+                            editInstant = processedMessage.date
                         )
                     }
                     messageRepository.promoteMessageToSentUpdatingServerTime(
@@ -219,14 +218,14 @@ internal class MessageSenderImpl internal constructor(
             attemptToBroadcastWithProteus(message, target, remainingAttempts = 2).map { }
         }
 
-    override suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, String> = attemptToSend(
+    override suspend fun sendClientDiscoveryMessage(message: Message.Regular): Either<CoreFailure, Instant> = attemptToSend(
         message
     )
 
     private suspend fun attemptToSend(
         message: Message.Sendable,
         messageTarget: MessageTarget = MessageTarget.Conversation()
-    ): Either<CoreFailure, String> {
+    ): Either<CoreFailure, Instant> {
         return conversationRepository
             .getConversationProtocolInfo(message.conversationId)
             .flatMap { protocolInfo ->
@@ -253,7 +252,7 @@ internal class MessageSenderImpl internal constructor(
         message: Message.Sendable,
         messageTarget: MessageTarget,
         remainingAttempts: Int
-    ): Either<CoreFailure, String> {
+    ): Either<CoreFailure, Instant> {
         val conversationId = message.conversationId
         val target = when (messageTarget) {
             is MessageTarget.Client -> Either.Right(messageTarget.recipients)
@@ -298,7 +297,7 @@ internal class MessageSenderImpl internal constructor(
         message: BroadcastMessage,
         target: BroadcastMessageTarget,
         remainingAttempts: Int,
-    ): Either<CoreFailure, String> {
+    ): Either<CoreFailure, Instant> {
         return userRepository.getAllRecipients().flatMap { (teamRecipients, otherRecipients) ->
             val (option, recipients) = getBroadcastParams(
                 message.senderUserId,
@@ -326,7 +325,7 @@ internal class MessageSenderImpl internal constructor(
     private suspend fun attemptToSendWithMLS(
         protocolInfo: Conversation.ProtocolInfo.MLS,
         message: Message.Sendable
-    ): Either<CoreFailure, String> {
+    ): Either<CoreFailure, Instant> {
         return mlsConversationRepository.commitPendingProposals(protocolInfo.groupId).flatMap {
             mlsMessageCreator.createOutgoingMLSMessage(protocolInfo.groupId, message).flatMap { mlsMessage ->
                 messageRepository.sendMLSMessage(message.conversationId, mlsMessage).fold({
@@ -390,7 +389,7 @@ internal class MessageSenderImpl internal constructor(
         message: Message.Sendable,
         messageTarget: MessageTarget,
         remainingAttempts: Int
-    ): Either<CoreFailure, String> =
+    ): Either<CoreFailure, Instant> =
         messageRepository
             .sendEnvelope(message.conversationId, envelope, messageTarget)
             .fold({
@@ -399,7 +398,7 @@ internal class MessageSenderImpl internal constructor(
                     action = "Send",
                     messageLogString = message.toLogString(),
                     messageId = message.id,
-                    messageTimestampIso = message.date,
+                    messageInstant = message.date,
                     conversationId = message.conversationId,
                     remainingAttempts = remainingAttempts
                 ) { remainingAttempts ->
@@ -430,7 +429,7 @@ internal class MessageSenderImpl internal constructor(
         option: BroadcastMessageOption,
         target: BroadcastMessageTarget,
         remainingAttempts: Int
-    ): Either<CoreFailure, String> =
+    ): Either<CoreFailure, Instant> =
         messageRepository
             .broadcastEnvelope(envelope, option)
             .fold({
@@ -459,17 +458,17 @@ internal class MessageSenderImpl internal constructor(
         action: String, // Send or Broadcast
         messageLogString: String,
         messageId: MessageId,
-        messageTimestampIso: String,
+        messageInstant: Instant,
         conversationId: ConversationId?,
         remainingAttempts: Int,
-        retry: suspend (remainingAttempts: Int) -> Either<CoreFailure, String>
-    ): Either<CoreFailure, String> =
+        retry: suspend (remainingAttempts: Int) -> Either<CoreFailure, Instant>
+    ): Either<CoreFailure, Instant> =
         when (failure) {
             is ProteusSendMessageFailure -> {
                 logger.w(
                     "Proteus $action Failure: { \"message\" : \"${messageLogString}\", \"errorInfo\" : \"${failure}\" }"
                 )
-                handleLegalHoldChanges(conversationId, messageTimestampIso) {
+                handleLegalHoldChanges(conversationId, messageInstant) {
                     messageSendFailureHandler
                         .handleClientsHaveChangedFailure(failure, conversationId)
                 }
@@ -518,11 +517,11 @@ internal class MessageSenderImpl internal constructor(
 
     private suspend fun handleLegalHoldChanges(
         conversationId: ConversationId?,
-        messageTimestampIso: String,
+        messageInstant: Instant,
         handleClientsHaveChangedFailure: suspend () -> Either<CoreFailure, Unit>
     ) =
         if (conversationId == null) handleClientsHaveChangedFailure().map { false }
-        else legalHoldHandler.handleMessageSendFailure(conversationId, messageTimestampIso, handleClientsHaveChangedFailure)
+        else legalHoldHandler.handleMessageSendFailure(conversationId, messageInstant, handleClientsHaveChangedFailure)
 
     private fun getBroadcastParams(
         selfUserId: UserId,
