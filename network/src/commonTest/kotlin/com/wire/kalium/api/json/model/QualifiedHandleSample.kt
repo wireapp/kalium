@@ -18,7 +18,7 @@
 
 package com.wire.kalium.api.json.model
 
-import com.wire.kalium.network.api.base.model.QualifiedHandle
+import com.wire.kalium.network.api.model.QualifiedHandle
 
 object QualifiedHandleSample {
     val one = QualifiedHandle("someDomain", "someHandle")

@@ -19,11 +19,11 @@
 package com.wire.kalium.network.api.v2.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.base.authenticated.client.ClientsOfUsersResponse
-import com.wire.kalium.network.api.base.authenticated.client.ListClientsOfUsersRequest
-import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
-import com.wire.kalium.network.api.base.model.QualifiedID
-import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.authenticated.client.ClientsOfUsersResponse
+import com.wire.kalium.network.api.authenticated.client.ListClientsOfUsersRequest
+import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
+import com.wire.kalium.network.api.model.QualifiedID
+import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v0.authenticated.ClientApiV0
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess

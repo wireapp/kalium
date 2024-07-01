@@ -66,6 +66,7 @@ import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSo
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.networkContainer.UnboundNetworkContainer
 import com.wire.kalium.network.networkContainer.UnboundNetworkContainerCommon
+import com.wire.kalium.network.utils.MockUnboundNetworkClient
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import kotlinx.coroutines.CoroutineScope
@@ -99,7 +100,7 @@ class GlobalKaliumScope internal constructor(
             userAgent,
             kaliumConfigs.ignoreSSLCertificatesForUnboundCalls,
             kaliumConfigs.certPinningConfig,
-            kaliumConfigs.kaliumMockEngine?.mockEngine
+            kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) }
         )
     }
 

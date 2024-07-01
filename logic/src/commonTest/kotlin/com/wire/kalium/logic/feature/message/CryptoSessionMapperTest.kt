@@ -23,7 +23,7 @@ import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.data.message.CryptoSessionMapper
 import com.wire.kalium.logic.data.message.CryptoSessionMapperImpl
 import com.wire.kalium.logic.data.prekey.PreKeyMapperImpl
-import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
+import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import kotlin.test.BeforeTest

@@ -19,13 +19,13 @@
 package com.wire.kalium.api.v2
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.model.EventContentDTOJson
-import com.wire.kalium.model.conversation.ConversationDetailsResponse
-import com.wire.kalium.model.conversation.ConversationListIdsResponseJson
-import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
-import com.wire.kalium.network.api.base.model.ConversationId
-import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.mocks.responses.EventContentDTOJson
+import com.wire.kalium.mocks.responses.conversation.ConversationDetailsResponse
+import com.wire.kalium.mocks.responses.conversation.ConversationListIdsResponseJson
+import com.wire.kalium.network.api.authenticated.conversation.AddConversationMembersRequest
+import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.model.ConversationId
+import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v2.authenticated.ConversationApiV2
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode

@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.user.AccountRepository
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import io.mockative.Mock
 import io.mockative.any

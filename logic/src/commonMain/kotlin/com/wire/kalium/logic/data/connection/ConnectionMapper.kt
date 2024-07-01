@@ -28,7 +28,7 @@ import com.wire.kalium.logic.data.user.UserMapper
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
+import com.wire.kalium.network.api.authenticated.connection.ConnectionDTO
 import com.wire.kalium.persistence.dao.ConnectionEntity
 
 interface ConnectionMapper {

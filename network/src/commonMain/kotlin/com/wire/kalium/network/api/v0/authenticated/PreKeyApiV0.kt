@@ -22,8 +22,8 @@ import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.prekey.DomainToUserIdToClientsToPreKeyMap
 import com.wire.kalium.network.api.base.authenticated.prekey.ListPrekeysResponse
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
-import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
-import com.wire.kalium.network.api.base.authenticated.prekey.UploadPreKeysRequest
+import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
+import com.wire.kalium.network.api.authenticated.prekey.UploadPreKeysRequest
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.mapSuccess
 import com.wire.kalium.network.utils.wrapKaliumResponse

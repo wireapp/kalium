@@ -21,11 +21,11 @@
 package com.wire.kalium.network.exceptions
 
 import com.wire.kalium.network.NetworkState
-import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
-import com.wire.kalium.network.api.base.authenticated.message.SendMessageResponse
-import com.wire.kalium.network.api.base.model.ErrorResponse
-import com.wire.kalium.network.api.base.model.FederationConflictResponse
-import com.wire.kalium.network.api.base.model.FederationUnreachableResponse
+import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
+import com.wire.kalium.network.api.authenticated.message.SendMessageResponse
+import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.FederationConflictResponse
+import com.wire.kalium.network.api.model.FederationUnreachableResponse
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.ACCESS_DENIED
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BAD_REQUEST
 import com.wire.kalium.network.exceptions.NetworkErrorLabel.BLACKLISTED_EMAIL

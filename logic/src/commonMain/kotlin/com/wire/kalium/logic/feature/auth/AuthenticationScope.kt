@@ -44,6 +44,7 @@ import com.wire.kalium.logic.feature.auth.verification.RequestSecondFactorVerifi
 import com.wire.kalium.logic.feature.register.RegisterScope
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
+import com.wire.kalium.network.utils.MockUnboundNetworkClient
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 
 class AuthenticationScopeProvider internal constructor(
@@ -88,7 +89,7 @@ class AuthenticationScope internal constructor(
             userAgent = userAgent,
             developmentApiEnabled = kaliumConfigs.developmentApiEnabled,
             certificatePinning = kaliumConfigs.certPinningConfig,
-            mockEngine = kaliumConfigs.kaliumMockEngine?.mockEngine
+            mockEngine = kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) }
         )
     }
 

@@ -19,33 +19,33 @@
 package com.wire.kalium.api.v0.conversation
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.model.AddServiceResponseJson
-import com.wire.kalium.model.EventContentDTOJson
-import com.wire.kalium.model.EventContentDTOJson.validGenerateGuestRoomLink
-import com.wire.kalium.model.conversation.ConversationDetailsResponse
-import com.wire.kalium.model.conversation.ConversationListIdsResponseJson
-import com.wire.kalium.model.conversation.ConversationResponseJson
-import com.wire.kalium.model.conversation.CreateConversationRequestJson
-import com.wire.kalium.model.conversation.MemberUpdateRequestJson
-import com.wire.kalium.model.conversation.SendTypingStatusNotificationRequestJson
-import com.wire.kalium.model.conversation.UpdateConversationAccessRequestJson
-import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.AddServiceRequest
+import com.wire.kalium.mocks.responses.AddServiceResponseJson
+import com.wire.kalium.mocks.responses.EventContentDTOJson
+import com.wire.kalium.mocks.responses.EventContentDTOJson.validGenerateGuestRoomLink
+import com.wire.kalium.mocks.responses.conversation.ConversationDetailsResponse
+import com.wire.kalium.mocks.responses.conversation.ConversationListIdsResponseJson
+import com.wire.kalium.mocks.responses.conversation.ConversationResponseJson
+import com.wire.kalium.mocks.responses.conversation.CreateConversationRequestJson
+import com.wire.kalium.mocks.responses.conversation.MemberUpdateRequestJson
+import com.wire.kalium.mocks.responses.conversation.SendTypingStatusNotificationRequestJson
+import com.wire.kalium.mocks.responses.conversation.UpdateConversationAccessRequestJson
+import com.wire.kalium.network.api.authenticated.conversation.AddConversationMembersRequest
+import com.wire.kalium.network.api.authenticated.conversation.AddServiceRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
-import com.wire.kalium.network.api.base.authenticated.conversation.TypingIndicatorStatus
-import com.wire.kalium.network.api.base.authenticated.conversation.TypingIndicatorStatusDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
-import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
-import com.wire.kalium.network.api.base.model.ConversationAccessDTO
-import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
-import com.wire.kalium.network.api.base.model.ConversationId
-import com.wire.kalium.network.api.base.model.JoinConversationRequestV0
-import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberAddedResponse
+import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.authenticated.conversation.TypingIndicatorStatus
+import com.wire.kalium.network.api.authenticated.conversation.TypingIndicatorStatusDTO
+import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
+import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessResponse
+import com.wire.kalium.network.api.authenticated.conversation.model.ConversationMemberRoleDTO
+import com.wire.kalium.network.api.authenticated.conversation.model.ConversationReceiptModeDTO
+import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.model.ConversationAccessDTO
+import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.model.ConversationId
+import com.wire.kalium.network.api.model.JoinConversationRequestV0
+import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v0.authenticated.ConversationApiV0
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
@@ -259,7 +259,7 @@ internal class ConversationApiV0Test : ApiTest() {
         val serviceId = AddServiceRequest("service_id", "service_provider")
 
         val networkClient = mockAuthenticatedNetworkClient(
-            responseBody = AddServiceResponseJson.valid.rawJson,
+            responseBody = AddServiceResponseJson.valid,
             statusCode = HttpStatusCode.Created,
             assertion = {
                 assertPost()

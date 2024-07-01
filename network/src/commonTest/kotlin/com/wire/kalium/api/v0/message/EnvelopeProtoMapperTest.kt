@@ -20,17 +20,17 @@ package com.wire.kalium.api.v0.message
 
 import com.wire.kalium.network.api.base.authenticated.message.EnvelopeProtoMapper
 import com.wire.kalium.network.api.base.authenticated.message.EnvelopeProtoMapperImpl
-import com.wire.kalium.network.api.base.authenticated.message.MessageApi
-import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
-import com.wire.kalium.network.api.base.authenticated.message.QualifiedUserToClientToEncMsgMap
-import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.authenticated.message.MessagePriority
+import com.wire.kalium.network.api.authenticated.message.Parameters
+import com.wire.kalium.network.api.authenticated.message.QualifiedMessageOption
+import com.wire.kalium.network.api.authenticated.message.QualifiedUserToClientToEncMsgMap
+import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.protobuf.decodeFromByteArray
 import com.wire.kalium.protobuf.otr.QualifiedNewOtrMessage
 import com.wire.kalium.protobuf.otr.QualifiedUserId
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
 
 class EnvelopeProtoMapperTest {
 
@@ -41,14 +41,14 @@ class EnvelopeProtoMapperTest {
         val data = byteArrayOf(0x42, 0x13, 0x69)
 
         val encoded = envelopeProtoMapper.encodeToProtobuf(
-            MessageApi.Parameters.QualifiedDefaultParameters(
+            Parameters.QualifiedDefaultParameters(
                 sender = TEST_SENDER,
                 recipients = mapOf(),
                 nativePush = true,
                 priority = MessagePriority.HIGH,
                 transient = false,
                 externalBlob = data,
-                messageOption = MessageApi.QualifiedMessageOption.ReportAll
+                messageOption = QualifiedMessageOption.ReportAll
             )
         )
         val newOtrMessage = QualifiedNewOtrMessage.decodeFromByteArray(encoded)
@@ -71,14 +71,14 @@ class EnvelopeProtoMapperTest {
         )
 
         val encoded = envelopeProtoMapper.encodeToProtobuf(
-            MessageApi.Parameters.QualifiedDefaultParameters(
+            Parameters.QualifiedDefaultParameters(
                 sender = TEST_SENDER,
                 recipients = recipients,
                 nativePush = true,
                 priority = MessagePriority.HIGH,
                 transient = false,
                 externalBlob = null,
-                messageOption = MessageApi.QualifiedMessageOption.ReportAll
+                messageOption = QualifiedMessageOption.ReportAll
             )
         )
 
@@ -100,14 +100,14 @@ class EnvelopeProtoMapperTest {
         )
         val expected = usersToIgnore.map { QualifiedUserId(it.value, it.domain) }
         val encoded = envelopeProtoMapper.encodeToProtobuf(
-            MessageApi.Parameters.QualifiedDefaultParameters(
+            Parameters.QualifiedDefaultParameters(
                 sender = TEST_SENDER,
                 recipients = mapOf(),
                 nativePush = true,
                 priority = MessagePriority.HIGH,
                 transient = false,
                 externalBlob = data,
-                messageOption = MessageApi.QualifiedMessageOption.IgnoreSome(usersToIgnore)
+                messageOption = QualifiedMessageOption.IgnoreSome(usersToIgnore)
             )
         )
         val newOtrMessage = QualifiedNewOtrMessage.decodeFromByteArray(encoded)
@@ -122,14 +122,14 @@ class EnvelopeProtoMapperTest {
         )
         val expected = usersToIgnore.map { QualifiedUserId(it.value, it.domain) }
         val encoded = envelopeProtoMapper.encodeToProtobuf(
-            MessageApi.Parameters.QualifiedDefaultParameters(
+            Parameters.QualifiedDefaultParameters(
                 sender = TEST_SENDER,
                 recipients = mapOf(),
                 nativePush = true,
                 priority = MessagePriority.HIGH,
                 transient = false,
                 externalBlob = data,
-                messageOption = MessageApi.QualifiedMessageOption.ReportSome(usersToIgnore)
+                messageOption = QualifiedMessageOption.ReportSome(usersToIgnore)
             )
         )
         val newOtrMessage = QualifiedNewOtrMessage.decodeFromByteArray(encoded)

@@ -36,15 +36,15 @@ import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
-import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
-import com.wire.kalium.network.api.base.authenticated.connection.ConnectionResponse
-import com.wire.kalium.network.api.base.authenticated.connection.ConnectionStateDTO
+import com.wire.kalium.network.api.authenticated.connection.ConnectionDTO
+import com.wire.kalium.network.api.authenticated.connection.ConnectionResponse
+import com.wire.kalium.network.api.authenticated.connection.ConnectionStateDTO
 import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
-import com.wire.kalium.network.api.base.model.ConversationId
-import com.wire.kalium.network.api.base.model.FederationUnreachableResponse
-import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
-import com.wire.kalium.network.api.base.model.QualifiedID
-import com.wire.kalium.network.api.base.model.UserProfileDTO
+import com.wire.kalium.network.api.model.ConversationId
+import com.wire.kalium.network.api.model.FederationUnreachableResponse
+import com.wire.kalium.network.api.model.LegalHoldStatusDTO
+import com.wire.kalium.network.api.model.QualifiedID
+import com.wire.kalium.network.api.model.UserProfileDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConnectionDAO
@@ -73,7 +73,7 @@ import kotlinx.datetime.toInstant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
-import com.wire.kalium.network.api.base.model.UserId as NetworkUserId
+import com.wire.kalium.network.api.model.UserId as NetworkUserId
 
 class ConnectionRepositoryTest {
 

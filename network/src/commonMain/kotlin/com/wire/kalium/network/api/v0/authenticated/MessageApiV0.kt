@@ -21,10 +21,11 @@ package com.wire.kalium.network.api.v0.authenticated
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.message.EnvelopeProtoMapper
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
-import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
-import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
-import com.wire.kalium.network.api.base.authenticated.message.UserToClientToEncMsgMap
-import com.wire.kalium.network.api.base.model.ConversationId
+import com.wire.kalium.network.api.authenticated.message.MessagePriority
+import com.wire.kalium.network.api.authenticated.message.Parameters
+import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
+import com.wire.kalium.network.api.authenticated.message.UserToClientToEncMsgMap
+import com.wire.kalium.network.api.model.ConversationId
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.network.serialization.XProtoBuf
 import com.wire.kalium.network.utils.NetworkResponse
@@ -56,7 +57,7 @@ internal open class MessageApiV0 internal constructor(
         @SerialName("native_priority") val priority: MessagePriority
     )
 
-    private fun MessageApi.Parameters.DefaultParameters.toRequestBody(): RequestBody = RequestBody(
+    private fun Parameters.DefaultParameters.toRequestBody(): RequestBody = RequestBody(
         sender = this.sender,
         data = this.data,
         nativePush = this.nativePush,
@@ -66,7 +67,7 @@ internal open class MessageApiV0 internal constructor(
     )
 
     override suspend fun qualifiedSendMessage(
-        parameters: MessageApi.Parameters.QualifiedDefaultParameters,
+        parameters: Parameters.QualifiedDefaultParameters,
         conversationId: ConversationId
     ): NetworkResponse<QualifiedSendMessageResponse> = wrapKaliumResponse<QualifiedSendMessageResponse.MessageSent>({
         if (it.status != STATUS_CLIENTS_HAVE_CHANGED) null
@@ -83,7 +84,7 @@ internal open class MessageApiV0 internal constructor(
     }
 
     override suspend fun qualifiedBroadcastMessage(
-        parameters: MessageApi.Parameters.QualifiedDefaultParameters
+        parameters: Parameters.QualifiedDefaultParameters
     ): NetworkResponse<QualifiedSendMessageResponse> = wrapKaliumResponse<QualifiedSendMessageResponse.MessageSent>({
         if (it.status != STATUS_CLIENTS_HAVE_CHANGED) null
         else NetworkResponse.Error(kException = ProteusClientsChangedError(errorBody = it.body()))

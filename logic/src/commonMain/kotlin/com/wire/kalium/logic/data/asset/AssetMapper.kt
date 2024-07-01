@@ -29,9 +29,9 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_CBC
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_GCM
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.api.base.authenticated.asset.AssetMetadataRequest
-import com.wire.kalium.network.api.base.authenticated.asset.AssetResponse
-import com.wire.kalium.network.api.base.model.AssetRetentionType
+import com.wire.kalium.network.api.authenticated.asset.AssetMetadataRequest
+import com.wire.kalium.network.api.authenticated.asset.AssetResponse
+import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity

@@ -17,7 +17,7 @@
  */
 package com.wire.kalium.logic.data.mls
 
-import com.wire.kalium.network.api.base.authenticated.client.MLSPublicKeyTypeDTO
+import com.wire.kalium.network.api.authenticated.client.MLSPublicKeyTypeDTO
 
 data class SupportedCipherSuite(
     val supported: List<CipherSuite>,
