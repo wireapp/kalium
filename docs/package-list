@@ -436,6 +436,7 @@ com.wire.kalium.logic.data.legalhold
 com.wire.kalium.logic.data.logout
 com.wire.kalium.logic.data.message
 com.wire.kalium.logic.data.message.draft
+com.wire.kalium.logic.data.message.linkpreview
 com.wire.kalium.logic.data.message.mention
 com.wire.kalium.logic.data.message.reaction
 com.wire.kalium.logic.data.message.receipt
