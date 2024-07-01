@@ -26,6 +26,7 @@ import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.mock
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -43,6 +44,7 @@ import kotlin.test.assertEquals
 import kotlin.time.Duration.Companion.days
 import kotlin.time.Duration.Companion.seconds
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class IncrementalSyncRepositoryTest {
 
     private lateinit var incrementalSyncRepository: IncrementalSyncRepository
@@ -203,9 +205,9 @@ class IncrementalSyncRepositoryTest {
     }
 
     @Test
-    fun givenASlowStateCollector_whenStateIsUpdatedManyTimes_thenUpdateEmissionShouldNotBeBlockedByOverflownBuffer() = runTest {
-        val updateCount = 10_000
-        withContext(Dispatchers.Default) {
+    fun givenASlowStateCollector_whenStateIsUpdatedManyTimes_thenUpdateEmissionShouldNotBeBlockedByOverflownBuffer() =
+        runTest(Dispatchers.Default) {
+            val updateCount = 10_000
             val slowCollectionJob = launch {
                 incrementalSyncRepository.incrementalSyncState.collect {
                     delay(1.days)
@@ -226,7 +228,6 @@ class IncrementalSyncRepositoryTest {
             // Cancel the slow collector as we already know we're able to emit all updates without being blocked.
             slowCollectionJob.cancel()
         }
-    }
 
     @Test
     fun givenASlowPolicyCollector_whenPolicyIsUpdatedManyTimes_thenUpdateEmissionShouldNotBeBlockedByOverflownBuffer() = runTest {
