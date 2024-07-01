@@ -205,9 +205,9 @@ class IncrementalSyncRepositoryTest {
     }
 
     @Test
-    fun givenASlowStateCollector_whenStateIsUpdatedManyTimes_thenUpdateEmissionShouldNotBeBlockedByOverflownBuffer() =
-        runTest(Dispatchers.Default) {
-            val updateCount = 10_000
+    fun givenASlowStateCollector_whenStateIsUpdatedManyTimes_thenUpdateEmissionShouldNotBeBlockedByOverflownBuffer() = runTest {
+        val updateCount = 10_000
+        withContext(Dispatchers.Default) {
             val slowCollectionJob = launch {
                 incrementalSyncRepository.incrementalSyncState.collect {
                     delay(1.days)
@@ -228,6 +228,7 @@ class IncrementalSyncRepositoryTest {
             // Cancel the slow collector as we already know we're able to emit all updates without being blocked.
             slowCollectionJob.cancel()
         }
+    }
 
     @Test
     fun givenASlowPolicyCollector_whenPolicyIsUpdatedManyTimes_thenUpdateEmissionShouldNotBeBlockedByOverflownBuffer() = runTest {
