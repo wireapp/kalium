@@ -335,7 +335,19 @@ internal class MessageDAOImpl internal constructor(
             queries.markMessageAsEdited(editInstant, currentMessageId, conversationId)
             reactionsQueries.deleteAllReactionsForMessage(currentMessageId, conversationId)
             queries.deleteMessageMentions(currentMessageId, conversationId)
+            queries.deleteMessageLinkPreviews(currentMessageId, conversationId)
             queries.updateMessageTextContent(newTextContent.messageBody, currentMessageId, conversationId)
+            newTextContent.linkPreview.forEach {
+                queries.insertMessageLinkPreview(
+                    message_id = currentMessageId,
+                    conversation_id = conversationId,
+                    url = it.url,
+                    url_offset = it.urlOffset,
+                    permanent_url = it.permanentUrl,
+                    title = it.title,
+                    summary = it.summary
+                )
+            }
             newTextContent.mentions.forEach {
                 queries.insertMessageMention(
                     message_id = currentMessageId,

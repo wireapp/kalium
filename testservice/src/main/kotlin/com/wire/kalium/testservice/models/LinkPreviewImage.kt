@@ -15,14 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.testservice.models
 
-data class LinkPreview(
-    val image: LinkPreviewImage? = null,
-    val permanentUrl: String = "",
-    val summary: String = "",
-    val title: String = "",
-    val url: String = "",
-    val urlOffset: Int = 0,
+data class LinkPreviewImage(
+    val type: String = "",
+    val data: String = "",
+    val height: Int = 0,
+    val width: Int = 0
 )
