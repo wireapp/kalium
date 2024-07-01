@@ -100,5 +100,7 @@ data class E2EIModel(
 
 data class E2EIConfigModel(
     val discoverUrl: String?,
-    val verificationExpirationSeconds: Long
+    val verificationExpirationSeconds: Long,
+    val shouldUseProxy: Boolean,
+    val crlProxy: String?,
 )

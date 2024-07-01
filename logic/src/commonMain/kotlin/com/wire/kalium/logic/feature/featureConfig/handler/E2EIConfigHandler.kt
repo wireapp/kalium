@@ -45,10 +45,12 @@ class E2EIConfigHandler(private val userConfigRepository: UserConfigRepository) 
         val newSettings = E2EISettings(
             isRequired = e2eiConfig.status == Status.ENABLED,
             discoverUrl = e2eiConfig.config.discoverUrl,
-            gracePeriodEnd = gracePeriodEnd
+            gracePeriodEnd = gracePeriodEnd,
+            shouldUseProxy = e2eiConfig.config.shouldUseProxy,
+            crlProxy = e2eiConfig.config.crlProxy
         )
 
-        if (currentSettings?.isRequired == newSettings.isRequired && currentSettings?.discoverUrl == newSettings.discoverUrl) {
+        if (currentSettings?.isRequired == newSettings.isRequired && currentSettings.discoverUrl == newSettings.discoverUrl) {
             // that settings were already handled,
             // no need to re-write as it will reset gracePeriod
             return

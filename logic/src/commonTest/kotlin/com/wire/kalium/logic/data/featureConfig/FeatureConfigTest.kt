@@ -49,7 +49,7 @@ object FeatureConfigTest {
             status = Status.ENABLED,
             supportedCipherSuite = null
         ),
-        e2EIModel: E2EIModel = E2EIModel(E2EIConfigModel("url", 10000L), Status.ENABLED),
+        e2EIModel: E2EIModel = E2EIModel(E2EIConfigModel("url", 10000L, false, null), Status.ENABLED),
         mlsMigrationModel: MLSMigrationModel? = MLSMigrationModel(
             Instant.DISTANT_FUTURE,
             Instant.DISTANT_FUTURE,

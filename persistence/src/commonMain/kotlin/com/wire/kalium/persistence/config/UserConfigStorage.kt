@@ -207,6 +207,8 @@ data class E2EISettingsEntity(
     @SerialName("status") val status: Boolean,
     @SerialName("discoverUrl") val discoverUrl: String?,
     @SerialName("gracePeriodEndMs") val gracePeriodEndMs: Long?,
+    @SerialName("shouldUseProxy") val shouldUseProxy: Boolean?,
+    @SerialName("crlProxy") val crlProxy: String?,
 )
 
 @Serializable
