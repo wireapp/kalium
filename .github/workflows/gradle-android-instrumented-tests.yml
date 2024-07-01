@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        api-level: [ 34 ]
+        api-level: [ 29, 31, 34 ]
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -59,17 +59,22 @@ jobs:
         run: |
           ./gradlew :samples:compileDebugSources
 
+        # API 30+ emulators only have x86_64 system images.
+      - name: Get AVD info
+        uses: ./.github/actions/get-avd-info
+        id: avd-info
+        with:
+          api-level: ${{ matrix.api-level }}
+
       - name: Android Instrumentation Tests
-        uses: reactivecircus/android-emulator-runner@v2.31.0
+        uses: reactivecircus/android-emulator-runner@v2
         env:
           GITHUB_USER: ${{ github.actor }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           api-level: ${{ matrix.api-level }}
-          force-avd-creation: false
-          target: google_apis
-          arch: x86_64
-          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          arch: ${{ steps.avd-info.outputs.arch }}
+          target: ${{ steps.avd-info.outputs.target }}
           cores: 4
           ram-size: 4096M
           heap-size: 2048M
