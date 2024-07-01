@@ -41,7 +41,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.wrapStorageNullableRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.base.model.ManagedByDTO
+import com.wire.kalium.network.api.model.ManagedByDTO
 import com.wire.kalium.persistence.client.AuthTokenStorage
 import com.wire.kalium.persistence.dao.ManagedByEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountsDAO

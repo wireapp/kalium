@@ -23,6 +23,7 @@ import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
+import com.wire.kalium.network.api.authenticated.properties.PropertyKey
 import com.wire.kalium.network.utils.NetworkResponse
 import io.mockative.Mock
 import io.mockative.any
@@ -104,13 +105,13 @@ class UserPropertyRepositoryTest {
 
         suspend fun withUpdateReadReceiptsSuccess() = apply {
             coEvery {
-                propertiesApi.setProperty(eq(PropertiesApi.PropertyKey.WIRE_RECEIPT_MODE), eq(1))
+                propertiesApi.setProperty(eq(PropertyKey.WIRE_RECEIPT_MODE), eq(1))
             }.returns(NetworkResponse.Success(Unit, mapOf(), 200))
         }
 
         suspend fun withDeleteReadReceiptsSuccess() = apply {
             coEvery {
-                propertiesApi.deleteProperty(eq(PropertiesApi.PropertyKey.WIRE_RECEIPT_MODE))
+                propertiesApi.deleteProperty(eq(PropertyKey.WIRE_RECEIPT_MODE))
             }.returns(NetworkResponse.Success(Unit, mapOf(), 200))
         }
 

@@ -51,7 +51,6 @@ import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrang
 import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.NotificationEventsManagerArrangement
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
@@ -65,6 +64,7 @@ import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.days
 
 class GetNotificationsUseCaseTest {
 
@@ -361,9 +361,9 @@ class GetNotificationsUseCaseTest {
     companion object {
         val SELF_USER_ID = UserId("user-id", "domain")
         private val MY_ID = TestUser.USER_ID
-        private val TIME = Instant.fromEpochMilliseconds(948558215).toIsoDateTimeString()
+        private val TIME = Instant.fromEpochMilliseconds(948558215)
         private val TIME_INSTANCE = Instant.fromEpochMilliseconds(948558215)
-        private const val TIME_EARLIER = "2000-01-23T01:23:30.678+09:00"
+        private val TIME_EARLIER = TIME - 10.days
 
         private fun conversationId(number: Int = 0) =
             QualifiedID("conversation_id_${number}_value", "conversation_id_${number}_domain")
@@ -395,19 +395,18 @@ class GetNotificationsUseCaseTest {
             messageId: String = "message_id",
             content: MessageContent.Regular = MessageContent.Text("test message $messageId"),
             visibility: Message.Visibility = Message.Visibility.VISIBLE
-        ) =
-            Message.Regular(
-                id = messageId,
-                content = content,
-                conversationId = conversationId,
-                date = TIME,
-                senderUserId = senderId,
-                senderClientId = ClientId("client_1"),
-                status = Message.Status.Sent,
-                editStatus = Message.EditStatus.NotEdited,
-                visibility = visibility,
-                isSelfMessage = false
-            )
+        ) = Message.Regular(
+            id = messageId,
+            content = content,
+            conversationId = conversationId,
+            date = TIME,
+            senderUserId = senderId,
+            senderClientId = ClientId("client_1"),
+            status = Message.Status.Sent,
+            editStatus = Message.EditStatus.NotEdited,
+            visibility = visibility,
+            isSelfMessage = false
+        )
 
         private fun entityAssetMessage(
             conversationId: QualifiedID,
@@ -451,7 +450,7 @@ class GetNotificationsUseCaseTest {
                 id = messageId,
                 content = MessageContent.MemberChange.Removed(listOf(senderId)),
                 conversationId = conversationId,
-                date = "some_time",
+                date = Instant.DISTANT_PAST,
                 senderUserId = senderId,
                 status = Message.Status.Sent,
                 expirationData = null

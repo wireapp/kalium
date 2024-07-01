@@ -20,12 +20,12 @@ package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
-import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
-import com.wire.kalium.network.api.base.authenticated.connection.ConnectionResponse
-import com.wire.kalium.network.api.base.authenticated.connection.ConnectionStateDTO
-import com.wire.kalium.network.api.base.authenticated.connection.UpdateConnectionRequest
-import com.wire.kalium.network.api.base.model.PaginationRequest
-import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.authenticated.connection.ConnectionDTO
+import com.wire.kalium.network.api.authenticated.connection.ConnectionResponse
+import com.wire.kalium.network.api.authenticated.connection.ConnectionStateDTO
+import com.wire.kalium.network.api.authenticated.connection.UpdateConnectionRequest
+import com.wire.kalium.network.api.model.PaginationRequest
+import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.post

@@ -39,11 +39,11 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 
 /**
  * Deletes a message from the conversation
@@ -91,7 +91,7 @@ class DeleteMessageUseCase internal constructor(
                                                 conversationId = conversationId
                                             ),
                                         conversationId = if (deleteForEveryone) conversationId else selfConversationId,
-                                        date = DateTimeUtil.currentIsoDateTimeString(),
+                                        date = Clock.System.now(),
                                         senderUserId = selfUserId,
                                         senderClientId = currentClientId,
                                         status = Message.Status.Pending,

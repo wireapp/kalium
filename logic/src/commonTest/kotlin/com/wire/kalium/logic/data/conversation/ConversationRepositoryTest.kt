@@ -49,28 +49,28 @@ import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
-import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
-import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol.MLS
+import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol.MLS
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationNameUpdateEvent
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationPagingResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRenameResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponseDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
-import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationProtocolResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationReceiptModeResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationAccessInfoDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationProtocolDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
-import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
-import com.wire.kalium.network.api.base.model.ConversationAccessDTO
-import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMembersResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationNameUpdateEvent
+import com.wire.kalium.network.api.authenticated.conversation.ConversationPagingResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponseDTO
+import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
+import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessResponse
+import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationProtocolResponse
+import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationReceiptModeResponse
+import com.wire.kalium.network.api.authenticated.conversation.model.ConversationAccessInfoDTO
+import com.wire.kalium.network.api.authenticated.conversation.model.ConversationMemberRoleDTO
+import com.wire.kalium.network.api.authenticated.conversation.model.ConversationProtocolDTO
+import com.wire.kalium.network.api.authenticated.conversation.model.ConversationReceiptModeDTO
+import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.model.ConversationAccessDTO
+import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ConversationIDEntity
@@ -92,6 +92,7 @@ import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
 import com.wire.kalium.persistence.dao.unread.ConversationUnreadEventEntity
 import com.wire.kalium.persistence.dao.unread.UnreadEventTypeEntity
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
@@ -118,7 +119,7 @@ import kotlin.test.assertIs
 import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
-import com.wire.kalium.network.api.base.model.ConversationId as APIConversationId
+import com.wire.kalium.network.api.model.ConversationId as APIConversationId
 import com.wire.kalium.persistence.dao.client.Client as ClientEntity
 
 @Suppress("LargeClass")
@@ -130,7 +131,7 @@ class ConversationRepositoryTest {
             "id",
             TestConversation.ID,
             TestUser.SELF.id,
-            "time",
+            Instant.UNIX_FIRST_DATE,
             CONVERSATION_RESPONSE
         )
         val selfUserFlow = flowOf(TestUser.SELF)
@@ -158,7 +159,7 @@ class ConversationRepositoryTest {
                 "id",
                 TestConversation.ID,
                 TestUser.SELF.id,
-                "time",
+                Instant.UNIX_FIRST_DATE,
                 CONVERSATION_RESPONSE
             )
             val selfUserFlow = flowOf(TestUser.SELF)
@@ -187,7 +188,7 @@ class ConversationRepositoryTest {
                 "id",
                 TestConversation.ID,
                 TestUser.SELF.id,
-                "time",
+                Instant.UNIX_FIRST_DATE,
                 CONVERSATION_RESPONSE
             )
             val selfUserFlow = flowOf(TestUser.SELF)
@@ -216,7 +217,7 @@ class ConversationRepositoryTest {
                 "id",
                 TestConversation.ID,
                 TestUser.SELF.id,
-                "time",
+                Instant.UNIX_FIRST_DATE,
                 CONVERSATION_RESPONSE.copy(
                     groupId = RAW_GROUP_ID,
                     protocol = MLS,
@@ -553,7 +554,10 @@ class ConversationRepositoryTest {
                 EventContentDTO.Conversation.AccessUpdate(
                     conversationIdDTO,
                     data = newAccessInfoDTO,
-                    qualifiedFrom = com.wire.kalium.network.api.base.model.UserId("from_id", "from_domain")
+                    qualifiedFrom = com.wire.kalium.network.api.model.UserId(
+                        "from_id",
+                        "from_domain"
+                    )
                 )
             )
 
@@ -1813,7 +1817,7 @@ class ConversationRepositoryTest {
             EventContentDTO.Conversation.ConversationRenameDTO(
                 CONVERSATION_ID.toApi(),
                 USER_ID.toApi(),
-                DateTimeUtil.currentIsoDateTimeString(),
+                Clock.System.now(),
                 ConversationNameUpdateEvent("newName")
             )
         )

@@ -20,8 +20,8 @@ package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
-import com.wire.kalium.network.api.base.authenticated.asset.AssetMetadataRequest
-import com.wire.kalium.network.api.base.authenticated.asset.AssetResponse
+import com.wire.kalium.network.api.authenticated.asset.AssetMetadataRequest
+import com.wire.kalium.network.api.authenticated.asset.AssetResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.utils.NetworkResponse

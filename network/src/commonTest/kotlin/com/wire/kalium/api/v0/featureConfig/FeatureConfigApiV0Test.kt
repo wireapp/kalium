@@ -19,7 +19,7 @@
 package com.wire.kalium.api.v0.featureConfig
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.model.FeatureConfigJson
+import com.wire.kalium.mocks.responses.FeatureConfigJson
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
 import com.wire.kalium.network.api.v0.authenticated.FeatureConfigApiV0
 import com.wire.kalium.network.exceptions.KaliumException

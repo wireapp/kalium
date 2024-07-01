@@ -16,6 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 @file:Suppress("TooManyFunctions")
+
 package com.wire.kalium.logic.data.conversation
 
 import com.wire.kalium.cryptography.E2EIConversationState
@@ -35,13 +36,13 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.toModel
 import com.wire.kalium.logic.data.user.type.DomainUserTypeMapper
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
-import com.wire.kalium.network.api.base.authenticated.conversation.ConvTeamInfo
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.CreateConversationRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
-import com.wire.kalium.network.api.base.model.ConversationAccessDTO
-import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.authenticated.conversation.ConvTeamInfo
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.CreateConversationRequest
+import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.model.ConversationAccessDTO
+import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.GroupState
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity.Protocol
@@ -50,7 +51,6 @@ import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.conversation.ProposalTimerEntity
 import com.wire.kalium.persistence.util.requireField
 import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
@@ -129,8 +129,8 @@ internal class ConversationMapperImpl(
     )
 
     override fun fromDaoModel(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
-        val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) UNIX_FIRST_DATE
-        else lastReadDate.toIsoDateTimeString()
+        val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) Instant.UNIX_FIRST_DATE
+        else lastReadDate
 
         Conversation(
             id = id.toModel(),
@@ -140,8 +140,8 @@ internal class ConversationMapperImpl(
             protocol = protocolInfoMapper.fromEntity(protocolInfo),
             mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
             removedBy = removedBy?.let { conversationStatusMapper.fromRemovedByToLogicModel(it) },
-            lastNotificationDate = lastNotificationDate?.toIsoDateTimeString(),
-            lastModifiedDate = lastModifiedDate?.toIsoDateTimeString(),
+            lastNotificationDate = lastNotificationDate,
+            lastModifiedDate = lastModifiedDate,
             lastReadDate = lastReadDateEntity,
             access = accessList.map { it.toDAO() },
             accessRole = accessRoleList.map { it.toDAO() },
@@ -158,8 +158,8 @@ internal class ConversationMapperImpl(
     }
 
     override fun fromDaoModel(daoModel: ConversationEntity): Conversation = with(daoModel) {
-        val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) UNIX_FIRST_DATE
-        else lastReadDate.toIsoDateTimeString()
+        val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) Instant.UNIX_FIRST_DATE
+        else lastReadDate
         Conversation(
             id = id.toModel(),
             name = name,
@@ -168,8 +168,8 @@ internal class ConversationMapperImpl(
             protocol = protocolInfoMapper.fromEntity(protocolInfo),
             mutedStatus = conversationStatusMapper.fromMutedStatusDaoModel(mutedStatus),
             removedBy = removedBy?.let { conversationStatusMapper.fromRemovedByToLogicModel(it) },
-            lastNotificationDate = lastNotificationDate?.toIsoDateTimeString(),
-            lastModifiedDate = lastModifiedDate?.toIsoDateTimeString(),
+            lastNotificationDate = lastNotificationDate,
+            lastModifiedDate = lastModifiedDate,
             lastReadDate = lastReadDateEntity,
             access = access.map { it.toDAO() },
             accessRole = accessRole.map { it.toDAO() },
@@ -260,11 +260,11 @@ internal class ConversationMapperImpl(
                         conversationId = id.toModel(),
                         otherUser = otherUser,
                         userType = domainUserTypeMapper.fromUserTypeEntity(userType),
-                        lastModifiedDate = lastModifiedDate?.toIsoDateTimeString().orEmpty(),
+                        lastModifiedDate = lastModifiedDate ?: Instant.UNIX_FIRST_DATE,
                         connection = Connection(
                             conversationId = id.value,
                             from = "",
-                            lastUpdate = "",
+                            lastUpdate = Instant.UNIX_FIRST_DATE,
                             qualifiedConversationId = id.toModel(),
                             qualifiedToId = otherUserId.requireField("otherUserID in Connection").toModel(),
                             status = connectionStatusMapper.fromDaoModel(connectionStatus),
@@ -367,9 +367,9 @@ internal class ConversationMapperImpl(
             mutedTime = 0,
             removedBy = null,
             creatorId = creatorId.orEmpty(),
-            lastNotificationDate = (conversation.lastNotificationDate ?: "1970-01-01T00:00:00.000Z").toInstant(),
-            lastModifiedDate = (conversation.lastModifiedDate ?: "1970-01-01T00:00:00.000Z").toInstant(),
-            lastReadDate = conversation.lastReadDate.toInstant(),
+            lastNotificationDate = conversation.lastNotificationDate,
+            lastModifiedDate = conversation.lastModifiedDate ?: Instant.UNIX_FIRST_DATE,
+            lastReadDate = conversation.lastReadDate,
             access = conversation.access.map { it.toDAO() },
             accessRole = conversation.accessRole.map { it.toDAO() },
             receiptMode = receiptModeMapper.toDaoModel(conversation.receiptMode),
@@ -471,6 +471,7 @@ internal fun ConversationResponse.toConversationType(selfUserTeamId: TeamId?): C
                 ConversationEntity.Type.GROUP
             }
         }
+
         ConversationResponse.Type.ONE_TO_ONE -> ConversationEntity.Type.ONE_ON_ONE
         ConversationResponse.Type.WAIT_FOR_CONNECTION -> ConversationEntity.Type.CONNECTION_PENDING
     }

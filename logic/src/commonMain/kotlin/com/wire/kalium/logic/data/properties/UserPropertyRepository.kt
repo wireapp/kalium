@@ -25,6 +25,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
+import com.wire.kalium.network.api.authenticated.properties.PropertyKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
 
@@ -51,13 +52,13 @@ internal class UserPropertyDataSource(
     override suspend fun observeReadReceiptsStatus(): Flow<Either<CoreFailure, Boolean>> = userConfigRepository.isReadReceiptsEnabled()
 
     override suspend fun setReadReceiptsEnabled(): Either<CoreFailure, Unit> = wrapApiRequest {
-        propertiesApi.setProperty(PropertiesApi.PropertyKey.WIRE_RECEIPT_MODE, 1)
+        propertiesApi.setProperty(PropertyKey.WIRE_RECEIPT_MODE, 1)
     }.flatMap {
         userConfigRepository.setReadReceiptsStatus(true)
     }
 
     override suspend fun deleteReadReceiptsProperty(): Either<CoreFailure, Unit> = wrapApiRequest {
-        propertiesApi.deleteProperty(PropertiesApi.PropertyKey.WIRE_RECEIPT_MODE)
+        propertiesApi.deleteProperty(PropertyKey.WIRE_RECEIPT_MODE)
     }.flatMap {
         userConfigRepository.setReadReceiptsStatus(false)
     }
@@ -71,13 +72,13 @@ internal class UserPropertyDataSource(
         userConfigRepository.isTypingIndicatorEnabled()
 
     override suspend fun setTypingIndicatorEnabled(): Either<CoreFailure, Unit> = wrapApiRequest {
-        propertiesApi.deleteProperty(PropertiesApi.PropertyKey.WIRE_TYPING_INDICATOR_MODE)
+        propertiesApi.deleteProperty(PropertyKey.WIRE_TYPING_INDICATOR_MODE)
     }.flatMap {
         userConfigRepository.setTypingIndicatorStatus(true)
     }
 
     override suspend fun removeTypingIndicatorProperty(): Either<CoreFailure, Unit> = wrapApiRequest {
-        propertiesApi.setProperty(PropertiesApi.PropertyKey.WIRE_TYPING_INDICATOR_MODE, 0)
+        propertiesApi.setProperty(PropertyKey.WIRE_TYPING_INDICATOR_MODE, 0)
     }.flatMap {
         userConfigRepository.setTypingIndicatorStatus(false)
     }

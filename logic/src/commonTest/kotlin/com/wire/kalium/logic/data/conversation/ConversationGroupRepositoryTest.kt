@@ -50,30 +50,31 @@ import com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangementImpl
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.util.thenReturnSequentially
-import com.wire.kalium.network.api.base.authenticated.conversation.AddServiceRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
-import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol.MLS
+import com.wire.kalium.network.api.authenticated.conversation.AddServiceRequest
+import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.authenticated.conversation.ConvProtocol.MLS
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembersResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
-import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
-import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
-import com.wire.kalium.network.api.base.model.ConversationAccessDTO
-import com.wire.kalium.network.api.base.model.ConversationAccessRoleDTO
-import com.wire.kalium.network.api.base.model.ErrorResponse
-import com.wire.kalium.network.api.base.model.FederationUnreachableResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberAddedResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberRemovedResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMembersResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
+import com.wire.kalium.network.api.authenticated.conversation.messagetimer.ConversationMessageTimerDTO
+import com.wire.kalium.network.api.authenticated.conversation.model.ConversationCodeInfo
+import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.model.ConversationAccessDTO
+import com.wire.kalium.network.api.model.ConversationAccessRoleDTO
+import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.FederationUnreachableResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationGuestLinkEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
@@ -1140,7 +1141,7 @@ class ConversationGroupRepositoryTest {
             TestConversation.NETWORK_ID,
             ConversationMessageTimerDTO(messageTimer),
             TestConversation.NETWORK_USER_ID1,
-            "2022-03-30T15:36:00.000Z"
+            Instant.UNIX_FIRST_DATE,
         )
 
         val (arrangement, conversationGroupRepository) = Arrangement()

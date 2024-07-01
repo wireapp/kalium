@@ -39,12 +39,12 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
+import kotlinx.datetime.Clock
 import kotlin.time.Duration
 
 @Suppress("LongParameterList")
@@ -102,7 +102,7 @@ class SendTextMessageUseCase internal constructor(
                 ),
                 expectsReadConfirmation = expectsReadConfirmation,
                 conversationId = conversationId,
-                date = DateTimeUtil.currentIsoDateTimeString(),
+                date = Clock.System.now(),
                 senderUserId = selfUserId,
                 senderClientId = clientId,
                 status = Message.Status.Pending,

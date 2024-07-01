@@ -18,7 +18,7 @@
 package com.wire.kalium.logic.data.service
 
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.api.base.model.ServiceDetailDTO
+import com.wire.kalium.network.api.model.ServiceDetailDTO
 import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.ServiceEntity
 import kotlinx.coroutines.ExperimentalCoroutinesApi

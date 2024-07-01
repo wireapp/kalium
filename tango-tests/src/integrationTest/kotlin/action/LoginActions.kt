@@ -18,17 +18,10 @@
 package action
 
 import com.wire.kalium.logic.CoreLogic
-import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.data.auth.AccountTokens
+import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
 import com.wire.kalium.logic.feature.auth.AuthenticationScope
-import com.wire.kalium.network.api.base.model.SelfUserDTO
-import io.ktor.http.HttpMethod
-import io.ktor.http.HttpStatusCode
-import util.ListUsersResponseJson
-import util.MockUnboundNetworkClient
-import util.ServerConfigDTOJson
-import util.UserDTOJson
 
 object LoginActions {
 
@@ -58,75 +51,4 @@ object LoginActions {
 
         return loginResult.authData
     }
-
-    /**
-     * URL Paths
-     */
-    private const val PATH_LOGIN = "${CommonResponses.BASE_PATH_V1}login?persist=true"
-    private const val PATH_SELF = "${CommonResponses.BASE_PATH_V1}self"
-    private const val PATH_LOGOUT = "${CommonResponses.BASE_PATH_V1}logout"
-    private const val PATH_API_VERSION = "${CommonResponses.BASE_PATH}api-version"
-
-    /**
-     * JSON Response
-     */
-    private val listUsersResponseJson = ListUsersResponseJson.v0
-    private val selfUserDTO = SelfUserDTO(
-        id = CommonResponses.userID,
-        name = "user_name_123",
-        accentId = 2,
-        assets = listOf(),
-        deleted = null,
-        email = "test@testio.test",
-        handle = "mrtestio",
-        service = null,
-        teamId = null,
-        expiresAt = "2026-03-25T14:17:27.364Z",
-        nonQualifiedId = "",
-        locale = "",
-        managedByDTO = null,
-        phone = null,
-        ssoID = null,
-        supportedProtocols = null
-    )
-    private val VALID_SELF_RESPONSE = UserDTOJson.createValid(selfUserDTO)
-
-    /**
-     * Requests / Responses
-     */
-    private val loginRequestSuccess = MockUnboundNetworkClient.TestRequestHandler(
-        path = PATH_LOGIN,
-        responseBody = CommonResponses.VALID_ACCESS_TOKEN_RESPONSE.rawJson,
-        statusCode = HttpStatusCode.OK,
-        httpMethod = HttpMethod.Post,
-        headers = mapOf("set-cookie" to "zuid=${CommonResponses.REFRESH_TOKEN}")
-    )
-
-    private val selfRequestSuccess = MockUnboundNetworkClient.TestRequestHandler(
-        path = PATH_SELF,
-        responseBody = VALID_SELF_RESPONSE.rawJson,
-        httpMethod = HttpMethod.Get,
-        statusCode = HttpStatusCode.OK,
-    )
-
-    private val userDetailsRequestSuccess = MockUnboundNetworkClient.TestRequestHandler(
-        path = PATH_LOGOUT,
-        responseBody = listUsersResponseJson.rawJson,
-        httpMethod = HttpMethod.Post,
-        statusCode = HttpStatusCode.Forbidden,
-    )
-
-    private val apiVersionRequestSuccess = MockUnboundNetworkClient.TestRequestHandler(
-        path = PATH_API_VERSION,
-        responseBody = ServerConfigDTOJson.validServerConfigResponse.rawJson,
-        httpMethod = HttpMethod.Get,
-        statusCode = HttpStatusCode.OK,
-    )
-
-    val loginRequestResponseSuccess = listOf(
-        loginRequestSuccess,
-        selfRequestSuccess,
-        userDetailsRequestSuccess,
-        apiVersionRequestSuccess
-    )
 }

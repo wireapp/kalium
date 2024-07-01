@@ -25,7 +25,9 @@ import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.utils.stubs.newConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
 import com.wire.kalium.persistence.utils.stubs.newUserEntity
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertContentEquals
@@ -56,7 +58,7 @@ class ReactionDAOTest : BaseDatabaseTest() {
         messageDAO.insertOrIgnoreMessage(TEST_MESSAGE)
         val expectedReaction = "🐻"
 
-        reactionDAO.insertReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID, "date", expectedReaction)
+        reactionDAO.insertReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID, Instant.UNIX_FIRST_DATE, expectedReaction)
 
         // When
         val result = reactionDAO.getReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID)
@@ -73,7 +75,7 @@ class ReactionDAOTest : BaseDatabaseTest() {
         messageDAO.insertOrIgnoreMessage(TEST_MESSAGE)
         val expectedReaction = "🐻"
 
-        reactionDAO.insertReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID, "date", expectedReaction)
+        reactionDAO.insertReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID, Instant.UNIX_FIRST_DATE, expectedReaction)
         reactionDAO.deleteReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID, expectedReaction)
 
         // When
@@ -94,9 +96,9 @@ class ReactionDAOTest : BaseDatabaseTest() {
         val expectedReactions = setOf("🐻", "🧱", "🍻")
 
         expectedReactions.forEach {
-            reactionDAO.insertReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, wantedUserId, "date", it)
+            reactionDAO.insertReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, wantedUserId, Instant.UNIX_FIRST_DATE, it)
         }
-        reactionDAO.insertReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, otherUserId, "date", "🪵")
+        reactionDAO.insertReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, otherUserId, Instant.UNIX_FIRST_DATE, "🪵")
 
         // When
         val result = reactionDAO.getReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, wantedUserId)
@@ -117,9 +119,9 @@ class ReactionDAOTest : BaseDatabaseTest() {
         val expectedReactions = setOf("🐻", "🧱", "🍻")
 
         expectedReactions.forEach {
-            reactionDAO.insertReaction(wantedMessageId, TEST_MESSAGE.conversationId, SELF_USER_ID, "date", it)
+            reactionDAO.insertReaction(wantedMessageId, TEST_MESSAGE.conversationId, SELF_USER_ID, Instant.UNIX_FIRST_DATE, it)
         }
-        reactionDAO.insertReaction(otherMessageId, TEST_MESSAGE.conversationId, SELF_USER_ID, "date", "🪵")
+        reactionDAO.insertReaction(otherMessageId, TEST_MESSAGE.conversationId, SELF_USER_ID, Instant.UNIX_FIRST_DATE, "🪵")
 
         // When
         val result = reactionDAO.getReaction(wantedMessageId, TEST_MESSAGE.conversationId, SELF_USER_ID)
@@ -141,9 +143,9 @@ class ReactionDAOTest : BaseDatabaseTest() {
         val expectedReactions = setOf("🐻", "🧱", "🍻")
 
         expectedReactions.forEach {
-            reactionDAO.insertReaction(TEST_MESSAGE.id, wantedConversationId, SELF_USER_ID, "date", it)
+            reactionDAO.insertReaction(TEST_MESSAGE.id, wantedConversationId, SELF_USER_ID, Instant.UNIX_FIRST_DATE, it)
         }
-        reactionDAO.insertReaction(TEST_MESSAGE.id, otherConversationId, SELF_USER_ID, "date", "🪵")
+        reactionDAO.insertReaction(TEST_MESSAGE.id, otherConversationId, SELF_USER_ID, Instant.UNIX_FIRST_DATE, "🪵")
 
         // When
         val result = reactionDAO.getReaction(TEST_MESSAGE.id, wantedConversationId, SELF_USER_ID)
@@ -161,10 +163,10 @@ class ReactionDAOTest : BaseDatabaseTest() {
         val initialReaction = "😎"
         val expectedReactions = setOf("🐻", "🧱", "🍻")
 
-        reactionDAO.insertReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID, "Date", initialReaction)
+        reactionDAO.insertReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID, Instant.UNIX_FIRST_DATE, initialReaction)
 
         // Given
-        reactionDAO.updateReactions(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID, "Date", expectedReactions)
+        reactionDAO.updateReactions(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID, Instant.UNIX_FIRST_DATE, expectedReactions)
 
         // Then
         val result = reactionDAO.getReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID)
@@ -181,10 +183,10 @@ class ReactionDAOTest : BaseDatabaseTest() {
         val initialReaction = "😎"
         val expectedReactions = setOf("😎", "🐻", "🧱", "🍻")
 
-        reactionDAO.insertReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID, "Date", initialReaction)
+        reactionDAO.insertReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID, Instant.UNIX_FIRST_DATE, initialReaction)
 
         // Given
-        reactionDAO.updateReactions(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID, "Date", expectedReactions)
+        reactionDAO.updateReactions(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID, Instant.UNIX_FIRST_DATE, expectedReactions)
 
         // Then
         val result = reactionDAO.getReaction(TEST_MESSAGE.id, TEST_MESSAGE.conversationId, SELF_USER_ID)

@@ -28,15 +28,16 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
-import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
+import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
-import com.wire.kalium.network.api.base.authenticated.notification.NotificationResponse
-import com.wire.kalium.network.api.base.authenticated.notification.conversation.MessageEventData
-import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
+import com.wire.kalium.network.api.authenticated.notification.conversation.MessageEventData
+import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
 import io.mockative.any
@@ -47,6 +48,7 @@ import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -58,7 +60,7 @@ class EventRepositoryTest {
         val pendingEventPayload = EventContentDTO.Conversation.NewMessageDTO(
             TestConversation.NETWORK_ID,
             UserId("value", "domain"),
-            "eventTime",
+            Instant.UNIX_FIRST_DATE,
             MessageEventData("text", "senderId", "recipient")
         )
         val pendingEvent = EventResponse("pendingEventId", listOf(pendingEventPayload))

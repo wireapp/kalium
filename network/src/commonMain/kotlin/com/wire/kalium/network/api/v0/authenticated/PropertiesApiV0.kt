@@ -20,6 +20,7 @@ package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.properties.PropertiesApi
+import com.wire.kalium.network.api.authenticated.properties.PropertyKey
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
 import io.ktor.client.request.delete
@@ -36,12 +37,12 @@ internal open class PropertiesApiV0 internal constructor(
         const val PATH_PROPERTIES = "properties"
     }
 
-    override suspend fun setProperty(propertyKey: PropertiesApi.PropertyKey, propertyValue: Any): NetworkResponse<Unit> =
+    override suspend fun setProperty(propertyKey: PropertyKey, propertyValue: Any): NetworkResponse<Unit> =
         wrapKaliumResponse {
             httpClient.put("$PATH_PROPERTIES/${propertyKey.key}") { setBody(propertyValue) }
         }
 
-    override suspend fun deleteProperty(propertyKey: PropertiesApi.PropertyKey): NetworkResponse<Unit> = wrapKaliumResponse {
+    override suspend fun deleteProperty(propertyKey: PropertyKey): NetworkResponse<Unit> = wrapKaliumResponse {
         httpClient.delete("$PATH_PROPERTIES/${propertyKey.key}")
     }
 

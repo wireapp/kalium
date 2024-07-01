@@ -94,16 +94,16 @@ internal class NewConversationEventHandlerImpl(
         event: Event.Conversation.NewConversation
     ) {
         if (isNewUnhandledConversation) {
-            newGroupConversationSystemMessagesCreator.conversationStarted(event.senderUserId, event.conversation, event.timestampIso)
+            newGroupConversationSystemMessagesCreator.conversationStarted(event.senderUserId, event.conversation, event.dateTime)
             newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(
                 event.conversationId.toDao(),
                 event.conversation.members.otherMembers.map { it.id.toModel() },
-                event.timestampIso
+                event.dateTime
             )
-            newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(event.conversation, event.timestampIso)
+            newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(event.conversation, event.dateTime)
             newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
                 event.conversation.id.toModel(),
-                event.timestampIso
+                event.dateTime
             )
         }
     }

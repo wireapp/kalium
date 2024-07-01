@@ -46,7 +46,7 @@ class CLIApplication : CliktCommand(allowMultipleSubcommands = true) {
     ).flag(default = false)
     private val encryptProteusStorage by option(
         help = "use encrypted storage for proteus sessions and identity"
-    ).flag(default = false)
+    ).flag(default = true)
     private val mlsMigrationInterval by option(
         help = "interval at which mls migration is updated"
     ).default("24h")

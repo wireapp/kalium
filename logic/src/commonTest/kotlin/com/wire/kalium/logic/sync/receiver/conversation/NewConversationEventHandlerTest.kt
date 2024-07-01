@@ -38,8 +38,9 @@ import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.wasInTheLastSecond
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ReceiptMode
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.ReceiptMode
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -50,6 +51,7 @@ import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 
 class NewConversationEventHandlerTest {
@@ -157,21 +159,21 @@ class NewConversationEventHandlerTest {
             arrangement.newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(
                 eq(event.conversationId.toDao()),
                 eq(event.conversation.members.otherMembers.map { it.id.toModel() }),
-                eq(event.timestampIso)
+                eq(event.dateTime)
             )
         }.wasInvoked(exactly = once)
 
         coVerify {
             arrangement.newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(
                 eq(event.conversation),
-                eq(event.timestampIso)
+                eq(event.dateTime)
             )
         }.wasInvoked(exactly = once)
 
         coVerify {
             arrangement.newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
                 eq(event.conversation.id.toModel()),
-                eq(event.timestampIso)
+                eq(event.dateTime)
             )
         }.wasInvoked(exactly = once)
     }
@@ -216,14 +218,14 @@ class NewConversationEventHandlerTest {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(
                     eq(event.conversationId.toDao()),
                     eq(event.conversation.members.otherMembers.map { it.id.toModel() }),
-                    eq(event.timestampIso)
+                    eq(event.dateTime)
                 )
             }.wasNotInvoked()
 
             coVerify {
                 arrangement.newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(
                     eq(event.conversation),
-                    eq(event.timestampIso)
+                    eq(event.dateTime)
                 )
             }.wasNotInvoked()
         }
@@ -368,7 +370,7 @@ class NewConversationEventHandlerTest {
 
         suspend fun withReadReceiptsSystemMessage() = apply {
             coEvery {
-                newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(any<ConversationResponse>(), any<String>())
+                newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(any<ConversationResponse>(), any<Instant>())
             }.returns(Either.Right(Unit))
         }
 
@@ -393,7 +395,7 @@ class NewConversationEventHandlerTest {
         ) = Event.Conversation.NewConversation(
             id = "eventId",
             conversationId = TestConversation.ID,
-            timestampIso = "timestamp",
+            dateTime = Instant.UNIX_FIRST_DATE,
             conversation = conversation,
             senderUserId = TestUser.SELF.id
         )

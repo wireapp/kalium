@@ -22,8 +22,9 @@ import com.wire.kalium.api.TEST_BACKEND_CONFIG
 import com.wire.kalium.api.json.model.testCredentials
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.AccessTokenApi
-import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
-import com.wire.kalium.network.api.base.model.SessionDTO
+import com.wire.kalium.network.api.model.ProxyCredentialsDTO
+import com.wire.kalium.network.api.model.SessionDTO
+import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.v0.authenticated.AccessTokenApiV0
 import com.wire.kalium.network.api.v0.authenticated.AssetApiV0
 import com.wire.kalium.network.exceptions.KaliumException
@@ -31,7 +32,6 @@ import com.wire.kalium.network.kaliumLogger
 import com.wire.kalium.network.networkContainer.KaliumUserAgentProvider
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.session.installAuth
-import com.wire.kalium.network.tools.ServerConfigDTO
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine

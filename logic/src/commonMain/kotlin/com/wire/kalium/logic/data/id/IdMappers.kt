@@ -24,10 +24,10 @@ import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.CryptoQualifiedID
 import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.logic.data.conversation.ClientId
-import com.wire.kalium.network.api.base.model.UserAssetDTO
+import com.wire.kalium.network.api.model.UserAssetDTO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 
-internal typealias NetworkQualifiedId = com.wire.kalium.network.api.base.model.QualifiedID
+internal typealias NetworkQualifiedId = com.wire.kalium.network.api.model.QualifiedID
 internal typealias PersistenceQualifiedId = QualifiedIDEntity
 
 // QualifiedID

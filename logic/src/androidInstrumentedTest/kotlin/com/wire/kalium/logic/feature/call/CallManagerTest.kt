@@ -49,6 +49,8 @@ import kotlin.test.Ignore
 import kotlin.test.Test
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.network.NetworkStateObserver
+import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
+import kotlinx.datetime.Instant
 
 class CallManagerTest {
 
@@ -160,7 +162,7 @@ class CallManagerTest {
             id = "id",
             content = CALL_CONTENT,
             conversationId = ConversationId(value = "value", domain = "domain"),
-            date = "2022-03-30T15:36:00.000Z",
+            date = Instant.parse("2022-03-30T15:36:00.000Z"),
             senderUserId = UserId(value = "value", domain = "domain"),
             senderClientId = ClientId(value = "value"),
             status = Message.Status.Sent,

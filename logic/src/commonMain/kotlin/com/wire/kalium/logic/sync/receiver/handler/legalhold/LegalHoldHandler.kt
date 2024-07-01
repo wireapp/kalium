@@ -41,8 +41,6 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.ObserveSyncStateUseCase
 import com.wire.kalium.logic.sync.receiver.conversation.message.MessageUnpackResult
 import com.wire.kalium.logic.util.TriggerBuffer
-import com.wire.kalium.util.DateTimeUtil
-import com.wire.kalium.util.DateTimeUtil.minusMilliseconds
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
@@ -51,6 +49,9 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
+import kotlin.time.Duration.Companion.milliseconds
 
 internal interface LegalHoldHandler {
     suspend fun handleEnable(legalHoldEnabled: Event.User.LegalHoldEnabled): Either<CoreFailure, Unit>
@@ -59,9 +60,10 @@ internal interface LegalHoldHandler {
     suspend fun handleNewMessage(message: MessageUnpackResult.ApplicationMessage, isLive: Boolean): Either<CoreFailure, Unit>
     suspend fun handleMessageSendFailure(
         conversationId: ConversationId,
-        messageTimestampIso: String,
+        messageInstant: Instant,
         handleFailure: suspend () -> Either<CoreFailure, Unit>
     ): Either<CoreFailure, Boolean>
+
     suspend fun handleConversationMembersChanged(conversationId: ConversationId): Either<CoreFailure, Unit>
     suspend fun handleUserFetch(userId: UserId, userIsUnderLegalHold: Boolean): Either<CoreFailure, Unit>
 }
@@ -102,7 +104,7 @@ internal class LegalHoldHandlerImpl internal constructor(
                 userConfigRepository.setLegalHoldChangeNotified(false)
             }
             handleConversationsForUser(legalHoldEnabled.userId)
-            legalHoldSystemMessagesHandler.handleEnabledForUser(legalHoldEnabled.userId, DateTimeUtil.currentIsoDateTimeString())
+            legalHoldSystemMessagesHandler.handleEnabledForUser(legalHoldEnabled.userId, Clock.System.now())
         }
 
         return Either.Right(Unit)
@@ -120,7 +122,7 @@ internal class LegalHoldHandlerImpl internal constructor(
                 userConfigRepository.setLegalHoldChangeNotified(false)
             }
             handleConversationsForUser(legalHoldDisabled.userId)
-            legalHoldSystemMessagesHandler.handleDisabledForUser(legalHoldDisabled.userId, DateTimeUtil.currentIsoDateTimeString())
+            legalHoldSystemMessagesHandler.handleDisabledForUser(legalHoldDisabled.userId, Clock.System.now())
         }
 
         return Either.Right(Unit)
@@ -133,6 +135,7 @@ internal class LegalHoldHandlerImpl internal constructor(
                 kaliumLogger.i("missing legal hold consent for connection with user ${connection.qualifiedToId.toLogString()}")
                 conversationRepository.updateLegalHoldStatus(connection.qualifiedConversationId, Conversation.LegalHoldStatus.DEGRADED)
             }
+
             ConnectionState.ACCEPTED -> {
                 isUserUnderLegalHold(connection.qualifiedToId).let { isUnderLegalHold ->
                     kaliumLogger.i(
@@ -143,20 +146,22 @@ internal class LegalHoldHandlerImpl internal constructor(
                     conversationRepository.updateLegalHoldStatus(connection.qualifiedConversationId, newStatus)
                 }
             }
+
             else -> { /* do nothing */ }
         }
         return Either.Right(Unit)
     }
 
     override suspend fun handleNewMessage(message: MessageUnpackResult.ApplicationMessage, isLive: Boolean): Either<CoreFailure, Unit> {
-        val systemMessageTimestampIso = minusMilliseconds(message.timestampIso, 1)
+        val systemMessageInstant = message.instant - 1.milliseconds
         val isStatusChangedForConversation = when (val legalHoldStatus = message.content.legalHoldStatus) {
             Conversation.LegalHoldStatus.ENABLED, Conversation.LegalHoldStatus.DISABLED ->
-                handleForConversation(message.conversationId, legalHoldStatus, systemMessageTimestampIso)
+                handleForConversation(message.conversationId, legalHoldStatus, systemMessageInstant)
+
             else -> false
         }
         if (isStatusChangedForConversation) {
-            if (isLive) handleUpdatedConversations(listOf(message.conversationId), systemMessageTimestampIso) // handle it right away
+            if (isLive) handleUpdatedConversations(listOf(message.conversationId), systemMessageInstant) // handle it right away
             else bufferedUpdatedConversationIds.add(message.conversationId) // buffer and handle after sync
         }
         return Either.Right(Unit)
@@ -164,22 +169,26 @@ internal class LegalHoldHandlerImpl internal constructor(
 
     override suspend fun handleMessageSendFailure(
         conversationId: ConversationId,
-        messageTimestampIso: String,
+        messageInstant: Instant,
         handleFailure: suspend () -> Either<CoreFailure, Unit>,
     ): Either<CoreFailure, Boolean> =
         membersHavingLegalHoldClient(conversationId).flatMap { membersHavingLegalHoldClientBefore ->
             handleFailure().flatMap {
-                val systemMessageTimestampIso = minusMilliseconds(messageTimestampIso, 1)
+                val systemMessageInstant = messageInstant - 1.milliseconds
                 membersHavingLegalHoldClient(conversationId).map { membersHavingLegalHoldClientAfter ->
                     val newStatus =
                         if (membersHavingLegalHoldClientAfter.isEmpty()) Conversation.LegalHoldStatus.DISABLED
                         else Conversation.LegalHoldStatus.ENABLED
-                    val isStatusChangedForConversation = handleForConversation(conversationId, newStatus, systemMessageTimestampIso)
+                    val isStatusChangedForConversation = handleForConversation(
+                        conversationId = conversationId,
+                        newStatus = newStatus,
+                        systemMessageInstant = systemMessageInstant
+                    )
                     (membersHavingLegalHoldClientBefore - membersHavingLegalHoldClientAfter).forEach {
-                        legalHoldSystemMessagesHandler.handleDisabledForUser(it, systemMessageTimestampIso)
+                        legalHoldSystemMessagesHandler.handleDisabledForUser(it, systemMessageInstant)
                     }
                     (membersHavingLegalHoldClientAfter - membersHavingLegalHoldClientBefore).forEach {
-                        legalHoldSystemMessagesHandler.handleEnabledForUser(it, systemMessageTimestampIso)
+                        legalHoldSystemMessagesHandler.handleEnabledForUser(it, systemMessageInstant)
                     }
                     isStatusChangedForConversation && newStatus == Conversation.LegalHoldStatus.ENABLED
                 }
@@ -216,9 +225,9 @@ internal class LegalHoldHandlerImpl internal constructor(
             processEvent(selfUserId, userId) // fetch and persist current clients for the given user
             handleConversationsForUser(userId)
             if (userIsUnderLegalHold) {
-                legalHoldSystemMessagesHandler.handleEnabledForUser(userId, DateTimeUtil.currentIsoDateTimeString())
+                legalHoldSystemMessagesHandler.handleEnabledForUser(userId, Clock.System.now())
             } else {
-                legalHoldSystemMessagesHandler.handleDisabledForUser(userId, DateTimeUtil.currentIsoDateTimeString())
+                legalHoldSystemMessagesHandler.handleDisabledForUser(userId, Clock.System.now())
             }
         }
 
@@ -232,7 +241,7 @@ internal class LegalHoldHandlerImpl internal constructor(
     private suspend fun handleForConversation(
         conversationId: ConversationId,
         newStatus: Conversation.LegalHoldStatus,
-        systemMessageTimestampIso: String = DateTimeUtil.currentIsoDateTimeString(),
+        systemMessageInstant: Instant = Clock.System.now(),
     ): Boolean =
         if (newStatus != Conversation.LegalHoldStatus.UNKNOWN) {
             conversationRepository.observeLegalHoldStatus(conversationId).firstOrNull()?.getOrNull().let { currentStatus ->
@@ -241,14 +250,17 @@ internal class LegalHoldHandlerImpl internal constructor(
                         currentStatus == Conversation.LegalHoldStatus.DEGRADED && newStatus == Conversation.LegalHoldStatus.ENABLED -> {
                             true // in case it's already degraded we want to keep it, not change it to enabled but create system messages
                         }
+
                         else -> conversationRepository.updateLegalHoldStatus(conversationId, newStatus).getOrElse(false)
                     }
                     if (isChanged) { // if conversation legal hold status has changed, create system message for it
                         when (newStatus) {
                             Conversation.LegalHoldStatus.DISABLED ->
-                                legalHoldSystemMessagesHandler.handleDisabledForConversation(conversationId, systemMessageTimestampIso)
+                                legalHoldSystemMessagesHandler.handleDisabledForConversation(conversationId, systemMessageInstant)
+
                             Conversation.LegalHoldStatus.ENABLED ->
-                                legalHoldSystemMessagesHandler.handleEnabledForConversation(conversationId, systemMessageTimestampIso)
+                                legalHoldSystemMessagesHandler.handleEnabledForConversation(conversationId, systemMessageInstant)
+
                             else -> { /* do nothing */ }
                         }
                     }
@@ -270,7 +282,7 @@ internal class LegalHoldHandlerImpl internal constructor(
 
     private suspend fun handleUpdatedConversations(
         conversationIds: List<ConversationId>,
-        systemMessageTimestampIso: String = DateTimeUtil.currentIsoDateTimeString(),
+        systemMessageInstant: Instant = Clock.System.now(),
     ) {
         conversationIds
             .foldToEitherWhileRight(mapOf<UserId, Boolean>()) { conversationId, acc ->
@@ -291,8 +303,8 @@ internal class LegalHoldHandlerImpl internal constructor(
                             userConfigRepository.setLegalHoldChangeNotified(false)
                             userConfigRepository.deleteLegalHoldRequest()
                         }
-                        if (userIsNowUnderLegalHold) legalHoldSystemMessagesHandler.handleEnabledForUser(userId, systemMessageTimestampIso)
-                        else legalHoldSystemMessagesHandler.handleDisabledForUser(userId, systemMessageTimestampIso)
+                        if (userIsNowUnderLegalHold) legalHoldSystemMessagesHandler.handleEnabledForUser(userId, systemMessageInstant)
+                        else legalHoldSystemMessagesHandler.handleDisabledForUser(userId, systemMessageInstant)
                     }
                 }
             }

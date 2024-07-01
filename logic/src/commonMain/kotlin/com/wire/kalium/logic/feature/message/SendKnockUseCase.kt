@@ -32,11 +32,11 @@ import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTim
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
+import kotlinx.datetime.Clock
 import kotlin.time.Duration
 
 @Suppress("LongParameterList")
@@ -76,7 +76,7 @@ class SendKnockUseCase internal constructor(
                 id = generatedMessageUuid,
                 content = MessageContent.Knock(hotKnock),
                 conversationId = conversationId,
-                date = DateTimeUtil.currentIsoDateTimeString(),
+                date = Clock.System.now(),
                 senderUserId = selfUserId,
                 senderClientId = currentClientId,
                 status = Message.Status.Pending,

@@ -18,8 +18,10 @@
 
 package com.wire.kalium.network.api.base.authenticated.userDetails
 
-import com.wire.kalium.network.api.base.model.UserId
-import com.wire.kalium.network.api.base.model.UserProfileDTO
+import com.wire.kalium.network.api.model.UserId
+import com.wire.kalium.network.api.model.UserProfileDTO
+import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
+import com.wire.kalium.network.api.authenticated.userDetails.ListUsersDTO
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface UserDetailsApi {

@@ -40,7 +40,7 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.util.serialization.toJsonElement
-import com.wire.kalium.util.DateTimeUtil
+import kotlinx.datetime.Clock
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -84,7 +84,7 @@ internal class SendConfirmationUseCase internal constructor(
                 id = uuid4().toString(),
                 content = MessageContent.Receipt(ReceiptType.READ, messageIds),
                 conversationId = conversationId,
-                date = DateTimeUtil.currentIsoDateTimeString(),
+                date = Clock.System.now(),
                 senderUserId = selfUserId,
                 senderClientId = currentClientId,
                 status = Message.Status.Pending,

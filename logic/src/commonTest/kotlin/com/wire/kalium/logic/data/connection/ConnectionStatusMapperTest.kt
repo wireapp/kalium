@@ -19,7 +19,7 @@
 package com.wire.kalium.logic.data.connection
 
 import com.wire.kalium.logic.data.user.ConnectionState
-import com.wire.kalium.network.api.base.authenticated.connection.ConnectionStateDTO
+import com.wire.kalium.network.api.authenticated.connection.ConnectionStateDTO
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull

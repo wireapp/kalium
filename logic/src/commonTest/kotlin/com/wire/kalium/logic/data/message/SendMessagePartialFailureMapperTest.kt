@@ -23,8 +23,9 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.feature.session.DoesValidSessionExistUseCaseTest.Arrangement.Companion.TEST_USER_ID
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID_2
-import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
-import com.wire.kalium.network.api.base.authenticated.message.SendMLSMessageResponse
+import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
+import com.wire.kalium.network.api.authenticated.message.SendMLSMessageResponse
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -35,7 +36,7 @@ class SendMessagePartialFailureMapperTest {
     @Test
     fun testFromDTOMapping() {
         assertEquals(
-            MessageSent("2022-04-21T20:56:22.393Z", listOf(TEST_USER_ID, OTHER_USER_ID_2)), mapper.fromDTO(RESULT_DTO)
+            MessageSent(Instant.parse("2022-04-21T20:56:22.393Z"), listOf(TEST_USER_ID, OTHER_USER_ID_2)), mapper.fromDTO(RESULT_DTO)
         )
     }
 
@@ -43,9 +44,9 @@ class SendMessagePartialFailureMapperTest {
     fun testFromMlsDTOMapping() {
         val expectedUsersFailedToSend = listOf(TEST_USER_ID, OTHER_USER_ID_2)
         assertEquals(
-            MessageSent("2022-04-21T20:56:22.393Z", expectedUsersFailedToSend),
+            MessageSent(Instant.parse("2022-04-21T20:56:22.393Z"), expectedUsersFailedToSend),
             mapper.fromMlsDTO(
-                SendMLSMessageResponse("2022-04-21T20:56:22.393Z",
+                SendMLSMessageResponse(Instant.parse("2022-04-21T20:56:22.393Z"),
                     emptyList(),
                     expectedUsersFailedToSend.map { it.toApi() })
             )
@@ -54,7 +55,7 @@ class SendMessagePartialFailureMapperTest {
 
     companion object {
         private val RESULT_DTO = QualifiedSendMessageResponse.MessageSent(
-            time = "2022-04-21T20:56:22.393Z",
+            time = Instant.parse("2022-04-21T20:56:22.393Z"),
             missing = mapOf(),
             redundant = mapOf(),
             deleted = mapOf(),

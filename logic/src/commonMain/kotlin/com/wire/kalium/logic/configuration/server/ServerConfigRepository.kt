@@ -31,8 +31,8 @@ import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
+import com.wire.kalium.network.api.unbound.configuration.ApiVersionDTO
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
-import com.wire.kalium.network.tools.ApiVersionDTO
 import com.wire.kalium.persistence.daokaliumdb.ServerConfigurationDAO
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl

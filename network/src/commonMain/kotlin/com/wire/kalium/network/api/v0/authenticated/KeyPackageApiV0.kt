@@ -18,10 +18,10 @@
 
 package com.wire.kalium.network.api.v0.authenticated
 
-import com.wire.kalium.network.api.base.authenticated.keypackage.ClaimedKeyPackageList
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackage
+import com.wire.kalium.network.api.authenticated.keypackage.ClaimedKeyPackageList
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackage
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageCountDTO
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
 import com.wire.kalium.network.exceptions.APINotSupported
 import com.wire.kalium.network.utils.NetworkResponse
 

@@ -27,13 +27,13 @@ import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.data.message.MessageSent
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
-import kotlinx.datetime.toInstant
+import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 
 object TestMessage {
     const val TEST_MESSAGE_ID = "messageId"
-    const val TEST_DATE_STRING = "2000-01-01T12:00:00.000Z"
-    val TEST_MESSAGE_SENT = MessageSent(TEST_DATE_STRING)
-    val TEST_DATE = TEST_DATE_STRING.toInstant()
+    val TEST_DATE = Instant.parse("2023-02-01T12:34:50Z")
+    val TEST_MESSAGE_SENT = MessageSent(TEST_DATE)
     val TEST_SENDER_USER_ID = TestUser.USER_ID
     val TEST_SENDER_CLIENT_ID = TestClient.CLIENT_ID
     val TEXT_CONTENT = MessageContent.Text("Ciao!")
@@ -57,7 +57,7 @@ object TestMessage {
         id = TEST_MESSAGE_ID,
         content = TEXT_CONTENT,
         conversationId = TestConversation.ID,
-        date = TEST_DATE_STRING,
+        date = TEST_DATE,
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,
         status = Message.Status.Pending,
@@ -69,7 +69,7 @@ object TestMessage {
         id = TEST_MESSAGE_ID,
         content = MessageContent.MissedCall,
         conversationId = ConversationId("conv", "id"),
-        date = TEST_DATE_STRING,
+        date = TEST_DATE,
         senderUserId = TEST_SENDER_USER_ID,
         status = Message.Status.Pending,
         expirationData = null
@@ -79,7 +79,7 @@ object TestMessage {
         id = TEST_MESSAGE_ID,
         content = ASSET_CONTENT,
         conversationId = ConversationId("conv", "id"),
-        date = TEST_DATE_STRING,
+        date = TEST_DATE,
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,
         status = Message.Status.Pending,
@@ -104,7 +104,7 @@ object TestMessage {
     val BROADCAST_MESSAGE = BroadcastMessage(
         id = TEST_MESSAGE_ID,
         content = MessageContent.Availability(UserAvailabilityStatus.AVAILABLE),
-        date = TEST_DATE_STRING,
+        date = TEST_DATE,
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,
         status = Message.Status.Pending,
@@ -117,7 +117,7 @@ object TestMessage {
         id = TEST_MESSAGE_ID,
         content = content,
         conversationId = TestConversation.ID,
-        date = "currentDate",
+        date = Clock.System.now(),
         senderUserId = TEST_SENDER_USER_ID,
         senderClientId = TEST_SENDER_CLIENT_ID,
         status = Message.Status.Sent,

@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.ProtoContent
+import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.feature.message.confirmation.ConfirmationDeliveryHandler
@@ -260,6 +261,21 @@ class NewMessageEventHandlerTest {
     }
 
     @Test
+    fun givenAMessage_whenHandlingSignalingMessage_thenEnqueueDeliveryConfirmationShouldNotHappen() = runTest {
+        val (arrangement, newMessageEventHandler) = Arrangement()
+            .withHandleLegalHoldSuccess()
+            .withProteusUnpackerReturning(Either.Right(signalingMessage))
+            .arrange()
+
+        val newMessageEvent = TestEvent.newMessageEvent("encryptedContent")
+        newMessageEventHandler.handleNewProteusMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
+
+        coVerify { arrangement.proteusMessageUnpacker.unpackProteusMessage(eq(newMessageEvent)) }.wasInvoked(exactly = once)
+        coVerify { arrangement.applicationMessageHandler.handleDecryptionError(any(), any(), any(), any(), any(), any()) }.wasNotInvoked()
+        coVerify { arrangement.confirmationDeliveryHandler.enqueueConfirmationDelivery(any(), any()) }.wasNotInvoked()
+    }
+
+    @Test
     fun givenAProteusMessage_whenHandling_thenEnqueueDeliveryConfirmation() = runTest {
         val (arrangement, newMessageEventHandler) = Arrangement()
             .withHandleLegalHoldSuccess()
@@ -355,7 +371,7 @@ class NewMessageEventHandlerTest {
         newMessageEventHandler.handleNewMLSMessage(newMessageEvent, TestEvent.liveDeliveryInfo)
 
         coVerify {
-            arrangement.staleEpochVerifier.verifyEpoch(eq(newMessageEvent.conversationId), eq(newMessageEvent.timestampIso.toInstant()))
+            arrangement.staleEpochVerifier.verifyEpoch(eq(newMessageEvent.conversationId), eq(newMessageEvent.messageInstant))
         }.wasInvoked(exactly = once)
     }
 
@@ -448,9 +464,25 @@ class NewMessageEventHandlerTest {
 
     private companion object {
         val SELF_USER_ID = UserId("selfUserId", "selfDomain")
+        val signalingMessage = MessageUnpackResult.ApplicationMessage(
+            conversationId = ConversationId("conversationID", "domain"),
+            instant = Instant.DISTANT_PAST,
+            senderUserId = UserId("otherUserId", "otherUserDomain"),
+            senderClientId = ClientId("otherUserClientId"),
+            content = ProtoContent.Readable(
+                messageUid = "otherMessageUID",
+                messageContent = MessageContent.Receipt(
+                    type = ReceiptType.READ,
+                    messageIds = listOf("messageId1", "messageId2")
+                ),
+                expectsReadConfirmation = false,
+                legalHoldStatus = Conversation.LegalHoldStatus.DISABLED,
+                expiresAfterMillis = null
+            )
+        )
         val applicationMessage = MessageUnpackResult.ApplicationMessage(
             ConversationId("conversationID", "domain"),
-            Instant.DISTANT_PAST.toIsoDateTimeString(),
+            Instant.DISTANT_PAST,
             SELF_USER_ID,
             ClientId("clientID"),
             ProtoContent.Readable(

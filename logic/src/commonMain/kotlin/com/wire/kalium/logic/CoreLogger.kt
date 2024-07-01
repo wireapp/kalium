@@ -23,6 +23,7 @@ import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.network.NetworkLogger
 import com.wire.kalium.network.NetworkUtilLogger
+import com.wire.kalium.network.utils.NetworkModelLogger
 import com.wire.kalium.persistence.PersistenceLogger
 import com.wire.kalium.util.serialization.toJsonElement
 
@@ -37,6 +38,7 @@ object CoreLogger {
         kaliumLogger = KaliumLogger(config = kaliumLoggerConfig, tag = "CoreLogic")
         callingLogger = KaliumLogger(config = kaliumLoggerConfig, tag = "Calling")
         NetworkLogger.init(config = config)
+        NetworkModelLogger.init(config = config)
         NetworkUtilLogger.init(config = config)
         CryptographyLogger.init(config = config)
         PersistenceLogger.init(config = config)

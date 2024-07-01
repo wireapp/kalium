@@ -21,24 +21,24 @@ package com.wire.kalium.logic.util
 import com.wire.kalium.cryptography.utils.calcSHA256
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.kaliumLogger
-import com.wire.kalium.util.DateTimeUtil.toEpochMillis
 import com.wire.kalium.util.long.toByteArray
 import com.wire.kalium.util.string.toHexString
 import com.wire.kalium.util.string.toUTF16BEByteArray
+import kotlinx.datetime.Instant
 import kotlin.math.roundToLong
 
 class MessageContentEncoder {
-    fun encodeMessageContent(messageDate: String, messageContent: MessageContent): EncodedMessageContent? {
+    fun encodeMessageContent(messageInstant: Instant, messageContent: MessageContent): EncodedMessageContent? {
         return when (messageContent) {
             is MessageContent.Asset ->
                 encodeMessageAsset(
-                    messageTimeStampInMillis = messageDate.toEpochMillis(),
+                    messageTimeStampInMillis = messageInstant.toEpochMilliseconds(),
                     assetId = messageContent.value.remoteData.assetId
                 )
 
             is MessageContent.Text ->
                 encodeMessageTextBody(
-                    messageTimeStampInMillis = messageDate.toEpochMillis(),
+                    messageTimeStampInMillis = messageInstant.toEpochMilliseconds(),
                     messageTextBody = messageContent.value
                 )
 
@@ -46,7 +46,7 @@ class MessageContentEncoder {
                 encodeLocationCoordinates(
                     latitude = latitude,
                     longitude = longitude,
-                    messageTimeStampInMillis = messageDate.toEpochMillis()
+                    messageTimeStampInMillis = messageInstant.toEpochMilliseconds()
                 )
             }
 
