@@ -269,7 +269,7 @@ sealed class ConversationRepository {
             throw WebApplicationException("Instance ${instance.instanceId}: Could not get recent messages")
         }
 
-        @Suppress("LongParameterList", "LongMethod", "ThrowsCount")
+        @Suppress("LongParameterList", "LongMethod", "ThrowsCount", "ComplexMethod")
         suspend fun sendFile(
             instance: Instance,
             conversationId: ConversationId,
@@ -331,16 +331,28 @@ sealed class ConversationRepository {
                             }
                             when (sendResult) {
                                 is ScheduleNewAssetMessageResult.Failure -> {
-                                    if (sendResult.coreFailure is StorageFailure.Generic) {
-                                        val rootCause = (sendResult.coreFailure as StorageFailure.Generic)
-                                            .rootCause.message
-                                        Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                                            .entity("Instance ${instance.instanceId}: Sending failed with $rootCause")
-                                            .build()
-                                    } else {
-                                        Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                                            .entity("Instance ${instance.instanceId}: Sending file $fileName failed")
-                                            .build()
+                                    // if the IDE tels you that this casting is unnecessary
+                                    // first check kotlin version
+                                    // if version < 2 then casting is necessary
+                                    // if version >= 2 then casting is unnecessary
+                                    when (val result = sendResult as ScheduleNewAssetMessageResult.Failure) {
+                                        ScheduleNewAssetMessageResult.Failure.RestrictedFileType,
+                                        ScheduleNewAssetMessageResult.Failure.DisabledByTeam -> {
+                                            throw WebApplicationException(
+                                                "Instance ${instance.instanceId}: Sending failed with $sendResult"
+                                            )
+                                        }
+
+                                        is ScheduleNewAssetMessageResult.Failure.Generic -> {
+                                            if (result.coreFailure is StorageFailure.Generic) {
+                                                val rootCause = (result.coreFailure as StorageFailure.Generic).rootCause.message
+                                                throw WebApplicationException(
+                                                    "Instance ${instance.instanceId}: Sending failed with $rootCause"
+                                                )
+                                            } else {
+                                                throw WebApplicationException("Instance ${instance.instanceId}: Sending failed")
+                                            }
+                                        }
                                     }
                                 }
 
@@ -366,7 +378,7 @@ sealed class ConversationRepository {
             }
         }
 
-        @Suppress("LongParameterList")
+        @Suppress("LongParameterList", "ThrowsCount")
         suspend fun sendImage(
             instance: Instance,
             conversationId: ConversationId,
@@ -409,17 +421,24 @@ sealed class ConversationRepository {
                                 height,
                                 0L
                             )
-                            if (sendResult is ScheduleNewAssetMessageResult.Failure) {
-                                if (sendResult.coreFailure is StorageFailure.Generic) {
-                                    val rootCause = (sendResult.coreFailure as StorageFailure.Generic).rootCause.message
-                                    throw WebApplicationException(
-                                        "Instance ${instance.instanceId}: Sending failed with $rootCause"
-                                    )
-                                } else {
-                                    throw WebApplicationException("Instance ${instance.instanceId}: Sending failed")
+                            when (sendResult) {
+                                ScheduleNewAssetMessageResult.Failure.RestrictedFileType,
+                                ScheduleNewAssetMessageResult.Failure.DisabledByTeam -> {
+                                    throw WebApplicationException("Instance ${instance.instanceId}: Sending failed with $sendResult")
                                 }
-                            } else {
-                                Response.status(Response.Status.OK).build()
+
+                                is ScheduleNewAssetMessageResult.Failure.Generic -> {
+                                    if (sendResult.coreFailure is StorageFailure.Generic) {
+                                        val rootCause = (sendResult.coreFailure as StorageFailure.Generic).rootCause.message
+                                        throw WebApplicationException(
+                                            "Instance ${instance.instanceId}: Sending failed with $rootCause"
+                                        )
+                                    } else {
+                                        throw WebApplicationException("Instance ${instance.instanceId}: Sending failed")
+                                    }
+                                }
+
+                                is ScheduleNewAssetMessageResult.Success -> Response.status(Response.Status.OK).build()
                             }
                         }
                     }

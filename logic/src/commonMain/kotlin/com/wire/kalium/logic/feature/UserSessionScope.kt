@@ -1542,6 +1542,7 @@ class UserSessionScope internal constructor(
             observeSelfDeletingMessages,
             messageMetadataRepository,
             staleEpochVerifier,
+            observeFileSharingStatus,
             this
         )
     val users: UserScope
