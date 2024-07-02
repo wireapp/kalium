@@ -1740,6 +1740,7 @@ class UserSessionScope internal constructor(
             legalHoldHandler,
             this,
             userScopedLogger,
+            observeFileSharingStatus,
         )
     val users: UserScope
         get() = UserScope(
