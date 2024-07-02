@@ -142,7 +142,7 @@ class CallManagerImpl internal constructor(
 
     @Suppress("UNUSED_ANONYMOUS_PARAMETER")
     private val metricsHandler = MetricsHandler { conversationId: String, metricsJson: String, arg: Pointer? ->
-        callingLogger.i("$TAG -> metricsHandler")
+        callingLogger.i("Calling metrics: $metricsJson")
     }.keepingStrongReference()
 
     @Suppress("UNUSED_ANONYMOUS_PARAMETER")
