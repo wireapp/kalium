@@ -273,8 +273,12 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
             ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
             (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
+<<<<<<< HEAD
 
             )
+=======
+        )
+>>>>>>> e176d92d8d (fix: Wrong E2EI information for other users [WPB-9409] 🍒 (#2835))
         val result = conversationDAO.getConversationByQualifiedID(conversationEntity2.id)
         assertEquals(
             (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState, ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
@@ -1655,9 +1659,24 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenEstablishedMLSConversationExists_whenGettingMLSGroupIdByUserId_thenReturnsMLSGroupId() = runTest {
         // given
         val expected = (conversationEntity4.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
-        userDAO.upsertUser(user1)
-        userDAO.upsertUser(user2)
 
+        conversationDAO.insertConversation(conversationEntity1.copy(id = user1.id, type = ConversationEntity.Type.SELF))
+        conversationDAO.insertConversation(conversationEntity4)
+        memberDAO.insertMembersWithQualifiedId(
+            listOf(
+                MemberEntity(user1.id, MemberEntity.Role.Admin),
+                MemberEntity(user2.id, MemberEntity.Role.Admin),
+                MemberEntity(selfUserId, MemberEntity.Role.Admin),
+            ),
+            conversationEntity4.id
+        )
+        // then
+        assertEquals(expected, conversationDAO.getMLSGroupIdByUserId(user1.id))
+    }
+
+    @Test
+    fun givenEstablishedMLSConversationExistsButSelfUserIsNotMember_whenGettingMLSGroupIdByUserId_thenNull() = runTest {
+        // given
         conversationDAO.insertConversation(conversationEntity1.copy(id = user1.id, type = ConversationEntity.Type.SELF))
         conversationDAO.insertConversation(conversationEntity4)
         memberDAO.insertMembersWithQualifiedId(
@@ -1668,9 +1687,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             conversationEntity4.id
         )
         // then
-        assertEquals(expected, conversationDAO.getMLSGroupIdByUserId(user1.id))
+        assertEquals(null, conversationDAO.getMLSGroupIdByUserId(user1.id))
     }
-
 
     @Test
     fun givenMLSSelfConversationDoesNotExists_whenGettingE2EIClientInfoByClientId_thenShouldReturnNull() = runTest {
