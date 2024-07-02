@@ -60,9 +60,10 @@ value class SubconversationId(val value: String) {
     fun toLogString() = value.obfuscateId()
 }
 
+@Serializable
 data class QualifiedClientID(
-    val clientId: ClientId,
-    val userId: UserId
+    @SerialName("clientId") val clientId: ClientId,
+    @SerialName("userId") val userId: UserId
 )
 
 typealias MessageId = String

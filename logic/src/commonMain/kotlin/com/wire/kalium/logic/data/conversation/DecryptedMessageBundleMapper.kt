@@ -33,17 +33,5 @@ fun com.wire.kalium.cryptography.DecryptedMessageBundle.toModel(groupID: GroupID
             )
         },
         commitDelay,
-        identity?.let { identity ->
-            identity.certificate?.let { certificate ->
-                E2EIdentity(
-                    identity.clientId,
-                    certificate.handle.handle,
-                    certificate.displayName,
-                    certificate.domain,
-                    certificate.certificate,
-                    identity.status,
-                    certificate.thumbprint
-                )
-            }
-        }
+        identity
     )

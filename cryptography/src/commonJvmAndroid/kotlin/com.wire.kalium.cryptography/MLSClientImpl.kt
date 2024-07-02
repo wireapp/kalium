@@ -19,6 +19,7 @@
 package com.wire.kalium.cryptography
 
 import com.wire.crypto.BufferedDecryptedMessage
+import com.wire.crypto.Ciphersuite
 import com.wire.crypto.ConversationConfiguration
 import com.wire.crypto.CoreCrypto
 import com.wire.crypto.CustomConfiguration
@@ -28,7 +29,6 @@ import com.wire.crypto.MlsCredentialType
 import com.wire.crypto.MlsGroupInfoEncryptionType
 import com.wire.crypto.MlsRatchetTreeType
 import com.wire.crypto.MlsWirePolicy
-import com.wire.crypto.Ciphersuite
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import kotlin.time.Duration
@@ -332,17 +332,25 @@ class MLSClientImpl(
             return clientId?.let {
                 WireIdentity(
                     CryptoQualifiedClientId.fromEncodedString(value.clientId)!!,
-                    value.x509Identity?.handle,
-                    value.x509Identity?.displayName,
-                    value.x509Identity?.domain,
-                    value.x509Identity?.certificate,
                     toDeviceStatus(value.status),
                     value.thumbprint,
-                    value.x509Identity?.serialNumber,
-                    value.x509Identity?.notAfter?.toLong()
+                    toCredentialType(value.credentialType),
+                    value.x509Identity?.let {
+                        toX509Identity(it)
+                    }
                 )
             }
         }
+
+        fun toX509Identity(value: com.wire.crypto.X509Identity) = WireIdentity.X509Identity(
+            handle = WireIdentity.Handle.fromString(value.handle, value.domain),
+            displayName = value.displayName,
+            domain = value.domain,
+            certificate = value.certificate,
+            serialNumber = value.serialNumber,
+            notBefore = value.notBefore.toLong(),
+            notAfter = value.notAfter.toLong()
+        )
 
         fun toDeviceStatus(value: com.wire.crypto.DeviceStatus) = when (value) {
             com.wire.crypto.DeviceStatus.VALID -> CryptoCertificateStatus.VALID
@@ -401,6 +409,11 @@ class MLSClientImpl(
         fun toCredentialType(value: CredentialType) = when (value) {
             CredentialType.Basic -> MlsCredentialType.BASIC
             CredentialType.X509 -> MlsCredentialType.X509
+        }
+
+        fun toCredentialType(value: MlsCredentialType) = when (value) {
+            MlsCredentialType.BASIC -> CredentialType.Basic
+            MlsCredentialType.X509 -> CredentialType.X509
         }
 
         fun toCrlRegistration(value: com.wire.crypto.CrlRegistration) = CrlRegistration(
