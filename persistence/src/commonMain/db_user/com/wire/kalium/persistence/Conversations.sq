@@ -395,9 +395,15 @@ AND Conversation.mls_group_state IS 'ESTABLISHED'
 ORDER BY Conversation.type DESC LIMIT 1;
 
 getMLSGroupIdByUserId:
-SELECT Conversation.mls_group_id FROM Member
-JOIN Conversation ON Conversation.qualified_id = Member.conversation
-WHERE Conversation.mls_group_id IS NOT NULL AND mls_group_state IS 'ESTABLISHED' AND Member.user = :userId LIMIT 1;
+SELECT mls_group_id FROM
+	(SELECT COUNT(Member.user) AS users_amout, Conversation.mls_group_id, Conversation.mls_group_state FROM Member
+	JOIN Conversation ON Conversation.qualified_id = Member.conversation
+	WHERE Member.user = :userId OR Member.user = (SELECT SelfUser.id FROM SelfUser LIMIT 1)
+	GROUP BY Conversation.qualified_id)
+WHERE users_amout > 1 -- both (Self and Other users) belongs to that conversation
+AND mls_group_id IS NOT NULL
+AND mls_group_state IS 'ESTABLISHED'
+LIMIT 1;
 
 getMLSGroupIdByConversationId:
 SELECT Conversation.mls_group_id FROM Conversation
