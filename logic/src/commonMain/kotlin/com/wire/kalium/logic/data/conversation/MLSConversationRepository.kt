@@ -472,12 +472,17 @@ internal class MLSConversationDataSource(
         allowPartialMemberList: Boolean = false,
     ): Either<CoreFailure, MLSAdditionResult> = withContext(serialDispatcher) {
         commitPendingProposals(groupID).flatMap {
-            kaliumLogger.d("adding $userIdList to MLS group: $groupID")
+            kaliumLogger.d("adding ${userIdList.count()} users to MLS group")
             produceAndSendCommitWithRetryAndResult(groupID, retryOnStaleMessage = retryOnStaleMessage) {
                 keyPackageRepository.claimKeyPackages(userIdList, cipherSuite).flatMap { result ->
                     if (result.usersWithoutKeyPackagesAvailable.isNotEmpty() && !allowPartialMemberList) {
+                        kaliumLogger.d(
+                            "add members to MLS Group: failed " +
+                                    "${result.usersWithoutKeyPackagesAvailable.count()} user(s) missing KeyPackages"
+                        )
                         Either.Left(CoreFailure.MissingKeyPackages(result.usersWithoutKeyPackagesAvailable))
                     } else {
+                        kaliumLogger.d("add members to MLS Group: claiming KeyPackages succeed")
                         Either.Right(result)
                     }
                 }.flatMap { result ->

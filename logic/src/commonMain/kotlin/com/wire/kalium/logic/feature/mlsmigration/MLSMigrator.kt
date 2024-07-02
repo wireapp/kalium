@@ -138,7 +138,11 @@ internal class MLSMigratorImpl(
                 when (protocolInfo) {
                     is Conversation.ProtocolInfo.Mixed -> {
                         conversationRepository.getConversationMembers(conversationId).flatMap { members ->
-                            mlsConversationRepository.establishMLSGroup(protocolInfo.groupId, members)
+                            mlsConversationRepository.establishMLSGroup(
+                                protocolInfo.groupId,
+                                members,
+                                allowSkippingUsersWithoutKeyPackages = true
+                            )
                         }
                         Unit.right()
                     }
