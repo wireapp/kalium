@@ -203,7 +203,8 @@ class ConversationScope internal constructor(
             selfUserId,
             selfConversationIdProvider,
             sendConfirmation,
-            scope
+            scope,
+            kaliumLogger
         )
 
     val updateConversationAccess: UpdateConversationAccessRoleUseCase

@@ -25,13 +25,13 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -41,6 +41,7 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.util.serialization.toJsonElement
 import kotlinx.datetime.Clock
+import kotlinx.datetime.Instant
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 
@@ -69,12 +70,19 @@ internal class SendConfirmationUseCase internal constructor(
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.MESSAGES) }
 
-    suspend operator fun invoke(conversationId: ConversationId): Either<CoreFailure, Unit> {
+    suspend operator fun invoke(
+        conversationId: ConversationId,
+        afterDateTime: Instant,
+        untilDateTime: Instant
+    ): Either<CoreFailure, Unit> {
         syncManager.waitUntilLive()
 
-        val messageIds = getPendingUnreadMessagesIds(conversationId)
+        val messageIds = getPendingUnreadMessagesIds(
+            conversationId,
+            afterDateTime,
+            untilDateTime
+        )
         if (messageIds.isEmpty()) {
-
             logConfirmationNothingToSend(conversationId)
             return Either.Right(Unit)
         }
@@ -100,13 +108,20 @@ internal class SendConfirmationUseCase internal constructor(
         }
     }
 
-    private suspend fun getPendingUnreadMessagesIds(conversationId: ConversationId): List<String> =
+    private suspend fun getPendingUnreadMessagesIds(
+        conversationId: ConversationId,
+        afterDateTime: Instant,
+        untilDateTime: Instant
+    ): List<String> =
         if (isReceiptsEnabledForConversation(conversationId)) {
-            messageRepository.getPendingConfirmationMessagesByConversationAfterDate(conversationId)
-                .fold({
-                    logger.e("$TAG There was an unknown error trying to get messages pending read confirmation $it")
-                    emptyList()
-                }, { it })
+            messageRepository.getPendingConfirmationMessagesByConversationAfterDate(
+                conversationId,
+                afterDateTime,
+                untilDateTime,
+            ).fold({
+                logger.e("$TAG There was an unknown error trying to get messages pending read confirmation $it")
+                emptyList()
+            }, { it })
         } else emptyList()
 
     private suspend fun isReceiptsEnabledForConversation(conversationId: ConversationId) =
