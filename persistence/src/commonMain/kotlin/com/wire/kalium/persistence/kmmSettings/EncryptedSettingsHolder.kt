@@ -35,7 +35,6 @@ internal sealed class SettingOptions {
     }
 }
 
-internal expect object EncryptedSettingsBuilder {
-    fun build(options: SettingOptions, param: EncryptedSettingsPlatformParam): Settings
-}
+internal expect fun buildSettings(options: SettingOptions, param: EncryptedSettingsPlatformParam): Settings
+
 internal expect class EncryptedSettingsPlatformParam
