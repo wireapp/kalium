@@ -22,6 +22,7 @@ import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.configuration.FileSharingStatus
 import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.asset.AssetTransferStatus
 import com.wire.kalium.logic.data.asset.FakeKaliumFileSystem
@@ -41,6 +42,11 @@ import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.feature.message.MessageSendFailureHandler
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
+<<<<<<< HEAD
+=======
+import com.wire.kalium.logic.data.message.SelfDeletionTimer
+import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
+>>>>>>> 596eb022e3 (fix: asset restriction [WPB-9947] (#2831) (#2856) (#2861))
 import com.wire.kalium.logic.framework.TestAsset.dummyUploadedAssetId
 import com.wire.kalium.logic.framework.TestAsset.mockedLongAssetData
 import com.wire.kalium.logic.functional.Either
@@ -93,6 +99,7 @@ class ScheduleNewAssetMessageUseCaseTest {
             .withObserveMessageVisibility()
             .withDeleteAssetLocally()
             .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
+            .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
             .arrange()
 
         // When
@@ -126,6 +133,7 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
                 .withDeleteAssetLocally()
                 .withObserveMessageVisibility()
+                .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
                 .arrange()
 
             // When
@@ -159,6 +167,7 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
                 .withObserveMessageVisibility()
                 .withDeleteAssetLocally()
+                .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
                 .arrange()
 
             // When
@@ -197,6 +206,7 @@ class ScheduleNewAssetMessageUseCaseTest {
             .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
             .withObserveMessageVisibility()
             .withDeleteAssetLocally()
+            .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
             .arrange()
 
         // When
@@ -243,7 +253,11 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
                 .withObserveMessageVisibility()
                 .withDeleteAssetLocally()
+<<<<<<< HEAD
                 .withUpdateMessageAssetTransferStatus(UpdateTransferStatusResult.Success)
+=======
+                .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
+>>>>>>> 596eb022e3 (fix: asset restriction [WPB-9947] (#2831) (#2856) (#2861))
                 .arrange()
 
             // When
@@ -261,6 +275,7 @@ class ScheduleNewAssetMessageUseCaseTest {
             advanceUntilIdle()
 
             // Then
+<<<<<<< HEAD
             coVerify {
                 arrangement.persistMessage.invoke(any())
             }.wasInvoked(exactly = twice)
@@ -273,6 +288,67 @@ class ScheduleNewAssetMessageUseCaseTest {
             coVerify {
                 arrangement.messageSendFailureHandler.handleFailureAndUpdateMessageStatus(any(), any(), any(), any(), any())
             }.wasInvoked(exactly = once)
+=======
+            verify(arrangement.persistMessage)
+                .suspendFunction(arrangement.persistMessage::invoke)
+                .with(any())
+                .wasInvoked(exactly = twice)
+            verify(arrangement.assetDataSource)
+                .suspendFunction(arrangement.assetDataSource::uploadAndPersistPrivateAsset)
+                .with(any(), any(), any(), any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.messageSender)
+                .suspendFunction(arrangement.messageSender::sendMessage)
+                .with(any())
+                .wasInvoked(exactly = once)
+            verify(arrangement.messageSendFailureHandler)
+                .suspendFunction(arrangement.messageSendFailureHandler::handleFailureAndUpdateMessageStatus)
+                .with(any(), any(), any(), any(), any())
+                .wasInvoked(exactly = once)
+        }
+
+    @Test
+    fun givenASuccessfulSendAssetMessageRequest_whenCheckingTheMessageRepository_thenTheAssetIsMarkedAsSavedInternally() =
+        runTest(testDispatcher.default) {
+            // Given
+            val assetToSend = mockedLongAssetData()
+            val assetName = "some-asset.txt"
+            val conversationId = ConversationId("some-convo-id", "some-domain-id")
+            val dataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
+            val expectedAssetId = dummyUploadedAssetId
+            val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
+            val (arrangement, sendAssetUseCase) = Arrangement(this)
+                .withSuccessfulResponse(expectedAssetId, expectedAssetSha256)
+                .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
+                .withObserveMessageVisibility()
+                .withDeleteAssetLocally()
+                .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
+                .arrange()
+
+            // When
+            sendAssetUseCase.invoke(
+                conversationId = conversationId,
+                assetDataPath = dataPath,
+                assetDataSize = assetToSend.size.toLong(),
+                assetName = assetName,
+                assetMimeType = "text/plain",
+                assetWidth = null,
+                assetHeight = null,
+                audioLengthInMs = 0
+            )
+            advanceUntilIdle()
+
+            // Then
+            verify(arrangement.persistMessage)
+                .suspendFunction(arrangement.persistMessage::invoke)
+                .with(
+                    matching {
+                        val content = it.content
+                        content is MessageContent.Asset && content.value.downloadStatus == Message.DownloadStatus.SAVED_INTERNALLY
+                    }
+                )
+                .wasInvoked(exactly = twice)
+>>>>>>> 596eb022e3 (fix: asset restriction [WPB-9947] (#2831) (#2856) (#2861))
         }
 
     @Test
@@ -288,6 +364,7 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
                 .withObserveMessageVisibility()
                 .withDeleteAssetLocally()
+                .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
                 .arrange()
 
             // When
@@ -334,7 +411,11 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
                 .withObserveMessageVisibility()
                 .withDeleteAssetLocally()
+<<<<<<< HEAD
                 .withUpdateMessageAssetTransferStatus(UpdateTransferStatusResult.Success)
+=======
+                .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
+>>>>>>> 596eb022e3 (fix: asset restriction [WPB-9947] (#2831) (#2856) (#2861))
                 .arrange()
 
             // When
@@ -388,6 +469,7 @@ class ScheduleNewAssetMessageUseCaseTest {
                 .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
                 .withObserveMessageVisibility()
                 .withDeleteAssetLocally()
+                .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
                 .arrange()
 
             // When
@@ -439,6 +521,7 @@ class ScheduleNewAssetMessageUseCaseTest {
             .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
             .withObserveMessageVisibility()
             .withDeleteAssetLocally()
+            .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
             .arrange()
 
         // When
@@ -484,6 +567,7 @@ class ScheduleNewAssetMessageUseCaseTest {
             .withSelfDeleteTimer(SelfDeletionTimer.Enabled(expectedDuration))
             .withObserveMessageVisibility()
             .withDeleteAssetLocally()
+            .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledAll)
             .arrange()
 
         // When
@@ -510,6 +594,111 @@ class ScheduleNewAssetMessageUseCaseTest {
                 }
             )
         }
+    }
+
+    @Test
+    fun givenFileSendingRestrictedByTeam_whenSending_thenReturnDisabledByTeam() = runTest {
+        // Given
+        val assetToSend = mockedLongAssetData()
+        val assetName = "some-asset.txt"
+        val inputDataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
+        val conversationId = ConversationId("some-convo-id", "some-domain-id")
+        val (_, sendAssetUseCase) = Arrangement(this)
+            .withStoredData(assetToSend, inputDataPath)
+            .withObserveFileSharingStatusResult(FileSharingStatus.Value.Disabled)
+            .arrange()
+
+        // When
+        val result = sendAssetUseCase.invoke(
+            conversationId = conversationId,
+            assetDataPath = inputDataPath,
+            assetDataSize = assetToSend.size.toLong(),
+            assetName = assetName,
+            assetMimeType = "text/plain",
+            assetWidth = null,
+            assetHeight = null,
+            audioLengthInMs = 0
+        )
+        advanceUntilIdle()
+
+        // Then
+        assertTrue(result is ScheduleNewAssetMessageResult.Failure.DisabledByTeam)
+    }
+
+    @Test
+    fun givenAseetMimeTypeRestricted_whenSending_thenReturnRestrictedFileType() = runTest {
+        // Given
+        val assetToSend = mockedLongAssetData()
+        val assetName = "some-asset.txt"
+        val inputDataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
+        val conversationId = ConversationId("some-convo-id", "some-domain-id")
+        val (arrangement, sendAssetUseCase) = Arrangement(this)
+            .withStoredData(assetToSend, inputDataPath)
+            .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledSome(listOf("png")))
+            .withValidateAsseMimeTypeResult(false)
+            .arrange()
+
+        // When
+        val result = sendAssetUseCase.invoke(
+            conversationId = conversationId,
+            assetDataPath = inputDataPath,
+            assetDataSize = assetToSend.size.toLong(),
+            assetName = assetName,
+            assetMimeType = "text/plain",
+            assetWidth = null,
+            assetHeight = null,
+            audioLengthInMs = 0
+        )
+        advanceUntilIdle()
+
+        // Then
+        assertTrue(result is ScheduleNewAssetMessageResult.Failure.RestrictedFileType)
+
+        verify(arrangement.validateAssetMimeTypeUseCase)
+            .function(arrangement.validateAssetMimeTypeUseCase::invoke)
+            .with(eq("text/plain"), eq(listOf("png")))
+            .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenAssetMimeTypeRestrictedAndFileAllowed_whenSending_thenReturnSendTheFile() = runTest(testDispatcher.default) {
+        // Given
+        val assetToSend = mockedLongAssetData()
+        val assetName = "some-asset.txt"
+        val inputDataPath = fakeKaliumFileSystem.providePersistentAssetPath(assetName)
+        val expectedAssetId = dummyUploadedAssetId
+        val expectedAssetSha256 = SHA256Key("some-asset-sha-256".toByteArray())
+        val conversationId = ConversationId("some-convo-id", "some-domain-id")
+        val (arrangement, sendAssetUseCase) = Arrangement(this)
+            .withStoredData(assetToSend, inputDataPath)
+            .withSuccessfulResponse(expectedAssetId, expectedAssetSha256)
+            .withObserveFileSharingStatusResult(FileSharingStatus.Value.EnabledSome(listOf("png")))
+            .withValidateAsseMimeTypeResult(true)
+            .withSelfDeleteTimer(SelfDeletionTimer.Disabled)
+            .withObserveMessageVisibility()
+            .withDeleteAssetLocally()
+            .arrange()
+
+        // When
+        val result = sendAssetUseCase.invoke(
+            conversationId = conversationId,
+            assetDataPath = inputDataPath,
+            assetDataSize = assetToSend.size.toLong(),
+            assetName = assetName,
+            assetMimeType = "image/png",
+            assetWidth = null,
+            assetHeight = null,
+            audioLengthInMs = 0
+        )
+        advanceUntilIdle()
+
+        // Then
+        assertTrue(result is ScheduleNewAssetMessageResult.Success)
+
+        verify(arrangement.validateAssetMimeTypeUseCase)
+            .function(arrangement.validateAssetMimeTypeUseCase::invoke)
+            .with(eq("image/png"), eq(listOf("png")))
+            .wasInvoked(exactly = once)
     }
 
     private class Arrangement(val coroutineScope: CoroutineScope) {
@@ -544,14 +733,47 @@ class ScheduleNewAssetMessageUseCaseTest {
         @Mock
         private val messageRepository: MessageRepository = mock(MessageRepository::class)
 
+        @Mock
+        val validateAssetMimeTypeUseCase: ValidateAssetMimeTypeUseCase = mock(ValidateAssetMimeTypeUseCase::class)
+
+        @Mock
+        val observerFileSharingStatusUseCase: ObserveFileSharingStatusUseCase = mock(ObserveFileSharingStatusUseCase::class)
+
         val someClientId = ClientId("some-client-id")
 
         val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
 
+<<<<<<< HEAD
         suspend fun withToggleReadReceiptsStatus(enabled: Boolean = false) = apply {
             coEvery {
                 userPropertyRepository.getReadReceiptsStatus()
             }.returns(enabled)
+=======
+
+        init {
+            withToggleReadReceiptsStatus()
+        }
+
+        fun withValidateAsseMimeTypeResult(result: Boolean) = apply {
+            given(validateAssetMimeTypeUseCase)
+                .function(validateAssetMimeTypeUseCase::invoke)
+                .whenInvokedWith(any(), any())
+                .thenReturn(result)
+        }
+
+        fun withObserveFileSharingStatusResult(result: FileSharingStatus.Value) = apply {
+            given(observerFileSharingStatusUseCase)
+                .function(observerFileSharingStatusUseCase::invoke)
+                .whenInvoked()
+                .thenReturn(flowOf(FileSharingStatus(result, false)))
+        }
+
+        fun withToggleReadReceiptsStatus(enabled: Boolean = false) = apply {
+            given(userPropertyRepository)
+                .suspendFunction(userPropertyRepository::getReadReceiptsStatus)
+                .whenInvoked()
+                .thenReturn(enabled)
+>>>>>>> 596eb022e3 (fix: asset restriction [WPB-9947] (#2831) (#2856) (#2861))
         }
 
         fun withStoredData(data: ByteArray, dataPath: Path): Arrangement {
@@ -704,6 +926,8 @@ class ScheduleNewAssetMessageUseCaseTest {
             userPropertyRepository,
             observeSelfDeletionTimerSettingsForConversation,
             coroutineScope,
+            observerFileSharingStatusUseCase,
+            validateAssetMimeTypeUseCase,
             testDispatcher
         ).also {
             withToggleReadReceiptsStatus()
