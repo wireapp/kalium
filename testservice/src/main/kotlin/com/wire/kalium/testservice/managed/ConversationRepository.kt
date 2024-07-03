@@ -383,7 +383,6 @@ sealed class ConversationRepository {
             throw WebApplicationException("Instance ${instance.instanceId}: Could not get recent messages")
         }
 
-<<<<<<< HEAD
         suspend fun getMessageReceipts(
             instance: Instance,
             conversationId: ConversationId,
@@ -408,10 +407,7 @@ sealed class ConversationRepository {
             throw WebApplicationException("Instance ${instance.instanceId}: Could not get receipts from message")
         }
 
-        @Suppress("LongParameterList", "LongMethod", "ThrowsCount")
-=======
         @Suppress("LongParameterList", "LongMethod", "ThrowsCount", "ComplexMethod")
->>>>>>> 596eb022e3 (fix: asset restriction [WPB-9947] (#2831) (#2856) (#2861))
         suspend fun sendFile(
             instance: Instance,
             conversationId: ConversationId,

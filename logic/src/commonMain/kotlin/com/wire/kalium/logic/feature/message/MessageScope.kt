@@ -57,18 +57,11 @@ import com.wire.kalium.logic.feature.asset.ObserveAssetStatusesUseCase
 import com.wire.kalium.logic.feature.asset.ObserveAssetStatusesUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCase
 import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCaseImpl
-<<<<<<< HEAD
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCaseImpl
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
-=======
-import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCase
-import com.wire.kalium.logic.feature.asset.UpdateAssetMessageDownloadStatusUseCaseImpl
-import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCase
-import com.wire.kalium.logic.feature.asset.UpdateAssetMessageUploadStatusUseCaseImpl
 import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCase
 import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCaseImpl
->>>>>>> 596eb022e3 (fix: asset restriction [WPB-9947] (#2831) (#2856) (#2861))
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonMessageUseCase
 import com.wire.kalium.logic.feature.message.draft.GetMessageDraftUseCase
