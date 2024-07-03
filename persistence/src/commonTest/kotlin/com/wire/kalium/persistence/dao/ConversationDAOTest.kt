@@ -273,12 +273,7 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
             ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
             (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
-<<<<<<< HEAD
-
-            )
-=======
         )
->>>>>>> e176d92d8d (fix: Wrong E2EI information for other users [WPB-9409] 🍒 (#2835))
         val result = conversationDAO.getConversationByQualifiedID(conversationEntity2.id)
         assertEquals(
             (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState, ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
