@@ -75,10 +75,12 @@ private fun encryptedSharedPref(
         if (isRetry) {
             throw e
         } else runBlocking {
-            delay(200)
+            delay(RETRY_DELAY)
             encryptedSharedPref(options, param, true)
         }
     }
 }
 
 internal actual class EncryptedSettingsPlatformParam(val appContext: Context)
+
+private const val RETRY_DELAY = 200L
