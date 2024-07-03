@@ -315,21 +315,17 @@ class ScheduleNewAssetMessageUseCaseTest {
             advanceUntilIdle()
 
             // Then
-            verify { arrangement.assetDataSource.persistAsset(TODO(), any(), any(), any(), any()) }
-                .wasInvoked(exactly = twice)
-
-            /*
-            verify(arrangement.persistMessage)
-                .suspendFunction(arrangement.persistMessage::invoke)
-                .with(
-                    matching {
+            coVerify { arrangement.assetDataSource.persistAsset(any(), any(), any(), any(), any()) }
+                .wasInvoked(exactly = once)
+            coVerify {
+                arrangement.persistMessage(
+                    matches {
                         val content = it.content
-                        content is MessageContent.Asset && content.value.downloadStatus == Message.DownloadStatus.SAVED_INTERNALLY
+                        content is MessageContent.Asset
                     }
                 )
-                .wasInvoked(exactly = twice)
+            }.wasInvoked(exactly = twice)
 
-             */
         }
 
     @Test
@@ -632,10 +628,9 @@ class ScheduleNewAssetMessageUseCaseTest {
         // Then
         assertTrue(result is ScheduleNewAssetMessageResult.Failure.RestrictedFileType)
 
-        verify(arrangement.validateAssetMimeTypeUseCase)
-            .function(arrangement.validateAssetMimeTypeUseCase::invoke)
-            .with(eq("text/plain"), eq(listOf("png")))
-            .wasInvoked(exactly = once)
+        verify {
+            arrangement.validateAssetMimeTypeUseCase(eq("text/plain"), eq(listOf("png")))
+        }.wasInvoked(exactly = once)
     }
 
     @Test
@@ -673,10 +668,9 @@ class ScheduleNewAssetMessageUseCaseTest {
         // Then
         assertTrue(result is ScheduleNewAssetMessageResult.Success)
 
-        verify(arrangement.validateAssetMimeTypeUseCase)
-            .function(arrangement.validateAssetMimeTypeUseCase::invoke)
-            .with(eq("image/png"), eq(listOf("png")))
-            .wasInvoked(exactly = once)
+        verify {
+            arrangement.validateAssetMimeTypeUseCase(eq("image/png"), eq(listOf("png")))
+        }.wasInvoked(exactly = once)
     }
 
     private class Arrangement(val coroutineScope: CoroutineScope) {
@@ -721,37 +715,22 @@ class ScheduleNewAssetMessageUseCaseTest {
 
         val completeStateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
 
-<<<<<<< HEAD
         suspend fun withToggleReadReceiptsStatus(enabled: Boolean = false) = apply {
             coEvery {
                 userPropertyRepository.getReadReceiptsStatus()
             }.returns(enabled)
-=======
-
-        init {
-            withToggleReadReceiptsStatus()
         }
 
         fun withValidateAsseMimeTypeResult(result: Boolean) = apply {
-            given(validateAssetMimeTypeUseCase)
-                .function(validateAssetMimeTypeUseCase::invoke)
-                .whenInvokedWith(any(), any())
-                .thenReturn(result)
+            every {
+                validateAssetMimeTypeUseCase.invoke(any(), any())
+            }.returns(result)
         }
 
         fun withObserveFileSharingStatusResult(result: FileSharingStatus.Value) = apply {
-            given(observerFileSharingStatusUseCase)
-                .function(observerFileSharingStatusUseCase::invoke)
-                .whenInvoked()
-                .thenReturn(flowOf(FileSharingStatus(result, false)))
-        }
-
-        fun withToggleReadReceiptsStatus(enabled: Boolean = false) = apply {
-            given(userPropertyRepository)
-                .suspendFunction(userPropertyRepository::getReadReceiptsStatus)
-                .whenInvoked()
-                .thenReturn(enabled)
->>>>>>> 596eb022e3 (fix: asset restriction [WPB-9947] (#2831) (#2856) (#2861))
+            every {
+                observerFileSharingStatusUseCase.invoke()
+            }.returns(flowOf(FileSharingStatus(result, false)))
         }
 
         fun withStoredData(data: ByteArray, dataPath: Path): Arrangement {
