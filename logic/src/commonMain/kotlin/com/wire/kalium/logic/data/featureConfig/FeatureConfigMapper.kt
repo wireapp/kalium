@@ -22,10 +22,10 @@ import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.mls.SupportedCipherSuite
 import com.wire.kalium.logic.data.user.SupportedProtocol
 import com.wire.kalium.logic.data.user.toModel
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigResponse
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
-import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSMigrationConfigDTO
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigResponse
+import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureFlagStatusDTO
+import com.wire.kalium.network.api.authenticated.featureConfigs.MLSMigrationConfigDTO
 import com.wire.kalium.persistence.config.MLSMigrationEntity
 
 interface FeatureConfigMapper {

@@ -18,6 +18,13 @@
 package com.wire.kalium.network.api.base.unbound.acme
 
 import com.wire.kalium.network.UnboundNetworkClient
+import com.wire.kalium.network.api.unbound.acme.ACMEAuthorizationResponse
+import com.wire.kalium.network.api.unbound.acme.ACMEResponse
+import com.wire.kalium.network.api.unbound.acme.AcmeDirectoriesResponse
+import com.wire.kalium.network.api.unbound.acme.AuthorizationResponse
+import com.wire.kalium.network.api.unbound.acme.ChallengeResponse
+import com.wire.kalium.network.api.unbound.acme.DtoAuthorizationChallengeType
+import com.wire.kalium.network.api.unbound.acme.FederationCertificateChainResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.serialization.JoseJson
 import com.wire.kalium.network.tools.KtxSerializer

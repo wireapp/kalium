@@ -30,6 +30,7 @@ kaliumLibrary {
     }
 }
 
+@Suppress("UnusedPrivateProperty")
 kotlin {
     sourceSets {
         val commonMain by getting {
@@ -37,6 +38,7 @@ kotlin {
                 implementation(project(":protobuf"))
                 implementation(project(":util"))
                 implementation(project(":network-util"))
+                api(project(":network-model"))
                 api(project(":logger"))
 
                 // coroutines
@@ -52,6 +54,9 @@ kotlin {
                 implementation(libs.ktor.webSocket)
                 implementation(libs.ktor.contentNegotiation)
                 implementation(libs.ktor.encoding)
+
+                // mock engine
+                implementation(libs.ktor.mock)
 
                 // KTX
                 implementation(libs.ktxDateTime)
@@ -71,6 +76,8 @@ kotlin {
                 implementation(libs.coroutines.test)
                 // ktor test
                 implementation(libs.ktor.mock)
+                // mocks
+                implementation(project(":mocks"))
             }
         }
 

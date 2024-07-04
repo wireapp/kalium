@@ -32,14 +32,15 @@ import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldRequestHan
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.TeamsApi
-import com.wire.kalium.network.api.base.authenticated.client.ClientIdDTO
-import com.wire.kalium.network.api.base.authenticated.keypackage.LastPreKeyDTO
-import com.wire.kalium.network.api.base.model.ErrorResponse
-import com.wire.kalium.network.api.base.model.LegalHoldStatusDTO
-import com.wire.kalium.network.api.base.model.LegalHoldStatusResponse
-import com.wire.kalium.network.api.base.model.ServiceDetailDTO
-import com.wire.kalium.network.api.base.model.ServiceDetailResponse
-import com.wire.kalium.network.api.base.model.TeamDTO
+import com.wire.kalium.network.api.authenticated.client.ClientIdDTO
+import com.wire.kalium.network.api.authenticated.keypackage.LastPreKeyDTO
+import com.wire.kalium.network.api.authenticated.teams.TeamMemberListPaginated
+import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.LegalHoldStatusDTO
+import com.wire.kalium.network.api.model.LegalHoldStatusResponse
+import com.wire.kalium.network.api.model.ServiceDetailDTO
+import com.wire.kalium.network.api.model.ServiceDetailResponse
+import com.wire.kalium.network.api.model.TeamDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.ServiceDAO
@@ -103,7 +104,7 @@ class TeamRepositoryTest {
             nonQualifiedUserId = "teamMember1"
         )
 
-        val teamMembersList = TeamsApi.TeamMemberListPaginated(
+        val teamMembersList = TeamMemberListPaginated(
             hasMore = false,
             members = listOf(
                 teamMember
@@ -159,7 +160,7 @@ class TeamRepositoryTest {
             nonQualifiedUserId = "teamMember1"
         )
 
-        val teamMembersList = TeamsApi.TeamMemberListPaginated(
+        val teamMembersList = TeamMemberListPaginated(
             hasMore = true,
             members = listOf(
                 teamMember
@@ -457,7 +458,7 @@ class TeamRepositoryTest {
             }.returns(Either.Right(Unit))
         }
 
-        suspend fun withGetTeamMembers(result: NetworkResponse<TeamsApi.TeamMemberListPaginated>) = apply {
+        suspend fun withGetTeamMembers(result: NetworkResponse<TeamMemberListPaginated>) = apply {
             coEvery {
                 teamsApi.getTeamMembers(any(), any(), any())
             }.returns(result)

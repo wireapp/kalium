@@ -19,8 +19,8 @@ package com.wire.kalium.logic.data.e2ei
 
 import com.wire.kalium.cryptography.AcmeChallenge
 import com.wire.kalium.cryptography.NewAcmeAuthz
-import com.wire.kalium.network.api.base.unbound.acme.ACMEAuthorizationResponse
-import com.wire.kalium.network.api.base.unbound.acme.DtoAuthorizationChallengeType
+import com.wire.kalium.network.api.unbound.acme.ACMEAuthorizationResponse
+import com.wire.kalium.network.api.unbound.acme.DtoAuthorizationChallengeType
 import kotlin.test.Test
 import kotlin.test.assertEquals
 

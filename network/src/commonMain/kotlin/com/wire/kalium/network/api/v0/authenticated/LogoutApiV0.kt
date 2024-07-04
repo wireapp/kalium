@@ -20,9 +20,9 @@ package com.wire.kalium.network.api.v0.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
 import com.wire.kalium.network.api.base.authenticated.logout.LogoutApi
-import com.wire.kalium.network.api.base.authenticated.logout.RemoveCookiesByIdsRequest
-import com.wire.kalium.network.api.base.authenticated.logout.RemoveCookiesByLabels
-import com.wire.kalium.network.api.base.model.RefreshTokenProperties
+import com.wire.kalium.network.api.authenticated.logout.RemoveCookiesByIdsRequest
+import com.wire.kalium.network.api.authenticated.logout.RemoveCookiesByLabels
+import com.wire.kalium.network.api.model.RefreshTokenProperties
 import com.wire.kalium.network.session.SessionManager
 import com.wire.kalium.network.utils.CustomErrors.MISSING_REFRESH_TOKEN
 import com.wire.kalium.network.utils.NetworkResponse

@@ -25,14 +25,12 @@ buildscript {
     repositories {
         google()
         mavenCentral()
-        maven(url = "https://raw.githubusercontent.com/wireapp/wire-maven/main/releases")
     }
 
     dependencies {
         classpath("com.android.tools.build:gradle:${libs.versions.agp.get()}")
         classpath("org.jetbrains.kotlin:kotlin-gradle-plugin:${libs.versions.kotlin.get()}")
         classpath("app.cash.sqldelight:gradle-plugin:${libs.versions.sqldelight.get()}")
-        classpath("com.wire:carthage-gradle-plugin:${libs.versions.carthage.get()}")
         classpath("org.jetbrains.dokka:dokka-gradle-plugin:${libs.versions.dokka.get()}")
         classpath("com.google.protobuf:protobuf-gradle-plugin:${libs.versions.protobufCodegen.get()}")
         classpath("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:${libs.versions.detekt.get()}")

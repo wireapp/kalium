@@ -54,7 +54,6 @@ import javax.ws.rs.PathParam
 import javax.ws.rs.Produces
 import javax.ws.rs.core.MediaType
 import javax.ws.rs.core.Response
-import kotlin.streams.toList
 
 @Path("/api/v1")
 @Produces(MediaType.APPLICATION_JSON)
@@ -417,11 +416,16 @@ class ConversationResources(private val instanceService: InstanceService) {
             }
         }
         return with(sendTextRequest) {
+            val linkPreviews = when (linkPreview) {
+                null -> emptyList()
+                else -> listOf(linkPreview)
+            }
             runBlocking {
                 ConversationRepository.sendTextMessage(
                     instance,
                     ConversationId(conversationId, conversationDomain),
                     text,
+                    linkPreviews,
                     mentions,
                     messageTimer,
                     quotedMessageId,

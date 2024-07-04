@@ -23,8 +23,8 @@ import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.feature.session.DoesValidSessionExistUseCaseTest.Arrangement.Companion.TEST_USER_ID
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID_2
-import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
-import com.wire.kalium.network.api.base.authenticated.message.SendMLSMessageResponse
+import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
+import com.wire.kalium.network.api.authenticated.message.SendMLSMessageResponse
 import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals

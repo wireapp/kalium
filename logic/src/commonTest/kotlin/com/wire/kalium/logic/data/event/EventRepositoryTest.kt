@@ -28,12 +28,12 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
-import com.wire.kalium.network.api.base.authenticated.notification.EventResponse
+import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.authenticated.notification.EventResponse
 import com.wire.kalium.network.api.base.authenticated.notification.NotificationApi
-import com.wire.kalium.network.api.base.authenticated.notification.NotificationResponse
-import com.wire.kalium.network.api.base.authenticated.notification.conversation.MessageEventData
-import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.authenticated.notification.NotificationResponse
+import com.wire.kalium.network.api.authenticated.notification.conversation.MessageEventData
+import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO

@@ -25,9 +25,9 @@ import com.wire.kalium.logic.util.arrangement.eventHandler.CodeUpdatedHandlerArr
 import com.wire.kalium.logic.util.arrangement.eventHandler.CodeUpdatedHandlerArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationGroupRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationGroupRepositoryArrangementImpl
-import com.wire.kalium.network.api.base.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
-import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
-import com.wire.kalium.network.api.base.model.QualifiedID
+import com.wire.kalium.network.api.authenticated.conversation.guestroomlink.ConversationInviteLinkResponse
+import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.model.QualifiedID
 import io.mockative.any
 import io.mockative.coVerify
 import io.mockative.once

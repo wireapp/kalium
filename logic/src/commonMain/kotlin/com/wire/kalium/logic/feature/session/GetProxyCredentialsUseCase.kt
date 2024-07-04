@@ -19,7 +19,7 @@
 
 package com.wire.kalium.logic.feature.session
 
-import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
+import com.wire.kalium.network.api.model.ProxyCredentialsDTO
 import com.wire.kalium.network.session.SessionManager
 
 internal interface GetProxyCredentialsUseCase {

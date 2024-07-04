@@ -18,9 +18,9 @@
 
 package com.wire.kalium.api.json.model
 
-import com.wire.kalium.api.json.ValidJsonProvider
-import com.wire.kalium.network.api.base.model.ErrorResponse
-import com.wire.kalium.network.api.base.model.FederationConflictResponse
+import com.wire.kalium.mocks.responses.ValidJsonProvider
+import com.wire.kalium.network.api.model.ErrorResponse
+import com.wire.kalium.network.api.model.FederationConflictResponse
 
 object ErrorResponseJson {
     private val jsonProvider = { serializable: ErrorResponse ->

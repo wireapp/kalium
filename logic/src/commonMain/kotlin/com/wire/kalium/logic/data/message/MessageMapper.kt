@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.message.mention.toModel
 import com.wire.kalium.logic.data.notification.LocalNotificationCommentType
@@ -66,6 +67,7 @@ interface MessageMapper {
 @Suppress("TooManyFunctions")
 class MessageMapperImpl(
     private val selfUserId: UserId,
+    private val linkPreviewMapper: LinkPreviewMapper = MapperProvider.linkPreviewMapper(),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
     private val userMapper: UserMapper = MapperProvider.userMapper()
 ) : MessageMapper {
@@ -402,6 +404,7 @@ class MessageMapperImpl(
 
     private fun toTextEntity(textContent: MessageContent.Text): MessageEntityContent.Text = MessageEntityContent.Text(
         messageBody = textContent.value,
+        linkPreview = textContent.linkPreviews.map(linkPreviewMapper::fromModelToDao),
         mentions = textContent.mentions.map(messageMentionMapper::fromModelToDao),
         quotedMessageId = textContent.quotedMessageReference?.quotedMessageId,
         isQuoteVerified = textContent.quotedMessageReference?.isVerified,

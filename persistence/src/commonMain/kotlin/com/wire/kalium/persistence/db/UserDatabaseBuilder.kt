@@ -134,6 +134,7 @@ class UserDatabaseBuilder internal constructor(
         MessageConversationChangedContentAdapter = TableMapper.messageConversationChangedContentAdapter,
         MessageFailedToDecryptContentAdapter = TableMapper.messageFailedToDecryptContentAdapter,
         MessageMemberChangeContentAdapter = TableMapper.messageMemberChangeContentAdapter,
+        MessageLinkPreviewAdapter = TableMapper.messageLinkPreviewAdapter,
         MessageMentionAdapter = TableMapper.messageMentionAdapter,
         MessageMissedCallContentAdapter = TableMapper.messageMissedCallContentAdapter,
         MessageRestrictedAssetContentAdapter = TableMapper.messageRestrictedAssetContentAdapter,

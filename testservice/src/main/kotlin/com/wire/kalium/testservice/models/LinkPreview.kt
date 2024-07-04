@@ -18,26 +18,11 @@
 
 package com.wire.kalium.testservice.models
 
-class LinkPreview {
-    /*
-    "image": {
-        "conversationDomain": "example.com",
-        "data": "",
-        "expectsReadConfirmation": false,
-        "height": 0,
-        "legalHoldStatus": 0,
-        "messageTimer": 0,
-        "type": "",
-        "width": 0
-    },
-    "permanentUrl": "",
-    "summary": "",
-    "title": "",
-    "tweet": {
-        "author": "",
-        "username": ""
-    },
-    "url": "",
-    "urlOffset": 0
-     */
-}
+data class LinkPreview(
+    val image: LinkPreviewImage? = null,
+    val permanentUrl: String = "",
+    val summary: String = "",
+    val title: String = "",
+    val url: String = "",
+    val urlOffset: Int = 0,
+)
