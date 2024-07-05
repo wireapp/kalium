@@ -518,7 +518,7 @@ SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? A
 selectByConversationIdAndSenderIdAndType:
 SELECT * FROM MessageDetailsView WHERE conversationId = ? AND senderUserId = ? AND contentType = ?;
 
-selectPendingMessagesIdsByConversationIdAndVisibilityAfterDate:
+selectMessageIdsThatExpectReadConfirmationWithinDates:
 SELECT Message.id
 FROM Message
 LEFT JOIN SelfUser
@@ -527,7 +527,8 @@ WHERE
     Message.conversation_id = ?
     AND Message.visibility IN ?
     AND (Message.expects_read_confirmation = 1)
-    AND Message.creation_date > Conversation.last_read_date
+    AND Message.creation_date > ?
+    AND Message.creation_date <= ?
     AND (Message.sender_user_id != SelfUser.id)
 ORDER BY
     Message.creation_date DESC;

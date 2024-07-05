@@ -113,8 +113,10 @@ interface MessageDAO {
         clientId: String,
     )
 
-    suspend fun getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
+    suspend fun getMessageIdsThatExpectReadConfirmationWithinDates(
         conversationId: QualifiedIDEntity,
+        afterDate: Instant,
+        untilDate: Instant,
         visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.entries
     ): List<String>
 

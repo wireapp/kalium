@@ -579,7 +579,12 @@ class MessageRepositoryTest {
                 messageDAO.getMessagesByConversationAndVisibility(any(), any(), any(), any())
             }.returns(flowOf(messages))
             coEvery {
-                messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(any(), any())
+                messageDAO.getMessageIdsThatExpectReadConfirmationWithinDates(
+                    any(),
+                    any(),
+                    any(),
+                    any()
+                )
             }.returns(messages.map { it.id })
             return this
         }
