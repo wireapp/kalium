@@ -30,14 +30,17 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.feature.message.SendConfirmationUseCase
+import com.wire.kalium.logic.feature.message.receipt.ConversationTimeEventInput
+import com.wire.kalium.logic.feature.message.receipt.ConversationTimeEventWorker
+import com.wire.kalium.logic.feature.message.receipt.ConversationWorkQueue
+import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
-import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
@@ -58,7 +61,7 @@ class UpdateConversationReadDateUseCase internal constructor(
     private val selfUserId: UserId,
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val sendConfirmation: SendConfirmationUseCase,
-    private val scope: CoroutineScope,
+    private val workQueue: ConversationWorkQueue,
     private val logger: KaliumLogger = kaliumLogger
 ) {
 
@@ -67,12 +70,20 @@ class UpdateConversationReadDateUseCase internal constructor(
      * @param time The last read date to update.
      */
     operator fun invoke(conversationId: QualifiedID, time: Instant) {
-        scope.launch {
+        workQueue.enqueue(ConversationTimeEventInput(conversationId, time), worker)
+    }
+
+    private val worker = ConversationTimeEventWorker { (conversationId, time) ->
+        coroutineScope {
             conversationRepository.observeCacheDetailsById(conversationId).flatMap {
                 it.first()?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
             }.onFailure {
                 logger.w("Failed to update conversation read date; StorageFailure $it")
             }.onSuccess { conversation ->
+                if (conversation.lastReadDate >= time) {
+                    // Skipping, as current lastRead is already newer than the scheduled one
+                    return@onSuccess
+                }
                 launch {
                     sendConfirmation(conversationId, conversation.lastReadDate, time)
                 }

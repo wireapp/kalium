@@ -79,6 +79,7 @@ import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletio
 import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletionUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
+import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCaseImpl
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCaseImpl
@@ -362,8 +363,8 @@ class MessageScope internal constructor(
             notificationEventsManager = NotificationEventsManagerImpl
         )
 
-    internal val sendConfirmation: SendConfirmationUseCase
-        get() = SendConfirmationUseCase(
+    internal val sendConfirmation: SendConfirmationUseCaseImpl
+        get() = SendConfirmationUseCaseImpl(
             currentClientIdProvider,
             syncManager,
             messageSender,

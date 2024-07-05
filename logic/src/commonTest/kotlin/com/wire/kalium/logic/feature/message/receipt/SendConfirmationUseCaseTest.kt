@@ -16,12 +16,13 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.message
+package com.wire.kalium.logic.feature.message.receipt
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
+import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
@@ -144,7 +145,7 @@ class SendConfirmationUseCaseTest {
             }.returns(Either.Right(listOf(TestMessage.TEXT_MESSAGE.id)))
         }
 
-        fun arrange() = this to SendConfirmationUseCase(
+        fun arrange() = this to SendConfirmationUseCaseImpl(
             currentClientIdProvider,
             syncManager,
             messageSender,
