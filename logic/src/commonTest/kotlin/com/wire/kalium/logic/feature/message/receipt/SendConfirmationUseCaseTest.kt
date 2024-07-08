@@ -145,7 +145,7 @@ class SendConfirmationUseCaseTest {
             }.returns(Either.Right(listOf(TestMessage.TEXT_MESSAGE.id)))
         }
 
-        fun arrange() = this to SendConfirmationUseCaseImpl(
+        fun arrange() = this to SendConfirmationUseCase(
             currentClientIdProvider,
             syncManager,
             messageSender,

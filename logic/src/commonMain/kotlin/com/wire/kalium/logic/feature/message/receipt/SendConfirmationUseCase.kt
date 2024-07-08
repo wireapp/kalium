@@ -61,22 +61,20 @@ internal interface SendConfirmationUseCase {
     ): Either<CoreFailure, Unit>
 }
 
-@Suppress("LongParameterList")
-internal class SendConfirmationUseCaseImpl internal constructor(
-    private val currentClientIdProvider: CurrentClientIdProvider,
-    private val syncManager: SyncManager,
-    private val messageSender: MessageSender,
-    private val selfUserId: UserId,
-    private val conversationRepository: ConversationRepository,
-    private val messageRepository: MessageRepository,
-    private val userPropertyRepository: UserPropertyRepository,
-) : SendConfirmationUseCase {
-    private companion object {
-        const val TAG = "SendConfirmation"
-        const val conversationIdKey = "conversationId"
-        const val messageIdsKey = "messageIds"
-        const val statusKey = "status"
-    }
+@Suppress("LongParameterList", "FunctionNaming")
+internal fun SendConfirmationUseCase(
+    currentClientIdProvider: CurrentClientIdProvider,
+    syncManager: SyncManager,
+    messageSender: MessageSender,
+    selfUserId: UserId,
+    conversationRepository: ConversationRepository,
+    messageRepository: MessageRepository,
+    userPropertyRepository: UserPropertyRepository,
+) = object : SendConfirmationUseCase {
+    val TAG = "SendConfirmation"
+    val conversationIdKey = "conversationId"
+    val messageIdsKey = "messageIds"
+    val statusKey = "status"
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.MESSAGES) }
 
@@ -180,6 +178,6 @@ internal class SendConfirmationUseCaseImpl internal constructor(
         val jsonLogString = "${properties.toJsonElement()}"
         val logMessage = "$TAG: $jsonLogString"
 
-        logger.i("$logMessage")
+        logger.i(logMessage)
     }
 }

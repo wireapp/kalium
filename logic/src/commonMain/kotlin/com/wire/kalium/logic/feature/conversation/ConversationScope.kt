@@ -61,7 +61,7 @@ import com.wire.kalium.logic.feature.conversation.messagetimer.UpdateMessageTime
 import com.wire.kalium.logic.feature.conversation.messagetimer.UpdateMessageTimerUseCaseImpl
 import com.wire.kalium.logic.feature.conversation.mls.OneOnOneResolver
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCaseImpl
+import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessagesAfterEndDateUseCase
 import com.wire.kalium.logic.feature.message.receipt.ConversationWorkQueue
 import com.wire.kalium.logic.feature.message.receipt.ParallelConversationWorkQueue
@@ -90,7 +90,7 @@ class ConversationScope internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val updateKeyingMaterialThresholdProvider: UpdateKeyingMaterialThresholdProvider,
     private val selfTeamIdProvider: SelfTeamIdProvider,
-    private val sendConfirmation: SendConfirmationUseCaseImpl,
+    private val sendConfirmation: SendConfirmationUseCase,
     private val renamedConversationHandler: RenamedConversationEventHandler,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val serverConfigRepository: ServerConfigRepository,
