@@ -63,7 +63,7 @@ interface ProtoContentMapper {
     fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent
 }
 
-@Suppress("TooManyFunctions", "LongParameterList")
+@Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 class ProtoContentMapperImpl(
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val availabilityMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
@@ -137,6 +137,8 @@ class ProtoContentMapperImpl(
 
             is MessageContent.ButtonActionConfirmation -> packButtonActionConfirmation(readableContent)
             is MessageContent.Location -> packLocation(readableContent, expectsReadConfirmation, legalHoldStatus)
+
+            is MessageContent.DataTransfer -> TODO("Analytics: Not yet implemented")
         }
     }
 
@@ -256,7 +258,8 @@ class ProtoContentMapperImpl(
             is MessageContent.Composite,
             is MessageContent.ButtonAction,
             is MessageContent.ButtonActionConfirmation,
-            is MessageContent.TextEdited -> throw IllegalArgumentException(
+            is MessageContent.TextEdited,
+            is MessageContent.DataTransfer -> throw IllegalArgumentException(
                 "Unexpected message content type: ${readableContent.getType()}"
             )
         }
@@ -351,7 +354,7 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.Cleared -> unpackCleared(protoContent)
             is GenericMessage.Content.ClientAction -> MessageContent.ClientAction
             is GenericMessage.Content.Confirmation -> unpackReceipt(protoContent)
-            is GenericMessage.Content.DataTransfer -> MessageContent.Ignored
+            is GenericMessage.Content.DataTransfer -> unpackDataTransfer(protoContent)
             is GenericMessage.Content.Deleted -> MessageContent.DeleteMessage(protoContent.value.messageId)
             is GenericMessage.Content.Edited -> unpackEdited(protoContent, typeName, encodedContent, genericMessage)
             is GenericMessage.Content.Ephemeral -> unpackEphemeral(protoContent)
@@ -533,6 +536,14 @@ class ProtoContentMapperImpl(
     private fun unpackCalling(protoContent: GenericMessage.Content.Calling) = MessageContent.Calling(
         value = protoContent.value.content,
         conversationId = protoContent.value.qualifiedConversationId?.let { idMapper.fromProtoModel(it) }
+    )
+
+    private fun unpackDataTransfer(protoContent: GenericMessage.Content.DataTransfer) = MessageContent.DataTransfer(
+        trackingIdentifier = protoContent.value.trackingIdentifier?.let { trackingIdentifier ->
+            MessageContent.DataTransfer.TrackingIdentifier(
+                identifier = trackingIdentifier.identifier
+            )
+        }
     )
 
     private fun packCleared(readableContent: MessageContent.Cleared) = GenericMessage.Content.Cleared(

@@ -41,6 +41,7 @@ internal interface UserConfigRepositoryArrangement {
     suspend fun withGetMigrationConfigurationReturning(result: Either<StorageFailure, MLSMigrationModel>)
     suspend fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>)
     suspend fun withGetSupportedCipherSuitesReturning(result: Either<StorageFailure, SupportedCipherSuite>)
+    suspend fun withSetTrackingIdentifier()
 }
 
 internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrangement {
@@ -93,5 +94,9 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
 
     override suspend fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>) {
         coEvery { userConfigRepository.setSupportedCipherSuite(any()) }.returns(result)
+    }
+
+    override suspend fun withSetTrackingIdentifier() {
+        coEvery { userConfigRepository.setTrackingIdentifier(any()) }.returns(Unit)
     }
 }
