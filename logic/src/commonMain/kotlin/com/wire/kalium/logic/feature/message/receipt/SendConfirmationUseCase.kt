@@ -16,7 +16,7 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.message
+package com.wire.kalium.logic.feature.message.receipt
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogger
@@ -29,9 +29,11 @@ import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
+import com.wire.kalium.logic.data.message.MessageTarget
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
@@ -51,26 +53,32 @@ import kotlinx.serialization.json.Json
  * - For 1:1 we take into consideration [UserPropertyRepository.getReadReceiptsStatus]
  * - For group conversations we have to look for each group conversation configuration.
  */
-@Suppress("LongParameterList")
-internal class SendConfirmationUseCase internal constructor(
-    private val currentClientIdProvider: CurrentClientIdProvider,
-    private val syncManager: SyncManager,
-    private val messageSender: MessageSender,
-    private val selfUserId: UserId,
-    private val conversationRepository: ConversationRepository,
-    private val messageRepository: MessageRepository,
-    private val userPropertyRepository: UserPropertyRepository,
-) {
-    private companion object {
-        const val TAG = "SendConfirmation"
-        const val conversationIdKey = "conversationId"
-        const val messageIdsKey = "messageIds"
-        const val statusKey = "status"
-    }
+internal interface SendConfirmationUseCase {
+    suspend operator fun invoke(
+        conversationId: ConversationId,
+        afterDateTime: Instant,
+        untilDateTime: Instant
+    ): Either<CoreFailure, Unit>
+}
+
+@Suppress("LongParameterList", "FunctionNaming")
+internal fun SendConfirmationUseCase(
+    currentClientIdProvider: CurrentClientIdProvider,
+    syncManager: SyncManager,
+    messageSender: MessageSender,
+    selfUserId: UserId,
+    conversationRepository: ConversationRepository,
+    messageRepository: MessageRepository,
+    userPropertyRepository: UserPropertyRepository,
+) = object : SendConfirmationUseCase {
+    val TAG = "SendConfirmation"
+    val conversationIdKey = "conversationId"
+    val messageIdsKey = "messageIds"
+    val statusKey = "status"
 
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.MESSAGES) }
 
-    suspend operator fun invoke(
+    override suspend operator fun invoke(
         conversationId: ConversationId,
         afterDateTime: Instant,
         untilDateTime: Instant
@@ -100,7 +108,7 @@ internal class SendConfirmationUseCase internal constructor(
                 expirationData = null
             )
 
-            messageSender.sendMessage(message)
+            messageSender.sendMessage(message, messageTarget = MessageTarget.Conversation(setOf(selfUserId)))
         }.onFailure {
             logConfirmationError(conversationId, messageIds, it)
         }.onSuccess {
@@ -170,6 +178,6 @@ internal class SendConfirmationUseCase internal constructor(
         val jsonLogString = "${properties.toJsonElement()}"
         val logMessage = "$TAG: $jsonLogString"
 
-        logger.i("$logMessage")
+        logger.i(logMessage)
     }
 }
