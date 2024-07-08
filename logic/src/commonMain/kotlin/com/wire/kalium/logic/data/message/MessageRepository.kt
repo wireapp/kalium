@@ -162,6 +162,8 @@ internal interface MessageRepository {
     suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>>
     suspend fun getPendingConfirmationMessagesByConversationAfterDate(
         conversationId: ConversationId,
+        afterDateTime: Instant,
+        untilDateTime: Instant,
         visibility: List<Message.Visibility> = Message.Visibility.entries
     ): Either<CoreFailure, List<String>>
 
@@ -533,10 +535,14 @@ internal class MessageDataSource internal constructor(
 
     override suspend fun getPendingConfirmationMessagesByConversationAfterDate(
         conversationId: ConversationId,
+        afterDateTime: Instant,
+        untilDateTime: Instant,
         visibility: List<Message.Visibility>
     ): Either<CoreFailure, List<String>> = wrapStorageRequest {
-        messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
+        messageDAO.getMessageIdsThatExpectReadConfirmationWithinDates(
             conversationId.toDao(),
+            afterDateTime,
+            untilDateTime,
             visibility.map { it.toEntityVisibility() }
         )
     }

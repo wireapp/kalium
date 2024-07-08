@@ -19,9 +19,9 @@
 package com.wire.kalium.logic.feature.message
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.framework.TestClient
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage
@@ -31,20 +31,16 @@ import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.any
-
 import io.mockative.coEvery
-import io.mockative.every
 import io.mockative.coVerify
-import io.mockative.coEvery
-import io.mockative.coEvery
+import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.seconds
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class SendConfirmationUseCaseTest {
 
     @Test
@@ -57,7 +53,10 @@ class SendConfirmationUseCaseTest {
             .withSendMessageSuccess()
             .arrange()
 
-        val result = sendConfirmation(TestConversation.ID)
+        val after = Instant.DISTANT_PAST
+        val until = after + 10.seconds
+
+        val result = sendConfirmation(TestConversation.ID, after, until)
 
         result.shouldSucceed()
         coVerify {
@@ -75,7 +74,10 @@ class SendConfirmationUseCaseTest {
             .withSendMessageSuccess()
             .arrange()
 
-        val result = sendConfirmation(TestConversation.ID)
+        val after = Instant.DISTANT_PAST
+        val until = after + 10.seconds
+
+        val result = sendConfirmation(TestConversation.ID, after, until)
 
         result.shouldSucceed()
         coVerify {
@@ -83,7 +85,12 @@ class SendConfirmationUseCaseTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.messageRepository.getPendingConfirmationMessagesByConversationAfterDate(any(), any())
+            arrangement.messageRepository.getPendingConfirmationMessagesByConversationAfterDate(
+                any(),
+                eq(after),
+                eq(until),
+                any()
+            )
         }.wasNotInvoked()
     }
 
@@ -133,7 +140,7 @@ class SendConfirmationUseCaseTest {
 
         suspend fun withPendingMessagesResponse() = apply {
             coEvery {
-                messageRepository.getPendingConfirmationMessagesByConversationAfterDate(any(), any())
+                messageRepository.getPendingConfirmationMessagesByConversationAfterDate(any(), any(), any(), any())
             }.returns(Either.Right(listOf(TestMessage.TEXT_MESSAGE.id)))
         }
 
