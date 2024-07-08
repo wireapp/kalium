@@ -192,7 +192,6 @@ sealed interface MessageContent {
         )
     }
 
-
     data class DeleteMessage(val messageId: String) : Signaling
 
     data class TextEdited(
