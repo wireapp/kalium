@@ -24,57 +24,63 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import com.russhwolf.settings.Settings
 import com.russhwolf.settings.SharedPreferencesSettings
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.runBlocking
 
 private fun SettingOptions.keyAlias(): String = when (this) {
     is SettingOptions.AppSettings -> "_app_settings_master_key_"
     is SettingOptions.UserSettings -> "_${this.fileName}_master_key_"
 }
 
-internal actual object EncryptedSettingsBuilder {
-    private fun getOrCreateMasterKey(
-        context: Context,
-        keyAlias: String
-    ): MasterKey =
-        MasterKey
-            .Builder(context, keyAlias)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .setRequestStrongBoxBacked(true)
-            .build()
+private val lock = Object()
 
-    actual fun build(
-        options: SettingOptions,
-        param: EncryptedSettingsPlatformParam
-    ): Settings = synchronized(this) {
-        val settings = if (options.shouldEncryptData) {
-            encryptedSharedPref(options, param, false)
-        } else {
-            param.appContext.getSharedPreferences(options.fileName, Context.MODE_PRIVATE)
-        }
-        SharedPreferencesSettings(settings, false)
+internal actual fun buildSettings(
+    options: SettingOptions,
+    param: EncryptedSettingsPlatformParam
+): Settings = synchronized(lock) {
+    val settings = if (options.shouldEncryptData) {
+        encryptedSharedPref(options, param, false)
+    } else {
+        param.appContext.getSharedPreferences(options.fileName, Context.MODE_PRIVATE)
     }
+    SharedPreferencesSettings(settings, false)
+}
 
-    private fun encryptedSharedPref(
-        options: SettingOptions,
-        param: EncryptedSettingsPlatformParam,
-        isRetry: Boolean
-    ): SharedPreferences {
-        @Suppress("TooGenericExceptionCaught")
-        return try {
-            val masterKey = getOrCreateMasterKey(param.appContext, options.keyAlias())
-            EncryptedSharedPreferences.create(
-                param.appContext,
-                options.fileName,
-                masterKey,
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            )
-        } catch (e: Exception) {
-            if (isRetry) {
-                throw e
-            }
+private fun getOrCreateMasterKey(
+    context: Context,
+    keyAlias: String
+): MasterKey =
+    MasterKey
+        .Builder(context, keyAlias)
+        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        .setRequestStrongBoxBacked(true)
+        .build()
+
+private fun encryptedSharedPref(
+    options: SettingOptions,
+    param: EncryptedSettingsPlatformParam,
+    isRetry: Boolean
+): SharedPreferences {
+    @Suppress("TooGenericExceptionCaught")
+    return try {
+        val masterKey = getOrCreateMasterKey(param.appContext, options.keyAlias())
+        EncryptedSharedPreferences.create(
+            param.appContext,
+            options.fileName,
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+    } catch (e: Exception) {
+        if (isRetry) {
+            throw e
+        } else runBlocking {
+            delay(RETRY_DELAY)
             encryptedSharedPref(options, param, true)
         }
     }
 }
 
 internal actual class EncryptedSettingsPlatformParam(val appContext: Context)
+
+private const val RETRY_DELAY = 200L

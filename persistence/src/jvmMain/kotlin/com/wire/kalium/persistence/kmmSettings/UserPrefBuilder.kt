@@ -32,7 +32,7 @@ actual class UserPrefBuilder(
 
     private val kaliumPref =
         KaliumPreferencesSettings(
-            EncryptedSettingsBuilder.build(
+            buildSettings(
                 SettingOptions.UserSettings(shouldEncryptData, userId),
                 EncryptedSettingsPlatformParam(rootPath)
             )

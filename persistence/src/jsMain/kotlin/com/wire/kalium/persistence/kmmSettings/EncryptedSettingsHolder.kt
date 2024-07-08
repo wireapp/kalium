@@ -22,11 +22,9 @@ import com.russhwolf.settings.Settings
 import com.russhwolf.settings.StorageSettings
 import org.w3c.dom.Storage
 
-internal actual object EncryptedSettingsBuilder {
-    actual fun build(
-        options: SettingOptions,
-        param: EncryptedSettingsPlatformParam
-    ): Settings = StorageSettings(param.storage)
-}
+internal actual fun buildSettings(
+    options: SettingOptions,
+    param: EncryptedSettingsPlatformParam
+): Settings = StorageSettings(param.storage)
 
 internal actual class EncryptedSettingsPlatformParam(val storage: Storage)
