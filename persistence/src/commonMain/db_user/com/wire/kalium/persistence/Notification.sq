@@ -13,7 +13,8 @@ SELECT
     TextContent.is_quoting_self AS isQuotingSelf,
     AssetContent.asset_mime_type AS assetMimeType,
     Conversation.muted_status AS mutedStatus,
-    Conversation.type AS conversationType
+    Conversation.type AS conversationType,
+    Conversation.degraded_conversation_notified AS degradedConversationNotified
 FROM Message
 LEFT JOIN SelfUser
 JOIN User ON Message.sender_user_id = User.qualified_id AND Message.content_type IN  ('TEXT', 'RESTRICTED_ASSET', 'ASSET', 'KNOCK', 'MISSED_CALL', 'LOCATION')

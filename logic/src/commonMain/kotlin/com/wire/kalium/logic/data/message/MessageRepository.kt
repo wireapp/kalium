@@ -34,6 +34,8 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.notification.LocalNotification
+import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
+import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapperImpl
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
@@ -253,7 +255,7 @@ internal interface MessageRepository {
 
 // TODO: suppress TooManyFunctions for now, something we need to fix in the future
 @Suppress("LongParameterList", "TooManyFunctions")
-internal class MessageDataSource internal constructor (
+internal class MessageDataSource internal constructor(
     private val selfUserId: UserId,
     private val messageApi: MessageApi,
     private val mlsMessageApi: MLSMessageApi,
@@ -263,6 +265,7 @@ internal class MessageDataSource internal constructor (
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
     private val sendMessagePartialFailureMapper: SendMessagePartialFailureMapper = MapperProvider.sendMessagePartialFailureMapper(),
+    private val notificationMapper: LocalNotificationMessageMapper = LocalNotificationMessageMapperImpl()
 ) : MessageRepository {
 
     override val extensions: MessageRepositoryExtensions = MessageRepositoryExtensionsImpl(messageDAO, messageMapper)
@@ -303,17 +306,10 @@ internal class MessageDataSource internal constructor (
         messageSizePerConversation: Int
     ): Either<CoreFailure, Flow<List<LocalNotification>>> = wrapStorageRequest {
         messageDAO.getNotificationMessage().mapLatest { notificationEntities ->
-            notificationEntities.groupBy { it.conversationId }
-                .map { (conversationId, messages) ->
-                    LocalNotification.Conversation(
-                        // todo: needs some clean up!
-                        id = conversationId.toModel(),
-                        conversationName = messages.first().conversationName ?: "",
-                        messages = messages.take(messageSizePerConversation)
-                            .mapNotNull { message -> messageMapper.fromMessageToLocalNotificationMessage(message) },
-                        isOneToOneConversation = messages.first().conversationType == ConversationEntity.Type.ONE_ON_ONE
-                    )
-                }
+            notificationMapper.fromEntitiesToLocalNotifications(
+                notificationEntities,
+                messageSizePerConversation
+            ) { message -> messageMapper.fromMessageToLocalNotificationMessage(message) }
         }
     }
 
