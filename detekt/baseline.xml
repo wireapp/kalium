@@ -664,8 +664,6 @@
     <ID>NoUnusedImports:SearchRepositoryArrangement.kt$com.wire.kalium.logic.util.arrangement.repository.SearchRepositoryArrangement.kt</ID>
     <ID>NoUnusedImports:SearchUseCaseTest.kt$com.wire.kalium.logic.feature.search.SearchUseCaseTest.kt</ID>
     <ID>NoUnusedImports:SendButtonActionMessageTest.kt$com.wire.kalium.logic.feature.message.SendButtonActionMessageTest.kt</ID>
-    <ID>NoUnusedImports:SendConfirmationUseCaseTest.kt$com.wire.kalium.logic.feature.message.SendConfirmationUseCaseTest.kt</ID>
-    <ID>NoUnusedImports:SendConfirmationUseCaseTest.kt$import io.mockative.coEvery</ID>
     <ID>NoUnusedImports:ServerConfigDTOJson.kt$util.ServerConfigDTOJson.kt</ID>
     <ID>NoUnusedImports:ServerConfigRepositoryArrangement.kt$com.wire.kalium.logic.util.arrangement.repository.ServerConfigRepositoryArrangement.kt</ID>
     <ID>NoUnusedImports:SessionEstablisherTest.kt$com.wire.kalium.logic.feature.message.SessionEstablisherTest.kt</ID>
