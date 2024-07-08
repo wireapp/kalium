@@ -19,9 +19,9 @@
 package com.wire.kalium.persistence
 
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
-import com.wire.kalium.persistence.kmmSettings.EncryptedSettingsBuilder
 import com.wire.kalium.persistence.kmmSettings.EncryptedSettingsPlatformParam
 import com.wire.kalium.persistence.kmmSettings.SettingOptions
+import com.wire.kalium.persistence.kmmSettings.buildSettings
 import org.junit.Test
 import java.io.FileInputStream
 import java.nio.file.Files
@@ -37,7 +37,7 @@ class EncryptedSettingsBuilderTest {
         val rootPath = Files.createTempDirectory("test-rootPath").toString()
         val userIDEntity = QualifiedIDEntity("user", "domain")
 
-        val encryptedSettings = EncryptedSettingsBuilder.build(
+        val encryptedSettings = buildSettings(
             SettingOptions.UserSettings(
                 shouldEncryptData = false,
                 userIDEntity
@@ -57,7 +57,7 @@ class EncryptedSettingsBuilderTest {
     fun givenJvmPropertiesSettings_WhenAppSettingsAreChanged_ThenItIsStoredInFile() {
         val rootPath = Files.createTempDirectory("test-rootPath").toString()
 
-        val encryptedSettings = EncryptedSettingsBuilder.build(
+        val encryptedSettings = buildSettings(
             SettingOptions.AppSettings(
                 shouldEncryptData = false
             ),
