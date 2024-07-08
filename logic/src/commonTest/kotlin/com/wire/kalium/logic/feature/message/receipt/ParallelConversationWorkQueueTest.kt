@@ -80,7 +80,6 @@ class ParallelConversationWorkQueueTest {
         assertTrue(endedSecond)
     }
 
-
     @Test
     fun givenWorkThrows_whenEnqueuingAnotherForTheSameConversation_itIsExecutedNormally() = runTest {
         val queue = testSubject()
