@@ -174,7 +174,7 @@ class ObserveSecurityClassificationLabelUseCaseTest {
 
         suspend fun withObserveConversationSuccess(conversationDomain: String) = apply {
             coEvery {
-                conversationRepository.observeById(any())
+                conversationRepository.observeConversationById(any())
             }.returns(
                 flowOf(
                     Either.Right(
@@ -190,7 +190,7 @@ class ObserveSecurityClassificationLabelUseCaseTest {
 
         suspend fun withObserveConversationError() = apply {
             coEvery {
-                conversationRepository.observeById(any())
+                conversationRepository.observeConversationById(any())
             }.returns(flowOf(Either.Left(StorageFailure.Generic(Throwable("error")))))
         }
 

@@ -117,7 +117,6 @@ import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 import com.wire.kalium.network.api.model.ConversationId as APIConversationId
 import com.wire.kalium.persistence.dao.client.Client as ClientEntity
@@ -337,7 +336,7 @@ class ConversationRepositoryTest {
             val conversationEntity = TestConversation.VIEW_ENTITY.copy(type = ConversationEntity.Type.GROUP)
 
             val (_, conversationRepository) = Arrangement()
-                .withExpectedObservableConversation(conversationEntity)
+                .withExpectedObservableConversationDetails(conversationEntity)
                 .arrange()
 
             conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
@@ -352,7 +351,7 @@ class ConversationRepositoryTest {
             val conversationEntity = TestConversation.VIEW_ENTITY.copy(type = ConversationEntity.Type.SELF)
 
             val (_, conversationRepository) = Arrangement()
-                .withExpectedObservableConversation(conversationEntity)
+                .withExpectedObservableConversationDetails(conversationEntity)
                 .arrange()
 
             conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
@@ -372,7 +371,7 @@ class ConversationRepositoryTest {
             )
 
             val (_, conversationRepository) = Arrangement()
-                .withExpectedObservableConversation(conversationEntity)
+                .withExpectedObservableConversationDetails(conversationEntity)
                 .arrange()
 
             conversationRepository.observeConversationDetailsById(TestConversation.ID).test {
@@ -387,7 +386,7 @@ class ConversationRepositoryTest {
             // given
             val (_, conversationRepository) = Arrangement()
                 .withSelfUserFlow(flowOf(TestUser.SELF))
-                .withExpectedConversationWithOtherUser(TestConversation.VIEW_ENTITY)
+                .withExpectedConversationWithOtherUser(TestConversation.ENTITY)
                 .withExpectedOtherKnownUser(TestUser.OTHER)
                 .arrange()
 
@@ -773,7 +772,7 @@ class ConversationRepositoryTest {
             type = ConversationEntity.Type.GROUP,
         )
         val (_, conversationRepository) = Arrangement()
-            .withExpectedObservableConversation(conversationEntity)
+            .withExpectedObservableConversationDetails(conversationEntity)
             .arrange()
 
         // when
@@ -798,7 +797,7 @@ class ConversationRepositoryTest {
             )
 
             val (_, conversationRepository) = Arrangement()
-                .withExpectedObservableConversation(conversationEntity)
+                .withExpectedObservableConversationDetails(conversationEntity)
                 .arrange()
 
             // when
@@ -940,18 +939,23 @@ class ConversationRepositoryTest {
     }
 
     @Test
-    fun givenAConversationId_WhenTheConversationDoesNotExists_ShouldReturnANullConversation() = runTest {
+    fun givenAConversationId_whenTheConversationDoesNotExists_thenShouldReturnDataNotFound() = runTest {
         val conversationId = ConversationId("conv_id", "conv_domain")
-        val (_, conversationRepository) = Arrangement().withExpectedObservableConversation().arrange()
+        val (_, conversationRepository) = Arrangement()
+            .withExpectedConversationBase(null)
+            .arrange()
 
-        val result = conversationRepository.getConversationById(conversationId)
-        assertNull(result)
+        conversationRepository.getConversationById(conversationId)
+            .shouldFail {
+                assertIs<StorageFailure.DataNotFound>(it)
+            }
     }
 
     @Test
     fun givenAConversationId_WhenTheConversationExists_ShouldReturnAConversationInstance() = runTest {
         val conversationId = ConversationId("conv_id", "conv_domain")
-        val (_, conversationRepository) = Arrangement().withExpectedObservableConversation(TestConversation.VIEW_ENTITY)
+        val (_, conversationRepository) = Arrangement()
+            .withExpectedObservableConversation(TestConversation.ENTITY)
             .arrange()
 
         val result = conversationRepository.getConversationById(conversationId)
@@ -1371,17 +1375,6 @@ class ConversationRepositoryTest {
         }.wasInvoked(exactly = once)
     }
 
-    @Test
-    fun givenConversationId_whenObservingFromCache_thenInvokeCorrectDao() = runTest {
-        val (arrange, conversationRepository) = Arrangement()
-            .withExpectedConversationView(TestConversation.VIEW_ENTITY)
-            .arrange()
-
-        conversationRepository.observeCacheDetailsById(CONVERSATION_ID)
-
-        coVerify { arrange.conversationDAO.observeConversationDetailsById(eq(CONVERSATION_ID.toDao())) }.wasInvoked(exactly = once)
-    }
-
     private class Arrangement :
         MemberDAOArrangement by MemberDAOArrangementImpl() {
 
@@ -1483,7 +1476,7 @@ class ConversationRepositoryTest {
             }.returns(response)
         }
 
-        suspend fun withExpectedConversationWithOtherUser(conversation: ConversationViewEntity?) = apply {
+        suspend fun withExpectedConversationWithOtherUser(conversation: ConversationEntity?) = apply {
             coEvery {
                 conversationDAO.observeOneOnOneConversationWithOtherUser(any())
             }.returns(flowOf(conversation))
@@ -1573,9 +1566,15 @@ class ConversationRepositoryTest {
             withObserveIsUserMember(expectedIsUserMember)
         }
 
-        suspend fun withExpectedObservableConversation(conversationEntity: ConversationViewEntity? = null) = apply {
+        suspend fun withExpectedObservableConversationDetails(conversationEntity: ConversationViewEntity? = null) = apply {
             coEvery {
-                conversationDAO.observeGetConversationByQualifiedID(any())
+                conversationDAO.observeConversationDetailsById(any())
+            }.returns(flowOf(conversationEntity))
+        }
+
+        suspend fun withExpectedObservableConversation(conversationEntity: ConversationEntity? = null) = apply {
+            coEvery {
+                conversationDAO.observeConversationById(any())
             }.returns(flowOf(conversationEntity))
         }
 
@@ -1587,7 +1586,7 @@ class ConversationRepositoryTest {
 
         suspend fun withExpectedConversation(conversationEntity: ConversationViewEntity?) = apply {
             coEvery {
-                conversationDAO.getConversationByQualifiedID(any())
+                conversationDAO.getConversationDetailsById(any())
             }.returns(conversationEntity)
         }
 
@@ -1599,7 +1598,7 @@ class ConversationRepositoryTest {
 
         suspend fun withExpectedConversationBase(conversationEntity: ConversationEntity?) = apply {
             coEvery {
-                conversationDAO.getConversationBaseInfoByQualifiedID(any())
+                conversationDAO.getConversationById(any())
             }.returns(conversationEntity)
         }
 

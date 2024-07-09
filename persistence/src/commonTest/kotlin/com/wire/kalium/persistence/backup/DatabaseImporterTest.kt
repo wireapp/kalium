@@ -23,14 +23,14 @@ import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
-import com.wire.kalium.persistence.dao.conversation.MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.db.UserDatabaseBuilder
 import com.wire.kalium.persistence.utils.IgnoreIOS
 import com.wire.kalium.persistence.utils.IgnoreJvm
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.test.TestResult
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
@@ -54,6 +54,12 @@ class DatabaseImporterTest : BaseDatabaseTest() {
 
     private val selfUserId = UserIDEntity("selfValue", "selfDomain")
     private val backupUserIdEntity = UserIDEntity("backup-${selfUserId.value}", selfUserId.domain)
+
+    private fun runTest(
+        testBody: suspend TestScope.() -> Unit
+    ): TestResult {
+        return runTest(dispatcher, testBody = testBody)
+    }
 
     @BeforeTest
     fun setUp() {
@@ -94,7 +100,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
             userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity), false)
 
             // then
-            val conversationsAfterBackup: List<ConversationViewEntity> =
+            val conversationsAfterBackup: List<ConversationEntity> =
                 userDatabaseBuilder.conversationDAO.getAllConversations().first()
 
             assertTrue(conversationsAfterBackup.containsAll(conversationsToBackup))
@@ -124,7 +130,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
                     userConversations[0],
                     userConversations[1],
                     userConversations[2]
-                ).map(::mapFromDetailsToConversationEntity)
+                )
             )
             // when
             userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity), false)
@@ -154,11 +160,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
                 messageType = MessageType.Regular
             )
 
-            backupDatabaseBuilder.conversationDAO.insertConversations(
-                userConversations.map(
-                    ::mapFromDetailsToConversationEntity
-                )
-            )
+            backupDatabaseBuilder.conversationDAO.insertConversations(userConversations)
             // when
             userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity), false)
 
@@ -215,11 +217,11 @@ class DatabaseImporterTest : BaseDatabaseTest() {
 
         // then
         assertEquals(
-            userDatabaseBuilder.conversationDAO.getConversationByQualifiedID(backupConversation1.id)?.lastReadDate,
+            userDatabaseBuilder.conversationDAO.getConversationDetailsById(backupConversation1.id)?.lastReadDate,
             readDateCurrent
         )
         assertEquals(
-            userDatabaseBuilder.conversationDAO.getConversationByQualifiedID(backupConversation2.id)?.lastReadDate,
+            userDatabaseBuilder.conversationDAO.getConversationDetailsById(backupConversation2.id)?.lastReadDate,
             readDateBackup2
         )
     }
@@ -234,7 +236,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
             messageType = MessageType.Regular
         )
 
-        backupDatabaseBuilder.conversationDAO.insertConversations(userConversations.map(::mapFromDetailsToConversationEntity))
+        backupDatabaseBuilder.conversationDAO.insertConversations(userConversations)
 
         // when
         userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity), false)
@@ -247,7 +249,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
 
     @Test
     fun givenBackupHasGroupConversationWithMembersAndUserNone_whenRestoringBackup_thenThoseConversationAreRestoredButMembersNot() =
-        runTest(dispatcher) {
+        runTest {
             // given
             val membersPerGroup = 10
             val backupConversations = backupDatabaseDataGenerator.generateAndInsertGroupConversations(
@@ -270,7 +272,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
 
     @Test
     fun givenBackupHasConversationWithMembersAndUseWithSomeOfThoseMembers_whenRestoringBackup_thenTheOverlappingMembersAreNotRestored() =
-        runTest(dispatcher) {
+        runTest {
             // given
             val overlappingBackupMembers = backupDatabaseDataGenerator.generateMembers(5)
             val backupConversationAmount = 5
@@ -360,7 +362,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
         userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity), false)
 
         // then
-        val conversationsAfterBackup: List<ConversationViewEntity> = userDatabaseBuilder.conversationDAO.getAllConversations().first()
+        val conversationsAfterBackup: List<ConversationEntity> = userDatabaseBuilder.conversationDAO.getAllConversations().first()
 
         val calls = conversationsWithCallToBackup.map {
             val call = it.second
@@ -438,7 +440,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
         userDatabaseBuilder.databaseImporter.importFromFile(databasePath(backupUserIdEntity), true)
 
         // then
-        val conversationsAfterBackup: List<ConversationViewEntity> = userDatabaseBuilder.conversationDAO.getAllConversations().first()
+        val conversationsAfterBackup: List<ConversationEntity> = userDatabaseBuilder.conversationDAO.getAllConversations().first()
 
         val backupCalls = backupConversationsWithCalls.map { it.second }
         val userCalls = userConversationsWithCalls.map { it.second }
@@ -545,35 +547,6 @@ class DatabaseImporterTest : BaseDatabaseTest() {
         userAssets.forEach { assetEntity ->
             val asset = userDatabaseBuilder.assetDAO.getAssetByKey(assetEntity.key).first()
             assertEquals(assetEntity, asset)
-        }
-    }
-
-    private fun mapFromDetailsToConversationEntity(details: ConversationViewEntity): ConversationEntity {
-        return with(details) {
-            ConversationEntity(
-                id = id,
-                name = name,
-                type = type,
-                teamId = teamId,
-                protocolInfo = protocolInfo,
-                mutedStatus = mutedStatus,
-                mutedTime = mutedTime,
-                removedBy = removedBy,
-                creatorId = creatorId,
-                lastNotificationDate = lastNotificationDate,
-                lastModifiedDate = lastModifiedDate ?: Instant.fromEpochMilliseconds(MLS_DEFAULT_LAST_KEY_MATERIAL_UPDATE_MILLI),
-                lastReadDate = lastReadDate,
-                access = accessList,
-                accessRole = accessRoleList,
-                receiptMode = receiptMode,
-                messageTimer = null,
-                userMessageTimer = null,
-                archived = false,
-                archivedInstant = null,
-                mlsVerificationStatus = mlsVerificationStatus,
-                proteusVerificationStatus = proteusVerificationStatus,
-                legalHoldStatus = legalHoldStatus
-            )
         }
     }
 

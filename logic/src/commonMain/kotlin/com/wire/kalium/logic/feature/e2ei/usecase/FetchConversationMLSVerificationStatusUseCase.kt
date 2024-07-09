@@ -35,7 +35,7 @@ internal class FetchConversationMLSVerificationStatusUseCaseImpl(
 ) : FetchConversationMLSVerificationStatusUseCase {
 
     override suspend fun invoke(conversationId: ConversationId) {
-        conversationRepository.detailsById(conversationId).onSuccess {
+        conversationRepository.getConversationById(conversationId).onSuccess {
             val protocol = it.protocol
             if (protocol is Conversation.ProtocolInfo.MLSCapable)
                 fetchMLSVerificationStatusUseCase(protocol.groupId)

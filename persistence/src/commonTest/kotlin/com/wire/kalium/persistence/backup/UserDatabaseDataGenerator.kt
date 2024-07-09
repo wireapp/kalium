@@ -32,7 +32,6 @@ import com.wire.kalium.persistence.dao.UserTypeEntity
 import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -239,7 +238,7 @@ class UserDatabaseDataGenerator(
         conversationAmount: Int,
         messagePerConversation: Int,
         messageType: MessageType
-    ): List<ConversationViewEntity> {
+    ): List<ConversationEntity> {
         val conversationPrefix = "${databasePrefix}Conversation${generatedConversationsCount}"
 
         for (index in generatedConversationsCount + 1..conversationAmount) {
@@ -434,7 +433,7 @@ class UserDatabaseDataGenerator(
     suspend fun generateAndInsertGroupConversations(
         conversationAmount: Int,
         membersPerGroup: Int
-    ): List<ConversationViewEntity> {
+    ): List<ConversationEntity> {
         val groupConversationPrefix = "${databasePrefix}GroupConversation${generatedConversationsCount}"
 
         for (index in generatedConversationsCount + 1..conversationAmount) {
@@ -482,7 +481,7 @@ class UserDatabaseDataGenerator(
     suspend fun generateAndInsertGroupConversations(
         conversationAmount: Int,
         membersGenerate: (ConversationIDEntity) -> List<MemberEntity>
-    ): List<ConversationViewEntity> {
+    ): List<ConversationEntity> {
         val groupConversationPrefix = "${databasePrefix}GroupConversation${generatedConversationsCount}"
 
         for (index in generatedConversationsCount + 1..conversationAmount) {
@@ -589,7 +588,7 @@ class UserDatabaseDataGenerator(
     suspend fun generateAndInsertMessageAssetContent(
         conversationAmount: Int,
         assetAmountPerConversation: Int
-    ): List<ConversationViewEntity> {
+    ): List<ConversationEntity> {
         val conversationPrefix = "${databasePrefix}Conversation${generatedConversationsCount}"
 
         for (index in generatedConversationsCount + 1..conversationAmount) {

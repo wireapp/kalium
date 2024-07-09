@@ -59,7 +59,6 @@ import kotlin.time.toDuration
 
 interface ConversationMapper {
     fun fromApiModelToDaoModel(apiModel: ConversationResponse, mlsGroupState: GroupState?, selfUserTeamId: TeamId?): ConversationEntity
-    fun fromDaoModel(daoModel: ConversationViewEntity): Conversation
     fun fromDaoModel(daoModel: ConversationEntity): Conversation
     fun fromDaoModelToDetails(
         daoModel: ConversationViewEntity,
@@ -128,7 +127,7 @@ internal class ConversationMapperImpl(
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
     )
 
-    override fun fromDaoModel(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
+    private fun fromConversationViewToEntity(daoModel: ConversationViewEntity): Conversation = with(daoModel) {
         val lastReadDateEntity = if (type == ConversationEntity.Type.CONNECTION_PENDING) Instant.UNIX_FIRST_DATE
         else lastReadDate
 
@@ -194,12 +193,12 @@ internal class ConversationMapperImpl(
         with(daoModel) {
             when (type) {
                 ConversationEntity.Type.SELF -> {
-                    ConversationDetails.Self(fromDaoModel(daoModel))
+                    ConversationDetails.Self(fromConversationViewToEntity(daoModel))
                 }
 
                 ConversationEntity.Type.ONE_ON_ONE -> {
                     ConversationDetails.OneOne(
-                        conversation = fromDaoModel(daoModel),
+                        conversation = fromConversationViewToEntity(daoModel),
                         otherUser = OtherUser(
                             id = otherUserId.requireField("otherUserID in OneOnOne").toModel(),
                             name = name,
@@ -227,7 +226,7 @@ internal class ConversationMapperImpl(
 
                 ConversationEntity.Type.GROUP -> {
                     ConversationDetails.Group(
-                        conversation = fromDaoModel(daoModel),
+                        conversation = fromConversationViewToEntity(daoModel),
                         hasOngoingCall = callStatus != null, // todo: we can do better!
                         unreadEventCount = unreadEventCount ?: mapOf(),
                         lastMessage = lastMessage,

@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.notification.EphemeralConversationNotification
 import com.wire.kalium.logic.data.notification.NotificationEventsManager
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
@@ -42,22 +43,25 @@ internal class DeletedConversationEventHandlerImpl(
 
     override suspend fun handle(event: Event.Conversation.DeletedConversation) {
         val logger = kaliumLogger.createEventProcessingLogger(event)
-        val conversation = conversationRepository.getConversationById(event.conversationId)
-        if (conversation != null) {
-            conversationRepository.deleteConversation(event.conversationId)
-                .onFailure { logger.logFailure(it) }.onSuccess {
-                    val senderUser = userRepository.observeUser(event.senderUserId).firstOrNull()
-                    val dataNotification = EphemeralConversationNotification(event, conversation, senderUser)
-                    notificationEventsManager.scheduleDeleteConversationNotification(dataNotification)
-                    logger.logSuccess()
-                }
-        } else {
-            logger.logComplete(
-                EventLoggingStatus.SKIPPED,
-                arrayOf(
-                    "info" to "Conversation delete event already handled?. Conversation is null."
+        conversationRepository.getConversationById(event.conversationId)
+            .onFailure {
+                logger.logComplete(
+                    EventLoggingStatus.SKIPPED,
+                    arrayOf(
+                        "info" to "Conversation delete event already handled?. Couldn't find the conversation."
+                    )
                 )
-            )
-        }
+            }
+            .flatMap { conversation ->
+                conversationRepository.deleteConversation(event.conversationId)
+                    .onFailure {
+                        logger.logFailure(it)
+                    }.onSuccess {
+                        val senderUser = userRepository.observeUser(event.senderUserId).firstOrNull()
+                        val dataNotification = EphemeralConversationNotification(event, conversation, senderUser)
+                        notificationEventsManager.scheduleDeleteConversationNotification(dataNotification)
+                        logger.logSuccess()
+                    }
+            }
     }
 }

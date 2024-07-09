@@ -50,7 +50,7 @@ internal class ObserveSecurityClassificationLabelUseCaseImpl(
     override suspend fun invoke(conversationId: ConversationId): Flow<SecurityClassificationType> {
         return combine(
             observeConversationMembers(conversationId),
-            conversationRepository.observeById(conversationId)
+            conversationRepository.observeConversationById(conversationId)
         ) { conversationMembers, eitherConversation -> eitherConversation.map { Pair(conversationMembers, it) } }
             .mapRight { (conversationMembers, conversation) ->
                 val trustedDomains = getClassifiedDomainsStatus()

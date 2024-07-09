@@ -129,7 +129,7 @@ class SendConfirmationUseCaseTest {
 
         suspend fun withGetConversationByIdSuccessful() = apply {
             coEvery {
-                conversationRepository.baseInfoById(any())
+                conversationRepository.getConversationById(any())
             }.returns(Either.Right(TestConversation.CONVERSATION))
         }
 
