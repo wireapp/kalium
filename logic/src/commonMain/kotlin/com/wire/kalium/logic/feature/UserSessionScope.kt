@@ -1768,6 +1768,7 @@ class UserSessionScope internal constructor(
             messageMetadataRepository,
             staleEpochVerifier,
             legalHoldHandler,
+            observeFileSharingStatus,
             this,
             userScopedLogger,
         )
