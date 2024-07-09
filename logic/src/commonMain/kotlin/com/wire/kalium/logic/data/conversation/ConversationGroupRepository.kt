@@ -131,6 +131,7 @@ internal class ConversationGroupRepositoryImpl(
             }
 
             when (apiResult) {
+<<<<<<< HEAD
                 is Either.Left -> handleCreateConverstionFailure(
                     apiResult = apiResult,
                     usersList = usersList,
@@ -140,6 +141,11 @@ internal class ConversationGroupRepositoryImpl(
                 )
 
                 is Either.Right -> handleGroupConversationCreated(apiResult.value, selfTeamId, usersList, lastUsersAttempt)
+=======
+                is Either.Left -> handleCreateConversationFailure(apiResult, usersList, failedUsersList, name, options)
+
+                is Either.Right -> handleCreateConversationSuccess(apiResult, usersList, failedUsersList, selfTeamId)
+>>>>>>> 478ed1e7d8 (fix: Allow creating empty MLS GroupConversation (#2869))
             }
         }
 
@@ -204,7 +210,7 @@ internal class ConversationGroupRepositoryImpl(
         }
     }
 
-    private suspend fun handleCreateConverstionFailure(
+    private suspend fun handleCreateConversationFailure(
         apiResult: Either.Left<NetworkFailure>,
         usersList: List<UserId>,
         name: String?,
