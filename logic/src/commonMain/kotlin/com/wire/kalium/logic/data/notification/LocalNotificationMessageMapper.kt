@@ -21,11 +21,8 @@ package com.wire.kalium.logic.data.notification
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.event.Event
-<<<<<<< HEAD
 import com.wire.kalium.logic.data.id.ConversationId
-=======
 import com.wire.kalium.logic.data.id.toModel
->>>>>>> 33eff5b65a (feat: Add isReplyAllowed field to notification entity [WPB-7425] (#2867))
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.OtherUser
@@ -45,15 +42,12 @@ interface LocalNotificationMessageMapper {
 
     fun fromMessageToMessageDeletedLocalNotification(message: Message): LocalNotification
     fun fromMessageToMessageEditedLocalNotification(message: Message, messageContent: MessageContent.TextEdited): LocalNotification
-<<<<<<< HEAD
     fun toConversationSeen(conversationId: ConversationId): LocalNotification
-=======
     fun fromEntitiesToLocalNotifications(
         list: List<NotificationMessageEntity>,
         messageSizePerConversation: Int,
         mapMessage: (NotificationMessageEntity) -> LocalNotificationMessage?
     ): List<LocalNotification.Conversation>
->>>>>>> 33eff5b65a (feat: Add isReplyAllowed field to notification entity [WPB-7425] (#2867))
 }
 
 class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {

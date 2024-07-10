@@ -56,11 +56,7 @@ internal interface MessageRepositoryArrangement {
         conversationId: Matcher<ConversationId> = AnyMatcher(valueOf())
     )
 
-<<<<<<< HEAD
-    suspend fun withLocalNotifications(list: Either<CoreFailure, Flow<List<LocalNotification>>>)
-=======
-    fun withLocalNotifications(list: Flow<Either<CoreFailure, List<LocalNotification>>>)
->>>>>>> 33eff5b65a (feat: Add isReplyAllowed field to notification entity [WPB-7425] (#2867))
+    suspend fun withLocalNotifications(list: Flow<Either<CoreFailure, List<LocalNotification>>>)
 
     suspend fun withMoveMessagesToAnotherConversation(
         result: Either<StorageFailure, Unit>,
@@ -112,18 +108,8 @@ internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangem
         }.returns(result)
     }
 
-<<<<<<< HEAD
-    override suspend fun withLocalNotifications(list: Either<CoreFailure, Flow<List<LocalNotification>>>) {
-        coEvery {
-            messageRepository.getNotificationMessage(any())
-        }.returns(list)
-=======
-    override fun withLocalNotifications(list: Flow<Either<CoreFailure, List<LocalNotification>>>) {
-        given(messageRepository)
-            .suspendFunction(messageRepository::getNotificationMessage)
-            .whenInvokedWith(any())
-            .thenReturn(list)
->>>>>>> 33eff5b65a (feat: Add isReplyAllowed field to notification entity [WPB-7425] (#2867))
+    override suspend fun withLocalNotifications(list: Flow<Either<CoreFailure, List<LocalNotification>>>) {
+        coEvery { messageRepository.getNotificationMessage(any()) }.returns(list)
     }
 
     override suspend fun withMoveMessagesToAnotherConversation(

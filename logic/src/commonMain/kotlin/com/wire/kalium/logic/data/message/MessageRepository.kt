@@ -46,11 +46,8 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.map
-<<<<<<< HEAD
 import com.wire.kalium.logic.functional.mapRight
-=======
 import com.wire.kalium.logic.functional.right
->>>>>>> 33eff5b65a (feat: Add isReplyAllowed field to notification entity [WPB-7425] (#2867))
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapFlowStorageRequest
@@ -311,25 +308,10 @@ internal class MessageDataSource internal constructor(
         messageSizePerConversation: Int
     ): Flow<Either<CoreFailure, List<LocalNotification>>> = wrapStorageRequest {
         messageDAO.getNotificationMessage().mapLatest { notificationEntities ->
-<<<<<<< HEAD
-            notificationEntities.groupBy { it.conversationId }
-                .map { (conversationId, messages) ->
-                    LocalNotification.Conversation(
-                        // todo: needs some clean up!
-                        id = conversationId.toModel(),
-                        conversationName = messages.first().conversationName,
-                        messages = messages.mapNotNull { message ->
-                            messageMapper.fromMessageToLocalNotificationMessage(message)
-                        },
-                        isOneToOneConversation = messages.first().conversationType == ConversationEntity.Type.ONE_ON_ONE
-                    )
-                }
-=======
             notificationMapper.fromEntitiesToLocalNotifications(
                 notificationEntities,
                 messageSizePerConversation
             ) { message -> messageMapper.fromMessageToLocalNotificationMessage(message) }
->>>>>>> 33eff5b65a (feat: Add isReplyAllowed field to notification entity [WPB-7425] (#2867))
         }
     }.fold({ flowOf(it.left()) }) { success -> success.map { it.right() } }
 

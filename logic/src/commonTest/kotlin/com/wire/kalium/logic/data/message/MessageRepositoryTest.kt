@@ -61,7 +61,6 @@ import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.every
-import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -662,11 +661,6 @@ class MessageRepositoryTest {
             return this
         }
 
-<<<<<<< HEAD
-        suspend fun withSuccessfulMessageDelivery(timestamp: String): Arrangement {
-            coEvery { messageApi.qualifiedSendMessage(any(), any()) }
-                .returns(
-=======
         fun withMappedEntitiesToLocalNotifications(message: LocalNotificationMessage): Arrangement {
             given(messageMapper)
                 .function(messageMapper::fromMessageToLocalNotificationMessage)
@@ -680,13 +674,12 @@ class MessageRepositoryTest {
                 .suspendFunction(messageApi::qualifiedSendMessage)
                 .whenInvokedWith(anything(), anything())
                 .then { _, _ ->
->>>>>>> 33eff5b65a (feat: Add isReplyAllowed field to notification entity [WPB-7425] (#2867))
                     NetworkResponse.Success(
                         QualifiedSendMessageResponse.MessageSent(timestamp, mapOf(), mapOf(), mapOf()),
                         emptyMap(),
                         201
                     )
-                )
+                }
             return this
         }
 

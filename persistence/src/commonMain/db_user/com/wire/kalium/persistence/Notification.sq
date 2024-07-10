@@ -15,6 +15,7 @@ WITH NumberedMessages AS (
         ac.asset_mime_type AS assetMimeType,
         c.muted_status AS mutedStatus,
         c.type AS conversationType,
+        c.degraded_conversation_notified AS degradedConversationNotified,
         ROW_NUMBER() OVER (PARTITION BY m.conversation_id ORDER BY m.creation_date DESC) AS row_num
     FROM
         Message m
@@ -35,7 +36,6 @@ WITH NumberedMessages AS (
         c.archived = 0
 )
 SELECT
-<<<<<<< HEAD
     id,
     conversationId,
     contentType,
@@ -49,32 +49,10 @@ SELECT
     isQuotingSelf,
     assetMimeType,
     mutedStatus,
-    conversationType
+    conversationType,
+    degradedConversationNotified
 FROM
     NumberedMessages
-=======
-    Message.id AS id,
-    Message.conversation_id AS conversationId,
-    Message.content_type AS contentType,
-    Message.creation_date AS date,
-    Message.sender_user_id AS senderUserId,
-    (Message.expire_after_millis IS NOT NULL) AS isSelfDelete,
-    User.name AS senderName,
-    User.preview_asset_id AS senderPreviewAssetId,
-    Conversation.name AS conversationName,
-    TextContent.text_body AS text,
-    TextContent.is_quoting_self AS isQuotingSelf,
-    AssetContent.asset_mime_type AS assetMimeType,
-    Conversation.muted_status AS mutedStatus,
-    Conversation.type AS conversationType,
-    Conversation.degraded_conversation_notified AS degradedConversationNotified
-FROM Message
-LEFT JOIN SelfUser
-JOIN User ON Message.sender_user_id = User.qualified_id AND Message.content_type IN  ('TEXT', 'RESTRICTED_ASSET', 'ASSET', 'KNOCK', 'MISSED_CALL', 'LOCATION')
-JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id AND (Message.creation_date > IFNULL(Conversation.last_notified_date, 0))
-LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
-LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
->>>>>>> 33eff5b65a (feat: Add isReplyAllowed field to notification entity [WPB-7425] (#2867))
 WHERE
     row_num <= 10 -- there is a bug in sqldelight where you can't use a parameter here
 ORDER BY
