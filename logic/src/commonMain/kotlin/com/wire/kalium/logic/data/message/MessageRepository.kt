@@ -36,14 +36,21 @@ import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.notification.LocalNotification
+import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
+import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapperImpl
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.map
+<<<<<<< HEAD
 import com.wire.kalium.logic.functional.mapRight
+=======
+import com.wire.kalium.logic.functional.right
+>>>>>>> 33eff5b65a (feat: Add isReplyAllowed field to notification entity [WPB-7425] (#2867))
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapFlowStorageRequest
@@ -53,7 +60,6 @@ import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
 import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
@@ -61,6 +67,7 @@ import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.datetime.Instant
@@ -118,7 +125,7 @@ internal interface MessageRepository {
         conversationIdList: List<ConversationId>
     ): Either<StorageFailure, Map<ConversationId, Message>>
 
-    suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Either<CoreFailure, Flow<List<LocalNotification>>>
+    suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Flow<Either<CoreFailure, List<LocalNotification>>>
 
     suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
@@ -263,6 +270,7 @@ internal class MessageDataSource internal constructor(
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
     private val sendMessagePartialFailureMapper: SendMessagePartialFailureMapper = MapperProvider.sendMessagePartialFailureMapper(),
+    private val notificationMapper: LocalNotificationMessageMapper = LocalNotificationMessageMapperImpl()
 ) : MessageRepository {
 
     override val extensions: MessageRepositoryExtensions = MessageRepositoryExtensionsImpl(messageDAO, messageMapper)
@@ -301,8 +309,9 @@ internal class MessageDataSource internal constructor(
     @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun getNotificationMessage(
         messageSizePerConversation: Int
-    ): Either<CoreFailure, Flow<List<LocalNotification>>> = wrapStorageRequest {
+    ): Flow<Either<CoreFailure, List<LocalNotification>>> = wrapStorageRequest {
         messageDAO.getNotificationMessage().mapLatest { notificationEntities ->
+<<<<<<< HEAD
             notificationEntities.groupBy { it.conversationId }
                 .map { (conversationId, messages) ->
                     LocalNotification.Conversation(
@@ -315,8 +324,14 @@ internal class MessageDataSource internal constructor(
                         isOneToOneConversation = messages.first().conversationType == ConversationEntity.Type.ONE_ON_ONE
                     )
                 }
+=======
+            notificationMapper.fromEntitiesToLocalNotifications(
+                notificationEntities,
+                messageSizePerConversation
+            ) { message -> messageMapper.fromMessageToLocalNotificationMessage(message) }
+>>>>>>> 33eff5b65a (feat: Add isReplyAllowed field to notification entity [WPB-7425] (#2867))
         }
-    }
+    }.fold({ flowOf(it.left()) }) { success -> success.map { it.right() } }
 
     @DelicateKaliumApi(
         message = "Calling this function directly may cause conversation list to be displayed in an incorrect order",

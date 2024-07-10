@@ -21,11 +21,17 @@ package com.wire.kalium.logic.data.notification
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.event.Event
+<<<<<<< HEAD
 import com.wire.kalium.logic.data.id.ConversationId
+=======
+import com.wire.kalium.logic.data.id.toModel
+>>>>>>> 33eff5b65a (feat: Add isReplyAllowed field to notification entity [WPB-7425] (#2867))
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.User
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
+import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
 import kotlinx.datetime.toInstant
 
 interface LocalNotificationMessageMapper {
@@ -39,7 +45,15 @@ interface LocalNotificationMessageMapper {
 
     fun fromMessageToMessageDeletedLocalNotification(message: Message): LocalNotification
     fun fromMessageToMessageEditedLocalNotification(message: Message, messageContent: MessageContent.TextEdited): LocalNotification
+<<<<<<< HEAD
     fun toConversationSeen(conversationId: ConversationId): LocalNotification
+=======
+    fun fromEntitiesToLocalNotifications(
+        list: List<NotificationMessageEntity>,
+        messageSizePerConversation: Int,
+        mapMessage: (NotificationMessageEntity) -> LocalNotificationMessage?
+    ): List<LocalNotification.Conversation>
+>>>>>>> 33eff5b65a (feat: Add isReplyAllowed field to notification entity [WPB-7425] (#2867))
 }
 
 class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
@@ -108,4 +122,21 @@ class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
             messageContent.editMessageId,
             LocalNotificationUpdateMessageAction.Edit(messageContent.newContent, message.id)
         )
+
+    override fun fromEntitiesToLocalNotifications(
+        list: List<NotificationMessageEntity>,
+        messageSizePerConversation: Int,
+        mapMessage: (NotificationMessageEntity) -> LocalNotificationMessage?
+    ): List<LocalNotification.Conversation> =
+        list.groupBy { it.conversationId }
+            .map { (conversationId, messages) ->
+                LocalNotification.Conversation(
+                    // todo: needs some clean up!
+                    id = conversationId.toModel(),
+                    conversationName = messages.first().conversationName ?: "",
+                    messages = messages.take(messageSizePerConversation).mapNotNull { mapMessage(it) },
+                    isOneToOneConversation = messages.first().conversationType == ConversationEntity.Type.ONE_ON_ONE,
+                    isReplyAllowed = messages.first().degradedConversationNotified
+                )
+            }
 }
