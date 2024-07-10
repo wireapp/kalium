@@ -61,6 +61,7 @@ import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.every
+import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -574,8 +575,7 @@ class MessageRepositoryTest {
             // then
             result.shouldSucceed { it.isEmpty() }
 
-            verify(arrangement.messageDAO)
-                .suspendFunction(arrangement.messageDAO::getNotificationMessage)
+            coVerify { arrangement.messageDAO.getNotificationMessage() }
                 .wasInvoked(exactly = once)
 
             awaitComplete()
@@ -661,26 +661,19 @@ class MessageRepositoryTest {
             return this
         }
 
-        fun withMappedEntitiesToLocalNotifications(message: LocalNotificationMessage): Arrangement {
-            given(messageMapper)
-                .function(messageMapper::fromMessageToLocalNotificationMessage)
-                .whenInvokedWith(anything())
-                .then { message }
-            return this
+        fun withMappedEntitiesToLocalNotifications(message: LocalNotificationMessage) = apply {
+            every { messageMapper.fromMessageToLocalNotificationMessage(any<NotificationMessageEntity>()) }
+                .returns(message)
         }
 
-        fun withSuccessfulMessageDelivery(timestamp: String): Arrangement {
-            given(messageApi)
-                .suspendFunction(messageApi::qualifiedSendMessage)
-                .whenInvokedWith(anything(), anything())
-                .then { _, _ ->
-                    NetworkResponse.Success(
-                        QualifiedSendMessageResponse.MessageSent(timestamp, mapOf(), mapOf(), mapOf()),
-                        emptyMap(),
-                        201
-                    )
-                }
-            return this
+        suspend fun withSuccessfulMessageDelivery(timestamp: String) = apply {
+            coEvery { messageApi.qualifiedSendMessage(any(), any()) }.returns(
+                NetworkResponse.Success(
+                    QualifiedSendMessageResponse.MessageSent(timestamp, mapOf(), mapOf(), mapOf()),
+                    emptyMap(),
+                    201
+                )
+            )
         }
 
         fun withFailedToSendMlsMapping(failedToSend: List<UserId>) = apply {
@@ -770,12 +763,8 @@ class MessageRepositoryTest {
             }.returns(result)
         }
 
-        fun withNotificationMessage(notificationEntities: List<NotificationMessageEntity>): Arrangement {
-            given(messageDAO)
-                .suspendFunction(messageDAO::getNotificationMessage)
-                .whenInvoked()
-                .then { flowOf(notificationEntities) }
-            return this
+        suspend fun withNotificationMessage(notificationEntities: List<NotificationMessageEntity>) = apply {
+            coEvery { messageDAO.getNotificationMessage() }.returns(flowOf(notificationEntities))
         }
 
         fun arrange() = this to MessageDataSource(
