@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
@@ -78,7 +79,7 @@ class KeyPackageDataSource(
         userIds: List<UserId>,
         cipherSuite: CipherSuite
     ): Either<CoreFailure, KeyPackageClaimResult> =
-        currentClientIdProvider().flatMap { selfClientId ->
+        currentClientIdProvider().map { selfClientId ->
             val failedUsers = mutableSetOf<UserId>()
             val claimedKeyPackages = mutableListOf<KeyPackageDTO>()
             userIds.forEach { userId ->
@@ -99,11 +100,7 @@ class KeyPackageDataSource(
                 }
             }
 
-            if (claimedKeyPackages.isEmpty() && failedUsers.isNotEmpty()) {
-                Either.Left(CoreFailure.MissingKeyPackages(failedUsers))
-            } else {
-                Either.Right(KeyPackageClaimResult(claimedKeyPackages, failedUsers))
-            }
+            KeyPackageClaimResult(claimedKeyPackages, failedUsers)
         }
 
     override suspend fun uploadNewKeyPackages(clientId: ClientId, amount: Int): Either<CoreFailure, Unit> =
