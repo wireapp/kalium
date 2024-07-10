@@ -29,10 +29,10 @@ import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.message.MessageTarget
 import com.wire.kalium.logic.feature.call.AvsCallBackError
 import com.wire.kalium.logic.feature.call.CallManagerImpl
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.data.message.MessageTarget
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.serialization.json.Json
@@ -85,15 +85,21 @@ internal class OnSendOTR(
                 }
 
                 callingLogger.i("[OnSendOTR] -> Success")
-                OnHttpRequest(handle, calling, messageSender, callingScope, selfConversationIdProvider).sendHandlerSuccess(
-                    context = context,
-                    messageString = data?.getString(0, CallManagerImpl.UTF8_ENCODING),
-                    conversationId = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationId),
-                    avsSelfUserId = qualifiedIdMapper.fromStringToQualifiedID(remoteSelfUserId),
-                    avsSelfClientId = ClientId(remoteClientIdSelf),
-                    messageTarget = messageTarget,
-                    sendInSelfConversation = myClientsOnly
-                )
+                OnHttpRequest(
+                    handle,
+                    calling,
+                    messageSender,
+                    callingScope,
+                    selfConversationIdProvider
+                ).sendHandlerSuccess(
+                        context = context,
+                        messageString = data?.getString(0, CallManagerImpl.UTF8_ENCODING),
+                        conversationId = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationId),
+                        avsSelfUserId = qualifiedIdMapper.fromStringToQualifiedID(remoteSelfUserId),
+                        avsSelfClientId = ClientId(remoteClientIdSelf),
+                        messageTarget = messageTarget,
+                        sendInSelfConversation = myClientsOnly
+                    )
                 AvsCallBackError.NONE.value
             } catch (exception: Exception) {
                 callingLogger.e("[OnSendOTR] -> Error Exception: $exception")
