@@ -57,9 +57,9 @@ class SendCallEmojiUseCase(
             id = uuid4().toString(),
             senderUserId = selfUserId,
             senderClientId = selfClientIdProvider().getOrElse { throw IllegalStateException("No client id") },
-            status = TODO()
+            status = Message.Status.Pending,
+            )
 
-        )
-
+        messageSender.sendMessage(message)
     }
 }

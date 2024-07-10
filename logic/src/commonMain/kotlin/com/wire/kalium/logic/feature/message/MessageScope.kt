@@ -60,9 +60,9 @@ import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCase
 import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCaseImpl
-import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
 import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCase
 import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCaseImpl
+import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonMessageUseCase
 import com.wire.kalium.logic.feature.message.confirmation.ConfirmationDeliveryHandler
@@ -240,6 +240,13 @@ class MessageScope internal constructor(
             slowSyncRepository,
             messageSender,
             messageSendFailureHandler
+        )
+
+    val sendCallEmoji: SendCallEmojiUseCase
+        get() = SendCallEmojiUseCase(
+            currentClientIdProvider,
+            selfUserId,
+            messageSender,
         )
 
     private val getAssetMessageTransferStatus: GetAssetMessageTransferStatusUseCase
