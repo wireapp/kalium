@@ -53,7 +53,7 @@ internal interface MessageRepositoryArrangement {
         conversationId: Matcher<ConversationId> = any()
     )
 
-    fun withLocalNotifications(list: Either<CoreFailure, Flow<List<LocalNotification>>>)
+    fun withLocalNotifications(list: Flow<Either<CoreFailure, List<LocalNotification>>>)
 
     fun withMoveMessagesToAnotherConversation(
         result: Either<StorageFailure, Unit>,
@@ -99,7 +99,7 @@ internal open class MessageRepositoryArrangementImpl : MessageRepositoryArrangem
             .thenReturn(result)
     }
 
-    override fun withLocalNotifications(list: Either<CoreFailure, Flow<List<LocalNotification>>>) {
+    override fun withLocalNotifications(list: Flow<Either<CoreFailure, List<LocalNotification>>>) {
         given(messageRepository)
             .suspendFunction(messageRepository::getNotificationMessage)
             .whenInvokedWith(any())
