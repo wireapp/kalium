@@ -131,7 +131,7 @@ internal class ConversationGroupRepositoryImpl(
             }
 
             when (apiResult) {
-                is Either.Left -> handleCreateConverstionFailure(
+                is Either.Left -> handleCreateConversationFailure(
                     apiResult = apiResult,
                     usersList = usersList,
                     name = name,
@@ -204,7 +204,7 @@ internal class ConversationGroupRepositoryImpl(
         }
     }
 
-    private suspend fun handleCreateConverstionFailure(
+    private suspend fun handleCreateConversationFailure(
         apiResult: Either.Left<NetworkFailure>,
         usersList: List<UserId>,
         name: String?,
