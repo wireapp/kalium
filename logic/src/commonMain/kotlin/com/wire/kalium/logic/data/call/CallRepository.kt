@@ -75,7 +75,9 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
@@ -88,6 +90,10 @@ import kotlinx.datetime.Clock
 import kotlin.math.max
 import kotlin.time.toDuration
 
+data object CallingEmojis {
+
+    val emojisFlow: MutableSharedFlow<Pair<UserId, List<String>>> = MutableSharedFlow()
+}
 internal val CALL_SUBCONVERSATION_ID = SubconversationId("conference")
 
 @Suppress("TooManyFunctions")

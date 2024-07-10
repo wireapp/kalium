@@ -36,6 +36,7 @@ import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.CallType
+import com.wire.kalium.logic.data.call.CallingEmojis
 import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.EpochInfo
 import com.wire.kalium.logic.data.call.Participant
@@ -90,11 +91,13 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
 import java.util.Collections
 
 @Suppress("LongParameterList", "TooManyFunctions")
-class CallManagerImpl internal constructor(
+class CallManagerImpl @OptIn(ExperimentalSerializationApi::class)
+internal constructor(
     private val calling: Calling,
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
@@ -111,7 +114,18 @@ class CallManagerImpl internal constructor(
     private val kaliumConfigs: KaliumConfigs,
     private val mediaManagerService: MediaManagerService,
     private val flowManagerService: FlowManagerService,
-    private val json: Json = Json { ignoreUnknownKeys = true },
+    private val json: Json = Json {
+        isLenient = true
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+        // explicitNulls, defines whether null property
+        // values should be included in the serialized JSON string.
+        explicitNulls = false
+
+        // If API returns null or unknown values for Enums, we can use default constructor parameter to override it
+        // https://github.com/Kotlin/kotlinx.serialization/blob/master/docs/json.md#coercing-input-values
+        coerceInputValues = true
+    },
     private val shouldRemoteMuteChecker: ShouldRemoteMuteChecker = ShouldRemoteMuteCheckerImpl(),
     kaliumDispatchers: KaliumDispatcher = KaliumDispatcherImpl
 ) : CallManager {
@@ -226,11 +240,28 @@ class CallManagerImpl internal constructor(
     override suspend fun onCallingMessageReceived(
         message: Message.Signaling,
         content: MessageContent.Calling,
-    ) = withCalling {
+    ): Unit = withCalling {
         callingLogger.i("$TAG - onCallingMessageReceived called: { \"message\" : ${message.toLogString()}}")
         val msg = content.value.toByteArray()
 
+        callingLogger.d("$TAG - onCallingMessageReceived called: ${content.value} }")
         val callingValue = json.decodeFromString<MessageContent.Calling.CallingValue>(content.value)
+
+        if (callingValue.type == EMOJIS_MESSAGE_TYPE) {
+            callingLogger.d("$TAG - onCallingMessageReceived Emojis message received, ignoring ${callingValue.emojis}")
+            if(callingValue.emojis == null){
+                callingLogger.d("$TAG - onCallingMessageReceived Emojis message received, but no emojis")
+                return@withCalling
+            }
+
+            scope.launch {
+                callingLogger.d("$TAG - onCallingMessageReceived Emojis message received, sending emojis")
+                CallingEmojis.emojisFlow.emit(message.senderUserId to callingValue.emojis)
+            }
+
+            return@withCalling
+        }
+
         val conversationMembers = conversationRepository.observeConversationMembers(message.conversationId).first()
         val shouldRemoteMute = shouldRemoteMuteChecker.check(
             senderUserId = message.senderUserId,
@@ -644,5 +675,6 @@ class CallManagerImpl internal constructor(
         const val NETWORK_QUALITY_INTERVAL_SECONDS = 5
         const val UTF8_ENCODING = "UTF-8"
         const val REMOTE_MUTE_TYPE = "REMOTEMUTE"
+        const val EMOJIS_MESSAGE_TYPE = "EMOJIS"
     }
 }

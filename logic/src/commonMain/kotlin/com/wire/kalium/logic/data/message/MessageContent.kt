@@ -171,6 +171,8 @@ sealed interface MessageContent {
             val type: String,
             @SerialName("data")
             val targets: Targets? = null,
+            @SerialName("emojis")
+            val emojis: List<String>? = null
         )
 
         @Serializable
