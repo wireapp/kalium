@@ -119,13 +119,17 @@ class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
     ): List<LocalNotification.Conversation> =
         list.groupBy { it.conversationId }
             .map { (conversationId, messages) ->
+                val isReplyAllowed = messages.first().run {
+                    degradedConversationNotified
+                            && (legalHoldStatus == ConversationEntity.LegalHoldStatus.ENABLED && !legalHoldStatusChangeNotified)
+                }
                 LocalNotification.Conversation(
                     // todo: needs some clean up!
                     id = conversationId.toModel(),
                     conversationName = messages.first().conversationName ?: "",
                     messages = messages.take(messageSizePerConversation).mapNotNull { mapMessage(it) },
                     isOneToOneConversation = messages.first().conversationType == ConversationEntity.Type.ONE_ON_ONE,
-                    isReplyAllowed = messages.first().degradedConversationNotified
+                    isReplyAllowed = isReplyAllowed
                 )
             }
 }
