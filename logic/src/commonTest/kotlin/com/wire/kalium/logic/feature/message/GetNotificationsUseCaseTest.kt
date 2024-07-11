@@ -41,6 +41,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConnectionRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
@@ -74,7 +75,11 @@ class GetNotificationsUseCaseTest {
         val expectedMessages = listOf(notificationMessageText(), notificationMessageComment())
         val expectedConversations = listOf(localNotificationConversation(messages = expectedMessages))
         val (arrange, getNotifications) = arrange {
+<<<<<<< HEAD
             withLocalNotifications(Either.Right(expectedConversations))
+=======
+            withLocalNotifications(flowOf(expectedConversations.right()))
+>>>>>>> 7756d06a53 (feat: Add isReplyAllowed field to notification entity [WPB-7425] 🍒 (#2871))
             withConnectionList(flowOf(listOf()))
             withIncrementalSyncState(syncStatusFlow)
             withEphemeralNotification()
@@ -123,7 +128,11 @@ class GetNotificationsUseCaseTest {
         val expectedMessages = listOf(notificationMessageText(), notificationMessageComment())
         val expectedConversations = listOf(localNotificationConversation(messages = expectedMessages))
         val (arrange, getNotifications) = arrange {
+<<<<<<< HEAD
             withLocalNotifications(Either.Right(expectedConversations))
+=======
+            withLocalNotifications(flowOf(expectedConversations.right()))
+>>>>>>> 7756d06a53 (feat: Add isReplyAllowed field to notification entity [WPB-7425] 🍒 (#2871))
             withConnectionList(flowOf(listOf()))
             withIncrementalSyncState(syncStatusFlow)
             withEphemeralNotification()
@@ -170,7 +179,11 @@ class GetNotificationsUseCaseTest {
         val expectedMessages = listOf(notificationMessageText(), notificationMessageComment())
         val expectedConversations = listOf(localNotificationConversation(messages = expectedMessages))
         val (arrange, getNotifications) = arrange {
+<<<<<<< HEAD
             withLocalNotifications(Either.Right(expectedConversations))
+=======
+            withLocalNotifications(flowOf(expectedConversations.right()))
+>>>>>>> 7756d06a53 (feat: Add isReplyAllowed field to notification entity [WPB-7425] 🍒 (#2871))
             withConnectionList(flowOf(listOf()))
             withIncrementalSyncState(syncStatusFlow)
             withEphemeralNotification()
@@ -216,7 +229,11 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenEmptyConversationList_thenNoItemsAreEmitted() = runTest {
         val (_, getNotifications) = arrange {
+<<<<<<< HEAD
             withLocalNotifications(Either.Right(listOf()))
+=======
+            withLocalNotifications(flowOf(listOf<LocalNotification>().right()))
+>>>>>>> 7756d06a53 (feat: Add isReplyAllowed field to notification entity [WPB-7425] 🍒 (#2871))
             withConnectionList(flowOf(listOf()))
             withEphemeralNotification(
                 flowOf(
@@ -236,7 +253,11 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenConversationWithEmptyMessageList_thenNoItemsAreEmitted() = runTest {
         val (_, getNotifications) = arrange {
+<<<<<<< HEAD
             withLocalNotifications(Either.Right(listOf(localNotificationConversation())))
+=======
+            withLocalNotifications(flowOf(listOf(localNotificationConversation()).right()))
+>>>>>>> 7756d06a53 (feat: Add isReplyAllowed field to notification entity [WPB-7425] 🍒 (#2871))
             withConnectionList(flowOf(listOf()))
             withEphemeralNotification(
                 flowOf(
@@ -256,7 +277,11 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenUpdateMessageFromEphemeralManager_thenCorrespondingItemsAreEmitted() = runTest {
         val (_, getNotifications) = arrange {
+<<<<<<< HEAD
             withLocalNotifications(Either.Right(listOf()))
+=======
+            withLocalNotifications(flowOf(listOf<LocalNotification>().right()))
+>>>>>>> 7756d06a53 (feat: Add isReplyAllowed field to notification entity [WPB-7425] 🍒 (#2871))
             withConnectionList(flowOf(listOf()))
             withEphemeralNotification(flowOf(localNotificationUpdateMessage()))
             withRegularNotificationsChecking(flowOf(Unit))
@@ -274,7 +299,11 @@ class GetNotificationsUseCaseTest {
             action = LocalNotificationUpdateMessageAction.Edit("updated text", "newId")
         )
         val (_, getNotifications) = arrange {
+<<<<<<< HEAD
             withLocalNotifications(Either.Right(listOf()))
+=======
+            withLocalNotifications(flowOf())
+>>>>>>> 7756d06a53 (feat: Add isReplyAllowed field to notification entity [WPB-7425] 🍒 (#2871))
             withConnectionList(flowOf(listOf()))
             withEphemeralNotification(flowOf(ephemeralNotification))
             withRegularNotificationsChecking(flowOf())
@@ -289,7 +318,11 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenConnectionRequests_thenNotificationListWithConnectionRequestMessage() = runTest {
         val (_, getNotifications) = arrange {
+<<<<<<< HEAD
             withLocalNotifications(Either.Right(listOf()))
+=======
+            withLocalNotifications(emptyFlow())
+>>>>>>> 7756d06a53 (feat: Add isReplyAllowed field to notification entity [WPB-7425] 🍒 (#2871))
             withConnectionList(flowOf(listOf(connectionRequest())))
             withEphemeralNotification()
             withRegularNotificationsChecking(flowOf())
@@ -315,7 +348,11 @@ class GetNotificationsUseCaseTest {
     @Test
     fun givenNoNewNotifications_thenShouldNotEmitAny() = runTest {
         val (_, getNotifications) = arrange {
+<<<<<<< HEAD
             withLocalNotifications(Either.Right(listOf()))
+=======
+            withLocalNotifications(emptyFlow())
+>>>>>>> 7756d06a53 (feat: Add isReplyAllowed field to notification entity [WPB-7425] 🍒 (#2871))
             withConnectionList(flowOf(listOf()))
             withEphemeralNotification()
             withRegularNotificationsChecking(flowOf())
