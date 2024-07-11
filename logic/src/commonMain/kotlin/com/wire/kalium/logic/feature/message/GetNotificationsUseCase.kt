@@ -73,11 +73,7 @@ internal class GetNotificationsUseCaseImpl internal constructor(
             .flatMapLatest { isLive ->
                 if (isLive) {
                     merge(
-<<<<<<< HEAD
                         observeRegularNotifications(),
-=======
-                        messageRepository.getNotificationMessage().onlyRight(),
->>>>>>> 7756d06a53 (feat: Add isReplyAllowed field to notification entity [WPB-7425] 🍒 (#2871))
                         observeConnectionRequests(),
                         observeEphemeralNotifications()
                     )

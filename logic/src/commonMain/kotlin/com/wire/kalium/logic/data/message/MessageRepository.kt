@@ -45,34 +45,27 @@ import com.wire.kalium.logic.failure.ProteusSendMessageFailure
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
-import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.mapRight
-import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapFlowStorageRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
-import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.authenticated.message.MessagePriority
 import com.wire.kalium.network.api.authenticated.message.Parameters
 import com.wire.kalium.network.api.authenticated.message.QualifiedMessageOption
 import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
+import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
+import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
-<<<<<<< HEAD
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
-=======
->>>>>>> 7756d06a53 (feat: Add isReplyAllowed field to notification entity [WPB-7425] 🍒 (#2871))
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity
 import com.wire.kalium.util.DelicateKaliumApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
 
@@ -129,11 +122,7 @@ internal interface MessageRepository {
         conversationIdList: List<ConversationId>
     ): Either<StorageFailure, Map<ConversationId, Message>>
 
-<<<<<<< HEAD
     suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Either<CoreFailure, List<LocalNotification>>
-=======
-    suspend fun getNotificationMessage(messageSizePerConversation: Int = 10): Flow<Either<CoreFailure, List<LocalNotification>>>
->>>>>>> 7756d06a53 (feat: Add isReplyAllowed field to notification entity [WPB-7425] 🍒 (#2871))
 
     suspend fun getMessagesByConversationIdAndVisibilityAfterDate(
         conversationId: ConversationId,
@@ -317,10 +306,8 @@ internal class MessageDataSource internal constructor(
     )
         .map(messageMapper::fromAssetEntityToAssetMessage)
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun getNotificationMessage(
         messageSizePerConversation: Int
-<<<<<<< HEAD
     ): Either<CoreFailure, List<LocalNotification>> = wrapStorageRequest {
         val notificationEntities = messageDAO.getNotificationMessage()
         notificationEntities.groupBy { it.conversationId }
@@ -336,16 +323,6 @@ internal class MessageDataSource internal constructor(
                 )
             }
     }
-=======
-    ): Flow<Either<CoreFailure, List<LocalNotification>>> = wrapStorageRequest {
-        messageDAO.getNotificationMessage().mapLatest { notificationEntities ->
-            notificationMapper.fromEntitiesToLocalNotifications(
-                notificationEntities,
-                messageSizePerConversation
-            ) { message -> messageMapper.fromMessageToLocalNotificationMessage(message) }
-        }
-    }.fold({ flowOf(it.left()) }) { success -> success.map { it.right() } }
->>>>>>> 7756d06a53 (feat: Add isReplyAllowed field to notification entity [WPB-7425] 🍒 (#2871))
 
     @DelicateKaliumApi(
         message = "Calling this function directly may cause conversation list to be displayed in an incorrect order",

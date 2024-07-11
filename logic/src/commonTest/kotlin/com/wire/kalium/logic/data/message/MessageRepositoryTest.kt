@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.data.message
 
-import app.cash.turbine.test
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetMessage
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -41,19 +40,16 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
-import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.authenticated.message.QualifiedMessageOption
 import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.api.authenticated.message.SendMLSMessageResponse
+import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
+import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
-<<<<<<< HEAD
-import com.wire.kalium.persistence.dao.message.InsertMessageResult
-=======
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
->>>>>>> 7756d06a53 (feat: Add isReplyAllowed field to notification entity [WPB-7425] 🍒 (#2871))
+import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
@@ -61,7 +57,6 @@ import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
 import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -574,16 +569,13 @@ class MessageRepositoryTest {
             .arrange()
 
         // when
-        messageRepository.getNotificationMessage().test {
-            val result = awaitItem()
-            // then
-            result.shouldSucceed { it.isEmpty() }
+        val result = messageRepository.getNotificationMessage()
 
-            coVerify { arrangement.messageDAO.getNotificationMessage() }
-                .wasInvoked(exactly = once)
+        // then
+        result.shouldSucceed { it.isEmpty() }
+        coVerify { arrangement.messageDAO.getNotificationMessage() }
+            .wasInvoked(exactly = once)
 
-            awaitComplete()
-        }
     }
 
     @Test
@@ -595,17 +587,14 @@ class MessageRepositoryTest {
             .arrange()
 
         // when
-        messageRepository.getNotificationMessage().test {
-            val result = awaitItem()
+        val result = messageRepository.getNotificationMessage()
 
-            // then
-            result.shouldSucceed {
-                assertEquals(1, it.size)
-                assertEquals(NOTIFICATION_CONVERSATION, it.first())
-            }
-
-            awaitComplete()
+        // then
+        result.shouldSucceed {
+            assertEquals(1, it.size)
+            assertEquals(NOTIFICATION_CONVERSATION, it.first())
         }
+
     }
 
     private class Arrangement {
@@ -670,8 +659,7 @@ class MessageRepositoryTest {
             return this
         }
 
-<<<<<<< HEAD
-        suspend fun withSuccessfulMessageDelivery(dateTime: Instant): Arrangement {
+        suspend fun withSuccessfulMessageDelivery(dateTime: Instant) = apply {
             coEvery { messageApi.qualifiedSendMessage(any(), any()) }
                 .returns(
                     NetworkResponse.Success(
@@ -679,21 +667,12 @@ class MessageRepositoryTest {
                         emptyMap(),
                         201
                     )
-=======
+                )
+        }
+
         fun withMappedEntitiesToLocalNotifications(message: LocalNotificationMessage) = apply {
             every { messageMapper.fromMessageToLocalNotificationMessage(any<NotificationMessageEntity>()) }
                 .returns(message)
-        }
-
-        suspend fun withSuccessfulMessageDelivery(timestamp: String) = apply {
-            coEvery { messageApi.qualifiedSendMessage(any(), any()) }.returns(
-                NetworkResponse.Success(
-                    QualifiedSendMessageResponse.MessageSent(timestamp, mapOf(), mapOf(), mapOf()),
-                    emptyMap(),
-                    201
->>>>>>> 7756d06a53 (feat: Add isReplyAllowed field to notification entity [WPB-7425] 🍒 (#2871))
-                )
-            )
         }
 
         fun withFailedToSendMlsMapping(failedToSend: List<UserId>) = apply {
@@ -783,15 +762,14 @@ class MessageRepositoryTest {
             }.returns(result)
         }
 
-<<<<<<< HEAD
         suspend fun withInsertOrIgnoreMessage(result: InsertMessageResult) = apply {
             coEvery {
                 messageDAO.insertOrIgnoreMessage(any(), any(), any())
             }.returns(result)
-=======
+        }
+
         suspend fun withNotificationMessage(notificationEntities: List<NotificationMessageEntity>) = apply {
-            coEvery { messageDAO.getNotificationMessage() }.returns(flowOf(notificationEntities))
->>>>>>> 7756d06a53 (feat: Add isReplyAllowed field to notification entity [WPB-7425] 🍒 (#2871))
+            coEvery { messageDAO.getNotificationMessage() }.returns(notificationEntities)
         }
 
         fun arrange() = this to MessageDataSource(
