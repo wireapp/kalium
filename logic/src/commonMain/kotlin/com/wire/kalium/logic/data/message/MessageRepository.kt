@@ -58,7 +58,6 @@ import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageRes
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
@@ -310,18 +309,10 @@ internal class MessageDataSource internal constructor(
         messageSizePerConversation: Int
     ): Either<CoreFailure, List<LocalNotification>> = wrapStorageRequest {
         val notificationEntities = messageDAO.getNotificationMessage()
-        notificationEntities.groupBy { it.conversationId }
-            .map { (conversationId, messages) ->
-                LocalNotification.Conversation(
-                    // todo: needs some clean up!
-                    id = conversationId.toModel(),
-                    conversationName = messages.first().conversationName,
-                    messages = messages.mapNotNull { message ->
-                        messageMapper.fromMessageToLocalNotificationMessage(message)
-                    },
-                    isOneToOneConversation = messages.first().conversationType == ConversationEntity.Type.ONE_ON_ONE
-                )
-            }
+        notificationMapper.fromEntitiesToLocalNotifications(
+            notificationEntities,
+            messageSizePerConversation
+        ) { message -> messageMapper.fromMessageToLocalNotificationMessage(message) }
     }
 
     @DelicateKaliumApi(
