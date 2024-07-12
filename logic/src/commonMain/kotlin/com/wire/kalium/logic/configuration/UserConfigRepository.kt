@@ -137,6 +137,11 @@ interface UserConfigRepository {
     fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
     fun getShouldFetchE2EITrustAnchor(): Boolean
     suspend fun setTrackingIdentifier(identifier: String)
+    suspend fun getTrackingIdentifier(): String?
+    suspend fun observeTrackingIdentifier(): Flow<Either<StorageFailure, String>>
+    suspend fun setPreviousTrackingIdentifier(identifier: String)
+    suspend fun getPreviousTrackingIdentifier(): String?
+    suspend fun deletePreviousTrackingIdentifier()
 }
 
 @Suppress("TooManyFunctions")
@@ -500,6 +505,27 @@ internal class UserConfigDataSource internal constructor(
     override suspend fun setTrackingIdentifier(identifier: String) {
         wrapStorageRequest {
             userConfigDAO.setTrackingIdentifier(identifier = identifier)
+        }
+    }
+
+    override suspend fun getTrackingIdentifier(): String? =
+        userConfigDAO.getTrackingIdentifier()
+
+    override suspend fun observeTrackingIdentifier(): Flow<Either<StorageFailure, String>> =
+        userConfigDAO.observeTrackingIdentifier().wrapStorageRequest()
+
+    override suspend fun setPreviousTrackingIdentifier(identifier: String) {
+        wrapStorageRequest {
+            userConfigDAO.setPreviousTrackingIdentifier(identifier = identifier)
+        }
+    }
+
+    override suspend fun getPreviousTrackingIdentifier(): String? =
+        userConfigDAO.getPreviousTrackingIdentifier()
+
+    override suspend fun deletePreviousTrackingIdentifier() {
+        wrapStorageRequest {
+            userConfigDAO.deletePreviousTrackingIdentifier()
         }
     }
 }
