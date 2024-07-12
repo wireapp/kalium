@@ -136,6 +136,7 @@ interface UserConfigRepository {
     suspend fun clearE2EISettings()
     fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
     fun getShouldFetchE2EITrustAnchor(): Boolean
+    suspend fun setTrackingIdentifier(identifier: String)
 }
 
 @Suppress("TooManyFunctions")
@@ -495,4 +496,10 @@ internal class UserConfigDataSource internal constructor(
     }
 
     override fun getShouldFetchE2EITrustAnchor(): Boolean = userConfigStorage.getShouldFetchE2EITrustAnchorHasRun()
+
+    override suspend fun setTrackingIdentifier(identifier: String) {
+        wrapStorageRequest {
+            userConfigDAO.setTrackingIdentifier(identifier = identifier)
+        }
+    }
 }

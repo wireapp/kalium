@@ -180,6 +180,18 @@ sealed interface MessageContent {
         )
     }
 
+    data class DataTransfer(
+        var trackingIdentifier: TrackingIdentifier? = null
+    ) : Signaling {
+        fun toLogMap(): Map<String, Any> = mapOf(
+            "identifier" to (trackingIdentifier?.identifier?.obfuscateId() ?: "null")
+        )
+
+        data class TrackingIdentifier(
+            val identifier: String
+        )
+    }
+
     data class DeleteMessage(val messageId: String) : Signaling
 
     data class TextEdited(
@@ -440,6 +452,7 @@ fun MessageContent?.getType() = when (this) {
     is MessageContent.LegalHold.ForConversation.Enabled -> "LegalHold.ForConversation.Enabled"
     is MessageContent.LegalHold.ForMembers.Disabled -> "LegalHold.ForMembers.Disabled"
     is MessageContent.LegalHold.ForMembers.Enabled -> "LegalHold.ForMembers.Enabled"
+    is MessageContent.DataTransfer -> "DataTransfer"
     null -> "null"
 }
 

@@ -411,6 +411,8 @@ import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdateHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
+import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandler
+import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandlerImpl
@@ -1290,6 +1292,12 @@ class UserSessionScope internal constructor(
     private val buttonActionConfirmationHandler: ButtonActionConfirmationHandler
         get() = ButtonActionConfirmationHandlerImpl(compositeMessageRepository, messageMetadataRepository)
 
+    private val dataTransferEventHandler: DataTransferEventHandler
+        get() = DataTransferEventHandlerImpl(
+            userId,
+            userConfigRepository
+        )
+
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(
             userRepository,
@@ -1315,6 +1323,7 @@ class UserSessionScope internal constructor(
             messageEncoder,
             receiptMessageHandler,
             buttonActionConfirmationHandler,
+            dataTransferEventHandler,
             userId
         )
 

@@ -60,6 +60,7 @@ interface UserConfigDAO {
     suspend fun observeShouldNotifyForRevokedCertificate(): Flow<Boolean?>
     suspend fun setDefaultCipherSuite(cipherSuite: SupportedCipherSuiteEntity)
     suspend fun getDefaultCipherSuite(): SupportedCipherSuiteEntity?
+    suspend fun setTrackingIdentifier(identifier: String)
 }
 
 @Suppress("TooManyFunctions")
@@ -186,6 +187,13 @@ internal class UserConfigDAOImpl internal constructor(
     override suspend fun getDefaultCipherSuite(): SupportedCipherSuiteEntity? =
         metadataDAO.getSerializable(DEFAULT_CIPHER_SUITE_KEY, SupportedCipherSuiteEntity.serializer())
 
+    override suspend fun setTrackingIdentifier(identifier: String) {
+        metadataDAO.insertValue(
+            key = ANALYTICS_TRACKING_IDENTIFIER_KEY,
+            value = identifier
+        )
+    }
+
     private companion object {
         private const val DEFAULT_CIPHER_SUITE_KEY = "DEFAULT_CIPHER_SUITE"
         private const val SELF_DELETING_MESSAGES_KEY = "SELF_DELETING_MESSAGES"
@@ -196,5 +204,6 @@ internal class UserConfigDAOImpl internal constructor(
         const val LEGAL_HOLD_CHANGE_NOTIFIED = "legal_hold_change_notified"
         const val SHOULD_UPDATE_CLIENT_LEGAL_HOLD_CAPABILITY =
             "should_update_client_legal_hold_capability"
+        private const val ANALYTICS_TRACKING_IDENTIFIER_KEY = "analytics_tracking_identifier"
     }
 }
