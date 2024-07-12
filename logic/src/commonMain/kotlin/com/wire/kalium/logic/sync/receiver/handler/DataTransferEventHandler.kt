@@ -39,14 +39,27 @@ internal class DataTransferEventHandlerImpl(
         message: Message.Signaling,
         messageContent: MessageContent.DataTransfer
     ) {
-        kaliumLogger.d("MessageContent.DataTransfer | with Identifier : ${messageContent.trackingIdentifier?.identifier} |end|")
         // DataTransfer from another user or null tracking identifier shouldn't happen,
-        // If it happens, it's unnecessary
-        // and we can squish some performance by skipping it completely
+        // If it happens, it's unnecessary, and we can squish some performance by skipping it completely
         if (message.senderUserId != selfUserId || messageContent.trackingIdentifier == null) return
 
-        userConfigRepository.setTrackingIdentifier(
-            identifier = messageContent.trackingIdentifier!!.identifier
-        )
+        val currentTrackingIdentifier = userConfigRepository.getTrackingIdentifier()
+        currentTrackingIdentifier?.let {
+            if (currentTrackingIdentifier != messageContent.trackingIdentifier!!.identifier) {
+                userConfigRepository.setPreviousTrackingIdentifier(identifier = currentTrackingIdentifier)
+                kaliumLogger.d("$TAG Moved Current Tracking Identifier to Previous")
+            }
+        }
+
+        messageContent.trackingIdentifier?.let { trackingIdentifier ->
+            userConfigRepository.setTrackingIdentifier(
+                identifier = trackingIdentifier.identifier
+            )
+            kaliumLogger.d("$TAG Tracking Identifier Updated")
+        }
+    }
+
+    private companion object {
+        const val TAG = "DataTransferEventHandler"
     }
 }
