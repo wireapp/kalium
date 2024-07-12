@@ -121,7 +121,7 @@ class LocalNotificationMessageMapperImpl : LocalNotificationMessageMapper {
             .map { (conversationId, messages) ->
                 val isReplyAllowed = messages.first().run {
                     degradedConversationNotified
-                            && (legalHoldStatus == ConversationEntity.LegalHoldStatus.ENABLED && !legalHoldStatusChangeNotified)
+                            && (legalHoldStatus != ConversationEntity.LegalHoldStatus.ENABLED || legalHoldStatusChangeNotified)
                 }
                 LocalNotification.Conversation(
                     // todo: needs some clean up!
