@@ -18,8 +18,6 @@
 
 package com.wire.kalium.logic.data.message
 
-import com.wire.kalium.logic.sync.receiver.conversation.message.hasValidRemoteData
-
 data class AssetContent(
     val sizeInBytes: Long,
     val name: String? = null,
@@ -101,3 +99,7 @@ data class AssetContent(
         }
     }
 }
+
+fun AssetContent.hasValidRemoteData() = this.remoteData.hasValidData()
+
+fun AssetContent.RemoteData.hasValidData() = assetId.isNotEmpty() && sha256.isNotEmpty() && otrKey.isNotEmpty()

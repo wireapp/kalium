@@ -53,63 +53,71 @@ data class WebConversationContent(
 )
 
 @Serializable
-sealed class WebEventContent {
+sealed interface WebEventContent {
 
     @Serializable
-    sealed class Conversation : WebEventContent() {
+    sealed interface Conversation : WebEventContent {
+        val qualifiedConversation: ConversationId
+        val conversation: String
+        val qualifiedFrom: UserId?
 
         @Serializable
         @SerialName("conversation.group-creation")
         data class NewGroup(
-            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
-            @SerialName("qualified_from") val qualifiedFrom: UserId?,
+            @SerialName("qualified_conversation") override val qualifiedConversation: ConversationId,
+            @SerialName("conversation") override val conversation: String,
+            @SerialName("qualified_from") override val qualifiedFrom: UserId?,
             @SerialName("from") val from: String,
             @SerialName("data") val members: WebGroupMembers,
             @SerialName("time") val time: String
-        ) : Conversation()
+        ) : Conversation
 
         @Serializable
         @SerialName("conversation.message-add")
         data class TextMessage(
-            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
-            @SerialName("qualified_from") val qualifiedFrom: UserId?,
+            @SerialName("qualified_conversation") override val qualifiedConversation: ConversationId,
+            @SerialName("conversation") override val conversation: String,
+            @SerialName("qualified_from") override val qualifiedFrom: UserId?,
             @SerialName("from") val from: String,
             @SerialName("from_client_id") val fromClientId: String?,
             @SerialName("time") val time: String,
             @SerialName("id") val id: String,
             @SerialName("data") val data: WebTextData,
-            @SerialName("reactions") val reactions: Map<String, String>?
-        ) : Conversation()
+            @SerialName("reactions") val reactions: Map<String, String>?,
+            @SerialName("category") val category: Int? // 16 ?
+        ) : Conversation
 
         @Serializable
         @SerialName("conversation.asset-add")
         data class AssetMessage(
-            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
-            @SerialName("qualified_from") val qualifiedFrom: UserId?,
+            @SerialName("qualified_conversation") override val qualifiedConversation: ConversationId,
+            @SerialName("conversation") override val conversation: String,
+            @SerialName("qualified_from") override val qualifiedFrom: UserId?,
             @SerialName("from") val from: String,
             @SerialName("from_client_id") val fromClientId: String?,
             @SerialName("time") val time: String,
             @SerialName("id") val id: String,
             @SerialName("data") val data: WebAssetData,
             @SerialName("reactions") val reactions: Map<String, String>?
-        ) : Conversation()
+        ) : Conversation
 
         @Serializable
         @SerialName("conversation.knock")
         data class KnockMessage(
-            @SerialName("qualified_conversation") val qualifiedConversation: ConversationId,
-            @SerialName("qualified_from") val qualifiedFrom: UserId?,
+            @SerialName("qualified_conversation") override val qualifiedConversation: ConversationId,
+            @SerialName("conversation") override val conversation: String,
+            @SerialName("qualified_from") override val qualifiedFrom: UserId?,
             @SerialName("from") val from: String,
             @SerialName("from_client_id") val fromClientId: String,
             @SerialName("time") val time: String,
             @SerialName("id") val id: String,
             @SerialName("data") val data: WebKnockData
-        ) : Conversation()
+        ) : Conversation
     }
 
     @Serializable
     @SerialName("unknown")
-    data object Unknown : WebEventContent()
+    data object Unknown : WebEventContent
 }
 
 @Serializable

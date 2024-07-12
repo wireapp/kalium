@@ -15,13 +15,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-
 package com.wire.kalium.logic.data.message
 
 import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.message.ProtoContent.ExternalMessageInstructions
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity.ProtocolInfo.Proteus
-import com.wire.kalium.protobuf.messages.GenericMessage
 
 /**
  * The result of the [protobuf model](https://github.com/wireapp/generic-message-proto) parsing.

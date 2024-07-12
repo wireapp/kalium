@@ -67,8 +67,9 @@ internal class PersistMigratedMessagesUseCaseImpl(
 
         messages.filter { it.encryptedProto != null || it.unencryptedProto != null }.map { migratedMessage ->
             coroutineScope.launch(coroutineContext) {
-                if (migratedMessage.unencryptedProto != null) {
-                    protoMessages[migratedMessage] = migratedMessage.unencryptedProto
+                val unencryptedProto = migratedMessage.unencryptedProto
+                if (unencryptedProto != null) {
+                    protoMessages[migratedMessage] = unencryptedProto
                 } else {
                     (try {
                         protoContentMapper.decodeFromProtobuf(
@@ -89,16 +90,18 @@ internal class PersistMigratedMessagesUseCaseImpl(
                 }
 
                 is ProtoContent.Readable -> {
+                    val messageContent = proto.messageContent
+                    val assetSize = migratedMessage.assetSize
                     val updatedProto =
-                        if (migratedMessage.assetSize != null &&
+                        if (assetSize != null &&
                             migratedMessage.assetName != null &&
-                            proto.messageContent is MessageContent.Asset
+                            messageContent is MessageContent.Asset
                         ) {
                             proto.copy(
-                                messageContent = proto.messageContent.copy(
-                                    value = proto.messageContent.value.copy(
+                                messageContent = messageContent.copy(
+                                    value = messageContent.value.copy(
                                         name = migratedMessage.assetName,
-                                        sizeInBytes = migratedMessage.assetSize.toLong()
+                                        sizeInBytes = assetSize.toLong()
                                     )
                                 )
                             )

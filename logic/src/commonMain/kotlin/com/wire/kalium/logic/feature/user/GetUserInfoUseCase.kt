@@ -76,11 +76,12 @@ internal class GetUserInfoUseCaseImpl(
      * @see [UserType]
      */
     private suspend fun getOtherUserTeam(otherUser: OtherUser): Either<CoreFailure, Team?> {
-        return if (otherUser.teamId != null && otherUser.userType in listOf(UserType.INTERNAL, UserType.OWNER)) {
-            val localTeam = teamRepository.getTeam(otherUser.teamId).firstOrNull()
+        val teamId = otherUser.teamId
+        return if (teamId != null && otherUser.userType in listOf(UserType.INTERNAL, UserType.OWNER)) {
+            val localTeam = teamRepository.getTeam(teamId).firstOrNull()
 
             if (localTeam == null) {
-                teamRepository.fetchTeamById(otherUser.teamId)
+                teamRepository.fetchTeamById(teamId)
             } else {
                 Either.Right(localTeam)
             }

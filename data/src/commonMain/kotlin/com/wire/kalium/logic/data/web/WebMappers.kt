@@ -154,7 +154,7 @@ fun WebConversationContent.toConversation(selfUserId: UserId): Conversation? {
             teamId = teamId?.let { teamId -> TeamId(teamId) },
             protocol = Conversation.ProtocolInfo.Proteus,
             mutedStatus = mapMutedStatus(mutedState),
-            access = mapAccess(access),
+            access = access.mapAccess(),
             accessRole = listOf(
                 Conversation.AccessRole.TEAM_MEMBER,
                 Conversation.AccessRole.NON_TEAM_MEMBER,
@@ -178,6 +178,47 @@ fun WebConversationContent.toConversation(selfUserId: UserId): Conversation? {
     }
 }
 
+fun Conversation.toWebConversationContent(): WebConversationContent {
+    val lastEventTime = if (lastModifiedDate == null || lastModifiedDate == Instant.UNIX_FIRST_DATE) {
+        0L
+    } else {
+        lastModifiedDate.toEpochMilliseconds()
+    }
+    val lastReadTime = if (lastReadDate == Instant.UNIX_FIRST_DATE) 0L else lastReadDate.toEpochMilliseconds()
+    val archivedTime = archivedDateTime?.toEpochMilliseconds()
+
+    return WebConversationContent(
+        id = id.value,
+        domain = id.domain,
+        type = mapConversationTypeToInt(type),
+        name = name,
+        mutedState = mapMutedStatusToInt(mutedStatus),
+        accessRole = accessRole.map { it.name.lowercase() },
+        access = access.mapAccessToString(),
+        archivedState = archived,
+        archivedTimestamp = archivedTime,
+        clearedTimestamp = null, // Not provided in Conversation
+        creator = creatorId,
+        epoch = null, // Not provided in Conversation
+        receiptMode = mapReceiptModeToInt(receiptMode),
+        isGuest = accessRole.contains(Conversation.AccessRole.GUEST),
+        isManaged = accessRole.contains(Conversation.AccessRole.TEAM_MEMBER), // Example condition
+        lastEventTimestamp = lastEventTime,
+        lastReadTimestamp = lastReadTime,
+        lastServerTimestamp = null, // Not provided in Conversation
+        legalHoldStatus = when (legalHoldStatus) {
+            Conversation.LegalHoldStatus.ENABLED -> 2
+            else -> 0
+        },
+        mutedTimestamp = null, // Not provided in Conversation
+        others = null, // Not provided in Conversation
+        protocol = protocol.name(),
+        status = 0, // Not provided in Conversation
+        teamId = teamId?.value,
+        messageTimer = messageTimer?.toLong(DurationUnit.MILLISECONDS)
+    )
+}
+
 private fun mapMutedStatus(status: Int?): MutedConversationStatus = when (status) {
     0 -> MutedConversationStatus.AllAllowed
     1 -> MutedConversationStatus.OnlyMentionsAndRepliesAllowed
@@ -186,8 +227,14 @@ private fun mapMutedStatus(status: Int?): MutedConversationStatus = when (status
     else -> MutedConversationStatus.AllAllowed
 }
 
-private fun mapAccess(accessList: List<String>?): List<Conversation.Access> {
-    return accessList?.let { list ->
+fun mapMutedStatusToInt(status: MutedConversationStatus): Int = when (status) {
+    MutedConversationStatus.AllAllowed -> 0
+    MutedConversationStatus.OnlyMentionsAndRepliesAllowed -> 1
+    MutedConversationStatus.AllMuted -> 3
+}
+
+private fun List<String>?.mapAccess(): List<Conversation.Access> {
+    return this?.let { list ->
         list.map {
             when (it) {
                 "private" -> Conversation.Access.PRIVATE
@@ -200,6 +247,18 @@ private fun mapAccess(accessList: List<String>?): List<Conversation.Access> {
     } ?: listOf(Conversation.Access.PRIVATE)
 }
 
+fun List<Conversation.Access>?.mapAccessToString(): List<String>? {
+    return this?.map {
+        when (it) {
+            Conversation.Access.PRIVATE -> "private"
+            Conversation.Access.INVITE -> "invite"
+            Conversation.Access.LINK -> "link"
+            Conversation.Access.CODE -> "code"
+            else -> "private"
+        }
+    }
+}
+
 private fun fromScalaReceiptMode(receiptMode: Int?): Conversation.ReceiptMode = receiptMode?.let {
     if (receiptMode > 0) {
         Conversation.ReceiptMode.ENABLED
@@ -208,10 +267,22 @@ private fun fromScalaReceiptMode(receiptMode: Int?): Conversation.ReceiptMode = 
     }
 } ?: Conversation.ReceiptMode.DISABLED
 
+fun mapReceiptModeToInt(receiptMode: Conversation.ReceiptMode): Int = when (receiptMode) {
+    Conversation.ReceiptMode.ENABLED -> 1
+    Conversation.ReceiptMode.DISABLED -> 0
+}
+
 private fun mapConversationType(type: Int): Conversation.Type? = when (type) {
     0 -> Conversation.Type.GROUP
     1 -> Conversation.Type.SELF
     2 -> Conversation.Type.ONE_ON_ONE
     3, 4 -> Conversation.Type.CONNECTION_PENDING
     else -> null
+}
+
+fun mapConversationTypeToInt(type: Conversation.Type): Int = when (type) {
+    Conversation.Type.GROUP -> 0
+    Conversation.Type.SELF -> 1
+    Conversation.Type.ONE_ON_ONE -> 2
+    Conversation.Type.CONNECTION_PENDING -> 3
 }

@@ -17,8 +17,6 @@
  */
 package com.wire.kalium.logic.data.message.linkpreview
 
-import com.wire.kalium.cryptography.utils.AES256Key
-import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import okio.Path
@@ -35,7 +33,7 @@ data class LinkPreviewAsset(
     var assetKey: String? = null,
     var assetToken: String? = null,
     var assetDomain: String? = null,
-    var otrKey: AES256Key = AES256Key(ByteArray(0)),
-    var sha256Key: SHA256Key = SHA256Key(ByteArray(0)),
+    var otrKey: ByteArray = ByteArray(0),
+    var sha256Key: ByteArray = ByteArray(0),
     var encryptionAlgorithm: MessageEncryptionAlgorithm = MessageEncryptionAlgorithm.AES_CBC,
 )

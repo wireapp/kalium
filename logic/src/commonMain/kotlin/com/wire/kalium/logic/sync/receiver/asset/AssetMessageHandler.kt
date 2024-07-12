@@ -42,11 +42,11 @@ internal class AssetMessageHandlerImpl(
 ) : AssetMessageHandler {
 
     override suspend fun handle(message: Message.Regular) {
-        if (message.content !is MessageContent.Asset) {
+        val messageContent = message.content
+        if (messageContent !is MessageContent.Asset) {
             kaliumLogger.e("The asset message trying to be processed has invalid content data")
             return
         }
-        val messageContent = message.content
         userConfigRepository.isFileSharingEnabled().onSuccess {
             val isThisAssetAllowed = when (it.state) {
                 FileSharingStatus.Value.Disabled -> false
