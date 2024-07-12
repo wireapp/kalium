@@ -42,6 +42,8 @@ internal interface UserConfigRepositoryArrangement {
     suspend fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>)
     suspend fun withGetSupportedCipherSuitesReturning(result: Either<StorageFailure, SupportedCipherSuite>)
     suspend fun withSetTrackingIdentifier()
+    suspend fun withGetTrackingIdentifier(result: String?)
+    suspend fun withSetPreviousTrackingIdentifier()
 }
 
 internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrangement {
@@ -98,5 +100,13 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
 
     override suspend fun withSetTrackingIdentifier() {
         coEvery { userConfigRepository.setTrackingIdentifier(any()) }.returns(Unit)
+    }
+
+    override suspend fun withGetTrackingIdentifier(result: String?) {
+        coEvery { userConfigRepository.getTrackingIdentifier() }.returns(result)
+    }
+
+    override suspend fun withSetPreviousTrackingIdentifier() {
+        coEvery { userConfigRepository.setPreviousTrackingIdentifier(any()) }.returns(Unit)
     }
 }

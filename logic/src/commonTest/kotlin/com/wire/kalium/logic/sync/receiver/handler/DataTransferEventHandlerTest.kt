@@ -38,6 +38,7 @@ class DataTransferEventHandlerTest {
     fun givenSelfUserDataTransferContent_whenHandlingEvent_thenSetTrackingIdentifier() = runTest {
         // given
         val (arrangement, handler) = Arrangement().arrange {
+            withGetTrackingIdentifier(null)
             withSetTrackingIdentifier()
         }
 
@@ -89,6 +90,35 @@ class DataTransferEventHandlerTest {
         coVerify {
             arrangement.userConfigRepository.setTrackingIdentifier(any())
         }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenSelfUserHasTrackingIdentifier_whenReceivingNewTrackingIdentifier_thenMoveCurrentToPreviousAndUpdate() = runTest {
+        // given
+        val currentIdentifier = "abcd-1234"
+        val newIdentifier = "efgh-5678"
+        val (arrangement, handler) = Arrangement().arrange {
+            withGetTrackingIdentifier(currentIdentifier)
+        }
+
+        // when
+        handler.handle(
+            message = MESSAGE,
+            messageContent = MESSAGE_CONTENT.copy(
+                trackingIdentifier = MESSAGE_CONTENT.trackingIdentifier?.copy(
+                    identifier = newIdentifier
+                )
+            )
+        )
+
+        // then
+        coVerify {
+            arrangement.userConfigRepository.setPreviousTrackingIdentifier(currentIdentifier)
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.userConfigRepository.setTrackingIdentifier(newIdentifier)
+        }.wasInvoked(exactly = once)
     }
 
     private companion object {
