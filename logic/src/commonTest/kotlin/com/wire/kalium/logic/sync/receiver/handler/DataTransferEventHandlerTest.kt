@@ -121,6 +121,29 @@ class DataTransferEventHandlerTest {
         }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenCurrentIdentifierIsTheSame_whenReceivingNewTrackingIdentifier_thenDoNotUpdateTrackingIdentifier() = runTest {
+        // given
+        val (arrangement, handler) = Arrangement().arrange {
+            withGetTrackingIdentifier(MESSAGE_CONTENT.trackingIdentifier?.identifier)
+        }
+
+        // when
+        handler.handle(
+            message = MESSAGE,
+            messageContent = MESSAGE_CONTENT
+        )
+
+        // then
+        coVerify {
+            arrangement.userConfigRepository.setPreviousTrackingIdentifier(any())
+        }.wasNotInvoked()
+
+        coVerify {
+            arrangement.userConfigRepository.setTrackingIdentifier(any())
+        }.wasNotInvoked()
+    }
+
     private companion object {
         val CONVERSATION_ID = ConversationId("conversationId", "domain")
         val SELF_USER_ID = UserId("selfUserId", "domain")

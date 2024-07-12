@@ -44,16 +44,22 @@ internal class DataTransferEventHandlerImpl(
         if (message.senderUserId != selfUserId || messageContent.trackingIdentifier == null) return
 
         val currentTrackingIdentifier = userConfigRepository.getTrackingIdentifier()
-        currentTrackingIdentifier?.let {
-            if (currentTrackingIdentifier != messageContent.trackingIdentifier!!.identifier) {
+        val isCurrentDifferentThanReceived = currentTrackingIdentifier != messageContent
+            .trackingIdentifier!!
+            .identifier
+
+        if (isCurrentDifferentThanReceived) {
+            currentTrackingIdentifier?.let {
                 userConfigRepository.setPreviousTrackingIdentifier(identifier = currentTrackingIdentifier)
                 kaliumLogger.d("$TAG Moved Current Tracking Identifier to Previous")
             }
-        }
 
-        messageContent.trackingIdentifier?.let { trackingIdentifier ->
             userConfigRepository.setTrackingIdentifier(
-                identifier = trackingIdentifier.identifier
+                identifier = requireNotNull(
+                    messageContent
+                        .trackingIdentifier
+                        ?.identifier
+                )
             )
             kaliumLogger.d("$TAG Tracking Identifier Updated")
         }
