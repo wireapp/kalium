@@ -66,7 +66,7 @@ object FeatureConfigResponseJson {
             FeatureFlagStatusDTO.ENABLED
         ),
         FeatureConfigData.E2EI(
-            E2EIConfigDTO("url", VERIFICATION_EXPIRATION),
+            E2EIConfigDTO("url", null, null, VERIFICATION_EXPIRATION),
             FeatureFlagStatusDTO.ENABLED
         ),
         FeatureConfigData.MLSMigration(

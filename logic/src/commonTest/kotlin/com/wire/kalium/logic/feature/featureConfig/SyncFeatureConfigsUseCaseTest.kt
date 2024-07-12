@@ -596,7 +596,7 @@ class SyncFeatureConfigsUseCaseTest {
 
     @Test
     fun givenE2EIIsDisabled_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
-        val e2EIModel = E2EIModel(E2EIConfigModel("url", 10_000L), Status.DISABLED)
+        val e2EIModel = E2EIModel(E2EIConfigModel("url", 10_000L, false, null), Status.DISABLED)
         val expectedGracePeriodEnd = DateTimeUtil.currentInstant().plus(10_000.toDuration(DurationUnit.SECONDS))
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
