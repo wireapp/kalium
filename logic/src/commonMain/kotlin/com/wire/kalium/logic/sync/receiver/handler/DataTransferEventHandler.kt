@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.sync.receiver.handler
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -51,7 +52,7 @@ internal class DataTransferEventHandlerImpl(
         if (isCurrentDifferentThanReceived) {
             currentTrackingIdentifier?.let {
                 userConfigRepository.setPreviousTrackingIdentifier(identifier = currentTrackingIdentifier)
-                kaliumLogger.d("$TAG Moved Current Tracking Identifier to Previous")
+                logger.d("$TAG Moved Current Tracking Identifier to Previous")
             }
 
             userConfigRepository.setTrackingIdentifier(
@@ -61,11 +62,12 @@ internal class DataTransferEventHandlerImpl(
                         ?.identifier
                 )
             )
-            kaliumLogger.d("$TAG Tracking Identifier Updated")
+            logger.d("$TAG Tracking Identifier Updated")
         }
     }
 
     private companion object {
         const val TAG = "DataTransferEventHandler"
+        private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.ANALYTICS) }
     }
 }
