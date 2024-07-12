@@ -59,14 +59,14 @@ import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRenameResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationAccessResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.UpdateConversationReceiptModeResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationMemberRoleDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationReceiptModeDTO
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberDTO
+import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessRequest
+import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationAccessResponse
+import com.wire.kalium.network.api.authenticated.conversation.UpdateConversationReceiptModeResponse
+import com.wire.kalium.network.api.authenticated.conversation.model.ConversationMemberRoleDTO
+import com.wire.kalium.network.api.authenticated.conversation.model.ConversationReceiptModeDTO
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.client.ClientDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
@@ -134,6 +134,7 @@ interface ConversationRepository {
     suspend fun fetchConversationIfUnknown(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun observeById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>>
     suspend fun getConversationById(conversationId: ConversationId): Conversation?
+    suspend fun observeCacheDetailsById(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation?>>
     suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun baseInfoById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
@@ -619,6 +620,14 @@ internal class ConversationDataSource internal constructor(
             .map { conversationEntity ->
                 conversationEntity?.let { conversationMapper.fromDaoModel(it) }
             }.firstOrNull()
+
+    override suspend fun observeCacheDetailsById(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation?>> =
+        wrapStorageRequest {
+            conversationDAO.observeConversationDetailsById(conversationId.toDao())
+                .map { conversationViewEntity ->
+                    conversationViewEntity?.let { conversationMapper.fromDaoModel(it) }
+                }
+        }
 
     override suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation> = wrapStorageRequest {
         conversationDAO.getConversationByQualifiedID(conversationId.toDao())?.let {

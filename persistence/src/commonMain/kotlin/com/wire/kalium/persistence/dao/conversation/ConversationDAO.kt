@@ -94,7 +94,7 @@ interface ConversationDAO {
     suspend fun clearProposalTimer(groupID: String)
     suspend fun getProposalTimers(): Flow<List<ProposalTimerEntity>>
     suspend fun whoDeletedMeInConversation(conversationId: QualifiedIDEntity, selfUserIdString: String): UserIDEntity?
-    suspend fun updateConversationName(conversationId: QualifiedIDEntity, conversationName: String, timestamp: String)
+    suspend fun updateConversationName(conversationId: QualifiedIDEntity, conversationName: String, dateTime: Instant)
     suspend fun updateConversationType(conversationID: QualifiedIDEntity, type: ConversationEntity.Type)
     suspend fun updateConversationProtocolAndCipherSuite(
         conversationId: QualifiedIDEntity,
@@ -132,6 +132,11 @@ interface ConversationDAO {
     suspend fun getEstablishedSelfMLSGroupId(): String?
 
     suspend fun selectGroupStatusMembersNamesAndHandles(groupID: String): EpochChangesDataEntity?
+
+    /**
+     * TODO: Remove later when implementing general conversation cache in the app.
+     */
+    suspend fun observeConversationDetailsById(conversationId: QualifiedIDEntity): Flow<ConversationViewEntity?>
 }
 
 data class NameAndHandleEntity(

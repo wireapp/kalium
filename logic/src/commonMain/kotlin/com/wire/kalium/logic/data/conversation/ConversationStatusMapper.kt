@@ -21,8 +21,8 @@ package com.wire.kalium.logic.data.conversation
 import com.wire.kalium.logic.data.id.IdMapper
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.api.base.authenticated.conversation.MemberUpdateDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.MutedStatus
+import com.wire.kalium.network.api.authenticated.conversation.MemberUpdateDTO
+import com.wire.kalium.network.api.authenticated.conversation.MutedStatus
 import com.wire.kalium.persistence.dao.UserIDEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString

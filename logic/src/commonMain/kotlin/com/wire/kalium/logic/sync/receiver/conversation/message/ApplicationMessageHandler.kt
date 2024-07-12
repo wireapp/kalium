@@ -45,6 +45,7 @@ import com.wire.kalium.logic.sync.receiver.handler.MessageTextEditHandler
 import com.wire.kalium.logic.sync.receiver.handler.ReceiptMessageHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
 import com.wire.kalium.util.string.toHexString
+import kotlinx.datetime.Instant
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
@@ -52,7 +53,7 @@ internal interface ApplicationMessageHandler {
 
     suspend fun handleContent(
         conversationId: ConversationId,
-        timestampIso: String,
+        messageInstant: Instant,
         senderUserId: UserId,
         senderClientId: ClientId,
         content: ProtoContent.Readable,
@@ -62,7 +63,7 @@ internal interface ApplicationMessageHandler {
     suspend fun handleDecryptionError(
         eventId: String,
         conversationId: ConversationId,
-        timestampIso: String,
+        messageInstant: Instant,
         senderUserId: UserId,
         senderClientId: ClientId,
         content: MessageContent.FailedDecryption
@@ -93,7 +94,7 @@ internal class ApplicationMessageHandlerImpl(
     @Suppress("ComplexMethod", "LongMethod")
     override suspend fun handleContent(
         conversationId: ConversationId,
-        timestampIso: String,
+        messageInstant: Instant,
         senderUserId: UserId,
         senderClientId: ClientId,
         content: ProtoContent.Readable
@@ -120,7 +121,7 @@ internal class ApplicationMessageHandlerImpl(
                     id = content.messageUid,
                     content = protoContent,
                     conversationId = conversationId,
-                    date = timestampIso,
+                    date = messageInstant,
                     senderUserId = senderUserId,
                     senderClientId = senderClientId,
                     status = Message.Status.Sent,
@@ -143,7 +144,7 @@ internal class ApplicationMessageHandlerImpl(
                     id = content.messageUid,
                     content = protoContent,
                     conversationId = conversationId,
-                    date = timestampIso,
+                    date = messageInstant,
                     senderUserId = senderUserId,
                     senderClientId = senderClientId,
                     status = Message.Status.Sent,
@@ -282,7 +283,7 @@ internal class ApplicationMessageHandlerImpl(
     override suspend fun handleDecryptionError(
         eventId: String,
         conversationId: ConversationId,
-        timestampIso: String,
+        messageInstant: Instant,
         senderUserId: UserId,
         senderClientId: ClientId,
         content: MessageContent.FailedDecryption
@@ -291,7 +292,7 @@ internal class ApplicationMessageHandlerImpl(
             id = eventId,
             content = content,
             conversationId = conversationId,
-            date = timestampIso,
+            date = messageInstant,
             senderUserId = senderUserId,
             senderClientId = senderClientId,
             status = Message.Status.Sent,

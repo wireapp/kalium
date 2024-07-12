@@ -292,7 +292,7 @@ class MessageMapperTest {
             id: String = "someId",
             content: MessageContent.Regular = MessageContent.Text("someText"),
             conversationId: ConversationId = ConversationId("someValue", "someDomain"),
-            date: String = Instant.DISTANT_PAST.toString(),
+            date: Instant = Instant.DISTANT_PAST,
             senderUserId: UserId = UserId(value = "someValue", "someDomain"),
             status: Message.Status = Message.Status.Sent,
             visibility: Message.Visibility = Message.Visibility.VISIBLE,

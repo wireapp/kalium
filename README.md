@@ -52,20 +52,41 @@ For example, if you want to run the task `jvmTest` and the libraries are in `./n
 
 #### Running the CLI
 
-##### JVM
+You can see all commands and options by running `login --help`
 
-Run the following with the native libs in the
-classpath (-Djava.library.path=/usr/local/lib/:./native/libs):
+```
+Usage: cliapplication login [OPTIONS] COMMAND [ARGS]...
+
+Options:
+  -e, --email TEXT     Account email
+  -p, --password TEXT  Account password
+  --environment TEXT   Choose backend environment: can be production, staging
+                       or an URL to a server configuration
+  -h, --help           Show this message and exit
+
+Commands:
+  create-group
+  listen-group
+  delete-client
+  add-member
+  remove-member
+  console
+  refill-key-packages
+  mark-as-read                Mark a conversation as read
+  update-supported-protocols
+```
+
+##### JVM
 
 ```
 ./gradlew :cli:assemble
-java -Djava.library.path=/usr/local/lib/:./native/libs -jar cli/build/libs/cli.jar login 
+java -jar cli/build/libs/cli.jar login --email <email> --password <password> listen-group 
 ```
 
 or if you want the jar file deleted after your run:
 
 ```
-./gradlew :cli:run --args="login" -Djava.library.path=/usr/local/lib/:./native/libs
+./gradlew :cli:run  --console=plain --quiet --args="login --email <email> --password <password> listen-group"
 ```
 
 ##### Native (Mac)

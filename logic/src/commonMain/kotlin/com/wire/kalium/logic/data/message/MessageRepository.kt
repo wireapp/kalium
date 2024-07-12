@@ -34,6 +34,7 @@ import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.id.toModel
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.notification.LocalNotification
 import com.wire.kalium.logic.data.user.UserId
@@ -50,8 +51,10 @@ import com.wire.kalium.logic.wrapFlowStorageRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
-import com.wire.kalium.network.api.base.authenticated.message.MessagePriority
-import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
+import com.wire.kalium.network.api.authenticated.message.MessagePriority
+import com.wire.kalium.network.api.authenticated.message.Parameters
+import com.wire.kalium.network.api.authenticated.message.QualifiedMessageOption
+import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
@@ -149,7 +152,7 @@ internal interface MessageRepository {
     suspend fun broadcastEnvelope(
         envelope: MessageEnvelope,
         messageOption: BroadcastMessageOption
-    ): Either<CoreFailure, String>
+    ): Either<CoreFailure, Instant>
 
     suspend fun sendMLSMessage(
         conversationId: ConversationId,
@@ -159,6 +162,8 @@ internal interface MessageRepository {
     suspend fun getAllPendingMessagesFromUser(senderUserId: UserId): Either<CoreFailure, List<Message>>
     suspend fun getPendingConfirmationMessagesByConversationAfterDate(
         conversationId: ConversationId,
+        afterDateTime: Instant,
+        untilDateTime: Instant,
         visibility: List<Message.Visibility> = Message.Visibility.entries
     ): Either<CoreFailure, List<String>>
 
@@ -166,7 +171,7 @@ internal interface MessageRepository {
         conversationId: ConversationId,
         messageContent: MessageContent.TextEdited,
         newMessageId: String,
-        editTimeStamp: String
+        editInstant: Instant
     ): Either<CoreFailure, Unit>
 
     suspend fun updateLegalHoldMessageMembers(
@@ -260,6 +265,7 @@ internal class MessageDataSource internal constructor(
     private val messageDAO: MessageDAO,
     private val sendMessageFailureMapper: SendMessageFailureMapper = MapperProvider.sendMessageFailureMapper(),
     private val messageMapper: MessageMapper = MapperProvider.messageMapper(selfUserId),
+    private val linkPreviewMapper: LinkPreviewMapper = MapperProvider.linkPreviewMapper(),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
     private val sendMessagePartialFailureMapper: SendMessagePartialFailureMapper = MapperProvider.sendMessagePartialFailureMapper(),
@@ -430,7 +436,7 @@ internal class MessageDataSource internal constructor(
         return wrapApiRequest {
             messageApi.qualifiedSendMessage(
                 // TODO(messaging): Handle other MessageOptions, native push, transient and priorities
-                MessageApi.Parameters.QualifiedDefaultParameters(
+                Parameters.QualifiedDefaultParameters(
                     envelope.senderClientId.value,
                     recipientMap,
                     true,
@@ -456,21 +462,21 @@ internal class MessageDataSource internal constructor(
     }
 
     private fun MessageTarget.toOption() = when (this) {
-        is MessageTarget.Client -> MessageApi.QualifiedMessageOption.IgnoreAll
+        is MessageTarget.Client -> QualifiedMessageOption.IgnoreAll
 
         is MessageTarget.Conversation -> if (this.usersToIgnore.isNotEmpty()) {
-            MessageApi.QualifiedMessageOption.IgnoreSome(this.usersToIgnore.map { it.toApi() })
+            QualifiedMessageOption.IgnoreSome(this.usersToIgnore.map { it.toApi() })
         } else {
-            MessageApi.QualifiedMessageOption.ReportAll
+            QualifiedMessageOption.ReportAll
         }
 
-        is MessageTarget.Users -> MessageApi.QualifiedMessageOption.ReportSome(this.userId.map { it.toApi() })
+        is MessageTarget.Users -> QualifiedMessageOption.ReportSome(this.userId.map { it.toApi() })
     }
 
     override suspend fun broadcastEnvelope(
         envelope: MessageEnvelope,
         messageOption: BroadcastMessageOption
-    ): Either<CoreFailure, String> {
+    ): Either<CoreFailure, Instant> {
         val recipientMap: Map<NetworkQualifiedId, Map<String, ByteArray>> =
             envelope.recipients.associate { recipientEntry ->
                 recipientEntry.userId.toApi() to recipientEntry.clientPayloads.associate { clientPayload ->
@@ -479,15 +485,15 @@ internal class MessageDataSource internal constructor(
             }
 
         val option = when (messageOption) {
-            is BroadcastMessageOption.IgnoreSome -> MessageApi.QualifiedMessageOption.IgnoreSome(messageOption.userIDs.map { it.toApi() })
-            is BroadcastMessageOption.ReportSome -> MessageApi.QualifiedMessageOption.ReportSome(messageOption.userIDs.map { it.toApi() })
-            is BroadcastMessageOption.ReportAll -> MessageApi.QualifiedMessageOption.ReportAll
-            is BroadcastMessageOption.IgnoreAll -> MessageApi.QualifiedMessageOption.IgnoreAll
+            is BroadcastMessageOption.IgnoreSome -> QualifiedMessageOption.IgnoreSome(messageOption.userIDs.map { it.toApi() })
+            is BroadcastMessageOption.ReportSome -> QualifiedMessageOption.ReportSome(messageOption.userIDs.map { it.toApi() })
+            is BroadcastMessageOption.ReportAll -> QualifiedMessageOption.ReportAll
+            is BroadcastMessageOption.IgnoreAll -> QualifiedMessageOption.IgnoreAll
         }
 
         return wrapApiRequest {
             messageApi.qualifiedBroadcastMessage(
-                MessageApi.Parameters.QualifiedDefaultParameters(
+                Parameters.QualifiedDefaultParameters(
                     envelope.senderClientId.value,
                     recipientMap,
                     true,
@@ -529,10 +535,14 @@ internal class MessageDataSource internal constructor(
 
     override suspend fun getPendingConfirmationMessagesByConversationAfterDate(
         conversationId: ConversationId,
+        afterDateTime: Instant,
+        untilDateTime: Instant,
         visibility: List<Message.Visibility>
     ): Either<CoreFailure, List<String>> = wrapStorageRequest {
-        messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
+        messageDAO.getMessageIdsThatExpectReadConfirmationWithinDates(
             conversationId.toDao(),
+            afterDateTime,
+            untilDateTime,
             visibility.map { it.toEntityVisibility() }
         )
     }
@@ -541,15 +551,16 @@ internal class MessageDataSource internal constructor(
         conversationId: ConversationId,
         messageContent: MessageContent.TextEdited,
         newMessageId: String,
-        editTimeStamp: String
+        editInstant: Instant
     ): Either<CoreFailure, Unit> {
         return wrapStorageRequest {
             messageDAO.updateTextMessageContent(
-                editTimeStamp = editTimeStamp,
+                editInstant = editInstant,
                 conversationId = conversationId.toDao(),
                 currentMessageId = messageContent.editMessageId,
                 newTextContent = MessageEntityContent.Text(
                     messageContent.newContent,
+                    messageContent.newLinkPreviews.map { linkPreviewMapper.fromModelToDao(it) },
                     messageContent.newMentions.map { messageMentionMapper.fromModelToDao(it) }
                 ),
                 newMessageId = newMessageId

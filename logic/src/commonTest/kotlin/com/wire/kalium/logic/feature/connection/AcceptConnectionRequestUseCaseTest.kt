@@ -38,6 +38,7 @@ import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -148,7 +149,7 @@ class AcceptConnectionRequestUseCaseTest {
         val CONNECTION = Connection(
             "someId",
             "from",
-            "lastUpdate",
+            Instant.DISTANT_PAST,
             CONVERSATION_ID,
             CONVERSATION_ID,
             ConnectionState.ACCEPTED,

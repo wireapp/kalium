@@ -53,8 +53,8 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.connection.ConnectionApi
-import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
-import com.wire.kalium.network.api.base.authenticated.connection.ConnectionStateDTO
+import com.wire.kalium.network.api.authenticated.connection.ConnectionDTO
+import com.wire.kalium.network.api.authenticated.connection.ConnectionStateDTO
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.UserDAO
@@ -64,7 +64,6 @@ import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.datetime.toInstant
 
 interface ConnectionRepository {
     suspend fun fetchSelfUserConnections(): Either<CoreFailure, Unit>
@@ -238,8 +237,8 @@ internal class ConnectionDataSource(
                         protocolInfo = ConversationEntity.ProtocolInfo.Proteus,
                         creatorId = connection.from,
                         lastNotificationDate = null,
-                        lastModifiedDate = connection.lastUpdate.toInstant(),
-                        lastReadDate = connection.lastUpdate.toInstant(),
+                        lastModifiedDate = connection.lastUpdate,
+                        lastReadDate = connection.lastUpdate,
                         access = emptyList(),
                         accessRole = emptyList(),
                         receiptMode = ConversationEntity.ReceiptMode.DISABLED,

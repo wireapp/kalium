@@ -19,12 +19,12 @@
 package com.wire.kalium.api.v0.asset
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.model.asset.AssetDownloadResponseJson
-import com.wire.kalium.model.asset.AssetUploadResponseJson
+import com.wire.kalium.mocks.responses.asset.AssetDownloadResponseJson
+import com.wire.kalium.mocks.responses.asset.AssetUploadResponseJson
 import com.wire.kalium.network.api.base.authenticated.asset.AssetApi
-import com.wire.kalium.network.api.base.authenticated.asset.AssetMetadataRequest
-import com.wire.kalium.network.api.base.model.AssetId
-import com.wire.kalium.network.api.base.model.AssetRetentionType
+import com.wire.kalium.network.api.authenticated.asset.AssetMetadataRequest
+import com.wire.kalium.network.api.model.AssetId
+import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.network.api.v0.authenticated.AssetApiV0
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse

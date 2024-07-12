@@ -18,7 +18,7 @@
 
 package com.wire.kalium.logic.data.team
 
-import com.wire.kalium.network.api.base.model.TeamDTO
+import com.wire.kalium.network.api.model.TeamDTO
 import com.wire.kalium.persistence.dao.TeamEntity
 
 interface TeamMapper {

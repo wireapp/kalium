@@ -25,7 +25,13 @@ interface FlowManagerService {
     suspend fun setVideoPreview(conversationId: ConversationId, view: PlatformView)
     suspend fun flipToFrontCamera(conversationId: ConversationId)
     suspend fun flipToBackCamera(conversationId: ConversationId)
-    fun setUIRotation(rotation: Int)
+    suspend fun setUIRotation(rotation: Int)
+
+    /**
+     * Suspends the execution of the current coroutine and starts the flow manager.
+     * If the FlowManager has already started, will return immediately.
+     */
+    suspend fun startFlowManager()
 }
 
 expect class FlowManagerServiceImpl : FlowManagerService

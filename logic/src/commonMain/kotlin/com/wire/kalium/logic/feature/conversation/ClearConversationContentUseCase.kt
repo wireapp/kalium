@@ -31,6 +31,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
 import com.wire.kalium.util.DateTimeUtil
+import kotlinx.datetime.Clock
 
 /**
  * This use case will clear all messages from a conversation and notify other clients, using the self conversation.
@@ -69,7 +70,7 @@ internal class ClearConversationContentUseCaseImpl(
                             ),
                             // sending the message to clear this conversation
                             conversationId = selfConversationId,
-                            date = DateTimeUtil.currentIsoDateTimeString(),
+                            date = Clock.System.now(),
                             senderUserId = selfUserId,
                             senderClientId = currentClientId,
                             status = Message.Status.Pending,

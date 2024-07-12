@@ -31,6 +31,7 @@ import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
+import io.mockative.eq
 import io.mockative.fake.valueOf
 import io.mockative.matchers.AnyMatcher
 import io.mockative.matchers.Matcher
@@ -85,6 +86,12 @@ internal interface ConversationRepositoryArrangement {
         coEvery {
             conversationRepository.fetchConversationIfUnknown(any())
         }.returns(Either.Right(Unit))
+    }
+
+    suspend fun withCachedInfoByIdReturning(conversation: Conversation) {
+        coEvery {
+            conversationRepository.observeCacheDetailsById(eq(conversation.id))
+        }.returns(Either.Right(flowOf(conversation)))
     }
 
     suspend fun withUpdateGroupStateReturning(result: Either<StorageFailure, Unit>) {

@@ -19,7 +19,9 @@
 package com.wire.kalium.logic.feature.message
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
@@ -30,16 +32,19 @@ import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.getOrNull
 import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.KaliumDispatcherImpl
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
+import kotlinx.datetime.Clock
 import kotlin.time.Duration
 
 @Suppress("LongParameterList")
@@ -51,6 +56,7 @@ class SendTextMessageUseCase internal constructor(
     private val persistMessage: PersistMessageUseCase,
     private val selfUserId: QualifiedID,
     private val provideClientId: CurrentClientIdProvider,
+    private val assetDataSource: AssetRepository,
     private val slowSyncRepository: SlowSyncRepository,
     private val messageSender: MessageSender,
     private val messageSendFailureHandler: MessageSendFailureHandler,
@@ -63,6 +69,7 @@ class SendTextMessageUseCase internal constructor(
     suspend operator fun invoke(
         conversationId: ConversationId,
         text: String,
+        linkPreviews: List<MessageLinkPreview> = emptyList(),
         mentions: List<MessageMention> = emptyList(),
         quotedMessageId: String? = null
     ): Either<CoreFailure, Unit> = scope.async(dispatchers.io) {
@@ -76,11 +83,14 @@ class SendTextMessageUseCase internal constructor(
             .first()
             .duration
 
+        val previews = uploadLinkPreviewImages(linkPreviews)
+
         provideClientId().flatMap { clientId ->
             val message = Message.Regular(
                 id = generatedMessageUuid,
                 content = MessageContent.Text(
                     value = text,
+                    linkPreviews = previews,
                     mentions = mentions,
                     quotedMessageReference = quotedMessageId?.let { quotedMessageId ->
                         MessageContent.QuoteReference(
@@ -92,7 +102,7 @@ class SendTextMessageUseCase internal constructor(
                 ),
                 expectsReadConfirmation = expectsReadConfirmation,
                 conversationId = conversationId,
-                date = DateTimeUtil.currentIsoDateTimeString(),
+                date = Clock.System.now(),
                 senderUserId = selfUserId,
                 senderClientId = clientId,
                 status = Message.Status.Pending,
@@ -115,5 +125,33 @@ class SendTextMessageUseCase internal constructor(
 
     companion object {
         const val TYPE = "Text"
+    }
+
+    private suspend fun uploadLinkPreviewImages(linkPreviews: List<MessageLinkPreview>): List<MessageLinkPreview> {
+        return linkPreviews.map { linkPreview ->
+            val imageCopy = linkPreview.image?.let {
+                // Generate the otr asymmetric key that will be used to encrypt the data
+                it.otrKey = generateRandomAES256Key()
+                // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
+                it.assetDataPath?.let { assetDataPath ->
+                    assetDataSource.uploadAndPersistPrivateAsset(
+                        it.mimeType,
+                        assetDataPath,
+                        it.otrKey,
+                        null
+                    ).onFailure { failure ->
+                        // on upload failure we still want link previews being included without image
+                        kaliumLogger.e("Upload of link preview asset failed: $failure")
+                    }.getOrNull()?.let { (assetId, sha256Key) ->
+                        it.assetToken = assetId.assetToken ?: ""
+                        it.assetKey = assetId.key
+                        it.assetDomain = assetId.domain
+                        it.sha256Key = sha256Key
+                        it
+                    }
+                }
+            }
+            linkPreview.copy(image = imageCopy)
+        }
     }
 }

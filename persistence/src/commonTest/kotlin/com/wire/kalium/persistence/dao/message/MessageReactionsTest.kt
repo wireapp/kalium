@@ -19,8 +19,10 @@
 package com.wire.kalium.persistence.dao.message
 
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
@@ -68,9 +70,27 @@ class MessageReactionsTest : BaseMessageTest() {
             firstEmoji to 2,
             secondEmoji to 1
         )
-        reactionDAO.insertReaction(initialMessageEntity.id, initialMessageEntity.conversationId, SELF_USER_ID, "date", firstEmoji)
-        reactionDAO.insertReaction(initialMessageEntity.id, initialMessageEntity.conversationId, OTHER_USER.id, "date", firstEmoji)
-        reactionDAO.insertReaction(initialMessageEntity.id, initialMessageEntity.conversationId, SELF_USER_ID, "date", secondEmoji)
+        reactionDAO.insertReaction(
+            initialMessageEntity.id,
+            initialMessageEntity.conversationId,
+            SELF_USER_ID,
+            Instant.UNIX_FIRST_DATE,
+            firstEmoji
+        )
+        reactionDAO.insertReaction(
+            initialMessageEntity.id,
+            initialMessageEntity.conversationId,
+            OTHER_USER.id,
+            Instant.UNIX_FIRST_DATE,
+            firstEmoji
+        )
+        reactionDAO.insertReaction(
+            initialMessageEntity.id,
+            initialMessageEntity.conversationId,
+            SELF_USER_ID,
+            Instant.UNIX_FIRST_DATE,
+            secondEmoji
+        )
 
         // When
         val result = queryMessageEntity()
@@ -87,10 +107,34 @@ class MessageReactionsTest : BaseMessageTest() {
         val firstEmoji = "🫡"
         val secondEmoji = "🫥"
         val expectedReactionCounts = setOf(firstEmoji, secondEmoji)
-        reactionDAO.insertReaction(initialMessageEntity.id, initialMessageEntity.conversationId, SELF_USER_ID, "date", firstEmoji)
-        reactionDAO.insertReaction(initialMessageEntity.id, initialMessageEntity.conversationId, OTHER_USER.id, "date", firstEmoji)
-        reactionDAO.insertReaction(initialMessageEntity.id, initialMessageEntity.conversationId, SELF_USER_ID, "date", secondEmoji)
-        reactionDAO.insertReaction(initialMessageEntity.id, initialMessageEntity.conversationId, OTHER_USER.id, "date", "😡")
+        reactionDAO.insertReaction(
+            initialMessageEntity.id,
+            initialMessageEntity.conversationId,
+            SELF_USER_ID,
+            Instant.DISTANT_PAST,
+            firstEmoji
+        )
+        reactionDAO.insertReaction(
+            initialMessageEntity.id,
+            initialMessageEntity.conversationId,
+            OTHER_USER.id,
+            Instant.DISTANT_PAST,
+            firstEmoji
+        )
+        reactionDAO.insertReaction(
+            initialMessageEntity.id,
+            initialMessageEntity.conversationId,
+            SELF_USER_ID,
+            Instant.DISTANT_PAST,
+            secondEmoji
+        )
+        reactionDAO.insertReaction(
+            initialMessageEntity.id,
+            initialMessageEntity.conversationId,
+            OTHER_USER.id,
+            Instant.DISTANT_PAST,
+            "😡"
+        )
 
         // When
         val result = queryMessageEntity()

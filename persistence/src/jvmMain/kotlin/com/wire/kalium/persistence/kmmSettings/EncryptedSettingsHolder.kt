@@ -47,16 +47,14 @@ private fun createOrLoad(rootPath: String, file: File): Properties {
 /**
  * the java implementation is not yet encrypted
  */
-internal actual object EncryptedSettingsBuilder {
-    actual fun build(
-        options: SettingOptions,
-        param: EncryptedSettingsPlatformParam
-    ): Settings {
-        val file: File = File(Paths.get(param.rootPath, options.fileName).toString())
-        val properties = createOrLoad(param.rootPath, file)
+internal actual fun buildSettings(
+    options: SettingOptions,
+    param: EncryptedSettingsPlatformParam
+): Settings {
+    val file = File(Paths.get(param.rootPath, options.fileName).toString())
+    val properties = createOrLoad(param.rootPath, file)
 
-        return PropertiesSettings(properties) { onModify(it, file) }
-    }
+    return PropertiesSettings(properties) { onModify(it, file) }
 }
 
 internal actual class EncryptedSettingsPlatformParam(val rootPath: String)

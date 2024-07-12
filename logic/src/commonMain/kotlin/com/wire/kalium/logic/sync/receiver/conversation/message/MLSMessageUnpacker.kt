@@ -41,15 +41,17 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.logStructuredJson
 import com.wire.kalium.logic.sync.KaliumSyncException
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import io.ktor.util.decodeBase64Bytes
 import kotlinx.datetime.Instant
-import kotlinx.datetime.toInstant
 import kotlin.time.Duration.Companion.seconds
 
 internal interface MLSMessageUnpacker {
     suspend fun unpackMlsMessage(event: Event.Conversation.NewMLSMessage): Either<CoreFailure, List<MessageUnpackResult>>
-    suspend fun unpackMlsBundle(bundle: DecryptedMessageBundle, conversationId: ConversationId, timestamp: Instant): MessageUnpackResult
+    suspend fun unpackMlsBundle(
+        bundle: DecryptedMessageBundle,
+        conversationId: ConversationId,
+        messageInstant: Instant
+    ): MessageUnpackResult
 }
 
 @Suppress("LongParameterList")
@@ -69,18 +71,18 @@ internal class MLSMessageUnpackerImpl(
             if (bundles.isEmpty()) return@map listOf(MessageUnpackResult.HandshakeMessage)
 
             bundles.map { bundle ->
-                unpackMlsBundle(bundle, event.conversationId, event.timestampIso.toInstant())
+                unpackMlsBundle(bundle, event.conversationId, event.messageInstant)
             }
         }
 
     override suspend fun unpackMlsBundle(
         bundle: DecryptedMessageBundle,
         conversationId: ConversationId,
-        timestamp: Instant
+        messageInstant: Instant
     ): MessageUnpackResult {
         bundle.commitDelay?.let {
             handlePendingProposal(
-                timestamp = timestamp,
+                timestamp = messageInstant,
                 groupId = bundle.groupID,
                 commitDelay = it
             )
@@ -93,7 +95,7 @@ internal class MLSMessageUnpackerImpl(
             }
             MessageUnpackResult.ApplicationMessage(
                 conversationId = conversationId,
-                timestampIso = timestamp.toIsoDateTimeString(),
+                instant = messageInstant,
                 senderUserId = it.senderID,
                 senderClientId = it.senderClientID,
                 content = protoContent

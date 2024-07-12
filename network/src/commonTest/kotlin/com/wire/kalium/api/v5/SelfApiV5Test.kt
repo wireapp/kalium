@@ -19,7 +19,7 @@
 package com.wire.kalium.api.v5
 
 import com.wire.kalium.api.ApiTest
-import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
+import com.wire.kalium.network.api.model.SupportedProtocolDTO
 import com.wire.kalium.network.api.v5.authenticated.SelfApiV5
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.HttpStatusCode

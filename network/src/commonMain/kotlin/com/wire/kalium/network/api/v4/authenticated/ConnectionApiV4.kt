@@ -19,10 +19,10 @@
 package com.wire.kalium.network.api.v4.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
-import com.wire.kalium.network.api.base.authenticated.connection.ConnectionStateDTO
-import com.wire.kalium.network.api.base.authenticated.connection.UpdateConnectionRequest
-import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.authenticated.connection.ConnectionDTO
+import com.wire.kalium.network.api.authenticated.connection.ConnectionStateDTO
+import com.wire.kalium.network.api.authenticated.connection.UpdateConnectionRequest
+import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v3.authenticated.ConnectionApiV3
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse

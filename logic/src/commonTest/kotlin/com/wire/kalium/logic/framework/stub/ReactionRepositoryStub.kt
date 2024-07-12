@@ -27,6 +27,7 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.datetime.Instant
 
 open class ReactionRepositoryStub : ReactionRepository {
 
@@ -34,7 +35,7 @@ open class ReactionRepositoryStub : ReactionRepository {
         originalMessageId: String,
         conversationId: ConversationId,
         senderUserId: UserId,
-        date: String,
+        instant: Instant,
         emoji: String
     ): Either<StorageFailure, Unit> = Either.Right(Unit)
 
@@ -63,7 +64,7 @@ open class ReactionRepositoryStub : ReactionRepository {
         originalMessageId: String,
         conversationId: ConversationId,
         senderUserId: UserId,
-        date: String,
+        instant: Instant,
         userReactions: UserReactions
     ): Either<StorageFailure, Unit> = Either.Right(Unit)
 }

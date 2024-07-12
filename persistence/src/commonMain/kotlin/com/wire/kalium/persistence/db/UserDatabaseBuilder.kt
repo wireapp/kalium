@@ -29,6 +29,7 @@ import com.wire.kalium.persistence.backup.DatabaseImporterImpl
 import com.wire.kalium.persistence.cache.LRUCache
 import com.wire.kalium.persistence.dao.ConnectionDAO
 import com.wire.kalium.persistence.dao.ConnectionDAOImpl
+import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.MetadataDAO
 import com.wire.kalium.persistence.dao.MetadataDAOImpl
 import com.wire.kalium.persistence.dao.MigrationDAO
@@ -55,6 +56,7 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationDAOImpl
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationMetaDataDAOImpl
+import com.wire.kalium.persistence.dao.conversation.ConversationViewEntity
 import com.wire.kalium.persistence.dao.member.MemberDAO
 import com.wire.kalium.persistence.dao.member.MemberDAOImpl
 import com.wire.kalium.persistence.dao.message.CompositeMessageDAO
@@ -82,6 +84,7 @@ import kotlin.coroutines.CoroutineContext
 import kotlin.jvm.JvmInline
 
 internal const val USER_CACHE_SIZE = 125
+internal const val CONVERSATION_CACHE_SIZE = 125
 internal const val METADATA_CACHE_SIZE = 30
 
 @JvmInline
@@ -131,6 +134,7 @@ class UserDatabaseBuilder internal constructor(
         MessageConversationChangedContentAdapter = TableMapper.messageConversationChangedContentAdapter,
         MessageFailedToDecryptContentAdapter = TableMapper.messageFailedToDecryptContentAdapter,
         MessageMemberChangeContentAdapter = TableMapper.messageMemberChangeContentAdapter,
+        MessageLinkPreviewAdapter = TableMapper.messageLinkPreviewAdapter,
         MessageMentionAdapter = TableMapper.messageMentionAdapter,
         MessageMissedCallContentAdapter = TableMapper.messageMissedCallContentAdapter,
         MessageRestrictedAssetContentAdapter = TableMapper.messageRestrictedAssetContentAdapter,
@@ -182,12 +186,16 @@ class UserDatabaseBuilder internal constructor(
             queriesContext
         )
 
+    private val conversationCache =
+        LRUCache<ConversationIDEntity, Flow<ConversationViewEntity?>>(CONVERSATION_CACHE_SIZE)
     val conversationDAO: ConversationDAO
         get() = ConversationDAOImpl(
+            conversationCache,
             database.conversationsQueries,
             database.membersQueries,
             database.unreadEventsQueries,
-            queriesContext
+            queriesContext,
+            databaseScope
         )
 
     val memberDAO: MemberDAO

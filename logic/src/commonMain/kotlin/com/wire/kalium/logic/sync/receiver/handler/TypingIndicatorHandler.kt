@@ -17,16 +17,14 @@
  */
 package com.wire.kalium.logic.sync.receiver.handler
 
-import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.TypingIndicatorIncomingRepository
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.event.EventLoggingStatus
-import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.createEventProcessingLogger
 
 internal interface TypingIndicatorHandler {
     suspend fun handle(event: Event.Conversation.TypingIndicator): Either<StorageFailure, Unit>
@@ -37,8 +35,9 @@ internal class TypingIndicatorHandlerImpl(
     private val typingIndicatorIncomingRepository: TypingIndicatorIncomingRepository
 ) : TypingIndicatorHandler {
     override suspend fun handle(event: Event.Conversation.TypingIndicator): Either<StorageFailure, Unit> {
+        val eventLogger = kaliumLogger.createEventProcessingLogger(event)
         if (event.senderUserId == selfUserId) {
-            kaliumLogger.withFeatureId(EVENT_RECEIVER).logEventProcessing(EventLoggingStatus.SKIPPED, event)
+            eventLogger.logSuccess("isForSelfUser" to true)
             return Either.Right(Unit)
         }
 
@@ -53,7 +52,7 @@ internal class TypingIndicatorHandlerImpl(
                 event.senderUserId
             )
         }.also {
-            kaliumLogger.withFeatureId(EVENT_RECEIVER).logEventProcessing(EventLoggingStatus.SUCCESS, event)
+            eventLogger.logSuccess("isForSelfUser" to false)
         }
 
         return Either.Right(Unit)

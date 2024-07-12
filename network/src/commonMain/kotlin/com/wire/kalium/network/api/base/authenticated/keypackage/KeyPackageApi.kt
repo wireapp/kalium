@@ -18,7 +18,10 @@
 
 package com.wire.kalium.network.api.base.authenticated.keypackage
 
-import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.authenticated.keypackage.ClaimedKeyPackageList
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackage
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
+import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.utils.NetworkResponse
 
 interface KeyPackageApi {
@@ -84,6 +87,3 @@ interface KeyPackageApi {
      */
     suspend fun getAvailableKeyPackageCount(clientId: String): NetworkResponse<KeyPackageCountDTO>
 }
-
-typealias KeyPackage = String
-typealias KeyPackageRef = String

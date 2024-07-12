@@ -80,12 +80,10 @@ import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProv
 import com.wire.kalium.logic.data.conversation.UpdateKeyingMaterialThresholdProviderImpl
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepositoryDataSource
-import com.wire.kalium.logic.data.e2ei.RevocationListChecker
-import com.wire.kalium.logic.data.e2ei.RevocationListCheckerImpl
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
 import com.wire.kalium.logic.data.e2ei.E2EIRepositoryImpl
-import com.wire.kalium.logic.feature.e2ei.usecase.ObserveE2EIConversationsVerificationStatusesUseCase
-import com.wire.kalium.logic.feature.e2ei.usecase.ObserveE2EIConversationsVerificationStatusesUseCaseImpl
+import com.wire.kalium.logic.data.e2ei.RevocationListChecker
+import com.wire.kalium.logic.data.e2ei.RevocationListCheckerImpl
 import com.wire.kalium.logic.data.event.EventDataSource
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.data.featureConfig.FeatureConfigDataSource
@@ -124,6 +122,7 @@ import com.wire.kalium.logic.data.message.reaction.ReactionRepositoryImpl
 import com.wire.kalium.logic.data.message.receipt.ReceiptRepositoryImpl
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepository
 import com.wire.kalium.logic.data.mlspublickeys.MLSPublicKeysRepositoryImpl
+import com.wire.kalium.logic.data.notification.NotificationEventsManagerImpl
 import com.wire.kalium.logic.data.notification.PushTokenDataSource
 import com.wire.kalium.logic.data.notification.PushTokenRepository
 import com.wire.kalium.logic.data.prekey.PreKeyDataSource
@@ -218,6 +217,8 @@ import com.wire.kalium.logic.feature.e2ei.usecase.FetchConversationMLSVerificati
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchConversationMLSVerificationStatusUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseCaseImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.ObserveE2EIConversationsVerificationStatusesUseCase
+import com.wire.kalium.logic.feature.e2ei.usecase.ObserveE2EIConversationsVerificationStatusesUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCase
 import com.wire.kalium.logic.feature.featureConfig.SyncFeatureConfigsUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.handler.AppLockConfigHandler
@@ -252,7 +253,6 @@ import com.wire.kalium.logic.feature.legalhold.UpdateSelfClientCapabilityToLegal
 import com.wire.kalium.logic.feature.legalhold.UpdateSelfClientCapabilityToLegalHoldConsentUseCaseImpl
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCase
 import com.wire.kalium.logic.feature.message.AddSystemMessageToAllConversationsUseCaseImpl
-import com.wire.kalium.logic.data.notification.NotificationEventsManagerImpl
 import com.wire.kalium.logic.feature.message.MessageScope
 import com.wire.kalium.logic.feature.message.MessageSendingScheduler
 import com.wire.kalium.logic.feature.message.PendingProposalScheduler
@@ -437,6 +437,7 @@ import com.wire.kalium.logic.wrapStorageNullableRequest
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.AuthenticatedNetworkContainer
 import com.wire.kalium.network.session.SessionManager
+import com.wire.kalium.network.utils.MockUnboundNetworkClient
 import com.wire.kalium.persistence.client.ClientRegistrationStorage
 import com.wire.kalium.persistence.client.ClientRegistrationStorageImpl
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
@@ -444,14 +445,13 @@ import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import com.wire.kalium.util.DelicateKaliumApi
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.launch
 import okio.Path.Companion.toPath
 import kotlin.coroutines.CoroutineContext
-import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
+import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
 @Suppress("LongParameterList", "LargeClass")
 class UserSessionScope internal constructor(
@@ -473,7 +473,6 @@ class UserSessionScope internal constructor(
     networkStateObserver: NetworkStateObserver,
     private val logoutCallback: LogoutCallback,
 ) : CoroutineScope {
-
     private val userStorage = userStorageProvider.getOrCreate(
         userId, platformUserStorageProperties, kaliumConfigs.shouldEncryptData
     )
@@ -574,12 +573,11 @@ class UserSessionScope internal constructor(
         logout = { logoutReason -> logout(reason = logoutReason, waitUntilCompletes = true) }
     )
     private val authenticatedNetworkContainer: AuthenticatedNetworkContainer = AuthenticatedNetworkContainer.create(
-        networkStateObserver,
-        sessionManager,
-        UserIdDTO(userId.value, userId.domain),
-        userAgent,
+        sessionManager = sessionManager,
+        selfUserId = UserIdDTO(userId.value, userId.domain),
+        userAgent = userAgent,
         certificatePinning = kaliumConfigs.certPinningConfig,
-        mockEngine = kaliumConfigs.kaliumMockEngine?.mockEngine,
+        mockEngine = kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) },
         kaliumLogger = userScopedLogger
     )
     private val featureSupport: FeatureSupport = FeatureSupportImpl(
@@ -589,9 +587,8 @@ class UserSessionScope internal constructor(
 
     val authenticationScope: AuthenticationScope by lazy {
         authenticationScopeProvider.provide(
-            sessionManager.getServerConfig(),
-            sessionManager.getProxyCredentials(),
-            networkStateObserver,
+            serverConfig = sessionManager.getServerConfig(),
+            proxyCredentials = sessionManager.getProxyCredentials(),
             globalDatabase = globalDatabaseBuilder,
             kaliumConfigs = kaliumConfigs,
         )
@@ -1338,6 +1335,9 @@ class UserSessionScope internal constructor(
             { conversationId, messageId ->
                 messages.ephemeralMessageDeletionHandler.startSelfDeletion(conversationId, messageId)
             },
+            { conversationId, messageId ->
+                messages.confirmationDeliveryHandler.enqueueConfirmationDelivery(conversationId, messageId)
+            },
             userId,
             staleEpochVerifier
         )
@@ -1654,8 +1654,8 @@ class UserSessionScope internal constructor(
         )
 
     @OptIn(DelicateKaliumApi::class)
-    val client: ClientScope
-        get() = ClientScope(
+    val client: ClientScope by lazy {
+        ClientScope(
             clientRepository,
             pushTokenRepository,
             logoutRepository,
@@ -1679,6 +1679,7 @@ class UserSessionScope internal constructor(
             registerMLSClientUseCase,
             syncFeatureConfigsUseCase
         )
+    }
     val conversations: ConversationScope by lazy {
         ConversationScope(
             conversationRepository,
@@ -1710,9 +1711,9 @@ class UserSessionScope internal constructor(
         )
     }
 
-    val migration get() = MigrationScope(userId, userStorage.database)
-    val debug: DebugScope
-        get() = DebugScope(
+    val migration by lazy { MigrationScope(userId, userStorage.database) }
+    val debug: DebugScope by lazy {
+        DebugScope(
             messageRepository,
             conversationRepository,
             mlsConversationRepository,
@@ -1735,8 +1736,10 @@ class UserSessionScope internal constructor(
             this,
             userScopedLogger,
         )
-    val messages: MessageScope
-        get() = MessageScope(
+    }
+
+    val messages: MessageScope by lazy {
+        MessageScope(
             connectionRepository,
             messageDraftRepository,
             userId,
@@ -1764,11 +1767,14 @@ class UserSessionScope internal constructor(
             messageMetadataRepository,
             staleEpochVerifier,
             legalHoldHandler,
+            observeFileSharingStatus,
             this,
             userScopedLogger,
         )
-    val users: UserScope
-        get() = UserScope(
+    }
+
+    val users: UserScope by lazy {
+        UserScope(
             userRepository,
             userConfigRepository,
             accountRepository,
@@ -1796,14 +1802,16 @@ class UserSessionScope internal constructor(
             syncFeatureConfigsUseCase,
             userScopedLogger
         )
+    }
 
-    val search: SearchScope
-        get() = SearchScope(
+    val search: SearchScope by lazy {
+        SearchScope(
             searchUserRepository = searchUserRepository,
             selfUserId = userId,
             sessionRepository = globalScope.sessionRepository,
             kaliumConfigs = kaliumConfigs
         )
+    }
 
     private val clearUserData: ClearUserDataUseCase get() = ClearUserDataUseCaseImpl(userStorage)
 
@@ -2020,6 +2028,10 @@ class UserSessionScope internal constructor(
             kaliumLogger = userScopedLogger,
         )
 
+    /**
+     * This will start subscribers of observable work per user session, as long as the user is logged in.
+     * When the user logs out, this work will be canceled.
+     */
     init {
         launch {
             apiMigrationManager.performMigrations()
@@ -2072,10 +2084,10 @@ class UserSessionScope internal constructor(
                 avsSyncStateReporter.execute()
             }
         }
-    }
 
-    fun onDestroy() {
-        cancel()
+        launch {
+            messages.confirmationDeliveryHandler.sendPendingConfirmations()
+        }
     }
 }
 

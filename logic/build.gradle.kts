@@ -32,6 +32,7 @@ kaliumLibrary {
     }
 }
 
+@Suppress("UnusedPrivateProperty")
 kotlin {
     sourceSets {
         val commonMain by getting {
@@ -50,6 +51,9 @@ kotlin {
                 implementation(libs.ktxSerialization)
                 implementation(libs.ktxDateTime)
                 implementation(libs.benAsherUUID)
+
+                // ktor mockk engine
+                implementation(libs.ktor.mock)
 
                 // the Dependency is duplicated between here and persistence build.gradle.kts
                 implementation(libs.settings.kmp)

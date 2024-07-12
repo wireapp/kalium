@@ -62,9 +62,10 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.util.thenReturnSequentially
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
-import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.util.DateTimeUtil
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.utils.io.core.toByteArray
 import io.mockative.Mock
 import io.mockative.any
@@ -413,7 +414,7 @@ class MessageSenderTest {
             id = Arrangement.TEST_MESSAGE_UUID,
             content = MessageContent.Calling(""),
             conversationId = Arrangement.TEST_CONVERSATION_ID,
-            date = TestMessage.TEST_DATE_STRING,
+            date = TestMessage.TEST_DATE,
             senderUserId = UserId("userValue", "userDomain"),
             senderClientId = ClientId("clientId"),
             status = Message.Status.Sent,
@@ -470,7 +471,7 @@ class MessageSenderTest {
             id = Arrangement.TEST_MESSAGE_UUID,
             content = MessageContent.Calling(""),
             conversationId = Arrangement.TEST_CONVERSATION_ID,
-            date = TestMessage.TEST_DATE_STRING,
+            date = TestMessage.TEST_DATE,
             senderUserId = UserId("userValue", "userDomain"),
             senderClientId = ClientId("clientId"),
             status = Message.Status.Sent,
@@ -626,7 +627,7 @@ class MessageSenderTest {
         val message = BroadcastMessage(
             id = Arrangement.TEST_MESSAGE_UUID,
             content = MessageContent.Calling(""),
-            date = TestMessage.TEST_DATE_STRING,
+            date = TestMessage.TEST_DATE,
             senderUserId = UserId("userValue", "userDomain"),
             senderClientId = ClientId("clientId"),
             status = Message.Status.Sent,
@@ -684,7 +685,7 @@ class MessageSenderTest {
         val message = BroadcastMessage(
             id = Arrangement.TEST_MESSAGE_UUID,
             content = MessageContent.Calling(""),
-            date = TestMessage.TEST_DATE_STRING,
+            date = TestMessage.TEST_DATE,
             senderUserId = senderUserId,
             senderClientId = senderClientId,
             status = Message.Status.Sent,
@@ -735,7 +736,7 @@ class MessageSenderTest {
         val message = BroadcastMessage(
             id = Arrangement.TEST_MESSAGE_UUID,
             content = MessageContent.Calling(""),
-            date = TestMessage.TEST_DATE_STRING,
+            date = TestMessage.TEST_DATE,
             senderUserId = senderUserId,
             senderClientId = senderClientId,
             status = Message.Status.Sent,
@@ -778,7 +779,7 @@ class MessageSenderTest {
             id = editedMessageId,
             content = content,
             conversationId = Arrangement.TEST_CONVERSATION_ID,
-            date = TestMessage.TEST_DATE_STRING,
+            date = TestMessage.TEST_DATE,
             senderUserId = UserId("userValue", "userDomain"),
             senderClientId = ClientId("clientId"),
             status = Message.Status.Pending,
@@ -939,7 +940,7 @@ class MessageSenderTest {
             withSendProteusMessage()
             withAllRecipients(listOf(Arrangement.TEST_RECIPIENT_1) to listOf())
             withCreateOutgoingBroadcastEnvelope()
-            withBroadcastEnvelope(Either.Left(failure), Either.Right(TestMessage.TEST_DATE_STRING)) // to avoid loop - fail then succeed
+            withBroadcastEnvelope(Either.Left(failure), Either.Right(TestMessage.TEST_DATE)) // to avoid loop - fail then succeed
             withHandleLegalHoldMessageSendFailure(Either.Right(false))
             withHandleClientsHaveChangedFailure()
         }
@@ -1123,13 +1124,13 @@ class MessageSenderTest {
             }.returns(if (failing) Either.Left(TEST_CORE_FAILURE) else Either.Right(TEST_MESSAGE_ENVELOPE))
         }
 
-        suspend fun withBroadcastEnvelope(result: Either<CoreFailure, String> = Either.Right(TestMessage.TEST_DATE_STRING)) = apply {
+        suspend fun withBroadcastEnvelope(result: Either<CoreFailure, Instant> = Either.Right(TestMessage.TEST_DATE)) = apply {
             coEvery {
                 messageRepository.broadcastEnvelope(any(), any())
             }.returns(result)
         }
 
-        suspend fun withBroadcastEnvelope(vararg result: Either<CoreFailure, String>) = apply {
+        suspend fun withBroadcastEnvelope(vararg result: Either<CoreFailure, Instant>) = apply {
             coEvery {
                 messageRepository.broadcastEnvelope(any(), any())
             }.thenReturnSequentially(*result)
@@ -1262,7 +1263,7 @@ class MessageSenderTest {
 
             val TEST_CONVERSATION_ID = TestConversation.ID
             const val TEST_MESSAGE_UUID = "messageUuid"
-            val MESSAGE_SENT_TIME = DateTimeUtil.currentIsoDateTimeString()
+            val MESSAGE_SENT_TIME = Instant.UNIX_FIRST_DATE
             val TEST_MLS_MESSAGE = MLSMessageApi.Message("message".toByteArray())
             val TEST_CORE_FAILURE = CoreFailure.Unknown(Throwable("an error"))
             val TEST_PROTOCOL_INFO_FAILURE = StorageFailure.DataNotFound

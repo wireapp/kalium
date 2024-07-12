@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.message.mention.toModel
 import com.wire.kalium.logic.data.notification.LocalNotificationCommentType
@@ -48,9 +49,7 @@ import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
-import kotlinx.datetime.toInstant
 import okio.Path.Companion.toPath
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -68,6 +67,7 @@ interface MessageMapper {
 @Suppress("TooManyFunctions")
 class MessageMapperImpl(
     private val selfUserId: UserId,
+    private val linkPreviewMapper: LinkPreviewMapper = MapperProvider.linkPreviewMapper(),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
     private val userMapper: UserMapper = MapperProvider.userMapper()
 ) : MessageMapper {
@@ -84,14 +84,14 @@ class MessageMapperImpl(
         id = message.id,
         content = toMessageEntityContent(message.content),
         conversationId = message.conversationId.toDao(),
-        date = message.date.toInstant(),
+        date = message.date,
         senderUserId = message.senderUserId.toDao(),
         senderClientId = message.senderClientId.value,
         status = message.status.toEntityStatus(),
         readCount = if (message.status is Message.Status.Read) message.status.readCount else 0,
         editStatus = when (message.editStatus) {
             is Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
-            is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp.toInstant())
+            is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastEditInstant)
         },
         expireAfterMs = message.expirationData?.expireAfter?.inWholeMilliseconds,
         selfDeletionEndDate = message.expirationData?.let {
@@ -112,7 +112,7 @@ class MessageMapperImpl(
         id = message.id,
         content = message.content.toMessageEntityContent(),
         conversationId = message.conversationId.toDao(),
-        date = message.date.toInstant(),
+        date = message.date,
         senderUserId = message.senderUserId.toDao(),
         status = message.status.toEntityStatus(),
         visibility = message.visibility.toEntityVisibility(),
@@ -152,13 +152,13 @@ class MessageMapperImpl(
         id = message.id,
         content = message.content.toMessageContent(message.visibility.toModel() == Message.Visibility.HIDDEN, selfUserId),
         conversationId = message.conversationId.toModel(),
-        date = message.date.toIsoDateTimeString(),
+        date = message.date,
         senderUserId = message.senderUserId.toModel(),
         senderClientId = ClientId(message.senderClientId),
         status = message.status.toModel(message.readCount),
         editStatus = when (val editStatus = message.editStatus) {
             MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
-            is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastDate.toIsoDateTimeString())
+            is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastDate)
         },
         expirationData = message.expireAfterMs?.let {
             Message.ExpirationData(
@@ -193,7 +193,7 @@ class MessageMapperImpl(
         id = message.id,
         content = message.content.toMessageContent(),
         conversationId = message.conversationId.toModel(),
-        date = message.date.toIsoDateTimeString(),
+        date = message.date,
         senderUserId = message.senderUserId.toModel(),
         status = message.status.toModel(message.readCount),
         visibility = message.visibility.toModel(),
@@ -404,6 +404,7 @@ class MessageMapperImpl(
 
     private fun toTextEntity(textContent: MessageContent.Text): MessageEntityContent.Text = MessageEntityContent.Text(
         messageBody = textContent.value,
+        linkPreview = textContent.linkPreviews.map(linkPreviewMapper::fromModelToDao),
         mentions = textContent.mentions.map(messageMentionMapper::fromModelToDao),
         quotedMessageId = textContent.quotedMessageReference?.quotedMessageId,
         isQuoteVerified = textContent.quotedMessageReference?.isVerified,
