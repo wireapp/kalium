@@ -33,8 +33,11 @@ internal interface DataTransferEventHandler {
 
 internal class DataTransferEventHandlerImpl(
     private val selfUserId: UserId,
-    private val userConfigRepository: UserConfigRepository
+    private val userConfigRepository: UserConfigRepository,
+    logger: KaliumLogger = kaliumLogger,
 ) : DataTransferEventHandler {
+
+    private val logger = logger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.ANALYTICS)
 
     override suspend fun handle(
         message: Message.Signaling,
@@ -68,6 +71,5 @@ internal class DataTransferEventHandlerImpl(
 
     private companion object {
         const val TAG = "DataTransferEventHandler"
-        private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.ANALYTICS) }
     }
 }

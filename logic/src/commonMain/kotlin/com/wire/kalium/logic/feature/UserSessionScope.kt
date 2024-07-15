@@ -1296,7 +1296,8 @@ class UserSessionScope internal constructor(
     private val dataTransferEventHandler: DataTransferEventHandler
         get() = DataTransferEventHandlerImpl(
             userId,
-            userConfigRepository
+            userConfigRepository,
+            userScopedLogger
         )
 
     private val applicationMessageHandler: ApplicationMessageHandler
@@ -1463,7 +1464,7 @@ class UserSessionScope internal constructor(
         get() = ObserveLegalHoldStateForUserUseCaseImpl(clientRepository)
 
     val observeAnalyticsTrackingIdentifierStatus: ObserveAnalyticsTrackingIdentifierStatusUseCase
-        get() = ObserveAnalyticsTrackingIdentifierStatusUseCase(userConfigRepository)
+        get() = ObserveAnalyticsTrackingIdentifierStatusUseCase(userConfigRepository, userScopedLogger)
 
     suspend fun observeIfE2EIRequiredDuringLogin(): Flow<Boolean?> = clientRepository.observeIsClientRegistrationBlockedByE2EI()
 
