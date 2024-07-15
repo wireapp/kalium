@@ -745,8 +745,12 @@ class UserSessionScope internal constructor(
             messageDraftDAO = userStorage.database.messageDraftDAO,
         )
 
-    private val slowSyncRepository: SlowSyncRepository by lazy { SlowSyncRepositoryImpl(userStorage.database.metadataDAO) }
-    private val incrementalSyncRepository: IncrementalSyncRepository by lazy { InMemoryIncrementalSyncRepository() }
+    private val slowSyncRepository: SlowSyncRepository by lazy {
+        SlowSyncRepositoryImpl(userStorage.database.metadataDAO, userScopedLogger)
+    }
+    private val incrementalSyncRepository: IncrementalSyncRepository by lazy {
+        InMemoryIncrementalSyncRepository(userScopedLogger)
+    }
 
     private val legalHoldSystemMessagesHandler = LegalHoldSystemMessagesHandlerImpl(
         selfUserId = userId,
@@ -903,7 +907,11 @@ class UserSessionScope internal constructor(
             kaliumFileSystem = kaliumFileSystem
         )
 
-    private val eventGatherer: EventGatherer get() = EventGathererImpl(eventRepository, incrementalSyncRepository)
+    private val eventGatherer: EventGatherer get() = EventGathererImpl(
+        eventRepository,
+        incrementalSyncRepository,
+        userScopedLogger,
+    )
 
     private val eventProcessor: EventProcessor by lazy {
         EventProcessorImpl(
@@ -913,7 +921,8 @@ class UserSessionScope internal constructor(
             teamEventReceiver,
             featureConfigEventReceiver,
             userPropertiesEventReceiver,
-            federationEventReceiver
+            federationEventReceiver,
+            userScopedLogger,
         )
     }
 
@@ -922,7 +931,9 @@ class UserSessionScope internal constructor(
 
     val syncManager: SyncManager by lazy {
         SyncManagerImpl(
-            slowSyncRepository, incrementalSyncRepository
+            slowSyncRepository = slowSyncRepository,
+            incrementalSyncRepository = incrementalSyncRepository,
+            logger = userScopedLogger
         )
     }
 
@@ -1067,8 +1078,8 @@ class UserSessionScope internal constructor(
             slowSyncWorker,
             slowSyncRecoveryHandler,
             networkStateObserver,
-            syncMigrationStepsProvider
-
+            syncMigrationStepsProvider,
+            userScopedLogger,
         )
     }
     private val mlsConversationsRecoveryManager: MLSConversationsRecoveryManager by lazy {
@@ -1094,13 +1105,15 @@ class UserSessionScope internal constructor(
     private val incrementalSyncWorker: IncrementalSyncWorker by lazy {
         IncrementalSyncWorkerImpl(
             eventGatherer,
-            eventProcessor
+            eventProcessor,
+            userScopedLogger,
         )
     }
     private val incrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandlerImpl
         get() = IncrementalSyncRecoveryHandlerImpl(
             restartSlowSyncProcessForRecoveryUseCase,
             eventRepository,
+            userScopedLogger,
         )
 
     private val incrementalSyncManager by lazy {
@@ -1109,7 +1122,8 @@ class UserSessionScope internal constructor(
             incrementalSyncWorker,
             incrementalSyncRepository,
             incrementalSyncRecoveryHandler,
-            networkStateObserver
+            networkStateObserver,
+            userScopedLogger,
         )
     }
 

@@ -475,6 +475,5 @@ class SlowSyncManagerTest {
             block()
             this to slowSyncManager
         }
-
     }
 }

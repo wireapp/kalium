@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.sync.slow
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
@@ -67,13 +68,14 @@ internal class SlowSyncManager(
     private val slowSyncRecoveryHandler: SlowSyncRecoveryHandler,
     private val networkStateObserver: NetworkStateObserver,
     private val syncMigrationStepsProvider: () -> SyncMigrationStepsProvider,
+    logger: KaliumLogger = kaliumLogger,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     private val exponentialDurationHelper: ExponentialDurationHelper = ExponentialDurationHelperImpl(MIN_RETRY_DELAY, MAX_RETRY_DELAY)
 ) {
 
     @OptIn(ExperimentalCoroutinesApi::class)
     private val scope = CoroutineScope(SupervisorJob() + kaliumDispatcher.default.limitedParallelism(1))
-    private val logger = kaliumLogger.withFeatureId(SYNC)
+    private val logger = logger.withFeatureId(SYNC)
 
     private val coroutineExceptionHandler = SyncExceptionHandler(
         onCancellation = {
@@ -88,7 +90,7 @@ internal class SlowSyncManager(
                     logger.i("SlowSync Triggering delay($delay) and waiting for reconnection")
                     networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
                     logger.i("SlowSync Delay and waiting for connection finished - retrying")
-                    kaliumLogger.i("SlowSync Connected - retrying")
+                    logger.i("SlowSync Connected - retrying")
                     startMonitoring()
                 }
             }

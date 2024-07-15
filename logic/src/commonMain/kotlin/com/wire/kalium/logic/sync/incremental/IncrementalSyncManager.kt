@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.sync.incremental
 
+import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.sync.ConnectionPolicy.KEEP_ALIVE
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
@@ -82,12 +84,15 @@ internal class IncrementalSyncManager(
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val incrementalSyncRecoveryHandler: IncrementalSyncRecoveryHandler,
     private val networkStateObserver: NetworkStateObserver,
+    logger: KaliumLogger = kaliumLogger,
     kaliumDispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     private val exponentialDurationHelper: ExponentialDurationHelper = ExponentialDurationHelperImpl(
         MIN_RETRY_DELAY,
         MAX_RETRY_DELAY
     )
 ) {
+
+    private val logger = logger.withFeatureId(SYNC)
 
     /**
      * A dispatcher with limited parallelism of 1.
@@ -98,21 +103,21 @@ internal class IncrementalSyncManager(
 
     private val coroutineExceptionHandler = SyncExceptionHandler(
         onCancellation = {
-            kaliumLogger.i("Cancellation exception handled in SyncExceptionHandler for IncrementalSyncManager")
+            logger.i("Cancellation exception handled in SyncExceptionHandler for IncrementalSyncManager")
             syncScope.launch {
                 incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
             }
         },
         onFailure = { failure ->
-            kaliumLogger.i("$TAG ExceptionHandler error $failure")
+            logger.i("$TAG ExceptionHandler error $failure")
             syncScope.launch {
                 incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Failed(failure))
 
                 incrementalSyncRecoveryHandler.recover(failure = failure) {
                     val delay = exponentialDurationHelper.next()
-                    kaliumLogger.i("$TAG Triggering delay($delay) and waiting for reconnection")
+                    logger.i("$TAG Triggering delay($delay) and waiting for reconnection")
                     delayUntilConnectedOrPolicyUpgrade(delay)
-                    kaliumLogger.i("$TAG Delay and waiting for connection finished - retrying")
+                    logger.i("$TAG Delay and waiting for connection finished - retrying")
                     startMonitoringForSync()
                 }
             }
@@ -127,12 +132,12 @@ internal class IncrementalSyncManager(
                     .drop(1)
                     .first { it == KEEP_ALIVE }
             }.onAwait {
-                kaliumLogger.i("$TAG backoff timer short-circuited as Policy was upgraded")
+                logger.i("$TAG backoff timer short-circuited as Policy was upgraded")
             }
             async {
                 networkStateObserver.delayUntilConnectedWithInternetAgain(delay)
             }.onAwait {
-                kaliumLogger.i("$TAG wait whole timer, as there was no policy upgrade until now")
+                logger.i("$TAG wait whole timer, as there was no policy upgrade until now")
             }
         }.also { coroutineContext.cancelChildren() }
     }
@@ -145,13 +150,13 @@ internal class IncrementalSyncManager(
 
     private fun startMonitoringForSync() {
         syncScope.launch(coroutineExceptionHandler) {
-            kaliumLogger.i("$TAG started monitoring for SlowSync")
+            logger.i("$TAG started monitoring for SlowSync")
             slowSyncRepository.slowSyncStatus.collectLatest { status ->
                 if (status is SlowSyncStatus.Complete) {
                     // START SYNC. The ConnectionPolicy doesn't matter the first time
-                    kaliumLogger.i("$TAG Starting IncrementalSync, as SlowSync is completed")
+                    logger.i("$TAG Starting IncrementalSync, as SlowSync is completed")
                     doIncrementalSyncWhilePolicyAllows()
-                    kaliumLogger.i("$TAG IncrementalSync finished normally. Starting to observe ConnectionPolicy upgrade")
+                    logger.i("$TAG IncrementalSync finished normally. Starting to observe ConnectionPolicy upgrade")
                     observeConnectionPolicyUpgrade()
                 }
                 incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
@@ -165,7 +170,7 @@ internal class IncrementalSyncManager(
             .cancellable()
             .collect {
                 exponentialDurationHelper.reset()
-                kaliumLogger.i("$TAG Re-starting IncrementalSync, as ConnectionPolicy was upgraded to KEEP_ALIVE")
+                logger.i("$TAG Re-starting IncrementalSync, as ConnectionPolicy was upgraded to KEEP_ALIVE")
                 doIncrementalSyncWhilePolicyAllows()
             }
     }
@@ -185,7 +190,7 @@ internal class IncrementalSyncManager(
                 incrementalSyncRepository.updateIncrementalSyncState(newState)
             }
         incrementalSyncRepository.updateIncrementalSyncState(IncrementalSyncStatus.Pending)
-        kaliumLogger.i("$TAG IncrementalSync stopped.")
+        logger.i("$TAG IncrementalSync stopped.")
     }
 
     private companion object {
