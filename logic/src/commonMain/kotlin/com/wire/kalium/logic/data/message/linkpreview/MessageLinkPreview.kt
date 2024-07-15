@@ -15,16 +15,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.data.message.linkpreview
 
-package com.wire.kalium.persistence.kmmSettings
-
-import com.russhwolf.settings.Settings
-import com.russhwolf.settings.StorageSettings
-import org.w3c.dom.Storage
-
-internal actual fun buildSettings(
-    options: SettingOptions,
-    param: EncryptedSettingsPlatformParam
-): Settings = StorageSettings(param.storage)
-
-internal actual class EncryptedSettingsPlatformParam(val storage: Storage)
+data class MessageLinkPreview(
+    val url: String,
+    val urlOffset: Int,
+    val permanentUrl: String? = null,
+    val title: String? = null,
+    val summary: String? = null,
+    val image: LinkPreviewAsset? = null,
+)

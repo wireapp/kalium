@@ -15,16 +15,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.logic.feature.message.receipt
 
-package com.wire.kalium.persistence.kmmSettings
+import kotlinx.coroutines.runBlocking
 
-import com.russhwolf.settings.Settings
-import com.russhwolf.settings.StorageSettings
-import org.w3c.dom.Storage
-
-internal actual fun buildSettings(
-    options: SettingOptions,
-    param: EncryptedSettingsPlatformParam
-): Settings = StorageSettings(param.storage)
-
-internal actual class EncryptedSettingsPlatformParam(val storage: Storage)
+internal class InstantConversationWorkQueue : ConversationWorkQueue {
+    override fun enqueue(
+        input: ConversationTimeEventInput,
+        worker: ConversationTimeEventWorker
+    ) {
+        runBlocking { worker.doWork(input) }
+    }
+}

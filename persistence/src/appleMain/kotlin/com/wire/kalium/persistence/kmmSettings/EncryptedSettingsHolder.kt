@@ -23,11 +23,9 @@ import com.russhwolf.settings.KeychainSettings
 import com.russhwolf.settings.Settings
 
 @OptIn(ExperimentalSettingsImplementation::class)
-internal actual object EncryptedSettingsBuilder {
-    actual fun build(
-        options: SettingOptions,
-        param: EncryptedSettingsPlatformParam
-    ): Settings = KeychainSettings(param.serviceName)
-}
+internal actual fun buildSettings(
+    options: SettingOptions,
+    param: EncryptedSettingsPlatformParam
+): Settings = KeychainSettings(param.serviceName)
 
 internal actual class EncryptedSettingsPlatformParam(val serviceName: String)

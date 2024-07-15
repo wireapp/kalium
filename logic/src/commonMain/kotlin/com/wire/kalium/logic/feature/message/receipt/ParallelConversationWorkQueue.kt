@@ -22,18 +22,20 @@ import com.wire.kalium.logic.data.id.ConversationId
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlin.time.Duration.Companion.seconds
 
 /**
  * A work queue that schedules and runs actions for conversations based on a time
  */
-internal interface ConversationWorkQueue {
+internal fun interface ConversationWorkQueue {
     /**
      * Enqueue [worker] to perform on the provided [input], to be executed according to the implementation.
      */
-    suspend fun enqueue(input: ConversationTimeEventInput, worker: ConversationTimeEventWorker)
+    fun enqueue(input: ConversationTimeEventInput, worker: ConversationTimeEventWorker)
 }
 
 /**
@@ -69,16 +71,26 @@ internal class ParallelConversationWorkQueue(
      * If there's an existing work being done for the same [ConversationTimeEventInput.conversationId], it will wait until it's over.
      * After that, will start working as soon as the [dispatcher] allows it, while the [scope] is alive.
      */
-    override suspend fun enqueue(
+    override fun enqueue(
         input: ConversationTimeEventInput,
         worker: ConversationTimeEventWorker
-    ): Unit = mutex.withLock {
+    ) {
+        scope.launch {
+            mutex.withLock {
+                enqueueWork(input, worker)
+            }
+        }
+    }
+
+    private fun ParallelConversationWorkQueue.enqueueWork(
+        input: ConversationTimeEventInput,
+        worker: ConversationTimeEventWorker
+    ): Any {
         val conversationId = input.conversationId
         val time = input.eventTime
-        logger.v("Attempting to enqueue receipt work for conversation '${conversationId.toLogString()}', with time '$time'")
         val work = ConversationTimeEventWork(input, worker)
         val existingConversationQueue = conversationQueueMap[conversationId]
-        existingConversationQueue?.let {
+        return existingConversationQueue?.let {
             val isNewWorkMoreRecent = time > it.value.conversationTimeEventInput.eventTime
             if (isNewWorkMoreRecent) {
                 it.value = work
@@ -88,11 +100,11 @@ internal class ParallelConversationWorkQueue(
         }
     }
 
-    private suspend fun createQueueForConversation(initialWork: ConversationTimeEventWork) =
-        MutableStateFlow(initialWork).also {
+    private fun createQueueForConversation(initialWork: ConversationTimeEventWork) =
+        MutableStateFlow(initialWork).also { flow ->
             scope.launch(dispatcher) {
                 @Suppress("TooGenericExceptionCaught")
-                it.collect { (conversationTimeEventInput, worker) ->
+                flow.debounce(QUEUE_DEBOUNCE).collect { (conversationTimeEventInput, worker) ->
                     try {
                         worker.doWork(conversationTimeEventInput)
                     } catch (t: Throwable) {
@@ -101,4 +113,8 @@ internal class ParallelConversationWorkQueue(
                 }
             }
         }
+
+    private companion object {
+        private val QUEUE_DEBOUNCE = 3.seconds
+    }
 }

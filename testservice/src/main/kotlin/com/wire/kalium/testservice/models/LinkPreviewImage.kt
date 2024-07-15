@@ -15,16 +15,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
+package com.wire.kalium.testservice.models
 
-package com.wire.kalium.persistence.kmmSettings
-
-import com.russhwolf.settings.Settings
-import com.russhwolf.settings.StorageSettings
-import org.w3c.dom.Storage
-
-internal actual fun buildSettings(
-    options: SettingOptions,
-    param: EncryptedSettingsPlatformParam
-): Settings = StorageSettings(param.storage)
-
-internal actual class EncryptedSettingsPlatformParam(val storage: Storage)
+data class LinkPreviewImage(
+    val type: String = "",
+    val data: String = "",
+    val height: Int = 0,
+    val width: Int = 0
+)

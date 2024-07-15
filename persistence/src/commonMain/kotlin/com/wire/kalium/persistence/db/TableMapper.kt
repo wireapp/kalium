@@ -40,6 +40,7 @@ import com.wire.kalium.persistence.MessageDraft
 import com.wire.kalium.persistence.MessageFailedToDecryptContent
 import com.wire.kalium.persistence.MessageFederationTerminatedContent
 import com.wire.kalium.persistence.MessageLegalHoldContent
+import com.wire.kalium.persistence.MessageLinkPreview
 import com.wire.kalium.persistence.MessageMemberChangeContent
 import com.wire.kalium.persistence.MessageMention
 import com.wire.kalium.persistence.MessageMissedCallContent
@@ -145,6 +146,10 @@ internal object TableMapper {
         conversation_idAdapter = QualifiedIDAdapter,
         domain_listAdapter = StringListAdapter,
         federation_typeAdapter = EnumColumnAdapter()
+    )
+    val messageLinkPreviewAdapter = MessageLinkPreview.Adapter(
+        conversation_idAdapter = QualifiedIDAdapter,
+        url_offsetAdapter = IntColumnAdapter
     )
     val messageMentionAdapter = MessageMention.Adapter(
         conversation_idAdapter = QualifiedIDAdapter,

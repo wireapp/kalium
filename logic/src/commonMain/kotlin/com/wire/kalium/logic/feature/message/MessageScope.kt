@@ -61,6 +61,8 @@ import com.wire.kalium.logic.feature.asset.ScheduleNewAssetMessageUseCaseImpl
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCase
 import com.wire.kalium.logic.feature.asset.UpdateAssetMessageTransferStatusUseCaseImpl
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionConfirmationMessageUseCase
+import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCase
+import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCaseImpl
 import com.wire.kalium.logic.feature.message.composite.SendButtonActionMessageUseCase
 import com.wire.kalium.logic.feature.message.composite.SendButtonMessageUseCase
 import com.wire.kalium.logic.feature.message.confirmation.ConfirmationDeliveryHandler
@@ -79,9 +81,11 @@ import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletio
 import com.wire.kalium.logic.feature.message.ephemeral.EnqueueMessageSelfDeletionUseCaseImpl
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandler
 import com.wire.kalium.logic.feature.message.ephemeral.EphemeralMessageDeletionHandlerImpl
+import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.feature.selfDeletingMessages.ObserveSelfDeletionTimerSettingsForConversationUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCase
 import com.wire.kalium.logic.feature.sessionreset.ResetSessionUseCaseImpl
+import com.wire.kalium.logic.feature.user.ObserveFileSharingStatusUseCase
 import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.util.MessageContentEncoder
@@ -118,8 +122,9 @@ class MessageScope internal constructor(
     private val messageMetadataRepository: MessageMetadataRepository,
     private val staleEpochVerifier: StaleEpochVerifier,
     private val legalHoldHandler: LegalHoldHandler,
+    private val observeFileSharingStatusUseCase: ObserveFileSharingStatusUseCase,
     private val scope: CoroutineScope,
-    private val kaliumLogger: KaliumLogger,
+    kaliumLogger: KaliumLogger,
     internal val dispatcher: KaliumDispatcher = KaliumDispatcherImpl,
     private val legalHoldStatusMapper: LegalHoldStatusMapper = LegalHoldStatusMapperImpl
 ) {
@@ -154,6 +159,9 @@ class MessageScope internal constructor(
             selfUserId = selfUserId,
             protoContentMapper = protoContentMapper
         )
+
+    private val validateAssetMimeTypeUseCase: ValidateAssetMimeTypeUseCase
+        get() = ValidateAssetMimeTypeUseCaseImpl()
 
     private val messageContentEncoder = MessageContentEncoder()
     private val messageSendingInterceptor: MessageSendingInterceptor
@@ -215,6 +223,7 @@ class MessageScope internal constructor(
             persistMessage = persistMessage,
             selfUserId = selfUserId,
             provideClientId = currentClientIdProvider,
+            assetDataSource = assetRepository,
             slowSyncRepository = slowSyncRepository,
             messageSender = messageSender,
             messageSendFailureHandler = messageSendFailureHandler,
@@ -268,6 +277,8 @@ class MessageScope internal constructor(
             userPropertyRepository,
             observeSelfDeletingMessages,
             scope,
+            observeFileSharingStatusUseCase,
+            validateAssetMimeTypeUseCase,
             dispatcher
         )
 

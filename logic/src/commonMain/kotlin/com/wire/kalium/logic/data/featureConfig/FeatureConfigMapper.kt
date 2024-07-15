@@ -139,14 +139,18 @@ class FeatureConfigMapperImpl : FeatureConfigMapper {
             E2EIModel(
                 E2EIConfigModel(
                     data.config.url,
-                    data.config.verificationExpirationSeconds
+                    data.config.verificationExpirationSeconds,
+                    data.config.shouldUseProxy == true,
+                    data.config.crlProxy
                 ),
                 fromDTO(data.status)
             )
         } ?: E2EIModel(
             E2EIConfigModel(
                 null,
-                0
+                0,
+                false,
+                null
             ),
             Status.DISABLED
         )

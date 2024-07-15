@@ -335,7 +335,19 @@ internal class MessageDAOImpl internal constructor(
             queries.markMessageAsEdited(editInstant, currentMessageId, conversationId)
             reactionsQueries.deleteAllReactionsForMessage(currentMessageId, conversationId)
             queries.deleteMessageMentions(currentMessageId, conversationId)
+            queries.deleteMessageLinkPreviews(currentMessageId, conversationId)
             queries.updateMessageTextContent(newTextContent.messageBody, currentMessageId, conversationId)
+            newTextContent.linkPreview.forEach {
+                queries.insertMessageLinkPreview(
+                    message_id = currentMessageId,
+                    conversation_id = conversationId,
+                    url = it.url,
+                    url_offset = it.urlOffset,
+                    permanent_url = it.permanentUrl,
+                    title = it.title,
+                    summary = it.summary
+                )
+            }
             newTextContent.mentions.forEach {
                 queries.insertMessageMention(
                     message_id = currentMessageId,
@@ -393,12 +405,17 @@ internal class MessageDAOImpl internal constructor(
         queries.markMessagesAsDecryptionResolved(userId, clientId)
     }
 
-    override suspend fun getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
+    override suspend fun getMessageIdsThatExpectReadConfirmationWithinDates(
         conversationId: QualifiedIDEntity,
+        afterDate: Instant,
+        untilDate: Instant,
         visibility: List<MessageEntity.Visibility>
     ): List<String> = withContext(coroutineContext) {
-        queries.selectPendingMessagesIdsByConversationIdAndVisibilityAfterDate(
-            conversationId, visibility
+        queries.selectMessageIdsThatExpectReadConfirmationWithinDates(
+            conversation_id = conversationId,
+            visibility = visibility,
+            creation_date = afterDate,
+            creation_date_ = untilDate
         ).executeAsList()
     }
 

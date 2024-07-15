@@ -132,6 +132,17 @@ internal class MessageInsertExtensionImpl(
                     quoted_message_id = content.quotedMessageId,
                     is_quote_verified = content.isQuoteVerified
                 )
+                content.linkPreview.forEach {
+                    messagesQueries.insertMessageLinkPreview(
+                        message_id = message.id,
+                        conversation_id = message.conversationId,
+                        url = it.url,
+                        url_offset = it.urlOffset,
+                        permanent_url = it.permanentUrl,
+                        summary = it.summary,
+                        title = it.title
+                    )
+                }
                 content.mentions.forEach {
                     messagesQueries.insertMessageMention(
                         message_id = message.id,
