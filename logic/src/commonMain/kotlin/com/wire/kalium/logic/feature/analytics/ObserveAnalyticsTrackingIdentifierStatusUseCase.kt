@@ -22,11 +22,12 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMapRightWithEither
-import com.wire.kalium.logic.functional.mapToRightOr
+import com.wire.kalium.logic.functional.isRight
 import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 
 /**
  * Use case that allows observing if the analytics tracking identifier
@@ -44,11 +45,12 @@ interface ObserveAnalyticsTrackingIdentifierStatusUseCase {
 
 @Suppress("FunctionNaming")
 internal fun ObserveAnalyticsTrackingIdentifierStatusUseCase(
-    userConfigRepository: UserConfigRepository
+    userConfigRepository: UserConfigRepository,
+    defaultLogger: KaliumLogger = kaliumLogger,
 ) = object : ObserveAnalyticsTrackingIdentifierStatusUseCase {
 
     private val TAG = "ObserveAnalyticsTrackingIdentifierStatusUseCase"
-    private val logger by lazy { kaliumLogger.withTextTag(KaliumLogger.Companion.ApplicationFlow.ANALYTICS.name) }
+    private val logger = defaultLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.ANALYTICS)
 
     override suspend fun invoke(): Flow<AnalyticsIdentifierResult> =
         userConfigRepository
@@ -57,11 +59,10 @@ internal fun ObserveAnalyticsTrackingIdentifierStatusUseCase(
             .flatMapRightWithEither { currentIdentifier: String ->
                 val result =
                     userConfigRepository.getPreviousTrackingIdentifier()?.let {
+                        logger.i("$TAG Updating Tracking Identifier with migration value.")
                         AnalyticsIdentifierResult.MigrationIdentifier(
                             identifier = currentIdentifier
-                        ).also {
-                            logger.i("$TAG Updating Tracking Identifier with migration value.")
-                        }
+                        )
                     } ?: AnalyticsIdentifierResult.ExistingIdentifier(
                         identifier = currentIdentifier
                     ).also {
@@ -69,28 +70,38 @@ internal fun ObserveAnalyticsTrackingIdentifierStatusUseCase(
                     }
 
                 flowOf(Either.Right(result))
-            }.mapToRightOr(
-                AnalyticsIdentifierResult.NonExistingIdentifier(
-                    identifier = uuid4().toString()
-                ).also {
-                    logger.i("$TAG Generating new Tracking Identifier value.")
+            }.map {
+                if (it.isRight()) it.value
+                else {
+                    userConfigRepository.getTrackingIdentifier()?.let { currentIdentifier: String ->
+                        logger.i("$TAG Updating Tracking Identifier with existing value.")
+                        AnalyticsIdentifierResult.ExistingIdentifier(
+                            identifier = currentIdentifier
+                        )
+                    } ?: uuid4().toString().let { trackingIdentifier: String ->
+                        logger.i("$TAG Generating new Tracking Identifier value.")
+                        userConfigRepository.setTrackingIdentifier(
+                            identifier = trackingIdentifier
+                        )
+
+                        AnalyticsIdentifierResult.NonExistingIdentifier(
+                            identifier = trackingIdentifier
+                        )
+                    }
                 }
-            )
+            }
 }
 
 sealed class AnalyticsIdentifierResult {
 
-    // TODO(Analytics): Send DataTransfer message if this
     data class NonExistingIdentifier(
         val identifier: String
     ) : AnalyticsIdentifierResult()
 
-    // TODO(Analytics): Just set identifier without migration
     data class ExistingIdentifier(
         val identifier: String
     ) : AnalyticsIdentifierResult()
 
-    // TODO(Analytics): Set identifier with migration
     data class MigrationIdentifier(
         val identifier: String
     ) : AnalyticsIdentifierResult()
