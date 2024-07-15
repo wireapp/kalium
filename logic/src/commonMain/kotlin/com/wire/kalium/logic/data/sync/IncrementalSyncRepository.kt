@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.sync
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository.Companion.BUFFER_SIZE
 import com.wire.kalium.logic.kaliumLogger
@@ -63,7 +64,12 @@ internal interface IncrementalSyncRepository {
     }
 }
 
-internal class InMemoryIncrementalSyncRepository : IncrementalSyncRepository {
+internal class InMemoryIncrementalSyncRepository(
+    logger: KaliumLogger = kaliumLogger,
+) : IncrementalSyncRepository {
+
+    private val logger = logger.withFeatureId(SYNC)
+
     private val _syncState = MutableSharedFlow<IncrementalSyncStatus>(
         replay = 1,
         extraBufferCapacity = BUFFER_SIZE,
@@ -90,13 +96,12 @@ internal class InMemoryIncrementalSyncRepository : IncrementalSyncRepository {
     }
 
     override suspend fun updateIncrementalSyncState(newState: IncrementalSyncStatus) {
-        kaliumLogger.withFeatureId(SYNC).i("IncrementalSyncStatus Updated FROM:${_syncState.first()}; TO: $newState")
+        logger.i("IncrementalSyncStatus Updated FROM:${_syncState.first()}; TO: $newState")
         _syncState.emit(newState)
     }
 
     override suspend fun setConnectionPolicy(connectionPolicy: ConnectionPolicy) {
-        kaliumLogger.withFeatureId(SYNC).i("IncrementalSync Connection Policy changed: $connectionPolicy")
+        logger.i("IncrementalSync Connection Policy changed: $connectionPolicy")
         _connectionPolicy.emit(connectionPolicy)
     }
-
 }

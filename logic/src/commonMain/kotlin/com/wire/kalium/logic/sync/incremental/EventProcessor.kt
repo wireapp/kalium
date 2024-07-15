@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.sync.incremental
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.Event
@@ -69,11 +70,12 @@ internal class EventProcessorImpl(
     private val teamEventReceiver: TeamEventReceiver,
     private val featureConfigEventReceiver: FeatureConfigEventReceiver,
     private val userPropertiesEventReceiver: UserPropertiesEventReceiver,
-    private val federationEventReceiver: FederationEventReceiver
+    private val federationEventReceiver: FederationEventReceiver,
+    logger: KaliumLogger = kaliumLogger,
 ) : EventProcessor {
 
     private val logger by lazy {
-        kaliumLogger.withFeatureId(EVENT_RECEIVER)
+        logger.withFeatureId(EVENT_RECEIVER)
     }
 
     override var disableEventProcessing: Boolean = false

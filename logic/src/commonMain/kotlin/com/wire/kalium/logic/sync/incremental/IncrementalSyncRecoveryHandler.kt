@@ -18,6 +18,8 @@
 
 package com.wire.kalium.logic.sync.incremental
 
+import com.wire.kalium.logger.KaliumLogger
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.event.EventRepository
 import com.wire.kalium.logic.functional.onSuccess
@@ -48,18 +50,21 @@ internal fun interface OnIncrementalSyncRetryCallback {
  */
 internal class IncrementalSyncRecoveryHandlerImpl(
     private val restartSlowSyncProcessForRecoveryUseCase: RestartSlowSyncProcessForRecoveryUseCase,
-    private val eventRepository: EventRepository
+    private val eventRepository: EventRepository,
+    logger: KaliumLogger = kaliumLogger,
 ) : IncrementalSyncRecoveryHandler {
 
+    private val logger = logger.withFeatureId(SYNC)
+
     override suspend fun recover(failure: CoreFailure, onIncrementalSyncRetryCallback: OnIncrementalSyncRetryCallback) {
-        kaliumLogger.i("$TAG Checking if we can recover from the failure: $failure")
+        logger.i("$TAG Checking if we can recover from the failure: $failure")
         if (shouldDiscardEventsAndRestartSlowSync(failure)) {
-            kaliumLogger.i("$TAG Discarding all events and restarting the slow sync process")
+            logger.i("$TAG Discarding all events and restarting the slow sync process")
             eventRepository.clearLastProcessedEventId().onSuccess {
                 restartSlowSyncProcessForRecoveryUseCase()
             }
         }
-        kaliumLogger.i("$TAG Retrying to recover form the failure $failure, perform the incremental sync again")
+        logger.i("$TAG Retrying to recover form the failure $failure, perform the incremental sync again")
         onIncrementalSyncRetryCallback.retry()
     }
 

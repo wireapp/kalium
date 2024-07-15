@@ -160,7 +160,7 @@ class FeatureConfigMapperTest {
                 ), FeatureFlagStatusDTO.ENABLED
             ),
             FeatureConfigData.E2EI(
-                E2EIConfigDTO("url", 1_000_000L),
+                E2EIConfigDTO("url", null, false, 1_000_000L),
                 FeatureFlagStatusDTO.ENABLED
             ),
             FeatureConfigData.MLSMigration(
