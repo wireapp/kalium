@@ -941,7 +941,7 @@ class E2EIRepositoryTest {
     @Test
     fun givenE2EIIsDisabled_whenCallingDiscoveryUrl_thenItFailWithDisabled() {
         val (arrangement, e2eiRepository) = Arrangement()
-            .withGettingE2EISettingsReturns(Either.Right(E2EISettings(false, null, Instant.DISTANT_FUTURE)))
+            .withGettingE2EISettingsReturns(Either.Right(E2EISettings(false, null, Instant.DISTANT_FUTURE, false, null)))
             .arrange()
 
         e2eiRepository.discoveryUrl().shouldFail {
@@ -956,7 +956,7 @@ class E2EIRepositoryTest {
     @Test
     fun givenE2EIIsEnabledAndDiscoveryUrlIsNull_whenCallingDiscoveryUrl_thenItFailWithMissingDiscoveryUrl() {
         val (arrangement, e2eiRepository) = Arrangement()
-            .withGettingE2EISettingsReturns(Either.Right(E2EISettings(true, null, Instant.DISTANT_FUTURE)))
+            .withGettingE2EISettingsReturns(Either.Right(E2EISettings(true, null, Instant.DISTANT_FUTURE, false, null)))
             .arrange()
 
         e2eiRepository.discoveryUrl().shouldFail {
@@ -971,7 +971,7 @@ class E2EIRepositoryTest {
     @Test
     fun givenE2EIIsEnabledAndDiscoveryUrlIsNotNull_whenCallingDiscoveryUrl_thenItSucceed() {
         val (arrangement, e2eiRepository) = Arrangement()
-            .withGettingE2EISettingsReturns(Either.Right(E2EISettings(true, RANDOM_URL, Instant.DISTANT_FUTURE)))
+            .withGettingE2EISettingsReturns(Either.Right(E2EISettings(true, RANDOM_URL, Instant.DISTANT_FUTURE, false, null)))
             .arrange()
 
         e2eiRepository.discoveryUrl().shouldSucceed {
@@ -1329,7 +1329,7 @@ class E2EIRepositoryTest {
             val HEADERS = mapOf(NONCE_HEADER_KEY to RANDOM_NONCE.value, LOCATION_HEADER_KEY to RANDOM_URL)
 
             val E2EI_TEAM_SETTINGS = E2EISettings(
-                true, RANDOM_URL, DateTimeUtil.currentInstant()
+                true, RANDOM_URL, DateTimeUtil.currentInstant(), false, null
             )
         }
     }
