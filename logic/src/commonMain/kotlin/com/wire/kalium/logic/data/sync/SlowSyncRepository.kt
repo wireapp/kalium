@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.sync
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.persistence.dao.MetadataDAO
@@ -43,8 +44,11 @@ internal interface SlowSyncRepository {
     suspend fun getSlowSyncVersion(): Int?
 }
 
-internal class SlowSyncRepositoryImpl(private val metadataDao: MetadataDAO) : SlowSyncRepository {
-    private val logger = kaliumLogger.withFeatureId(SYNC)
+internal class SlowSyncRepositoryImpl(
+    private val metadataDao: MetadataDAO,
+    logger: KaliumLogger = kaliumLogger,
+) : SlowSyncRepository {
+    private val logger = logger.withFeatureId(SYNC)
 
     private val _slowSyncStatus = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Pending)
     override val slowSyncStatus: StateFlow<SlowSyncStatus> get() = _slowSyncStatus.asStateFlow()
