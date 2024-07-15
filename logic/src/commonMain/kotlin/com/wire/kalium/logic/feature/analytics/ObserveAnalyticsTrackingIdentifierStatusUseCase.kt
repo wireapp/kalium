@@ -79,20 +79,21 @@ internal fun ObserveAnalyticsTrackingIdentifierStatusUseCase(
 }
 
 sealed class AnalyticsIdentifierResult {
-    abstract val identifier: String
 
     // TODO(Analytics): Send DataTransfer message if this
     data class NonExistingIdentifier(
-        override val identifier: String
+        val identifier: String
     ) : AnalyticsIdentifierResult()
 
     // TODO(Analytics): Just set identifier without migration
     data class ExistingIdentifier(
-        override val identifier: String
+        val identifier: String
     ) : AnalyticsIdentifierResult()
 
     // TODO(Analytics): Set identifier with migration
     data class MigrationIdentifier(
-        override val identifier: String
+        val identifier: String
     ) : AnalyticsIdentifierResult()
+
+    data object None : AnalyticsIdentifierResult()
 }
