@@ -277,7 +277,7 @@ class RevocationListCheckerTest {
 
             every {
                 userConfigRepository.getE2EISettings()
-            }.returns(E2EISettings(true, DUMMY_URL, DateTimeUtil.currentInstant()).right())
+            }.returns(E2EISettings(true, DUMMY_URL, DateTimeUtil.currentInstant(), false, null).right())
         }
     }
 
