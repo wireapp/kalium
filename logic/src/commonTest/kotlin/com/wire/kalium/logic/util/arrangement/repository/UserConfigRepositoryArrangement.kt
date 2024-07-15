@@ -28,6 +28,8 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.every
 import io.mockative.mock
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 
 internal interface UserConfigRepositoryArrangement {
     val userConfigRepository: UserConfigRepository
@@ -44,6 +46,8 @@ internal interface UserConfigRepositoryArrangement {
     suspend fun withSetTrackingIdentifier()
     suspend fun withGetTrackingIdentifier(result: String?)
     suspend fun withSetPreviousTrackingIdentifier()
+    suspend fun withGetPreviousTrackingIdentifier(result: String?)
+    suspend fun withObserveTrackingIdentifier(result: Either<StorageFailure, String>)
 }
 
 internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrangement {
@@ -108,5 +112,13 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
 
     override suspend fun withSetPreviousTrackingIdentifier() {
         coEvery { userConfigRepository.setPreviousTrackingIdentifier(any()) }.returns(Unit)
+    }
+
+    override suspend fun withGetPreviousTrackingIdentifier(result: String?) {
+        coEvery { userConfigRepository.getPreviousTrackingIdentifier() }.returns(result)
+    }
+
+    override suspend fun withObserveTrackingIdentifier(result: Either<StorageFailure, String>) {
+        coEvery { userConfigRepository.observeTrackingIdentifier() }.returns(flowOf(result))
     }
 }
