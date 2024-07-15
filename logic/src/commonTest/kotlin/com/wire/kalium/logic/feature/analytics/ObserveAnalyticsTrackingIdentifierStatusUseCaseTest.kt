@@ -69,6 +69,7 @@ class ObserveAnalyticsTrackingIdentifierStatusUseCaseTest {
     fun givenThereIsNoIdentifier_whenObservingTrackingIdentifier_thenReturnNonExistingIdentifier() = runTest {
         // given
         val (_, useCase) = Arrangement().arrange {
+            withGetTrackingIdentifier(null)
             withObserveTrackingIdentifier(Either.Left(StorageFailure.DataNotFound))
         }
 
@@ -77,6 +78,24 @@ class ObserveAnalyticsTrackingIdentifierStatusUseCaseTest {
             // then
             val item = awaitItem()
             assertIs<AnalyticsIdentifierResult.NonExistingIdentifier>(item)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun givenExistingIdentifier_whenObservingTrackingIdentifierReturnsDataNotFound_thenReturnExistingIdentifier() = runTest {
+        // given
+        val (_, useCase) = Arrangement().arrange {
+            withGetTrackingIdentifier(CURRENT_IDENTIFIER)
+            withObserveTrackingIdentifier(Either.Left(StorageFailure.DataNotFound))
+        }
+
+        // when
+        useCase().test {
+            // then
+            val item = awaitItem()
+            assertIs<AnalyticsIdentifierResult.ExistingIdentifier>(item)
 
             cancelAndIgnoreRemainingEvents()
         }
