@@ -32,7 +32,8 @@ sealed class LocalNotification(open val conversationId: ConversationId) {
         val id: ConversationId,
         val conversationName: String?,
         val messages: List<LocalNotificationMessage>,
-        val isOneToOneConversation: Boolean
+        val isOneToOneConversation: Boolean,
+        val isReplyAllowed: Boolean = false
     ) : LocalNotification(id)
 
     data class UpdateMessage(

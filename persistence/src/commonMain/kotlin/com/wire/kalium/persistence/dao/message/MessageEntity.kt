@@ -385,6 +385,7 @@ data class NotificationMessageEntity(
     val conversationName: String?,
     val mutedStatus: ConversationEntity.MutedStatus,
     val conversationType: ConversationEntity.Type,
+    val degradedConversationNotified: Boolean
 )
 
 sealed class MessagePreviewEntityContent {
