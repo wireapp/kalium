@@ -30,6 +30,7 @@ import com.wire.kalium.logic.data.client.ClientType
 import com.wire.kalium.logic.data.client.DeleteClientParam
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.logout.LogoutReason
 import com.wire.kalium.logic.data.user.UserAvailabilityStatus
 import com.wire.kalium.logic.feature.auth.AddAuthenticatedUserUseCase
 import com.wire.kalium.logic.feature.auth.AuthenticationResult
@@ -281,12 +282,8 @@ class InstanceService(
                 val result = session.currentSession()
                 if (result is CurrentSessionResult.Success) {
                     instance.coreLogic.sessionScope(result.accountInfo.userId) {
-                        instance.clientId?.let {
-                            runBlocking {
-                                client.deleteClient(DeleteClientParam(instance.password, ClientId(instance.clientId)))
-                            }
-                        }
-                        log.info("Instance $id: Device ${instance.clientId} removed")
+                        log.info("Instance $id: Logout device ${instance.clientId}")
+                        logout(reason = LogoutReason.SELF_HARD_LOGOUT, waitUntilCompletes = true)
                     }
                 }
             }
