@@ -424,6 +424,9 @@ data class NotificationMessageEntity(
     val conversationName: String?,
     val mutedStatus: ConversationEntity.MutedStatus,
     val conversationType: ConversationEntity.Type,
+    val degradedConversationNotified: Boolean,
+    val legalHoldStatus: ConversationEntity.LegalHoldStatus,
+    val legalHoldStatusChangeNotified: Boolean
 )
 
 sealed class MessagePreviewEntityContent {

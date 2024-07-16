@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.data.message
 
+import app.cash.turbine.test
 import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.asset.AssetMessage
@@ -28,8 +29,13 @@ import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.notification.LocalNotification
+import com.wire.kalium.logic.data.notification.LocalNotificationMessage
+import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage.TEST_MESSAGE_ID
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID
 import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID_2
 import com.wire.kalium.logic.functional.Either
@@ -42,10 +48,12 @@ import com.wire.kalium.network.api.base.authenticated.message.SendMLSMessageResp
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
 import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.Mock
@@ -525,6 +533,7 @@ class MessageRepositoryTest {
             (result as Either.Right).value
         )
     }
+
     @Test
     fun givenLegalHoldForMembersMessage_whenUpdatingMembers_thenTheDAOShouldBeCalledWithProperValues() = runTest {
         // given
@@ -538,6 +547,7 @@ class MessageRepositoryTest {
             .with(eq(TEST_CONVERSATION_ID.toDao()), eq(TEST_MESSAGE_ID), eq(newUsersList.map { it.toDao() }))
             .wasInvoked(exactly = once)
     }
+
     @Test
     fun givenConversationIds_whenGettingLastMessagesForConversationIds_thenTheDAOShouldBeCalledWithProperValues() = runTest {
         // given
@@ -552,6 +562,49 @@ class MessageRepositoryTest {
             .suspendFunction(arrangement.messageDAO::getLastMessagesByConversations)
             .with(eq(conversationIds.map { it.toDao() }))
             .wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenSuccessOnNotificationMessage_whenGettingNotificationMessage_thenTheDAOShouldBeCalled() = runTest {
+        // given
+        val (arrangement, messageRepository) = Arrangement()
+            .withNotificationMessage(listOf())
+            .arrange()
+
+        // when
+        messageRepository.getNotificationMessage().test {
+            val result = awaitItem()
+            // then
+            result.shouldSucceed { it.isEmpty() }
+
+            verify(arrangement.messageDAO)
+                .suspendFunction(arrangement.messageDAO::getNotificationMessage)
+                .wasInvoked(exactly = once)
+
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun givenSuccessOnNotificationMessage2_whenGettingNotificationMessage_thenProperNotificationReturned() = runTest {
+        // given
+        val (arrangement, messageRepository) = Arrangement()
+            .withNotificationMessage(listOf(NOTIFICATION_ENTITY))
+            .withMappedEntitiesToLocalNotifications(NOTIFICATION_MESSAGE)
+            .arrange()
+
+        // when
+        messageRepository.getNotificationMessage().test {
+            val result = awaitItem()
+
+            // then
+            result.shouldSucceed {
+                assertEquals(1, it.size)
+                assertEquals(NOTIFICATION_CONVERSATION, it.first())
+            }
+
+            awaitComplete()
+        }
     }
 
     private class Arrangement {
@@ -612,6 +665,14 @@ class MessageRepositoryTest {
         fun withMappedMessageEntity(message: MessageEntity.Regular): Arrangement {
             given(messageMapper)
                 .function(messageMapper::fromMessageToEntity)
+                .whenInvokedWith(anything())
+                .then { message }
+            return this
+        }
+
+        fun withMappedEntitiesToLocalNotifications(message: LocalNotificationMessage): Arrangement {
+            given(messageMapper)
+                .function(messageMapper::fromMessageToLocalNotificationMessage)
                 .whenInvokedWith(anything())
                 .then { message }
             return this
@@ -728,6 +789,14 @@ class MessageRepositoryTest {
                 .thenReturn(result)
         }
 
+        fun withNotificationMessage(notificationEntities: List<NotificationMessageEntity>): Arrangement {
+            given(messageDAO)
+                .suspendFunction(messageDAO::getNotificationMessage)
+                .whenInvoked()
+                .then { flowOf(notificationEntities) }
+            return this
+        }
+
         fun arrange() = this to MessageDataSource(
             messageApi = messageApi,
             mlsMessageApi = mlsMessageApi,
@@ -800,6 +869,38 @@ class MessageRepositoryTest {
                     TEST_CLIENT_ID.value, ClientId("clientId2").value
                 )
             )
+        )
+
+        val NOTIFICATION_MESSAGE = LocalNotificationMessage.Text(
+            messageId = "message_id",
+            author = LocalNotificationMessageAuthor("Sender", null),
+            time = Instant.DISTANT_PAST,
+            text = "Some text in message",
+            isQuotingSelfUser = false
+        )
+
+        val NOTIFICATION_CONVERSATION = LocalNotification.Conversation(
+            TestConversation.ID, "", listOf(NOTIFICATION_MESSAGE), true, true
+        )
+
+        val NOTIFICATION_ENTITY = NotificationMessageEntity(
+            id = "message_id",
+            contentType = MessageEntity.ContentType.TEXT,
+            isSelfDelete = false,
+            senderUserId = TestUser.ENTITY_ID,
+            senderImage = null,
+            date = Instant.DISTANT_PAST,
+            senderName = "Sender",
+            text = "Some text in message",
+            assetMimeType = null,
+            isQuotingSelf = false,
+            conversationId = TestConversation.ENTITY_ID,
+            conversationName = null,
+            mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
+            conversationType = ConversationEntity.Type.ONE_ON_ONE,
+            degradedConversationNotified = true,
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.ENABLED,
+            legalHoldStatusChangeNotified = true
         )
     }
 }
