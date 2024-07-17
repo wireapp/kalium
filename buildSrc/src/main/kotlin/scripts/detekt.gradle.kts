@@ -31,7 +31,7 @@ dependencies {
     detekt("io.gitlab.arturbosch.detekt:detekt-cli:$detektVersion")
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-formatting:$detektVersion")
     detektPlugins("io.gitlab.arturbosch.detekt:detekt-rules-libraries:$detektVersion")
-    detektPlugins("com.wire:detekt-rules:2.0.0-main-SNAPSHOT") {
+    detektPlugins("com.wire:detekt-rules:1.0.0-1.23.6") {
         isChanging = true
     }
 }
@@ -39,7 +39,7 @@ dependencies {
 detekt {
     buildUponDefaultConfig = true
     // activate all available (even unstable) rules.
-    allRules = false
+    // allRules = false
     config.setFrom(files("$rootDir/detekt/detekt.yml"))
     source.setFrom(files("$rootDir"))
     // a way of suppressing issues before introducing detekt
@@ -47,7 +47,7 @@ detekt {
 
     // dynamic prop to enable and disable autocorrect, enabled locally via local.properties file
     val autoFixEnabled = getLocalProperty("detektAutofix", "false")
-    autoCorrect.set(autoFixEnabled.toBoolean())
+    autoCorrect = autoFixEnabled.toBoolean()
     println("> Detekt autoCorrect: $autoFixEnabled")
 }
 
@@ -64,4 +64,12 @@ tasks.withType<Detekt> {
         "**/*Test/**",
         "**/protobuf/**",
     )
+}
+
+configurations.matching { it.name == "detekt" }.all {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "org.jetbrains.kotlin") {
+            useVersion("1.9.23")
+        }
+    }
 }

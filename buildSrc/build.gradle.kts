@@ -27,6 +27,14 @@ repositories {
     maven(url = "https://oss.sonatype.org/content/repositories/snapshots")
 }
 
+configurations.all {
+    resolutionStrategy.eachDependency {
+        if (requested.group == "org.jetbrains.kotlin") {
+            useVersion(libs.versions.kotlin.get())
+        }
+    }
+}
+
 dependencies {
     implementation(libs.kotlin.plugin)
     implementation("org.jetbrains.dokka:dokka-gradle-plugin:${libs.versions.dokka.get()}")

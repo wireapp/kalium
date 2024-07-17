@@ -58,4 +58,4 @@ abstract class UserSessionScopeProviderCommon(
     abstract fun create(userId: UserId): UserSessionScope
 }
 
-internal expect class UserSessionScopeProviderImpl : UserSessionScopeProviderCommon
+internal expect class UserSessionScopeProviderImpl : UserSessionScopeProvider
