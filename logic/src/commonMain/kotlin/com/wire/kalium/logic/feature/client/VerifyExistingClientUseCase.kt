@@ -23,8 +23,6 @@ import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.map
@@ -69,8 +67,6 @@ internal class VerifyExistingClientUseCaseImpl @OptIn(DelicateKaliumApi::class) 
 
                     else -> VerifyExistingClientResult.Success(client)
                 }
-
-
 
                 if (client != null) {
                     if (isAllowedToRegisterMLSClient()) {
