@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.sync.slow
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
@@ -70,9 +71,10 @@ internal class SlowSyncWorkerImpl(
     private val joinMLSConversations: JoinExistingMLSConversationsUseCase,
     private val fetchLegalHoldForSelfUserFromRemoteUseCase: FetchLegalHoldForSelfUserFromRemoteUseCase,
     private val oneOnOneResolver: OneOnOneResolver,
+    logger: KaliumLogger = kaliumLogger
 ) : SlowSyncWorker {
 
-    private val logger = kaliumLogger.withFeatureId(SYNC)
+    private val logger = logger.withFeatureId(SYNC)
 
     override suspend fun slowSyncStepsFlow(migrationSteps: List<SyncMigrationStep>): Flow<SlowSyncStep> = flow {
 
@@ -110,20 +112,20 @@ internal class SlowSyncWorkerImpl(
 
     private suspend fun saveLastProcessedEventIdIfNeeded(lastProcessedEventIdToSaveOnSuccess: String?) =
         if (lastProcessedEventIdToSaveOnSuccess != null) {
-            kaliumLogger.i("Saving last processed event ID to complete SlowSync: $lastProcessedEventIdToSaveOnSuccess")
+            logger.i("Saving last processed event ID to complete SlowSync: $lastProcessedEventIdToSaveOnSuccess")
             eventRepository.updateLastProcessedEventId(lastProcessedEventIdToSaveOnSuccess)
         } else {
-            kaliumLogger.i("Skipping saving last processed event ID to complete SlowSync")
+            logger.i("Skipping saving last processed event ID to complete SlowSync")
             Either.Right(Unit)
         }
 
     private suspend fun getLastProcessedEventIdToSaveOnSuccess(): String? {
         val hasLastEventId = eventRepository.lastProcessedEventId().isRight()
         val lastProcessedEventIdToSaveOnSuccess = if (hasLastEventId) {
-            kaliumLogger.i("Last processed event ID already exists, skipping fetch")
+            logger.i("Last processed event ID already exists, skipping fetch")
             null
         } else {
-            kaliumLogger.i("Last processed event ID does not exist, fetching most recent event ID from remote")
+            logger.i("Last processed event ID does not exist, fetching most recent event ID from remote")
             eventRepository.fetchMostRecentEventId().onFailure {
                 throw KaliumSyncException("Failure during SlowSync. Unable to fetch most recent event ID", it)
             }.nullableFold({ null }, { it })

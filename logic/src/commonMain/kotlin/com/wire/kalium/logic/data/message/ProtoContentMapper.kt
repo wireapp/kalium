@@ -86,10 +86,11 @@ class ProtoContentMapperImpl(
 
     @Suppress("ComplexMethod")
     private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable): GenericMessage.Content<out Any> {
-        return if (protoContent.expiresAfterMillis != null) {
+        val expiration = protoContent.expiresAfterMillis
+        return if (expiration != null) {
             mapEphemeralContent(
                 protoContent.messageContent,
-                protoContent.expiresAfterMillis,
+                expiration,
                 protoContent.expectsReadConfirmation,
                 protoContent.legalHoldStatus
             )

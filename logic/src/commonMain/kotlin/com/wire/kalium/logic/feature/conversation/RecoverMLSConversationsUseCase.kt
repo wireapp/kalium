@@ -73,8 +73,9 @@ internal class RecoverMLSConversationsUseCaseImpl(
         }
 
     private suspend fun recoverMLSGroup(conversation: Conversation): Either<CoreFailure, Unit> {
-        return if (conversation.protocol is Conversation.ProtocolInfo.MLS) {
-            mlsConversationRepository.isGroupOutOfSync(conversation.protocol.groupId, conversation.protocol.epoch)
+        val protocol = conversation.protocol
+        return if (protocol is Conversation.ProtocolInfo.MLS) {
+            mlsConversationRepository.isGroupOutOfSync(protocol.groupId, protocol.epoch)
                 .fold({ checkEpochFailure ->
                     Either.Left(checkEpochFailure)
                 }, { isGroupOutOfSync ->
