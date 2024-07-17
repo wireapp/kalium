@@ -100,6 +100,6 @@ data class AssetContent(
     }
 }
 
-fun AssetContent.hasValidRemoteData() = this.remoteData.hasValidData()
+fun AssetContent.hasValidRemoteData() = remoteData.hasValidData()
 
 fun AssetContent.RemoteData.hasValidData() = assetId.isNotEmpty() && sha256.isNotEmpty() && otrKey.isNotEmpty()
