@@ -71,7 +71,8 @@ internal fun ObserveAnalyticsTrackingIdentifierStatusUseCase(
 
                 flowOf(Either.Right(result))
             }.map {
-                if (it.isRight()) it.value
+                // it's needed, otherwise it will be detected as Flow<Any>
+                if (it.isRight()) it.value as AnalyticsIdentifierResult
                 else {
                     userConfigRepository.getTrackingIdentifier()?.let { currentIdentifier: String ->
                         logger.i("$TAG Updating Tracking Identifier with existing value.")
