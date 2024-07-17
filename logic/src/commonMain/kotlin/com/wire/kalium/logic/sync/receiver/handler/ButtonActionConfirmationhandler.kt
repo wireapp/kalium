@@ -53,11 +53,12 @@ internal class ButtonActionConfirmationHandlerImpl internal constructor(
                     Either.Right(Unit)
                 }
             }.flatMap {
-                if (messageContent.buttonId != null) {
+                val buttonId = messageContent.buttonId
+                if (buttonId != null) {
                     compositeMessageRepository.markSelected(
                         messageId = messageId,
                         conversationId = conversationId,
-                        buttonId = messageContent.buttonId
+                        buttonId = buttonId
                     )
                 } else {
                     compositeMessageRepository.resetSelection(

@@ -37,6 +37,8 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.notification.LocalNotification
+import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapper
+import com.wire.kalium.logic.data.notification.LocalNotificationMessageMapperImpl
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.failure.ProteusSendMessageFailure
@@ -49,21 +51,19 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapFlowStorageRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
-import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.authenticated.message.MessagePriority
 import com.wire.kalium.network.api.authenticated.message.Parameters
 import com.wire.kalium.network.api.authenticated.message.QualifiedMessageOption
 import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
+import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
+import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.exceptions.ProteusClientsChangedError
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
 import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity
 import com.wire.kalium.util.DelicateKaliumApi
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.datetime.Instant
@@ -269,6 +269,7 @@ internal class MessageDataSource internal constructor(
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
     private val receiptModeMapper: ReceiptModeMapper = MapperProvider.receiptModeMapper(),
     private val sendMessagePartialFailureMapper: SendMessagePartialFailureMapper = MapperProvider.sendMessagePartialFailureMapper(),
+    private val notificationMapper: LocalNotificationMessageMapper = LocalNotificationMessageMapperImpl()
 ) : MessageRepository {
 
     override val extensions: MessageRepositoryExtensions = MessageRepositoryExtensionsImpl(messageDAO, messageMapper)
@@ -304,23 +305,14 @@ internal class MessageDataSource internal constructor(
     )
         .map(messageMapper::fromAssetEntityToAssetMessage)
 
-    @OptIn(ExperimentalCoroutinesApi::class)
     override suspend fun getNotificationMessage(
         messageSizePerConversation: Int
     ): Either<CoreFailure, List<LocalNotification>> = wrapStorageRequest {
         val notificationEntities = messageDAO.getNotificationMessage()
-        notificationEntities.groupBy { it.conversationId }
-            .map { (conversationId, messages) ->
-                LocalNotification.Conversation(
-                    // todo: needs some clean up!
-                    id = conversationId.toModel(),
-                    conversationName = messages.first().conversationName,
-                    messages = messages.mapNotNull { message ->
-                        messageMapper.fromMessageToLocalNotificationMessage(message)
-                    },
-                    isOneToOneConversation = messages.first().conversationType == ConversationEntity.Type.ONE_ON_ONE
-                )
-            }
+        notificationMapper.fromEntitiesToLocalNotifications(
+            notificationEntities,
+            messageSizePerConversation
+        ) { message -> messageMapper.fromMessageToLocalNotificationMessage(message) }
     }
 
     @DelicateKaliumApi(

@@ -301,7 +301,8 @@ object MessageMapper {
         isQuotingSelf: Boolean?,
         assetMimeType: String?,
         mutedStatus: ConversationEntity.MutedStatus,
-        conversationType: ConversationEntity.Type
+        conversationType: ConversationEntity.Type,
+        degradedConversationNotified: Boolean
     ): NotificationMessageEntity = NotificationMessageEntity(
         id = id,
         contentType = contentType,
@@ -316,7 +317,8 @@ object MessageMapper {
         mutedStatus = mutedStatus,
         conversationType = conversationType,
         isQuotingSelf = isQuotingSelf == true,
-        isSelfDelete = isSelfDelete
+        isSelfDelete = isSelfDelete,
+        degradedConversationNotified = degradedConversationNotified
     )
 
     private fun createMessageEntity(

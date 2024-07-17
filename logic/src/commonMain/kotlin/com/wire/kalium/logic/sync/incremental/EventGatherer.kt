@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.sync.incremental
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.CoreFailure
@@ -76,6 +77,7 @@ internal interface EventGatherer {
 internal class EventGathererImpl(
     private val eventRepository: EventRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
+    logger: KaliumLogger = kaliumLogger,
 ) : EventGatherer {
 
     private val _currentSource = MutableStateFlow(EventSource.PENDING)
@@ -83,7 +85,7 @@ internal class EventGathererImpl(
     override val currentSource: StateFlow<EventSource> get() = _currentSource.asStateFlow()
 
     private val offlineEventBuffer = EventProcessingHistory()
-    private val logger = kaliumLogger.withFeatureId(SYNC)
+    private val logger = logger.withFeatureId(SYNC)
 
     override suspend fun gatherEvents(): Flow<EventEnvelope> = flow {
         offlineEventBuffer.clear()

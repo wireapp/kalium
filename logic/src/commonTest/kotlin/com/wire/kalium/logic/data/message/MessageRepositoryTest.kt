@@ -27,30 +27,36 @@ import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.notification.LocalNotification
+import com.wire.kalium.logic.data.notification.LocalNotificationMessage
+import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage.TEST_MESSAGE_ID
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID
 import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID_2
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
-import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.api.authenticated.message.QualifiedMessageOption
 import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
 import com.wire.kalium.network.api.authenticated.message.SendMLSMessageResponse
+import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
+import com.wire.kalium.network.api.base.authenticated.message.MessageApi
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
 import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
-
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -555,6 +561,42 @@ class MessageRepositoryTest {
         }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenSuccessOnNotificationMessage_whenGettingNotificationMessage_thenTheDAOShouldBeCalled() = runTest {
+        // given
+        val (arrangement, messageRepository) = Arrangement()
+            .withNotificationMessage(listOf())
+            .arrange()
+
+        // when
+        val result = messageRepository.getNotificationMessage()
+
+        // then
+        result.shouldSucceed { it.isEmpty() }
+        coVerify { arrangement.messageDAO.getNotificationMessage() }
+            .wasInvoked(exactly = once)
+
+    }
+
+    @Test
+    fun givenSuccessOnNotificationMessage2_whenGettingNotificationMessage_thenProperNotificationReturned() = runTest {
+        // given
+        val (arrangement, messageRepository) = Arrangement()
+            .withNotificationMessage(listOf(NOTIFICATION_ENTITY))
+            .withMappedEntitiesToLocalNotifications(NOTIFICATION_MESSAGE)
+            .arrange()
+
+        // when
+        val result = messageRepository.getNotificationMessage()
+
+        // then
+        result.shouldSucceed {
+            assertEquals(1, it.size)
+            assertEquals(NOTIFICATION_CONVERSATION, it.first())
+        }
+
+    }
+
     private class Arrangement {
 
         @Mock
@@ -617,7 +659,7 @@ class MessageRepositoryTest {
             return this
         }
 
-        suspend fun withSuccessfulMessageDelivery(dateTime: Instant): Arrangement {
+        suspend fun withSuccessfulMessageDelivery(dateTime: Instant) = apply {
             coEvery { messageApi.qualifiedSendMessage(any(), any()) }
                 .returns(
                     NetworkResponse.Success(
@@ -626,7 +668,11 @@ class MessageRepositoryTest {
                         201
                     )
                 )
-            return this
+        }
+
+        fun withMappedEntitiesToLocalNotifications(message: LocalNotificationMessage) = apply {
+            every { messageMapper.fromMessageToLocalNotificationMessage(any<NotificationMessageEntity>()) }
+                .returns(message)
         }
 
         fun withFailedToSendMlsMapping(failedToSend: List<UserId>) = apply {
@@ -722,6 +768,10 @@ class MessageRepositoryTest {
             }.returns(result)
         }
 
+        suspend fun withNotificationMessage(notificationEntities: List<NotificationMessageEntity>) = apply {
+            coEvery { messageDAO.getNotificationMessage() }.returns(notificationEntities)
+        }
+
         fun arrange() = this to MessageDataSource(
             messageApi = messageApi,
             mlsMessageApi = mlsMessageApi,
@@ -791,6 +841,36 @@ class MessageRepositoryTest {
                     TEST_CLIENT_ID.value, ClientId("clientId2").value
                 )
             )
+        )
+
+        val NOTIFICATION_MESSAGE = LocalNotificationMessage.Text(
+            messageId = "message_id",
+            author = LocalNotificationMessageAuthor("Sender", null),
+            time = Instant.DISTANT_PAST,
+            text = "Some text in message",
+            isQuotingSelfUser = false
+        )
+
+        val NOTIFICATION_CONVERSATION = LocalNotification.Conversation(
+            TestConversation.ID, "", listOf(NOTIFICATION_MESSAGE), true, true
+        )
+
+        val NOTIFICATION_ENTITY = NotificationMessageEntity(
+            id = "message_id",
+            contentType = MessageEntity.ContentType.TEXT,
+            isSelfDelete = false,
+            senderUserId = TestUser.ENTITY_ID,
+            senderImage = null,
+            date = Instant.DISTANT_PAST,
+            senderName = "Sender",
+            text = "Some text in message",
+            assetMimeType = null,
+            isQuotingSelf = false,
+            conversationId = TestConversation.ENTITY_ID,
+            conversationName = null,
+            mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
+            conversationType = ConversationEntity.Type.ONE_ON_ONE,
+            degradedConversationNotified = true
         )
     }
 }

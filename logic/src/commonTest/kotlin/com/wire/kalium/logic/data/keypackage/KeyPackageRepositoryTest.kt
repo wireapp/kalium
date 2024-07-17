@@ -121,7 +121,7 @@ class KeyPackageRepositoryTest {
     }
 
     @Test
-    fun givenAllUsersHaveNoKeyPackagesAvailable_whenClaimingKeyPackagesFromMultipleUsers_thenSuccessFailWithMissingKeyPackages() = runTest {
+    fun givenAllUsersHaveNoKeyPackagesAvailable_whenClaimingKeyPackagesFromMultipleUsers_thenSuccessWitheEmptySuccessKeyPackages() = runTest {
         val usersWithout = setOf(
             Arrangement.USER_ID.copy(value = "missingKP"),
             Arrangement.USER_ID.copy(value = "alsoMissingKP"),
@@ -136,13 +136,14 @@ class KeyPackageRepositoryTest {
 
         val result = keyPackageRepository.claimKeyPackages(usersWithout.toList(), CIPHER_SUITE)
 
-        result.shouldFail { failure ->
-            assertIs<CoreFailure.MissingKeyPackages>(failure)
+        result.shouldSucceed { keyPackages ->
+            assertEquals(emptyList(), keyPackages.successfullyFetchedKeyPackages)
+            assertEquals(usersWithout, keyPackages.usersWithoutKeyPackagesAvailable)
         }
     }
 
     @Test
-    fun givenUserWithNoKeyPackages_whenClaimingKeyPackagesFromSingleUser_thenResultShouldFailWithError() = runTest {
+    fun givenUserWithNoKeyPackages_whenClaimingKeyPackagesFromSingleUser_thenSuccessWitheEmptySuccessKeyPackages() = runTest {
 
         val (_, keyPackageRepository) = Arrangement()
             .withCurrentClientId()
@@ -151,8 +152,9 @@ class KeyPackageRepositoryTest {
 
         val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.USER_ID), CIPHER_SUITE)
 
-        result.shouldFail { failure ->
-            assertEquals(CoreFailure.MissingKeyPackages(setOf(Arrangement.USER_ID)), failure)
+        result.shouldSucceed { keyPackages ->
+            assertEquals(emptyList(), keyPackages.successfullyFetchedKeyPackages)
+            assertEquals(setOf(Arrangement.USER_ID), keyPackages.usersWithoutKeyPackagesAvailable)
         }
     }
 
