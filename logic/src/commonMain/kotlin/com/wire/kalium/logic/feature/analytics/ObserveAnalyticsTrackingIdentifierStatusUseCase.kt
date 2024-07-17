@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.analytics
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
+import com.wire.kalium.logic.data.analytics.AnalyticsIdentifierResult
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMapRightWithEither
 import com.wire.kalium.logic.functional.isRight
@@ -91,21 +92,4 @@ internal fun ObserveAnalyticsTrackingIdentifierStatusUseCase(
                     }
                 }
             }
-}
-
-sealed class AnalyticsIdentifierResult {
-
-    data class NonExistingIdentifier(
-        val identifier: String
-    ) : AnalyticsIdentifierResult()
-
-    data class ExistingIdentifier(
-        val identifier: String
-    ) : AnalyticsIdentifierResult()
-
-    data class MigrationIdentifier(
-        val identifier: String
-    ) : AnalyticsIdentifierResult()
-
-    data object None : AnalyticsIdentifierResult()
 }
