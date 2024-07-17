@@ -68,6 +68,11 @@ internal class GetOrRegisterClientUseCaseImpl(
                             clearOldClientRelatedData()
                             null
                         }
+
+                        is VerifyExistingClientResult.Failure.E2EICertificateRequired -> RegisterClientResult.E2EICertificateRequired(
+                            result.client,
+                            result.userId
+                        )
                     }
                 }
             ) ?: registerClient(registerClientParam)
