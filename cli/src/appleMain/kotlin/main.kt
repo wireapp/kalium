@@ -21,6 +21,7 @@ import com.wire.kalium.cli.CLIApplication
 import com.wire.kalium.cli.commands.AddMemberToGroupCommand
 import com.wire.kalium.cli.commands.CreateGroupCommand
 import com.wire.kalium.cli.commands.DeleteClientCommand
+import com.wire.kalium.cli.commands.GenerateEventsCommand
 import com.wire.kalium.cli.commands.ListenGroupCommand
 import com.wire.kalium.cli.commands.LoginCommand
 import com.wire.kalium.cli.commands.MarkAsReadCommand
@@ -39,6 +40,7 @@ fun main(args: Array<String>) = CLIApplication().subcommands(
         RefillKeyPackagesCommand(),
         MarkAsReadCommand(),
         InteractiveCommand(),
-        UpdateSupportedProtocolsCommand()
+        UpdateSupportedProtocolsCommand(),
+        GenerateEventsCommand()
     )
 ).main(args)
