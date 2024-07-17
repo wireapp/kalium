@@ -88,9 +88,10 @@ class RetryFailedMessageUseCase internal constructor(
                             messageUuid = message.id
                         )
                         scope.launch(dispatcher.io) {
+                            val content = message.content
                             when {
-                                message is Message.Regular && message.content is MessageContent.Asset ->
-                                    retrySendingAssetMessage(message, message.content.value)
+                                message is Message.Regular && content is MessageContent.Asset ->
+                                    retrySendingAssetMessage(message, content.value)
 
                                 message is Message.Regular && message.editStatus is Message.EditStatus.Edited ->
                                     retrySendingEditMessage(message)
