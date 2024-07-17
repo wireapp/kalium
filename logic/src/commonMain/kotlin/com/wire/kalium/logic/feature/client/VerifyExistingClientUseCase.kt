@@ -22,7 +22,13 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.ClientId
+import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.fold
+import com.wire.kalium.logic.functional.getOrElse
+import com.wire.kalium.logic.functional.map
+import com.wire.kalium.util.DelicateKaliumApi
 
 /**
  * Checks if the given client is still exists on the backend, otherwise returns failure.
@@ -36,18 +42,48 @@ interface VerifyExistingClientUseCase {
     suspend operator fun invoke(clientId: ClientId): VerifyExistingClientResult
 }
 
-internal class VerifyExistingClientUseCaseImpl(
-    private val clientRepository: ClientRepository
+internal class VerifyExistingClientUseCaseImpl @OptIn(DelicateKaliumApi::class) constructor(
+    private val selfUserId: UserId,
+    private val clientRepository: ClientRepository,
+    private val isAllowedToRegisterMLSClient: IsAllowedToRegisterMLSClientUseCase,
+    private val registerMLSClientUseCase: RegisterMLSClientUseCase,
 ) : VerifyExistingClientUseCase {
 
+    @OptIn(DelicateKaliumApi::class)
     override suspend fun invoke(clientId: ClientId): VerifyExistingClientResult {
         return clientRepository.selfListOfClients()
             .fold({
                 VerifyExistingClientResult.Failure.Generic(it)
             }, { listOfClients ->
                 val client = listOfClients.firstOrNull { it.id == clientId }
+                when {
+                    (client == null) -> VerifyExistingClientResult.Failure.ClientNotRegistered
+
+                    isAllowedToRegisterMLSClient() -> {
+                        registerMLSClientUseCase.invoke(clientId = client.id).map {
+                            if (it is RegisterMLSClientResult.E2EICertificateRequired)
+                                VerifyExistingClientResult.Failure.E2EICertificateRequired(client, selfUserId)
+                            else VerifyExistingClientResult.Success(client)
+                        }.getOrElse { VerifyExistingClientResult.Failure.Generic(it) }
+                    }
+
+                    else -> VerifyExistingClientResult.Success(client)
+                }
+
+
+
                 if (client != null) {
-                    VerifyExistingClientResult.Success(client)
+                    if (isAllowedToRegisterMLSClient()) {
+                        registerMLSClientUseCase.invoke(clientId = client.id).fold({
+                            VerifyExistingClientResult.Failure.Generic(it)
+                        }) {
+                            if (it is RegisterMLSClientResult.E2EICertificateRequired)
+                                VerifyExistingClientResult.Failure.E2EICertificateRequired(client, selfUserId)
+                            else VerifyExistingClientResult.Success(client)
+                        }
+                    } else {
+                        VerifyExistingClientResult.Success(client)
+                    }
                 } else {
                     VerifyExistingClientResult.Failure.ClientNotRegistered
                 }
@@ -61,5 +97,6 @@ sealed class VerifyExistingClientResult {
     sealed class Failure : VerifyExistingClientResult() {
         data object ClientNotRegistered : Failure()
         data class Generic(val genericFailure: CoreFailure) : Failure()
+        class E2EICertificateRequired(val client: Client, val userId: UserId) : Failure()
     }
 }

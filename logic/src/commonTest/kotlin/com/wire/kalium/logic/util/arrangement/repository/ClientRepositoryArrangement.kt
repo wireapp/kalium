@@ -17,11 +17,14 @@
  */
 package com.wire.kalium.logic.util.arrangement.repository
 
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.client.VerifyExistingClientUseCaseTest
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import io.mockative.Mock
@@ -39,19 +42,24 @@ internal interface ClientRepositoryArrangement {
         result: Either<StorageFailure, List<UserId>>,
         redundantClientsOfUsers: Matcher<Map<UserId, List<ClientId>>> = any()
     )
+
     fun withStoreUserClientIdList(
         result: Either<StorageFailure, Unit>,
         userId: Matcher<UserId> = any(),
         clientIds: Matcher<List<ClientId>> = any()
     )
+
     fun withStoreMapOfUserToClientId(
         result: Either<StorageFailure, Unit>,
         mapUserToClientId: Matcher<Map<UserId, List<ClientId>>> = any()
     )
+
     fun withStoreUserClientListAndRemoveRedundantClients(
         result: Either<StorageFailure, Unit>,
         clients: Matcher<List<InsertClientParam>> = any()
     )
+
+    fun withSelfClientsResult(result: Either<NetworkFailure, List<Client>>)
 }
 
 internal open class ClientRepositoryArrangementImpl : ClientRepositoryArrangement {
@@ -75,7 +83,7 @@ internal open class ClientRepositoryArrangementImpl : ClientRepositoryArrangemen
     override fun withRemoveClientsAndReturnUsersWithNoClients(
         result: Either<StorageFailure, List<UserId>>,
         redundantClientsOfUsers: Matcher<Map<UserId, List<ClientId>>>
-        ) {
+    ) {
         given(clientRepository)
             .suspendFunction(clientRepository::removeClientsAndReturnUsersWithNoClients)
             .whenInvokedWith(redundantClientsOfUsers)
@@ -110,6 +118,13 @@ internal open class ClientRepositoryArrangementImpl : ClientRepositoryArrangemen
         given(clientRepository)
             .suspendFunction(clientRepository::storeUserClientListAndRemoveRedundantClients)
             .whenInvokedWith(any())
+            .thenReturn(result)
+    }
+
+    override fun withSelfClientsResult(result: Either<NetworkFailure, List<Client>>) {
+        given(clientRepository)
+            .suspendFunction(clientRepository::selfListOfClients)
+            .whenInvoked()
             .thenReturn(result)
     }
 }
