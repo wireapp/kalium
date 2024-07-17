@@ -16,7 +16,6 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-
 package com.wire.kalium.logic.feature.client
 
 import com.wire.kalium.logic.CoreFailure
@@ -32,13 +31,8 @@ import com.wire.kalium.logic.util.arrangement.usecase.RegisterMLSClientUseCaseAr
 import com.wire.kalium.logic.util.arrangement.usecase.RegisterMLSClientUseCaseArrangementImpl
 import com.wire.kalium.util.DelicateKaliumApi
 import io.mockative.any
-<<<<<<< HEAD
-import io.mockative.coEvery
 import io.mockative.coVerify
-import io.mockative.mock
-=======
-import io.mockative.verify
->>>>>>> c7792e365a (fix: Stuck on Setting up Wire after canceling E2EI during login [WPB-10046] (#2882))
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -112,36 +106,23 @@ class VerifyExistingClientUseCaseTest {
         }.wasNotInvoked()
     }
 
-    private fun arrange(block: Arrangement.() -> Unit) = Arrangement(block).arrange()
+    private fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
 
-<<<<<<< HEAD
-        @Mock
-        val clientRepository = mock(ClientRepository::class)
-=======
     @OptIn(DelicateKaliumApi::class)
-    private class Arrangement(private val block: Arrangement.() -> Unit) :
+    private class Arrangement(private val block: suspend Arrangement.() -> Unit) :
         RegisterMLSClientUseCaseArrangement by RegisterMLSClientUseCaseArrangementImpl(),
         ClientRepositoryArrangement by ClientRepositoryArrangementImpl(),
         IsAllowedToRegisterMLSClientUseCaseArrangement by IsAllowedToRegisterMLSClientUseCaseArrangementImpl() {
->>>>>>> c7792e365a (fix: Stuck on Setting up Wire after canceling E2EI during login [WPB-10046] (#2882))
 
         fun arrange() = run {
-            block()
+            runBlocking { block() }
 
-<<<<<<< HEAD
-        suspend fun withSelfClientsResult(result: Either<NetworkFailure, List<Client>>): Arrangement {
-            coEvery {
-                clientRepository.selfListOfClients()
-            }.returns(result)
-            return this
-=======
             this@Arrangement to VerifyExistingClientUseCaseImpl(
                 TestUser.USER_ID,
                 clientRepository,
                 isAllowedToRegisterMLSClientUseCase,
                 registerMLSClientUseCase
             )
->>>>>>> c7792e365a (fix: Stuck on Setting up Wire after canceling E2EI during login [WPB-10046] (#2882))
         }
     }
 }

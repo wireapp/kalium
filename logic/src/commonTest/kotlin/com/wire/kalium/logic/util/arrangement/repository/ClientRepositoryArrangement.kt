@@ -24,7 +24,6 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.feature.client.VerifyExistingClientUseCaseTest
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.persistence.dao.client.InsertClientParam
 import io.mockative.Mock
@@ -46,35 +45,23 @@ internal interface ClientRepositoryArrangement {
         redundantClientsOfUsers: Matcher<Map<UserId, List<ClientId>>> = AnyMatcher(valueOf())
     )
 
-<<<<<<< HEAD
     suspend fun withStoreUserClientIdList(
-=======
-    fun withStoreUserClientIdList(
->>>>>>> c7792e365a (fix: Stuck on Setting up Wire after canceling E2EI during login [WPB-10046] (#2882))
         result: Either<StorageFailure, Unit>,
         userId: Matcher<UserId> = AnyMatcher(valueOf()),
         clientIds: Matcher<List<ClientId>> = AnyMatcher(valueOf())
     )
 
-<<<<<<< HEAD
     suspend fun withStoreMapOfUserToClientId(
-=======
-    fun withStoreMapOfUserToClientId(
->>>>>>> c7792e365a (fix: Stuck on Setting up Wire after canceling E2EI during login [WPB-10046] (#2882))
         result: Either<StorageFailure, Unit>,
         mapUserToClientId: Matcher<Map<UserId, List<ClientId>>> = AnyMatcher(valueOf())
     )
 
-<<<<<<< HEAD
     suspend fun withStoreUserClientListAndRemoveRedundantClients(
-=======
-    fun withStoreUserClientListAndRemoveRedundantClients(
->>>>>>> c7792e365a (fix: Stuck on Setting up Wire after canceling E2EI during login [WPB-10046] (#2882))
         result: Either<StorageFailure, Unit>,
         clients: Matcher<List<InsertClientParam>> = AnyMatcher(valueOf())
     )
 
-    fun withSelfClientsResult(result: Either<NetworkFailure, List<Client>>)
+    suspend fun withSelfClientsResult(result: Either<NetworkFailure, List<Client>>)
 }
 
 internal open class ClientRepositoryArrangementImpl : ClientRepositoryArrangement {
@@ -97,16 +84,9 @@ internal open class ClientRepositoryArrangementImpl : ClientRepositoryArrangemen
         result: Either<StorageFailure, List<UserId>>,
         redundantClientsOfUsers: Matcher<Map<UserId, List<ClientId>>>
     ) {
-<<<<<<< HEAD
         coEvery {
             clientRepository.removeClientsAndReturnUsersWithNoClients(matches { redundantClientsOfUsers.matches(it) })
         }.returns(result)
-=======
-        given(clientRepository)
-            .suspendFunction(clientRepository::removeClientsAndReturnUsersWithNoClients)
-            .whenInvokedWith(redundantClientsOfUsers)
-            .thenReturn(result)
->>>>>>> c7792e365a (fix: Stuck on Setting up Wire after canceling E2EI during login [WPB-10046] (#2882))
     }
 
     override suspend fun withStoreUserClientIdList(
@@ -137,10 +117,7 @@ internal open class ClientRepositoryArrangementImpl : ClientRepositoryArrangemen
         }.returns(result)
     }
 
-    override fun withSelfClientsResult(result: Either<NetworkFailure, List<Client>>) {
-        given(clientRepository)
-            .suspendFunction(clientRepository::selfListOfClients)
-            .whenInvoked()
-            .thenReturn(result)
+    override suspend fun withSelfClientsResult(result: Either<NetworkFailure, List<Client>>) {
+        coEvery { clientRepository.selfListOfClients() }.returns(result)
     }
 }

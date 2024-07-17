@@ -22,24 +22,21 @@ import com.wire.kalium.logic.feature.client.RegisterMLSClientResult
 import com.wire.kalium.logic.feature.client.RegisterMLSClientUseCase
 import com.wire.kalium.logic.functional.Either
 import io.mockative.any
-import io.mockative.given
+import io.mockative.coEvery
 import io.mockative.mock
 
 interface RegisterMLSClientUseCaseArrangement {
 
     val registerMLSClientUseCase: RegisterMLSClientUseCase
 
-    fun withRegisterMLSClient(result: Either<CoreFailure, RegisterMLSClientResult>)
+    suspend fun withRegisterMLSClient(result: Either<CoreFailure, RegisterMLSClientResult>)
 }
 
 class RegisterMLSClientUseCaseArrangementImpl : RegisterMLSClientUseCaseArrangement {
     override val registerMLSClientUseCase: RegisterMLSClientUseCase = mock(RegisterMLSClientUseCase::class)
 
-    override fun withRegisterMLSClient(result: Either<CoreFailure, RegisterMLSClientResult>) {
-        given(registerMLSClientUseCase)
-            .suspendFunction(registerMLSClientUseCase::invoke)
-            .whenInvokedWith(any())
-            .thenReturn(result)
+    override suspend fun withRegisterMLSClient(result: Either<CoreFailure, RegisterMLSClientResult>) {
+        coEvery { registerMLSClientUseCase(any()) }.returns(result)
     }
 
 }
