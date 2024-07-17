@@ -19,6 +19,7 @@
 package com.wire.kalium.logic.feature.message
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.cryptography.utils.AES256Key
 import com.wire.kalium.cryptography.utils.generateRandomAES256Key
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
@@ -131,13 +132,13 @@ class SendTextMessageUseCase internal constructor(
         return linkPreviews.map { linkPreview ->
             val imageCopy = linkPreview.image?.let {
                 // Generate the otr asymmetric key that will be used to encrypt the data
-                it.otrKey = generateRandomAES256Key()
+                it.otrKey = generateRandomAES256Key().data
                 // The assetDataSource will encrypt the data with the provided otrKey and upload it if successful
                 it.assetDataPath?.let { assetDataPath ->
                     assetDataSource.uploadAndPersistPrivateAsset(
                         it.mimeType,
                         assetDataPath,
-                        it.otrKey,
+                        AES256Key(it.otrKey),
                         null
                     ).onFailure { failure ->
                         // on upload failure we still want link previews being included without image
@@ -146,7 +147,7 @@ class SendTextMessageUseCase internal constructor(
                         it.assetToken = assetId.assetToken ?: ""
                         it.assetKey = assetId.key
                         it.assetDomain = assetId.domain
-                        it.sha256Key = sha256Key
+                        it.sha256Key = sha256Key.data
                         it
                     }
                 }

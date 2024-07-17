@@ -18,25 +18,10 @@
 
 package com.wire.kalium.logic.data.client
 
-import com.wire.kalium.cryptography.PreKeyCrypto
 import com.wire.kalium.logic.data.conversation.ClientId
 import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 import kotlin.time.Duration.Companion.days
-
-data class RegisterClientParam(
-    val password: String?,
-    val preKeys: List<PreKeyCrypto>,
-    val lastKey: PreKeyCrypto,
-    val deviceType: DeviceType?,
-    val label: String?,
-    val capabilities: List<ClientCapability>?,
-    val clientType: ClientType?,
-    val model: String?,
-    val cookieLabel: String?,
-    val secondFactorVerificationCode: String? = null,
-    val modelPostfix: String? = null
-)
 
 data class DeleteClientParam(
     val password: String?,

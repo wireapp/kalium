@@ -29,6 +29,8 @@ import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.PersistReactionUseCase
 import com.wire.kalium.logic.data.message.ProtoContent
 import com.wire.kalium.logic.data.message.getType
+import com.wire.kalium.logic.data.message.hasValidData
+import com.wire.kalium.logic.data.message.hasValidRemoteData
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.feature.call.CallManager
@@ -304,6 +306,14 @@ internal class ApplicationMessageHandlerImpl(
     }
 }
 
-fun AssetContent.hasValidRemoteData() = this.remoteData.hasValidData()
+@Deprecated(
+    "This will be moved to another package",
+    ReplaceWith("com.wire.kalium.logic.data.message.hasValidRemoteData")
+)
+fun AssetContent.hasValidRemoteData() = hasValidRemoteData()
 
-fun AssetContent.RemoteData.hasValidData() = assetId.isNotEmpty() && sha256.isNotEmpty() && otrKey.isNotEmpty()
+@Deprecated(
+    "This will be moved to another package",
+    ReplaceWith("com.wire.kalium.logic.data.message.hasValidData")
+)
+fun AssetContent.RemoteData.hasValidData() = hasValidData()

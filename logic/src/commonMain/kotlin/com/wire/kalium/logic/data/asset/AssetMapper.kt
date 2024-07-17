@@ -206,22 +206,24 @@ class AssetMapperImpl(
                 mimeType = mimeType,
                 size = sizeInBytes,
                 name = name,
-                metaData = when (metadata) {
-                    is Image -> Asset.Original.MetaData.Image(
-                        Asset.ImageMetaData(
-                            width = metadata.width,
-                            height = metadata.height,
+                metaData = metadata.let {
+                    when (it) {
+                        is Image -> Asset.Original.MetaData.Image(
+                            Asset.ImageMetaData(
+                                width = it.width,
+                                height = it.height,
+                            )
                         )
-                    )
 
-                    is Audio -> Asset.Original.MetaData.Audio(
-                        audio = Asset.AudioMetaData(
-                            durationInMillis = metadata.durationMs,
-                            normalizedLoudness = metadata.normalizedLoudness?.let { ByteArr(it) }
+                        is Audio -> Asset.Original.MetaData.Audio(
+                            audio = Asset.AudioMetaData(
+                                durationInMillis = it.durationMs,
+                                normalizedLoudness = it.normalizedLoudness?.let { ByteArr(it) }
+                            )
                         )
-                    )
 
-                    else -> null
+                        else -> null
+                    }
                 }
             ),
             status = Asset.Status.Uploaded(
