@@ -357,6 +357,8 @@ class MessageNotificationsTest : BaseMessageTest() {
     override suspend fun insertInitialData() {
         super.insertInitialData()
         // Always insert original messages
+        conversationDAO.updateLegalHoldStatusChangeNotified(TEST_CONVERSATION_1.id, true)
+        conversationDAO.updateLegalHoldStatusChangeNotified(TEST_CONVERSATION_2.id, true)
     }
 
     private companion object {
