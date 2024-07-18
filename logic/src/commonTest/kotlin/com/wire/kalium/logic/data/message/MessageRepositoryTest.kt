@@ -870,7 +870,9 @@ class MessageRepositoryTest {
             conversationName = null,
             mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
             conversationType = ConversationEntity.Type.ONE_ON_ONE,
-            degradedConversationNotified = true
+            degradedConversationNotified = true,
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.ENABLED,
+            legalHoldStatusChangeNotified = true
         )
     }
 }
