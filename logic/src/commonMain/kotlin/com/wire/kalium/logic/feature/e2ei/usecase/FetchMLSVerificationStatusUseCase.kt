@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.e2ei.usecase
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logger.KaliumLogger
@@ -115,9 +116,10 @@ internal class FetchMLSVerificationStatusUseCaseImpl(
                     val persistedMemberInfo = dbData.members[userId]
                     val isUserVerified = wireIdentity.firstOrNull {
                         it.status != CryptoCertificateStatus.VALID ||
-                                it.certificate == null ||
-                                it.certificate?.displayName != persistedMemberInfo?.name ||
-                                it.certificate?.handle?.handle != persistedMemberInfo?.handle
+                                it.credentialType != CredentialType.X509 ||
+                                it.x509Identity == null ||
+                                it.x509Identity?.displayName != persistedMemberInfo?.name ||
+                                it.x509Identity?.handle?.handle != persistedMemberInfo?.handle
                     } == null
                     if (!isUserVerified) {
                         newStatus = VerificationStatus.NOT_VERIFIED

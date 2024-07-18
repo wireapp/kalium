@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIConversationState
@@ -32,7 +33,11 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.UserId
+<<<<<<< HEAD
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseCaseImpl
+=======
+import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseCaseTest.Arrangement.Companion.getMockedIdentity
+>>>>>>> 8f000c0431 (chore(mls): unify MLSClientIdentity models (WPB-9774) (#2818))
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
 import com.wire.kalium.logic.framework.TestUser
@@ -62,6 +67,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 
 class FetchMLSVerificationStatusUseCaseTest {
@@ -162,6 +168,7 @@ class FetchMLSVerificationStatusUseCaseTest {
 
         val ccMembersIdentity: Map<UserId, List<WireIdentity>> = mapOf(
             user1.first to listOf(
+<<<<<<< HEAD
                 WireIdentity(
                     CryptoQualifiedClientId(
                         value = "client_user_1",
@@ -192,6 +199,12 @@ class FetchMLSVerificationStatusUseCaseTest {
                     thumbprint = "thumbprint2",
                     endTimestampSeconds = 1899105093
                 )
+=======
+                getMockedIdentity(user1.first, user1.second)
+            ),
+            user2.first to listOf(
+                getMockedIdentity(user2.first, user2.second)
+>>>>>>> 8f000c0431 (chore(mls): unify MLSClientIdentity models (WPB-9774) (#2818))
             )
         )
         val (arrangement, handler) = arrange {
@@ -233,6 +246,7 @@ class FetchMLSVerificationStatusUseCaseTest {
 
         val ccMembersIdentity: Map<UserId, List<WireIdentity>> = mapOf(
             user1.first to listOf(
+<<<<<<< HEAD
                 WireIdentity(
                     CryptoQualifiedClientId(
                         value = "client_user_1",
@@ -263,6 +277,12 @@ class FetchMLSVerificationStatusUseCaseTest {
                     thumbprint = "thumbprint2",
                     endTimestampSeconds = 1899105093
                 )
+=======
+                getMockedIdentity(user1.first, user1.second, CryptoCertificateStatus.REVOKED)
+            ),
+            user2.first to listOf(
+                getMockedIdentity(user2.first, user2.second)
+>>>>>>> 8f000c0431 (chore(mls): unify MLSClientIdentity models (WPB-9774) (#2818))
             )
         )
         val (arrangement, handler) = arrange {
@@ -335,6 +355,35 @@ class FetchMLSVerificationStatusUseCaseTest {
                 userRepository = userRepository,
                 mlsClientProvider = mlsClientProvider,
                 mlsConversationRepository = mlsConversationRepository
+            )
+        }
+
+        companion object {
+            fun getMockedIdentity(
+                userId: QualifiedID,
+                nameAndHandle: NameAndHandle,
+                status: CryptoCertificateStatus = CryptoCertificateStatus.VALID
+            ) = WireIdentity(
+                CryptoQualifiedClientId(
+                    value = userId.value,
+                    userId = userId.toCrypto()
+                ),
+                status,
+                thumbprint = "thumbprint",
+                credentialType = CredentialType.X509,
+                x509Identity = WireIdentity.X509Identity(
+                    WireIdentity.Handle(
+                        scheme = "wireapp",
+                        handle = nameAndHandle.handle!!,
+                        domain = userId.domain
+                    ),
+                    displayName = nameAndHandle.name!!,
+                    domain = userId.domain,
+                    certificate = "cert1",
+                    serialNumber = "serial1",
+                    notBefore = Instant.DISTANT_PAST.epochSeconds,
+                    notAfter = Instant.DISTANT_FUTURE.epochSeconds
+                )
             )
         }
     }

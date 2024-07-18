@@ -20,6 +20,7 @@ package com.wire.kalium.logic.data.conversation
 
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.cryptography.CommitBundle
+import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIClient
@@ -1459,7 +1460,7 @@ class MLSConversationRepositoryTest {
         val handleWithSchemeAndDomain = "$scheme://%40$handle@$domain"
         val groupId = Arrangement.GROUP_ID.value
         val wireIdentity = WIRE_IDENTITY.copy(
-            certificate = WIRE_IDENTITY.certificate!!.copy(
+            x509Identity = WIRE_IDENTITY.x509Identity!!.copy(
                 handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain)
             )
         )
@@ -1473,9 +1474,9 @@ class MLSConversationRepositoryTest {
         // then
         result.shouldSucceed() {
             it.forEach {
-                assertEquals(scheme, it.certificate?.handle?.scheme)
-                assertEquals(handle, it.certificate?.handle?.handle)
-                assertEquals(domain, it.certificate?.handle?.domain)
+                assertEquals(scheme, it.x509Identity?.handle?.scheme)
+                assertEquals(handle, it.x509Identity?.handle?.handle)
+                assertEquals(domain, it.x509Identity?.handle?.domain)
             }
         }
     }
@@ -1489,7 +1490,7 @@ class MLSConversationRepositoryTest {
         val handleWithSchemeAndDomain = "$scheme://%40$handle@$domain"
         val groupId = Arrangement.GROUP_ID.value
         val wireIdentity = WIRE_IDENTITY.copy(
-            certificate = WIRE_IDENTITY.certificate!!.copy(
+            x509Identity = WIRE_IDENTITY.x509Identity!!.copy(
                 handle = WireIdentity.Handle.fromString(handleWithSchemeAndDomain, domain)
             )
         )
@@ -1504,9 +1505,9 @@ class MLSConversationRepositoryTest {
         result.shouldSucceed() {
             it.values.forEach {
                 it.forEach {
-                    assertEquals(scheme, it.certificate?.handle?.scheme)
-                    assertEquals(handle, it.certificate?.handle?.handle)
-                    assertEquals(domain, it.certificate?.handle?.domain)
+                    assertEquals(scheme, it.x509Identity?.handle?.scheme)
+                    assertEquals(handle, it.x509Identity?.handle?.handle)
+                    assertEquals(domain, it.x509Identity?.handle?.domain)
                 }
             }
         }
@@ -1822,14 +1823,22 @@ class MLSConversationRepositoryTest {
             val WIRE_IDENTITY =
                 WireIdentity(
                     CRYPTO_CLIENT_ID,
-                    "user_handle",
+                    CryptoCertificateStatus.VALID,
+                    thumbprint = "thumbprint",
+                    CredentialType.X509,
+                    x509Identity = WireIdentity.X509Identity(
+                        WireIdentity.Handle(
+                            "wireapp",
+                            "user_handle",
+                            "wire.com"
+                        ),
                     "User Test",
                     "domain.com",
                     "certificate",
-                    CryptoCertificateStatus.VALID,
-                    thumbprint = "thumbprint",
                     serialNumber = "serialNumber",
-                    endTimestampSeconds = 1899105093
+                        notAfter = 1899105093,
+                        notBefore = 1899205093
+                    )
                 )
             val E2EI_CONVERSATION_CLIENT_INFO_ENTITY =
                 E2EIConversationClientInfoEntity(UserIDEntity(uuid4().toString(), "domain.com"), "clientId", "groupId")

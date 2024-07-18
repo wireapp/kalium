@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.e2ei
 
+import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.WireIdentity
@@ -30,9 +31,14 @@ import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangemen
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
 import io.mockative.any
+<<<<<<< HEAD
 import io.mockative.coVerify
 import kotlinx.coroutines.runBlocking
+=======
+import io.mockative.verify
+>>>>>>> 8f000c0431 (chore(mls): unify MLSClientIdentity models (WPB-9774) (#2818))
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -85,9 +91,9 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
             val result = getUserE2eiAllCertificateStatuses(USER_ID)
 
             assertEquals(3, result.size)
-            assertEquals(CertificateStatus.VALID, result[identity1.clientId.value]?.status)
-            assertEquals(CertificateStatus.EXPIRED, result[identity2.clientId.value]?.status)
-            assertEquals(CertificateStatus.REVOKED, result[identity3.clientId.value]?.status)
+            assertEquals(MLSClientE2EIStatus.VALID, result[identity1.clientId.value]?.e2eiStatus)
+            assertEquals(MLSClientE2EIStatus.EXPIRED, result[identity2.clientId.value]?.e2eiStatus)
+            assertEquals(MLSClientE2EIStatus.REVOKED, result[identity3.clientId.value]?.e2eiStatus)
         }
 
     @Test
@@ -116,7 +122,11 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
         IsE2EIEnabledUseCaseArrangement by IsE2EIEnabledUseCaseArrangementImpl() {
 
         fun arrange() = run {
+<<<<<<< HEAD
             runBlocking { block() }
+=======
+            block()
+>>>>>>> 8f000c0431 (chore(mls): unify MLSClientIdentity models (WPB-9774) (#2818))
             this@Arrangement to GetUserE2eiCertificatesUseCaseImpl(
                 mlsConversationRepository = mlsConversationRepository,
                 isE2EIEnabledUseCase = isE2EIEnabledUseCase
@@ -130,6 +140,7 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
         private val USER_ID = UserId("value", "domain")
         private val CRYPTO_QUALIFIED_CLIENT_ID =
             CryptoQualifiedClientId("clientId", USER_ID.toCrypto())
+<<<<<<< HEAD
         private val WIRE_IDENTITY =
             WireIdentity(
                 CRYPTO_QUALIFIED_CLIENT_ID,
@@ -141,6 +152,24 @@ class GetUserE2eiAllCertificateStatusesUseCaseTest {
                 "thumbprint",
                 "serialNumber",
                 1899105093
+=======
+        private val WIRE_IDENTITY = WireIdentity(
+            CRYPTO_QUALIFIED_CLIENT_ID,
+            status = CryptoCertificateStatus.VALID,
+            thumbprint = "thumbprint",
+            credentialType = CredentialType.X509,
+            x509Identity = WireIdentity.X509Identity(
+                WireIdentity.Handle(
+                    scheme = "wireapp", handle = "userHandle", domain = "domain1"
+                ),
+                displayName = "user displayName",
+                domain = "domain.com",
+                certificate = "cert1",
+                serialNumber = "serial1",
+                notBefore = Instant.DISTANT_PAST.epochSeconds,
+                notAfter = Instant.DISTANT_FUTURE.epochSeconds
+>>>>>>> 8f000c0431 (chore(mls): unify MLSClientIdentity models (WPB-9774) (#2818))
             )
+        )
     }
 }
