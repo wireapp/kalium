@@ -18,9 +18,12 @@
 
 package com.wire.kalium.logic.data.id
 
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmInline
 
 @JvmInline
-value class PlainId(val value: String)
+@Serializable
+value class PlainId(@SerialName("value") val value: String)
 
 typealias TeamId = PlainId
