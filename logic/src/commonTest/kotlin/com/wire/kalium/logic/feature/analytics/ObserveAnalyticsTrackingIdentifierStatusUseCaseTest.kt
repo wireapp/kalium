@@ -19,6 +19,7 @@ package com.wire.kalium.logic.feature.analytics
 
 import app.cash.turbine.test
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.analytics.AnalyticsIdentifierResult
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
