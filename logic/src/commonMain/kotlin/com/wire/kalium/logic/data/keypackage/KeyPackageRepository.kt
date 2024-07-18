@@ -61,7 +61,7 @@ interface KeyPackageRepository {
 
     suspend fun uploadKeyPackages(clientId: ClientId, keyPackages: List<ByteArray>): Either<CoreFailure, Unit>
 
-    suspend fun replaceKeyPackages(clientId: ClientId, keyPackages: List<ByteArray>): Either<CoreFailure, Unit>
+    suspend fun replaceKeyPackages(clientId: ClientId, keyPackages: List<ByteArray>, cipherSuite: CipherSuite): Either<CoreFailure, Unit>
 
     suspend fun getAvailableKeyPackageCount(clientId: ClientId): Either<NetworkFailure, KeyPackageCountDTO>
 
@@ -124,10 +124,11 @@ class KeyPackageDataSource(
 
     override suspend fun replaceKeyPackages(
         clientId: ClientId,
-        keyPackages: List<ByteArray>
+        keyPackages: List<ByteArray>,
+        cipherSuite: CipherSuite
     ): Either<CoreFailure, Unit> =
         wrapApiRequest {
-            keyPackageApi.replaceKeyPackages(clientId.value, keyPackages.map { it.encodeBase64() })
+            keyPackageApi.replaceKeyPackages(clientId.value, keyPackages.map { it.encodeBase64() }, cipherSuite.tag)
         }
 
     override suspend fun validKeyPackageCount(clientId: ClientId): Either<CoreFailure, Int> =

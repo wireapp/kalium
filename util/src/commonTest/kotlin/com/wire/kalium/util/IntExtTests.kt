@@ -16,14 +16,16 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.util.string
+package com.wire.kalium.util
 
 import com.wire.kalium.util.int.toByteArray
+import com.wire.kalium.util.int.toHexString
 import com.wire.kalium.util.long.toByteArray
+import com.wire.kalium.util.string.toHexString
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class NumberByteArrayTest {
+class IntExtTests {
 
     @Test
     fun givenMaxLongValue_whenConvertingToByteArray_HexStringIsEqualToTheExpected() {
@@ -67,4 +69,10 @@ class NumberByteArrayTest {
         assertEquals("00000002540BE400", result.toHexString().uppercase())
     }
 
+    @Test
+    fun givenAnInteger_whenConvertingToHex_HexValueIsAsExpected(){
+        val given = 2
+        val expected= "0x000$given"
+        assertEquals(expected, given.toHexString())
+    }
 }

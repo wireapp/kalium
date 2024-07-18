@@ -30,6 +30,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.handleUnsuccessfulResponse
 import com.wire.kalium.network.utils.wrapFederationResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
+import com.wire.kalium.util.int.toHex
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
@@ -67,12 +68,14 @@ internal open class KeyPackageApiV5 internal constructor(
 
     override suspend fun replaceKeyPackages(
         clientId: String,
-        keyPackages: List<KeyPackage>
+        keyPackages: List<KeyPackage>,
+        cipherSuite: Int
     ): NetworkResponse<Unit> =
         wrapKaliumResponse {
             kaliumLogger.v("Keypackages Count to replace: ${keyPackages.size}")
             httpClient.put("$PATH_KEY_PACKAGES/$PATH_SELF/$clientId") {
                 setBody(KeyPackageList(keyPackages))
+                parameter(QUERY_CIPHER_SUITES, cipherSuite.toHex())
             }
         }
 
@@ -86,5 +89,6 @@ internal open class KeyPackageApiV5 internal constructor(
         const val PATH_COUNT = "count"
         const val QUERY_SKIP_OWN = "skip_own"
         const val QUERY_CIPHER_SUITE = "ciphersuite"
+        const val QUERY_CIPHER_SUITES = "ciphersuites"
     }
 }
