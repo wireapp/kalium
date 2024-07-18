@@ -48,6 +48,7 @@ internal interface UserConfigRepositoryArrangement {
     suspend fun withSetPreviousTrackingIdentifier()
     suspend fun withGetPreviousTrackingIdentifier(result: String?)
     suspend fun withObserveTrackingIdentifier(result: Either<StorageFailure, String>)
+    suspend fun withDeletePreviousTrackingIdentifier()
 }
 
 internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrangement {
@@ -120,5 +121,9 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
 
     override suspend fun withObserveTrackingIdentifier(result: Either<StorageFailure, String>) {
         coEvery { userConfigRepository.observeTrackingIdentifier() }.returns(flowOf(result))
+    }
+
+    override suspend fun withDeletePreviousTrackingIdentifier() {
+        coEvery { userConfigRepository.deletePreviousTrackingIdentifier() }.returns(Unit)
     }
 }
