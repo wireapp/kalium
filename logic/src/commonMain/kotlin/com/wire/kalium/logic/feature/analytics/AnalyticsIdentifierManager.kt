@@ -39,7 +39,7 @@ interface AnalyticsIdentifierManager {
     suspend fun propagateTrackingIdentifier(identifier: String)
 }
 
-@Suppress("FunctionNaming")
+@Suppress("FunctionNaming", "LongParameterList")
 internal fun AnalyticsIdentifierManager(
     messageSender: MessageSender,
     userConfigRepository: UserConfigRepository,
