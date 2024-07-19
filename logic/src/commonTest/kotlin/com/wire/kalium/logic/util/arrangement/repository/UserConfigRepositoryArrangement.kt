@@ -28,7 +28,6 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.every
 import io.mockative.mock
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 
 internal interface UserConfigRepositoryArrangement {
