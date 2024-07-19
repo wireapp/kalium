@@ -20,7 +20,7 @@ package com.wire.kalium.logic.data.analytics
 
 sealed interface AnalyticsIdentifierResult {
 
-    sealed interface Enabled {
+    sealed interface Enabled : AnalyticsIdentifierResult {
         val identifier: String
     }
 
