@@ -18,19 +18,23 @@
 
 package com.wire.kalium.logic.data.analytics
 
-sealed class AnalyticsIdentifierResult {
+sealed interface AnalyticsIdentifierResult {
+
+    sealed interface Enabled {
+        val identifier: String
+    }
 
     data class NonExistingIdentifier(
-        val identifier: String
-    ) : AnalyticsIdentifierResult()
+        override val identifier: String
+    ) : Enabled
 
     data class ExistingIdentifier(
-        val identifier: String
-    ) : AnalyticsIdentifierResult()
+        override val identifier: String
+    ) : Enabled
 
     data class MigrationIdentifier(
-        val identifier: String
-    ) : AnalyticsIdentifierResult()
+        override val identifier: String
+    ) : Enabled
 
-    data object None : AnalyticsIdentifierResult()
+    data object None : AnalyticsIdentifierResult
 }
