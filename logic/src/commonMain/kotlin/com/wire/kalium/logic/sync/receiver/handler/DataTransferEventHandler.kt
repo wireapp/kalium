@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.sync.receiver.handler
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
@@ -32,21 +33,43 @@ internal interface DataTransferEventHandler {
 
 internal class DataTransferEventHandlerImpl(
     private val selfUserId: UserId,
-    private val userConfigRepository: UserConfigRepository
+    private val userConfigRepository: UserConfigRepository,
+    logger: KaliumLogger = kaliumLogger,
 ) : DataTransferEventHandler {
+
+    private val logger = logger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.ANALYTICS)
 
     override suspend fun handle(
         message: Message.Signaling,
         messageContent: MessageContent.DataTransfer
     ) {
-        kaliumLogger.d("MessageContent.DataTransfer | with Identifier : ${messageContent.trackingIdentifier?.identifier} |end|")
         // DataTransfer from another user or null tracking identifier shouldn't happen,
-        // If it happens, it's unnecessary
-        // and we can squish some performance by skipping it completely
+        // If it happens, it's unnecessary, and we can squish some performance by skipping it completely
         if (message.senderUserId != selfUserId || messageContent.trackingIdentifier == null) return
 
-        userConfigRepository.setTrackingIdentifier(
-            identifier = messageContent.trackingIdentifier!!.identifier
-        )
+        val currentTrackingIdentifier = userConfigRepository.getCurrentTrackingIdentifier()
+        val isCurrentDifferentThanReceived = currentTrackingIdentifier != messageContent
+            .trackingIdentifier!!
+            .identifier
+
+        if (isCurrentDifferentThanReceived) {
+            currentTrackingIdentifier?.let {
+                userConfigRepository.setPreviousTrackingIdentifier(identifier = currentTrackingIdentifier)
+                logger.d("$TAG Moved Current Tracking Identifier to Previous")
+            }
+
+            userConfigRepository.setCurrentTrackingIdentifier(
+                newIdentifier = requireNotNull(
+                    messageContent
+                        .trackingIdentifier
+                        ?.identifier
+                )
+            )
+            logger.d("$TAG Tracking Identifier Updated")
+        }
+    }
+
+    private companion object {
+        const val TAG = "DataTransferEventHandler"
     }
 }

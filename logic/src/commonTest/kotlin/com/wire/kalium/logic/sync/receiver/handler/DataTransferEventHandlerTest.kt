@@ -38,6 +38,7 @@ class DataTransferEventHandlerTest {
     fun givenSelfUserDataTransferContent_whenHandlingEvent_thenSetTrackingIdentifier() = runTest {
         // given
         val (arrangement, handler) = Arrangement().arrange {
+            withGetTrackingIdentifier(null)
             withSetTrackingIdentifier()
         }
 
@@ -49,7 +50,7 @@ class DataTransferEventHandlerTest {
 
         // then
         coVerify {
-            arrangement.userConfigRepository.setTrackingIdentifier(any())
+            arrangement.userConfigRepository.setCurrentTrackingIdentifier(any())
         }.wasInvoked(exactly = once)
     }
 
@@ -68,7 +69,7 @@ class DataTransferEventHandlerTest {
 
         // then
         coVerify {
-            arrangement.userConfigRepository.setTrackingIdentifier(any())
+            arrangement.userConfigRepository.setCurrentTrackingIdentifier(any())
         }.wasNotInvoked()
     }
 
@@ -87,7 +88,59 @@ class DataTransferEventHandlerTest {
 
         // then
         coVerify {
-            arrangement.userConfigRepository.setTrackingIdentifier(any())
+            arrangement.userConfigRepository.setCurrentTrackingIdentifier(any())
+        }.wasNotInvoked()
+    }
+
+    @Test
+    fun givenSelfUserHasTrackingIdentifier_whenReceivingNewTrackingIdentifier_thenMoveCurrentToPreviousAndUpdate() = runTest {
+        // given
+        val currentIdentifier = "abcd-1234"
+        val newIdentifier = "efgh-5678"
+        val (arrangement, handler) = Arrangement().arrange {
+            withGetTrackingIdentifier(currentIdentifier)
+        }
+
+        // when
+        handler.handle(
+            message = MESSAGE,
+            messageContent = MESSAGE_CONTENT.copy(
+                trackingIdentifier = MESSAGE_CONTENT.trackingIdentifier?.copy(
+                    identifier = newIdentifier
+                )
+            )
+        )
+
+        // then
+        coVerify {
+            arrangement.userConfigRepository.setPreviousTrackingIdentifier(currentIdentifier)
+        }.wasInvoked(exactly = once)
+
+        coVerify {
+            arrangement.userConfigRepository.setCurrentTrackingIdentifier(newIdentifier)
+        }.wasInvoked(exactly = once)
+    }
+
+    @Test
+    fun givenCurrentIdentifierIsTheSame_whenReceivingNewTrackingIdentifier_thenDoNotUpdateTrackingIdentifier() = runTest {
+        // given
+        val (arrangement, handler) = Arrangement().arrange {
+            withGetTrackingIdentifier(MESSAGE_CONTENT.trackingIdentifier?.identifier)
+        }
+
+        // when
+        handler.handle(
+            message = MESSAGE,
+            messageContent = MESSAGE_CONTENT
+        )
+
+        // then
+        coVerify {
+            arrangement.userConfigRepository.setPreviousTrackingIdentifier(any())
+        }.wasNotInvoked()
+
+        coVerify {
+            arrangement.userConfigRepository.setCurrentTrackingIdentifier(any())
         }.wasNotInvoked()
     }
 
