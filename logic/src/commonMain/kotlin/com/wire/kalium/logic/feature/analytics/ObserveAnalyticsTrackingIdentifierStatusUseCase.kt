@@ -55,7 +55,7 @@ internal fun ObserveAnalyticsTrackingIdentifierStatusUseCase(
 
     override suspend fun invoke(): Flow<AnalyticsIdentifierResult> =
         userConfigRepository
-            .observeTrackingIdentifier()
+            .observeCurrentTrackingIdentifier()
             .distinctUntilChanged()
             .flatMapRightWithEither { currentIdentifier: String ->
                 val result =
@@ -75,15 +75,15 @@ internal fun ObserveAnalyticsTrackingIdentifierStatusUseCase(
                 // it's needed, otherwise it will be detected as Flow<Any>
                 if (it.isRight()) it.value as AnalyticsIdentifierResult
                 else {
-                    userConfigRepository.getTrackingIdentifier()?.let { currentIdentifier: String ->
+                    userConfigRepository.getCurrentTrackingIdentifier()?.let { currentIdentifier: String ->
                         logger.i("$TAG Updating Tracking Identifier with existing value.")
                         AnalyticsIdentifierResult.ExistingIdentifier(
                             identifier = currentIdentifier
                         )
                     } ?: uuid4().toString().let { trackingIdentifier: String ->
                         logger.i("$TAG Generating new Tracking Identifier value.")
-                        userConfigRepository.setTrackingIdentifier(
-                            identifier = trackingIdentifier
+                        userConfigRepository.setCurrentTrackingIdentifier(
+                            newIdentifier = trackingIdentifier
                         )
 
                         AnalyticsIdentifierResult.NonExistingIdentifier(

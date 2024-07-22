@@ -47,7 +47,7 @@ internal class DataTransferEventHandlerImpl(
         // If it happens, it's unnecessary, and we can squish some performance by skipping it completely
         if (message.senderUserId != selfUserId || messageContent.trackingIdentifier == null) return
 
-        val currentTrackingIdentifier = userConfigRepository.getTrackingIdentifier()
+        val currentTrackingIdentifier = userConfigRepository.getCurrentTrackingIdentifier()
         val isCurrentDifferentThanReceived = currentTrackingIdentifier != messageContent
             .trackingIdentifier!!
             .identifier
@@ -58,8 +58,8 @@ internal class DataTransferEventHandlerImpl(
                 logger.d("$TAG Moved Current Tracking Identifier to Previous")
             }
 
-            userConfigRepository.setTrackingIdentifier(
-                identifier = requireNotNull(
+            userConfigRepository.setCurrentTrackingIdentifier(
+                newIdentifier = requireNotNull(
                     messageContent
                         .trackingIdentifier
                         ?.identifier

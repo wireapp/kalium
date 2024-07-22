@@ -103,11 +103,11 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
     }
 
     override suspend fun withSetTrackingIdentifier() {
-        coEvery { userConfigRepository.setTrackingIdentifier(any()) }.returns(Unit)
+        coEvery { userConfigRepository.setCurrentTrackingIdentifier(any()) }.returns(Unit)
     }
 
     override suspend fun withGetTrackingIdentifier(result: String?) {
-        coEvery { userConfigRepository.getTrackingIdentifier() }.returns(result)
+        coEvery { userConfigRepository.getCurrentTrackingIdentifier() }.returns(result)
     }
 
     override suspend fun withSetPreviousTrackingIdentifier() {
@@ -119,7 +119,7 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
     }
 
     override suspend fun withObserveTrackingIdentifier(result: Either<StorageFailure, String>) {
-        coEvery { userConfigRepository.observeTrackingIdentifier() }.returns(flowOf(result))
+        coEvery { userConfigRepository.observeCurrentTrackingIdentifier() }.returns(flowOf(result))
     }
 
     override suspend fun withDeletePreviousTrackingIdentifier() {

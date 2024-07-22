@@ -50,7 +50,7 @@ class DataTransferEventHandlerTest {
 
         // then
         coVerify {
-            arrangement.userConfigRepository.setTrackingIdentifier(any())
+            arrangement.userConfigRepository.setCurrentTrackingIdentifier(any())
         }.wasInvoked(exactly = once)
     }
 
@@ -69,7 +69,7 @@ class DataTransferEventHandlerTest {
 
         // then
         coVerify {
-            arrangement.userConfigRepository.setTrackingIdentifier(any())
+            arrangement.userConfigRepository.setCurrentTrackingIdentifier(any())
         }.wasNotInvoked()
     }
 
@@ -88,7 +88,7 @@ class DataTransferEventHandlerTest {
 
         // then
         coVerify {
-            arrangement.userConfigRepository.setTrackingIdentifier(any())
+            arrangement.userConfigRepository.setCurrentTrackingIdentifier(any())
         }.wasNotInvoked()
     }
 
@@ -117,7 +117,7 @@ class DataTransferEventHandlerTest {
         }.wasInvoked(exactly = once)
 
         coVerify {
-            arrangement.userConfigRepository.setTrackingIdentifier(newIdentifier)
+            arrangement.userConfigRepository.setCurrentTrackingIdentifier(newIdentifier)
         }.wasInvoked(exactly = once)
     }
 
@@ -140,7 +140,7 @@ class DataTransferEventHandlerTest {
         }.wasNotInvoked()
 
         coVerify {
-            arrangement.userConfigRepository.setTrackingIdentifier(any())
+            arrangement.userConfigRepository.setCurrentTrackingIdentifier(any())
         }.wasNotInvoked()
     }
 
