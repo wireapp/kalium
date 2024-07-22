@@ -180,7 +180,7 @@ sealed interface Message {
             return "${toLogMap().toJsonElement()}"
         }
 
-        @Suppress("LongMethod")
+        @Suppress("LongMethod", "CyclomaticComplexMethod")
         override fun toLogMap(): Map<String, Any?> {
             val typeKey = "type"
 
@@ -239,6 +239,11 @@ sealed interface Message {
 
                 is MessageContent.ButtonActionConfirmation -> mutableMapOf(
                     typeKey to "buttonActionConfirmation"
+                )
+
+                is MessageContent.DataTransfer -> mutableMapOf(
+                    typeKey to "dataTransfer",
+                    "content" to content.toLogMap(),
                 )
             }
 
