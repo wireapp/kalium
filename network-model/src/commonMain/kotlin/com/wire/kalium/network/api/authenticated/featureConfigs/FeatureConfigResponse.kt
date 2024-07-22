@@ -69,6 +69,12 @@ enum class FeatureFlagStatusDTO {
 }
 
 @Serializable
+data class ConferenceCallingConfig(
+    @SerialName("useSFTForOneToOneCalls")
+    val useSFTForOneToOneCalls: Boolean
+)
+
+@Serializable
 data class AppLockConfigDTO(
     @SerialName("enforceAppLock")
     val enforceAppLock: Boolean,
@@ -155,7 +161,9 @@ sealed class FeatureConfigData {
     @Serializable
     data class ConferenceCalling(
         @SerialName("status")
-        val status: FeatureFlagStatusDTO
+        val status: FeatureFlagStatusDTO,
+        @SerialName("config")
+        val config: ConferenceCallingConfig
     ) : FeatureConfigData()
 
     @SerialName("conversationGuestLinks")

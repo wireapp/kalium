@@ -118,7 +118,7 @@ class FeatureConfigEventReceiverTest {
             .arrange()
 
         featureConfigEventReceiver.onEvent(
-            arrangement.newConferenceCallingUpdatedEvent(ConferenceCallingModel(Status.ENABLED)),
+            arrangement.newConferenceCallingUpdatedEvent(ConferenceCallingModel(Status.ENABLED, false)),
             TestEvent.liveDeliveryInfo
         )
 
@@ -134,7 +134,7 @@ class FeatureConfigEventReceiverTest {
             .arrange()
 
         featureConfigEventReceiver.onEvent(
-            event = arrangement.newConferenceCallingUpdatedEvent(ConferenceCallingModel(Status.DISABLED)),
+            event = arrangement.newConferenceCallingUpdatedEvent(ConferenceCallingModel(Status.DISABLED, false)),
             deliveryInfo = TestEvent.liveDeliveryInfo
         )
 
