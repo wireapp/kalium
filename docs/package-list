@@ -446,6 +446,7 @@ com.wire.kalium.logic.data.user.type
 com.wire.kalium.logic.di
 com.wire.kalium.logic.failure
 com.wire.kalium.logic.feature
+com.wire.kalium.logic.feature.analytics
 com.wire.kalium.logic.feature.appVersioning
 com.wire.kalium.logic.feature.applock
 com.wire.kalium.logic.feature.asset
