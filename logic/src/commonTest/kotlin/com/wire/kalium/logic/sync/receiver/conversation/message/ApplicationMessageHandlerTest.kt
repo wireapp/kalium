@@ -37,6 +37,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.asset.AssetMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.ButtonActionConfirmationHandler
 import com.wire.kalium.logic.sync.receiver.handler.ClearConversationContentHandler
+import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandler
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandler
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandler
@@ -133,6 +134,44 @@ class ApplicationMessageHandlerTest {
         }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenDataTransferEventReceived_whenHandling_thenCorrectHandlerIsInvoked() = runTest {
+        // given
+        val messageId = "messageId"
+        val dataTransferContent = MessageContent.DataTransfer(
+            trackingIdentifier = MessageContent.DataTransfer.TrackingIdentifier(
+                identifier = "abcd-1234-efgh-5678"
+            )
+        )
+        val protoContent = ProtoContent.Readable(
+            messageId,
+            dataTransferContent,
+            false,
+            Conversation.LegalHoldStatus.DISABLED
+        )
+
+        val (arrangement, messageHandler) = Arrangement()
+            .withPersistingMessageReturning(Either.Right(Unit))
+            .arrange()
+
+        val encodedEncryptedContent = Base64.encodeToBase64("Hello".encodeToByteArray())
+        val messageEvent = TestEvent.newMessageEvent(encodedEncryptedContent.decodeToString())
+
+        // when
+        messageHandler.handleContent(
+            messageEvent.conversationId,
+            messageEvent.messageInstant,
+            messageEvent.senderUserId,
+            messageEvent.senderClientId,
+            protoContent
+        )
+
+        // then
+        coVerify {
+            arrangement.dataTransferEventHandler.handle(any(), any())
+        }.wasInvoked(exactly = once)
+    }
+
     private class Arrangement {
         @Mock
         val persistMessage = mock(PersistMessageUseCase::class)
@@ -176,6 +215,9 @@ class ApplicationMessageHandlerTest {
         @Mock
         val buttonActionConfirmationHandler = mock(ButtonActionConfirmationHandler::class)
 
+        @Mock
+        val dataTransferEventHandler = mock(DataTransferEventHandler::class)
+
         private val applicationMessageHandler = ApplicationMessageHandlerImpl(
             userRepository,
             messageRepository,
@@ -191,6 +233,7 @@ class ApplicationMessageHandlerTest {
             MessageContentEncoder(),
             receiptMessageHandler,
             buttonActionConfirmationHandler,
+            dataTransferEventHandler,
             TestUser.SELF.id
         )
 
