@@ -32,6 +32,8 @@ import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * In-memory cache for sharing flows.
+ * This aims to bundle all interested collectors
+ * and read from a single upstream source, reducing IO reading.
  *
  * New collectors will get the latest value immediately.
  * It converts produced flows into shared flows with a replay cache of 1.
@@ -43,7 +45,7 @@ import kotlin.time.Duration.Companion.milliseconds
  *
  * Once the [cacheScope] is canceled, the whole cache stops.
  */
-class FlowCache<Key : Any, Value>(
+internal class FlowCache<Key : Any, Value>(
     private val cacheScope: CoroutineScope,
     private val flowTimeoutDuration: Duration = FLOW_OBSERVING_TIMEOUT_IN_MILLIS.milliseconds,
 ) {
