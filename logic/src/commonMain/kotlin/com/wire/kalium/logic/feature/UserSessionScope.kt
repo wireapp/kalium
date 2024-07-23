@@ -1375,7 +1375,8 @@ class UserSessionScope internal constructor(
             conversationRepository = conversationRepository,
             userRepository = userRepository,
             persistMessage = persistMessage,
-            legalHoldHandler = legalHoldHandler
+            legalHoldHandler = legalHoldHandler,
+            selfUserId = userId
         )
     private val memberLeaveHandler: MemberLeaveEventHandler
         get() = MemberLeaveEventHandlerImpl(

@@ -24,9 +24,12 @@ import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.event.Event
+import com.wire.kalium.logic.data.event.EventLoggingStatus
+import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.onFailure
@@ -50,11 +53,13 @@ internal class MemberJoinEventHandlerImpl(
 
     override suspend fun handle(event: Event.Conversation.MemberJoin): Either<CoreFailure, Unit> {
         val eventLogger = logger.createEventProcessingLogger(event)
-        // the group info need to be fetched for the following cases:
-        // 1. self user is added/re-added to a group and we need to update the group info in case something changed form last time
-        // 2. the new member is a bot in that case we need to make the group a bot 1:1
-        // 3. fetch group info in case it is not stored in the first place
-        return conversationRepository.fetchConversation(event.conversationId)
+        // we need to force fetching conversation when self user rejoined to conversation,
+        // because he may not received member change events
+        if (event.members.map { it.id }.contains(selfUserId)) {
+            conversationRepository.fetchConversation(event.conversationId)
+        } else {
+            conversationRepository.fetchConversationIfUnknown(event.conversationId)
+        }
             .run {
                 onSuccess {
                     val logMap = mapOf(
