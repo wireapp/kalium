@@ -112,8 +112,9 @@ class FeatureConfigEventReceiverTest {
     }
 
     @Test
-    fun givenConferenceCallingUpdatedEventGrantingAccess_whenProcessingEvent_ThenSetConferenceCallingEnabledToTrue() = runTest {
+    fun givenConferenceCallingEventEnabled_whenProcessingEvent_ThenSetConferenceCallingEnabledToTrueAndSetShouldUseSFTFlag() = runTest {
         val (arrangement, featureConfigEventReceiver) = Arrangement()
+            .withSetUseSFTForOneOnOneCallsSuccessful()
             .withSettingConferenceCallingEnabledSuccessful()
             .arrange()
 
@@ -125,11 +126,16 @@ class FeatureConfigEventReceiverTest {
         verify {
             arrangement.userConfigRepository.setConferenceCallingEnabled(eq(true))
         }.wasInvoked(once)
+
+        verify {
+            arrangement.userConfigRepository.setUseSFTForOneOnOneCalls(eq(false))
+        }.wasInvoked(once)
     }
 
     @Test
-    fun givenConferenceCallingUpdatedEventGrantingAccess_whenProcessingEvent_ThenSetConferenceCallingEnabledToFalse() = runTest {
+    fun givenConferenceCallingEventDisabled_whenProcessingEvent_ThenSetConferenceCallingEnabledToFalseOnly() = runTest {
         val (arrangement, featureConfigEventReceiver) = Arrangement()
+            .withSetUseSFTForOneOnOneCallsSuccessful()
             .withSettingConferenceCallingEnabledSuccessful()
             .arrange()
 
@@ -141,6 +147,10 @@ class FeatureConfigEventReceiverTest {
         verify {
             arrangement.userConfigRepository.setConferenceCallingEnabled(eq(false))
         }.wasInvoked(once)
+
+        verify {
+            arrangement.userConfigRepository.setUseSFTForOneOnOneCalls(eq(true))
+        }.wasNotInvoked()
     }
 
     @Test
@@ -336,6 +346,12 @@ class FeatureConfigEventReceiverTest {
         fun withSettingConferenceCallingEnabledSuccessful() = apply {
             every {
                 userConfigRepository.setConferenceCallingEnabled(any())
+            }.returns(Either.Right(Unit))
+        }
+
+        fun withSetUseSFTForOneOnOneCallsSuccessful() = apply {
+            every {
+                userConfigRepository.setUseSFTForOneOnOneCalls(any())
             }.returns(Either.Right(Unit))
         }
 
