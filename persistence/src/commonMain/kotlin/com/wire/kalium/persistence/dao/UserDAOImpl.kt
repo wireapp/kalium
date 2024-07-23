@@ -23,7 +23,6 @@ import com.wire.kalium.persistence.UsersQueries
 import com.wire.kalium.persistence.cache.FlowCache
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
