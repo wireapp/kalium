@@ -29,7 +29,7 @@ object FeatureConfigTest {
             ClassifiedDomainsConfigModel(listOf()),
             Status.ENABLED
         ),
-        conferenceCallingModel: ConferenceCallingModel = ConferenceCallingModel(Status.ENABLED),
+        conferenceCallingModel: ConferenceCallingModel = ConferenceCallingModel(Status.ENABLED, false),
         conversationGuestLinksModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
         digitalSignaturesModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
         fileSharingModel: ConfigsStatusModel = ConfigsStatusModel(Status.ENABLED),
