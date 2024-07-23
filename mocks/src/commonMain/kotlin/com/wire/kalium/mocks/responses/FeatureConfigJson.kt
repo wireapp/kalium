@@ -20,6 +20,7 @@ package com.wire.kalium.mocks.responses
 
 import com.wire.kalium.network.api.authenticated.featureConfigs.AppLockConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
+import com.wire.kalium.network.api.authenticated.featureConfigs.ConferenceCallingConfig
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData.AppLock
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData.ClassifiedDomains
@@ -64,6 +65,9 @@ object FeatureConfigJson {
             |    "status": "enabled"
             |  },
             |  "conferenceCalling": {
+            |    "config": {
+			|      "useSFTForOneToOneCalls": false,
+		    |    },
             |    "status": "enabled"
             |  },
             |  "conversationGuestLinks": {
@@ -116,7 +120,7 @@ object FeatureConfigJson {
                 AppLockConfigDTO(true, 0), FeatureFlagStatusDTO.ENABLED
             ),
             ClassifiedDomains(ClassifiedDomainsConfigDTO(listOf()), FeatureFlagStatusDTO.ENABLED),
-            ConferenceCalling(FeatureFlagStatusDTO.ENABLED),
+            ConferenceCalling(FeatureFlagStatusDTO.ENABLED, ConferenceCallingConfig(false)),
             ConversationGuestLinks(FeatureFlagStatusDTO.ENABLED),
             DigitalSignatures(FeatureFlagStatusDTO.ENABLED),
             FileSharing(FeatureFlagStatusDTO.ENABLED),
