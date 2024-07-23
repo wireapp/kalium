@@ -22,7 +22,7 @@ import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UnreadEventsQueries
-import com.wire.kalium.persistence.cache.Cache
+import com.wire.kalium.persistence.cache.FlowCache
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -32,12 +32,9 @@ import com.wire.kalium.persistence.util.mapToOneOrDefault
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.SharingStarted.Companion.Lazily
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.shareIn
 import kotlinx.coroutines.withContext
 import kotlinx.datetime.Instant
 import kotlinx.datetime.toInstant
@@ -53,12 +50,12 @@ internal val MLS_DEFAULT_CIPHER_SUITE = ConversationEntity.CipherSuite.MLS_128_D
 //       Even if they operate on the same table underneath, these DAOs can represent/do different things.
 @Suppress("TooManyFunctions")
 internal class ConversationDAOImpl internal constructor(
-    private val conversationCache: Cache<ConversationIDEntity, Flow<ConversationViewEntity?>>,
+    private val conversationDetailsCache: FlowCache<ConversationIDEntity, ConversationViewEntity?>,
+    private val conversationCache: FlowCache<ConversationIDEntity, ConversationEntity?>,
     private val conversationQueries: ConversationsQueries,
     private val memberQueries: MembersQueries,
     private val unreadEventsQueries: UnreadEventsQueries,
     private val coroutineContext: CoroutineContext,
-    private val databaseScope: CoroutineScope
 ) : ConversationDAO {
 
     private val conversationMapper = ConversationMapper()
@@ -206,15 +203,18 @@ internal class ConversationDAOImpl internal constructor(
     }
 
     override suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationViewEntity?> {
-        return conversationQueries.selectByQualifiedId(qualifiedID)
-            .asFlow()
-            .mapToOneOrNull()
-            .flowOn(coroutineContext)
-            .map { it?.let { conversationMapper.toModel(it) } }
+        return conversationDetailsCache.get(qualifiedID) {
+            conversationQueries.selectByQualifiedId(qualifiedID)
+                .asFlow()
+                .mapToOneOrNull()
+                .map { it?.let { conversationMapper.toModel(it) } }
+        }
     }
 
-    override suspend fun observeGetConversationBaseInfoByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?> {
-        return conversationQueries.selectConversationByQualifiedId(qualifiedID, conversationMapper::toModel)
+    override suspend fun observeGetConversationBaseInfoByQualifiedID(
+        qualifiedID: QualifiedIDEntity
+    ): Flow<ConversationEntity?> = conversationCache.get(qualifiedID) {
+        conversationQueries.selectConversationByQualifiedId(qualifiedID, conversationMapper::toModel)
             .asFlow()
             .mapToOneOrNull()
             .flowOn(coroutineContext)
@@ -492,13 +492,12 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
-    override suspend fun observeConversationDetailsById(conversationId: QualifiedIDEntity): Flow<ConversationViewEntity?> =
-        conversationCache.get(conversationId) {
-            conversationQueries.selectByQualifiedId(conversationId)
-                .asFlow()
-                .mapToOneOrNull()
-                .flowOn(coroutineContext)
-                .map { it?.let { conversationMapper.toModel(it) } }
-                .shareIn(databaseScope, Lazily, 1)
-        }
+    override suspend fun observeConversationDetailsById(
+        conversationId: QualifiedIDEntity
+    ): Flow<ConversationViewEntity?> = conversationDetailsCache.get(conversationId) {
+        conversationQueries.selectByQualifiedId(conversationId)
+            .asFlow()
+            .mapToOneOrNull()
+            .map { it?.let { conversationMapper.toModel(it) } }
+    }
 }
