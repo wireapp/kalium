@@ -20,6 +20,7 @@ package com.wire.kalium.persistence.cache
 import app.cash.turbine.test
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.test.advanceTimeBy
@@ -94,5 +95,26 @@ class FlowCacheTest {
         }
 
         assertTrue(isNewFlowCreated)
+    }
+
+    @Test
+    fun givenCachedFlow_whenNoMoreCollectors_thenCachedFlowShouldBeCancelled() = runTest {
+        val timeout = 3.seconds
+        val cache = FlowCache<Int, String>(backgroundScope, timeout)
+        val itemKey = 42
+        val channel = Channel<String>(Channel.UNLIMITED)
+        channel.send("First ever item!!!!")
+        channel.send("Another item!!!!")
+
+        cache.get(itemKey) {
+            channel.consumeAsFlow()
+        }.test {
+            awaitItem()
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        advanceTimeBy(timeout + 1.seconds)
+
+        assertTrue(channel.isClosedForSend)
     }
 }
