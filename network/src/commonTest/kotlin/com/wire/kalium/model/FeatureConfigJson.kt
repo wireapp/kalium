@@ -19,6 +19,7 @@
 package com.wire.kalium.model
 
 import com.wire.kalium.api.json.ValidJsonProvider
+import com.wire.kalium.network.api.authenticated.featureConfigs.ConferenceCallingConfigDTO
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.AppLockConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
@@ -66,6 +67,9 @@ object FeatureConfigJson {
             |    "status": "enabled"
             |  },
             |  "conferenceCalling": {
+            |    "config": {
+			|      "useSFTForOneToOneCalls": false
+            |    },
             |    "status": "enabled"
             |  },
             |  "conversationGuestLinks": {
@@ -118,7 +122,7 @@ object FeatureConfigJson {
                 AppLockConfigDTO(true, 0), FeatureFlagStatusDTO.ENABLED
             ),
             ClassifiedDomains(ClassifiedDomainsConfigDTO(listOf()), FeatureFlagStatusDTO.ENABLED),
-            ConferenceCalling(FeatureFlagStatusDTO.ENABLED),
+            ConferenceCalling(FeatureFlagStatusDTO.ENABLED, ConferenceCallingConfigDTO(false)),
             ConversationGuestLinks(FeatureFlagStatusDTO.ENABLED),
             DigitalSignatures(FeatureFlagStatusDTO.ENABLED),
             FileSharing(FeatureFlagStatusDTO.ENABLED),

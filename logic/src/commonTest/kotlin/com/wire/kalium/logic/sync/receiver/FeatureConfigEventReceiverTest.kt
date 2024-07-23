@@ -114,13 +114,14 @@ class FeatureConfigEventReceiverTest {
     }
 
     @Test
-    fun givenConferenceCallingUpdatedEventGrantingAccess_whenProcessingEvent_ThenSetConferenceCallingEnabledToTrue() = runTest {
+    fun givenConferenceCallingEventEnabled_whenProcessingEvent_ThenSetConferenceCallingEnabledToTrueAndSetShouldUseSFTFlag() = runTest {
         val (arrangement, featureConfigEventReceiver) = Arrangement()
+            .withSetUseSFTForOneOnOneCallsSuccessful()
             .withSettingConferenceCallingEnabledSuccessful()
             .arrange()
 
         featureConfigEventReceiver.onEvent(
-            arrangement.newConferenceCallingUpdatedEvent(ConferenceCallingModel(Status.ENABLED)),
+            arrangement.newConferenceCallingUpdatedEvent(ConferenceCallingModel(Status.ENABLED, false)),
             TestEvent.liveDeliveryInfo
         )
 
@@ -128,16 +129,21 @@ class FeatureConfigEventReceiverTest {
             .function(arrangement.userConfigRepository::setConferenceCallingEnabled)
             .with(eq(true))
             .wasInvoked(once)
+
+        verify {
+            arrangement.userConfigRepository.setUseSFTForOneOnOneCalls(eq(false))
+        }.wasInvoked(once)
     }
 
     @Test
-    fun givenConferenceCallingUpdatedEventGrantingAccess_whenProcessingEvent_ThenSetConferenceCallingEnabledToFalse() = runTest {
+    fun givenConferenceCallingEventDisabled_whenProcessingEvent_ThenSetConferenceCallingEnabledToFalseOnly() = runTest {
         val (arrangement, featureConfigEventReceiver) = Arrangement()
+            .withSetUseSFTForOneOnOneCallsSuccessful()
             .withSettingConferenceCallingEnabledSuccessful()
             .arrange()
 
         featureConfigEventReceiver.onEvent(
-            event = arrangement.newConferenceCallingUpdatedEvent(ConferenceCallingModel(Status.DISABLED)),
+            event = arrangement.newConferenceCallingUpdatedEvent(ConferenceCallingModel(Status.DISABLED, false)),
             deliveryInfo = TestEvent.liveDeliveryInfo
         )
 
@@ -145,6 +151,10 @@ class FeatureConfigEventReceiverTest {
             .function(arrangement.userConfigRepository::setConferenceCallingEnabled)
             .with(eq(false))
             .wasInvoked(once)
+
+        verify {
+            arrangement.userConfigRepository.setUseSFTForOneOnOneCalls(eq(true))
+        }.wasNotInvoked()
     }
 
     @Test
@@ -347,6 +357,12 @@ class FeatureConfigEventReceiverTest {
                 .function(userConfigRepository::setConferenceCallingEnabled)
                 .whenInvokedWith(any())
                 .thenReturn(Either.Right(Unit))
+        }
+
+        fun withSetUseSFTForOneOnOneCallsSuccessful() = apply {
+            every {
+                userConfigRepository.setUseSFTForOneOnOneCalls(any())
+            }.returns(Either.Right(Unit))
         }
 
         fun withIsFileSharingEnabled(result: Either<StorageFailure, FileSharingStatus>) = apply {

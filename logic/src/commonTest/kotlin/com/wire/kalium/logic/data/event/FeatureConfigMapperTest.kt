@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.featureConfig.FeatureConfigMapperImpl
 import com.wire.kalium.logic.data.featureConfig.Status
 import com.wire.kalium.logic.data.id.PlainId
 import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
+import com.wire.kalium.network.api.authenticated.featureConfigs.ConferenceCallingConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.AppLockConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
@@ -143,7 +144,7 @@ class FeatureConfigMapperTest {
                 ClassifiedDomainsConfigDTO(listOf("wire.com")),
                 FeatureFlagStatusDTO.ENABLED
             ),
-            FeatureConfigData.ConferenceCalling(FeatureFlagStatusDTO.ENABLED),
+            FeatureConfigData.ConferenceCalling(FeatureFlagStatusDTO.ENABLED, ConferenceCallingConfigDTO(false)),
             FeatureConfigData.ConversationGuestLinks(FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.DigitalSignatures(FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.FileSharing(FeatureFlagStatusDTO.ENABLED),
