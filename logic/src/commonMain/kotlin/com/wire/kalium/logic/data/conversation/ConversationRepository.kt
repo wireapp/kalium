@@ -622,11 +622,12 @@ internal class ConversationDataSource internal constructor(
                 conversationEntity?.let { conversationMapper.fromDaoModel(it) }
             }.firstOrNull()
 
-    override suspend fun getConversationTypeById(conversationId: ConversationId): Either<StorageFailure, Conversation.Type> = wrapStorageRequest {
-        conversationDAO.getConversationTypeById(conversationId.toDao())?.let {
-            conversationMapper.fromConversationEntityType(it)
+    override suspend fun getConversationTypeById(conversationId: ConversationId): Either<StorageFailure, Conversation.Type> =
+        wrapStorageRequest {
+            conversationDAO.getConversationTypeById(conversationId.toDao())?.let {
+                conversationMapper.fromConversationEntityType(it)
+            }
         }
-    }
 
     override suspend fun observeCacheDetailsById(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation?>> =
         wrapStorageRequest {

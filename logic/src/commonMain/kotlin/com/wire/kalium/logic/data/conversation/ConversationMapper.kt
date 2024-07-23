@@ -457,7 +457,7 @@ internal class ConversationMapperImpl(
             ConversationEntity.LegalHoldStatus.DISABLED -> Conversation.LegalHoldStatus.DISABLED
         }
 
-    override  fun fromConversationEntityType(type: ConversationEntity.Type): Conversation.Type {
+    override fun fromConversationEntityType(type: ConversationEntity.Type): Conversation.Type {
         return type.fromDaoModelToType()
     }
 }

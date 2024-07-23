@@ -36,6 +36,7 @@ import kotlinx.coroutines.withContext
  * Will wait for sync to finish or fail if it is pending,
  * and return one [Result].
  */
+@Suppress("LongParameterList")
 class StartCallUseCase internal constructor(
     private val callManager: Lazy<CallManager>,
     private val syncManager: SyncManager,
