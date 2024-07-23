@@ -24,13 +24,13 @@ import com.wire.kalium.cryptography.MLSGroupId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
-import com.wire.kalium.network.api.base.model.UserSsoIdDTO
+import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
+import com.wire.kalium.network.api.model.UserSsoIdDTO
 import com.wire.kalium.persistence.dao.client.Client
 import com.wire.kalium.persistence.model.SsoIdEntity
 import com.wire.kalium.protobuf.messages.QualifiedConversationId
 import com.wire.kalium.protobuf.messages.QualifiedUserId
-import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
+import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
 @Suppress("TooManyFunctions")
 interface IdMapper {

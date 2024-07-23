@@ -18,6 +18,13 @@
 package com.wire.kalium.network.api.base.unbound.acme
 
 import com.wire.kalium.network.UnboundNetworkClient
+import com.wire.kalium.network.api.unbound.acme.ACMEAuthorizationResponse
+import com.wire.kalium.network.api.unbound.acme.ACMEResponse
+import com.wire.kalium.network.api.unbound.acme.AcmeDirectoriesResponse
+import com.wire.kalium.network.api.unbound.acme.AuthorizationResponse
+import com.wire.kalium.network.api.unbound.acme.ChallengeResponse
+import com.wire.kalium.network.api.unbound.acme.DtoAuthorizationChallengeType
+import com.wire.kalium.network.api.unbound.acme.FederationCertificateChainResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.serialization.JoseJson
 import com.wire.kalium.network.tools.KtxSerializer
@@ -59,7 +66,7 @@ interface ACMEApi {
      * @return A [NetworkResponse] object containing the certificate chain as a list of strings.
      */
     suspend fun getACMEFederationCertificateChain(discoveryUrl: String): NetworkResponse<List<String>>
-    suspend fun getClientDomainCRL(url: String): NetworkResponse<ByteArray>
+    suspend fun getClientDomainCRL(url: String, proxyUrl: String?): NetworkResponse<ByteArray>
 }
 
 class ACMEApiImpl internal constructor(
@@ -252,7 +259,7 @@ class ACMEApiImpl internal constructor(
         }.mapSuccess { it.certificates }
     }
 
-    override suspend fun getClientDomainCRL(url: String): NetworkResponse<ByteArray> {
+    override suspend fun getClientDomainCRL(url: String, proxyUrl: String?): NetworkResponse<ByteArray> {
         if (url.isBlank()) {
             return NetworkResponse.Error(
                 KaliumException.GenericError(
@@ -262,9 +269,9 @@ class ACMEApiImpl internal constructor(
         }
 
         return wrapKaliumResponse {
-            val httpUrl = URLBuilder(url).apply {
-                this.protocol = URLProtocol.HTTP
-            }.build()
+            val httpUrl = if (proxyUrl.isNullOrEmpty()) URLBuilder(url).apply { this.protocol = URLProtocol.HTTP }.build()
+            else URLBuilder(proxyUrl).apply { this.pathSegments = this.pathSegments.plus(url) }.build()
+
             clearTextTrafficHttpClient.get(httpUrl)
         }
     }

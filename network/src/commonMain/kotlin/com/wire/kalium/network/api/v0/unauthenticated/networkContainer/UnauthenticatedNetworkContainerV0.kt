@@ -18,17 +18,17 @@
 
 package com.wire.kalium.network.api.v0.unauthenticated.networkContainer
 
-import com.wire.kalium.network.NetworkStateObserver
-import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
-import com.wire.kalium.network.api.base.unauthenticated.DomainLookupApi
-import com.wire.kalium.network.api.base.unauthenticated.LoginApi
-import com.wire.kalium.network.api.base.unauthenticated.SSOLoginApi
-import com.wire.kalium.network.api.base.unauthenticated.VerificationCodeApi
+import com.wire.kalium.network.api.model.ProxyCredentialsDTO
+import com.wire.kalium.network.api.base.unauthenticated.domainLookup.DomainLookupApi
+import com.wire.kalium.network.api.base.unauthenticated.login.LoginApi
+import com.wire.kalium.network.api.base.unauthenticated.sso.SSOLoginApi
+import com.wire.kalium.network.api.base.unauthenticated.verification.VerificationCodeApi
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApi
 import com.wire.kalium.network.api.base.unauthenticated.appVersioning.AppVersioningApiImpl
 import com.wire.kalium.network.api.base.unauthenticated.register.RegisterApi
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApi
 import com.wire.kalium.network.api.base.unbound.configuration.ServerConfigApiImpl
+import com.wire.kalium.network.api.unbound.configuration.ServerConfigDTO
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApi
 import com.wire.kalium.network.api.base.unbound.versioning.VersionApiImpl
 import com.wire.kalium.network.api.v0.unauthenticated.DomainLookupApiV0
@@ -41,13 +41,11 @@ import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkClientProv
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkClientProviderImpl
 import com.wire.kalium.network.networkContainer.UnauthenticatedNetworkContainer
 import com.wire.kalium.network.session.CertificatePinning
-import com.wire.kalium.network.tools.ServerConfigDTO
 import io.ktor.client.engine.HttpClientEngine
 
 @Suppress("LongParameterList")
 class UnauthenticatedNetworkContainerV0 internal constructor(
     private val developmentApiEnabled: Boolean,
-    networkStateObserver: NetworkStateObserver,
     backendLinks: ServerConfigDTO,
     proxyCredentials: ProxyCredentialsDTO?,
     certificatePinning: CertificatePinning,
@@ -59,7 +57,6 @@ class UnauthenticatedNetworkContainerV0 internal constructor(
     )
 ) : UnauthenticatedNetworkContainer,
     UnauthenticatedNetworkClientProvider by UnauthenticatedNetworkClientProviderImpl(
-        networkStateObserver,
         backendLinks,
         engine
     ) {

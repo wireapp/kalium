@@ -38,6 +38,7 @@ import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangeme
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -48,6 +49,7 @@ import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 
 class MemberLeaveEventHandlerTest {
@@ -294,7 +296,7 @@ class MemberLeaveEventHandlerTest {
             conversationId = conversationId,
             removedBy = userId,
             removedList = listOf(userId),
-            timestampIso = "timestampIso",
+            dateTime = Instant.UNIX_FIRST_DATE,
             reason = reason
         )
 
@@ -302,7 +304,7 @@ class MemberLeaveEventHandlerTest {
             id = event.id,
             content = MessageContent.MemberChange.Removed(members = event.removedList),
             conversationId = event.conversationId,
-            date = event.timestampIso,
+            date = event.dateTime,
             senderUserId = event.removedBy,
             status = Message.Status.Sent,
             visibility = Message.Visibility.VISIBLE,
@@ -313,7 +315,7 @@ class MemberLeaveEventHandlerTest {
             id = event.id,
             content = MessageContent.MemberChange.RemovedFromTeam(members = event.removedList),
             conversationId = event.conversationId,
-            date = event.timestampIso,
+            date = event.dateTime,
             senderUserId = event.removedBy,
             status = Message.Status.Sent,
             visibility = Message.Visibility.VISIBLE,

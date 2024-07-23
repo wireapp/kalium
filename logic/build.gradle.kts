@@ -32,11 +32,13 @@ kaliumLibrary {
     }
 }
 
+@Suppress("UnusedPrivateProperty")
 kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
                 implementation(project(":network"))
+                api(project(":data"))
                 api(project(":network-util"))
                 implementation(project(":cryptography"))
                 implementation(project(":persistence"))
@@ -50,6 +52,9 @@ kotlin {
                 implementation(libs.ktxSerialization)
                 implementation(libs.ktxDateTime)
                 implementation(libs.benAsherUUID)
+
+                // ktor mockk engine
+                implementation(libs.ktor.mock)
 
                 // the Dependency is duplicated between here and persistence build.gradle.kts
                 implementation(libs.settings.kmp)

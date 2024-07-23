@@ -23,6 +23,7 @@ import com.wire.kalium.logic.data.asset.AssetMapper
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.IdMapper
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.message.receipt.ReceiptType
 import com.wire.kalium.logic.data.user.AvailabilityStatusMapper
@@ -62,13 +63,14 @@ interface ProtoContentMapper {
     fun decodeFromProtobuf(encodedContent: PlainMessageBlob): ProtoContent
 }
 
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions", "LongParameterList", "LargeClass")
 class ProtoContentMapperImpl(
     private val assetMapper: AssetMapper = MapperProvider.assetMapper(),
     private val availabilityMapper: AvailabilityStatusMapper = MapperProvider.availabilityStatusMapper(),
     private val encryptionAlgorithmMapper: EncryptionAlgorithmMapper = MapperProvider.encryptionAlgorithmMapper(),
     private val idMapper: IdMapper = MapperProvider.idMapper(),
     private val selfUserId: UserId,
+    private val linkPreviewMapper: LinkPreviewMapper = MapperProvider.linkPreviewMapper(),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
 ) : ProtoContentMapper {
 
@@ -84,10 +86,11 @@ class ProtoContentMapperImpl(
 
     @Suppress("ComplexMethod")
     private fun mapReadableContentToProtobuf(protoContent: ProtoContent.Readable): GenericMessage.Content<out Any> {
-        return if (protoContent.expiresAfterMillis != null) {
+        val expiration = protoContent.expiresAfterMillis
+        return if (expiration != null) {
             mapEphemeralContent(
                 protoContent.messageContent,
-                protoContent.expiresAfterMillis,
+                expiration,
                 protoContent.expectsReadConfirmation,
                 protoContent.legalHoldStatus
             )
@@ -135,6 +138,8 @@ class ProtoContentMapperImpl(
 
             is MessageContent.ButtonActionConfirmation -> packButtonActionConfirmation(readableContent)
             is MessageContent.Location -> packLocation(readableContent, expectsReadConfirmation, legalHoldStatus)
+
+            is MessageContent.DataTransfer -> TODO("Analytics: Not yet implemented")
         }
     }
 
@@ -254,7 +259,8 @@ class ProtoContentMapperImpl(
             is MessageContent.Composite,
             is MessageContent.ButtonAction,
             is MessageContent.ButtonActionConfirmation,
-            is MessageContent.TextEdited -> throw IllegalArgumentException(
+            is MessageContent.TextEdited,
+            is MessageContent.DataTransfer -> throw IllegalArgumentException(
                 "Unexpected message content type: ${readableContent.getType()}"
             )
         }
@@ -349,7 +355,7 @@ class ProtoContentMapperImpl(
             is GenericMessage.Content.Cleared -> unpackCleared(protoContent)
             is GenericMessage.Content.ClientAction -> MessageContent.ClientAction
             is GenericMessage.Content.Confirmation -> unpackReceipt(protoContent)
-            is GenericMessage.Content.DataTransfer -> MessageContent.Ignored
+            is GenericMessage.Content.DataTransfer -> unpackDataTransfer(protoContent)
             is GenericMessage.Content.Deleted -> MessageContent.DeleteMessage(protoContent.value.messageId)
             is GenericMessage.Content.Edited -> unpackEdited(protoContent, typeName, encodedContent, genericMessage)
             is GenericMessage.Content.Ephemeral -> unpackEphemeral(protoContent)
@@ -533,6 +539,14 @@ class ProtoContentMapperImpl(
         conversationId = protoContent.value.qualifiedConversationId?.let { idMapper.fromProtoModel(it) }
     )
 
+    private fun unpackDataTransfer(protoContent: GenericMessage.Content.DataTransfer) = MessageContent.DataTransfer(
+        trackingIdentifier = protoContent.value.trackingIdentifier?.let { trackingIdentifier ->
+            MessageContent.DataTransfer.TrackingIdentifier(
+                identifier = trackingIdentifier.identifier
+            )
+        }
+    )
+
     private fun packCleared(readableContent: MessageContent.Cleared) = GenericMessage.Content.Cleared(
         Cleared(
             conversationId = readableContent.conversationId.value,
@@ -558,6 +572,7 @@ class ProtoContentMapperImpl(
         expectsReadConfirmation: Boolean,
         legalHoldStatus: Conversation.LegalHoldStatus
     ): GenericMessage.Content.Text {
+        val linkPreview = readableContent.linkPreviews.map { linkPreviewMapper.fromModelToProto(it) }
         val mentions = readableContent.mentions.map { messageMentionMapper.fromModelToProto(it) }
         val quote = readableContent.quotedMessageReference?.let {
             Quote(it.quotedMessageId, it.quotedMessageSha256?.let { hash -> ByteArr(hash) })
@@ -566,6 +581,7 @@ class ProtoContentMapperImpl(
         return GenericMessage.Content.Text(
             Text(
                 content = readableContent.value,
+                linkPreview = linkPreview,
                 mentions = mentions,
                 quote = quote,
                 expectsReadConfirmation = expectsReadConfirmation,
@@ -587,6 +603,7 @@ class ProtoContentMapperImpl(
 
     private fun unpackText(protoContent: Text) = MessageContent.Text(
         value = protoContent.content,
+        linkPreviews = protoContent.linkPreview.mapNotNull { linkPreviewMapper.fromProtoToModel(it) },
         mentions = protoContent.mentions.mapNotNull { messageMentionMapper.fromProtoToModel(it) },
         quotedMessageReference = protoContent.quote?.let {
             MessageContent.QuoteReference(

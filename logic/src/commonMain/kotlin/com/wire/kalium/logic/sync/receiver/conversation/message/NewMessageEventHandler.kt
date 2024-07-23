@@ -25,10 +25,9 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.event.Event
 import com.wire.kalium.logic.data.event.EventDeliveryInfo
-import com.wire.kalium.logic.data.event.EventLoggingStatus
-import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.MessageContent
+import com.wire.kalium.logic.data.message.typeDescription
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.message.StaleEpochVerifier
 import com.wire.kalium.logic.functional.onFailure
@@ -36,8 +35,8 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.incremental.EventSource
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
+import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.util.serialization.toJsonElement
-import kotlinx.datetime.toInstant
 
 internal interface NewMessageEventHandler {
     suspend fun handleNewProteusMessage(event: Event.Conversation.NewMessage, deliveryInfo: EventDeliveryInfo)
@@ -51,6 +50,7 @@ internal class NewMessageEventHandlerImpl(
     private val applicationMessageHandler: ApplicationMessageHandler,
     private val legalHoldHandler: LegalHoldHandler,
     private val enqueueSelfDeletion: (conversationId: ConversationId, messageId: String) -> Unit,
+    private val enqueueConfirmationDelivery: suspend (conversationId: ConversationId, messageId: String) -> Unit,
     private val selfUserId: UserId,
     private val staleEpochVerifier: StaleEpochVerifier
 ) : NewMessageEventHandler {
@@ -58,6 +58,7 @@ internal class NewMessageEventHandlerImpl(
     private val logger by lazy { kaliumLogger.withFeatureId(KaliumLogger.Companion.ApplicationFlow.EVENT_RECEIVER) }
 
     override suspend fun handleNewProteusMessage(event: Event.Conversation.NewMessage, deliveryInfo: EventDeliveryInfo) {
+        val eventLogger = logger.createEventProcessingLogger(event)
         proteusMessageUnpacker.unpackProteusMessage(event)
             .onFailure {
                 val logMap = mapOf(
@@ -76,7 +77,7 @@ internal class NewMessageEventHandlerImpl(
                 applicationMessageHandler.handleDecryptionError(
                     eventId = event.id,
                     conversationId = event.conversationId,
-                    timestampIso = event.timestampIso,
+                    messageInstant = event.messageInstant,
                     senderUserId = event.senderUserId,
                     senderClientId = event.senderClientId,
                     content = MessageContent.FailedDecryption(
@@ -86,42 +87,33 @@ internal class NewMessageEventHandlerImpl(
                         clientId = ClientId(event.senderClientId.value)
                     )
                 )
+                eventLogger.logFailure(it, "protocol" to "Proteus")
             }.onSuccess {
                 if (it is MessageUnpackResult.ApplicationMessage) {
-                    if (it.content.legalHoldStatus != Conversation.LegalHoldStatus.UNKNOWN) {
-                        legalHoldHandler.handleNewMessage(it, isLive = deliveryInfo.source == EventSource.LIVE)
-                    }
-                    handleSuccessfulResult(it)
-                    onMessageInserted(it)
+                    processApplicationMessage(it, deliveryInfo)
                 }
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.SUCCESS,
-                        event
-                    )
+                eventLogger.logSuccess(
+                    "protocol" to "Proteus",
+                    "messageType" to it.messageTypeDescription,
+                )
             }
     }
 
     override suspend fun handleNewMLSMessage(event: Event.Conversation.NewMLSMessage, deliveryInfo: EventDeliveryInfo) {
+        var eventLogger = logger.createEventProcessingLogger(event)
         mlsMessageUnpacker.unpackMlsMessage(event)
             .onFailure {
-                val logMap = mapOf(
-                    "event" to event.toLogMap(),
-                    "errorInfo" to "$it",
-                    "protocol" to "MLS"
-                )
-
                 when (MLSMessageFailureHandler.handleFailure(it)) {
                     is MLSMessageFailureResolution.Ignore -> {
-                        logger.i("Ignoring event: ${logMap.toJsonElement()}")
+                        eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "IGNORE")
                     }
 
                     is MLSMessageFailureResolution.InformUser -> {
-                        logger.i("Informing users about decryption error: ${logMap.toJsonElement()}")
+                        eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "INFORM_USER")
                         applicationMessageHandler.handleDecryptionError(
                             eventId = event.id,
                             conversationId = event.conversationId,
-                            timestampIso = event.timestampIso,
+                            messageInstant = event.messageInstant,
                             senderUserId = event.senderUserId,
                             senderClientId = ClientId(""), // TODO(mls): client ID not available for MLS messages
                             content = MessageContent.FailedDecryption(
@@ -132,32 +124,52 @@ internal class NewMessageEventHandlerImpl(
                     }
 
                     is MLSMessageFailureResolution.OutOfSync -> {
-                        logger.i("Epoch out of sync error: ${logMap.toJsonElement()}")
+                        eventLogger.logFailure(it, "protocol" to "MLS", "mlsOutcome" to "OUT_OF_SYNC")
                         staleEpochVerifier.verifyEpoch(
                             event.conversationId,
-                            event.timestampIso.toInstant()
+                            event.messageInstant
                         )
                     }
                 }
-            }.onSuccess {
-                it.forEach {
-                    if (it is MessageUnpackResult.ApplicationMessage) {
-                        if (it.content.legalHoldStatus != Conversation.LegalHoldStatus.UNKNOWN) {
-                            legalHoldHandler.handleNewMessage(it, isLive = deliveryInfo.source == EventSource.LIVE)
-                        }
-                        handleSuccessfulResult(it)
-                        onMessageInserted(it)
+            }.onSuccess { batchResult ->
+                batchResult.forEach { message ->
+                    if (message is MessageUnpackResult.ApplicationMessage) {
+                        processApplicationMessage(message, deliveryInfo)
                     }
-                }
-                kaliumLogger
-                    .logEventProcessing(
-                        EventLoggingStatus.SUCCESS,
-                        event
+                    eventLogger.logSuccess(
+                        "protocol" to "MLS",
+                        "isPartOfMLSBatch" to (batchResult.size > 1),
+                        "messageType" to message.messageTypeDescription
                     )
+                    // reset the time for next messages, if this is a batch
+                    eventLogger = logger.createEventProcessingLogger(event)
+                }
             }
     }
 
-    private fun onMessageInserted(result: MessageUnpackResult.ApplicationMessage) {
+    private suspend fun processApplicationMessage(
+        it: MessageUnpackResult.ApplicationMessage,
+        deliveryInfo: EventDeliveryInfo
+    ) {
+        if (it.content.legalHoldStatus != Conversation.LegalHoldStatus.UNKNOWN) {
+            legalHoldHandler.handleNewMessage(it, isLive = deliveryInfo.source == EventSource.LIVE)
+        }
+        handleSuccessfulResult(it)
+        onMessageInserted(it)
+    }
+
+    private val MessageUnpackResult.messageTypeDescription
+        get() = if (this is MessageUnpackResult.ApplicationMessage) {
+            content.messageContent.typeDescription()
+        } else {
+            "Handshake"
+        }
+
+    private suspend fun onMessageInserted(result: MessageUnpackResult.ApplicationMessage) {
+        if (result.senderUserId != selfUserId && result.content.messageContent is MessageContent.Regular) {
+            enqueueConfirmationDelivery(result.conversationId, result.content.messageUid)
+        }
+
         if (result.senderUserId == selfUserId && result.content.expiresAfterMillis != null) {
             enqueueSelfDeletion(
                 result.conversationId,
@@ -169,7 +181,7 @@ internal class NewMessageEventHandlerImpl(
     private suspend fun handleSuccessfulResult(result: MessageUnpackResult.ApplicationMessage) {
         applicationMessageHandler.handleContent(
             conversationId = result.conversationId,
-            timestampIso = result.timestampIso,
+            messageInstant = result.instant,
             senderUserId = result.senderUserId,
             senderClientId = result.senderClientId,
             content = result.content

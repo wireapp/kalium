@@ -39,7 +39,7 @@ import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.prekey.DomainToUserIdToClientsToPreKeyMap
 import com.wire.kalium.network.api.base.authenticated.prekey.ListPrekeysResponse
 import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyApi
-import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
+import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.MetadataDAO
@@ -55,7 +55,6 @@ import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertContentEquals

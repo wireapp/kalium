@@ -24,7 +24,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.joinAll
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -51,7 +50,7 @@ class EncryptedSettingsBuilderTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         (1..5000).map {
             launch() {
-                EncryptedSettingsBuilder.build(
+                buildSettings(
                     options = SettingOptions.UserSettings(
                         shouldEncryptData = true,
                         userIDEntity = UserIDEntity(

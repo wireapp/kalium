@@ -39,23 +39,24 @@ internal class MessageSendingInterceptorImpl internal constructor(
 
         val replyMessageContent = originalMessage.content
 
+        val quotedReference = (replyMessageContent as? MessageContent.Text)?.quotedMessageReference
         if (replyMessageContent !is MessageContent.Text
             || originalMessage !is Message.Regular
-            || replyMessageContent.quotedMessageReference == null
+            || quotedReference == null
         ) {
             return Either.Right(originalMessage)
         }
 
-        return messageRepository.getMessageById(originalMessage.conversationId, replyMessageContent.quotedMessageReference.quotedMessageId)
+        return messageRepository.getMessageById(originalMessage.conversationId, quotedReference.quotedMessageId)
             .map { persistedMessage ->
                 val encodedMessageContent = messageContentEncoder.encodeMessageContent(
-                    messageDate = persistedMessage.date,
+                    messageInstant = persistedMessage.date,
                     messageContent = persistedMessage.content
                 )
 
                 originalMessage.copy(
                     content = replyMessageContent.copy(
-                        quotedMessageReference = replyMessageContent.quotedMessageReference.copy(
+                        quotedMessageReference = quotedReference.copy(
                             quotedMessageSha256 = encodedMessageContent?.sha256Digest
                         )
                     )

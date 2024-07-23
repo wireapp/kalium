@@ -19,10 +19,11 @@
 package com.wire.kalium.logic.data.auth.login
 
 import com.wire.kalium.logic.framework.TestUser
-import com.wire.kalium.network.api.base.model.SelfUserDTO
-import com.wire.kalium.network.api.base.model.SessionDTO
-import com.wire.kalium.network.api.base.model.UserDTO
-import com.wire.kalium.network.api.base.unauthenticated.LoginApi
+import com.wire.kalium.network.api.model.SelfUserDTO
+import com.wire.kalium.network.api.model.SessionDTO
+import com.wire.kalium.network.api.model.UserDTO
+import com.wire.kalium.network.api.base.unauthenticated.login.LoginApi
+import com.wire.kalium.network.api.unauthenticated.login.LoginParam
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.http.HttpStatusCode
 import io.mockative.Mock
@@ -60,7 +61,7 @@ class LoginRepositoryTest {
             secondFactorVerificationCode = TEST_SECOND_FACTOR_CODE
         )
 
-        val expectedParam = LoginApi.LoginParam.LoginWithEmail(
+        val expectedParam = LoginParam.LoginWithEmail(
             email = TEST_EMAIL,
             password = TEST_PASSWORD,
             label = TEST_LABEL,
@@ -82,7 +83,7 @@ class LoginRepositoryTest {
             shouldPersistClient = TEST_PERSIST_CLIENT,
         )
 
-        val expectedParam = LoginApi.LoginParam.LoginWithHandle(
+        val expectedParam = LoginParam.LoginWithHandle(
             handle = TEST_HANDLE,
             password = TEST_PASSWORD,
             label = TEST_LABEL,

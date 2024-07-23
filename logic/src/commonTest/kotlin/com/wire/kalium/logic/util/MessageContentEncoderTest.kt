@@ -21,6 +21,7 @@ package com.wire.kalium.logic.util
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.util.string.toHexString
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -33,7 +34,7 @@ class MessageContentEncoderTest {
     fun givenAMessageBodyWithEmoji_whenEncoding_ThenResultHasExpectedHexResult() = runTest {
         // given / when
         val result = messageContentEncoder.encodeMessageContent(
-            messageDate = textWithEmoji.first.second,
+            messageInstant = textWithEmoji.first.second,
             messageContent = MessageContent.Text(textWithEmoji.first.first)
         )
         // then
@@ -44,7 +45,7 @@ class MessageContentEncoderTest {
     @Test
     fun givenAMessageBodyWithUrl_whenEncoding_ThenResultHasExpectedHexResult() = runTest {
         val result = messageContentEncoder.encodeMessageContent(
-            messageDate = url.first.second,
+            messageInstant = url.first.second,
             messageContent = MessageContent.Text(url.first.first)
         )
 
@@ -56,7 +57,7 @@ class MessageContentEncoderTest {
     @Test
     fun givenAMessageBodyWithArabic_whenEncoding_ThenResultHasExpectedHexResult() = runTest {
         val result = messageContentEncoder.encodeMessageContent(
-            messageDate = arabic.first.second,
+            messageInstant = arabic.first.second,
             messageContent = MessageContent.Text(arabic.first.first)
         )
 
@@ -68,7 +69,7 @@ class MessageContentEncoderTest {
     @Test
     fun givenAMessageBodyWithMarkDown_whenEncoding_ThenResultHasExpectedHexResult() = runTest {
         val result = messageContentEncoder.encodeMessageContent(
-            messageDate = markDown.first.second,
+            messageInstant = markDown.first.second,
             messageContent = MessageContent.Text(markDown.first.first)
         )
 
@@ -81,7 +82,7 @@ class MessageContentEncoderTest {
     fun givenAMessageBodyWithEmoji_whenEncoding_ThenResultHasExpectedSHA256HashResult() = runTest {
         // given / when
         val result = messageContentEncoder.encodeMessageContent(
-            messageDate = textWithEmoji.first.second,
+            messageInstant = textWithEmoji.first.second,
             messageContent = MessageContent.Text(textWithEmoji.first.first)
         )
 
@@ -93,7 +94,7 @@ class MessageContentEncoderTest {
     @Test
     fun givenAMessageBodyWithUrl_whenEncoding_ThenResultHasExpectedSHA256HashResult() = runTest {
         val result = messageContentEncoder.encodeMessageContent(
-            messageDate = url.first.second,
+            messageInstant = url.first.second,
             messageContent = MessageContent.Text(url.first.first)
         )
 
@@ -105,7 +106,7 @@ class MessageContentEncoderTest {
     @Test
     fun givenAMessageBodyWithArabic_whenEncoding_ThenResultHasExpectedSHA256HashResult() = runTest {
         val result = messageContentEncoder.encodeMessageContent(
-            messageDate = arabic.first.second,
+            messageInstant = arabic.first.second,
             messageContent = MessageContent.Text(arabic.first.first)
         )
 
@@ -117,7 +118,7 @@ class MessageContentEncoderTest {
     @Test
     fun givenAMessageBodyWithMarkDown_whenEncoding_ThenResultHasExpectedSHA256HashResult() = runTest {
         val result = messageContentEncoder.encodeMessageContent(
-            messageDate = markDown.first.second,
+            messageInstant = markDown.first.second,
             messageContent = MessageContent.Text(markDown.first.first)
         )
 
@@ -130,7 +131,7 @@ class MessageContentEncoderTest {
     fun givenALocationMessage_whenEncoding_ThenResultHasExpectedSHA256HashResult() = runTest {
         val (locationMessage, messageDate, expectedHash) = location
         val result = messageContentEncoder.encodeMessageContent(
-            messageDate = messageDate,
+            messageInstant = messageDate,
             messageContent = locationMessage
         )
 
@@ -143,7 +144,7 @@ class MessageContentEncoderTest {
         val textWithEmoji =
             (
                     "Hello \uD83D\uDC69\u200D\uD83D\uDCBB\uD83D\uDC68\u200D\uD83D\uDC69\u200D\uD83D\uDC67!" to
-                            "2018-10-22T15:09:29.000+02:00"
+                            Instant.parse("2018-10-22T15:09:29.000+02:00")
                     ) to
                     (
                             "feff00480065006c006c006f0020d83ddc69200dd83ddcbbd83ddc68200dd83ddc69200dd83ddc670021000000005bcdcc09" to
@@ -152,7 +153,7 @@ class MessageContentEncoderTest {
 
         val url = (
                 "https://www.youtube.com/watch?v=DLzxrzFCyOs" to
-                        "2018-10-22T15:09:29.000+02:00"
+                        Instant.parse("2018-10-22T15:09:29.000+02:00")
                 ) to
                 ("feff00680074007400700073003a002f002f007700770077002e" +
                         "0079006f00750074007500620065002e0063006f006d002f007700610" +
@@ -163,7 +164,7 @@ class MessageContentEncoderTest {
 
         val arabic = (
                 "بغداد" to
-                        "2018-10-22T15:12:45.000+02:00"
+                        Instant.parse("2018-10-22T15:12:45.000+02:00")
                 ) to
                 (
                         "feff0628063a062f0627062f000000005bcdcccd" to
@@ -172,7 +173,7 @@ class MessageContentEncoderTest {
 
         val markDown = (
                 "This has **markdown**" to
-                        "2018-10-22T15:12:45.000+02:00"
+                        Instant.parse("2018-10-22T15:12:45.000+02:00")
                 ) to ("feff005400680069007300200068006100730020002a" +
                 "002a006d00610072006b0064006f0077006e002a002a00000" +
                 "0005bcdcccd" to
@@ -181,7 +182,7 @@ class MessageContentEncoderTest {
 
         val location = Triple(
             MessageContent.Location(52.516666f, 13.4f, "someLocation", 10),
-            "2018-10-22T15:09:29.000+02:00",
+            Instant.parse("2018-10-22T15:09:29.000+02:00"),
             "56a5fa30081bc16688574fdfbbe96c2eee004d1fb37dc714eec6efb340192816"
         )
     }

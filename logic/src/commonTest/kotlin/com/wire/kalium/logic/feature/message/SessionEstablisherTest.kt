@@ -36,18 +36,15 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.prekey.PreKeyDTO
+import com.wire.kalium.network.api.authenticated.prekey.PreKeyDTO
 import io.mockative.Mock
 import io.mockative.any
 
 import io.mockative.coEvery
-import io.mockative.every
 import io.mockative.coVerify
 import io.mockative.eq
-import io.mockative.coEvery
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test

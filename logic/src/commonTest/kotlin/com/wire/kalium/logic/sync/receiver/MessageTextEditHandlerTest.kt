@@ -29,13 +29,16 @@ import com.wire.kalium.logic.util.arrangement.repository.MessageRepositoryArrang
 import com.wire.kalium.logic.util.arrangement.usecase.NotificationEventsManagerArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangementImpl
 import com.wire.kalium.persistence.dao.message.MessageEntity
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
+import kotlin.time.Duration.Companion.minutes
 
 class MessageTextEditHandlerTest {
 
@@ -77,7 +80,7 @@ class MessageTextEditHandlerTest {
     @Test
     fun givenEditIsNewerThanLocalPendingStoredEdit_whenHandling_thenShouldUpdateTheWholeMessageDataAndStatus() = runTest {
         val originalContent = TestMessage.TEXT_CONTENT
-        val originalEditStatus = Message.EditStatus.Edited("2000-01-01T12:00:00.000Z")
+        val originalEditStatus = Message.EditStatus.Edited(Instant.UNIX_FIRST_DATE)
         val originalMessage = ORIGINAL_MESSAGE.copy(
             editStatus = originalEditStatus,
             content = originalContent,
@@ -85,7 +88,7 @@ class MessageTextEditHandlerTest {
         )
         val editContent = EDIT_CONTENT
         val editMessage = EDIT_MESSAGE.copy(
-            date = "2000-01-01T12:00:00.001Z",
+            date = Instant.UNIX_FIRST_DATE,
             content = editContent
         )
         val (arrangement, messageTextEditHandler) = arrange {
@@ -115,7 +118,7 @@ class MessageTextEditHandlerTest {
     @Test
     fun givenEditIsOlderThanLocalPendingStoredEdit_whenHandling_thenShouldUpdateOnlyMessageIdAndDate() = runTest {
         val originalContent = TestMessage.TEXT_CONTENT
-        val originalEditStatus = Message.EditStatus.Edited("2000-01-01T12:00:00.001Z")
+        val originalEditStatus = Message.EditStatus.Edited(Instant.UNIX_FIRST_DATE)
         val originalMessage = ORIGINAL_MESSAGE.copy(
             editStatus = originalEditStatus,
             content = originalContent,
@@ -124,7 +127,7 @@ class MessageTextEditHandlerTest {
         )
         val editContent = EDIT_CONTENT
         val editMessage = EDIT_MESSAGE.copy(
-            date = "2000-01-01T12:00:00.000Z",
+            date = EDIT_MESSAGE.date - 10.minutes,
             content = editContent
         )
         val expectedContent = MessageContent.TextEdited(
@@ -140,7 +143,7 @@ class MessageTextEditHandlerTest {
 
         with(arrangement) {
             coVerify {
-                messageRepository.updateTextMessage(any(), eq(expectedContent), eq(editMessage.id), eq(originalEditStatus.lastTimeStamp))
+                messageRepository.updateTextMessage(any(), eq(expectedContent), eq(editMessage.id), eq(originalEditStatus.lastEditInstant))
             }.wasInvoked(exactly = once)
             coVerify {
                 messageRepository.updateMessageStatus(any(), any(), any())

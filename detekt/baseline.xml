@@ -54,7 +54,6 @@
     <ID>ArgumentListWrapping:ConversationDAOTest.kt$ConversationDAOTest$( expectedUserB.copy(clientId = clientCB2), conversationDAO.getE2EIConversationClientInfoByClientId(clientCB2) )</ID>
     <ID>ArgumentListWrapping:ConversationGroupRepository.kt$ConversationGroupRepositoryImpl$( conversationEntity.id, conversationResponse )</ID>
     <ID>ArgumentListWrapping:ConversationGroupRepository.kt$ConversationGroupRepositoryImpl$( conversationEntity.id.toModel(), lastUsersAttempt.failedUsers, lastUsersAttempt.failType )</ID>
-    <ID>ArgumentListWrapping:ConversationGroupRepository.kt$ConversationGroupRepositoryImpl$( conversationEntity.id.toModel(), protocolSpecificAdditionFailures.toList(), FailedToAdd.Type.Unknown )</ID>
     <ID>ArgumentListWrapping:ConversationGroupRepository.kt$ConversationGroupRepositoryImpl$( conversationId, (validUsers + failedUsers), failType )</ID>
     <ID>ArgumentListWrapping:ConversationGroupRepository.kt$ConversationGroupRepositoryImpl$( conversationId, lastUsersAttempt.failedUsers, lastUsersAttempt.failType )</ID>
     <ID>ArgumentListWrapping:ConversationGroupRepository.kt$ConversationGroupRepositoryImpl$( conversationId, userIdList + lastUsersAttempt.failedUsers, failType )</ID>
@@ -118,9 +117,9 @@
     <ID>ArgumentListWrapping:FeatureConfigEventReceiverTest.kt$FeatureConfigEventReceiverTest$( SelfDeletingMessagesConfigModel(enforcedTimeoutSeconds = newEnforcedTimeoutSeconds), Status.DISABLED )</ID>
     <ID>ArgumentListWrapping:FeatureConfigEventReceiverTest.kt$FeatureConfigEventReceiverTest$( SelfDeletingMessagesConfigModel(enforcedTimeoutSeconds = newEnforcedTimeoutSeconds), Status.ENABLED )</ID>
     <ID>ArgumentListWrapping:FeatureConfigJson.kt$FeatureConfigJson$( AppLockConfigDTO(true, 0), FeatureFlagStatusDTO.ENABLED )</ID>
-    <ID>ArgumentListWrapping:FeatureConfigMapperTest.kt$FeatureConfigMapperTest.Arrangement$( MLSConfigDTO( SupportedProtocolDTO.MLS, listOf(SupportedProtocolDTO.MLS), emptyList(), 1 ), FeatureFlagStatusDTO.ENABLED )</ID>
+    <ID>ArgumentListWrapping:FeatureConfigMapperTest.kt$FeatureConfigMapperTest.Arrangement$( MLSConfigDTO( SupportedProtocolDTO.MLS, listOf(SupportedProtocolDTO.MLS), listOf(1), 1 ), FeatureFlagStatusDTO.ENABLED )</ID>
     <ID>ArgumentListWrapping:FeatureConfigRepositoryTest.kt$FeatureConfigRepositoryTest.Arrangement$( AppLockConfigDTO(true, 0), FeatureFlagStatusDTO.ENABLED )</ID>
-    <ID>ArgumentListWrapping:FeatureConfigRepositoryTest.kt$FeatureConfigRepositoryTest.Arrangement$( MLSConfigDTO( SupportedProtocolDTO.PROTEUS, listOf(SupportedProtocolDTO.PROTEUS), emptyList(), 1 ), FeatureFlagStatusDTO.ENABLED )</ID>
+    <ID>ArgumentListWrapping:FeatureConfigRepositoryTest.kt$FeatureConfigRepositoryTest.Arrangement$( MLSConfigDTO( SupportedProtocolDTO.PROTEUS, listOf(SupportedProtocolDTO.PROTEUS), allowedCipherSuites = listOf(1), defaultCipherSuite = 1 ), FeatureFlagStatusDTO.ENABLED )</ID>
     <ID>ArgumentListWrapping:FetchUsersClientsFromRemoteUseCaseTest.kt$FetchUsersClientsFromRemoteUseCaseTest$( SimpleClientResponse("111", DeviceTypeDTO.Phone), SimpleClientResponse("2222", DeviceTypeDTO.Desktop) )</ID>
     <ID>ArgumentListWrapping:GetMessageAssetUseCaseTest.kt$GetMessageAssetUseCaseTest.Arrangement$( assetDataSource, messageRepository, userRepository, updateAssetMessageTransferStatus, testScope, testDispatcher )</ID>
     <ID>ArgumentListWrapping:GetNotificationsUseCaseTest.kt$GetNotificationsUseCaseTest$( conversationId(1), "some convo", listOf(), false )</ID>
@@ -128,6 +127,7 @@
     <ID>ArgumentListWrapping:GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase.kt$GetPaginatedFlowOfMessagesBySearchQueryAndConversationIdUseCase$( searchQuery, conversationId, pagingConfig, startingOffset )</ID>
     <ID>ArgumentListWrapping:GetSessionsUseCase.kt$GetSessionsUseCase$( { when (it) { StorageFailure.DataNotFound -> GetAllSessionsResult.Failure.NoSessionFound is StorageFailure.Generic -> GetAllSessionsResult.Failure.Generic(it) } }, { GetAllSessionsResult.Success(it) } )</ID>
     <ID>ArgumentListWrapping:GetUserInfoUseCase.kt$GetUserInfoUseCaseImpl$( { GetUserInfoResult.Failure }, { team -> GetUserInfoResult.Success(otherUser, team) })</ID>
+    <ID>ArgumentListWrapping:GlobalDBBaseTest.kt$GlobalDBBaseTest$( PlatformDatabaseData(StorageData.FileBacked(storePath)), StandardTestDispatcher(), null, false )</ID>
     <ID>ArgumentListWrapping:GuestRoomConfigHandler.kt$GuestRoomConfigHandler$( { false }, { it.isGuestRoomLinkEnabled != status } )</ID>
     <ID>ArgumentListWrapping:HandleExternalRequestAction.kt$( """ Hey there, I hope you're doing well. I've got a bit of a craving for bananas, and I was wondering if you might be able to share a few with me? It would mean a lot. 😊 Thanks a bunch, A friendly monkey 🍌🐵 """.trimIndent(), """ Yo, I'm in need of some bananas, my friend. Can you hook me up? I'd appreciate it big time. Respect, A neutral monkey 🍌 """.trimIndent(), """ Listen up, I ain't messin' around. I want them bananas, and I want 'em now. You better deliver or there'll be consequences. No games, An evil monkey 🍌👿💀 """.trimIndent() )</ID>
     <ID>ArgumentListWrapping:InstanceService.kt$InstanceService$( instanceRequest.email, instanceRequest.password, true, secondFactorVerificationCode = instanceRequest.verificationCode )</ID>
@@ -146,6 +146,12 @@
     <ID>ArgumentListWrapping:LocalMonkey.kt$LocalMonkey$( userIdentifier = email, password = password, shouldPersistClient = false, secondFactorVerificationCode = secondFactor )</ID>
     <ID>ArgumentListWrapping:LoginWithEmailRequestJson.kt$LoginWithEmailRequestJson$( LoginApi.LoginParam.LoginWithEmail( email = "user@email.de", label = "label", password = "password", verificationCode = "verificationCode" ), jsonProvider )</ID>
     <ID>ArgumentListWrapping:LoginWithEmailRequestJson.kt$LoginWithEmailRequestJson$( LoginApi.LoginParam.LoginWithHandle( handle = "cool_user_name", label = "label", password = "password", ), jsonProvider )</ID>
+    <ID>ArgumentListWrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.DISABLED ), duringSlowSync = false )</ID>
+    <ID>ArgumentListWrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.DISABLED, defaultProtocol = SupportedProtocol.MLS ), duringSlowSync = false )</ID>
+    <ID>ArgumentListWrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.ENABLED, defaultProtocol = SupportedProtocol.MLS ), duringSlowSync = false )</ID>
+    <ID>ArgumentListWrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.ENABLED, defaultProtocol = SupportedProtocol.PROTEUS ), duringSlowSync = false )</ID>
+    <ID>ArgumentListWrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.ENABLED, supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS) ), duringSlowSync = false )</ID>
+    <ID>ArgumentListWrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.ENABLED, supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS) ), duringSlowSync = true )</ID>
     <ID>ArgumentListWrapping:MLSKeyPackageCountUseCase.kt$MLSKeyPackageCountUseCaseImpl$( { MLSKeyPackageCountResult.Failure.Generic(it) }, { MLSKeyPackageCountResult.Success(selfClient, it, keyPackageLimitsProvider.needsRefill(it)) })</ID>
     <ID>ArgumentListWrapping:MLSKeyPackageCountUseCase.kt$MLSKeyPackageCountUseCaseImpl$( { MLSKeyPackageCountResult.Failure.NetworkCallFailure(it) }, { MLSKeyPackageCountResult.Success(selfClient, it.count, keyPackageLimitsProvider.needsRefill(it.count)) })</ID>
     <ID>ArgumentListWrapping:MLSMessageUnpacker.kt$MLSMessageUnpackerImpl$( KaliumLogLevel.DEBUG, "Received MLS proposal, scheduling delayed commit", mapOf( "groupId" to groupId.toLogString(), "commitDelay" to "$commitDelay" ) )</ID>
@@ -293,7 +299,6 @@
     <ID>ArgumentListWrapping:UserSessionScope.kt$UserSessionScope$( slowSyncRepository, incrementalSyncRepository )</ID>
     <ID>ArgumentListWrapping:UserSessionScope.kt$UserSessionScope$( userId, platformUserStorageProperties, kaliumConfigs.shouldEncryptData )</ID>
     <ID>ArgumentListWrapping:UserSessionScope.kt$UserSessionScope$( userId, qualifiedIdMapper, globalScope.sessionRepository )</ID>
-    <ID>ArgumentListWrapping:UserSessionScope.kt$UserSessionScope$( userRepository, conversationRepository, EphemeralEventsNotificationManagerImpl )</ID>
     <ID>ArgumentListWrapping:UserSessionScope.kt$UserSessionScope$( userStorage.database.conversationDAO, persistMessage )</ID>
     <ID>ArgumentListWrapping:UserSessionScope.kt$UserSessionScope$(clientIdProvider, isAllowedToRegisterMLSClient, incrementalSyncRepository, lazy { slowSyncRepository }, lazy { clientRepository }, lazy { RegisterMLSClientUseCaseImpl( mlsClientProvider, clientRepository, keyPackageRepository, keyPackageLimitsProvider, userConfigRepository ) })</ID>
     <ID>ArgumentListWrapping:UserSessionScope.kt$UserSessionScope$(featureSupport, incrementalSyncRepository, lazy { clientRepository }, lazy { client.refillKeyPackages }, lazy { client.mlsKeyPackageCountUseCase }, lazy { users.timestampKeyRepository })</ID>
@@ -364,7 +369,6 @@
     <ID>FunctionParameterNaming:Calling.kt$Calling$wcall_participant_changed_h: ParticipantChangedHandler</ID>
     <ID>FunctionParameterNaming:CryptoboxSession.module_@wireapp_cryptobox.kt$CryptoboxSession$pk_store: CryptoboxCRUDStore</ID>
     <ID>FunctionParameterNaming:KeyPair.module_@wireapp_proteus.kt$KeyPair.Companion$ed25519_key_pair: KeyPair</ID>
-    <ID>FunctionReturnTypeSpacing:BaseMLSClientTest.kt$BaseMLSClientTest$actual suspend fun createCoreCrypto(clientId: CryptoQualifiedClientId):CoreCryptoCentral</ID>
     <ID>FunctionStartOfBodySpacing:E2EIClientProviderTest.kt$E2EIClientProviderTest$@Test fun givenIsNewClientTrue_whenGettingE2EIClient_newAcmeEnrollmentCalled()</ID>
     <ID>LargeClass:E2EIRepositoryTest.kt$E2EIRepositoryTest</ID>
     <ID>LargeClass:EnrollE2EICertificateUseCaseTest.kt$EnrollE2EICertificateUseCaseTest</ID>
@@ -408,13 +412,10 @@
     <ID>MagicNumber:NetworkUtils.kt$500</ID>
     <ID>MagicNumber:NetworkUtils.kt$599</ID>
     <ID>MagicNumber:RegisterClientRequestJson.kt$RegisterClientRequestJson$999</ID>
+    <ID>MagicNumber:build.gradle.kts$10</ID>
     <ID>MatchingDeclarationName:ConversationStatus.kt$MutedConversationStatus</ID>
     <ID>MatchingDeclarationName:CryptoboxCRUDStore.module_@wireapp_cryptobox.kt$CryptoboxCRUDStore : PreKeyStore</ID>
     <ID>MatchingDeclarationName:CryptoboxSession.module_@wireapp_cryptobox.kt$CryptoboxSession</ID>
-    <ID>MatchingDeclarationName:DriverBuilder.android.kt$DriverBuilder</ID>
-    <ID>MatchingDeclarationName:DriverBuilder.apple.kt$DriverBuilder</ID>
-    <ID>MatchingDeclarationName:DriverBuilder.js.kt$DriverBuilder</ID>
-    <ID>MatchingDeclarationName:DriverBuilder.jvm.kt$DriverBuilder</ID>
     <ID>MatchingDeclarationName:Encoder.module_@wireapp_cbor.kt$Encoder</ID>
     <ID>MatchingDeclarationName:FileUtilTest.kt$FileTestHelper</ID>
     <ID>MatchingDeclarationName:GetOtherUserClientsUseCaseTest.kt$ObserveClientsByUserIdUseCaseTest</ID>
@@ -556,6 +557,7 @@
     <ID>NoConsecutiveBlankLines:KaliumPreferencesTest.kt$KaliumPreferencesTest$ </ID>
     <ID>NoConsecutiveBlankLines:LegalHoldSystemMessageHandlerTest.kt$LegalHoldSystemMessagesHandlerTest.Arrangement$ </ID>
     <ID>NoConsecutiveBlankLines:LogoutUseCaseTest.kt$ </ID>
+    <ID>NoConsecutiveBlankLines:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$ </ID>
     <ID>NoConsecutiveBlankLines:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest$ </ID>
     <ID>NoConsecutiveBlankLines:MLSMigrationConfigHandlerTest.kt$ </ID>
     <ID>NoConsecutiveBlankLines:MemberDAOTest.kt$MemberDAOTest$ </ID>
@@ -576,6 +578,7 @@
     <ID>NoConsecutiveBlankLines:VerifyExistingClientUseCaseTest.kt$ </ID>
     <ID>NoMultipleSpaces:CommonDokkaConfig.kt$ </ID>
     <ID>NoMultipleSpaces:ConversationGroupRepositoryTest.kt$ConversationGroupRepositoryTest$ </ID>
+    <ID>NoMultipleSpaces:E2EIClientTest.kt$E2EIClientTest$ </ID>
     <ID>NoMultipleSpaces:HttpClientConnectionSpecsTest.kt$HttpClientConnectionSpecsTest$ </ID>
     <ID>NoMultipleSpaces:IgnoreIOS.kt$IgnoreIOS$ </ID>
     <ID>NoMultipleSpaces:LegalHoldHandlerTest.kt$LegalHoldHandlerTest$ </ID>
@@ -606,7 +609,7 @@
     <ID>NoTrailingSpaces:SSOMetaDataUseCaseTest.kt$SSOMetaDataUseCaseTest$ </ID>
     <ID>NoTrailingSpaces:SSOSettingsUseCaseTest.kt$SSOSettingsUseCaseTest$ </ID>
     <ID>NoTrailingSpaces:VerifyActivationCodeUseCaseTest.kt$VerifyActivationCodeUseCaseTest$ </ID>
-    <ID>NoUnusedImports:ACMEActions.kt$action.ACMEActions.kt</ID>
+    <ID>NoUnusedImports:ACMEActions.kt$com.wire.kalium.mocks.action.ACMEActions.kt</ID>
     <ID>NoUnusedImports:AccountRepositoryArrangement.kt$com.wire.kalium.logic.util.arrangement.repository.AccountRepositoryArrangement.kt</ID>
     <ID>NoUnusedImports:CodeDeletedHandlerArrangement.kt$com.wire.kalium.logic.util.arrangement.eventHandler.CodeDeletedHandlerArrangement.kt</ID>
     <ID>NoUnusedImports:CodeUpdatedHandlerArrangement.kt$com.wire.kalium.logic.util.arrangement.eventHandler.CodeUpdatedHandlerArrangement.kt</ID>
@@ -622,7 +625,6 @@
     <ID>NoUnusedImports:EncryptedSettingsBuilderTest.kt$com.wire.kalium.persistence.kmmSettings.EncryptedSettingsBuilderTest.kt</ID>
     <ID>NoUnusedImports:EnrollE2EICertificateUseCaseTest.kt$com.wire.kalium.logic.feature.e2ei.EnrollE2EICertificateUseCaseTest.kt</ID>
     <ID>NoUnusedImports:EnvelopeProtoMapperTest.kt$com.wire.kalium.api.v0.message.EnvelopeProtoMapperTest.kt</ID>
-    <ID>NoUnusedImports:EphemeralEventsNotificationManagerArrangement.kt$com.wire.kalium.logic.util.arrangement.usecase.EphemeralEventsNotificationManagerArrangement.kt</ID>
     <ID>NoUnusedImports:FeatureConfigJson.kt$com.wire.kalium.model.FeatureConfigJson.kt</ID>
     <ID>NoUnusedImports:FeatureConfigMapperTest.kt$com.wire.kalium.logic.data.event.FeatureConfigMapperTest.kt</ID>
     <ID>NoUnusedImports:FederatedSearchParserTest.kt$com.wire.kalium.logic.feature.search.FederatedSearchParserTest.kt</ID>
@@ -631,6 +633,7 @@
     <ID>NoUnusedImports:IsOneToOneConversationCreatedUseCaseTest.kt$com.wire.kalium.logic.feature.conversation.IsOneToOneConversationCreatedUseCaseTest.kt</ID>
     <ID>NoUnusedImports:LogoutUseCaseTest.kt$com.wire.kalium.logic.feature.auth.LogoutUseCaseTest.kt</ID>
     <ID>NoUnusedImports:MemberDAOArrangement.kt$com.wire.kalium.logic.util.arrangement.dao.MemberDAOArrangement.kt</ID>
+    <ID>NoUnusedImports:MemberJoinEventHandlerTest.kt$com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandlerTest.kt</ID>
     <ID>NoUnusedImports:MemberMapperTest.kt$com.wire.kalium.logic.data.conversation.MemberMapperTest.kt</ID>
     <ID>NoUnusedImports:MessageMetadataDAOArrangement.kt$com.wire.kalium.logic.util.arrangement.dao.MessageMetadataDAOArrangement.kt</ID>
     <ID>NoUnusedImports:MessageMetadataRepositoryArrangement.kt$com.wire.kalium.logic.util.arrangement.repository.MessageMetadataRepositoryArrangement.kt</ID>
@@ -661,8 +664,6 @@
     <ID>NoUnusedImports:SearchRepositoryArrangement.kt$com.wire.kalium.logic.util.arrangement.repository.SearchRepositoryArrangement.kt</ID>
     <ID>NoUnusedImports:SearchUseCaseTest.kt$com.wire.kalium.logic.feature.search.SearchUseCaseTest.kt</ID>
     <ID>NoUnusedImports:SendButtonActionMessageTest.kt$com.wire.kalium.logic.feature.message.SendButtonActionMessageTest.kt</ID>
-    <ID>NoUnusedImports:SendConfirmationUseCaseTest.kt$com.wire.kalium.logic.feature.message.SendConfirmationUseCaseTest.kt</ID>
-    <ID>NoUnusedImports:SendConfirmationUseCaseTest.kt$import io.mockative.coEvery</ID>
     <ID>NoUnusedImports:ServerConfigDTOJson.kt$util.ServerConfigDTOJson.kt</ID>
     <ID>NoUnusedImports:ServerConfigRepositoryArrangement.kt$com.wire.kalium.logic.util.arrangement.repository.ServerConfigRepositoryArrangement.kt</ID>
     <ID>NoUnusedImports:SessionEstablisherTest.kt$com.wire.kalium.logic.feature.message.SessionEstablisherTest.kt</ID>
@@ -670,7 +671,6 @@
     <ID>NoUnusedImports:SlowSyncRepositoryTest.kt$com.wire.kalium.logic.data.sync.SlowSyncRepositoryTest.kt</ID>
     <ID>NoUnusedImports:SyncMigrationStepsProviderArrangement.kt$com.wire.kalium.logic.util.arrangement.provider.SyncMigrationStepsProviderArrangement.kt</ID>
     <ID>NoUnusedImports:TestNetworkStateObserver.kt$.TestNetworkStateObserver.kt</ID>
-    <ID>NoUnusedImports:UserConfigRepositoryArrangement.kt$com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement.kt</ID>
     <ID>NoUnusedImports:UserConfigStorageTest.kt$com.wire.kalium.persistence.config.UserConfigStorageTest.kt</ID>
     <ID>NoUnusedImports:UserDetailsApiV4Test.kt$com.wire.kalium.api.v4.UserDetailsApiV4Test.kt</ID>
     <ID>NoUnusedImports:UserRepositoryArrangement.kt$com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement.kt</ID>
@@ -749,7 +749,6 @@
     <ID>PropertyWrapping:UserDAOTest.kt$UserDAOTest$val usersToInsert = listOf(user1.copy(name = "other name to make sure this one wasn't inserted nor edited"), user2)</ID>
     <ID>PropertyWrapping:UserRepositoryTest.kt$UserRepositoryTest$val knownUserEntities = listOf(TestUser.DETAILS_ENTITY.copy(id = UserIDEntity(value = "id1", domain = "domain1")))</ID>
     <ID>ReturnCount:NetworkUtils.kt$internal fun String.splitSetCookieHeader(): List&lt;String></ID>
-    <ID>SpacingAroundColon:BaseMLSClientTest.kt$BaseMLSClientTest$:</ID>
     <ID>SpacingAroundColon:FederatedSearchParserTest.kt$FederatedSearchParserTest.Arrangement$:</ID>
     <ID>SpacingAroundColon:IncrementalSyncRepositoryArrangement.kt$IncrementalSyncRepositoryArrangementImpl$:</ID>
     <ID>SpacingAroundColon:LastMessageListTest.kt$LastMessageListTest$:</ID>
@@ -914,8 +913,8 @@
     <ID>UnusedPrivateProperty:build.gradle.kts$val commonMain by getting { dependencies { implementation(libs.ktxSerialization) // coroutines implementation(libs.coroutines.core) implementation(libs.ktxDateTime) } }</ID>
     <ID>UnusedPrivateProperty:build.gradle.kts$val commonMain by getting { dependencies { implementation(project(":network")) api(project(":network-util")) implementation(project(":cryptography")) implementation(project(":persistence")) implementation(project(":protobuf")) api(project(":logger")) api(project(":calling")) implementation(project(":util")) // coroutines implementation(libs.coroutines.core) implementation(libs.ktxSerialization) implementation(libs.ktxDateTime) implementation(libs.benAsherUUID) // the Dependency is duplicated between here and persistence build.gradle.kts implementation(libs.settings.kmp) // Okio implementation(libs.okio.core) implementation(libs.sqldelight.androidxPaging) // Concurrent collections implementation(libs.concurrentCollections) implementation(libs.statelyCommons) configurations.all { exclude(group = "co.touchlab", module = "stately-strict-jvm") } } }</ID>
     <ID>UnusedPrivateProperty:build.gradle.kts$val commonMain by getting { dependencies { implementation(project(":network")) implementation(project(":cryptography")) implementation(project(":persistence")) implementation(project(":protobuf")) implementation(project(":logger")) implementation(libs.coroutines.core) } }</ID>
-    <ID>UnusedPrivateProperty:build.gradle.kts$val commonMain by getting { dependencies { implementation(project(":persistence")) implementation(libs.coroutines.core) implementation(libs.ktxDateTime) implementation(libs.kotlinx.benchmark.runtime) } }</ID>
     <ID>UnusedPrivateProperty:build.gradle.kts$val commonMain by getting { dependencies { implementation(project(":persistence")) implementation(libs.kotlin.test) // coroutines implementation(libs.coroutines.core) implementation(libs.coroutines.test) implementation(libs.settings.kmp) implementation(libs.settings.kmpTest) } }</ID>
+    <ID>UnusedPrivateProperty:build.gradle.kts$val commonMain by getting { dependencies { implementation(project(":persistence")) implementation(project(":logic")) implementation(libs.coroutines.core) implementation(libs.ktxDateTime) implementation(libs.kotlinx.benchmark.runtime) implementation(libs.ktor.mock) } }</ID>
     <ID>UnusedPrivateProperty:build.gradle.kts$val commonMain by getting { dependencies { implementation(project(":protobuf")) implementation(project(":util")) implementation(project(":network-util")) api(project(":logger")) // coroutines implementation(libs.coroutines.core) // ktor api(libs.ktor.core) implementation(libs.ktor.utils) implementation(libs.ktor.json) implementation(libs.ktor.serialization) implementation(libs.ktor.logging) implementation(libs.ktor.authClient) implementation(libs.ktor.webSocket) implementation(libs.ktor.contentNegotiation) implementation(libs.ktor.encoding) // KTX implementation(libs.ktxDateTime) implementation(libs.ktx.atomicfu) // Okio implementation(libs.okio.core) implementation(libs.okio.test) // UUIDs implementation(libs.benAsherUUID) } }</ID>
     <ID>UnusedPrivateProperty:build.gradle.kts$val commonMain by getting { kotlin.srcDir(generatedFilesBaseDir) dependencies { api(libs.pbandk.runtime.common) } }</ID>
     <ID>UnusedPrivateProperty:build.gradle.kts$val commonMain by sourceSets.getting { dependencies { implementation(project(":network")) implementation(project(":cryptography")) implementation(project(":logic")) implementation(project(":util")) implementation(libs.cliKt) implementation(libs.ktor.utils) implementation(libs.coroutines.core) implementation(libs.ktxDateTime) implementation(libs.mordant) } }</ID>
@@ -1240,8 +1239,8 @@
     <ID>Wrapping:EnvelopeProtoMapperTest.kt$EnvelopeProtoMapperTest$( user, mapOf( Pair("241b5be49179d81b", ByteArray(0)), Pair("8bdacec7398a982e", ByteArray(0)), Pair("e47d908549239b72", ByteArray(0)), Pair("4c8346ce67fa0d7", ByteArray(0)) ) )</ID>
     <ID>Wrapping:FeatureConfigEventReceiverTest.kt$FeatureConfigEventReceiverTest$(</ID>
     <ID>Wrapping:FeatureConfigEventReceiverTest.kt$FeatureConfigEventReceiverTest$( SelfDeletingMessagesConfigModel( enforcedTimeoutSeconds = null ), Status.DISABLED )</ID>
-    <ID>Wrapping:FeatureConfigMapperTest.kt$FeatureConfigMapperTest.Arrangement$( MLSConfigDTO( SupportedProtocolDTO.MLS, listOf(SupportedProtocolDTO.MLS), emptyList(), 1 ), FeatureFlagStatusDTO.ENABLED )</ID>
-    <ID>Wrapping:FeatureConfigRepositoryTest.kt$FeatureConfigRepositoryTest.Arrangement$( MLSConfigDTO( SupportedProtocolDTO.PROTEUS, listOf(SupportedProtocolDTO.PROTEUS), emptyList(), 1 ), FeatureFlagStatusDTO.ENABLED )</ID>
+    <ID>Wrapping:FeatureConfigMapperTest.kt$FeatureConfigMapperTest.Arrangement$( MLSConfigDTO( SupportedProtocolDTO.MLS, listOf(SupportedProtocolDTO.MLS), listOf(1), 1 ), FeatureFlagStatusDTO.ENABLED )</ID>
+    <ID>Wrapping:FeatureConfigRepositoryTest.kt$FeatureConfigRepositoryTest.Arrangement$( MLSConfigDTO( SupportedProtocolDTO.PROTEUS, listOf(SupportedProtocolDTO.PROTEUS), allowedCipherSuites = listOf(1), defaultCipherSuite = 1 ), FeatureFlagStatusDTO.ENABLED )</ID>
     <ID>Wrapping:FederationEventReceiverTest.kt$FederationEventReceiverTest$UserId(value = "defIdTwo$it", domain = defederatedDomainTwo)</ID>
     <ID>Wrapping:FederationEventReceiverTest.kt$FederationEventReceiverTest$it.toDao()</ID>
     <ID>Wrapping:GetNotificationsUseCaseTest.kt$GetNotificationsUseCaseTest$(</ID>
@@ -1264,6 +1263,12 @@
     <ID>Wrapping:ListUsersRequestJson.kt$ListUsersRequestJson$( QualifiedUserIdListRequest( listOf( QualifiedID("id1", "domain1"), QualifiedID("id11", "domain1"), QualifiedID("id2", "domain2") ) ), qualifiedIdsProvider )</ID>
     <ID>Wrapping:LoginWithEmailRequestJson.kt$LoginWithEmailRequestJson$( LoginApi.LoginParam.LoginWithEmail( email = "user@email.de", label = "label", password = "password", verificationCode = "verificationCode" ), jsonProvider )</ID>
     <ID>Wrapping:LoginWithEmailRequestJson.kt$LoginWithEmailRequestJson$( LoginApi.LoginParam.LoginWithHandle( handle = "cool_user_name", label = "label", password = "password", ), jsonProvider )</ID>
+    <ID>Wrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.DISABLED ), duringSlowSync = false )</ID>
+    <ID>Wrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.DISABLED, defaultProtocol = SupportedProtocol.MLS ), duringSlowSync = false )</ID>
+    <ID>Wrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.ENABLED, defaultProtocol = SupportedProtocol.MLS ), duringSlowSync = false )</ID>
+    <ID>Wrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.ENABLED, defaultProtocol = SupportedProtocol.PROTEUS ), duringSlowSync = false )</ID>
+    <ID>Wrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.ENABLED, supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS) ), duringSlowSync = false )</ID>
+    <ID>Wrapping:MLSConfigHandlerTest.kt$MLSConfigHandlerTest$( MLS_CONFIG.copy( status = Status.ENABLED, supportedProtocols = setOf(SupportedProtocol.PROTEUS, SupportedProtocol.MLS) ), duringSlowSync = true )</ID>
     <ID>Wrapping:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest$it is Event.Conversation.MemberLeave &amp;&amp; LocalId.check(it.id)</ID>
     <ID>Wrapping:MLSConversationRepositoryTest.kt$MLSConversationRepositoryTest.Arrangement$;</ID>
     <ID>Wrapping:MLSKeyPackageCountUseCase.kt$MLSKeyPackageCountUseCaseImpl$(</ID>

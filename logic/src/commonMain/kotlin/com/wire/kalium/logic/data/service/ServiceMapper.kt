@@ -19,9 +19,9 @@ package com.wire.kalium.logic.data.service
 
 import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.network.api.base.model.ServiceDetailDTO
-import com.wire.kalium.network.api.base.model.getCompleteAssetOrNull
-import com.wire.kalium.network.api.base.model.getPreviewAssetOrNull
+import com.wire.kalium.network.api.model.ServiceDetailDTO
+import com.wire.kalium.network.api.model.getCompleteAssetOrNull
+import com.wire.kalium.network.api.model.getPreviewAssetOrNull
 import com.wire.kalium.persistence.dao.BotIdEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.ServiceEntity

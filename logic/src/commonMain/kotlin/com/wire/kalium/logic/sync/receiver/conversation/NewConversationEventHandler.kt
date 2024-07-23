@@ -22,8 +22,6 @@ import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.conversation.NewGroupConversationSystemMessagesCreator
 import com.wire.kalium.logic.data.conversation.toConversationType
 import com.wire.kalium.logic.data.event.Event
-import com.wire.kalium.logic.data.event.EventLoggingStatus
-import com.wire.kalium.logic.data.event.logEventProcessing
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.toDao
@@ -37,6 +35,7 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
+import com.wire.kalium.logic.util.createEventProcessingLogger
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.util.DateTimeUtil
 
@@ -53,6 +52,7 @@ internal class NewConversationEventHandlerImpl(
 ) : NewConversationEventHandler {
 
     override suspend fun handle(event: Event.Conversation.NewConversation) {
+        val eventLogger = kaliumLogger.createEventProcessingLogger(event)
         val selfUserTeamId = selfTeamIdProvider().getOrNull()
         conversationRepository
             .persistConversation(event.conversation, selfUserTeamId?.value, true)
@@ -67,9 +67,9 @@ internal class NewConversationEventHandlerImpl(
                     .map { isNewUnhandledConversation }
             }.onSuccess { isNewUnhandledConversation ->
                 createSystemMessagesForNewConversation(isNewUnhandledConversation, event)
-                kaliumLogger.logEventProcessing(EventLoggingStatus.SUCCESS, event)
+                eventLogger.logSuccess()
             }.onFailure {
-                kaliumLogger.logEventProcessing(EventLoggingStatus.FAILURE, event, Pair("errorInfo", "$it"))
+                eventLogger.logFailure(it)
             }
     }
 
@@ -94,16 +94,16 @@ internal class NewConversationEventHandlerImpl(
         event: Event.Conversation.NewConversation
     ) {
         if (isNewUnhandledConversation) {
-            newGroupConversationSystemMessagesCreator.conversationStarted(event.senderUserId, event.conversation, event.timestampIso)
+            newGroupConversationSystemMessagesCreator.conversationStarted(event.senderUserId, event.conversation, event.dateTime)
             newGroupConversationSystemMessagesCreator.conversationResolvedMembersAdded(
                 event.conversationId.toDao(),
                 event.conversation.members.otherMembers.map { it.id.toModel() },
-                event.timestampIso
+                event.dateTime
             )
-            newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(event.conversation, event.timestampIso)
+            newGroupConversationSystemMessagesCreator.conversationReadReceiptStatus(event.conversation, event.dateTime)
             newGroupConversationSystemMessagesCreator.conversationStartedUnverifiedWarning(
                 event.conversation.id.toModel(),
-                event.timestampIso
+                event.dateTime
             )
         }
     }

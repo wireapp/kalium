@@ -27,9 +27,9 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser.USER_ID
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.sync.receiver.conversation.RenamedConversationEventHandler
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationNameUpdateEvent
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationRenameResponse
-import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.authenticated.conversation.ConversationNameUpdateEvent
+import com.wire.kalium.network.api.authenticated.conversation.ConversationRenameResponse
+import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.util.DateTimeUtil
 import io.mockative.Mock
 import io.mockative.any
@@ -39,6 +39,7 @@ import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertIs
 
@@ -111,7 +112,7 @@ class RenameConversationUseCaseTest {
             EventContentDTO.Conversation.ConversationRenameDTO(
                 ConversationRepositoryTest.CONVERSATION_ID.toApi(),
                 ConversationRepositoryTest.USER_ID.toApi(),
-                DateTimeUtil.currentIsoDateTimeString(),
+                Instant.DISTANT_PAST,
                 ConversationNameUpdateEvent("newName")
             )
         )

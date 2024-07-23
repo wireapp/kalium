@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.sync
 
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.SYNC
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
@@ -61,9 +62,10 @@ interface SyncManager {
 internal class SyncManagerImpl(
     private val slowSyncRepository: SlowSyncRepository,
     private val incrementalSyncRepository: IncrementalSyncRepository,
+    logger: KaliumLogger = kaliumLogger,
 ) : SyncManager {
 
-    private val logger by lazy { kaliumLogger.withFeatureId(SYNC) }
+    private val logger by lazy { logger.withFeatureId(SYNC) }
 
     override suspend fun waitUntilLive() {
         incrementalSyncRepository.incrementalSyncState.first { it is IncrementalSyncStatus.Live }

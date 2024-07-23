@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Audio
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Image
 import com.wire.kalium.logic.data.message.AssetContent.AssetMetadata.Video
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewMapper
 import com.wire.kalium.logic.data.message.mention.MessageMentionMapper
 import com.wire.kalium.logic.data.message.mention.toModel
 import com.wire.kalium.logic.data.notification.LocalNotificationCommentType
@@ -48,9 +49,7 @@ import com.wire.kalium.persistence.dao.message.MessagePreviewEntity
 import com.wire.kalium.persistence.dao.message.MessagePreviewEntityContent
 import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
 import com.wire.kalium.persistence.dao.message.draft.MessageDraftEntity
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
-import kotlinx.datetime.toInstant
 import okio.Path.Companion.toPath
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
@@ -68,6 +67,7 @@ interface MessageMapper {
 @Suppress("TooManyFunctions")
 class MessageMapperImpl(
     private val selfUserId: UserId,
+    private val linkPreviewMapper: LinkPreviewMapper = MapperProvider.linkPreviewMapper(),
     private val messageMentionMapper: MessageMentionMapper = MapperProvider.messageMentionMapper(selfUserId),
     private val userMapper: UserMapper = MapperProvider.userMapper()
 ) : MessageMapper {
@@ -84,19 +84,21 @@ class MessageMapperImpl(
         id = message.id,
         content = toMessageEntityContent(message.content),
         conversationId = message.conversationId.toDao(),
-        date = message.date.toInstant(),
+        date = message.date,
         senderUserId = message.senderUserId.toDao(),
         senderClientId = message.senderClientId.value,
         status = message.status.toEntityStatus(),
-        readCount = if (message.status is Message.Status.Read) message.status.readCount else 0,
-        editStatus = when (message.editStatus) {
-            is Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
-            is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(message.editStatus.lastTimeStamp.toInstant())
+        readCount = message.status.let { if (it is Message.Status.Read) it.readCount else 0 },
+        editStatus = message.editStatus.let {
+            when (it) {
+                is Message.EditStatus.NotEdited -> MessageEntity.EditStatus.NotEdited
+                is Message.EditStatus.Edited -> MessageEntity.EditStatus.Edited(it.lastEditInstant)
+            }
         },
         expireAfterMs = message.expirationData?.expireAfter?.inWholeMilliseconds,
-        selfDeletionEndDate = message.expirationData?.let {
-            when (it.selfDeletionStatus) {
-                is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionStatus.selfDeletionEndDate
+        selfDeletionEndDate = message.expirationData?.selfDeletionStatus?.let {
+            when (it) {
+                is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionEndDate
                 is Message.ExpirationData.SelfDeletionStatus.NotStarted -> null
             }
         },
@@ -112,16 +114,16 @@ class MessageMapperImpl(
         id = message.id,
         content = message.content.toMessageEntityContent(),
         conversationId = message.conversationId.toDao(),
-        date = message.date.toInstant(),
+        date = message.date,
         senderUserId = message.senderUserId.toDao(),
         status = message.status.toEntityStatus(),
         visibility = message.visibility.toEntityVisibility(),
         senderName = message.senderUserName,
         expireAfterMs = message.expirationData?.expireAfter?.inWholeMilliseconds,
-        readCount = if (message.status is Message.Status.Read) message.status.readCount else 0,
-        selfDeletionEndDate = message.expirationData?.let {
-            when (it.selfDeletionStatus) {
-                is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionStatus.selfDeletionEndDate
+        readCount = message.status.let { if (it is Message.Status.Read) it.readCount else 0 },
+        selfDeletionEndDate = message.expirationData?.selfDeletionStatus?.let {
+            when (it) {
+                is Message.ExpirationData.SelfDeletionStatus.Started -> it.selfDeletionEndDate
                 is Message.ExpirationData.SelfDeletionStatus.NotStarted -> null
             }
         }
@@ -152,13 +154,13 @@ class MessageMapperImpl(
         id = message.id,
         content = message.content.toMessageContent(message.visibility.toModel() == Message.Visibility.HIDDEN, selfUserId),
         conversationId = message.conversationId.toModel(),
-        date = message.date.toIsoDateTimeString(),
+        date = message.date,
         senderUserId = message.senderUserId.toModel(),
         senderClientId = ClientId(message.senderClientId),
         status = message.status.toModel(message.readCount),
         editStatus = when (val editStatus = message.editStatus) {
             MessageEntity.EditStatus.NotEdited -> Message.EditStatus.NotEdited
-            is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastDate.toIsoDateTimeString())
+            is MessageEntity.EditStatus.Edited -> Message.EditStatus.Edited(editStatus.lastDate)
         },
         expirationData = message.expireAfterMs?.let {
             Message.ExpirationData(
@@ -193,7 +195,7 @@ class MessageMapperImpl(
         id = message.id,
         content = message.content.toMessageContent(),
         conversationId = message.conversationId.toModel(),
-        date = message.date.toIsoDateTimeString(),
+        date = message.date,
         senderUserId = message.senderUserId.toModel(),
         status = message.status.toModel(message.readCount),
         visibility = message.visibility.toModel(),
@@ -331,6 +333,7 @@ class MessageMapperImpl(
         is MessageContent.Text -> toTextEntity(regularMessage)
 
         is MessageContent.Asset -> with(regularMessage.value) {
+            val metadata = metadata
             val assetWidth = when (metadata) {
                 is Image -> metadata.width
                 is Video -> metadata.width
@@ -404,6 +407,7 @@ class MessageMapperImpl(
 
     private fun toTextEntity(textContent: MessageContent.Text): MessageEntityContent.Text = MessageEntityContent.Text(
         messageBody = textContent.value,
+        linkPreview = textContent.linkPreviews.map(linkPreviewMapper::fromModelToDao),
         mentions = textContent.mentions.map(messageMentionMapper::fromModelToDao),
         quotedMessageId = textContent.quotedMessageReference?.quotedMessageId,
         isQuoteVerified = textContent.quotedMessageReference?.isVerified,
@@ -420,10 +424,13 @@ fun MessageEntityContent.System.toMessageContent(): MessageContent.System = when
             MessageEntity.MemberChangeType.CREATION_ADDED -> MessageContent.MemberChange.CreationAdded(memberList)
             MessageEntity.MemberChangeType.FAILED_TO_ADD_FEDERATION ->
                 MessageContent.MemberChange.FailedToAdd(memberList, MessageContent.MemberChange.FailedToAdd.Type.Federation)
+
             MessageEntity.MemberChangeType.FAILED_TO_ADD_LEGAL_HOLD ->
                 MessageContent.MemberChange.FailedToAdd(memberList, MessageContent.MemberChange.FailedToAdd.Type.LegalHold)
+
             MessageEntity.MemberChangeType.FAILED_TO_ADD_UNKNOWN ->
                 MessageContent.MemberChange.FailedToAdd(memberList, MessageContent.MemberChange.FailedToAdd.Type.Unknown)
+
             MessageEntity.MemberChangeType.FEDERATION_REMOVED -> MessageContent.MemberChange.FederationRemoved(memberList)
             MessageEntity.MemberChangeType.REMOVED_FROM_TEAM -> MessageContent.MemberChange.RemovedFromTeam(memberList)
         }
@@ -668,8 +675,10 @@ fun MessageContent.System.toMessageEntityContent(): MessageEntityContent.System 
                 when (this.type) {
                     MessageContent.MemberChange.FailedToAdd.Type.Federation ->
                         MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD_FEDERATION)
+
                     MessageContent.MemberChange.FailedToAdd.Type.LegalHold ->
                         MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD_LEGAL_HOLD)
+
                     MessageContent.MemberChange.FailedToAdd.Type.Unknown ->
                         MessageEntityContent.MemberChange(memberUserIdList, MessageEntity.MemberChangeType.FAILED_TO_ADD_UNKNOWN)
                 }

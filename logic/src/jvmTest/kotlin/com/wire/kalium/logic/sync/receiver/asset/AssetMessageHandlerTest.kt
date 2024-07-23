@@ -28,11 +28,12 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.message.hasValidData
+import com.wire.kalium.logic.data.message.hasValidRemoteData
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.asset.ValidateAssetMimeTypeUseCase
 import com.wire.kalium.logic.functional.Either
-import com.wire.kalium.logic.sync.receiver.conversation.message.hasValidData
-import com.wire.kalium.logic.sync.receiver.conversation.message.hasValidRemoteData
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -45,6 +46,7 @@ import io.mockative.once
 import junit.framework.TestCase.assertFalse
 import junit.framework.TestCase.assertTrue
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import org.junit.Test
 
 class AssetMessageHandlerTest {
@@ -330,7 +332,7 @@ class AssetMessageHandlerTest {
             id = "uid-complete",
             content = COMPLETE_ASSET_CONTENT,
             conversationId = ConversationId("some-value", "some-domain.com"),
-            date = "1970-01-01T00:00:01.000Z",
+            date = Instant.UNIX_FIRST_DATE,
             senderUserId = UserId("some-sender-value", "some-sender-domain.com"),
             senderClientId = ClientId("some-client-value"),
             status = Message.Status.Sent,
@@ -339,7 +341,7 @@ class AssetMessageHandlerTest {
         )
         val PREVIEW_ASSET_MESSAGE = COMPLETE_ASSET_MESSAGE.copy(
             content = PREVIEW_ASSET_CONTENT,
-            date = "1970-01-01T00:00:00.000Z",
+            date = Instant.UNIX_FIRST_DATE,
         )
     }
 }

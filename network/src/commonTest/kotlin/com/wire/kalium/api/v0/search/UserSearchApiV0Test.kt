@@ -20,7 +20,7 @@ package com.wire.kalium.api.v0.search
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.network.api.base.authenticated.search.UserSearchApi
-import com.wire.kalium.network.api.base.authenticated.search.UserSearchRequest
+import com.wire.kalium.network.api.authenticated.search.UserSearchRequest
 import com.wire.kalium.network.api.v0.authenticated.UserSearchApiV0
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest

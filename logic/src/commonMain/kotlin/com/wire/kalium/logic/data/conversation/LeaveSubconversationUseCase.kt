@@ -31,7 +31,7 @@ import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationMember
+import com.wire.kalium.network.api.authenticated.conversation.SubconversationMember
 
 /**
  * Leave a sub-conversation you've previously joined

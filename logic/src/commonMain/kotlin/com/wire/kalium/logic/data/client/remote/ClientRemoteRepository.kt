@@ -36,11 +36,11 @@ import com.wire.kalium.logic.functional.left
 import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
-import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
-import com.wire.kalium.network.api.base.authenticated.client.UpdateClientMlsPublicKeysRequest
-import com.wire.kalium.network.api.base.model.PushTokenBody
+import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
+import com.wire.kalium.network.api.authenticated.client.UpdateClientMlsPublicKeysRequest
+import com.wire.kalium.network.api.model.PushTokenBody
 import com.wire.kalium.network.exceptions.KaliumException
-import com.wire.kalium.network.api.base.model.UserId as UserIdDTO
+import com.wire.kalium.network.api.model.UserId as UserIdDTO
 
 interface ClientRemoteRepository {
     suspend fun registerClient(param: RegisterClientParam): Either<NetworkFailure, Client>

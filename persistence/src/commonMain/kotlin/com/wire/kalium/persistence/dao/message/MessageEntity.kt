@@ -214,6 +214,14 @@ sealed interface MessageEntity {
         @SerialName("length") val length: Int,
         @SerialName("userId") val userId: QualifiedIDEntity
     )
+
+    data class LinkPreview(
+        val url: String,
+        val urlOffset: Int,
+        val permanentUrl: String,
+        val title: String,
+        val summary: String
+    )
 }
 
 sealed class MessageEntityContent {
@@ -225,6 +233,7 @@ sealed class MessageEntityContent {
 
     data class Text(
         val messageBody: String,
+        val linkPreview: List<MessageEntity.LinkPreview> = listOf(),
         val mentions: List<MessageEntity.Mention> = listOf(),
         /**
          * ID of a message being quoted.
@@ -376,6 +385,9 @@ data class NotificationMessageEntity(
     val conversationName: String?,
     val mutedStatus: ConversationEntity.MutedStatus,
     val conversationType: ConversationEntity.Type,
+    val degradedConversationNotified: Boolean,
+    val legalHoldStatus: ConversationEntity.LegalHoldStatus,
+    val legalHoldStatusChangeNotified: Boolean
 )
 
 sealed class MessagePreviewEntityContent {

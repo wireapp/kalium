@@ -21,10 +21,10 @@ package com.wire.kalium.logic.data.connection
 import com.wire.kalium.logic.data.user.Connection
 import com.wire.kalium.logic.data.user.ConnectionState
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.api.base.model.ConversationId
-import com.wire.kalium.network.api.base.model.UserId
-import com.wire.kalium.network.api.base.authenticated.connection.ConnectionDTO
-import com.wire.kalium.network.api.base.authenticated.connection.ConnectionStateDTO
+import com.wire.kalium.network.api.model.ConversationId
+import com.wire.kalium.network.api.model.UserId
+import com.wire.kalium.network.api.authenticated.connection.ConnectionDTO
+import com.wire.kalium.network.api.authenticated.connection.ConnectionStateDTO
 import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
@@ -95,7 +95,7 @@ class ConnectionMapperTest {
         val stubConnectionResponse = ConnectionDTO(
             "someId",
             "from",
-            UNIX_FIRST_DATE,
+            Instant.UNIX_FIRST_DATE,
             ConversationId("someId", "someDomain"),
             UserId("someId", "someDomain"),
             ConnectionStateDTO.ACCEPTED,
@@ -105,7 +105,7 @@ class ConnectionMapperTest {
         val stubConnection = Connection(
             "someId",
             "from",
-            UNIX_FIRST_DATE,
+            Instant.UNIX_FIRST_DATE,
             ModelConversationId("someId", "someDomain"),
             ModelConversationId("someId", "someDomain"),
             ConnectionState.ACCEPTED,

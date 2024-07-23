@@ -18,12 +18,17 @@
 
 package com.wire.kalium.logic.feature.message
 
+import com.wire.kalium.cryptography.utils.SHA256Key
 import com.wire.kalium.logic.NetworkFailure
+import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.data.asset.UploadedAssetId
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
 import com.wire.kalium.logic.data.message.SelfDeletionTimer
+import com.wire.kalium.logic.data.message.linkpreview.LinkPreviewAsset
+import com.wire.kalium.logic.data.message.linkpreview.MessageLinkPreview
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.sync.SlowSyncStatus
@@ -48,7 +53,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import okio.Path.Companion.toPath
 import kotlin.test.Test
+import kotlin.test.assertIs
 
 class SendTextMessageCaseTest {
 
@@ -119,6 +126,165 @@ class SendTextMessageCaseTest {
         }.wasInvoked(once)
     }
 
+    @Test
+    fun givenAMessageWithLinkPreview_whenSendingWithoutLinkPreviewImage_thenShouldSucceed() = runTest {
+        // Given
+        val (arrangement, sendTextMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withPersistMessageSuccess()
+            .withSlowSyncStatusComplete()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
+            .withSendMessageSuccess()
+            .arrange()
+        val linkPreviews = listOf(
+            MessageLinkPreview(
+                url = "",
+                urlOffset = 0,
+                permanentUrl = "",
+                summary = "",
+                title = "",
+                image = null
+            )
+        )
+
+        // When
+        val result = sendTextMessage(TestConversation.ID, "some-text", linkPreviews)
+
+        // Then
+        result.shouldSucceed()
+
+        coVerify {
+            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+        }.wasNotInvoked()
+        coVerify {
+            arrangement.persistMessage.invoke(matches { message ->
+                (message.content as MessageContent.Text).linkPreviews.get(0).image == null
+            })
+        }.wasInvoked(once)
+    }
+
+    @Test
+    fun givenAMessageWithLinkPreview_whenSendingWithLinkPreviewImage_thenShouldSucceedWithImage() = runTest {
+        // Given
+        val (arrangement, sendTextMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withPersistMessageSuccess()
+            .withUploadAndPersistPrivateAssetSuccess()
+            .withSlowSyncStatusComplete()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
+            .withSendMessageSuccess()
+            .arrange()
+        val linkPreviews = listOf(
+            MessageLinkPreview(
+                url = "",
+                urlOffset = 0,
+                permanentUrl = "",
+                summary = "",
+                title = "",
+                image = VALID_LINK_PREVIEW_ASSET
+            )
+        )
+
+        // When
+        val result = sendTextMessage(TestConversation.ID, "some-text", linkPreviews)
+
+        // Then
+        result.shouldSucceed()
+
+        coVerify {
+            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.persistMessage.invoke(
+                matches { message ->
+                    (message.content as MessageContent.Text).linkPreviews[0].image != null
+                            && !(message.content as MessageContent.Text).linkPreviews[0].image?.otrKey.contentEquals(ByteArray(0))
+                }
+            )
+        }.wasInvoked(once)
+    }
+
+    @Test
+    fun givenAMessageWithLinkPreview_whenSendingWithWrongLinkPreviewImageData_thenShouldSucceedWithoutImage() = runTest {
+        // Given
+        val (arrangement, sendTextMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withPersistMessageSuccess()
+            .withUploadAndPersistPrivateAssetSuccess()
+            .withSlowSyncStatusComplete()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
+            .withSendMessageSuccess()
+            .arrange()
+        val linkPreviews = listOf(
+            MessageLinkPreview(
+                url = "",
+                urlOffset = 0,
+                permanentUrl = "",
+                summary = "",
+                title = "",
+                image = INVALID_LINK_PREVIEW_ASSET
+            )
+        )
+
+        // When
+        val result = sendTextMessage(TestConversation.ID, "some-text", linkPreviews)
+
+        // Then
+        result.shouldSucceed()
+
+        coVerify {
+            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.persistMessage.invoke(matches { message ->
+                (message.content as MessageContent.Text).linkPreviews.get(0).image != null
+            })
+        }.wasInvoked(once)
+    }
+
+    @Test
+    fun givenAMessageWithLinkPreview_whenUploadingLinkPreviewImageDataFailed_thenShouldSucceedWithoutImage() = runTest {
+        // Given
+        val (arrangement, sendTextMessage) = Arrangement(this)
+            .withToggleReadReceiptsStatus()
+            .withCurrentClientProviderSuccess()
+            .withPersistMessageSuccess()
+            .withUploadAndPersistPrivateAssetFailure()
+            .withSlowSyncStatusComplete()
+            .withMessageTimer(SelfDeletionTimer.Disabled)
+            .withSendMessageSuccess()
+            .arrange()
+        val linkPreviews = listOf(
+            MessageLinkPreview(
+                url = "",
+                urlOffset = 0,
+                permanentUrl = "",
+                summary = "",
+                title = "",
+                image = VALID_LINK_PREVIEW_ASSET
+            )
+        )
+
+        // When
+        val result = sendTextMessage(TestConversation.ID, "some-text", linkPreviews)
+
+        // Then
+        result.shouldSucceed()
+
+        coVerify {
+            arrangement.assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+        }.wasInvoked(once)
+        coVerify {
+            arrangement.persistMessage.invoke(matches { message ->
+                assertIs<MessageContent.Text>(message.content)
+                (message.content as MessageContent.Text).linkPreviews.get(0).image == null
+            })
+        }.wasInvoked(once)
+    }
+
     private class Arrangement(private val coroutineScope: CoroutineScope) {
 
         @Mock
@@ -126,6 +292,9 @@ class SendTextMessageCaseTest {
 
         @Mock
         val currentClientIdProvider = mock(CurrentClientIdProvider::class)
+
+        @Mock
+        val assetRepository = mock(AssetRepository::class)
 
         @Mock
         val slowSyncRepository = mock(SlowSyncRepository::class)
@@ -166,6 +335,18 @@ class SendTextMessageCaseTest {
             }.returns(Either.Right(Unit))
         }
 
+        suspend fun withUploadAndPersistPrivateAssetSuccess() = apply {
+            coEvery {
+                assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+            }.returns(Either.Right(Pair<UploadedAssetId, SHA256Key>(UploadedAssetId(any(), any(), any()), SHA256Key(ByteArray(any())))))
+        }
+
+        suspend fun withUploadAndPersistPrivateAssetFailure() = apply {
+            coEvery {
+                assetRepository.uploadAndPersistPrivateAsset(any(), any(), any(), any())
+            }.returns(Either.Left(NetworkFailure.NoNetworkConnection(null)))
+        }
+
         fun withSlowSyncStatusComplete() = apply {
             val stateFlow = MutableStateFlow<SlowSyncStatus>(SlowSyncStatus.Complete).asStateFlow()
             every {
@@ -189,6 +370,7 @@ class SendTextMessageCaseTest {
             persistMessage,
             TestUser.SELF.id,
             currentClientIdProvider,
+            assetRepository,
             slowSyncRepository,
             messageSender,
             messageSendFailureHandler,
@@ -196,6 +378,31 @@ class SendTextMessageCaseTest {
             observeSelfDeletionTimerSettingsForConversation,
             scope = coroutineScope,
             dispatchers = coroutineScope.testKaliumDispatcher
+        )
+    }
+
+    private companion object {
+        val VALID_LINK_PREVIEW_ASSET = LinkPreviewAsset(
+            assetKey = "",
+            assetDomain = "",
+            assetToken = "",
+            assetHeight = 80,
+            assetWidth = 80,
+            assetName = "",
+            assetDataPath = "".toPath(),
+            assetDataSize = 120,
+            mimeType = "image/png"
+        )
+        val INVALID_LINK_PREVIEW_ASSET = LinkPreviewAsset(
+            assetKey = "",
+            assetDomain = "",
+            assetToken = "",
+            assetHeight = 0,
+            assetWidth = 0,
+            assetName = null,
+            assetDataPath = "".toPath(),
+            assetDataSize = 0,
+            mimeType = ""
         )
     }
 

@@ -89,7 +89,7 @@ interface MessageDAO {
 
     suspend fun getAllPendingMessagesFromUser(userId: UserIDEntity): List<MessageEntity>
     suspend fun updateTextMessageContent(
-        editTimeStamp: String,
+        editInstant: Instant,
         conversationId: QualifiedIDEntity,
         currentMessageId: String,
         newTextContent: MessageEntityContent.Text,
@@ -113,8 +113,10 @@ interface MessageDAO {
         clientId: String,
     )
 
-    suspend fun getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(
+    suspend fun getMessageIdsThatExpectReadConfirmationWithinDates(
         conversationId: QualifiedIDEntity,
+        afterDate: Instant,
+        untilDate: Instant,
         visibility: List<MessageEntity.Visibility> = MessageEntity.Visibility.entries
     ): List<String>
 

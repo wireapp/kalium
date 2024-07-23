@@ -64,9 +64,9 @@ import com.wire.kalium.logic.feature.user.ObserveValidAccountsUseCaseImpl
 import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCase
 import com.wire.kalium.logic.feature.user.webSocketStatus.ObservePersistentWebSocketConnectionStatusUseCaseImpl
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
-import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.network.networkContainer.UnboundNetworkContainer
 import com.wire.kalium.network.networkContainer.UnboundNetworkContainerCommon
+import com.wire.kalium.network.utils.MockUnboundNetworkClient
 import com.wire.kalium.persistence.db.GlobalDatabaseBuilder
 import com.wire.kalium.persistence.kmmSettings.GlobalPrefProvider
 import kotlinx.coroutines.CoroutineScope
@@ -90,7 +90,6 @@ class GlobalKaliumScope internal constructor(
     private val kaliumConfigs: KaliumConfigs,
     private val userSessionScopeProvider: Lazy<UserSessionScopeProvider>,
     private val authenticationScopeProvider: AuthenticationScopeProvider,
-    private val networkStateObserver: NetworkStateObserver,
     val logoutCallbackManager: LogoutCallbackManager,
 ) : CoroutineScope {
 
@@ -98,11 +97,10 @@ class GlobalKaliumScope internal constructor(
 
     val unboundNetworkContainer: UnboundNetworkContainer by lazy {
         UnboundNetworkContainerCommon(
-            networkStateObserver,
             userAgent,
             kaliumConfigs.ignoreSSLCertificatesForUnboundCalls,
             kaliumConfigs.certPinningConfig,
-            kaliumConfigs.kaliumMockEngine?.mockEngine
+            kaliumConfigs.mockedRequests?.let { MockUnboundNetworkClient.createMockEngine(it) }
         )
     }
 
@@ -147,9 +145,8 @@ class GlobalKaliumScope internal constructor(
             globalPreferences.authTokenStorage,
             { serverConfig, proxyCredentials ->
                 authenticationScopeProvider.provide(
-                    serverConfig,
-                    proxyCredentials,
-                    networkStateObserver,
+                    serverConfig = serverConfig,
+                    proxyCredentials = proxyCredentials,
                     globalDatabase = globalDatabase,
                     kaliumConfigs = kaliumConfigs,
                 ).serverConfigRepository
@@ -175,7 +172,6 @@ class GlobalKaliumScope internal constructor(
             customServerConfigRepository,
             authenticationScopeProvider,
             userSessionScopeProvider.value,
-            networkStateObserver,
             globalDatabase,
             kaliumConfigs
         )

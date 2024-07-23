@@ -19,6 +19,8 @@
 @Suppress("DSL_SCOPE_VIOLATION")
 plugins {
     kotlin("jvm")
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
 }
 
 kotlin {
@@ -29,6 +31,7 @@ kotlin {
                 implementation(project(":network"))
                 implementation(project(":logic"))
                 implementation(project(":persistence"))
+                implementation(project(":mocks"))
                 implementation(libs.kotlin.test)
                 implementation(libs.settings.kmpTest)
 

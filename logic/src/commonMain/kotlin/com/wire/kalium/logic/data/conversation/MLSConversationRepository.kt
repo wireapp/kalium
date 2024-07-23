@@ -69,7 +69,7 @@ import com.wire.kalium.logic.wrapMLSRequest
 import com.wire.kalium.logic.wrapStorageRequest
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
-import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isMlsClientMismatch
 import com.wire.kalium.network.exceptions.isMlsCommitMissingReferences
@@ -472,11 +472,17 @@ internal class MLSConversationDataSource(
         allowPartialMemberList: Boolean = false,
     ): Either<CoreFailure, MLSAdditionResult> = withContext(serialDispatcher) {
         commitPendingProposals(groupID).flatMap {
+            kaliumLogger.d("adding ${userIdList.count()} users to MLS group")
             produceAndSendCommitWithRetryAndResult(groupID, retryOnStaleMessage = retryOnStaleMessage) {
                 keyPackageRepository.claimKeyPackages(userIdList, cipherSuite).flatMap { result ->
                     if (result.usersWithoutKeyPackagesAvailable.isNotEmpty() && !allowPartialMemberList) {
+                        kaliumLogger.d(
+                            "add members to MLS Group: failed " +
+                                    "${result.usersWithoutKeyPackagesAvailable.count()} user(s) missing KeyPackages"
+                        )
                         Either.Left(CoreFailure.MissingKeyPackages(result.usersWithoutKeyPackagesAvailable))
                     } else {
+                        kaliumLogger.d("add members to MLS Group: claiming KeyPackages succeed")
                         Either.Right(result)
                     }
                 }.flatMap { result ->
@@ -598,6 +604,7 @@ internal class MLSConversationDataSource(
         externalSenders: ByteArray,
         allowPartialMemberList: Boolean = false,
     ): Either<CoreFailure, MLSAdditionResult> = withContext(serialDispatcher) {
+        kaliumLogger.d("establish MLS group: $groupID")
         mlsClientProvider.getMLSClient().flatMap { mlsClient ->
             wrapMLSRequest {
                 mlsClient.createConversation(
@@ -624,8 +631,9 @@ internal class MLSConversationDataSource(
                 }
             }.flatMap { additionResult ->
                 wrapStorageRequest {
-                    conversationDAO.updateConversationGroupState(
+                    conversationDAO.updateMlsGroupStateAndCipherSuite(
                         ConversationEntity.GroupState.ESTABLISHED,
+                        ConversationEntity.CipherSuite.fromTag(mlsClient.getDefaultCipherSuite().toInt()),
                         idMapper.toGroupIDEntity(groupID)
                     )
                 }.map { additionResult }

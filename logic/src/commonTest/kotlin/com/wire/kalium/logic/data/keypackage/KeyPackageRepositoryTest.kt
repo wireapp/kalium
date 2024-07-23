@@ -31,12 +31,12 @@ import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.keypackage.ClaimedKeyPackageList
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackage
+import com.wire.kalium.network.api.authenticated.keypackage.ClaimedKeyPackageList
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackage
 import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageApi
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageCountDTO
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageRef
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageCountDTO
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageDTO
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageRef
 import com.wire.kalium.network.utils.NetworkResponse
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
@@ -121,7 +121,7 @@ class KeyPackageRepositoryTest {
     }
 
     @Test
-    fun givenAllUsersHaveNoKeyPackagesAvailable_whenClaimingKeyPackagesFromMultipleUsers_thenSuccessFailWithMissingKeyPackages() = runTest {
+    fun givenAllUsersHaveNoKeyPackagesAvailable_whenClaimingKeyPackagesFromMultipleUsers_thenSuccessWitheEmptySuccessKeyPackages() = runTest {
         val usersWithout = setOf(
             Arrangement.USER_ID.copy(value = "missingKP"),
             Arrangement.USER_ID.copy(value = "alsoMissingKP"),
@@ -136,13 +136,14 @@ class KeyPackageRepositoryTest {
 
         val result = keyPackageRepository.claimKeyPackages(usersWithout.toList(), CIPHER_SUITE)
 
-        result.shouldFail { failure ->
-            assertIs<CoreFailure.MissingKeyPackages>(failure)
+        result.shouldSucceed { keyPackages ->
+            assertEquals(emptyList(), keyPackages.successfullyFetchedKeyPackages)
+            assertEquals(usersWithout, keyPackages.usersWithoutKeyPackagesAvailable)
         }
     }
 
     @Test
-    fun givenUserWithNoKeyPackages_whenClaimingKeyPackagesFromSingleUser_thenResultShouldFailWithError() = runTest {
+    fun givenUserWithNoKeyPackages_whenClaimingKeyPackagesFromSingleUser_thenSuccessWitheEmptySuccessKeyPackages() = runTest {
 
         val (_, keyPackageRepository) = Arrangement()
             .withCurrentClientId()
@@ -151,8 +152,9 @@ class KeyPackageRepositoryTest {
 
         val result = keyPackageRepository.claimKeyPackages(listOf(Arrangement.USER_ID), CIPHER_SUITE)
 
-        result.shouldFail { failure ->
-            assertEquals(CoreFailure.MissingKeyPackages(setOf(Arrangement.USER_ID)), failure)
+        result.shouldSucceed { keyPackages ->
+            assertEquals(emptyList(), keyPackages.successfullyFetchedKeyPackages)
+            assertEquals(setOf(Arrangement.USER_ID), keyPackages.usersWithoutKeyPackagesAvailable)
         }
     }
 

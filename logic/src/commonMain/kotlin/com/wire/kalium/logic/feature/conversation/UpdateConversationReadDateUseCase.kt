@@ -19,22 +19,31 @@
 package com.wire.kalium.logic.feature.conversation
 
 import com.benasher44.uuid.uuid4
+import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.feature.message.SendConfirmationUseCase
+import com.wire.kalium.logic.feature.message.receipt.ConversationTimeEventInput
+import com.wire.kalium.logic.feature.message.receipt.ConversationTimeEventWorker
+import com.wire.kalium.logic.feature.message.receipt.ConversationWorkQueue
+import com.wire.kalium.logic.feature.message.receipt.SendConfirmationUseCase
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
-import com.wire.kalium.util.DateTimeUtil
-import kotlinx.coroutines.CoroutineScope
+import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.kaliumLogger
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
 import kotlinx.datetime.Instant
 
 /**
@@ -52,7 +61,8 @@ class UpdateConversationReadDateUseCase internal constructor(
     private val selfUserId: UserId,
     private val selfConversationIdProvider: SelfConversationIdProvider,
     private val sendConfirmation: SendConfirmationUseCase,
-    private val scope: CoroutineScope
+    private val workQueue: ConversationWorkQueue,
+    private val logger: KaliumLogger = kaliumLogger
 ) {
 
     /**
@@ -60,12 +70,32 @@ class UpdateConversationReadDateUseCase internal constructor(
      * @param time The last read date to update.
      */
     operator fun invoke(conversationId: QualifiedID, time: Instant) {
-        scope.launch {
-            sendConfirmation(conversationId)
-            conversationRepository.updateConversationReadDate(conversationId, time)
-            selfConversationIdProvider().flatMap { selfConversationIds ->
-                selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
-                    sendLastReadMessageToOtherClients(conversationId, selfConversationId, time)
+        workQueue.enqueue(ConversationTimeEventInput(conversationId, time), worker)
+    }
+
+    private val worker = ConversationTimeEventWorker { (conversationId, time) ->
+        coroutineScope {
+            conversationRepository.observeCacheDetailsById(conversationId).flatMap {
+                it.first()?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
+            }.onFailure {
+                logger.w("Failed to update conversation read date; StorageFailure $it")
+            }.onSuccess { conversation ->
+                if (conversation.lastReadDate >= time) {
+                    // Skipping, as current lastRead is already newer than the scheduled one
+                    return@onSuccess
+                }
+                launch {
+                    sendConfirmation(conversationId, conversation.lastReadDate, time)
+                }
+                launch {
+                    conversationRepository.updateConversationReadDate(conversationId, time)
+                }
+                launch {
+                    selfConversationIdProvider().flatMap { selfConversationIds ->
+                        selfConversationIds.foldToEitherWhileRight(Unit) { selfConversationId, _ ->
+                            sendLastReadMessageToOtherClients(conversationId, selfConversationId, time)
+                        }
+                    }
                 }
             }
         }
@@ -87,7 +117,7 @@ class UpdateConversationReadDateUseCase internal constructor(
                     time = time
                 ),
                 conversationId = selfConversationId,
-                date = DateTimeUtil.currentIsoDateTimeString(),
+                date = Clock.System.now(),
                 senderUserId = selfUserId,
                 senderClientId = currentClientId,
                 status = Message.Status.Pending,

@@ -29,15 +29,15 @@ import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.util.DelicateKaliumApi
 
-internal interface SelfConversationIdProvider {
+internal fun interface SelfConversationIdProvider {
     suspend operator fun invoke(): Either<StorageFailure, List<ConversationId>>
 }
 
-internal interface ProteusSelfConversationIdProvider {
+internal fun interface ProteusSelfConversationIdProvider {
     suspend operator fun invoke(): Either<StorageFailure, ConversationId>
 }
 
-internal interface MLSSelfConversationIdProvider {
+internal fun interface MLSSelfConversationIdProvider {
     suspend operator fun invoke(): Either<StorageFailure, ConversationId>
 }
 

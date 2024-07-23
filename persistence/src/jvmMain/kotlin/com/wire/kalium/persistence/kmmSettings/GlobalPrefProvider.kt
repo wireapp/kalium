@@ -31,7 +31,7 @@ actual class GlobalPrefProvider(
 ) {
     private val kaliumPref =
         KaliumPreferencesSettings(
-            EncryptedSettingsBuilder.build(
+            buildSettings(
                 SettingOptions.AppSettings(shouldEncryptData),
                 EncryptedSettingsPlatformParam(rootPath)
             )

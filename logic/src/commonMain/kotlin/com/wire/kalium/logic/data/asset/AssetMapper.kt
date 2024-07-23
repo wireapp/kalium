@@ -29,9 +29,9 @@ import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_CBC
 import com.wire.kalium.logic.data.message.MessageEncryptionAlgorithm.AES_GCM
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.network.api.base.authenticated.asset.AssetMetadataRequest
-import com.wire.kalium.network.api.base.authenticated.asset.AssetResponse
-import com.wire.kalium.network.api.base.model.AssetRetentionType
+import com.wire.kalium.network.api.authenticated.asset.AssetMetadataRequest
+import com.wire.kalium.network.api.authenticated.asset.AssetResponse
+import com.wire.kalium.network.api.model.AssetRetentionType
 import com.wire.kalium.persistence.dao.asset.AssetEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
 import com.wire.kalium.persistence.dao.asset.AssetTransferStatusEntity
@@ -206,22 +206,24 @@ class AssetMapperImpl(
                 mimeType = mimeType,
                 size = sizeInBytes,
                 name = name,
-                metaData = when (metadata) {
-                    is Image -> Asset.Original.MetaData.Image(
-                        Asset.ImageMetaData(
-                            width = metadata.width,
-                            height = metadata.height,
+                metaData = metadata.let {
+                    when (it) {
+                        is Image -> Asset.Original.MetaData.Image(
+                            Asset.ImageMetaData(
+                                width = it.width,
+                                height = it.height,
+                            )
                         )
-                    )
 
-                    is Audio -> Asset.Original.MetaData.Audio(
-                        audio = Asset.AudioMetaData(
-                            durationInMillis = metadata.durationMs,
-                            normalizedLoudness = metadata.normalizedLoudness?.let { ByteArr(it) }
+                        is Audio -> Asset.Original.MetaData.Audio(
+                            audio = Asset.AudioMetaData(
+                                durationInMillis = it.durationMs,
+                                normalizedLoudness = it.normalizedLoudness?.let { ByteArr(it) }
+                            )
                         )
-                    )
 
-                    else -> null
+                        else -> null
+                    }
                 }
             ),
             status = Asset.Status.Uploaded(

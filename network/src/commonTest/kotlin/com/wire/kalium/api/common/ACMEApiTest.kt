@@ -22,6 +22,10 @@ import com.wire.kalium.api.json.model.ACMEApiResponseJsonSample
 import com.wire.kalium.api.json.model.ACMEApiResponseJsonSample.ACME_RESPONSE_SAMPLE
 import com.wire.kalium.api.json.model.ACMEApiResponseJsonSample.jsonProviderAcmeChallengeResponse
 import com.wire.kalium.network.api.base.unbound.acme.*
+import com.wire.kalium.network.api.unbound.acme.ACMEResponse
+import com.wire.kalium.network.api.unbound.acme.AcmeDirectoriesResponse
+import com.wire.kalium.network.api.unbound.acme.CertificateChain
+import com.wire.kalium.network.api.unbound.acme.ChallengeResponse
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.isSuccessful
 import io.ktor.http.*

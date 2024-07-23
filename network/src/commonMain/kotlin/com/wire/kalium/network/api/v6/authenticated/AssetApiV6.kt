@@ -19,7 +19,7 @@
 package com.wire.kalium.network.api.v6.authenticated
 
 import com.wire.kalium.network.AuthenticatedNetworkClient
-import com.wire.kalium.network.api.base.model.UserId
+import com.wire.kalium.network.api.model.UserId
 import com.wire.kalium.network.api.v5.authenticated.AssetApiV5
 
 internal open class AssetApiV6 internal constructor(

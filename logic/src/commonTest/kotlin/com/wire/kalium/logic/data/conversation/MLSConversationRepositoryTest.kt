@@ -66,16 +66,16 @@ import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.client.ClientApi
-import com.wire.kalium.network.api.base.authenticated.client.DeviceTypeDTO
-import com.wire.kalium.network.api.base.authenticated.client.SimpleClientResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMembers
-import com.wire.kalium.network.api.base.authenticated.keypackage.KeyPackageDTO
+import com.wire.kalium.network.api.authenticated.client.DeviceTypeDTO
+import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberRemovedDTO
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMembers
+import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageDTO
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
-import com.wire.kalium.network.api.base.authenticated.message.SendMLSMessageResponse
-import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
-import com.wire.kalium.network.api.base.authenticated.notification.MemberLeaveReasonDTO
-import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.authenticated.message.SendMLSMessageResponse
+import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.authenticated.notification.MemberLeaveReasonDTO
+import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -85,6 +85,7 @@ import com.wire.kalium.persistence.dao.conversation.E2EIConversationClientInfoEn
 import com.wire.kalium.persistence.dao.message.LocalId
 import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.util.decodeBase64Bytes
 import io.ktor.util.encodeBase64
 import io.mockative.Mock
@@ -1789,7 +1790,7 @@ class MLSConversationRepositoryTest {
             const val EPOCH = 5UL
             const val RAW_GROUP_ID = "groupId"
             val GROUP_ID = GroupID(RAW_GROUP_ID)
-            val TIME = DateTimeUtil.currentIsoDateTimeString()
+            val TIME = Instant.DISTANT_PAST
             val INVALID_REQUEST_ERROR = KaliumException.InvalidRequestError(ErrorResponse(405, "", ""))
             val MLS_STALE_MESSAGE_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-stale-message"))
             val MLS_CLIENT_MISMATCH_ERROR = KaliumException.InvalidRequestError(ErrorResponse(409, "", "mls-client-mismatch"))
@@ -1844,14 +1845,14 @@ class MLSConversationRepositoryTest {
             val MEMBER_JOIN_EVENT = EventContentDTO.Conversation.MemberJoinDTO(
                 TestConversation.NETWORK_ID,
                 TestConversation.NETWORK_USER_ID1,
-                "2022-03-30T15:36:00.000Z",
+                Instant.UNIX_FIRST_DATE,
                 ConversationMembers(emptyList(), emptyList()),
                 TestConversation.NETWORK_USER_ID1.value
             )
             val MEMBER_LEAVE_EVENT = EventContentDTO.Conversation.MemberLeaveDTO(
                 TestConversation.NETWORK_ID,
                 TestConversation.NETWORK_USER_ID1,
-                "2022-03-30T15:36:00.000Z",
+                Instant.UNIX_FIRST_DATE,
                 ConversationMemberRemovedDTO(emptyList(), MemberLeaveReasonDTO.LEFT),
                 TestConversation.NETWORK_USER_ID1.value
             )

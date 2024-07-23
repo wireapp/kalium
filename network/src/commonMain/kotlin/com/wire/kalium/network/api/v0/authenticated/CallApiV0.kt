@@ -27,6 +27,8 @@ import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
 import io.ktor.client.request.setBody
+import io.ktor.http.URLBuilder
+import io.ktor.http.URLProtocol
 
 internal open class CallApiV0 internal constructor(private val authenticatedNetworkClient: AuthenticatedNetworkClient) :
     CallApi {
@@ -42,11 +44,17 @@ internal open class CallApiV0 internal constructor(private val authenticatedNetw
 
     override suspend fun connectToSFT(url: String, data: String): NetworkResponse<ByteArray> =
         wrapKaliumResponse {
-            httpClient.post(urlString = url) {
-                // We are parsing the data string to json due to Ktor serialization escaping the string
-                // and thus backend not recognizing and returning a 400 - Bad Request
-                val json = KtxSerializer.json.parseToJsonElement(data)
-                setBody(json)
+            url.let {
+                URLBuilder(it).apply {
+                    protocol = URLProtocol.HTTPS
+                }
+            }.build().let { parsedUrl ->
+                httpClient.post(url = parsedUrl) {
+                    // We are parsing the data string to json due to Ktor serialization escaping the string
+                    // and thus backend not recognizing and returning a 400 - Bad Request
+                    val json = KtxSerializer.json.parseToJsonElement(data)
+                    setBody(json)
+                }
             }
         }
 

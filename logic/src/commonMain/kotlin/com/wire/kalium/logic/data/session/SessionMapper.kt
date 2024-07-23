@@ -27,8 +27,8 @@ import com.wire.kalium.logic.data.user.SsoId
 import com.wire.kalium.logic.data.auth.AccountInfo
 import com.wire.kalium.logic.data.auth.AccountTokens
 import com.wire.kalium.logic.data.auth.PersistentWebSocketStatus
-import com.wire.kalium.network.api.base.model.ProxyCredentialsDTO
-import com.wire.kalium.network.api.base.model.SessionDTO
+import com.wire.kalium.network.api.model.ProxyCredentialsDTO
+import com.wire.kalium.network.api.model.SessionDTO
 import com.wire.kalium.persistence.client.AuthTokenEntity
 import com.wire.kalium.persistence.client.ProxyCredentialsEntity
 import com.wire.kalium.persistence.daokaliumdb.AccountInfoEntity

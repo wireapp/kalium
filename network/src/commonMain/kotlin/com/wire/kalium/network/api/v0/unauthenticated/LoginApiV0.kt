@@ -19,12 +19,13 @@
 package com.wire.kalium.network.api.v0.unauthenticated
 
 import com.wire.kalium.network.UnauthenticatedNetworkClient
-import com.wire.kalium.network.api.base.model.AccessTokenDTO
-import com.wire.kalium.network.api.base.model.RefreshTokenProperties
-import com.wire.kalium.network.api.base.model.SelfUserDTO
-import com.wire.kalium.network.api.base.model.SessionDTO
-import com.wire.kalium.network.api.base.model.toSessionDto
-import com.wire.kalium.network.api.base.unauthenticated.LoginApi
+import com.wire.kalium.network.api.base.unauthenticated.login.LoginApi
+import com.wire.kalium.network.api.model.AccessTokenDTO
+import com.wire.kalium.network.api.model.RefreshTokenProperties
+import com.wire.kalium.network.api.model.SelfUserDTO
+import com.wire.kalium.network.api.model.SessionDTO
+import com.wire.kalium.network.api.model.toSessionDto
+import com.wire.kalium.network.api.unauthenticated.login.LoginParam
 import com.wire.kalium.network.utils.CustomErrors
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.flatMap
@@ -53,15 +54,16 @@ internal open class LoginApiV0 internal constructor(
         @SerialName("verification_code") val verificationCode: String? = null,
     )
 
-    private fun LoginApi.LoginParam.toRequestBody(): LoginRequest {
+    private fun LoginParam.toRequestBody(): LoginRequest {
         return when (this) {
-            is LoginApi.LoginParam.LoginWithEmail -> LoginRequest(
+            is LoginParam.LoginWithEmail -> LoginRequest(
                 email = email,
                 password = password,
                 label = label,
                 verificationCode = verificationCode
             )
-            is LoginApi.LoginParam.LoginWithHandle -> LoginRequest(
+
+            is LoginParam.LoginWithHandle -> LoginRequest(
                 handle = handle,
                 password = password,
                 label = label,
@@ -70,7 +72,7 @@ internal open class LoginApiV0 internal constructor(
     }
 
     override suspend fun login(
-        param: LoginApi.LoginParam,
+        param: LoginParam,
         persist: Boolean
     ): NetworkResponse<Pair<SessionDTO, SelfUserDTO>> = wrapKaliumResponse<AccessTokenDTO> {
         httpClient.post(PATH_LOGIN) {

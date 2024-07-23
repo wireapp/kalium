@@ -273,16 +273,17 @@ class ConversationDAOTest : BaseDatabaseTest() {
             ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE,
             ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521,
             (conversationEntity2.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId,
-
         )
         val result = conversationDAO.getConversationByQualifiedID(conversationEntity2.id)
         assertEquals(
             (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupState, ConversationEntity.GroupState.PENDING_WELCOME_MESSAGE
         )
         assertEquals(
-            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).cipherSuite, ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521
+            (result?.protocolInfo as ConversationEntity.ProtocolInfo.MLS).cipherSuite,
+            ConversationEntity.CipherSuite.MLS_256_DHKEMP521_AES256GCM_SHA512_P521
         )
     }
+
     @Test
     fun givenExistingConversation_ThenConversationIsUpdatedOnInsert() = runTest {
         conversationDAO.insertConversation(conversationEntity1)
@@ -792,7 +793,11 @@ class ConversationDAOTest : BaseDatabaseTest() {
         insertTeamUserAndMember(team, user1, conversationEntity3.id)
 
         // when
-        conversationDAO.updateConversationName(conversationEntity3.id, "NEW-NAME", "2023-11-22T15:36:00.000Z")
+        conversationDAO.updateConversationName(
+            conversationEntity3.id,
+            "NEW-NAME",
+            Instant.parse("2023-11-22T15:36:00.000Z")
+        )
         val updatedConversation = conversationDAO.getConversationByQualifiedID(conversationEntity3.id)
 
         // then
@@ -1649,9 +1654,24 @@ class ConversationDAOTest : BaseDatabaseTest() {
     fun givenEstablishedMLSConversationExists_whenGettingMLSGroupIdByUserId_thenReturnsMLSGroupId() = runTest {
         // given
         val expected = (conversationEntity4.protocolInfo as ConversationEntity.ProtocolInfo.MLS).groupId
-        userDAO.upsertUser(user1)
-        userDAO.upsertUser(user2)
 
+        conversationDAO.insertConversation(conversationEntity1.copy(id = user1.id, type = ConversationEntity.Type.SELF))
+        conversationDAO.insertConversation(conversationEntity4)
+        memberDAO.insertMembersWithQualifiedId(
+            listOf(
+                MemberEntity(user1.id, MemberEntity.Role.Admin),
+                MemberEntity(user2.id, MemberEntity.Role.Admin),
+                MemberEntity(selfUserId, MemberEntity.Role.Admin),
+            ),
+            conversationEntity4.id
+        )
+        // then
+        assertEquals(expected, conversationDAO.getMLSGroupIdByUserId(user1.id))
+    }
+
+    @Test
+    fun givenEstablishedMLSConversationExistsButSelfUserIsNotMember_whenGettingMLSGroupIdByUserId_thenNull() = runTest {
+        // given
         conversationDAO.insertConversation(conversationEntity1.copy(id = user1.id, type = ConversationEntity.Type.SELF))
         conversationDAO.insertConversation(conversationEntity4)
         memberDAO.insertMembersWithQualifiedId(
@@ -1662,9 +1682,8 @@ class ConversationDAOTest : BaseDatabaseTest() {
             conversationEntity4.id
         )
         // then
-        assertEquals(expected, conversationDAO.getMLSGroupIdByUserId(user1.id))
+        assertEquals(null, conversationDAO.getMLSGroupIdByUserId(user1.id))
     }
-
 
     @Test
     fun givenMLSSelfConversationDoesNotExists_whenGettingE2EIClientInfoByClientId_thenShouldReturnNull() = runTest {
@@ -1914,6 +1933,26 @@ class ConversationDAOTest : BaseDatabaseTest() {
 
         // then
         assertEquals(expected, result)
+    }
+
+    @Test
+    fun givenConversations_whenGettingConversationByIdAndUpdated_thenGetNewEmittedState() = runTest(dispatcher) {
+        conversationDAO.insertConversation(conversationEntity1)
+        insertTeamUserAndMember(team, user1, conversationEntity1.id)
+        conversationDAO.observeConversationDetailsById(conversationEntity1.id).test {
+            val result = awaitItem()
+            assertEquals(conversationEntity1.toViewEntity(user1), result)
+
+            conversationDAO.updateConversationMutedStatus(
+                conversationEntity1.id,
+                ConversationEntity.MutedStatus.MENTIONS_MUTED,
+                Clock.System.now().toEpochMilliseconds()
+            )
+            val result2 = awaitItem()
+            assertEquals(ConversationEntity.MutedStatus.MENTIONS_MUTED, result2?.mutedStatus)
+
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     private fun ConversationEntity.toViewEntity(userEntity: UserEntity? = null): ConversationViewEntity {

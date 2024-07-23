@@ -1,0 +1,16 @@
+import com.wire.kalium.persistence.dao.QualifiedIDEntity;
+import kotlin.Int;
+
+CREATE TABLE MessageLinkPreview (
+      message_id TEXT NOT NULL,
+      conversation_id TEXT AS QualifiedIDEntity NOT NULL,
+
+      url TEXT NOT NULL,
+      url_offset INTEGER AS Int NOT NULL,
+      permanent_url TEXT,
+      title TEXT NOT NULL,
+      summary TEXT NOT NULL,
+
+      FOREIGN KEY (message_id, conversation_id) REFERENCES Message(id, conversation_id) ON DELETE CASCADE ON UPDATE CASCADE,
+      PRIMARY KEY (message_id, conversation_id, url_offset) -- there should not be any overlapping link previews
+);

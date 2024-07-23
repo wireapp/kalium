@@ -27,26 +27,34 @@ import com.wire.kalium.logic.data.id.NetworkQualifiedId
 import com.wire.kalium.logic.data.id.PersistenceQualifiedId
 import com.wire.kalium.logic.data.id.toApi
 import com.wire.kalium.logic.data.id.toDao
+import com.wire.kalium.logic.data.notification.LocalNotification
+import com.wire.kalium.logic.data.notification.LocalNotificationMessage
+import com.wire.kalium.logic.data.notification.LocalNotificationMessageAuthor
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestMessage.TEST_MESSAGE_ID
+import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID
 import com.wire.kalium.logic.framework.TestUser.OTHER_USER_ID_2
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+import com.wire.kalium.network.api.authenticated.message.QualifiedMessageOption
+import com.wire.kalium.network.api.authenticated.message.QualifiedSendMessageResponse
+import com.wire.kalium.network.api.authenticated.message.SendMLSMessageResponse
 import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.base.authenticated.message.MessageApi
-import com.wire.kalium.network.api.base.authenticated.message.QualifiedSendMessageResponse
-import com.wire.kalium.network.api.base.authenticated.message.SendMLSMessageResponse
 import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.asset.AssetMessageEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.message.InsertMessageResult
 import com.wire.kalium.persistence.dao.message.MessageDAO
 import com.wire.kalium.persistence.dao.message.MessageEntity
 import com.wire.kalium.persistence.dao.message.MessageEntity.Status.SENT
 import com.wire.kalium.persistence.dao.message.MessageEntityContent
+import com.wire.kalium.persistence.dao.message.NotificationMessageEntity
 import com.wire.kalium.persistence.dao.message.RecipientFailureTypeEntity
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.Mock
@@ -164,16 +172,15 @@ class MessageRepositoryTest {
     fun givenAMessage_whenSendingReturnsSuccess_thenSuccessShouldBePropagatedWithServerTime() = runTest {
         val messageEnvelope = MessageEnvelope(TEST_CLIENT_ID, listOf())
         val mappedId: NetworkQualifiedId = TEST_NETWORK_QUALIFIED_ID_ENTITY
-        val timestamp = TEST_DATETIME
 
         val (_, messageRepository) = Arrangement()
-            .withSuccessfulMessageDelivery(timestamp)
+            .withSuccessfulMessageDelivery(TEST_DATETIME)
             .withFailedToSendMapping(emptyList())
             .arrange()
 
         messageRepository.sendEnvelope(TEST_CONVERSATION_ID, messageEnvelope, MessageTarget.Conversation())
             .shouldSucceed {
-                assertSame(it.time, TEST_DATETIME)
+                assertEquals(TEST_DATETIME, it.time)
             }
     }
 
@@ -228,7 +235,7 @@ class MessageRepositoryTest {
         coVerify {
             arrangement.messageApi.qualifiedSendMessage(
                 matches {
-                    it.recipients.isEmpty() && it.messageOption == MessageApi.QualifiedMessageOption.IgnoreAll
+                    it.recipients.isEmpty() && it.messageOption == QualifiedMessageOption.IgnoreAll
                 }, any()
             )
         }.wasInvoked()
@@ -252,7 +259,7 @@ class MessageRepositoryTest {
         coVerify {
             arrangement.messageApi.qualifiedSendMessage(
                 matches {
-                    it.recipients.isEmpty() && it.messageOption == MessageApi.QualifiedMessageOption.ReportAll
+                    it.recipients.isEmpty() && it.messageOption == QualifiedMessageOption.ReportAll
                 }, any()
             )
         }.wasInvoked()
@@ -261,15 +268,14 @@ class MessageRepositoryTest {
     @Test
     fun givenABroadcastMessage_whenBroadcastingReturnsSuccess_thenSuccessShouldBePropagatedWithServerTime() = runTest {
         val messageEnvelope = MessageEnvelope(TEST_CLIENT_ID, listOf())
-        val timestamp = TEST_DATETIME
 
         val (_, messageRepository) = Arrangement()
-            .withSuccessfulMessageBroadcasting(timestamp)
+            .withSuccessfulMessageBroadcasting(TEST_DATETIME)
             .arrange()
 
         messageRepository.broadcastEnvelope(messageEnvelope, BroadcastMessageOption.IgnoreSome(listOf()))
             .shouldSucceed {
-                assertSame(it, TEST_DATETIME)
+                assertSame(TEST_DATETIME, it)
             }
     }
 
@@ -277,15 +283,14 @@ class MessageRepositoryTest {
     fun givenABroadcastMessageWithExternalBlob_whenBroadcasting_thenApiShouldBeCalledWithBlob() = runTest {
         val dataBlob = EncryptedMessageBlob(byteArrayOf(0x42, 0x13, 0x69))
         val messageEnvelope = MessageEnvelope(TEST_CLIENT_ID, listOf(), dataBlob)
-        val timestamp = TEST_DATETIME
 
         val (arrangement, messageRepository) = Arrangement()
-            .withSuccessfulMessageBroadcasting(timestamp)
+            .withSuccessfulMessageBroadcasting(TEST_DATETIME)
             .arrange()
 
         messageRepository.broadcastEnvelope(messageEnvelope, BroadcastMessageOption.IgnoreSome(listOf()))
             .shouldSucceed {
-                assertSame(it, TEST_DATETIME)
+                assertEquals(TEST_DATETIME, it)
             }
 
         with(arrangement) {
@@ -311,7 +316,7 @@ class MessageRepositoryTest {
 
         coVerify {
             arrangement.messageApi.qualifiedBroadcastMessage(
-                matches { it.recipients.isEmpty() && it.messageOption == MessageApi.QualifiedMessageOption.IgnoreSome(listOf()) }
+                matches { it.recipients.isEmpty() && it.messageOption == QualifiedMessageOption.IgnoreSome(listOf()) }
             )
         }.wasInvoked()
     }
@@ -362,7 +367,7 @@ class MessageRepositoryTest {
             arrangement.messageApi.qualifiedSendMessage(
                 matches {
                     val messageOption = it.messageOption
-                    assertIs<MessageApi.QualifiedMessageOption.ReportSome>(messageOption)
+                    assertIs<QualifiedMessageOption.ReportSome>(messageOption)
                     val expected = recipient.map { recipient -> recipient.id.toApi() }
                     assertContentEquals(expected, messageOption.userIDs)
                     true
@@ -556,6 +561,42 @@ class MessageRepositoryTest {
         }.wasInvoked(exactly = once)
     }
 
+    @Test
+    fun givenSuccessOnNotificationMessage_whenGettingNotificationMessage_thenTheDAOShouldBeCalled() = runTest {
+        // given
+        val (arrangement, messageRepository) = Arrangement()
+            .withNotificationMessage(listOf())
+            .arrange()
+
+        // when
+        val result = messageRepository.getNotificationMessage()
+
+        // then
+        result.shouldSucceed { it.isEmpty() }
+        coVerify { arrangement.messageDAO.getNotificationMessage() }
+            .wasInvoked(exactly = once)
+
+    }
+
+    @Test
+    fun givenSuccessOnNotificationMessage2_whenGettingNotificationMessage_thenProperNotificationReturned() = runTest {
+        // given
+        val (arrangement, messageRepository) = Arrangement()
+            .withNotificationMessage(listOf(NOTIFICATION_ENTITY))
+            .withMappedEntitiesToLocalNotifications(NOTIFICATION_MESSAGE)
+            .arrange()
+
+        // when
+        val result = messageRepository.getNotificationMessage()
+
+        // then
+        result.shouldSucceed {
+            assertEquals(1, it.size)
+            assertEquals(NOTIFICATION_CONVERSATION, it.first())
+        }
+
+    }
+
     private class Arrangement {
 
         @Mock
@@ -580,7 +621,12 @@ class MessageRepositoryTest {
                 messageDAO.getMessagesByConversationAndVisibility(any(), any(), any(), any())
             }.returns(flowOf(messages))
             coEvery {
-                messageDAO.getPendingToConfirmMessagesByConversationAndVisibilityAfterDate(any(), any())
+                messageDAO.getMessageIdsThatExpectReadConfirmationWithinDates(
+                    any(),
+                    any(),
+                    any(),
+                    any()
+                )
             }.returns(messages.map { it.id })
             return this
         }
@@ -613,16 +659,20 @@ class MessageRepositoryTest {
             return this
         }
 
-        suspend fun withSuccessfulMessageDelivery(timestamp: String): Arrangement {
+        suspend fun withSuccessfulMessageDelivery(dateTime: Instant) = apply {
             coEvery { messageApi.qualifiedSendMessage(any(), any()) }
                 .returns(
                     NetworkResponse.Success(
-                        QualifiedSendMessageResponse.MessageSent(timestamp, mapOf(), mapOf(), mapOf()),
+                        QualifiedSendMessageResponse.MessageSent(dateTime, mapOf(), mapOf(), mapOf()),
                         emptyMap(),
                         201
                     )
                 )
-            return this
+        }
+
+        fun withMappedEntitiesToLocalNotifications(message: LocalNotificationMessage) = apply {
+            every { messageMapper.fromMessageToLocalNotificationMessage(any<NotificationMessageEntity>()) }
+                .returns(message)
         }
 
         fun withFailedToSendMlsMapping(failedToSend: List<UserId>) = apply {
@@ -657,11 +707,11 @@ class MessageRepositoryTest {
             return this
         }
 
-        suspend fun withSuccessfulMessageBroadcasting(timestamp: String): Arrangement {
+        suspend fun withSuccessfulMessageBroadcasting(dateTime: Instant): Arrangement {
             coEvery { messageApi.qualifiedBroadcastMessage(any()) }
                 .returns(
                     NetworkResponse.Success(
-                        QualifiedSendMessageResponse.MessageSent(timestamp, mapOf(), mapOf(), mapOf()),
+                        QualifiedSendMessageResponse.MessageSent(dateTime, mapOf(), mapOf(), mapOf()),
                         emptyMap(),
                         201
                     )
@@ -718,6 +768,10 @@ class MessageRepositoryTest {
             }.returns(result)
         }
 
+        suspend fun withNotificationMessage(notificationEntities: List<NotificationMessageEntity>) = apply {
+            coEvery { messageDAO.getNotificationMessage() }.returns(notificationEntities)
+        }
+
         fun arrange() = this to MessageDataSource(
             messageApi = messageApi,
             mlsMessageApi = mlsMessageApi,
@@ -756,8 +810,7 @@ class MessageRepositoryTest {
         val TEST_CLIENT_ID = ClientId("clientId")
         val TEST_USER_ID = UserId("userId", "domain")
         val TEST_CONTENT = MessageContent.Text("Ciao!")
-        const val TEST_DATETIME = "2022-04-21T20:56:22.393Z"
-        val INSTANT_TEST_DATETIME = Instant.parse(TEST_DATETIME)
+        val TEST_DATETIME = Instant.parse("2022-04-21T20:56:22.393Z")
         val TEST_MESSAGE = Message.Regular(
             id = "uid",
             content = TEST_CONTENT,
@@ -770,7 +823,7 @@ class MessageRepositoryTest {
             isSelfMessage = false
         )
         val TEST_ASSET_MESSAGE = AssetMessage(
-            time = INSTANT_TEST_DATETIME,
+            time = TEST_DATETIME,
             conversationId = TEST_CONVERSATION_ID,
             username = "username",
             messageId = "messageId",
@@ -788,6 +841,38 @@ class MessageRepositoryTest {
                     TEST_CLIENT_ID.value, ClientId("clientId2").value
                 )
             )
+        )
+
+        val NOTIFICATION_MESSAGE = LocalNotificationMessage.Text(
+            messageId = "message_id",
+            author = LocalNotificationMessageAuthor("Sender", null),
+            time = Instant.DISTANT_PAST,
+            text = "Some text in message",
+            isQuotingSelfUser = false
+        )
+
+        val NOTIFICATION_CONVERSATION = LocalNotification.Conversation(
+            TestConversation.ID, "", listOf(NOTIFICATION_MESSAGE), true, true
+        )
+
+        val NOTIFICATION_ENTITY = NotificationMessageEntity(
+            id = "message_id",
+            contentType = MessageEntity.ContentType.TEXT,
+            isSelfDelete = false,
+            senderUserId = TestUser.ENTITY_ID,
+            senderImage = null,
+            date = Instant.DISTANT_PAST,
+            senderName = "Sender",
+            text = "Some text in message",
+            assetMimeType = null,
+            isQuotingSelf = false,
+            conversationId = TestConversation.ENTITY_ID,
+            conversationName = null,
+            mutedStatus = ConversationEntity.MutedStatus.ALL_ALLOWED,
+            conversationType = ConversationEntity.Type.ONE_ON_ONE,
+            degradedConversationNotified = true,
+            legalHoldStatus = ConversationEntity.LegalHoldStatus.ENABLED,
+            legalHoldStatusChangeNotified = true
         )
     }
 }

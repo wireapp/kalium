@@ -20,10 +20,10 @@ package com.wire.kalium.api.v0.user.register
 
 import com.wire.kalium.api.ApiTest
 import com.wire.kalium.api.json.model.ErrorResponseJson
-import com.wire.kalium.model.ActivationRequestJson
-import com.wire.kalium.model.RegisterAccountJson
-import com.wire.kalium.model.RequestActivationCodeJson
-import com.wire.kalium.model.UserDTOJson
+import com.wire.kalium.mocks.responses.ActivationRequestJson
+import com.wire.kalium.mocks.responses.RegisterAccountJson
+import com.wire.kalium.mocks.responses.RequestActivationCodeJson
+import com.wire.kalium.mocks.responses.UserDTOJson
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Ignore

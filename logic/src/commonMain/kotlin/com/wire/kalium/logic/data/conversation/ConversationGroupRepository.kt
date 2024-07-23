@@ -43,18 +43,19 @@ import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.sync.receiver.conversation.ConversationMessageTimerEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberJoinEventHandler
 import com.wire.kalium.logic.sync.receiver.conversation.MemberLeaveEventHandler
+import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapNullableFlowStorageRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.AddConversationMembersRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.AddServiceRequest
+import com.wire.kalium.network.api.authenticated.conversation.AddConversationMembersRequest
+import com.wire.kalium.network.api.authenticated.conversation.AddServiceRequest
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberAddedResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationMemberRemovedResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.ConversationResponse
-import com.wire.kalium.network.api.base.authenticated.conversation.model.ConversationCodeInfo
-import com.wire.kalium.network.api.base.authenticated.notification.EventContentDTO
-import com.wire.kalium.network.api.base.model.ServiceAddedResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberAddedResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberRemovedResponse
+import com.wire.kalium.network.api.authenticated.conversation.ConversationResponse
+import com.wire.kalium.network.api.authenticated.conversation.model.ConversationCodeInfo
+import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
+import com.wire.kalium.network.api.model.ServiceAddedResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.exceptions.isConversationHasNoCode
 import com.wire.kalium.persistence.dao.conversation.ConversationDAO
@@ -106,6 +107,7 @@ internal class ConversationGroupRepositoryImpl(
     private val newGroupConversationSystemMessagesCreator: Lazy<NewGroupConversationSystemMessagesCreator>,
     private val selfUserId: UserId,
     private val teamIdProvider: SelfTeamIdProvider,
+    private val legalHoldHandler: LegalHoldHandler,
     private val conversationMapper: ConversationMapper = MapperProvider.conversationMapper(selfUserId),
     private val eventMapper: EventMapper = MapperProvider.eventMapper(selfUserId),
     private val protocolInfoMapper: ProtocolInfoMapper = MapperProvider.protocolInfoMapper(),
@@ -131,7 +133,7 @@ internal class ConversationGroupRepositoryImpl(
             }
 
             when (apiResult) {
-                is Either.Left -> handleCreateConverstionFailure(
+                is Either.Left -> handleCreateConversationFailure(
                     apiResult = apiResult,
                     usersList = usersList,
                     name = name,
@@ -195,6 +197,8 @@ internal class ConversationGroupRepositoryImpl(
                     conversationEntity.id.toModel()
                 )
             }
+        }.onSuccess {
+            legalHoldHandler.handleConversationMembersChanged(conversationEntity.id.toModel())
         }.flatMap {
             wrapStorageRequest {
                 conversationDAO.getConversationByQualifiedID(conversationEntity.id)?.let {
@@ -204,7 +208,7 @@ internal class ConversationGroupRepositoryImpl(
         }
     }
 
-    private suspend fun handleCreateConverstionFailure(
+    private suspend fun handleCreateConversationFailure(
         apiResult: Either.Left<NetworkFailure>,
         usersList: List<UserId>,
         name: String?,
@@ -649,13 +653,23 @@ internal class ConversationGroupRepositoryImpl(
     }
 
     /**
-     * Filter the initial [userIdList] into valid and invalid users where valid users are only team members.
+     * Filter the initial [userIdList] into valid and invalid users where valid users are only team members and people with consent.
      */
     private suspend fun fetchAndExtractValidUsersForRetryableLegalHoldError(
         userIdList: List<UserId>
     ): Either<CoreFailure, ValidToInvalidUsers> =
-        userRepository.fetchUsersLegalHoldConsent(userIdList.toSet()).map {
-            ValidToInvalidUsers(it.usersWithConsent, it.usersWithoutConsent + it.usersFailed, FailedToAdd.Type.LegalHold)
+        teamIdProvider().flatMap { selfTeamId ->
+            userRepository.fetchUsersLegalHoldConsent(userIdList.toSet()).map {
+                it.usersWithConsent
+                    .partition { (_, teamId) -> teamId == selfTeamId }
+                    .let { (validUsers, membersFromOtherTeam) ->
+                        ValidToInvalidUsers(
+                            validUsers = validUsers.map { (userId, _) -> userId },
+                            failedUsers = membersFromOtherTeam.map { (userId, _) -> userId } + it.usersWithoutConsent + it.usersFailed,
+                            failType = FailedToAdd.Type.LegalHold
+                        )
+                    }
+            }
         }
 
     /**

@@ -28,6 +28,7 @@ import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.every
 import io.mockative.mock
+import kotlinx.coroutines.flow.flowOf
 
 internal interface UserConfigRepositoryArrangement {
     val userConfigRepository: UserConfigRepository
@@ -41,6 +42,12 @@ internal interface UserConfigRepositoryArrangement {
     suspend fun withGetMigrationConfigurationReturning(result: Either<StorageFailure, MLSMigrationModel>)
     suspend fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>)
     suspend fun withGetSupportedCipherSuitesReturning(result: Either<StorageFailure, SupportedCipherSuite>)
+    suspend fun withSetTrackingIdentifier()
+    suspend fun withGetTrackingIdentifier(result: String?)
+    suspend fun withSetPreviousTrackingIdentifier()
+    suspend fun withGetPreviousTrackingIdentifier(result: String?)
+    suspend fun withObserveTrackingIdentifier(result: Either<StorageFailure, String>)
+    suspend fun withDeletePreviousTrackingIdentifier()
 }
 
 internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrangement {
@@ -93,5 +100,29 @@ internal class UserConfigRepositoryArrangementImpl : UserConfigRepositoryArrange
 
     override suspend fun withSetSupportedCipherSuite(result: Either<StorageFailure, Unit>) {
         coEvery { userConfigRepository.setSupportedCipherSuite(any()) }.returns(result)
+    }
+
+    override suspend fun withSetTrackingIdentifier() {
+        coEvery { userConfigRepository.setCurrentTrackingIdentifier(any()) }.returns(Unit)
+    }
+
+    override suspend fun withGetTrackingIdentifier(result: String?) {
+        coEvery { userConfigRepository.getCurrentTrackingIdentifier() }.returns(result)
+    }
+
+    override suspend fun withSetPreviousTrackingIdentifier() {
+        coEvery { userConfigRepository.setPreviousTrackingIdentifier(any()) }.returns(Unit)
+    }
+
+    override suspend fun withGetPreviousTrackingIdentifier(result: String?) {
+        coEvery { userConfigRepository.getPreviousTrackingIdentifier() }.returns(result)
+    }
+
+    override suspend fun withObserveTrackingIdentifier(result: Either<StorageFailure, String>) {
+        coEvery { userConfigRepository.observeCurrentTrackingIdentifier() }.returns(flowOf(result))
+    }
+
+    override suspend fun withDeletePreviousTrackingIdentifier() {
+        coEvery { userConfigRepository.deletePreviousTrackingIdentifier() }.returns(Unit)
     }
 }

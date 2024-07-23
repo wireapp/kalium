@@ -44,9 +44,8 @@ import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.logic.util.thenReturnSequentially
-import com.wire.kalium.util.DateTimeUtil.minusMilliseconds
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import com.wire.kalium.util.KaliumDispatcher
+import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -68,6 +67,7 @@ import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.time.Duration.Companion.milliseconds
 
 class LegalHoldHandlerTest {
 
@@ -435,7 +435,7 @@ class LegalHoldHandlerTest {
         coVerify {
             arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(
                 eq(TestConversation.CONVERSATION.id),
-                eq(minusMilliseconds(message.timestampIso, 1))
+                eq(message.instant - 1.milliseconds)
             )
         }.wasInvoked()
     }
@@ -495,12 +495,12 @@ class LegalHoldHandlerTest {
         // given
         val conversationId = TestConversation.CONVERSATION.id
         val failure = CoreFailure.Unknown(null)
-        val timestampIso = "2022-03-30T15:36:00.000Z"
+        val dateTime = Instant.UNIX_FIRST_DATE
         val handleFailure: () -> Either<CoreFailure, Unit> = { Either.Left(failure) }
-        val (arrangement, handler) = Arrangement()
+        val (_, handler) = Arrangement()
             .arrange()
         // when
-        val result = handler.handleMessageSendFailure(conversationId, timestampIso, handleFailure)
+        val result = handler.handleMessageSendFailure(conversationId, dateTime, handleFailure)
         // then
         result.shouldFail {
             assertEquals(failure, it)
@@ -511,7 +511,7 @@ class LegalHoldHandlerTest {
     fun givenLegalHoldEnabledForConversation_whenHandlingMessageSendFailure_thenHandleItProperlyAndReturnTrue() = runTest {
         // given
         val conversationId = TestConversation.CONVERSATION.id
-        val timestampIso = "2022-03-30T15:36:00.000Z"
+        val dateTime = Instant.UNIX_FIRST_DATE
         val handleFailure: () -> Either<CoreFailure, Unit> = { Either.Right(Unit) }
         val membersHavingLegalHoldClientBefore = emptyList<UserId>()
         val membersHavingLegalHoldClientAfter = listOf(TestUser.OTHER_USER_ID)
@@ -521,7 +521,7 @@ class LegalHoldHandlerTest {
             .withUpdateLegalHoldStatusSuccess(true)
             .arrange()
         // when
-        val result = handler.handleMessageSendFailure(conversationId, timestampIso, handleFailure)
+        val result = handler.handleMessageSendFailure(conversationId, dateTime, handleFailure)
         // then
         result.shouldSucceed {
             assertEquals(true, it)
@@ -535,7 +535,7 @@ class LegalHoldHandlerTest {
     fun givenLegalHoldDisabledForConversation_whenHandlingMessageSendFailure_thenHandleItProperlyAndReturnFalse() = runTest {
         // given
         val conversationId = TestConversation.CONVERSATION.id
-        val timestampIso = "2022-03-30T15:36:00.000Z"
+        val dateTime = Instant.UNIX_FIRST_DATE
         val handleFailure: () -> Either<CoreFailure, Unit> = { Either.Right(Unit) }
         val membersHavingLegalHoldClientBefore = listOf(TestUser.OTHER_USER_ID)
         val membersHavingLegalHoldClientAfter = emptyList<UserId>()
@@ -545,7 +545,7 @@ class LegalHoldHandlerTest {
             .withUpdateLegalHoldStatusSuccess(true)
             .arrange()
         // when
-        val result = handler.handleMessageSendFailure(conversationId, timestampIso, handleFailure)
+        val result = handler.handleMessageSendFailure(conversationId, dateTime, handleFailure)
         // then
         result.shouldSucceed {
             assertEquals(false, it)
@@ -559,7 +559,7 @@ class LegalHoldHandlerTest {
     fun givenLegalHoldChangedForConversation_whenHandlingMessageSendFailure_thenUseTimestampOfMessageMinus1msForSystemMessage() = runTest {
         // given
         val conversationId = TestConversation.CONVERSATION.id
-        val timestampIso = "2022-03-30T15:36:00.000Z"
+        val dateTime = Instant.UNIX_FIRST_DATE
         val handleFailure: () -> Either<CoreFailure, Unit> = { Either.Right(Unit) }
         val membersHavingLegalHoldClientBefore = emptyList<UserId>()
         val membersHavingLegalHoldClientAfter = listOf(TestUser.OTHER_USER_ID)
@@ -569,12 +569,12 @@ class LegalHoldHandlerTest {
             .withUpdateLegalHoldStatusSuccess(true)
             .arrange()
         // when
-        val result = handler.handleMessageSendFailure(conversationId, timestampIso, handleFailure)
+        handler.handleMessageSendFailure(conversationId, dateTime, handleFailure)
         // then
         coVerify {
             arrangement.legalHoldSystemMessagesHandler.handleEnabledForConversation(
                 eq(conversationId),
-                eq(minusMilliseconds(timestampIso, 1))
+                eq(dateTime - 1.milliseconds)
             )
         }.wasInvoked()
     }
@@ -583,7 +583,7 @@ class LegalHoldHandlerTest {
     fun givenLegalHoldNotChangedForConversation_whenHandlingMessageSendFailure_thenHandleItProperlyAndReturnFalse() = runTest {
         // given
         val conversationId = TestConversation.CONVERSATION.id
-        val timestampIso = "2022-03-30T15:36:00.000Z"
+        val dateTime = Instant.UNIX_FIRST_DATE
         val handleFailure: () -> Either<CoreFailure, Unit> = { Either.Right(Unit) }
         val membersHavingLegalHoldClientBefore = listOf(TestUser.OTHER_USER_ID)
         val membersHavingLegalHoldClientAfter = listOf(TestUser.OTHER_USER_ID)
@@ -593,7 +593,7 @@ class LegalHoldHandlerTest {
             .withUpdateLegalHoldStatusSuccess(false)
             .arrange()
         // when
-        val result = handler.handleMessageSendFailure(conversationId, timestampIso, handleFailure)
+        val result = handler.handleMessageSendFailure(conversationId, dateTime, handleFailure)
         // then
         result.shouldSucceed {
             assertEquals(false, it)
@@ -610,7 +610,7 @@ class LegalHoldHandlerTest {
     fun givenLegalHoldChangedForMembers_whenHandlingMessageSendFailure_thenHandleItProperly() = runTest {
         // given
         val conversationId = TestConversation.CONVERSATION.id
-        val timestampIso = "2022-03-30T15:36:00.000Z"
+        val dateTime = Instant.UNIX_FIRST_DATE
         val handleFailure: () -> Either<CoreFailure, Unit> = { Either.Right(Unit) }
         val membersHavingLegalHoldClientBefore = listOf(TestUser.OTHER_USER_ID)
         val membersHavingLegalHoldClientAfter = listOf(TestUser.OTHER_USER_ID_2)
@@ -620,7 +620,7 @@ class LegalHoldHandlerTest {
             .withUpdateLegalHoldStatusSuccess()
             .arrange()
         // when
-        val result = handler.handleMessageSendFailure(conversationId, timestampIso, handleFailure)
+        val result = handler.handleMessageSendFailure(conversationId, dateTime, handleFailure)
         // then
         result.shouldSucceed()
         coVerify {
@@ -649,6 +649,7 @@ class LegalHoldHandlerTest {
             .withMembersHavingLegalHoldClientSuccess(membersHavingLegalHoldClient)
             .withObserveConversationLegalHoldStatus(conversationLegalHoldStatusBefore)
             .withUpdateLegalHoldStatusSuccess(isChanged = legalHoldStatusForConversationChanged)
+            .withObserveIsUserMember(TestUser.SELF.id, true)
             .arrange()
         // when
         val result = handler.handleConversationMembersChanged(conversationId)
@@ -699,6 +700,29 @@ class LegalHoldHandlerTest {
             handleEnabledForConversationInvoked = false,
             handleDisabledForConversationInvoked = false,
         )
+
+    @Test
+    fun givenSelfUserIsRemovedFromGroup_whenHandlingMembersChanged_thenResetConversationLegalHoldState() = runTest {
+        // given
+        val conversationId = TestConversation.CONVERSATION.id
+        val selfUserId = TestUser.SELF.id
+        val otherUserId = TestUser.OTHER_USER_ID
+        val membersHavingLegalHoldClient = listOf(otherUserId)
+        val conversationLegalHoldStatusBefore = Conversation.LegalHoldStatus.ENABLED
+        val (arrangement, handler) = Arrangement()
+            .withMembersHavingLegalHoldClientSuccess(membersHavingLegalHoldClient)
+            .withObserveConversationLegalHoldStatus(conversationLegalHoldStatusBefore)
+            .withUpdateLegalHoldStatusSuccess(isChanged = false)
+            .withObserveIsUserMember(selfUserId, false)
+            .arrange()
+        // when
+        val result = handler.handleConversationMembersChanged(conversationId)
+        // then
+        result.shouldSucceed()
+        coVerify {
+            arrangement.conversationRepository.updateLegalHoldStatus(eq(conversationId), eq(Conversation.LegalHoldStatus.UNKNOWN))
+        }.wasInvoked(exactly = 1)
+    }
 
     private fun testHandlingNewConnection(
         userLegalHoldStatus: LegalHoldState,
@@ -896,7 +920,7 @@ class LegalHoldHandlerTest {
             coVerify {
                 arrangement.legalHoldSystemMessagesHandler.handleEnabledForUser(any(), any())
             }.wasInvoked()
-    }
+        }
 
     private class Arrangement {
 
@@ -1022,6 +1046,12 @@ class LegalHoldHandlerTest {
                 observeSyncState.invoke()
             }.returns(syncStates)
         }
+
+        suspend fun withObserveIsUserMember(userId: UserId, isMember: Boolean) = apply {
+            coEvery {
+                conversationRepository.observeIsUserMember(any(), eq(userId))
+            }.returns(flowOf(Either.Right(isMember)))
+        }
     }
 
     companion object {
@@ -1040,7 +1070,7 @@ class LegalHoldHandlerTest {
 
         private fun applicationMessage(legalHoldStatus: Conversation.LegalHoldStatus) = MessageUnpackResult.ApplicationMessage(
             conversationId = TestConversation.CONVERSATION.id,
-            timestampIso = Instant.DISTANT_PAST.toIsoDateTimeString(),
+            instant = Instant.DISTANT_PAST,
             senderUserId = TestUser.SELF.id,
             senderClientId = ClientId("clientID"),
             content = ProtoContent.Readable(
