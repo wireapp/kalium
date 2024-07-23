@@ -25,7 +25,7 @@ import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.authenticated.featureConfigs.AppLockConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
-import com.wire.kalium.network.api.authenticated.featureConfigs.ConferenceCallingConfig
+import com.wire.kalium.network.api.authenticated.featureConfigs.ConferenceCallingConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.E2EIConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
@@ -146,7 +146,7 @@ class FeatureConfigRepositoryTest {
                 AppLockConfigDTO(true, 0), FeatureFlagStatusDTO.ENABLED
             ),
             FeatureConfigData.ClassifiedDomains(ClassifiedDomainsConfigDTO(listOf()), FeatureFlagStatusDTO.ENABLED),
-            FeatureConfigData.ConferenceCalling(FeatureFlagStatusDTO.ENABLED, ConferenceCallingConfig(false)),
+            FeatureConfigData.ConferenceCalling(FeatureFlagStatusDTO.ENABLED, ConferenceCallingConfigDTO(false)),
             FeatureConfigData.ConversationGuestLinks(FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.DigitalSignatures(FeatureFlagStatusDTO.ENABLED),
             FeatureConfigData.FileSharing(FeatureFlagStatusDTO.ENABLED),
