@@ -17,7 +17,9 @@
  */
 package com.wire.kalium.logic.util.arrangement.repository
 
+import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.client.Client
 import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.client.OtherUserClient
 import com.wire.kalium.logic.data.conversation.ClientId
@@ -58,6 +60,8 @@ internal interface ClientRepositoryArrangement {
         result: Either<StorageFailure, Unit>,
         clients: Matcher<List<InsertClientParam>> = AnyMatcher(valueOf())
     )
+
+    suspend fun withSelfClientsResult(result: Either<NetworkFailure, List<Client>>)
 }
 
 internal open class ClientRepositoryArrangementImpl : ClientRepositoryArrangement {
@@ -111,5 +115,9 @@ internal open class ClientRepositoryArrangementImpl : ClientRepositoryArrangemen
         coEvery {
             clientRepository.storeUserClientListAndRemoveRedundantClients(any())
         }.returns(result)
+    }
+
+    override suspend fun withSelfClientsResult(result: Either<NetworkFailure, List<Client>>) {
+        coEvery { clientRepository.selfListOfClients() }.returns(result)
     }
 }
