@@ -247,7 +247,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
 
     @Test
     fun givenBackupHasGroupConversationWithMembersAndUserNone_whenRestoringBackup_thenThoseConversationAreRestoredButMembersNot() =
-        runTest {
+        runTest(dispatcher) {
             // given
             val membersPerGroup = 10
             val backupConversations = backupDatabaseDataGenerator.generateAndInsertGroupConversations(
@@ -270,7 +270,7 @@ class DatabaseImporterTest : BaseDatabaseTest() {
 
     @Test
     fun givenBackupHasConversationWithMembersAndUseWithSomeOfThoseMembers_whenRestoringBackup_thenTheOverlappingMembersAreNotRestored() =
-        runTest {
+        runTest(dispatcher) {
             // given
             val overlappingBackupMembers = backupDatabaseDataGenerator.generateMembers(5)
             val backupConversationAmount = 5
