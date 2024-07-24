@@ -268,7 +268,7 @@ sealed class ConversationRepository {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
                         if (text != null) {
                             setMessageTimer(instance, conversationId, messageTimer)
-                            if (legalHoldStatus != null && legalHoldStatus > 0) {
+                            if (legalHoldStatus != null && legalHoldStatus == 2) {
                                 log.info("Instance ${instance.instanceId}: Approve legal hold request and don't block sending")
                                 approveLegalHoldRequest(instance.password)
                                 conversations.setNotifiedAboutConversationUnderLegalHold(conversationId)
