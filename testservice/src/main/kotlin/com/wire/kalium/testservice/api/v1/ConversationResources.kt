@@ -429,7 +429,8 @@ class ConversationResources(private val instanceService: InstanceService) {
                     mentions,
                     messageTimer,
                     quotedMessageId,
-                    buttons
+                    buttons,
+                    legalHoldStatus
                 )
             }
         }
