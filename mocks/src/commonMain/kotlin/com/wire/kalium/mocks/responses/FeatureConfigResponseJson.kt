@@ -19,6 +19,7 @@ package com.wire.kalium.mocks.responses
 
 import com.wire.kalium.network.api.authenticated.featureConfigs.AppLockConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
+import com.wire.kalium.network.api.authenticated.featureConfigs.ConferenceCallingConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.E2EIConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigResponse
@@ -46,7 +47,7 @@ object FeatureConfigResponseJson {
             ClassifiedDomainsConfigDTO(listOf("wire.com")),
             FeatureFlagStatusDTO.ENABLED
         ),
-        FeatureConfigData.ConferenceCalling(FeatureFlagStatusDTO.ENABLED),
+        FeatureConfigData.ConferenceCalling(FeatureFlagStatusDTO.ENABLED, ConferenceCallingConfigDTO(false)),
         FeatureConfigData.ConversationGuestLinks(FeatureFlagStatusDTO.ENABLED),
         FeatureConfigData.DigitalSignatures(FeatureFlagStatusDTO.ENABLED),
         FeatureConfigData.FileSharing(FeatureFlagStatusDTO.ENABLED),
