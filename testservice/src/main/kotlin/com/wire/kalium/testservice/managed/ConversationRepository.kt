@@ -260,13 +260,19 @@ sealed class ConversationRepository {
             mentions: List<MessageMention>,
             messageTimer: Int?,
             quotedMessageId: String?,
-            buttons: List<String> = listOf()
+            buttons: List<String> = listOf(),
+            legalHoldStatus: Int?
         ): Response = instance.coreLogic.globalScope {
             return when (val session = session.currentSession()) {
                 is CurrentSessionResult.Success -> {
                     instance.coreLogic.sessionScope(session.accountInfo.userId) {
                         if (text != null) {
                             setMessageTimer(instance, conversationId, messageTimer)
+                            if (legalHoldStatus != null && legalHoldStatus > 0) {
+                                log.info("Instance ${instance.instanceId}: Approve legal hold request and don't block sending")
+                                approveLegalHoldRequest(instance.password)
+                                conversations.setNotifiedAboutConversationUnderLegalHold(conversationId)
+                            }
                             log.info("Instance ${instance.instanceId}: Send text message '$text'")
                             val result = if (buttons.isEmpty()) {
                                 val previews = mapLinkPreviews(linkPreviews)
