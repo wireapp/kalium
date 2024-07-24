@@ -19,10 +19,9 @@
 package com.wire.kalium.model
 
 import com.wire.kalium.api.json.ValidJsonProvider
-import com.wire.kalium.network.api.authenticated.featureConfigs.ConferenceCallingConfigDTO
-import com.wire.kalium.network.api.base.authenticated.conversation.ConvProtocol
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.AppLockConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.ConferenceCallingConfigDTO
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.AppLock
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.ClassifiedDomains

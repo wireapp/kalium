@@ -47,6 +47,7 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.classOf
 import io.mockative.eq
+import io.mockative.every
 import io.mockative.given
 import io.mockative.matching
 import io.mockative.mock
