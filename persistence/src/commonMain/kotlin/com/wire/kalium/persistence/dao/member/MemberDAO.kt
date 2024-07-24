@@ -21,6 +21,7 @@ import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.ConversationsQueries
 import com.wire.kalium.persistence.MembersQueries
 import com.wire.kalium.persistence.UsersQueries
+import com.wire.kalium.persistence.cache.FlowCache
 import com.wire.kalium.persistence.dao.ConversationIDEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserIDEntity
@@ -68,6 +69,7 @@ interface MemberDAO {
 
 @Suppress("TooManyFunctions")
 internal class MemberDAOImpl internal constructor(
+    private val membersCache: FlowCache<ConversationIDEntity, List<MemberEntity>>,
     private val memberQueries: MembersQueries,
     private val userQueries: UsersQueries,
     private val conversationsQueries: ConversationsQueries,
@@ -140,8 +142,10 @@ internal class MemberDAOImpl internal constructor(
             }
         }
 
-    override suspend fun observeConversationMembers(qualifiedID: QualifiedIDEntity): Flow<List<MemberEntity>> {
-        return memberQueries.selectAllMembersByConversation(qualifiedID)
+    override suspend fun observeConversationMembers(
+        qualifiedID: QualifiedIDEntity
+    ): Flow<List<MemberEntity>> = membersCache.get(qualifiedID) {
+        memberQueries.selectAllMembersByConversation(qualifiedID)
             .asFlow()
             .flowOn(coroutineContext)
             .mapToList()
