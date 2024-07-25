@@ -26,7 +26,9 @@ import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.isRight
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.every
+import io.mockative.anything
+import io.mockative.eq
+import io.mockative.given
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -44,13 +46,15 @@ class ConferenceCallingConfigHandlerTest {
 
         val result = conferenceCallingConfigHandler.handle(conferenceCallingModel)
 
-        verify {
-            arrangement.userConfigRepository.setConferenceCallingEnabled(conferenceCallingModel.status.toBoolean())
-        }.wasInvoked(exactly = once)
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setConferenceCallingEnabled)
+            .with(eq(conferenceCallingModel.status.toBoolean()))
+            .wasInvoked(once)
 
-        verify {
-            arrangement.userConfigRepository.setUseSFTForOneOnOneCalls(any())
-        }.wasNotInvoked()
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setUseSFTForOneOnOneCalls)
+            .with(any())
+            .wasNotInvoked()
 
         assertTrue { result.isLeft() }
     }
@@ -65,13 +69,15 @@ class ConferenceCallingConfigHandlerTest {
 
         val result = conferenceCallingConfigHandler.handle(conferenceCallingModel)
 
-        verify {
-            arrangement.userConfigRepository.setConferenceCallingEnabled(conferenceCallingModel.status.toBoolean())
-        }.wasInvoked(exactly = once)
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setConferenceCallingEnabled)
+            .with(eq(conferenceCallingModel.status.toBoolean()))
+            .wasInvoked(once)
 
-        verify {
-            arrangement.userConfigRepository.setUseSFTForOneOnOneCalls(any())
-        }.wasInvoked(exactly = once)
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setUseSFTForOneOnOneCalls)
+            .with(any())
+            .wasInvoked(once)
 
         assertTrue { result.isLeft() }
     }
@@ -86,13 +92,15 @@ class ConferenceCallingConfigHandlerTest {
 
         val result = conferenceCallingConfigHandler.handle(conferenceCallingModel)
 
-        verify {
-            arrangement.userConfigRepository.setConferenceCallingEnabled(conferenceCallingModel.status.toBoolean())
-        }.wasInvoked(exactly = once)
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setConferenceCallingEnabled)
+            .with(eq(conferenceCallingModel.status.toBoolean()))
+            .wasInvoked(once)
 
-        verify {
-            arrangement.userConfigRepository.setUseSFTForOneOnOneCalls(any())
-        }.wasInvoked(exactly = once)
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setUseSFTForOneOnOneCalls)
+            .with(any())
+            .wasInvoked(once)
 
         assertTrue { result.isRight() }
     }
@@ -109,33 +117,38 @@ class ConferenceCallingConfigHandlerTest {
         }
 
         init {
-            every {
-                userConfigRepository.setAppLockStatus(any(), any(), any())
-            }.returns(Either.Right(Unit))
+            given(userConfigRepository)
+                .function(userConfigRepository::setAppLockStatus)
+                .whenInvokedWith(anything(), anything(), anything())
+                .thenReturn(Either.Right(Unit))
         }
 
         fun withSetConferenceCallingEnabledFailure() = apply {
-            every {
-                userConfigRepository.setConferenceCallingEnabled(any())
-            }.returns(Either.Left(StorageFailure.DataNotFound))
+            given(userConfigRepository)
+                .function(userConfigRepository::setConferenceCallingEnabled)
+                .whenInvokedWith(anything())
+                .thenReturn(Either.Left(StorageFailure.DataNotFound))
         }
 
         fun withSetConferenceCallingEnabledSuccess() = apply {
-            every {
-                userConfigRepository.setConferenceCallingEnabled(any())
-            }.returns(Either.Right(Unit))
+            given(userConfigRepository)
+                .function(userConfigRepository::setConferenceCallingEnabled)
+                .whenInvokedWith(anything())
+                .thenReturn(Either.Right(Unit))
         }
 
         fun withSetUseSFTForOneOnOneCallsFailure() = apply {
-            every {
-                userConfigRepository.setUseSFTForOneOnOneCalls(any())
-            }.returns(Either.Left(StorageFailure.DataNotFound))
+            given(userConfigRepository)
+                .function(userConfigRepository::setUseSFTForOneOnOneCalls)
+                .whenInvokedWith(anything())
+                .thenReturn(Either.Left(StorageFailure.DataNotFound))
         }
 
         fun withSetUseSFTForOneOnOneCallsSuccess() = apply {
-            every {
-                userConfigRepository.setUseSFTForOneOnOneCalls(any())
-            }.returns(Either.Right(Unit))
+            given(userConfigRepository)
+                .function(userConfigRepository::setUseSFTForOneOnOneCalls)
+                .whenInvokedWith(anything())
+                .thenReturn(Either.Right(Unit))
         }
     }
 }
