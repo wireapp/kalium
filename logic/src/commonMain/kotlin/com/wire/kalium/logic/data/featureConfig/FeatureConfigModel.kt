@@ -90,7 +90,8 @@ data class MLSMigrationModel(
 )
 
 data class ConferenceCallingModel(
-    val status: Status
+    val status: Status,
+    val useSFTForOneOnOneCalls: Boolean
 )
 
 data class E2EIModel(

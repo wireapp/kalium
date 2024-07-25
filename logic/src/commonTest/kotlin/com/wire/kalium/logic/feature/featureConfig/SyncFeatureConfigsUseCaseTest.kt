@@ -118,7 +118,7 @@ class SyncFeatureConfigsUseCaseTest {
     fun givenConferenceCallingIsEnabled_whenSyncing_thenItShouldBeStoredAsEnabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(conferenceCallingModel = ConferenceCallingModel(Status.ENABLED))
+                FeatureConfigTest.newModel(conferenceCallingModel = ConferenceCallingModel(Status.ENABLED, false))
             )
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .withGetSupportedProtocolsReturning(null)
@@ -135,7 +135,7 @@ class SyncFeatureConfigsUseCaseTest {
     fun givenConferenceCallingIsDisasbled_whenSyncing_thenItShouldBeStoredAsDisabled() = runTest {
         val (arrangement, syncFeatureConfigsUseCase) = Arrangement()
             .withRemoteFeatureConfigsSucceeding(
-                FeatureConfigTest.newModel(conferenceCallingModel = ConferenceCallingModel(Status.DISABLED))
+                FeatureConfigTest.newModel(conferenceCallingModel = ConferenceCallingModel(Status.DISABLED, false))
             )
             .withGetTeamSettingsSelfDeletionStatusSuccessful()
             .withGetSupportedProtocolsReturning(null)
