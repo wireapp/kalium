@@ -1,8 +1,11 @@
 name: Benchmark Checks
 on:
-  branches: [ develop ]
+  push:
+    branches:
+      - develop
   pull_request:
-    branches: [ develop ]
+    branches:
+      - develop
     types: [ opened, synchronize ]
   workflow_dispatch:
 
