@@ -73,7 +73,7 @@ internal class GetOrCreateOneToOneConversationUseCaseImpl(
                 user = otherUser,
                 invalidateCurrentKnownProtocols = true
             )
-        }.flatMap { conversationId -> conversationRepository.detailsById(conversationId) }
+        }.flatMap { conversationId -> conversationRepository.getConversationById(conversationId) }
 
 }
 

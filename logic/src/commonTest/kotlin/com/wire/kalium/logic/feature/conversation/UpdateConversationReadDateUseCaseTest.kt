@@ -56,7 +56,7 @@ class UpdateConversationReadDateUseCaseTest {
         val persistedLastRead = Clock.System.now()
         val conversationId = TestConversation.CONVERSATION.id
         val (arrangement, updateConversationReadDateUseCase) = arrange {
-            withCachedInfoByIdReturning(
+            withObserveByIdReturning(
                 TestConversation.CONVERSATION.copy(lastReadDate = persistedLastRead)
             )
         }
@@ -80,7 +80,7 @@ class UpdateConversationReadDateUseCaseTest {
         val newLastRead = persistedLastRead + 1.seconds
         val conversationId = TestConversation.CONVERSATION.id
         val (arrangement, updateConversationReadDateUseCase) = arrange {
-            withCachedInfoByIdReturning(
+            withObserveByIdReturning(
                 TestConversation.CONVERSATION.copy(lastReadDate = persistedLastRead)
             )
         }
@@ -98,7 +98,7 @@ class UpdateConversationReadDateUseCaseTest {
         val newLastRead = persistedLastRead + 1.seconds
         val conversationId = TestConversation.CONVERSATION.id
         val (arrangement, updateConversationReadDateUseCase) = arrange {
-            withCachedInfoByIdReturning(
+            withObserveByIdReturning(
                 TestConversation.CONVERSATION.copy(lastReadDate = persistedLastRead)
             )
         }
@@ -116,7 +116,7 @@ class UpdateConversationReadDateUseCaseTest {
         val newLastRead = persistedLastRead + 1.seconds
         val conversationId = TestConversation.CONVERSATION.id
         val (arrangement, updateConversationReadDateUseCase) = arrange {
-            withCachedInfoByIdReturning(
+            withObserveByIdReturning(
                 TestConversation.CONVERSATION.copy(lastReadDate = persistedLastRead)
             )
         }
