@@ -22,3 +22,8 @@ enum class CertificateStatus {
     EXPIRED,
     VALID
 }
+
+enum class UserVerificationStatus {
+    Verified,
+    NotVerified
+}
