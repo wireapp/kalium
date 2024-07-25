@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.scenario
+package com.wire.kalium.logic.feature.call.scenario
 
 import com.wire.kalium.calling.CallClosedReason
 import com.wire.kalium.calling.types.Uint32_t
