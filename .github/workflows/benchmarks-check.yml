@@ -72,7 +72,6 @@ jobs:
           --file ${{ steps.path.outputs.report_full_path }}
 
       - name: Run Bencher on base branch
-        uses: bencherdev/bencher@v0.4.17
         if: github.event_name == 'push' && github.ref_name == 'develop'
         run: |
           bencher run \
