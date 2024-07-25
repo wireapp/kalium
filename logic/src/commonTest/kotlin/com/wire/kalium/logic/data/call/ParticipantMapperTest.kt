@@ -55,11 +55,11 @@ class ParticipantMapperTest {
 
     @Test
     fun whenMappingToParticipant_withCallMember_thenReturnParticipant() = runTest {
-        val participantMap = participantMapperImpl.fromCallMemberToParticipant(
+        val participantMap = participantMapperImpl.fromCallMemberToParticipantMinimized(
             member = DUMMY_CALL_MEMBER
         )
 
-        val expectedParticipant = Participant(
+        val expectedParticipant = ParticipantMinimized(
             id = QualifiedID(
                 value = "dummyId",
                 domain = "dummyDomain"

@@ -23,7 +23,13 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.call.Call
+import com.wire.kalium.logic.data.call.CallActiveSpeaker
 import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.logic.data.call.Participant
+import com.wire.kalium.logic.data.call.ParticipantMinimized
+import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.user.OtherUserMinimized
+import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.call.CallEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
@@ -73,7 +79,33 @@ object TestCall {
         callerTeamName = CALLER_TEAM_NAME,
         establishedTime = null,
         callStatus = CallStatus.ESTABLISHED,
-        protocol = Conversation.ProtocolInfo.Proteus
+        protocol = Conversation.ProtocolInfo.Proteus,
+        participants = listOf(
+            ParticipantMinimized(
+                id = QualifiedID("participantId", "participantDomain"),
+                clientId = "abcd",
+                isMuted = true,
+                isCameraOn = false,
+                isSharingScreen = false,
+                hasEstablishedAudio = true
+            )
+        ),
+        activeSpeakers = listOf(
+            CallActiveSpeaker(
+                userId = "participantId@participantDomain",
+                clientId = "abcd",
+                audioLevel = 1,
+                audioLevelNow = 1
+            )
+        ),
+        users = listOf(
+            OtherUserMinimized(
+                id = QualifiedID("participantId", "participantDomain"),
+                name = "User Name",
+                completePicture = null,
+                userType = UserType.ADMIN
+            )
+        )
     )
 
     fun oneOnOneEstablishedCall() = Call(
@@ -88,7 +120,20 @@ object TestCall {
         callerName = CALLER_NAME,
         callerTeamName = CALLER_TEAM_NAME,
         establishedTime = null,
-        participants = emptyList(),
+        participants = listOf(
+            Participant(
+                id = QualifiedID("participantId", "participantDomain"),
+                clientId = "abcd",
+                isMuted = true,
+                isCameraOn = false,
+                isSharingScreen = false,
+                hasEstablishedAudio = true,
+                name = "User Name",
+                avatarAssetId = null,
+                userType = UserType.ADMIN,
+                isSpeaking = true
+            )
+        ),
         maxParticipants = 0
     )
 

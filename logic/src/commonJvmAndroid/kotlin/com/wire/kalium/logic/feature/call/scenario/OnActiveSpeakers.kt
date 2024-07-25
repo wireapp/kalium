@@ -36,9 +36,13 @@ class OnActiveSpeakers(
         val callActiveSpeakers = Json.decodeFromString<CallActiveSpeakers>(data)
         val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(conversationId)
 
+        val onlyActiveSpeakers = callActiveSpeakers.activeSpeakers.filter { activeSpeaker ->
+            activeSpeaker.audioLevel > 0 || activeSpeaker.audioLevelNow > 0
+        }
+
         callRepository.updateParticipantsActiveSpeaker(
             conversationId = conversationIdWithDomain,
-            activeSpeakers = callActiveSpeakers
+            activeSpeakers = onlyActiveSpeakers
         )
     }
 }

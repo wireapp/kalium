@@ -291,6 +291,13 @@ class UserDAOImpl internal constructor(
             }.executeAsOneOrNull()
         }
 
+    override suspend fun getUsersMinimizedByQualifiedIDs(qualifiedIDs: List<QualifiedIDEntity>): List<UserEntityMinimized> =
+        withContext(queriesContext) {
+            userQueries.selectMinimizedByQualifiedId(qualifiedIDs) { qualifiedId, name, completeAssetId, userType ->
+                mapper.toModelMinimized(qualifiedId, name, completeAssetId, userType)
+            }.executeAsList()
+        }
+
     override suspend fun getUsersDetailsByQualifiedIDList(qualifiedIDList: List<QualifiedIDEntity>): List<UserDetailsEntity> =
         withContext(queriesContext) {
             userQueries.selectDetailsByQualifiedId(qualifiedIDList)

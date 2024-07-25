@@ -24,12 +24,9 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallParticipants
 import com.wire.kalium.logic.data.call.CallRepository
-import com.wire.kalium.logic.data.call.Participant
+import com.wire.kalium.logic.data.call.ParticipantMinimized
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
-import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.functional.onFailure
-import com.wire.kalium.logic.functional.onSuccess
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -39,7 +36,6 @@ class OnParticipantListChanged internal constructor(
     private val callRepository: CallRepository,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val participantMapper: ParticipantMapper,
-    private val userRepository: UserRepository,
     private val callingScope: CoroutineScope
 ) : ParticipantChangedHandler {
 
@@ -48,22 +44,11 @@ class OnParticipantListChanged internal constructor(
         val participantsChange = Json.decodeFromString<CallParticipants>(data)
 
         callingScope.launch {
-            val participants = mutableListOf<Participant>()
+            val participants = mutableListOf<ParticipantMinimized>()
             val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationId)
 
             participantsChange.members.map { member ->
-                val participant = participantMapper.fromCallMemberToParticipant(member)
-                val userId = qualifiedIdMapper.fromStringToQualifiedID(member.userId)
-                userRepository.getKnownUserMinimized(userId).onSuccess {
-                    val updatedParticipant = participant.copy(
-                        name = it.name,
-                        avatarAssetId = it.completePicture,
-                        userType = it.userType
-                    )
-                    participants.add(updatedParticipant)
-                }.onFailure {
-                    participants.add(participant)
-                }
+                participants.add(participantMapper.fromCallMemberToParticipantMinimized(member))
             }
 
             callRepository.updateCallParticipants(

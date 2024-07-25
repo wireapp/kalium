@@ -20,6 +20,8 @@ package com.wire.kalium.logic.data.call
 
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.user.OtherUserMinimized
+import com.wire.kalium.logic.data.user.type.UserType
 
 data class CallMetadataProfile(
     val data: Map<ConversationId, CallMetadata>
@@ -37,7 +39,26 @@ data class CallMetadata(
     val callerTeamName: String?,
     val establishedTime: String? = null,
     val callStatus: CallStatus,
-    val participants: List<Participant> = emptyList(),
+    val participants: List<ParticipantMinimized> = emptyList(),
     val maxParticipants: Int = 0, // Was used for tracking
-    val protocol: Conversation.ProtocolInfo
-)
+    val protocol: Conversation.ProtocolInfo,
+    val activeSpeakers: List<CallActiveSpeaker> = listOf(),
+    val users: List<OtherUserMinimized> = listOf()
+) {
+    fun getFullParticipants(): List<Participant> = participants.map { participant ->
+        val user = users.firstOrNull { it.id == participant.id }
+        val isSpeaking = activeSpeakers.any { it.userId == participant.id.toString() && it.clientId == participant.clientId }
+        Participant(
+            id = participant.id,
+            clientId = participant.clientId,
+            name = user?.name,
+            isMuted = participant.isMuted,
+            isCameraOn = participant.isCameraOn,
+            isSpeaking = isSpeaking,
+            isSharingScreen = participant.isSharingScreen,
+            hasEstablishedAudio = participant.hasEstablishedAudio,
+            avatarAssetId = user?.completePicture,
+            userType = user?.userType ?: UserType.NONE
+        )
+    }
+}

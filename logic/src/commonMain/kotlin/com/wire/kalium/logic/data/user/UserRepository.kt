@@ -159,6 +159,7 @@ interface UserRepository {
     suspend fun fetchUsersLegalHoldConsent(userIds: Set<UserId>): Either<CoreFailure, ListUsersLegalHoldConsent>
 
     suspend fun getOneOnOnConversationId(userId: QualifiedID): Either<StorageFailure, ConversationId>
+    suspend fun getUsersMinimizedByQualifiedIDs(userIds: List<UserId>): Either<StorageFailure, List<OtherUserMinimized>>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -418,7 +419,9 @@ internal class UserDataSource internal constructor(
                     kaliumLogger.i("$logPrefix: Succeeded")
                     userDetailsRefreshInstantCache[selfUserId] = DateTimeUtil.currentInstant()
                 })
-            } else { refreshUserDetailsIfNeeded(selfUserId) }
+            } else {
+                refreshUserDetailsIfNeeded(selfUserId)
+            }
         }.filterNotNull().flatMapMerge { encodedValue ->
             val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
             userDAO.observeUserDetailsByQualifiedID(selfUserID)
@@ -476,6 +479,12 @@ internal class UserDataSource internal constructor(
         )?.let {
             userMapper.fromUserEntityToOtherUserMinimized(it)
         }
+    }
+
+    override suspend fun getUsersMinimizedByQualifiedIDs(userIds: List<UserId>) = wrapStorageRequest {
+        userDAO.getUsersMinimizedByQualifiedIDs(
+            qualifiedIDs = userIds.map { it.toDao() }
+        ).map(userMapper::fromUserEntityToOtherUserMinimized)
     }
 
     override suspend fun observeUser(userId: UserId): Flow<User?> =

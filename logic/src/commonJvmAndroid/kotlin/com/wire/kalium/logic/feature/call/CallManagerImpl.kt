@@ -520,7 +520,6 @@ class CallManagerImpl internal constructor(
                     callRepository = callRepository,
                     qualifiedIdMapper = qualifiedIdMapper,
                     participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper),
-                    userRepository = userRepository,
                     callingScope = scope
                 ).keepingStrongReference()
 
