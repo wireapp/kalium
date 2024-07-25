@@ -21,7 +21,6 @@ package com.wire.kalium.logic.feature.conversation
 import com.benasher44.uuid.uuid4
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.CoreFailure
-import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
@@ -75,9 +74,7 @@ class UpdateConversationReadDateUseCase internal constructor(
 
     private val worker = ConversationTimeEventWorker { (conversationId, time) ->
         coroutineScope {
-            conversationRepository.observeCacheDetailsById(conversationId).flatMap {
-                it.first()?.let { Either.Right(it) } ?: Either.Left(StorageFailure.DataNotFound)
-            }.onFailure {
+            conversationRepository.observeConversationById(conversationId).first().onFailure {
                 logger.w("Failed to update conversation read date; StorageFailure $it")
             }.onSuccess { conversation ->
                 if (conversation.lastReadDate >= time) {

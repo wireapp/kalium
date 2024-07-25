@@ -73,7 +73,7 @@ internal class MemberJoinEventHandlerImpl(
                 userRepository.fetchUsersIfUnknownByIds(event.members.map { it.id }.toSet())
                 conversationRepository.persistMembers(event.members, event.conversationId)
             }.onSuccess {
-                conversationRepository.detailsById(event.conversationId).onSuccess { conversation ->
+                conversationRepository.getConversationById(event.conversationId).onSuccess { conversation ->
                     if (conversation.type == Conversation.Type.GROUP) addSystemMessage(event)
                 }
                 legalHoldHandler.handleConversationMembersChanged(event.conversationId)

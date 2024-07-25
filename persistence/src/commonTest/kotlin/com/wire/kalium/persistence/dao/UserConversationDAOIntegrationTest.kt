@@ -259,7 +259,7 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
 
         userDAO.updateActiveOneOnOneConversation(user1.id, conversationEntity1.id)
 
-        val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
+        val result = conversationDAO.getConversationDetailsById(conversationEntity1.id)
         assertEquals(conversationEntity1.id, result?.userActiveOneOnOneConversationId)
     }
 
@@ -269,7 +269,7 @@ class UserConversationDAOIntegrationTest : BaseDatabaseTest() {
         conversationDAO.insertConversation(conversationEntity1)
         memberDAO.insertMember(member1, conversationEntity1.id)
 
-        val result = conversationDAO.getConversationByQualifiedID(conversationEntity1.id)
+        val result = conversationDAO.getConversationDetailsById(conversationEntity1.id)
         assertNotNull(result)
         assertNull(result.userActiveOneOnOneConversationId)
     }

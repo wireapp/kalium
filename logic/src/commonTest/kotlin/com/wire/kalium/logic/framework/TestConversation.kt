@@ -294,6 +294,9 @@ object TestConversation {
         proteusVerificationStatus = ConversationEntity.VerificationStatus.NOT_VERIFIED,
         legalHoldStatus = ConversationEntity.LegalHoldStatus.DISABLED
     )
+    val ENTITY_GROUP = ENTITY.copy(
+        type = ConversationEntity.Type.GROUP
+    )
     val VIEW_ENTITY = ConversationViewEntity(
         id = ENTITY_ID,
         name = "convo name",

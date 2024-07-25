@@ -29,7 +29,17 @@ data class ProposalTimerEntity(
     val firingDate: Instant
 )
 
+@Suppress("TooManyFunctions")
 interface ConversationDAO {
+    //region Get/Observe by ID
+
+    suspend fun observeConversationById(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
+    suspend fun getConversationById(qualifiedID: QualifiedIDEntity): ConversationEntity?
+    suspend fun getConversationDetailsById(qualifiedID: QualifiedIDEntity): ConversationViewEntity?
+    suspend fun observeConversationDetailsById(conversationId: QualifiedIDEntity): Flow<ConversationViewEntity?>
+
+    //endregion
+
     suspend fun getSelfConversationId(protocol: ConversationEntity.Protocol): QualifiedIDEntity?
     suspend fun getE2EIConversationClientInfoByClientId(clientId: String): E2EIConversationClientInfoEntity?
     suspend fun insertConversation(conversationEntity: ConversationEntity)
@@ -45,7 +55,7 @@ interface ConversationDAO {
     suspend fun updateConversationNotificationDate(qualifiedID: QualifiedIDEntity)
     suspend fun updateConversationReadDate(conversationID: QualifiedIDEntity, date: Instant)
     suspend fun updateAllConversationsNotificationDate()
-    suspend fun getAllConversations(): Flow<List<ConversationViewEntity>>
+    suspend fun getAllConversations(): Flow<List<ConversationEntity>>
     suspend fun getAllConversationDetails(fromArchive: Boolean): Flow<List<ConversationViewEntity>>
     suspend fun getConversationIds(
         type: ConversationEntity.Type,
@@ -54,20 +64,16 @@ interface ConversationDAO {
     ): List<QualifiedIDEntity>
 
     suspend fun getTeamConversationIdsReadyToCompleteMigration(teamId: String): List<QualifiedIDEntity>
-    suspend fun observeGetConversationByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationViewEntity?>
-    suspend fun observeGetConversationBaseInfoByQualifiedID(qualifiedID: QualifiedIDEntity): Flow<ConversationEntity?>
-    suspend fun getConversationBaseInfoByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationEntity?
-    suspend fun getConversationByQualifiedID(qualifiedID: QualifiedIDEntity): ConversationViewEntity?
     suspend fun getOneOnOneConversationIdsWithOtherUser(
         userId: UserIDEntity,
         protocol: ConversationEntity.Protocol
     ): List<QualifiedIDEntity>
 
-    suspend fun observeOneOnOneConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationViewEntity?>
+    suspend fun observeOneOnOneConversationWithOtherUser(userId: UserIDEntity): Flow<ConversationEntity?>
     suspend fun getConversationProtocolInfo(qualifiedID: QualifiedIDEntity): ConversationEntity.ProtocolInfo?
     suspend fun observeConversationByGroupID(groupID: String): Flow<ConversationViewEntity?>
     suspend fun getConversationIdByGroupID(groupID: String): QualifiedIDEntity?
-    suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationViewEntity>
+    suspend fun getConversationsByGroupState(groupState: ConversationEntity.GroupState): List<ConversationEntity>
     suspend fun deleteConversationByQualifiedID(qualifiedID: QualifiedIDEntity)
 
     suspend fun updateConversationMutedStatus(
@@ -132,11 +138,6 @@ interface ConversationDAO {
     suspend fun getEstablishedSelfMLSGroupId(): String?
 
     suspend fun selectGroupStatusMembersNamesAndHandles(groupID: String): EpochChangesDataEntity?
-
-    /**
-     * TODO: Remove later when implementing general conversation cache in the app.
-     */
-    suspend fun observeConversationDetailsById(conversationId: QualifiedIDEntity): Flow<ConversationViewEntity?>
 }
 
 data class NameAndHandleEntity(

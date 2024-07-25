@@ -44,7 +44,7 @@ class DeletedConversationEventHandlerTest {
     fun givenADeletedConversationEvent_whenHandlingItAndNotExists_thenShouldSkipTheDeletion() = runTest {
         val event = TestEvent.deletedConversation()
         val (arrangement, eventHandler) = arrange {
-            withGetConversation(null)
+            withGetConversationByIdReturning(null)
             withObserveUser(userId = EqualsMatcher(event.senderUserId))
             withDeletingConversationSucceeding(EqualsMatcher(TestConversation.ID))
         }
@@ -64,7 +64,7 @@ class DeletedConversationEventHandlerTest {
         val conversation = TestConversation.CONVERSATION
         val otherUser = TestUser.OTHER
         val (arrangement, eventHandler) = arrange {
-            withGetConversation(conversation)
+            withGetConversationByIdReturning(conversation)
             withObserveUser(flowOf(otherUser), EqualsMatcher(event.senderUserId))
             withDeletingConversationSucceeding(EqualsMatcher(TestConversation.ID))
         }
@@ -96,7 +96,7 @@ class DeletedConversationEventHandlerTest {
         val conversation = TestConversation.CONVERSATION
         val otherUser = TestUser.OTHER
         val (arrangement, eventHandler) = arrange {
-            withGetConversation(conversation)
+            withGetConversationByIdReturning(conversation)
             withObserveUser(flowOf(otherUser), EqualsMatcher(event.senderUserId))
             withDeletingConversationFailing()
         }

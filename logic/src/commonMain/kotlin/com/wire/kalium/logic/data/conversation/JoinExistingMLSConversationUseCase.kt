@@ -72,7 +72,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
             kaliumLogger.d("Skip re-join existing MLS conversation, since MLS is not supported.")
             Either.Right(Unit)
         } else {
-            conversationRepository.baseInfoById(conversationId).fold({
+            conversationRepository.getConversationById(conversationId).fold({
                 Either.Left(StorageFailure.DataNotFound)
             }, { conversation ->
                 withContext(dispatcher) {
@@ -106,7 +106,7 @@ internal class JoinExistingMLSConversationUseCaseImpl(
                         } else {
                             conversationRepository.fetchConversation(conversation.id)
                         }.flatMap {
-                            conversationRepository.baseInfoById(conversation.id).flatMap { conversation ->
+                            conversationRepository.getConversationById(conversation.id).flatMap { conversation ->
                                 joinOrEstablishMLSGroup(conversation)
                             }
                         }

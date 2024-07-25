@@ -55,7 +55,7 @@ class ObserveSelfDeletionTimerSettingsForConversationUseCaseImpl internal constr
         withContext(dispatcher.io) {
             userConfigRepository.observeTeamSettingsSelfDeletingStatus()
                 .combine(
-                    conversationRepository.observeById(conversationId)
+                    conversationRepository.observeConversationById(conversationId)
                 ) { teamSettings, conversationDetailsEither ->
                     teamSettings.fold({
                         onTeamEnabled(conversationDetailsEither, considerSelfUserSettings)
