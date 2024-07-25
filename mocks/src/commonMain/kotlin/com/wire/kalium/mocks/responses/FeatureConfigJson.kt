@@ -18,6 +18,7 @@
 
 package com.wire.kalium.mocks.responses
 
+<<<<<<< HEAD:mocks/src/commonMain/kotlin/com/wire/kalium/mocks/responses/FeatureConfigJson.kt
 import com.wire.kalium.network.api.authenticated.featureConfigs.AppLockConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.ConferenceCallingConfigDTO
@@ -43,6 +44,34 @@ import com.wire.kalium.network.api.authenticated.featureConfigs.MLSMigrationConf
 import com.wire.kalium.network.api.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.api.model.SupportedProtocolDTO
+=======
+import com.wire.kalium.api.json.ValidJsonProvider
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.AppLockConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.ConferenceCallingConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.AppLock
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.ClassifiedDomains
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.ConferenceCalling
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.ConversationGuestLinks
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.DigitalSignatures
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.FileSharing
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.Legalhold
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.MLS
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.SSO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.SearchVisibility
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.SecondFactorPasswordChallenge
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.SelfDeletingMessages
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigData.ValidateSAMLEmails
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigResponse
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureFlagStatusDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.E2EIConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.MLSMigrationConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.SelfDeletingMessagesConfigDTO
+import com.wire.kalium.network.api.base.model.ErrorResponse
+import com.wire.kalium.network.api.base.model.SupportedProtocolDTO
+>>>>>>> 35a088d190 (feat: Add useSFTForOneOneOneCalls -  cherrypick RC4.6  (#2897)):network/src/commonTest/kotlin/com/wire/kalium/model/FeatureConfigJson.kt
 import kotlinx.datetime.Instant
 
 object FeatureConfigJson {

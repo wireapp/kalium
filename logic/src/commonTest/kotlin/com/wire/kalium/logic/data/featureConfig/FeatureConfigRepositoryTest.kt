@@ -23,10 +23,17 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestNetworkException
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
+<<<<<<< HEAD
 import com.wire.kalium.network.api.authenticated.featureConfigs.AppLockConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.ConferenceCallingConfigDTO
 import com.wire.kalium.network.api.authenticated.featureConfigs.E2EIConfigDTO
+=======
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.AppLockConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.ClassifiedDomainsConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.ConferenceCallingConfigDTO
+import com.wire.kalium.network.api.base.authenticated.featureConfigs.E2EIConfigDTO
+>>>>>>> 35a088d190 (feat: Add useSFTForOneOneOneCalls -  cherrypick RC4.6  (#2897))
 import com.wire.kalium.network.api.base.authenticated.featureConfigs.FeatureConfigApi
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigData
 import com.wire.kalium.network.api.authenticated.featureConfigs.FeatureConfigResponse

@@ -26,7 +26,13 @@ import com.wire.kalium.logic.functional.isLeft
 import com.wire.kalium.logic.functional.isRight
 import io.mockative.Mock
 import io.mockative.any
+<<<<<<< HEAD
 import io.mockative.every
+=======
+import io.mockative.anything
+import io.mockative.eq
+import io.mockative.given
+>>>>>>> 35a088d190 (feat: Add useSFTForOneOneOneCalls -  cherrypick RC4.6  (#2897))
 import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
@@ -44,6 +50,7 @@ class ConferenceCallingConfigHandlerTest {
 
         val result = conferenceCallingConfigHandler.handle(conferenceCallingModel)
 
+<<<<<<< HEAD
         verify {
             arrangement.userConfigRepository.setConferenceCallingEnabled(conferenceCallingModel.status.toBoolean())
         }.wasInvoked(exactly = once)
@@ -51,6 +58,17 @@ class ConferenceCallingConfigHandlerTest {
         verify {
             arrangement.userConfigRepository.setUseSFTForOneOnOneCalls(any())
         }.wasNotInvoked()
+=======
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setConferenceCallingEnabled)
+            .with(eq(conferenceCallingModel.status.toBoolean()))
+            .wasInvoked(once)
+
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setUseSFTForOneOnOneCalls)
+            .with(any())
+            .wasNotInvoked()
+>>>>>>> 35a088d190 (feat: Add useSFTForOneOneOneCalls -  cherrypick RC4.6  (#2897))
 
         assertTrue { result.isLeft() }
     }
@@ -65,6 +83,7 @@ class ConferenceCallingConfigHandlerTest {
 
         val result = conferenceCallingConfigHandler.handle(conferenceCallingModel)
 
+<<<<<<< HEAD
         verify {
             arrangement.userConfigRepository.setConferenceCallingEnabled(conferenceCallingModel.status.toBoolean())
         }.wasInvoked(exactly = once)
@@ -72,6 +91,17 @@ class ConferenceCallingConfigHandlerTest {
         verify {
             arrangement.userConfigRepository.setUseSFTForOneOnOneCalls(any())
         }.wasInvoked(exactly = once)
+=======
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setConferenceCallingEnabled)
+            .with(eq(conferenceCallingModel.status.toBoolean()))
+            .wasInvoked(once)
+
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setUseSFTForOneOnOneCalls)
+            .with(any())
+            .wasInvoked(once)
+>>>>>>> 35a088d190 (feat: Add useSFTForOneOneOneCalls -  cherrypick RC4.6  (#2897))
 
         assertTrue { result.isLeft() }
     }
@@ -86,6 +116,7 @@ class ConferenceCallingConfigHandlerTest {
 
         val result = conferenceCallingConfigHandler.handle(conferenceCallingModel)
 
+<<<<<<< HEAD
         verify {
             arrangement.userConfigRepository.setConferenceCallingEnabled(conferenceCallingModel.status.toBoolean())
         }.wasInvoked(exactly = once)
@@ -93,6 +124,17 @@ class ConferenceCallingConfigHandlerTest {
         verify {
             arrangement.userConfigRepository.setUseSFTForOneOnOneCalls(any())
         }.wasInvoked(exactly = once)
+=======
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setConferenceCallingEnabled)
+            .with(eq(conferenceCallingModel.status.toBoolean()))
+            .wasInvoked(once)
+
+        verify(arrangement.userConfigRepository)
+            .function(arrangement.userConfigRepository::setUseSFTForOneOnOneCalls)
+            .with(any())
+            .wasInvoked(once)
+>>>>>>> 35a088d190 (feat: Add useSFTForOneOneOneCalls -  cherrypick RC4.6  (#2897))
 
         assertTrue { result.isRight() }
     }
@@ -109,6 +151,7 @@ class ConferenceCallingConfigHandlerTest {
         }
 
         init {
+<<<<<<< HEAD
             every {
                 userConfigRepository.setAppLockStatus(any(), any(), any())
             }.returns(Either.Right(Unit))
@@ -136,6 +179,40 @@ class ConferenceCallingConfigHandlerTest {
             every {
                 userConfigRepository.setUseSFTForOneOnOneCalls(any())
             }.returns(Either.Right(Unit))
+=======
+            given(userConfigRepository)
+                .function(userConfigRepository::setAppLockStatus)
+                .whenInvokedWith(anything(), anything(), anything())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withSetConferenceCallingEnabledFailure() = apply {
+            given(userConfigRepository)
+                .function(userConfigRepository::setConferenceCallingEnabled)
+                .whenInvokedWith(anything())
+                .thenReturn(Either.Left(StorageFailure.DataNotFound))
+        }
+
+        fun withSetConferenceCallingEnabledSuccess() = apply {
+            given(userConfigRepository)
+                .function(userConfigRepository::setConferenceCallingEnabled)
+                .whenInvokedWith(anything())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        fun withSetUseSFTForOneOnOneCallsFailure() = apply {
+            given(userConfigRepository)
+                .function(userConfigRepository::setUseSFTForOneOnOneCalls)
+                .whenInvokedWith(anything())
+                .thenReturn(Either.Left(StorageFailure.DataNotFound))
+        }
+
+        fun withSetUseSFTForOneOnOneCallsSuccess() = apply {
+            given(userConfigRepository)
+                .function(userConfigRepository::setUseSFTForOneOnOneCalls)
+                .whenInvokedWith(anything())
+                .thenReturn(Either.Right(Unit))
+>>>>>>> 35a088d190 (feat: Add useSFTForOneOneOneCalls -  cherrypick RC4.6  (#2897))
         }
     }
 }
