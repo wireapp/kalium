@@ -40,7 +40,7 @@ import kotlinx.datetime.Clock
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
-class GetCallConversationTypeUseCaseTest {
+class GetCallConversationTypeProviderTest {
 
     @Test
     fun givenShouldUseSFTForOneOnOneCallsAndMLSEnabled_whenRunningUseCase_thenReturnConferenceMls() =
