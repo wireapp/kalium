@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.conversation
 
+import com.wire.kalium.cryptography.CredentialType
 import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.E2EIConversationState
@@ -32,6 +33,7 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.feature.conversation.FetchMLSVerificationStatusUseCaseTest.Arrangement.Companion.getMockedIdentity
 import com.wire.kalium.logic.feature.e2ei.usecase.FetchMLSVerificationStatusUseCaseImpl
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestConversationDetails
@@ -40,16 +42,10 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.ConversationRepositoryArrangementImpl
-import com.wire.kalium.logic.util.arrangement.repository.MLSConversationRepositoryArrangement
-import com.wire.kalium.logic.util.arrangement.repository.MLSConversationRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangement
 import com.wire.kalium.logic.util.arrangement.usecase.PersistMessageUseCaseArrangementImpl
-import com.wire.kalium.persistence.dao.UserIDEntity
-import com.wire.kalium.persistence.dao.conversation.ConversationEntity
-import com.wire.kalium.persistence.dao.conversation.EpochChangesDataEntity
-import com.wire.kalium.persistence.dao.conversation.NameAndHandleEntity
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
@@ -57,11 +53,9 @@ import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 
 class FetchMLSVerificationStatusUseCaseTest {
@@ -162,36 +156,10 @@ class FetchMLSVerificationStatusUseCaseTest {
 
         val ccMembersIdentity: Map<UserId, List<WireIdentity>> = mapOf(
             user1.first to listOf(
-                WireIdentity(
-                    CryptoQualifiedClientId(
-                        value = "client_user_1",
-                        userId = user1.first.toCrypto()
-                    ),
-                    handle = user1.second.handle!!,
-                    displayName = user1.second.name!!,
-                    certificate = "cert1",
-                    domain = "domain1",
-                    serialNumber = "serial1",
-                    status = CryptoCertificateStatus.VALID,
-                    thumbprint = "thumbprint1",
-                    endTimestampSeconds = 1899105093
-                )
+                getMockedIdentity(user1.first, user1.second)
             ),
             user2.first to listOf(
-                WireIdentity(
-                    CryptoQualifiedClientId(
-                        value = "client_user_2",
-                        userId = user2.first.toCrypto()
-                    ),
-                    handle = user2.second.handle!!,
-                    displayName = user2.second.name!!,
-                    certificate = "cert2",
-                    domain = "domain2",
-                    serialNumber = "serial2",
-                    status = CryptoCertificateStatus.VALID,
-                    thumbprint = "thumbprint2",
-                    endTimestampSeconds = 1899105093
-                )
+                getMockedIdentity(user2.first, user2.second)
             )
         )
         val (arrangement, handler) = arrange {
@@ -233,36 +201,10 @@ class FetchMLSVerificationStatusUseCaseTest {
 
         val ccMembersIdentity: Map<UserId, List<WireIdentity>> = mapOf(
             user1.first to listOf(
-                WireIdentity(
-                    CryptoQualifiedClientId(
-                        value = "client_user_1",
-                        userId = user1.first.toCrypto()
-                    ),
-                    handle = user1.second.handle!! + "1", // this user name changed
-                    displayName = user1.second.name!! + "1",
-                    certificate = "cert1",
-                    domain = "domain1",
-                    serialNumber = "serial1",
-                    status = CryptoCertificateStatus.VALID,
-                    thumbprint = "thumbprint1",
-                    endTimestampSeconds = 1899105093
-                )
+                getMockedIdentity(user1.first, user1.second, CryptoCertificateStatus.REVOKED)
             ),
             user2.first to listOf(
-                WireIdentity(
-                    CryptoQualifiedClientId(
-                        value = "client_user_2",
-                        userId = user2.first.toCrypto()
-                    ),
-                    handle = user2.second.handle!!,
-                    displayName = user2.second.name!!,
-                    certificate = "cert2",
-                    domain = "domain2",
-                    serialNumber = "serial2",
-                    status = CryptoCertificateStatus.VALID,
-                    thumbprint = "thumbprint2",
-                    endTimestampSeconds = 1899105093
-                )
+                getMockedIdentity(user2.first, user2.second)
             )
         )
         val (arrangement, handler) = arrange {
@@ -335,6 +277,35 @@ class FetchMLSVerificationStatusUseCaseTest {
                 userRepository = userRepository,
                 mlsClientProvider = mlsClientProvider,
                 mlsConversationRepository = mlsConversationRepository
+            )
+        }
+
+        companion object {
+            fun getMockedIdentity(
+                userId: QualifiedID,
+                nameAndHandle: NameAndHandle,
+                status: CryptoCertificateStatus = CryptoCertificateStatus.VALID
+            ) = WireIdentity(
+                CryptoQualifiedClientId(
+                    value = userId.value,
+                    userId = userId.toCrypto()
+                ),
+                status,
+                thumbprint = "thumbprint",
+                credentialType = CredentialType.X509,
+                x509Identity = WireIdentity.X509Identity(
+                    WireIdentity.Handle(
+                        scheme = "wireapp",
+                        handle = nameAndHandle.handle!!,
+                        domain = userId.domain
+                    ),
+                    displayName = nameAndHandle.name!!,
+                    domain = userId.domain,
+                    certificate = "cert1",
+                    serialNumber = "serial1",
+                    notBefore = Instant.DISTANT_PAST.epochSeconds,
+                    notAfter = Instant.DISTANT_FUTURE.epochSeconds
+                )
             )
         }
     }
