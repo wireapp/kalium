@@ -1499,6 +1499,7 @@ class UserSessionScope internal constructor(
             userId,
             clientIdProvider,
             selfConversationIdProvider,
+            syncManager,
             userScopedLogger
         )
 

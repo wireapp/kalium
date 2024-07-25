@@ -23,6 +23,8 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
+import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.sync.SyncManager
 import com.wire.kalium.logic.util.arrangement.MessageSenderArrangement
 import com.wire.kalium.logic.util.arrangement.MessageSenderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.SelfConversationIdProviderArrangement
@@ -31,9 +33,12 @@ import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderAr
 import com.wire.kalium.logic.util.arrangement.provider.CurrentClientIdProviderArrangementImpl
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.repository.UserConfigRepositoryArrangementImpl
+import io.mockative.Mock
 import io.mockative.any
+import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.matches
+import io.mockative.mock
 import io.mockative.once
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest
@@ -45,6 +50,7 @@ class AnalyticsIdentifierManagerTest {
     fun givenAnalyticsMigrationIsComplete_whenDeletingPreviousTrackingIdentifier_thenUserConfigRepositoryIsCalled() = runTest {
         // given
         val (arrangement, manager) = Arrangement().arrange {
+            withWaitUntilLiveSuccessful()
             withDeletePreviousTrackingIdentifier()
         }
 
@@ -61,6 +67,7 @@ class AnalyticsIdentifierManagerTest {
     fun givenAnIdentifier_whenPropagatingTrackingIdentifier_thenSignalingMessageIsSent() = runTest {
         // given
         val (arrangement, manager) = Arrangement().arrange {
+            withWaitUntilLiveSuccessful()
             withCurrentClientIdSuccess(SELF_CLIENT_ID)
             withSelfConversationIds(listOf(SELF_CONVERSATION_ID))
             withSendMessageSucceed()
@@ -81,6 +88,7 @@ class AnalyticsIdentifierManagerTest {
     fun givenAnIdentifierAndNoClientId_whenPropagatingTrackingIdentifier_thenMessageIsNotSent() = runTest {
         // given
         val (arrangement, manager) = Arrangement().arrange {
+            withWaitUntilLiveSuccessful()
             withCurrentClientIdFailure(StorageFailure.DataNotFound)
         }
 
@@ -105,13 +113,23 @@ class AnalyticsIdentifierManagerTest {
         CurrentClientIdProviderArrangement by CurrentClientIdProviderArrangementImpl(),
         SelfConversationIdProviderArrangement by SelfConversationIdProviderArrangementImpl() {
 
+        @Mock
+        val syncManager = mock(SyncManager::class)
+
         private val useCase: AnalyticsIdentifierManager = AnalyticsIdentifierManager(
             messageSender = messageSender,
             userConfigRepository = userConfigRepository,
             selfUserId = SELF_USER_ID,
             selfClientIdProvider = currentClientIdProvider,
-            selfConversationIdProvider = selfConversationIdProvider
+            selfConversationIdProvider = selfConversationIdProvider,
+            syncManager = syncManager
         )
+
+        suspend fun withWaitUntilLiveSuccessful() = apply {
+            coEvery {
+                syncManager.waitUntilLiveOrFailure()
+            }.returns(Either.Right(Unit))
+        }
 
         fun arrange(block: suspend Arrangement.() -> Unit): Pair<Arrangement, AnalyticsIdentifierManager> {
             runBlocking { block() }
