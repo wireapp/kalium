@@ -51,7 +51,6 @@ expect class GlobalCallManager {
         videoStateChecker: VideoStateChecker,
         conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
         getCallConversationType: GetCallConversationTypeProvider,
-        networkStateObserver: NetworkStateObserver,
         kaliumConfigs: KaliumConfigs
     ): CallManager
 

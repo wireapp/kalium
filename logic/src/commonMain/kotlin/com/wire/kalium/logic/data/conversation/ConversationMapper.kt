@@ -437,6 +437,8 @@ internal class ConversationMapperImpl(
         }
     }
 
+    override fun fromConversationEntityType(type: ConversationEntity.Type): Conversation.Type = type.fromDaoModelToType()
+
     override fun verificationStatusFromEntity(verificationStatus: ConversationEntity.VerificationStatus) =
         Conversation.VerificationStatus.valueOf(verificationStatus.name)
 

@@ -134,7 +134,6 @@ interface ConversationRepository {
     suspend fun observeById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>>
     suspend fun getConversationById(conversationId: ConversationId): Conversation?
     suspend fun getConversationTypeById(conversationId: ConversationId): Either<StorageFailure, Conversation.Type>
-    suspend fun observeCacheDetailsById(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation?>>
     suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun baseInfoById(conversationId: ConversationId): Either<StorageFailure, Conversation>
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
@@ -1101,6 +1100,13 @@ internal class ConversationDataSource internal constructor(
         wrapStorageRequest {
             conversationDAO.selectGroupStatusMembersNamesAndHandles(groupID.value)
         }.map { EpochChangesData.fromEntity(it) }
+
+    override suspend fun getConversationTypeById(conversationId: ConversationId): Either<StorageFailure, Conversation.Type> =
+        wrapStorageRequest {
+            conversationDAO.getConversationTypeById(conversationId.toDao())?.let {
+                conversationMapper.fromConversationEntityType(it)
+            }
+        }
 
     companion object {
         const val DEFAULT_MEMBER_ROLE = "wire_member"
