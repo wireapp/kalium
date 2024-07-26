@@ -113,8 +113,7 @@ class MessageNotificationsTest : BaseMessageTest() {
         conversationDAO.updateLegalHoldStatusChangeNotified(TEST_CONVERSATION_1.id, false)
         messageDAO.insertOrIgnoreMessages(listOf(message, messageOtherConvo2))
 
-        messageDAO.getNotificationMessage().test {
-            val notifications = awaitItem()
+        messageDAO.getNotificationMessage().let { notifications ->
             assertEquals(2, notifications.size)
             assertEquals(false, notifications.first { it.conversationId == TEST_CONVERSATION_1.id  }.legalHoldStatusChangeNotified)
             assertEquals(true, notifications.first { it.conversationId == TEST_CONVERSATION_2.id  }.legalHoldStatusChangeNotified)
