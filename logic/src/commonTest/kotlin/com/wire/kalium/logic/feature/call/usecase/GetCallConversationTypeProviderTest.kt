@@ -31,9 +31,8 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.coEvery
 import io.mockative.eq
-import io.mockative.every
+import io.mockative.given
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
@@ -167,93 +166,109 @@ class GetCallConversationTypeProviderTest {
         fun arrange() = this to getCallConversationType
 
         fun withMLSEnabled() = apply {
-            every {
-                userConfigRepository.isMLSEnabled()
-            }.returns(Either.Right(true))
+            given(userConfigRepository)
+                .function(userConfigRepository::isMLSEnabled)
+                .whenInvoked()
+                .thenReturn(Either.Right(true))
         }
 
         fun withMLSDisabled() = apply {
-            every {
-                userConfigRepository.isMLSEnabled()
-            }.returns(Either.Right(false))
+            given(userConfigRepository)
+                .function(userConfigRepository::isMLSEnabled)
+                .whenInvoked()
+                .thenReturn(Either.Right(false))
         }
 
         fun withShouldUseSFTForOneOnOneCalls() = apply {
-            every {
-                userConfigRepository.shouldUseSFTForOneOnOneCalls()
-            }.returns(Either.Right(true))
+            given(userConfigRepository)
+                .function(userConfigRepository::shouldUseSFTForOneOnOneCalls)
+                .whenInvoked()
+                .thenReturn(Either.Right(true))
         }
 
         fun withShouldNotUseSFTForOneOnOneCalls() = apply {
-            every {
-                userConfigRepository.shouldUseSFTForOneOnOneCalls()
-            }.returns(Either.Right(false))
+            given(userConfigRepository)
+                .function(userConfigRepository::shouldUseSFTForOneOnOneCalls)
+                .whenInvoked()
+                .thenReturn(Either.Right(false))
         }
 
         fun withShouldUseSFTForOneOnOneCallsFailure() = apply {
-            every {
-                userConfigRepository.shouldUseSFTForOneOnOneCalls()
-            }.returns(Either.Left(StorageFailure.DataNotFound))
+            given(userConfigRepository)
+                .function(userConfigRepository::shouldUseSFTForOneOnOneCalls)
+                .whenInvoked()
+                .thenReturn(Either.Left(StorageFailure.DataNotFound))
         }
 
         suspend fun withGetConversationTypeByIdSuccess(
             conversationId: ConversationId,
             result: Conversation.Type
         ) = apply {
-            coEvery {
-                conversationRepository.getConversationTypeById(eq(conversationId))
-            }.returns(Either.Right(result))
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::getConversationTypeById)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(result))
         }
 
         suspend fun withGetConversationTypeByIdFailure(conversationId: ConversationId) = apply {
-            coEvery {
-                conversationRepository.getConversationTypeById(eq(conversationId))
-            }.returns(Either.Left(StorageFailure.DataNotFound))
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::getConversationTypeById)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Left(StorageFailure.DataNotFound))
         }
 
         suspend fun withGetConversationProtocolInfoSuccess(
             conversationId: ConversationId,
             protocolResult: Conversation.ProtocolInfo
         ) = apply {
-            coEvery {
-                conversationRepository.getConversationProtocolInfo(eq(conversationId))
-            }.returns(Either.Right(protocolResult))
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::getConversationProtocolInfo)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(protocolResult))
         }
 
         fun withOneOnOneCallMapping() = apply {
-            every {
-                callMapper.fromConversationTypeToConversationTypeForCall(any(), any())
-            }.returns(ConversationTypeForCall.OneOnOne)
-
-            every {
-                callMapper.toConversationTypeCalling(any())
-            }.returns(ConversationTypeCalling.OneOnOne)
+            given(callMapper)
+                .function(callMapper::fromConversationTypeToConversationTypeForCall)
+                .whenInvokedWith(any(), any())
+                .thenReturn(ConversationTypeForCall.OneOnOne)
+            given(callMapper)
+                .function(callMapper::toConversationTypeCalling)
+                .whenInvokedWith(any())
+                .thenReturn(ConversationTypeCalling.OneOnOne)
         }
 
         fun withConferenceCallMapping() = apply {
-            every {
-                callMapper.fromConversationTypeToConversationTypeForCall(any(), any())
-            }.returns(ConversationTypeForCall.Conference)
+            given(callMapper)
+                .function(callMapper::fromConversationTypeToConversationTypeForCall)
+                .whenInvokedWith(any(), any())
+                .thenReturn(ConversationTypeForCall.Conference)
 
-            every {
-                callMapper.toConversationTypeCalling(any())
-            }.returns(ConversationTypeCalling.Conference)
+            given(callMapper)
+                .function(callMapper::toConversationTypeCalling)
+                .whenInvokedWith(any())
+                .thenReturn(ConversationTypeCalling.Conference)
         }
 
         fun withMlsConferenceCallMapping() = apply {
-            every {
-                callMapper.fromConversationTypeToConversationTypeForCall(any(), any())
-            }.returns(ConversationTypeForCall.ConferenceMls)
+            given(callMapper)
+                .function(callMapper::fromConversationTypeToConversationTypeForCall)
+                .whenInvokedWith(any(), any())
+                .thenReturn(ConversationTypeForCall.ConferenceMls)
 
-            every {
-                callMapper.toConversationTypeCalling(any())
-            }.returns(ConversationTypeCalling.ConferenceMls)
+            given(callMapper)
+                .function(callMapper::toConversationTypeCalling)
+                .whenInvokedWith(any())
+                .thenReturn(ConversationTypeCalling.ConferenceMls)
         }
 
         fun withUnknownCallMapping() = apply {
-            every {
-                callMapper.toConversationTypeCalling(eq(ConversationTypeForCall.Unknown))
-            }.returns(ConversationTypeCalling.Unknown)
+            given(callMapper)
+                .function(callMapper::toConversationTypeCalling)
+                .whenInvokedWith(eq(ConversationTypeForCall.Unknown))
+                .then {
+                    ConversationTypeCalling.Unknown
+                }
         }
     }
 }
