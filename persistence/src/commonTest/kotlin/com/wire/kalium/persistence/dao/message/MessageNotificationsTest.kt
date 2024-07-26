@@ -22,7 +22,6 @@ import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.utils.stubs.newRegularMessageEntity
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
 import kotlin.test.Test
@@ -31,7 +30,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.hours
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MessageNotificationsTest : BaseMessageTest() {
 
     @Test
@@ -102,6 +100,23 @@ class MessageNotificationsTest : BaseMessageTest() {
         messageDAO.getNotificationMessage().let { notifications ->
             assertEquals(2, notifications.size)
             assertEquals(false, notifications.any { it.isQuotingSelf })
+        }
+    }
+
+    @Test
+    fun givenConversation_whenNoLegalHoldNotified_thenNotificationIsPresent() = runTest {
+        val message = OTHER_MESSAGE
+        val messageOtherConvo2 = OTHER_MESSAGE_CONVO2
+        // going to super to not insert legal hold values
+        insertInitialData()
+        // just inserting legal hold for one conversation
+        conversationDAO.updateLegalHoldStatusChangeNotified(TEST_CONVERSATION_1.id, false)
+        messageDAO.insertOrIgnoreMessages(listOf(message, messageOtherConvo2))
+
+        messageDAO.getNotificationMessage().let { notifications ->
+            assertEquals(2, notifications.size)
+            assertEquals(false, notifications.first { it.conversationId == TEST_CONVERSATION_1.id }.legalHoldStatusChangeNotified)
+            assertEquals(true, notifications.first { it.conversationId == TEST_CONVERSATION_2.id }.legalHoldStatusChangeNotified)
         }
     }
 
@@ -356,9 +371,6 @@ class MessageNotificationsTest : BaseMessageTest() {
 
     override suspend fun insertInitialData() {
         super.insertInitialData()
-        // Always insert original messages
-        conversationDAO.updateLegalHoldStatusChangeNotified(TEST_CONVERSATION_1.id, true)
-        conversationDAO.updateLegalHoldStatusChangeNotified(TEST_CONVERSATION_2.id, true)
     }
 
     private companion object {
@@ -374,6 +386,13 @@ class MessageNotificationsTest : BaseMessageTest() {
         val OTHER_MESSAGE = newRegularMessageEntity(
             id = "OTHER_MESSAGE",
             conversationId = TEST_CONVERSATION_1.id,
+            senderUserId = ORIGINAL_MESSAGE_SENDER.id,
+            content = MessageEntityContent.Text(OTHER_MESSAGE_CONTENT)
+        )
+
+        val OTHER_MESSAGE_CONVO2 = newRegularMessageEntity(
+            id = "OTHER_MESSAGE",
+            conversationId = TEST_CONVERSATION_2.id,
             senderUserId = ORIGINAL_MESSAGE_SENDER.id,
             content = MessageEntityContent.Text(OTHER_MESSAGE_CONTENT)
         )
