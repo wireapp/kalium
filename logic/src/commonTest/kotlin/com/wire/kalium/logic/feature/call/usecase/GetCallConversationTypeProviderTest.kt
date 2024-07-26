@@ -31,9 +31,14 @@ import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
+<<<<<<< HEAD
 import io.mockative.coEvery
 import io.mockative.eq
 import io.mockative.every
+=======
+import io.mockative.eq
+import io.mockative.given
+>>>>>>> f712fc2340 (feat: Use sft for one to one calls when needed cherry pick 4.6  (WPB-7153) (#2907))
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Clock
@@ -167,6 +172,7 @@ class GetCallConversationTypeProviderTest {
         fun arrange() = this to getCallConversationType
 
         fun withMLSEnabled() = apply {
+<<<<<<< HEAD
             every {
                 userConfigRepository.isMLSEnabled()
             }.returns(Either.Right(true))
@@ -194,12 +200,47 @@ class GetCallConversationTypeProviderTest {
             every {
                 userConfigRepository.shouldUseSFTForOneOnOneCalls()
             }.returns(Either.Left(StorageFailure.DataNotFound))
+=======
+            given(userConfigRepository)
+                .function(userConfigRepository::isMLSEnabled)
+                .whenInvoked()
+                .thenReturn(Either.Right(true))
+        }
+
+        fun withMLSDisabled() = apply {
+            given(userConfigRepository)
+                .function(userConfigRepository::isMLSEnabled)
+                .whenInvoked()
+                .thenReturn(Either.Right(false))
+        }
+
+        fun withShouldUseSFTForOneOnOneCalls() = apply {
+            given(userConfigRepository)
+                .function(userConfigRepository::shouldUseSFTForOneOnOneCalls)
+                .whenInvoked()
+                .thenReturn(Either.Right(true))
+        }
+
+        fun withShouldNotUseSFTForOneOnOneCalls() = apply {
+            given(userConfigRepository)
+                .function(userConfigRepository::shouldUseSFTForOneOnOneCalls)
+                .whenInvoked()
+                .thenReturn(Either.Right(false))
+        }
+
+        fun withShouldUseSFTForOneOnOneCallsFailure() = apply {
+            given(userConfigRepository)
+                .function(userConfigRepository::shouldUseSFTForOneOnOneCalls)
+                .whenInvoked()
+                .thenReturn(Either.Left(StorageFailure.DataNotFound))
+>>>>>>> f712fc2340 (feat: Use sft for one to one calls when needed cherry pick 4.6  (WPB-7153) (#2907))
         }
 
         suspend fun withGetConversationTypeByIdSuccess(
             conversationId: ConversationId,
             result: Conversation.Type
         ) = apply {
+<<<<<<< HEAD
             coEvery {
                 conversationRepository.getConversationTypeById(eq(conversationId))
             }.returns(Either.Right(result))
@@ -209,12 +250,26 @@ class GetCallConversationTypeProviderTest {
             coEvery {
                 conversationRepository.getConversationTypeById(eq(conversationId))
             }.returns(Either.Left(StorageFailure.DataNotFound))
+=======
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::getConversationTypeById)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(result))
+        }
+
+        suspend fun withGetConversationTypeByIdFailure(conversationId: ConversationId) = apply {
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::getConversationTypeById)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Left(StorageFailure.DataNotFound))
+>>>>>>> f712fc2340 (feat: Use sft for one to one calls when needed cherry pick 4.6  (WPB-7153) (#2907))
         }
 
         suspend fun withGetConversationProtocolInfoSuccess(
             conversationId: ConversationId,
             protocolResult: Conversation.ProtocolInfo
         ) = apply {
+<<<<<<< HEAD
             coEvery {
                 conversationRepository.getConversationProtocolInfo(eq(conversationId))
             }.returns(Either.Right(protocolResult))
@@ -254,6 +309,56 @@ class GetCallConversationTypeProviderTest {
             every {
                 callMapper.toConversationTypeCalling(eq(ConversationTypeForCall.Unknown))
             }.returns(ConversationTypeCalling.Unknown)
+=======
+            given(conversationRepository)
+                .suspendFunction(conversationRepository::getConversationProtocolInfo)
+                .whenInvokedWith(any())
+                .thenReturn(Either.Right(protocolResult))
+        }
+
+        fun withOneOnOneCallMapping() = apply {
+            given(callMapper)
+                .function(callMapper::fromConversationTypeToConversationTypeForCall)
+                .whenInvokedWith(any(), any())
+                .thenReturn(ConversationTypeForCall.OneOnOne)
+            given(callMapper)
+                .function(callMapper::toConversationTypeCalling)
+                .whenInvokedWith(any())
+                .thenReturn(ConversationTypeCalling.OneOnOne)
+        }
+
+        fun withConferenceCallMapping() = apply {
+            given(callMapper)
+                .function(callMapper::fromConversationTypeToConversationTypeForCall)
+                .whenInvokedWith(any(), any())
+                .thenReturn(ConversationTypeForCall.Conference)
+
+            given(callMapper)
+                .function(callMapper::toConversationTypeCalling)
+                .whenInvokedWith(any())
+                .thenReturn(ConversationTypeCalling.Conference)
+        }
+
+        fun withMlsConferenceCallMapping() = apply {
+            given(callMapper)
+                .function(callMapper::fromConversationTypeToConversationTypeForCall)
+                .whenInvokedWith(any(), any())
+                .thenReturn(ConversationTypeForCall.ConferenceMls)
+
+            given(callMapper)
+                .function(callMapper::toConversationTypeCalling)
+                .whenInvokedWith(any())
+                .thenReturn(ConversationTypeCalling.ConferenceMls)
+        }
+
+        fun withUnknownCallMapping() = apply {
+            given(callMapper)
+                .function(callMapper::toConversationTypeCalling)
+                .whenInvokedWith(eq(ConversationTypeForCall.Unknown))
+                .then {
+                    ConversationTypeCalling.Unknown
+                }
+>>>>>>> f712fc2340 (feat: Use sft for one to one calls when needed cherry pick 4.6  (WPB-7153) (#2907))
         }
     }
 }

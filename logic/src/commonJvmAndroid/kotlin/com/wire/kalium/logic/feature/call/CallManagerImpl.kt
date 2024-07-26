@@ -108,7 +108,10 @@ class CallManagerImpl internal constructor(
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val videoStateChecker: VideoStateChecker,
     private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
+<<<<<<< HEAD
     private val networkStateObserver: NetworkStateObserver,
+=======
+>>>>>>> f712fc2340 (feat: Use sft for one to one calls when needed cherry pick 4.6  (WPB-7153) (#2907))
     private val getCallConversationType: GetCallConversationTypeProvider,
     private val kaliumConfigs: KaliumConfigs,
     private val mediaManagerService: MediaManagerService,

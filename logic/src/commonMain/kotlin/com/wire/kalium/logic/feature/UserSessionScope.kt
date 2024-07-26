@@ -1236,7 +1236,10 @@ class UserSessionScope internal constructor(
             callMapper = callMapper,
             conversationClientsInCallUpdater = conversationClientsInCallUpdater,
             getCallConversationType = getCallConversationType,
+<<<<<<< HEAD
             networkStateObserver = networkStateObserver,
+=======
+>>>>>>> f712fc2340 (feat: Use sft for one to one calls when needed cherry pick 4.6  (WPB-7153) (#2907))
             kaliumConfigs = kaliumConfigs
         )
     }

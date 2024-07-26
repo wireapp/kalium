@@ -54,7 +54,10 @@ expect class GlobalCallManager {
         videoStateChecker: VideoStateChecker,
         conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
         getCallConversationType: GetCallConversationTypeProvider,
+<<<<<<< HEAD
         networkStateObserver: NetworkStateObserver,
+=======
+>>>>>>> f712fc2340 (feat: Use sft for one to one calls when needed cherry pick 4.6  (WPB-7153) (#2907))
         kaliumConfigs: KaliumConfigs
     ): CallManager
 

@@ -100,6 +100,9 @@ class CallManagerTest {
     @Mock
     private val getCallConversationType = mock(GetCallConversationTypeProvider::class)
 
+    @Mock
+    private val getCallConversationType = mock(GetCallConversationTypeProvider::class)
+
     private val dispatcher = TestKaliumDispatcher
 
     private lateinit var callManagerImpl: CallManagerImpl

@@ -80,9 +80,16 @@ class StartCallUseCaseTest {
 
         startCall.invoke(conversationId, CallType.AUDIO)
 
+<<<<<<< HEAD
         coVerify {
             arrangement.callManager.startCall(eq(conversationId), eq(CallType.AUDIO), any(), eq(false))
         }.wasInvoked(once)
+=======
+        verify(arrangement.callManager)
+            .suspendFunction(arrangement.callManager::startCall)
+            .with(eq(conversationId), eq(CallType.AUDIO), eq(ConversationTypeCalling.Conference), eq(false))
+            .wasInvoked(once)
+>>>>>>> f712fc2340 (feat: Use sft for one to one calls when needed cherry pick 4.6  (WPB-7153) (#2907))
 
         coVerify {
             arrangement.answerCall.invoke(any())
@@ -148,12 +155,23 @@ class StartCallUseCaseTest {
 
         startCall.invoke(conversationId, CallType.AUDIO)
 
+<<<<<<< HEAD
         coVerify {
             arrangement.callManager.startCall(eq(conversationId), eq(CallType.AUDIO), any(), eq(true))
         }.wasInvoked(once)
         coVerify {
             arrangement.answerCall.invoke(any())
         }.wasNotInvoked()
+=======
+        verify(arrangement.callManager)
+            .suspendFunction(arrangement.callManager::startCall)
+            .with(eq(conversationId), eq(CallType.AUDIO), eq(ConversationTypeCalling.Conference), eq(true))
+            .wasInvoked(once)
+        verify(arrangement.answerCall)
+            .suspendFunction(arrangement.answerCall::invoke)
+            .with(any())
+            .wasNotInvoked()
+>>>>>>> f712fc2340 (feat: Use sft for one to one calls when needed cherry pick 4.6  (WPB-7153) (#2907))
     }
 
     private class Arrangement(private var dispatcher: KaliumDispatcher = TestKaliumDispatcher) {
@@ -171,11 +189,16 @@ class StartCallUseCaseTest {
         val getCallConversationType = mock(GetCallConversationTypeProvider::class)
 
         @Mock
+<<<<<<< HEAD
         val callRepository = mock(CallRepository::class)
+=======
+        val callRepository = mock(classOf<CallRepository>())
+>>>>>>> f712fc2340 (feat: Use sft for one to one calls when needed cherry pick 4.6  (WPB-7153) (#2907))
 
         private val kaliumConfigs = KaliumConfigs()
 
         private val startCallUseCase = StartCallUseCase(
+<<<<<<< HEAD
             lazy { callManager },
             syncManager,
             kaliumConfigs,
@@ -183,6 +206,9 @@ class StartCallUseCaseTest {
             getCallConversationType,
             answerCall,
             dispatcher
+=======
+            lazy { callManager }, syncManager, kaliumConfigs, callRepository, getCallConversationType, answerCall
+>>>>>>> f712fc2340 (feat: Use sft for one to one calls when needed cherry pick 4.6  (WPB-7153) (#2907))
         )
 
         private val startCallUseCaseWithCBR = StartCallUseCase(
@@ -192,7 +218,10 @@ class StartCallUseCaseTest {
             callRepository,
             getCallConversationType,
             answerCall,
+<<<<<<< HEAD
             dispatcher
+=======
+>>>>>>> f712fc2340 (feat: Use sft for one to one calls when needed cherry pick 4.6  (WPB-7153) (#2907))
         )
 
         suspend fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))
@@ -203,9 +232,23 @@ class StartCallUseCaseTest {
         }
 
         suspend fun withCallConversationTypeUseCaseReturning(result: ConversationTypeCalling) = apply {
+<<<<<<< HEAD
             coEvery {
                 getCallConversationType.invoke(any())
             }.returns(result)
+=======
+            given(getCallConversationType)
+                .suspendFunction(getCallConversationType::invoke)
+                .whenInvokedWith(any())
+                .then { result }
+        }
+
+        fun withNoIncomingCall() = apply {
+            given(callRepository)
+                .suspendFunction(callRepository::incomingCallsFlow)
+                .whenInvoked()
+                .then { flowOf(listOf()) }
+>>>>>>> f712fc2340 (feat: Use sft for one to one calls when needed cherry pick 4.6  (WPB-7153) (#2907))
         }
 
         suspend fun withNoIncomingCall() = apply {

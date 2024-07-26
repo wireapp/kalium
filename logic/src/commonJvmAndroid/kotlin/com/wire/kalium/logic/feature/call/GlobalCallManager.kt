@@ -90,7 +90,10 @@ actual class GlobalCallManager(
         videoStateChecker: VideoStateChecker,
         conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
         getCallConversationType: GetCallConversationTypeProvider,
+<<<<<<< HEAD
         networkStateObserver: NetworkStateObserver,
+=======
+>>>>>>> f712fc2340 (feat: Use sft for one to one calls when needed cherry pick 4.6  (WPB-7153) (#2907))
         kaliumConfigs: KaliumConfigs
     ): CallManager {
         return callManagerHolder.computeIfAbsent(userId) {
@@ -108,9 +111,12 @@ actual class GlobalCallManager(
                 videoStateChecker = videoStateChecker,
                 conversationClientsInCallUpdater = conversationClientsInCallUpdater,
                 getCallConversationType = getCallConversationType,
+<<<<<<< HEAD
                 networkStateObserver = networkStateObserver,
                 mediaManagerService = mediaManager,
                 flowManagerService = flowManager,
+=======
+>>>>>>> f712fc2340 (feat: Use sft for one to one calls when needed cherry pick 4.6  (WPB-7153) (#2907))
                 kaliumConfigs = kaliumConfigs
             )
         }
