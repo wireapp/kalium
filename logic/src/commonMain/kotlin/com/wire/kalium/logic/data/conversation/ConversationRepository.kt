@@ -140,6 +140,15 @@ interface ConversationRepository {
     suspend fun fetchConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun fetchSentConnectionConversation(conversationID: ConversationId): Either<CoreFailure, Unit>
     suspend fun fetchConversationIfUnknown(conversationID: ConversationId): Either<CoreFailure, Unit>
+<<<<<<< HEAD
+=======
+    suspend fun observeById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>>
+    suspend fun getConversationById(conversationId: ConversationId): Conversation?
+    suspend fun getConversationTypeById(conversationId: ConversationId): Either<StorageFailure, Conversation.Type>
+    suspend fun observeCacheDetailsById(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation?>>
+    suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation>
+    suspend fun baseInfoById(conversationId: ConversationId): Either<StorageFailure, Conversation>
+>>>>>>> f4bcf0162f (feat: Use SFT for one to one calls when needed (WPB-7153) (#2893))
     suspend fun getConversationRecipients(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
     suspend fun getRecipientById(conversationId: ConversationId, userIDList: List<UserId>): Either<StorageFailure, List<Recipient>>
     suspend fun getConversationRecipientsForCalling(conversationId: ConversationId): Either<CoreFailure, List<Recipient>>
@@ -620,6 +629,50 @@ internal class ConversationDataSource internal constructor(
         }
     }
 
+<<<<<<< HEAD
+=======
+    // Deprecated notice, so we can use newer versions of Kalium on Reloaded without breaking things.
+    @Deprecated("This doesn't return conversation details", ReplaceWith("detailsById"))
+    override suspend fun observeById(conversationId: ConversationId): Flow<Either<StorageFailure, Conversation>> =
+        conversationDAO.observeGetConversationByQualifiedID(conversationId.toDao()).filterNotNull()
+            .map(conversationMapper::fromDaoModel)
+            .wrapStorageRequest()
+
+    // TODO: refactor. 3 Ways different ways to return conversation details?!
+    override suspend fun getConversationById(conversationId: ConversationId): Conversation? =
+        conversationDAO.observeGetConversationByQualifiedID(conversationId.toDao())
+            .map { conversationEntity ->
+                conversationEntity?.let { conversationMapper.fromDaoModel(it) }
+            }.firstOrNull()
+
+    override suspend fun getConversationTypeById(conversationId: ConversationId): Either<StorageFailure, Conversation.Type> =
+        wrapStorageRequest {
+            conversationDAO.getConversationTypeById(conversationId.toDao())?.let {
+                conversationMapper.fromConversationEntityType(it)
+            }
+        }
+
+    override suspend fun observeCacheDetailsById(conversationId: ConversationId): Either<StorageFailure, Flow<Conversation?>> =
+        wrapStorageRequest {
+            conversationDAO.observeConversationDetailsById(conversationId.toDao())
+                .map { conversationViewEntity ->
+                    conversationViewEntity?.let { conversationMapper.fromDaoModel(it) }
+                }
+        }
+
+    override suspend fun detailsById(conversationId: ConversationId): Either<StorageFailure, Conversation> = wrapStorageRequest {
+        conversationDAO.getConversationByQualifiedID(conversationId.toDao())?.let {
+            conversationMapper.fromDaoModel(it)
+        }
+    }
+
+    override suspend fun baseInfoById(conversationId: ConversationId): Either<StorageFailure, Conversation> = wrapStorageRequest {
+        conversationDAO.getConversationBaseInfoByQualifiedID(conversationId.toDao())?.let {
+            conversationMapper.fromDaoModel(it)
+        }
+    }
+
+>>>>>>> f4bcf0162f (feat: Use SFT for one to one calls when needed (WPB-7153) (#2893))
     override suspend fun getConversationProtocolInfo(conversationId: ConversationId): Either<StorageFailure, Conversation.ProtocolInfo> =
         wrapStorageRequest {
             conversationDAO.getConversationProtocolInfo(conversationId.toDao())?.let {

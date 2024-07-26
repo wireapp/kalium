@@ -31,6 +31,7 @@ import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.data.message.MessageTarget
 import com.wire.kalium.logic.framework.TestCall
 import com.wire.kalium.persistence.dao.call.CallEntity
+import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
@@ -59,13 +60,22 @@ class CallMapperTest {
 
     @Test
     fun whenMappingToConversationTypeCalling_withConversationType_thenReturnConversationTypeCalling() = runTest {
-        val oneOnOneMap = callMapper.toConversationTypeCalling(conversationType = ConversationType.OneOnOne)
-        val conferenceMap = callMapper.toConversationTypeCalling(conversationType = ConversationType.Conference)
-        val unknown = callMapper.toConversationTypeCalling(conversationType = ConversationType.Unknown)
+        val oneOnOneMap = callMapper.toConversationTypeCalling(conversationTypeForCall = ConversationTypeForCall.OneOnOne)
+        val conferenceMap = callMapper.toConversationTypeCalling(conversationTypeForCall = ConversationTypeForCall.Conference)
+        val unknown = callMapper.toConversationTypeCalling(conversationTypeForCall = ConversationTypeForCall.Unknown)
 
         assertEquals(ConversationTypeCalling.OneOnOne, oneOnOneMap)
         assertEquals(ConversationTypeCalling.Conference, conferenceMap)
         assertEquals(ConversationTypeCalling.Unknown, unknown)
+    }
+
+    @Test
+    fun givenCallMapper_whenMappingToConversationType_thenReturnConversationType() = runTest {
+        val oneOnOneMap = callMapper.toConversationType(conversationType = ConversationEntity.Type.ONE_ON_ONE)
+        val conferenceMap = callMapper.toConversationType(conversationType = ConversationEntity.Type.GROUP)
+
+        assertEquals(Conversation.Type.ONE_ON_ONE, oneOnOneMap)
+        assertEquals(Conversation.Type.GROUP, conferenceMap)
     }
 
     @Test
@@ -87,7 +97,7 @@ class CallMapperTest {
 
     @Test
     fun given0AsAConversationTypeInputValue_whenMappingToConversationType_ThenReturnOneOnOneType() {
-        val expected = ConversationType.OneOnOne
+        val expected = ConversationTypeForCall.OneOnOne
 
         val actual = callMapper.fromIntToConversationType(0)
 
@@ -96,7 +106,7 @@ class CallMapperTest {
 
     @Test
     fun given2AsAConversationTypeInputValue_whenMappingToConversationType_ThenReturnConferenceType() {
-        val expected = ConversationType.Conference
+        val expected = ConversationTypeForCall.Conference
 
         val actual = callMapper.fromIntToConversationType(2)
 
@@ -105,7 +115,7 @@ class CallMapperTest {
 
     @Test
     fun givenADifferentAConversationTypeInputValue_whenMappingToConversationType_ThenReturnConferenceType() {
-        val expected = ConversationType.Unknown
+        val expected = ConversationTypeForCall.Unknown
 
         val actual = callMapper.fromIntToConversationType(4)
 
@@ -124,7 +134,7 @@ class CallMapperTest {
             status = CallStatus.ESTABLISHED,
             conversationType = Conversation.Type.ONE_ON_ONE,
             callerId = TestCall.CALLER_ID,
-            type = ConversationType.OneOnOne
+            type = ConversationTypeForCall.OneOnOne
         )
 
         // then
