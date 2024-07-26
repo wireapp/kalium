@@ -191,8 +191,8 @@ class StartCallUseCaseTest {
             syncManager,
             KaliumConfigs(forceConstantBitrateCalls = true),
             callRepository,
+            getCallConversationType,
             answerCall,
-            getCallConversationType
         )
 
         fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))
@@ -206,12 +206,9 @@ class StartCallUseCaseTest {
         }
 
         suspend fun withCallConversationTypeUseCaseReturning(result: ConversationTypeCalling) = apply {
-            coEvery {
-                getCallConversationType.invoke(any())
-            }.returns(result)
             given(getCallConversationType)
                 .suspendFunction(getCallConversationType::invoke)
-                .whenInvoked()
+                .whenInvokedWith(any())
                 .then { result }
         }
 
