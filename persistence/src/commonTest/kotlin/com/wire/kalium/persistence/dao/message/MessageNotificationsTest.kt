@@ -108,15 +108,15 @@ class MessageNotificationsTest : BaseMessageTest() {
         val message = OTHER_MESSAGE
         val messageOtherConvo2 = OTHER_MESSAGE_CONVO2
         // going to super to not insert legal hold values
-        super.insertInitialData()
+        insertInitialData()
         // just inserting legal hold for one conversation
         conversationDAO.updateLegalHoldStatusChangeNotified(TEST_CONVERSATION_1.id, false)
         messageDAO.insertOrIgnoreMessages(listOf(message, messageOtherConvo2))
 
         messageDAO.getNotificationMessage().let { notifications ->
             assertEquals(2, notifications.size)
-            assertEquals(false, notifications.first { it.conversationId == TEST_CONVERSATION_1.id  }.legalHoldStatusChangeNotified)
-            assertEquals(true, notifications.first { it.conversationId == TEST_CONVERSATION_2.id  }.legalHoldStatusChangeNotified)
+            assertEquals(false, notifications.first { it.conversationId == TEST_CONVERSATION_1.id }.legalHoldStatusChangeNotified)
+            assertEquals(true, notifications.first { it.conversationId == TEST_CONVERSATION_2.id }.legalHoldStatusChangeNotified)
         }
     }
 
@@ -371,9 +371,6 @@ class MessageNotificationsTest : BaseMessageTest() {
 
     override suspend fun insertInitialData() {
         super.insertInitialData()
-        // Always insert original messages
-        conversationDAO.updateLegalHoldStatusChangeNotified(TEST_CONVERSATION_1.id, true)
-        conversationDAO.updateLegalHoldStatusChangeNotified(TEST_CONVERSATION_2.id, true)
     }
 
     private companion object {
