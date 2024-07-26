@@ -23,6 +23,7 @@ package com.wire.kalium.logic.feature.call
 import com.sun.jna.Pointer
 import com.wire.kalium.calling.CallTypeCalling
 import com.wire.kalium.calling.Calling
+import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.calling.callbacks.ConstantBitRateStateChangeHandler
 import com.wire.kalium.calling.callbacks.MetricsHandler
 import com.wire.kalium.calling.callbacks.ReadyHandler
@@ -36,7 +37,6 @@ import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.CallType
-import com.wire.kalium.logic.data.call.ConversationType
 import com.wire.kalium.logic.data.call.EpochInfo
 import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.call.TestVideoType
@@ -71,6 +71,7 @@ import com.wire.kalium.logic.feature.call.scenario.OnRequestNewEpoch
 import com.wire.kalium.logic.feature.call.scenario.OnSFTRequest
 import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
+import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.functional.fold
@@ -108,6 +109,7 @@ class CallManagerImpl internal constructor(
     private val videoStateChecker: VideoStateChecker,
     private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
     private val networkStateObserver: NetworkStateObserver,
+    private val getCallConversationType: GetCallConversationTypeProvider,
     private val kaliumConfigs: KaliumConfigs,
     private val mediaManagerService: MediaManagerService,
     private val flowManagerService: FlowManagerService,
@@ -249,11 +251,8 @@ class CallManagerImpl internal constructor(
                 message.conversationId
             }
 
-            val type = conversationRepository.getConversationById(targetConversationId).fold({
-                ConversationType.Unknown
-            }, {
-                callMapper.fromConversationToConversationType(it)
-            })
+            val callConversationType = getCallConversationType(targetConversationId)
+            val type = callMapper.toConversationType(callConversationType)
 
             wcall_recv_msg(
                 inst = deferredHandle.await(),
@@ -273,6 +272,7 @@ class CallManagerImpl internal constructor(
     override suspend fun startCall(
         conversationId: ConversationId,
         callType: CallType,
+        conversationTypeCalling: ConversationTypeCalling,
         isAudioCbr: Boolean
     ) {
         callingLogger.d(
@@ -280,11 +280,8 @@ class CallManagerImpl internal constructor(
                     "${conversationId.toLogString()}.."
         )
         val isCameraOn = callType == CallType.VIDEO
-        val type = conversationRepository.getConversationById(conversationId).fold({
-            ConversationType.Unknown
-        }, {
-            callMapper.fromConversationToConversationType(it)
-        })
+
+        val type = callMapper.toConversationType(conversationTypeCalling)
 
         callRepository.createCall(
             conversationId = conversationId,
@@ -298,13 +295,12 @@ class CallManagerImpl internal constructor(
 
         withCalling {
             val avsCallType = callMapper.toCallTypeCalling(callType)
-            val avsConversationType = callMapper.toConversationTypeCalling(type)
             // TODO: Handle response. Possible failure?
             wcall_start(
                 deferredHandle.await(),
                 federatedIdMapper.parseToFederatedId(conversationId),
                 avsCallType.avsValue,
-                avsConversationType.avsValue,
+                conversationTypeCalling.avsValue,
                 isAudioCbr.toInt()
             )
 
