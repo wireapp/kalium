@@ -83,6 +83,8 @@ interface ConversationMapper {
     fun verificationStatusFromEntity(verificationStatus: ConversationEntity.VerificationStatus): Conversation.VerificationStatus
     fun legalHoldStatusToEntity(legalHoldStatus: Conversation.LegalHoldStatus): ConversationEntity.LegalHoldStatus
     fun legalHoldStatusFromEntity(legalHoldStatus: ConversationEntity.LegalHoldStatus): Conversation.LegalHoldStatus
+
+    fun fromConversationEntityType(type: ConversationEntity.Type): Conversation.Type
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")
@@ -454,6 +456,10 @@ internal class ConversationMapperImpl(
             ConversationEntity.LegalHoldStatus.DEGRADED -> Conversation.LegalHoldStatus.DEGRADED
             ConversationEntity.LegalHoldStatus.DISABLED -> Conversation.LegalHoldStatus.DISABLED
         }
+
+    override fun fromConversationEntityType(type: ConversationEntity.Type): Conversation.Type {
+        return type.fromDaoModelToType()
+    }
 }
 
 internal fun ConversationResponse.toConversationType(selfUserTeamId: TeamId?): ConversationEntity.Type {

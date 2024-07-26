@@ -163,7 +163,7 @@ sealed class FeatureConfigData {
         @SerialName("status")
         val status: FeatureFlagStatusDTO,
         @SerialName("config")
-        val config: ConferenceCallingConfigDTO
+        val config: ConferenceCallingConfigDTO? // TODO make it non optional when the minimum supported API is v6
     ) : FeatureConfigData()
 
     @SerialName("conversationGuestLinks")

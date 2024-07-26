@@ -16,19 +16,15 @@
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
 
-package com.wire.kalium.logic.feature.e2ei
+package com.wire.kalium.logic.data.call
 
-import com.wire.kalium.cryptography.CryptoCertificateStatus
-
-interface CertificateStatusMapper {
-    fun toCertificateStatus(certificateStatus: CryptoCertificateStatus): CertificateStatus
-}
-
-class CertificateStatusMapperImpl : CertificateStatusMapper {
-    override fun toCertificateStatus(certificateStatus: CryptoCertificateStatus): CertificateStatus =
-        when (certificateStatus) {
-            CryptoCertificateStatus.EXPIRED -> CertificateStatus.EXPIRED
-            CryptoCertificateStatus.REVOKED -> CertificateStatus.REVOKED
-            CryptoCertificateStatus.VALID -> CertificateStatus.VALID
-        }
+/**
+ * [OneOnOne] for a 1:1 call
+ * [Conference] for a group cal
+ */
+enum class ConversationTypeForCall {
+    OneOnOne,
+    Conference,
+    ConferenceMls,
+    Unknown
 }
