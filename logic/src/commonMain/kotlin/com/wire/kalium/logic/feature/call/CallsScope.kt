@@ -34,7 +34,6 @@ import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdat
 import com.wire.kalium.logic.feature.call.usecase.EndCallResultListenerImpl
 import com.wire.kalium.logic.feature.call.usecase.EndCallOnConversationChangeUseCase
 import com.wire.kalium.logic.feature.call.usecase.EndCallOnConversationChangeUseCaseImpl
-import com.wire.kalium.logic.feature.call.usecase.EndCallResultListenerImpl
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.EndCallUseCaseImpl
 import com.wire.kalium.logic.feature.call.usecase.FlipToBackCameraUseCase
