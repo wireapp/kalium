@@ -118,7 +118,9 @@ class MessageNotificationsTest : BaseMessageTest() {
     fun givenConversation_whenNoLegalHoldNotified_thenNotificationIsPresent() = runTest {
         val message = OTHER_MESSAGE
         val messageOtherConvo2 = OTHER_MESSAGE_CONVO2
+        // going to super to not insert legal hold values
         super.insertInitialData()
+        // just inserting legal hold for one conversation
         conversationDAO.updateLegalHoldStatusChangeNotified(TEST_CONVERSATION_1.id, false)
         messageDAO.insertOrIgnoreMessages(listOf(message, messageOtherConvo2))
 
