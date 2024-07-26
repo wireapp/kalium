@@ -83,6 +83,8 @@ interface ConversationMapper {
     fun verificationStatusFromEntity(verificationStatus: ConversationEntity.VerificationStatus): Conversation.VerificationStatus
     fun legalHoldStatusToEntity(legalHoldStatus: Conversation.LegalHoldStatus): ConversationEntity.LegalHoldStatus
     fun legalHoldStatusFromEntity(legalHoldStatus: ConversationEntity.LegalHoldStatus): Conversation.LegalHoldStatus
+
+    fun fromConversationEntityType(type: ConversationEntity.Type): Conversation.Type
 }
 
 @Suppress("TooManyFunctions", "LongParameterList")

@@ -20,7 +20,7 @@ package com.wire.kalium.logic.feature.call.scenario
 import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.logic.data.call.CallRepository
-import com.wire.kalium.logic.data.call.ConversationType
+import com.wire.kalium.logic.data.call.ConversationTypeForCall
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.data.call.CallStatus
@@ -33,7 +33,6 @@ import io.mockative.configure
 import io.mockative.eq
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -64,7 +63,7 @@ class OnIncomingCallTest {
             .suspendFunction(arrangement.callRepository::createCall)
             .with(
                 eq(TestConversation.CONVERSATION.id),
-                eq(ConversationType.Conference),
+                eq(ConversationTypeForCall.Conference),
                 eq(CallStatus.INCOMING),
                 eq(TestUser.USER_ID.toString()),
                 eq(true),
@@ -95,7 +94,7 @@ class OnIncomingCallTest {
             .suspendFunction(arrangement.callRepository::createCall)
             .with(
                 eq(TestConversation.CONVERSATION.id),
-                eq(ConversationType.Conference),
+                eq(ConversationTypeForCall.Conference),
                 eq(CallStatus.STILL_ONGOING),
                 eq(TestUser.USER_ID.toString()),
                 eq(true),
