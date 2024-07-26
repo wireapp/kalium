@@ -195,7 +195,7 @@ class CallRepositoryTest {
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
-            type = ConversationType.Conference
+            type = ConversationTypeForCall.Conference
         )
 
         // then
@@ -245,7 +245,7 @@ class CallRepositoryTest {
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
-            type = ConversationType.Conference
+            type = ConversationTypeForCall.Conference
         )
 
         // then
@@ -291,7 +291,7 @@ class CallRepositoryTest {
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
-            type = ConversationType.Conference
+            type = ConversationTypeForCall.Conference
         )
 
         // then
@@ -346,7 +346,7 @@ class CallRepositoryTest {
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
-            type = ConversationType.Conference
+            type = ConversationTypeForCall.Conference
         )
 
         // then
@@ -395,7 +395,7 @@ class CallRepositoryTest {
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
-            type = ConversationType.Conference
+            type = ConversationTypeForCall.Conference
         )
 
         // then
@@ -430,7 +430,7 @@ class CallRepositoryTest {
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
-            type = ConversationType.OneOnOne
+            type = ConversationTypeForCall.OneOnOne
         )
 
         // then
@@ -469,7 +469,7 @@ class CallRepositoryTest {
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
-            type = ConversationType.OneOnOne
+            type = ConversationTypeForCall.OneOnOne
         )
 
         // then
@@ -507,7 +507,7 @@ class CallRepositoryTest {
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
-            type = ConversationType.OneOnOne
+            type = ConversationTypeForCall.OneOnOne
         )
 
         coVerify {
@@ -553,7 +553,7 @@ class CallRepositoryTest {
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
-            type = ConversationType.OneOnOne
+            type = ConversationTypeForCall.OneOnOne
         )
 
         // then
@@ -590,7 +590,7 @@ class CallRepositoryTest {
             isMuted = true,
             isCameraOn = false,
             isCbrEnabled = false,
-            type = ConversationType.OneOnOne
+            type = ConversationTypeForCall.OneOnOne
         )
 
         // then
