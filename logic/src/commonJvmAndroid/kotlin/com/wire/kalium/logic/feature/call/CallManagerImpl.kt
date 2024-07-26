@@ -251,16 +251,8 @@ class CallManagerImpl internal constructor(
                 message.conversationId
             }
 
-<<<<<<< HEAD
-            val type = conversationRepository.getConversationById(targetConversationId).fold({
-                ConversationType.Unknown
-            }, {
-                callMapper.fromConversationToConversationType(it)
-            })
-=======
             val callConversationType = getCallConversationType(targetConversationId)
             val type = callMapper.toConversationType(callConversationType)
->>>>>>> f4bcf0162f (feat: Use SFT for one to one calls when needed (WPB-7153) (#2893))
 
             wcall_recv_msg(
                 inst = deferredHandle.await(),
@@ -288,15 +280,8 @@ class CallManagerImpl internal constructor(
                     "${conversationId.toLogString()}.."
         )
         val isCameraOn = callType == CallType.VIDEO
-<<<<<<< HEAD
-        val type = conversationRepository.getConversationById(conversationId).fold({
-            ConversationType.Unknown
-        }, {
-            callMapper.fromConversationToConversationType(it)
-        })
-=======
+
         val type = callMapper.toConversationType(conversationTypeCalling)
->>>>>>> f4bcf0162f (feat: Use SFT for one to one calls when needed (WPB-7153) (#2893))
 
         callRepository.createCall(
             conversationId = conversationId,
