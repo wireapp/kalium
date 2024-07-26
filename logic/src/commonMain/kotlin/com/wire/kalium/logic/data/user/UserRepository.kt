@@ -482,6 +482,7 @@ internal class UserDataSource internal constructor(
     }
 
     override suspend fun getUsersMinimizedByQualifiedIDs(userIds: List<UserId>) = wrapStorageRequest {
+        println("cyka getUsersMinimizedByQualifiedIDs....")
         userDAO.getUsersMinimizedByQualifiedIDs(
             qualifiedIDs = userIds.map { it.toDao() }
         ).map(userMapper::fromUserEntityToOtherUserMinimized)

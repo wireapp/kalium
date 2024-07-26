@@ -22,7 +22,9 @@ import com.wire.kalium.calling.VideoStateCalling
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapperImpl
 import com.wire.kalium.logic.data.id.QualifiedID
+import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.every
 import io.mockative.mock
 import kotlinx.coroutines.test.runTest
@@ -38,7 +40,10 @@ class ParticipantMapperTest {
     @Mock
     private val callMapper = mock(CallMapper::class)
 
-    private val participantMapperImpl = ParticipantMapperImpl(videoStateChecker, callMapper)
+    @Mock
+    private val qualifiedIdMapper = mock(QualifiedIdMapper::class)
+
+    private val participantMapperImpl = ParticipantMapperImpl(videoStateChecker, callMapper, qualifiedIdMapper)
 
     @BeforeTest
     fun setUp() {
@@ -51,6 +56,8 @@ class ParticipantMapperTest {
         every {
             videoStateChecker.isSharingScreen(VideoStateCalling.STOPPED)
         }.returns(false)
+        every { qualifiedIdMapper.fromStringToQualifiedID(any()) }
+            .returns(QualifiedID("value", "domain"))
     }
 
     @Test

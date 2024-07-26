@@ -42,12 +42,12 @@ data class CallMetadata(
     val participants: List<ParticipantMinimized> = emptyList(),
     val maxParticipants: Int = 0, // Was used for tracking
     val protocol: Conversation.ProtocolInfo,
-    val activeSpeakers: List<CallActiveSpeaker> = listOf(),
+    val activeSpeakers: List<CallSpeakingUser> = listOf(),
     val users: List<OtherUserMinimized> = listOf()
 ) {
     fun getFullParticipants(): List<Participant> = participants.map { participant ->
         val user = users.firstOrNull { it.id == participant.id }
-        val isSpeaking = activeSpeakers.any { it.userId == participant.id.toString() && it.clientId == participant.clientId }
+        val isSpeaking = activeSpeakers.any { it.userId == participant.id && it.clientId == participant.clientId }
         Participant(
             id = participant.id,
             clientId = participant.clientId,

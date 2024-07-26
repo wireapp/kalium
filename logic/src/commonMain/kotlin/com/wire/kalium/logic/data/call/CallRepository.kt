@@ -119,7 +119,7 @@ interface CallRepository {
     fun updateIsCbrEnabled(isCbrEnabled: Boolean)
     fun updateIsCameraOnById(conversationId: ConversationId, isCameraOn: Boolean)
     suspend fun updateCallParticipants(conversationId: ConversationId, participants: List<ParticipantMinimized>)
-    fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: List<CallActiveSpeaker>)
+    fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: List<CallSpeakingUser>)
     suspend fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?>
     suspend fun updateOpenCallsToClosedStatus()
     suspend fun persistMissedCall(conversationId: ConversationId)
@@ -419,10 +419,12 @@ internal class CallDataSource(
                 val currentParticipantIds = call.participants.map { it.id }
                 val newParticipantIds = participants.map { it.id }
 
-                val updateUsers = if (currentParticipantIds == newParticipantIds) {
-                    userRepository.getUsersMinimizedByQualifiedIDs(newParticipantIds).getOrElse { call.users }
-                } else {
-                    call.users
+                val updateUsers = when {
+                    newParticipantIds.isEmpty() -> call.users
+                    (currentParticipantIds != newParticipantIds) ->
+                        userRepository.getUsersMinimizedByQualifiedIDs(newParticipantIds).getOrElse { call.users }
+
+                    else -> call.users
                 }
 
                 val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
@@ -478,7 +480,7 @@ internal class CallDataSource(
         }
     }
 
-    override fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: List<CallActiveSpeaker>) {
+    override fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: List<CallSpeakingUser>) {
         val callMetadataProfile = _callMetadataProfile.value
 
         callMetadataProfile.data[conversationId]?.let { call ->
