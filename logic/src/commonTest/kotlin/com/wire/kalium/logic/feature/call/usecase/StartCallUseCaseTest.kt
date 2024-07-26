@@ -83,7 +83,7 @@ class StartCallUseCaseTest {
 
         verify(arrangement.callManager)
             .suspendFunction(arrangement.callManager::startCall)
-            .with(eq(conversationId), eq(CallType.AUDIO), eq(false))
+            .with(eq(conversationId), eq(CallType.AUDIO), eq(ConversationTypeCalling.Conference), eq(false))
             .wasInvoked(once)
 
         verify(arrangement.answerCall)
@@ -155,7 +155,7 @@ class StartCallUseCaseTest {
 
         verify(arrangement.callManager)
             .suspendFunction(arrangement.callManager::startCall)
-            .with(eq(conversationId), eq(CallType.AUDIO), eq(true))
+            .with(eq(conversationId), eq(CallType.AUDIO), eq(ConversationTypeCalling.Conference), eq(true))
             .wasInvoked(once)
         verify(arrangement.answerCall)
             .suspendFunction(arrangement.answerCall::invoke)
