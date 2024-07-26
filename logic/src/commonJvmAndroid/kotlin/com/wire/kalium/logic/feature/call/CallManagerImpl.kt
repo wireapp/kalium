@@ -103,7 +103,6 @@ class CallManagerImpl internal constructor(
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val videoStateChecker: VideoStateChecker,
     private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
-    private val networkStateObserver: NetworkStateObserver,
     private val getCallConversationType: GetCallConversationTypeProvider,
     private val kaliumConfigs: KaliumConfigs,
     private val json: Json = Json { ignoreUnknownKeys = true },
