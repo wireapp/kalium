@@ -16,12 +16,12 @@ SELECT
     Conversation.type AS conversationType,
     Conversation.degraded_conversation_notified AS degradedConversationNotified,
     Conversation.legal_hold_status AS legalHoldStatus,
-    LegalHoldNotified.legal_hold_status_change_notified AS legalHoldStatusChangeNotified
+    IFNULL(LegalHoldNotified.legal_hold_status_change_notified, 1) == 1 AS legalHoldStatusChangeNotified
 FROM Message
 LEFT JOIN SelfUser
 JOIN User ON Message.sender_user_id = User.qualified_id AND Message.content_type IN  ('TEXT', 'RESTRICTED_ASSET', 'ASSET', 'KNOCK', 'MISSED_CALL', 'LOCATION')
 JOIN Conversation AS Conversation ON Message.conversation_id == Conversation.qualified_id AND (Message.creation_date > IFNULL(Conversation.last_notified_date, 0))
-JOIN ConversationLegalHoldStatusChangeNotified AS LegalHoldNotified ON Message.conversation_id == LegalHoldNotified.conversation_id AND (Message.creation_date > IFNULL(Conversation.last_notified_date, 0))
+LEFT JOIN ConversationLegalHoldStatusChangeNotified AS LegalHoldNotified ON Message.conversation_id == LegalHoldNotified.conversation_id AND (Message.creation_date > IFNULL(Conversation.last_notified_date, 0))
 LEFT JOIN MessageAssetContent AS AssetContent ON Message.id = AssetContent.message_id AND Message.conversation_id = AssetContent.conversation_id
 LEFT JOIN MessageTextContent AS TextContent ON Message.id = TextContent.message_id AND Message.conversation_id = TextContent.conversation_id
 WHERE
