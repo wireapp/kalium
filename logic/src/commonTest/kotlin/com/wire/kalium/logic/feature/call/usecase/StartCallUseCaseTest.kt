@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.call.usecase
 
+import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.call.CallRepository
@@ -52,6 +53,7 @@ class StartCallUseCaseTest {
             val (arrangement, startCall) = Arrangement()
                 .withWaitingForSyncSucceeding()
                 .withAnIncomingCall()
+                .withCallConversationTypeUseCaseReturning(ConversationTypeCalling.Conference)
                 .arrange()
 
             startCall.invoke(conversationId)
@@ -74,13 +76,14 @@ class StartCallUseCaseTest {
         val (arrangement, startCall) = Arrangement()
             .withWaitingForSyncSucceeding()
             .withNoIncomingCall()
+            .withCallConversationTypeUseCaseReturning(ConversationTypeCalling.Conference)
             .arrange()
 
         startCall.invoke(conversationId, CallType.AUDIO)
 
         verify(arrangement.callManager)
             .suspendFunction(arrangement.callManager::startCall)
-            .with(eq(conversationId), eq(CallType.AUDIO), eq(false))
+            .with(eq(conversationId), eq(CallType.AUDIO), eq(ConversationTypeCalling.Conference), eq(false))
             .wasInvoked(once)
 
         verify(arrangement.answerCall)
@@ -96,6 +99,7 @@ class StartCallUseCaseTest {
         val (arrangement, startCall) = Arrangement()
             .withWaitingForSyncSucceeding()
             .withNoIncomingCall()
+            .withCallConversationTypeUseCaseReturning(ConversationTypeCalling.Conference)
             .arrange()
 
         val result = startCall.invoke(conversationId, CallType.AUDIO)
@@ -113,6 +117,7 @@ class StartCallUseCaseTest {
 
         val (arrangement, startCall) = Arrangement()
             .withWaitingForSyncFailing()
+            .withCallConversationTypeUseCaseReturning(ConversationTypeCalling.OneOnOne)
             .arrange()
 
         startCall.invoke(conversationId, CallType.AUDIO)
@@ -143,13 +148,14 @@ class StartCallUseCaseTest {
         val (arrangement, startCall) = Arrangement()
             .withWaitingForSyncSucceeding()
             .withNoIncomingCall()
+            .withCallConversationTypeUseCaseReturning(ConversationTypeCalling.Conference)
             .arrangeWithCBR()
 
         startCall.invoke(conversationId, CallType.AUDIO)
 
         verify(arrangement.callManager)
             .suspendFunction(arrangement.callManager::startCall)
-            .with(eq(conversationId), eq(CallType.AUDIO), eq(true))
+            .with(eq(conversationId), eq(CallType.AUDIO), eq(ConversationTypeCalling.Conference), eq(true))
             .wasInvoked(once)
         verify(arrangement.answerCall)
             .suspendFunction(arrangement.answerCall::invoke)
@@ -169,12 +175,15 @@ class StartCallUseCaseTest {
         val answerCall = mock(classOf<AnswerCallUseCase>())
 
         @Mock
+        val getCallConversationType = mock(GetCallConversationTypeProvider::class)
+
+        @Mock
         val callRepository = mock(classOf<CallRepository>())
 
         private val kaliumConfigs = KaliumConfigs()
 
         private val startCallUseCase = StartCallUseCase(
-            lazy { callManager }, syncManager, kaliumConfigs, callRepository, answerCall
+            lazy { callManager }, syncManager, kaliumConfigs, callRepository, getCallConversationType, answerCall
         )
 
         private val startCallUseCaseWithCBR = StartCallUseCase(
@@ -182,7 +191,8 @@ class StartCallUseCaseTest {
             syncManager,
             KaliumConfigs(forceConstantBitrateCalls = true),
             callRepository,
-            answerCall
+            getCallConversationType,
+            answerCall,
         )
 
         fun withWaitingForSyncSucceeding() = withSyncReturning(Either.Right(Unit))
@@ -193,6 +203,13 @@ class StartCallUseCaseTest {
                 .then {
                     flowOf(listOf(TestCall.groupIncomingCall(TestConversation.ID)))
                 }
+        }
+
+        suspend fun withCallConversationTypeUseCaseReturning(result: ConversationTypeCalling) = apply {
+            given(getCallConversationType)
+                .suspendFunction(getCallConversationType::invoke)
+                .whenInvokedWith(any())
+                .then { result }
         }
 
         fun withNoIncomingCall() = apply {

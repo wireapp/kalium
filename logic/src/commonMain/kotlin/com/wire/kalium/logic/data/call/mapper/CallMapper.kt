@@ -24,7 +24,7 @@ import com.wire.kalium.calling.VideoStateCalling
 import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.CallMetadata
 import com.wire.kalium.logic.data.call.CallType
-import com.wire.kalium.logic.data.call.ConversationType
+import com.wire.kalium.logic.data.call.ConversationTypeForCall
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
@@ -41,17 +41,21 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 
 interface CallMapper {
     fun toCallTypeCalling(callType: CallType): CallTypeCalling
-    fun toConversationTypeCalling(conversationType: ConversationType): ConversationTypeCalling
-    fun fromIntToConversationType(conversationType: Int): ConversationType
+    fun toConversationTypeCalling(conversationTypeForCall: ConversationTypeForCall): ConversationTypeCalling
+    fun toConversationType(conversationTypeCalling: ConversationTypeCalling): ConversationTypeForCall
+    fun fromIntToConversationType(conversationType: Int): ConversationTypeForCall
     fun fromIntToCallingVideoState(videStateInt: Int): VideoStateCalling
     fun toVideoStateCalling(videoState: VideoState): VideoStateCalling
-    fun fromConversationToConversationType(conversation: Conversation): ConversationType
+    fun fromConversationTypeToConversationTypeForCall(
+        conversationType: Conversation.Type,
+        conversationProtocol: Conversation.ProtocolInfo
+    ): ConversationTypeForCall
 
     @Suppress("LongParameterList")
     fun toCallEntity(
         conversationId: ConversationId,
         id: String,
-        type: ConversationType,
+        type: ConversationTypeForCall,
         status: CallStatus,
         conversationType: Conversation.Type,
         callerId: UserId
@@ -81,21 +85,30 @@ class CallMapperImpl(
         }
     }
 
-    override fun toConversationTypeCalling(conversationType: ConversationType): ConversationTypeCalling {
-        return when (conversationType) {
-            ConversationType.OneOnOne -> ConversationTypeCalling.OneOnOne
-            ConversationType.Conference -> ConversationTypeCalling.Conference
-            ConversationType.ConferenceMls -> ConversationTypeCalling.ConferenceMls
+    override fun toConversationTypeCalling(conversationTypeForCall: ConversationTypeForCall): ConversationTypeCalling {
+        return when (conversationTypeForCall) {
+            ConversationTypeForCall.OneOnOne -> ConversationTypeCalling.OneOnOne
+            ConversationTypeForCall.Conference -> ConversationTypeCalling.Conference
+            ConversationTypeForCall.ConferenceMls -> ConversationTypeCalling.ConferenceMls
             else -> ConversationTypeCalling.Unknown
         }
     }
 
-    override fun fromIntToConversationType(conversationType: Int): ConversationType {
+    override fun toConversationType(conversationTypeCalling: ConversationTypeCalling): ConversationTypeForCall {
+        return when (conversationTypeCalling) {
+            ConversationTypeCalling.OneOnOne -> ConversationTypeForCall.OneOnOne
+            ConversationTypeCalling.Conference -> ConversationTypeForCall.Conference
+            ConversationTypeCalling.ConferenceMls -> ConversationTypeForCall.ConferenceMls
+            else -> ConversationTypeForCall.Unknown
+        }
+    }
+
+    override fun fromIntToConversationType(conversationType: Int): ConversationTypeForCall {
         return when (conversationType) {
-            ConversationTypeCalling.OneOnOne.avsValue -> ConversationType.OneOnOne
-            ConversationTypeCalling.Conference.avsValue -> ConversationType.Conference
-            ConversationTypeCalling.ConferenceMls.avsValue -> ConversationType.ConferenceMls
-            else -> ConversationType.Unknown
+            ConversationTypeCalling.OneOnOne.avsValue -> ConversationTypeForCall.OneOnOne
+            ConversationTypeCalling.Conference.avsValue -> ConversationTypeForCall.Conference
+            ConversationTypeCalling.ConferenceMls.avsValue -> ConversationTypeForCall.ConferenceMls
+            else -> ConversationTypeForCall.Unknown
         }
     }
 
@@ -120,23 +133,26 @@ class CallMapperImpl(
         VideoState.UNKNOWN -> VideoStateCalling.UNKNOWN
     }
 
-    override fun fromConversationToConversationType(conversation: Conversation): ConversationType =
-        when (conversation.type) {
+    override fun fromConversationTypeToConversationTypeForCall(
+        conversationType: Conversation.Type,
+        conversationProtocol: Conversation.ProtocolInfo
+    ): ConversationTypeForCall =
+        when (conversationType) {
             Conversation.Type.GROUP -> {
-                when (conversation.protocol) {
-                    is Conversation.ProtocolInfo.MLS -> ConversationType.ConferenceMls
+                when (conversationProtocol) {
+                    is Conversation.ProtocolInfo.MLS -> ConversationTypeForCall.ConferenceMls
                     is Conversation.ProtocolInfo.Proteus,
-                    is Conversation.ProtocolInfo.Mixed -> ConversationType.Conference
+                    is Conversation.ProtocolInfo.Mixed -> ConversationTypeForCall.Conference
                 }
             }
-            Conversation.Type.ONE_ON_ONE -> ConversationType.OneOnOne
-            else -> ConversationType.Unknown
+            Conversation.Type.ONE_ON_ONE -> ConversationTypeForCall.OneOnOne
+            else -> ConversationTypeForCall.Unknown
         }
 
     override fun toCallEntity(
         conversationId: ConversationId,
         id: String,
-        type: ConversationType,
+        type: ConversationTypeForCall,
         status: CallStatus,
         conversationType: Conversation.Type,
         callerId: UserId
@@ -179,11 +195,11 @@ class CallMapperImpl(
         else -> ConversationEntity.Type.ONE_ON_ONE
     }
 
-    private fun toCallEntityType(conversationType: ConversationType): CallEntity.Type = when (conversationType) {
-        ConversationType.OneOnOne -> CallEntity.Type.ONE_ON_ONE
-        ConversationType.Conference -> CallEntity.Type.CONFERENCE
-        ConversationType.ConferenceMls -> CallEntity.Type.MLS_CONFERENCE
-        ConversationType.Unknown -> CallEntity.Type.UNKNOWN
+    private fun toCallEntityType(conversationTypeForCall: ConversationTypeForCall): CallEntity.Type = when (conversationTypeForCall) {
+        ConversationTypeForCall.OneOnOne -> CallEntity.Type.ONE_ON_ONE
+        ConversationTypeForCall.Conference -> CallEntity.Type.CONFERENCE
+        ConversationTypeForCall.ConferenceMls -> CallEntity.Type.MLS_CONFERENCE
+        ConversationTypeForCall.Unknown -> CallEntity.Type.UNKNOWN
     }
 
     override fun toConversationType(conversationType: ConversationEntity.Type): Conversation.Type = when (conversationType) {

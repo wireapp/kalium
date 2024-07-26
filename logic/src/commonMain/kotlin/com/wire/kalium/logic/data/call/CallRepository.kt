@@ -106,7 +106,7 @@ interface CallRepository {
     @Suppress("LongParameterList")
     suspend fun createCall(
         conversationId: ConversationId,
-        type: ConversationType,
+        type: ConversationTypeForCall,
         status: CallStatus,
         callerId: String,
         isMuted: Boolean,
@@ -185,7 +185,7 @@ internal class CallDataSource(
     @Suppress("LongMethod", "NestedBlockDepth")
     override suspend fun createCall(
         conversationId: ConversationId,
-        type: ConversationType,
+        type: ConversationTypeForCall,
         status: CallStatus,
         callerId: String,
         isMuted: Boolean,

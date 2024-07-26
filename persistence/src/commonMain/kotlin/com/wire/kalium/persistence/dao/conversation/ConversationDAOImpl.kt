@@ -190,6 +190,11 @@ internal class ConversationDAOImpl internal constructor(
         }
     }
 
+    override suspend fun getConversationTypeById(conversationId: QualifiedIDEntity): ConversationEntity.Type? =
+        withContext(coroutineContext) {
+            conversationQueries.getConversationTypeById(conversationId).executeAsOneOrNull()
+        }
+
     override suspend fun getTeamConversationIdsReadyToCompleteMigration(teamId: String): List<QualifiedIDEntity> {
         return withContext(coroutineContext) {
             conversationQueries.selectAllTeamProteusConversationsReadyForMigration(teamId)
