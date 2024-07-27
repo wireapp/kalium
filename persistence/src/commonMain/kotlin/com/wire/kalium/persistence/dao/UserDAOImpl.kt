@@ -447,7 +447,6 @@ class UserDAOImpl internal constructor(
         userQueries.setOneOnOneConversationIdIfNotSet(conversationId, userId)
     }
 
-
     override suspend fun upsertConnectionStatuses(userStatuses: Map<QualifiedIDEntity, ConnectionEntity.State>) {
         withContext(queriesContext) {
             userQueries.transaction {
