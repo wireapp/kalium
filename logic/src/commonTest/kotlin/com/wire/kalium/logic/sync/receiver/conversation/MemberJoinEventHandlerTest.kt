@@ -57,7 +57,7 @@ class MemberJoinEventHandlerTest {
 
         val (arrangement, eventHandler) = arrange {
             withFetchConversationSucceeding()
-            withConversationDetailsByIdReturning(TestConversation.CONVERSATION.right())
+            withConversationDetailsByIdReturning(TEST_GROUP_CONVERSATION.right())
         }
 
         eventHandler.handle(event)
@@ -78,7 +78,7 @@ class MemberJoinEventHandlerTest {
 
         val (arrangement, eventHandler) = arrange {
             withFetchConversationSucceeding()
-            withConversationDetailsByIdReturning(TestConversation.CONVERSATION.right())
+            withConversationDetailsByIdReturning(TEST_GROUP_CONVERSATION.right())
         }
 
         eventHandler.handle(event)
@@ -96,7 +96,7 @@ class MemberJoinEventHandlerTest {
         val (arrangement, eventHandler) = arrange {
             withFetchConversationIfUnknownFailingWith(NetworkFailure.NoNetworkConnection(null))
             withFetchConversation(NetworkFailure.NoNetworkConnection(null).left())
-            withConversationDetailsByIdReturning(TestConversation.CONVERSATION.right())
+            withConversationDetailsByIdReturning(TEST_GROUP_CONVERSATION.right())
         }
 
         eventHandler.handle(event)
@@ -113,7 +113,7 @@ class MemberJoinEventHandlerTest {
 
         val (arrangement, eventHandler) = arrange {
             withFetchConversationSucceeding()
-            withConversationDetailsByIdReturning(TestConversation.GROUP().right())
+            withConversationDetailsByIdReturning(TEST_GROUP_CONVERSATION.right())
         }
 
         eventHandler.handle(event)
@@ -129,17 +129,49 @@ class MemberJoinEventHandlerTest {
 
     @Test
     fun givenMemberJoinEventIn1o1Conversation_whenHandlingIt_thenShouldNotPersistSystemMessage() = runTest {
-        val newMembers = listOf(Member(TestUser.USER_ID, Member.Role.Admin))
+        val userId = TestUser.USER_ID
+        val conversation = TEST_ONE_ON_ONE_CONVERSATION
+        val newMembers = listOf(Member(userId, Member.Role.Admin))
         val event = TestEvent.memberJoin(members = newMembers)
 
         val (arrangement, eventHandler) = arrange {
             withFetchConversationSucceeding()
-            withConversationDetailsByIdReturning(TestConversation.CONVERSATION.right())
+            withUpdateActiveOneOnOneConversationIfNotSet(Unit.right())
+            withConversationDetailsByIdReturning(conversation.right())
         }
 
         eventHandler.handle(event)
 
         coVerify { arrangement.persistMessageUseCase(any()) }.wasNotInvoked()
+        coVerify {
+            arrangement.userRepository.updateActiveOneOnOneConversationIfNotSet(
+                userId = any(),
+                conversationId = any()
+            )
+        }.wasInvoked(exactly = 1)
+    }
+
+    @Test
+    fun givenMemberJoinEventIn1o1Conversation_whenHandlingIt_1o1ConversationForTheUserShouldBeSetIffItWasNotBefore() = runTest {
+        val userId = TestUser.USER_ID
+        val conversation = TEST_ONE_ON_ONE_CONVERSATION
+        val newMembers = listOf(Member(userId, Member.Role.Admin))
+        val event = TestEvent.memberJoin(members = newMembers)
+
+        val (arrangement, eventHandler) = arrange {
+            withFetchConversationSucceeding()
+            withUpdateActiveOneOnOneConversationIfNotSet(Unit.right())
+            withConversationDetailsByIdReturning(conversation.right())
+        }
+
+        eventHandler.handle(event)
+
+        coVerify {
+            arrangement.userRepository.updateActiveOneOnOneConversationIfNotSet(
+                userId = any(),
+                conversationId = any()
+            )
+        }.wasInvoked(exactly = 1)
     }
 
     @Test
@@ -179,7 +211,11 @@ class MemberJoinEventHandlerTest {
         eventHandler.handle(event)
         // then
         coVerify {
-            arrangement.legalHoldHandler.handleConversationMembersChanged(eq(event.conversationId))
+            arrangement.persistMessageUseCase.invoke(
+                matches {
+                    it is Message.System && it.content is MessageContent.MemberChange && it.id.isNotEmpty()
+                }
+            )
         }.wasInvoked(exactly = once)
     }
 
@@ -209,5 +245,9 @@ class MemberJoinEventHandlerTest {
 
     private companion object {
         suspend fun arrange(block: suspend Arrangement.() -> Unit) = Arrangement(block).arrange()
+
+        val TEST_GROUP_CONVERSATION = TestConversation.GROUP()
+        val TEST_ONE_ON_ONE_CONVERSATION = TestConversation.ONE_ON_ONE()
+
     }
 }
