@@ -119,7 +119,7 @@ interface CallRepository {
     fun updateIsCbrEnabled(isCbrEnabled: Boolean)
     fun updateIsCameraOnById(conversationId: ConversationId, isCameraOn: Boolean)
     suspend fun updateCallParticipants(conversationId: ConversationId, participants: List<ParticipantMinimized>)
-    fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: List<CallSpeakingUser>)
+    fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: Map<UserId, List<String>>)
     suspend fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?>
     suspend fun updateOpenCallsToClosedStatus()
     suspend fun persistMissedCall(conversationId: ConversationId)
@@ -223,7 +223,7 @@ internal class CallDataSource(
             establishedTime = null,
             callStatus = status,
             protocol = conversation.conversation.protocol,
-            activeSpeakers = listOf()
+            activeSpeakers = mapOf()
         )
 
         val isCallInCurrentSession = _callMetadataProfile.value.data.containsKey(conversationId)
@@ -416,22 +416,24 @@ internal class CallDataSource(
                             " with size of: ${participants.size}"
                 )
 
-                val currentParticipantIds = call.participants.map { it.id }
-                val newParticipantIds = participants.map { it.id }
+                val currentParticipantIds = call.participants.map { it.id }.toSet()
+                val newParticipantIds = participants.map { it.id }.toSet()
 
-                val updateUsers = when {
-                    newParticipantIds.isEmpty() -> call.users
-                    (currentParticipantIds != newParticipantIds) ->
-                        userRepository.getUsersMinimizedByQualifiedIDs(newParticipantIds).getOrElse { call.users }
+                val updatedUsers = call.users.toMutableList()
 
-                    else -> call.users
+                newParticipantIds.minus(currentParticipantIds).let { missedUserIds ->
+                    if (missedUserIds.isNotEmpty())
+                        updatedUsers.addAll(
+                            userRepository.getUsersMinimizedByQualifiedIDs(missedUserIds.toList()).getOrElse { listOf() }
+                        )
+
                 }
 
                 val updatedCallMetadata = callMetadataProfile.data.toMutableMap().apply {
                     this[conversationId] = call.copy(
                         participants = participants,
                         maxParticipants = max(call.maxParticipants, participants.size + 1),
-                        users = updateUsers
+                        users = updatedUsers
                     )
                 }
 
@@ -480,7 +482,7 @@ internal class CallDataSource(
         }
     }
 
-    override fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: List<CallSpeakingUser>) {
+    override fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: Map<UserId, List<String>>) {
         val callMetadataProfile = _callMetadataProfile.value
 
         callMetadataProfile.data[conversationId]?.let { call ->

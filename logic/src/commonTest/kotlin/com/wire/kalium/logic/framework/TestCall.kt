@@ -18,17 +18,16 @@
 
 package com.wire.kalium.logic.framework
 
-import com.wire.kalium.logic.data.call.CallMetadata
-import com.wire.kalium.logic.data.conversation.Conversation
-import com.wire.kalium.logic.data.id.ConversationId
-import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.call.Call
-import com.wire.kalium.logic.data.call.CallActiveSpeaker
+import com.wire.kalium.logic.data.call.CallMetadata
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.call.ParticipantMinimized
+import com.wire.kalium.logic.data.conversation.Conversation
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.user.OtherUserMinimized
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
 import com.wire.kalium.persistence.dao.call.CallEntity
@@ -90,14 +89,7 @@ object TestCall {
                 hasEstablishedAudio = true
             )
         ),
-        activeSpeakers = listOf(
-            CallActiveSpeaker(
-                userId = "participantId@participantDomain",
-                clientId = "abcd",
-                audioLevel = 1,
-                audioLevelNow = 1
-            )
-        ),
+        activeSpeakers = mapOf(QualifiedID("participantId", "participantDomain") to listOf("abcd")),
         users = listOf(
             OtherUserMinimized(
                 id = QualifiedID("participantId", "participantDomain"),

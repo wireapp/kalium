@@ -18,7 +18,6 @@
 
 package com.wire.kalium.logic.data.call
 
-import com.wire.kalium.logic.data.user.UserId
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -33,9 +32,4 @@ data class CallActiveSpeaker(
     @SerialName("clientid") val clientId: String,
     @SerialName("audio_level") val audioLevel: Int,
     @SerialName("audio_level_now") val audioLevelNow: Int
-)
-
-data class CallSpeakingUser(
-    val userId: UserId,
-    val clientId: String
 )

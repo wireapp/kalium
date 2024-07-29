@@ -758,7 +758,9 @@ class CallRepositoryTest {
     @Test
     fun givenAConversationIdThatExistsInTheFlow_whenUpdateCallParticipantsIsCalled_thenUpdateCallStatusInTheFlow() = runTest {
         // given
-        val (_, callRepository) = Arrangement().arrange()
+        val (_, callRepository) = Arrangement()
+            .givenGetKnownUserMinimizedSucceeds()
+            .arrange()
         val participantsList = listOf(
             ParticipantMinimized(
                 id = QualifiedID("participantId", "participantDomain"),
@@ -795,11 +797,91 @@ class CallRepositoryTest {
     }
 
     @Test
+    fun givenCallWithSomeParticipants_whenUpdateCallParticipantsIsCalledWithNewParticipants_thenOnlyNewUsersFetchedFromDB() =
+        runTest {
+            // given
+            val (arrangement, callRepository) = Arrangement()
+                .givenGetKnownUserMinimizedSucceeds()
+                .arrange()
+            val participant = ParticipantMinimized(
+                id = QualifiedID("participantId", "participantDomain"),
+                clientId = "abcd",
+                isMuted = true,
+                isCameraOn = false,
+                isSharingScreen = false,
+                hasEstablishedAudio = true
+            )
+            val newParticipant = participant.copy(id = QualifiedID("anotherParticipantId", "participantDomain"))
+            val participantsList = listOf(participant)
+            callRepository.updateCallMetadataProfileFlow(
+                callMetadataProfile = CallMetadataProfile(
+                    data = mapOf(
+                        Arrangement.conversationId to createCallMetadata().copy(
+                            participants = participantsList,
+                            maxParticipants = 0
+                        )
+                    )
+                )
+            )
+
+            // when
+            callRepository.updateCallParticipants(
+                Arrangement.conversationId,
+                participantsList.plus(newParticipant)
+            )
+
+            // then
+            coVerify {
+                arrangement.userRepository.getUsersMinimizedByQualifiedIDs(listOf(newParticipant.id))
+            }.wasInvoked(exactly = once)
+        }
+
+    @Test
+    fun givenCallWithSomeParticipants_whenUpdateCallParticipantsIsCalledWithSameParticipants_thenNoFetchingUsersFromDB() =
+        runTest {
+            // given
+            val (arrangement, callRepository) = Arrangement()
+                .givenGetKnownUserMinimizedSucceeds()
+                .arrange()
+            val participant = ParticipantMinimized(
+                id = QualifiedID("participantId", "participantDomain"),
+                clientId = "abcd",
+                isMuted = true,
+                isCameraOn = false,
+                isSharingScreen = false,
+                hasEstablishedAudio = true
+            )
+            val otherParticipant = participant.copy(id = QualifiedID("anotherParticipantId", "participantDomain"))
+            val participantsList = listOf(participant, otherParticipant)
+            callRepository.updateCallMetadataProfileFlow(
+                callMetadataProfile = CallMetadataProfile(
+                    data = mapOf(
+                        Arrangement.conversationId to createCallMetadata().copy(
+                            participants = participantsList,
+                            maxParticipants = 0
+                        )
+                    )
+                )
+            )
+
+            // when
+            callRepository.updateCallParticipants(
+                Arrangement.conversationId,
+                participantsList
+            )
+
+            // then
+            coVerify {
+                arrangement.userRepository.getUsersMinimizedByQualifiedIDs(listOf(otherParticipant.id))
+            }.wasNotInvoked()
+        }
+
+    @Test
     fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateParticipantsActiveSpeakerIsCalled_thenDoNotUpdateTheFlow() = runTest {
         val (_, callRepository) = Arrangement().arrange()
         callRepository.updateParticipantsActiveSpeaker(
             Arrangement.randomConversationId,
-            emptyList()
+            emptyMap()
         )
 
         assertFalse {
@@ -1252,6 +1334,7 @@ class CallRepositoryTest {
         TestKaliumDispatcher.main
     ) {
         val (arrangement, callRepository) = Arrangement()
+            .givenGetKnownUserMinimizedSucceeds()
             .givenGetSubconversationInfoReturns(Arrangement.subconversationGroupId)
             .givenRemoveClientsFromMLSGroupSucceeds()
             .arrange()
@@ -1367,7 +1450,7 @@ class CallRepositoryTest {
     @Test
     fun givenAConversationIdThatExistsInTheFlow_whenUpdateParticipantsActiveSpeakerIsCalled_thenUpdateTheFlow() = runTest {
         val (_, callRepository) = Arrangement().arrange()
-        val activeSpeakers = listOf(CallActiveSpeaker("participantId@participantDomain", "clientId", 1, 1))
+        val activeSpeakers = mapOf(QualifiedID("participantId", "participantDomain") to listOf("abcd"))
 
         callRepository.updateCallMetadataProfileFlow(
             callMetadataProfile = CallMetadataProfile(
@@ -1425,7 +1508,7 @@ class CallRepositoryTest {
         callerTeamName = null,
         callStatus = CallStatus.ESTABLISHED,
         protocol = Conversation.ProtocolInfo.Proteus,
-        activeSpeakers = listOf()
+        activeSpeakers = mapOf()
     )
 
     private class Arrangement {

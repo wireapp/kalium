@@ -57,14 +57,14 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.base.authenticated.TeamsApi
-import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberIdList
 import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.authenticated.userDetails.ListUsersDTO
-import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.authenticated.userDetails.qualifiedIds
+import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.base.authenticated.self.SelfApi
+import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.SelfUserDTO
 import com.wire.kalium.network.api.model.UserProfileDTO
@@ -482,7 +482,6 @@ internal class UserDataSource internal constructor(
     }
 
     override suspend fun getUsersMinimizedByQualifiedIDs(userIds: List<UserId>) = wrapStorageRequest {
-        println("cyka getUsersMinimizedByQualifiedIDs....")
         userDAO.getUsersMinimizedByQualifiedIDs(
             qualifiedIDs = userIds.map { it.toDao() }
         ).map(userMapper::fromUserEntityToOtherUserMinimized)

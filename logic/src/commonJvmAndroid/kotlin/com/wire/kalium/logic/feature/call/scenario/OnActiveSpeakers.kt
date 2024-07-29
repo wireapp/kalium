@@ -23,7 +23,6 @@ import com.wire.kalium.calling.callbacks.ActiveSpeakersHandler
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.logic.data.call.CallActiveSpeakers
 import com.wire.kalium.logic.data.call.CallRepository
-import com.wire.kalium.logic.data.call.CallSpeakingUser
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import kotlinx.serialization.json.Json
 
@@ -38,12 +37,7 @@ class OnActiveSpeakers(
 
         val onlyActiveSpeakers = callActiveSpeakers.activeSpeakers.filter { activeSpeaker ->
             activeSpeaker.audioLevel > 0 || activeSpeaker.audioLevelNow > 0
-        }.map {
-            CallSpeakingUser(
-                userId = qualifiedIdMapper.fromStringToQualifiedID(it.userId),
-                clientId = it.clientId
-            )
-        }
+        }.groupBy({ qualifiedIdMapper.fromStringToQualifiedID(it.userId) }) { it.clientId }
 
         callRepository.updateParticipantsActiveSpeaker(
             conversationId = conversationIdWithDomain,

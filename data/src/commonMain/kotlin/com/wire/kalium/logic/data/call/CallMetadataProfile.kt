@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.call
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.OtherUserMinimized
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.type.UserType
 
 data class CallMetadataProfile(
@@ -42,12 +43,12 @@ data class CallMetadata(
     val participants: List<ParticipantMinimized> = emptyList(),
     val maxParticipants: Int = 0, // Was used for tracking
     val protocol: Conversation.ProtocolInfo,
-    val activeSpeakers: List<CallSpeakingUser> = listOf(),
+    val activeSpeakers: Map<UserId, List<String>> = mapOf(),
     val users: List<OtherUserMinimized> = listOf()
 ) {
     fun getFullParticipants(): List<Participant> = participants.map { participant ->
         val user = users.firstOrNull { it.id == participant.id }
-        val isSpeaking = activeSpeakers.any { it.userId == participant.id && it.clientId == participant.clientId }
+        val isSpeaking = (activeSpeakers[participant.id]?.contains(participant.clientId) ?: false) && participant.isMuted
         Participant(
             id = participant.id,
             clientId = participant.clientId,
