@@ -406,6 +406,7 @@ internal class CallDataSource(
         }
     }
 
+    @Suppress("NestedBlockDepth")
     override suspend fun updateCallParticipants(conversationId: ConversationId, participants: List<ParticipantMinimized>) {
         val callMetadataProfile = _callMetadataProfile.value
         callMetadataProfile.data[conversationId]?.let { call ->

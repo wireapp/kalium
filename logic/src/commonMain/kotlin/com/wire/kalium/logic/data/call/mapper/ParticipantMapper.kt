@@ -21,7 +21,6 @@ package com.wire.kalium.logic.data.call.mapper
 import com.wire.kalium.logic.data.call.CallMember
 import com.wire.kalium.logic.data.call.ParticipantMinimized
 import com.wire.kalium.logic.data.call.VideoStateChecker
-import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 
 interface ParticipantMapper {
