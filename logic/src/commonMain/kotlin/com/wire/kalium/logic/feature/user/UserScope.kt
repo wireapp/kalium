@@ -27,8 +27,8 @@ import com.wire.kalium.logic.data.client.ClientRepository
 import com.wire.kalium.logic.data.conversation.JoinExistingMLSConversationsUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.e2ei.CertificateRevocationListRepository
-import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.e2ei.E2EIRepository
+import com.wire.kalium.logic.data.e2ei.RevocationListChecker
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.properties.UserPropertyRepository
 import com.wire.kalium.logic.data.session.SessionRepository
@@ -53,14 +53,14 @@ import com.wire.kalium.logic.feature.e2ei.CertificateRevocationListCheckWorker
 import com.wire.kalium.logic.feature.e2ei.CertificateRevocationListCheckWorkerImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
-import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCase
-import com.wire.kalium.logic.feature.e2ei.usecase.GetE2eiCertificateUseCaseImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.GetMLSClientIdentityUseCase
+import com.wire.kalium.logic.feature.e2ei.usecase.GetMLSClientIdentityUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMembersE2EICertificateStatusesUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMembersE2EICertificateStatusesUseCaseImpl
-import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificateStatusUseCase
-import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificateStatusUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificatesUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.GetUserE2eiCertificatesUseCaseImpl
+import com.wire.kalium.logic.feature.e2ei.usecase.IsOtherUserE2EIVerifiedUseCase
+import com.wire.kalium.logic.feature.e2ei.usecase.IsOtherUserE2EIVerifiedUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateRevocationForSelfClientUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.ObserveCertificateRevocationForSelfClientUseCaseImpl
 import com.wire.kalium.logic.feature.featureConfig.FeatureFlagSyncWorkerImpl
@@ -126,12 +126,12 @@ class UserScope internal constructor(
             clientRepository,
             joinExistingMLSConversationsUseCase
         )
-    val getE2EICertificate: GetE2eiCertificateUseCase
-        get() = GetE2eiCertificateUseCaseImpl(
+    val getE2EICertificate: GetMLSClientIdentityUseCase
+        get() = GetMLSClientIdentityUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository
         )
-    val getUserE2eiCertificateStatus: GetUserE2eiCertificateStatusUseCase
-        get() = GetUserE2eiCertificateStatusUseCaseImpl(
+    val getUserE2eiCertificateStatus: IsOtherUserE2EIVerifiedUseCase
+        get() = IsOtherUserE2EIVerifiedUseCaseImpl(
             mlsConversationRepository = mlsConversationRepository,
             isE2EIEnabledUseCase = isE2EIEnabledUseCase
         )
