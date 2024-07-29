@@ -49,8 +49,8 @@ import com.wire.kalium.logic.feature.auth.ValidateUserHandleUseCaseImpl
 import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollment
 import com.wire.kalium.logic.feature.client.FinalizeMLSClientAfterE2EIEnrollmentImpl
 import com.wire.kalium.logic.feature.conversation.GetAllContactsNotInConversationUseCase
-import com.wire.kalium.logic.feature.e2ei.CertificateRevocationListCheckWorker
-import com.wire.kalium.logic.feature.e2ei.CertificateRevocationListCheckWorkerImpl
+import com.wire.kalium.logic.feature.e2ei.SyncCertificateRevocationListUseCase
+import com.wire.kalium.logic.feature.e2ei.SyncCertificateRevocationListUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCase
 import com.wire.kalium.logic.feature.e2ei.usecase.EnrollE2EIUseCaseImpl
 import com.wire.kalium.logic.feature.e2ei.usecase.GetMLSClientIdentityUseCase
@@ -205,8 +205,8 @@ class UserScope internal constructor(
             kaliumLogger = userScopedLogger,
         )
 
-    val certificateRevocationListCheckWorker: CertificateRevocationListCheckWorker by lazy {
-        CertificateRevocationListCheckWorkerImpl(
+    val syncCertificateRevocationListUseCase: SyncCertificateRevocationListUseCase by lazy {
+        SyncCertificateRevocationListUseCaseImpl(
             certificateRevocationListRepository = certificateRevocationListRepository,
             incrementalSyncRepository = incrementalSyncRepository,
             revocationListChecker = checkRevocationList,

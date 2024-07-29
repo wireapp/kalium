@@ -22,11 +22,7 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
 import com.wire.kalium.logic.logStructuredJson
-import kotlinx.coroutines.flow.filter
-import kotlinx.datetime.Clock
-import kotlinx.datetime.Instant
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.minutes
+import kotlinx.coroutines.flow.first
 
 /**
  * Worker that periodically syncs feature flags.
@@ -39,43 +35,16 @@ internal class FeatureFlagSyncWorkerImpl(
     private val incrementalSyncRepository: IncrementalSyncRepository,
     private val syncFeatureConfigs: SyncFeatureConfigsUseCase,
     kaliumLogger: KaliumLogger,
-    private val minIntervalBetweenPulls: Duration = MIN_INTERVAL_BETWEEN_PULLS,
-    private val clock: Clock = Clock.System
 ) : FeatureFlagsSyncWorker {
 
-    private var lastPullInstant: Instant? = null
     private val logger = kaliumLogger.withTextTag("FeatureFlagSyncWorker")
 
     override suspend fun execute() {
         logger.d("Starting to monitor")
-        incrementalSyncRepository.incrementalSyncState.filter {
+        incrementalSyncRepository.incrementalSyncState.first {
             it is IncrementalSyncStatus.Live
-        }.collect {
-            syncFeatureFlagsIfNeeded()
-        }
-    }
-
-    private suspend fun FeatureFlagSyncWorkerImpl.syncFeatureFlagsIfNeeded() {
-        val now = clock.now()
-        val wasLastPullRecent = lastPullInstant?.let { lastPull ->
-            lastPull + minIntervalBetweenPulls > now
-        } ?: false
-        logger.logStructuredJson(
-            level = KaliumLogLevel.INFO,
-            leadingMessage = "syncFeatureFlagsIfNeeded",
-            jsonStringKeyValues = mapOf(
-                "lastPullInstant" to lastPullInstant,
-                "wasLastPullRecent" to wasLastPullRecent
-            )
-        )
-        if (!wasLastPullRecent) {
-            logger.i("Synching feature configs and updating lastPullInstant")
+        }.let {
             syncFeatureConfigs()
-            lastPullInstant = now
         }
-    }
-
-    private companion object {
-        val MIN_INTERVAL_BETWEEN_PULLS = 60.minutes
     }
 }

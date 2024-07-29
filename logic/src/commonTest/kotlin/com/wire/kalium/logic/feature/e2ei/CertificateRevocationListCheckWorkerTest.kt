@@ -75,7 +75,7 @@ class CertificateRevocationListCheckWorkerTest {
         @Mock
         val checkRevocationList = mock(RevocationListChecker::class)
 
-        fun arrange() = this to CertificateRevocationListCheckWorkerImpl(
+        fun arrange() = this to SyncCertificateRevocationListUseCaseImpl(
             certificateRevocationListRepository, incrementalSyncRepository, checkRevocationList, kaliumLogger
         )
 
