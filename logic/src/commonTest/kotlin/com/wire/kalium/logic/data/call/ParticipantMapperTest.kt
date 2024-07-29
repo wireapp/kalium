@@ -57,7 +57,7 @@ class ParticipantMapperTest {
             videoStateChecker.isSharingScreen(VideoStateCalling.STOPPED)
         }.returns(false)
         every { qualifiedIdMapper.fromStringToQualifiedID(any()) }
-            .returns(QualifiedID("value", "domain"))
+            .returns(DUMMY_USER_ID)
     }
 
     @Test
@@ -88,6 +88,11 @@ class ParticipantMapperTest {
             aestab = 0,
             vrecv = 0,
             isMuted = 0
+        )
+
+        private val DUMMY_USER_ID = QualifiedID(
+            value = "dummyId",
+            domain = "dummyDomain"
         )
     }
 }
