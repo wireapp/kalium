@@ -18,6 +18,7 @@
 
 package com.wire.kalium.logic.feature.call.usecase
 
+import com.wire.kalium.calling.ConversationTypeCalling
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.NetworkFailure
 import com.wire.kalium.logic.data.call.CallRepository
@@ -53,6 +54,7 @@ class StartCallUseCaseTest {
             val (arrangement, startCall) = Arrangement(testKaliumDispatcher)
                 .withWaitingForSyncSucceeding()
                 .withAnIncomingCall()
+                .withCallConversationTypeUseCaseReturning(ConversationTypeCalling.Conference)
                 .arrange()
 
             startCall.invoke(conversationId)
@@ -62,7 +64,7 @@ class StartCallUseCaseTest {
             }.wasInvoked(once)
 
             coVerify {
-                arrangement.callManager.startCall(any(), any(), any())
+                arrangement.callManager.startCall(any(), any(), any(), any())
             }.wasNotInvoked()
         }
 
@@ -73,12 +75,13 @@ class StartCallUseCaseTest {
         val (arrangement, startCall) = Arrangement(testKaliumDispatcher)
             .withWaitingForSyncSucceeding()
             .withNoIncomingCall()
+            .withCallConversationTypeUseCaseReturning(ConversationTypeCalling.Conference)
             .arrange()
 
         startCall.invoke(conversationId, CallType.AUDIO)
 
         coVerify {
-            arrangement.callManager.startCall(eq(conversationId), eq(CallType.AUDIO), eq(false))
+            arrangement.callManager.startCall(eq(conversationId), eq(CallType.AUDIO), any(), eq(false))
         }.wasInvoked(once)
 
         coVerify {
@@ -93,6 +96,7 @@ class StartCallUseCaseTest {
         val (arrangement, startCall) = Arrangement(testKaliumDispatcher)
             .withWaitingForSyncSucceeding()
             .withNoIncomingCall()
+            .withCallConversationTypeUseCaseReturning(ConversationTypeCalling.Conference)
             .arrange()
 
         val result = startCall.invoke(conversationId, CallType.AUDIO)
@@ -109,12 +113,13 @@ class StartCallUseCaseTest {
 
         val (arrangement, startCall) = Arrangement(testKaliumDispatcher)
             .withWaitingForSyncFailing()
+            .withCallConversationTypeUseCaseReturning(ConversationTypeCalling.OneOnOne)
             .arrange()
 
         startCall.invoke(conversationId, CallType.AUDIO)
 
         coVerify {
-            arrangement.callManager.startCall(any(), any(), any())
+            arrangement.callManager.startCall(any(), any(), any(), any())
         }.wasNotInvoked()
     }
 
@@ -138,12 +143,13 @@ class StartCallUseCaseTest {
         val (arrangement, startCall) = Arrangement(testKaliumDispatcher)
             .withWaitingForSyncSucceeding()
             .withNoIncomingCall()
+            .withCallConversationTypeUseCaseReturning(ConversationTypeCalling.Conference)
             .arrangeWithCBR()
 
         startCall.invoke(conversationId, CallType.AUDIO)
 
         coVerify {
-            arrangement.callManager.startCall(eq(conversationId), eq(CallType.AUDIO), eq(true))
+            arrangement.callManager.startCall(eq(conversationId), eq(CallType.AUDIO), any(), eq(true))
         }.wasInvoked(once)
         coVerify {
             arrangement.answerCall.invoke(any())
@@ -162,6 +168,9 @@ class StartCallUseCaseTest {
         val answerCall = mock(AnswerCallUseCase::class)
 
         @Mock
+        val getCallConversationType = mock(GetCallConversationTypeProvider::class)
+
+        @Mock
         val callRepository = mock(CallRepository::class)
 
         private val kaliumConfigs = KaliumConfigs()
@@ -171,6 +180,7 @@ class StartCallUseCaseTest {
             syncManager,
             kaliumConfigs,
             callRepository,
+            getCallConversationType,
             answerCall,
             dispatcher
         )
@@ -180,6 +190,7 @@ class StartCallUseCaseTest {
             syncManager,
             KaliumConfigs(forceConstantBitrateCalls = true),
             callRepository,
+            getCallConversationType,
             answerCall,
             dispatcher
         )
@@ -189,6 +200,12 @@ class StartCallUseCaseTest {
             coEvery {
                 callRepository.incomingCallsFlow()
             }.returns(flowOf(listOf(TestCall.groupIncomingCall(TestConversation.ID))))
+        }
+
+        suspend fun withCallConversationTypeUseCaseReturning(result: ConversationTypeCalling) = apply {
+            coEvery {
+                getCallConversationType.invoke(any())
+            }.returns(result)
         }
 
         suspend fun withNoIncomingCall() = apply {

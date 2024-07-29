@@ -48,6 +48,7 @@ import kotlin.test.BeforeTest
 import kotlin.test.Ignore
 import kotlin.test.Test
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
+import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.network.NetworkStateObserver
 import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
 import kotlinx.datetime.Instant
@@ -96,6 +97,9 @@ class CallManagerTest {
     @Mock
     private val networkStateObserver = mock(NetworkStateObserver::class)
 
+    @Mock
+    private val getCallConversationType = mock(GetCallConversationTypeProvider::class)
+
     private val dispatcher = TestKaliumDispatcher
 
     private lateinit var callManagerImpl: CallManagerImpl
@@ -119,6 +123,7 @@ class CallManagerTest {
             qualifiedIdMapper = qualifiedIdMapper,
             videoStateChecker = videoStateChecker,
             callMapper = callMapper,
+            getCallConversationType = getCallConversationType,
             conversationClientsInCallUpdater = conversationClientsInCallUpdater,
             networkStateObserver = networkStateObserver,
             kaliumConfigs = kaliumConfigs,

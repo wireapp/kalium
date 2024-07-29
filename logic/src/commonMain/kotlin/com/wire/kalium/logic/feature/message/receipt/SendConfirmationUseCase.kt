@@ -133,7 +133,7 @@ internal fun SendConfirmationUseCase(
         } else emptyList()
 
     private suspend fun isReceiptsEnabledForConversation(conversationId: ConversationId) =
-        conversationRepository.baseInfoById(conversationId).fold({
+        conversationRepository.getConversationById(conversationId).fold({
             false
         }, { conversation ->
             when (conversation.type) {

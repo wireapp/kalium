@@ -17,66 +17,116 @@
  */
 package com.wire.kalium.persistence.dao.conversation
 
+import com.wire.kalium.persistence.dao.BotIdEntity
+import com.wire.kalium.persistence.dao.ConnectionEntity
 import com.wire.kalium.persistence.dao.QualifiedIDEntity
+import com.wire.kalium.persistence.dao.SupportedProtocolEntity
+import com.wire.kalium.persistence.dao.UserAvailabilityStatusEntity
+import com.wire.kalium.persistence.dao.UserTypeEntity
+import com.wire.kalium.persistence.dao.call.CallEntity
+import com.wire.kalium.persistence.dao.member.MemberEntity
 import kotlinx.datetime.Instant
-import com.wire.kalium.persistence.ConversationDetails as SQLDelightConversationView
 
 internal class ConversationMapper {
-    fun toModel(conversation: SQLDelightConversationView): ConversationViewEntity = with(conversation) {
-        ConversationViewEntity(
-            id = qualifiedId,
-            name = name,
-            type = type,
-            teamId = teamId,
-            protocolInfo = mapProtocolInfo(
-                protocol,
-                mls_group_id,
-                mls_group_state,
-                mls_epoch,
-                mls_last_keying_material_update_date,
-                mls_cipher_suite
-            ),
-            isCreator = isCreator,
-            mutedStatus = mutedStatus,
-            mutedTime = muted_time,
-            creatorId = creator_id,
-            lastNotificationDate = lastNotifiedMessageDate,
-            lastModifiedDate = last_modified_date,
-            lastReadDate = lastReadDate,
-            accessList = access_list,
-            accessRoleList = access_role_list,
-            protocol = protocol,
-            mlsCipherSuite = mls_cipher_suite,
-            mlsEpoch = mls_epoch,
-            mlsGroupId = mls_group_id,
-            mlsLastKeyingMaterialUpdateDate = mls_last_keying_material_update_date,
-            mlsGroupState = mls_group_state,
-            mlsProposalTimer = mls_proposal_timer,
-            callStatus = callStatus,
-            previewAssetId = previewAssetId,
-            userAvailabilityStatus = userAvailabilityStatus,
-            userType = userType,
-            botService = botService,
-            userDeleted = userDeleted,
-            connectionStatus = connectionStatus,
-            otherUserId = otherUserId,
-            selfRole = selfRole,
-            receiptMode = receipt_mode,
-            messageTimer = message_timer,
-            userMessageTimer = user_message_timer,
-            userDefederated = userDefederated,
-            archived = archived,
-            archivedDateTime = archived_date_time,
-            mlsVerificationStatus = mls_verification_status,
-            userSupportedProtocols = userSupportedProtocols,
-            userActiveOneOnOneConversationId = otherUserActiveConversationId,
-            proteusVerificationStatus = proteus_verification_status,
-            legalHoldStatus = legal_hold_status
-        )
-    }
+    @Suppress("LongParameterList", "UnusedParameter", "FunctionParameterNaming")
+    fun fromViewToModel(
+        qualifiedId: QualifiedIDEntity,
+        name: String?,
+        type: ConversationEntity.Type,
+        callStatus: CallEntity.Status?,
+        previewAssetId: QualifiedIDEntity?,
+        mutedStatus: ConversationEntity.MutedStatus,
+        teamId: String?,
+        lastModifiedDate_: Instant?,
+        lastReadDate: Instant,
+        userAvailabilityStatus: UserAvailabilityStatusEntity?,
+        userType: UserTypeEntity?,
+        botService: BotIdEntity?,
+        userDeleted: Boolean?,
+        userDefederated: Boolean?,
+        userSupportedProtocols: Set<SupportedProtocolEntity>?,
+        connectionStatus: ConnectionEntity.State?,
+        otherUserId: QualifiedIDEntity?,
+        otherUserActiveConversationId: QualifiedIDEntity?,
+        isCreator: Long,
+        isActive: Long,
+        lastNotifiedMessageDate: Instant?,
+        selfRole: MemberEntity.Role?,
+        protocol: ConversationEntity.Protocol,
+        mlsCipherSuite: ConversationEntity.CipherSuite,
+        mlsEpoch: Long,
+        mlsGroupId: String?,
+        mlsLastKeyingMaterialUpdateDate: Instant,
+        mlsGroupState: ConversationEntity.GroupState,
+        accessList: List<ConversationEntity.Access>,
+        accessRoleList: List<ConversationEntity.AccessRole>,
+        teamId_: String?,
+        mlsProposalTimer: String?,
+        mutedTime: Long,
+        creatorId: String,
+        lastModifiedDate: Instant,
+        receiptMode: ConversationEntity.ReceiptMode,
+        messageTimer: Long?,
+        userMessageTimer: Long?,
+        incompleteMetadata: Boolean,
+        archived: Boolean,
+        archivedDateTime: Instant?,
+        mlsVerificationStatus: ConversationEntity.VerificationStatus,
+        proteusVerificationStatus: ConversationEntity.VerificationStatus,
+        legalHoldStatus: ConversationEntity.LegalHoldStatus,
+    ): ConversationViewEntity = ConversationViewEntity(
+        id = qualifiedId,
+        name = name,
+        type = type,
+        teamId = teamId,
+        protocolInfo = mapProtocolInfo(
+            protocol,
+            mlsGroupId,
+            mlsGroupState,
+            mlsEpoch,
+            mlsLastKeyingMaterialUpdateDate,
+            mlsCipherSuite
+        ),
+        isCreator = isCreator,
+        mutedStatus = mutedStatus,
+        mutedTime = mutedTime,
+        creatorId = creatorId,
+        lastNotificationDate = lastNotifiedMessageDate,
+        lastModifiedDate = lastModifiedDate,
+        lastReadDate = lastReadDate,
+        accessList = accessList,
+        accessRoleList = accessRoleList,
+        protocol = protocol,
+        mlsCipherSuite = mlsCipherSuite,
+        mlsEpoch = mlsEpoch,
+        mlsGroupId = mlsGroupId,
+        mlsLastKeyingMaterialUpdateDate = mlsLastKeyingMaterialUpdateDate,
+        mlsGroupState = mlsGroupState,
+        mlsProposalTimer = mlsProposalTimer,
+        callStatus = callStatus,
+        previewAssetId = previewAssetId,
+        userAvailabilityStatus = userAvailabilityStatus,
+        userType = userType,
+        botService = botService,
+        userDeleted = userDeleted,
+        connectionStatus = connectionStatus,
+        otherUserId = otherUserId,
+        selfRole = selfRole,
+        receiptMode = receiptMode,
+        messageTimer = messageTimer,
+        userMessageTimer = userMessageTimer,
+        userDefederated = userDefederated,
+        archived = archived,
+        archivedDateTime = archivedDateTime,
+        mlsVerificationStatus = mlsVerificationStatus,
+        userSupportedProtocols = userSupportedProtocols,
+        userActiveOneOnOneConversationId = otherUserActiveConversationId,
+        proteusVerificationStatus = proteusVerificationStatus,
+        legalHoldStatus = legalHoldStatus
+    )
 
-    @Suppress("LongParameterList")
-    fun toModel(
+    @Suppress("LongParameterList", "UnusedParameter")
+    fun fromViewToModel(
         qualifiedId: QualifiedIDEntity,
         name: String?,
         type: ConversationEntity.Type,
@@ -97,13 +147,18 @@ internal class ConversationMapper {
         mlsLastKeyingMaterialUpdateDate: Instant,
         mlsCipherSuite: ConversationEntity.CipherSuite,
         receiptMode: ConversationEntity.ReceiptMode,
+        guestRoomLink: String?,
         messageTimer: Long?,
         userMessageTimer: Long?,
+        incompleteMetadata: Boolean,
+        mlsDegradedNotified: Boolean,
+        isGuestPasswordProtected: Boolean,
         archived: Boolean,
         archivedDateTime: Instant?,
-        mlsVerificationStatus: ConversationEntity.VerificationStatus,
+        verificationStatus: ConversationEntity.VerificationStatus,
         proteusVerificationStatus: ConversationEntity.VerificationStatus,
-        legalHoldStatus: ConversationEntity.LegalHoldStatus
+        degradedConversationNotified: Boolean,
+        legalHoldStatus: ConversationEntity.LegalHoldStatus,
     ) = ConversationEntity(
         id = qualifiedId,
         name = name,
@@ -130,7 +185,7 @@ internal class ConversationMapper {
         userMessageTimer = userMessageTimer,
         archived = archived,
         archivedInstant = archivedDateTime,
-        mlsVerificationStatus = mlsVerificationStatus,
+        mlsVerificationStatus = verificationStatus,
         proteusVerificationStatus = proteusVerificationStatus,
         legalHoldStatus = legalHoldStatus
     )

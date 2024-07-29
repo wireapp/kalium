@@ -48,13 +48,13 @@ class MigrationDAOTest : BaseDatabaseTest() {
         val conversationFromMigration = conversation.copy(type = ConversationEntity.Type.ONE_ON_ONE, name = "migration name")
 
         conversationDAO.insertConversation(conversation)
-        conversationDAO.getConversationByQualifiedID(conversation.id).also {
+        conversationDAO.getConversationDetailsById(conversation.id).also {
             assertEquals(conversation.type, it?.type)
             assertEquals(conversation.name, it?.name)
         }
 
         migrationDAO.insertConversation(listOf(conversationFromMigration))
-        conversationDAO.getConversationByQualifiedID(conversationFromMigration.id).also {
+        conversationDAO.getConversationDetailsById(conversationFromMigration.id).also {
             assertEquals(conversation.type, it?.type)
             assertEquals(conversation.name, it?.name)
         }
