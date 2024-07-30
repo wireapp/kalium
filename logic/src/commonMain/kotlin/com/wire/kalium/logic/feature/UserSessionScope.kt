@@ -168,6 +168,8 @@ import com.wire.kalium.logic.feature.call.CallsScope
 import com.wire.kalium.logic.feature.call.GlobalCallManager
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
 import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdaterImpl
+import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
+import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProviderImpl
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCase
 import com.wire.kalium.logic.feature.call.usecase.UpdateConversationClientsForCurrentCallUseCaseImpl
 import com.wire.kalium.logic.feature.client.ClientScope
@@ -1195,6 +1197,7 @@ class UserSessionScope internal constructor(
             videoStateChecker = videoStateChecker,
             callMapper = callMapper,
             conversationClientsInCallUpdater = conversationClientsInCallUpdater,
+            getCallConversationType = getCallConversationType,
             kaliumConfigs = kaliumConfigs
         )
     }
@@ -1213,6 +1216,14 @@ class UserSessionScope internal constructor(
             conversationRepository = conversationRepository,
             federatedIdMapper = federatedIdMapper
         )
+
+    private val getCallConversationType: GetCallConversationTypeProvider by lazy {
+        GetCallConversationTypeProviderImpl(
+            userConfigRepository = userConfigRepository,
+            conversationRepository = conversationRepository,
+            callMapper = callMapper
+        )
+    }
 
     private val updateConversationClientsForCurrentCall: Lazy<UpdateConversationClientsForCurrentCallUseCase>
         get() = lazy {
@@ -1902,18 +1913,19 @@ class UserSessionScope internal constructor(
 
     val calls: CallsScope
         get() = CallsScope(
-            callManager,
-            callRepository,
-            conversationRepository,
-            userRepository,
-            flowManagerService,
-            mediaManagerService,
-            syncManager,
-            qualifiedIdMapper,
-            clientIdProvider,
-            userConfigRepository,
-            conversationClientsInCallUpdater,
-            kaliumConfigs
+            callManager = callManager,
+            callRepository = callRepository,
+            conversationRepository = conversationRepository,
+            userRepository = userRepository,
+            flowManagerService = flowManagerService,
+            mediaManagerService = mediaManagerService,
+            syncManager = syncManager,
+            qualifiedIdMapper = qualifiedIdMapper,
+            currentClientIdProvider = clientIdProvider,
+            userConfigRepository = userConfigRepository,
+            getCallConversationType = getCallConversationType,
+            conversationClientsInCallUpdater = conversationClientsInCallUpdater,
+            kaliumConfigs = kaliumConfigs
         )
 
     val connection: ConnectionScope

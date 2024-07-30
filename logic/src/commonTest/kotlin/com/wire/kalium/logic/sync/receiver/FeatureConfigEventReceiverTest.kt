@@ -45,6 +45,7 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.util.shouldSucceed
 import io.mockative.Mock
 import io.mockative.any
+import io.mockative.anything
 import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
@@ -60,120 +61,169 @@ import kotlin.time.toDuration
 class FeatureConfigEventReceiverTest {
 
     @Test
-    fun givenFileSharingUpdatedEventWithStatusEnabled_whenProcessingEvent_ThenSetFileSharingStatusToTrue() = runTest {
-        val (arrangement, featureConfigEventReceiver) = Arrangement()
-            .withSettingFileSharingEnabledSuccessful()
-            .withIsFileSharingEnabled(Either.Right(FileSharingStatus(state = FileSharingStatus.Value.Disabled, isStatusChanged = false)))
-            .arrange()
+    fun givenFileSharingUpdatedEventWithStatusEnabled_whenProcessingEvent_ThenSetFileSharingStatusToTrue() =
+        runTest {
+            val (arrangement, featureConfigEventReceiver) = Arrangement()
+                .withSettingFileSharingEnabledSuccessful()
+                .withIsFileSharingEnabled(
+                    Either.Right(
+                        FileSharingStatus(
+                            state = FileSharingStatus.Value.Disabled,
+                            isStatusChanged = false
+                        )
+                    )
+                )
+                .arrange()
 
-        featureConfigEventReceiver.onEvent(
-            event = arrangement.newFileSharingUpdatedEvent(ConfigsStatusModel(Status.ENABLED)),
-            deliveryInfo = TestEvent.liveDeliveryInfo
-        )
+            featureConfigEventReceiver.onEvent(
+                event = arrangement.newFileSharingUpdatedEvent(ConfigsStatusModel(Status.ENABLED)),
+                deliveryInfo = TestEvent.liveDeliveryInfo
+            )
 
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setFileSharingStatus)
-            .with(eq(true), eq(true))
-            .wasInvoked(once)
-    }
-
-    @Test
-    fun givenFileSharingUpdatedEventWithStatusDisabled_whenProcessingEvent_ThenSetFileSharingStatusToFalse() = runTest {
-        val (arrangement, featureConfigEventReceiver) = Arrangement()
-            .withIsFileSharingEnabled(Either.Right(FileSharingStatus(state = FileSharingStatus.Value.EnabledAll, isStatusChanged = false)))
-            .withSettingFileSharingEnabledSuccessful()
-            .arrange()
-
-        featureConfigEventReceiver.onEvent(
-            event = arrangement.newFileSharingUpdatedEvent(ConfigsStatusModel(Status.DISABLED)),
-            deliveryInfo = TestEvent.liveDeliveryInfo
-        )
-
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setFileSharingStatus)
-            .with(eq(false), eq(true))
-            .wasInvoked(once)
-    }
+            verify(arrangement.userConfigRepository)
+                .function(arrangement.userConfigRepository::setFileSharingStatus)
+                .with(eq(true), eq(true))
+                .wasInvoked(once)
+        }
 
     @Test
-    fun givenFileSharingUpdatedEvent_whenTheNewValueIsSameAsTHeOneStored_ThenIsChangedIsSetToFalse() = runTest {
-        val (arrangement, featureConfigEventReceiver) = Arrangement()
-            .withIsFileSharingEnabled(Either.Right(FileSharingStatus(state = FileSharingStatus.Value.Disabled, isStatusChanged = false)))
-            .withSettingFileSharingEnabledSuccessful()
-            .arrange()
+    fun givenFileSharingUpdatedEventWithStatusDisabled_whenProcessingEvent_ThenSetFileSharingStatusToFalse() =
+        runTest {
+            val (arrangement, featureConfigEventReceiver) = Arrangement()
+                .withIsFileSharingEnabled(
+                    Either.Right(
+                        FileSharingStatus(
+                            state = FileSharingStatus.Value.EnabledAll,
+                            isStatusChanged = false
+                        )
+                    )
+                )
+                .withSettingFileSharingEnabledSuccessful()
+                .arrange()
 
-        featureConfigEventReceiver.onEvent(
-            event = arrangement.newFileSharingUpdatedEvent(ConfigsStatusModel(Status.DISABLED)),
-            deliveryInfo = TestEvent.liveDeliveryInfo
-        )
+            featureConfigEventReceiver.onEvent(
+                event = arrangement.newFileSharingUpdatedEvent(ConfigsStatusModel(Status.DISABLED)),
+                deliveryInfo = TestEvent.liveDeliveryInfo
+            )
 
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setFileSharingStatus)
-            .with(eq(false), eq(false))
-            .wasInvoked(once)
-    }
-
-    @Test
-    fun givenConferenceCallingUpdatedEventGrantingAccess_whenProcessingEvent_ThenSetConferenceCallingEnabledToTrue() = runTest {
-        val (arrangement, featureConfigEventReceiver) = Arrangement()
-            .withSettingConferenceCallingEnabledSuccessful()
-            .arrange()
-
-        featureConfigEventReceiver.onEvent(
-            arrangement.newConferenceCallingUpdatedEvent(ConferenceCallingModel(Status.ENABLED)),
-            TestEvent.liveDeliveryInfo
-        )
-
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setConferenceCallingEnabled)
-            .with(eq(true))
-            .wasInvoked(once)
-    }
+            verify(arrangement.userConfigRepository)
+                .function(arrangement.userConfigRepository::setFileSharingStatus)
+                .with(eq(false), eq(true))
+                .wasInvoked(once)
+        }
 
     @Test
-    fun givenConferenceCallingUpdatedEventGrantingAccess_whenProcessingEvent_ThenSetConferenceCallingEnabledToFalse() = runTest {
-        val (arrangement, featureConfigEventReceiver) = Arrangement()
-            .withSettingConferenceCallingEnabledSuccessful()
-            .arrange()
+    fun givenFileSharingUpdatedEvent_whenTheNewValueIsSameAsTHeOneStored_ThenIsChangedIsSetToFalse() =
+        runTest {
+            val (arrangement, featureConfigEventReceiver) = Arrangement()
+                .withIsFileSharingEnabled(
+                    Either.Right(
+                        FileSharingStatus(
+                            state = FileSharingStatus.Value.Disabled,
+                            isStatusChanged = false
+                        )
+                    )
+                )
+                .withSettingFileSharingEnabledSuccessful()
+                .arrange()
 
-        featureConfigEventReceiver.onEvent(
-            event = arrangement.newConferenceCallingUpdatedEvent(ConferenceCallingModel(Status.DISABLED)),
-            deliveryInfo = TestEvent.liveDeliveryInfo
-        )
+            featureConfigEventReceiver.onEvent(
+                event = arrangement.newFileSharingUpdatedEvent(ConfigsStatusModel(Status.DISABLED)),
+                deliveryInfo = TestEvent.liveDeliveryInfo
+            )
 
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setConferenceCallingEnabled)
-            .with(eq(false))
-            .wasInvoked(once)
-    }
+            verify(arrangement.userConfigRepository)
+                .function(arrangement.userConfigRepository::setFileSharingStatus)
+                .with(eq(false), eq(false))
+                .wasInvoked(once)
+        }
 
     @Test
-    fun givenNewTeamSettingsSelfDeletingDisablingEvent_whenProcessingEvent_ThenDisableFeatureOnUserConfigRepository() = runTest {
-        val currentSelfDeletingMessagesStatus = TeamSettingsSelfDeletionStatus(
-            enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Enabled,
-            hasFeatureChanged = false
-        )
-        val newSelfDeletingEventModel = SelfDeletingMessagesModel(
-            SelfDeletingMessagesConfigModel(
-                enforcedTimeoutSeconds = null
-            ), Status.DISABLED
-        )
-        val (arrangement, featureConfigEventReceiver) = Arrangement()
-            .withSelfDeletingMessages(currentSelfDeletingMessagesStatus)
-            .arrange()
+    fun givenConferenceCallingEventEnabled_whenProcessingEvent_ThenSetConferenceCallingEnabledToTrueAndSetShouldUseSFTFlag() =
+        runTest {
+            val (arrangement, featureConfigEventReceiver) = Arrangement()
+                .withSetUseSFTForOneOnOneCallsSuccessful()
+                .withSettingConferenceCallingEnabledSuccessful()
+                .arrange()
 
-        featureConfigEventReceiver.onEvent(
-            arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel),
-            TestEvent.liveDeliveryInfo
-        )
+            featureConfigEventReceiver.onEvent(
+                arrangement.newConferenceCallingUpdatedEvent(
+                    ConferenceCallingModel(
+                        Status.ENABLED,
+                        false
+                    )
+                ),
+                TestEvent.liveDeliveryInfo
+            )
 
-        verify(arrangement.userConfigRepository)
-            .suspendFunction(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
-            .with(matching {
-                it.hasFeatureChanged == true && it.enforcedSelfDeletionTimer is TeamSelfDeleteTimer.Disabled
-            })
-            .wasInvoked(once)
-    }
+            verify(arrangement.userConfigRepository)
+                .function(arrangement.userConfigRepository::setConferenceCallingEnabled)
+                .with(eq(true))
+                .wasInvoked(once)
+
+            verify(arrangement.userConfigRepository)
+                .function(arrangement.userConfigRepository::setUseSFTForOneOnOneCalls)
+                .with(eq(false))
+                .wasInvoked(once)
+        }
+
+    @Test
+    fun givenConferenceCallingEventDisabled_whenProcessingEvent_ThenSetConferenceCallingEnabledToFalseOnly() =
+        runTest {
+            val (arrangement, featureConfigEventReceiver) = Arrangement()
+                .withSetUseSFTForOneOnOneCallsSuccessful()
+                .withSettingConferenceCallingEnabledSuccessful()
+                .arrange()
+
+            featureConfigEventReceiver.onEvent(
+                event = arrangement.newConferenceCallingUpdatedEvent(
+                    ConferenceCallingModel(
+                        Status.DISABLED,
+                        false
+                    )
+                ),
+                deliveryInfo = TestEvent.liveDeliveryInfo
+            )
+
+            verify(arrangement.userConfigRepository)
+                .function(arrangement.userConfigRepository::setConferenceCallingEnabled)
+                .with(eq(false))
+                .wasInvoked(once)
+
+            verify(arrangement.userConfigRepository)
+                .function(arrangement.userConfigRepository::setUseSFTForOneOnOneCalls)
+                .with(eq(true))
+                .wasNotInvoked()
+        }
+
+    @Test
+    fun givenNewTeamSettingsSelfDeletingDisablingEvent_whenProcessingEvent_ThenDisableFeatureOnUserConfigRepository() =
+        runTest {
+            val currentSelfDeletingMessagesStatus = TeamSettingsSelfDeletionStatus(
+                enforcedSelfDeletionTimer = TeamSelfDeleteTimer.Enabled,
+                hasFeatureChanged = false
+            )
+            val newSelfDeletingEventModel = SelfDeletingMessagesModel(
+                SelfDeletingMessagesConfigModel(
+                    enforcedTimeoutSeconds = null
+                ), Status.DISABLED
+            )
+            val (arrangement, featureConfigEventReceiver) = Arrangement()
+                .withSelfDeletingMessages(currentSelfDeletingMessagesStatus)
+                .arrange()
+
+            featureConfigEventReceiver.onEvent(
+                arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel),
+                TestEvent.liveDeliveryInfo
+            )
+
+            verify(arrangement.userConfigRepository)
+                .suspendFunction(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
+                .with(matching {
+                    it.hasFeatureChanged == true && it.enforcedSelfDeletionTimer is TeamSelfDeleteTimer.Disabled
+                })
+                .wasInvoked(once)
+        }
 
     @Test
     fun givenNewSelfDeletingMessagesEnablingEventWithNoEnforcedTimeout_whenProcessingEvent_ThenEnableFeatureOnUserConfigRepository() =
@@ -211,7 +261,8 @@ class FeatureConfigEventReceiverTest {
                 hasFeatureChanged = false
             )
             val newSelfDeletingEventModel = SelfDeletingMessagesModel(
-                SelfDeletingMessagesConfigModel(enforcedTimeoutSeconds = newEnforcedDuration.inWholeSeconds), Status.ENABLED
+                SelfDeletingMessagesConfigModel(enforcedTimeoutSeconds = newEnforcedDuration.inWholeSeconds),
+                Status.ENABLED
             )
             val (arrangement, featureConfigEventReceiver) = Arrangement()
                 .withSelfDeletingMessages(currentSelfDeletingMessagesStatus)
@@ -236,7 +287,8 @@ class FeatureConfigEventReceiverTest {
         runTest {
             val newEnforcedTimeoutSeconds = 3600L
             val newSelfDeletingEventModel = SelfDeletingMessagesModel(
-                SelfDeletingMessagesConfigModel(enforcedTimeoutSeconds = newEnforcedTimeoutSeconds), Status.ENABLED
+                SelfDeletingMessagesConfigModel(enforcedTimeoutSeconds = newEnforcedTimeoutSeconds),
+                Status.ENABLED
             )
             val (arrangement, featureConfigEventReceiver) = Arrangement()
                 .withStoredTeamSettingsSelfDeletionStatusError()
@@ -260,7 +312,8 @@ class FeatureConfigEventReceiverTest {
         runTest {
             val newEnforcedTimeoutSeconds = 0L
             val newSelfDeletingEventModel = SelfDeletingMessagesModel(
-                SelfDeletingMessagesConfigModel(enforcedTimeoutSeconds = newEnforcedTimeoutSeconds), Status.DISABLED
+                SelfDeletingMessagesConfigModel(enforcedTimeoutSeconds = newEnforcedTimeoutSeconds),
+                Status.DISABLED
             )
             val (arrangement, featureConfigEventReceiver) = Arrangement()
                 .withStoredTeamSettingsSelfDeletionStatusError()
@@ -280,27 +333,29 @@ class FeatureConfigEventReceiverTest {
         }
 
     @Test
-    fun givenSelfDeletingFlagDisabledInKaliumConfigs_whenProcessingEnablingEvent_ThenItDisablesFeatureOnUserConfigRepository() = runTest {
-        val newEnforcedTimeoutSeconds = 0L
-        val newSelfDeletingEventModel = SelfDeletingMessagesModel(
-            SelfDeletingMessagesConfigModel(enforcedTimeoutSeconds = newEnforcedTimeoutSeconds), Status.ENABLED
-        )
-        val (arrangement, featureConfigEventReceiver) = Arrangement()
-            .withDisabledKaliumConfigFlag()
-            .arrange()
+    fun givenSelfDeletingFlagDisabledInKaliumConfigs_whenProcessingEnablingEvent_ThenItDisablesFeatureOnUserConfigRepository() =
+        runTest {
+            val newEnforcedTimeoutSeconds = 0L
+            val newSelfDeletingEventModel = SelfDeletingMessagesModel(
+                SelfDeletingMessagesConfigModel(enforcedTimeoutSeconds = newEnforcedTimeoutSeconds),
+                Status.ENABLED
+            )
+            val (arrangement, featureConfigEventReceiver) = Arrangement()
+                .withDisabledKaliumConfigFlag()
+                .arrange()
 
-        featureConfigEventReceiver.onEvent(
-            event = arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel),
-            deliveryInfo = TestEvent.liveDeliveryInfo
-        )
+            featureConfigEventReceiver.onEvent(
+                event = arrangement.newSelfDeletingMessagesUpdatedEvent(newSelfDeletingEventModel),
+                deliveryInfo = TestEvent.liveDeliveryInfo
+            )
 
-        verify(arrangement.userConfigRepository)
-            .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
-            .with(matching<TeamSettingsSelfDeletionStatus> {
-                it.hasFeatureChanged == null && it.enforcedSelfDeletionTimer is TeamSelfDeleteTimer.Disabled
-            })
-            .wasInvoked(once)
-    }
+            verify(arrangement.userConfigRepository)
+                .function(arrangement.userConfigRepository::setTeamSettingsSelfDeletionStatus)
+                .with(matching<TeamSettingsSelfDeletionStatus> {
+                    it.hasFeatureChanged == null && it.enforcedSelfDeletionTimer is TeamSelfDeleteTimer.Disabled
+                })
+                .wasInvoked(once)
+        }
 
     @Test
     fun givenUnknownFeatureConfig_whenPrecessing_thenReturnSuccess() = runTest {
@@ -319,14 +374,18 @@ class FeatureConfigEventReceiverTest {
         val userConfigRepository = mock(classOf<UserConfigRepository>())
 
         @Mock
-        val updateSupportedProtocolsAndResolveOneOnOnes = mock(classOf<UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>())
+        val updateSupportedProtocolsAndResolveOneOnOnes =
+            mock(classOf<UpdateSupportedProtocolsAndResolveOneOnOnesUseCase>())
 
         private val featureConfigEventReceiver: FeatureConfigEventReceiver by lazy {
             FeatureConfigEventReceiverImpl(
                 GuestRoomConfigHandler(userConfigRepository, kaliumConfigs),
                 FileSharingConfigHandler(userConfigRepository),
                 MLSConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes),
-                MLSMigrationConfigHandler(userConfigRepository, updateSupportedProtocolsAndResolveOneOnOnes),
+                MLSMigrationConfigHandler(
+                    userConfigRepository,
+                    updateSupportedProtocolsAndResolveOneOnOnes
+                ),
                 ClassifiedDomainsConfigHandler(userConfigRepository),
                 ConferenceCallingConfigHandler(userConfigRepository),
                 SelfDeletingMessagesConfigHandler(userConfigRepository, kaliumConfigs),
@@ -349,6 +408,13 @@ class FeatureConfigEventReceiverTest {
                 .thenReturn(Either.Right(Unit))
         }
 
+        fun withSetUseSFTForOneOnOneCallsSuccessful() = apply {
+            given(userConfigRepository)
+                .function(userConfigRepository::setUseSFTForOneOnOneCalls)
+                .whenInvokedWith(anything())
+                .thenReturn(Either.Right(Unit))
+        }
+
         fun withIsFileSharingEnabled(result: Either<StorageFailure, FileSharingStatus>) = apply {
             given(userConfigRepository)
                 .function(userConfigRepository::isFileSharingEnabled)
@@ -356,16 +422,17 @@ class FeatureConfigEventReceiverTest {
                 .thenReturn(result)
         }
 
-        fun withSelfDeletingMessages(currentSelfDeletingMessagesStatus: TeamSettingsSelfDeletionStatus) = apply {
-            given(userConfigRepository)
-                .suspendFunction(userConfigRepository::getTeamSettingsSelfDeletionStatus)
-                .whenInvoked()
-                .thenReturn(Either.Right(currentSelfDeletingMessagesStatus))
-            given(userConfigRepository)
-                .suspendFunction(userConfigRepository::setTeamSettingsSelfDeletionStatus)
-                .whenInvokedWith(any())
-                .thenReturn(Either.Right(Unit))
-        }
+        fun withSelfDeletingMessages(currentSelfDeletingMessagesStatus: TeamSettingsSelfDeletionStatus) =
+            apply {
+                given(userConfigRepository)
+                    .suspendFunction(userConfigRepository::getTeamSettingsSelfDeletionStatus)
+                    .whenInvoked()
+                    .thenReturn(Either.Right(currentSelfDeletingMessagesStatus))
+                given(userConfigRepository)
+                    .suspendFunction(userConfigRepository::setTeamSettingsSelfDeletionStatus)
+                    .whenInvokedWith(any())
+                    .thenReturn(Either.Right(Unit))
+            }
 
         fun withStoredTeamSettingsSelfDeletionStatusError() = apply {
             given(userConfigRepository)
