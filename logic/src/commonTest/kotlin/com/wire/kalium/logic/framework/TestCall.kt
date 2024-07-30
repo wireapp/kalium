@@ -115,7 +115,7 @@ object TestCall {
         establishedTime = null,
         participants = listOf(
             Participant(
-                id = QualifiedID("participantId", "participantDomain"),
+                id = QualifiedID("participantId", ""),
                 clientId = "abcd",
                 isMuted = true,
                 isCameraOn = false,
