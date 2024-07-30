@@ -123,7 +123,7 @@ object TestCall {
                 name = "User Name",
                 avatarAssetId = null,
                 userType = UserType.ADMIN,
-                isSpeaking = true
+                isSpeaking = false
             )
         ),
         maxParticipants = 0
