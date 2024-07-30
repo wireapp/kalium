@@ -55,6 +55,7 @@ import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
+import com.wire.kalium.logic.feature.call.scenario.CallingMessageSender
 import com.wire.kalium.logic.feature.call.scenario.OnActiveSpeakers
 import com.wire.kalium.logic.feature.call.scenario.OnAnsweredCall
 import com.wire.kalium.logic.feature.call.scenario.OnClientsRequest
@@ -100,9 +101,9 @@ class CallManagerImpl internal constructor(
     private val callRepository: CallRepository,
     private val userRepository: UserRepository,
     private val currentClientIdProvider: CurrentClientIdProvider,
-    private val selfConversationIdProvider: SelfConversationIdProvider,
+    selfConversationIdProvider: SelfConversationIdProvider,
     private val conversationRepository: ConversationRepository,
-    private val messageSender: MessageSender,
+    messageSender: MessageSender,
     private val callMapper: CallMapper,
     private val federatedIdMapper: FederatedIdMapper,
     private val qualifiedIdMapper: QualifiedIdMapper,
@@ -121,6 +122,14 @@ class CallManagerImpl internal constructor(
     private val job = SupervisorJob()
     private val scope = CoroutineScope(job + kaliumDispatchers.io)
     private val deferredHandle: Deferred<Handle> = startHandleAsync()
+
+    private val callingMessageSender = CallingMessageSender(
+        deferredHandle,
+        calling,
+        messageSender,
+        scope,
+        selfConversationIdProvider
+    )
 
     private val strongReferences = Collections.synchronizedList(mutableListOf<Any>())
     private fun <T : Any> T.keepingStrongReference(): T {
@@ -185,15 +194,11 @@ class CallManagerImpl internal constructor(
                 }.keepingStrongReference(),
                 // TODO(refactor): inject all of these CallbackHandlers in class constructor
                 sendHandler = OnSendOTR(
-                    deferredHandle,
-                    calling,
-                    qualifiedIdMapper,
-                    selfUserId,
-                    selfClientId,
-                    messageSender,
-                    selfConversationIdProvider,
-                    scope,
-                    callMapper
+                    qualifiedIdMapper = qualifiedIdMapper,
+                    selfUserId = selfUserId,
+                    selfClientId = selfClientId,
+                    callMapper = callMapper,
+                    callingMessageSender = callingMessageSender,
                 ).keepingStrongReference(),
                 sftRequestHandler = OnSFTRequest(deferredHandle, calling, callRepository, scope)
                     .keepingStrongReference(),
@@ -511,6 +516,13 @@ class CallManagerImpl internal constructor(
         initActiveSpeakersHandler()
         initRequestNewEpochHandler()
         initSelfUserMuteHandler()
+        initCallingMessageSender()
+    }
+
+    private fun initCallingMessageSender() {
+        scope.launch {
+            callingMessageSender.processQueue()
+        }
     }
 
     private fun initParticipantsHandler() {

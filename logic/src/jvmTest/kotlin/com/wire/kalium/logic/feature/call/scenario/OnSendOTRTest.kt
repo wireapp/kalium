@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program. If not, see http://www.gnu.org/licenses/.
  */
-package com.wire.kalium.logic.feature.scenario
+package com.wire.kalium.logic.feature.call.scenario
 
 import com.sun.jna.Memory
 import com.wire.kalium.calling.Calling
@@ -27,9 +27,6 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.feature.call.CallManagerImpl
-import com.wire.kalium.logic.feature.call.scenario.OnSendOTR
-import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.data.message.MessageTarget
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
@@ -37,14 +34,11 @@ import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
-import io.mockative.matches
 import io.mockative.coVerify
-import io.mockative.coEvery
+import io.mockative.eq
+import io.mockative.instanceOf
 import io.mockative.mock
 import io.mockative.once
-import io.mockative.verify
-import kotlinx.coroutines.CompletableDeferred
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import org.junit.Test
@@ -78,9 +72,13 @@ class OnSendOTRTest {
         yield()
 
         coVerify {
-            arrangement.messageSender.sendMessage(
-                matches { it.conversationId == Arrangement.selfConversationId },
-                matches { it is MessageTarget.Conversation },
+            arrangement.messageSender.enqueueSendingOfCallingMessage(
+                any(),
+                eq(Arrangement.conversationId),
+                any(),
+                any(),
+                any(),
+                instanceOf<CallingMessageTarget.Self>(),
             )
         }.wasInvoked(exactly = once)
     }
@@ -111,9 +109,13 @@ class OnSendOTRTest {
         yield()
 
         coVerify {
-            arrangement.messageSender.sendMessage(
-                matches { it.conversationId == Arrangement.conversationId },
-                matches { it is MessageTarget.Conversation },
+            arrangement.messageSender.enqueueSendingOfCallingMessage(
+                any(),
+                eq(Arrangement.conversationId),
+                any(),
+                any(),
+                any(),
+                instanceOf<CallingMessageTarget.HostConversation>(),
             )
         }.wasInvoked(exactly = once)
     }
@@ -124,25 +126,21 @@ class OnSendOTRTest {
         val calling = mock(Calling::class)
 
         @Mock
-        val messageSender = mock(MessageSender::class)
+        val selfConversationIdProvider = mock(SelfConversationIdProvider::class)
 
         @Mock
-        val selfConversationIdProvider = mock(SelfConversationIdProvider::class)
+        val messageSender = mock(CallingMessageSender::class)
 
         val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
 
         val callMapper = CallMapperImpl(qualifiedIdMapper)
 
         fun arrange() = this to OnSendOTR(
-            CompletableDeferred(),
-            calling,
             qualifiedIdMapper,
             TestUser.SELF.id.toString(),
-                    "self_client_id",
+            "self_client_id",
+            callMapper,
             messageSender,
-            selfConversationIdProvider,
-            CoroutineScope(TestKaliumDispatcher.main),
-            callMapper
         )
 
         companion object {
@@ -160,8 +158,15 @@ class OnSendOTRTest {
 
         suspend fun givenSendMessageSuccessful() = apply {
             coEvery {
-                messageSender.sendMessage(any(), any())
-            }.returns(Either.Right(Unit))
+                messageSender.enqueueSendingOfCallingMessage(
+                    context = any(),
+                    callHostConversationId = any(),
+                    messageString = any(),
+                    avsSelfUserId = any(),
+                    avsSelfClientId = any(),
+                    messageTarget = any(),
+                )
+            }.returns(Unit)
         }
     }
 
