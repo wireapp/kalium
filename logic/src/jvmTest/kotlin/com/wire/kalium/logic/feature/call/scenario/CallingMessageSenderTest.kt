@@ -17,6 +17,7 @@
  */
 package com.wire.kalium.logic.feature.call.scenario
 
+import com.sun.jna.Pointer
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.logic.CoreFailure
@@ -34,6 +35,7 @@ import io.mockative.Mock
 import io.mockative.any
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.every
 import io.mockative.instanceOf
 import io.mockative.matches
@@ -47,7 +49,6 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertIs
 
 class CallingMessageSenderTest {
 
@@ -76,6 +77,74 @@ class CallingMessageSenderTest {
             arrangement.messageSender.sendMessage(
                 matches { it.conversationId == Arrangement.selfConversationId },
                 matches { it is MessageTarget.Conversation },
+            )
+        }.wasInvoked(exactly = once)
+        processingJob.cancel()
+    }
+
+    @Test
+    fun givenSendFails_whenSending_thenAvsIsInformedAboutItWithCode400() = runTest {
+        val (arrangement, sender) = Arrangement(this)
+            .givenSelfConversationIdProviderReturns(Either.Right(listOf(Arrangement.selfConversationId)))
+            .givenSendMessageFails()
+            .arrange()
+
+        val processingJob = launch {
+            sender.processQueue()
+        }
+
+        val contextPointer = Pointer.createConstant(24)
+
+        sender.enqueueSendingOfCallingMessage(
+            context = contextPointer,
+            messageString = "message",
+            callHostConversationId = Arrangement.conversationId,
+            avsSelfUserId = Arrangement.selfUserId,
+            avsSelfClientId = Arrangement.selfUserCLientId,
+            messageTarget = CallingMessageTarget.Self
+        )
+        advanceUntilIdle()
+
+        coVerify {
+            arrangement.calling.wcall_resp(
+                eq(arrangement.handle),
+                eq(400),
+                any(),
+                eq(contextPointer),
+            )
+        }.wasInvoked(exactly = once)
+        processingJob.cancel()
+    }
+
+    @Test
+    fun givenSendSucceeds_whenSending_thenAvsIsInformedAboutItWithCode200() = runTest {
+        val (arrangement, sender) = Arrangement(this)
+            .givenSelfConversationIdProviderReturns(Either.Right(listOf(Arrangement.selfConversationId)))
+            .givenSendMessageSuccessful()
+            .arrange()
+
+        val processingJob = launch {
+            sender.processQueue()
+        }
+
+        val contextPointer = Pointer.createConstant(123)
+
+        sender.enqueueSendingOfCallingMessage(
+            context = contextPointer,
+            messageString = "message",
+            callHostConversationId = Arrangement.conversationId,
+            avsSelfUserId = Arrangement.selfUserId,
+            avsSelfClientId = Arrangement.selfUserCLientId,
+            messageTarget = CallingMessageTarget.Self
+        )
+        advanceUntilIdle()
+
+        coVerify {
+            arrangement.calling.wcall_resp(
+                eq(arrangement.handle),
+                eq(200),
+                any(),
+                eq(contextPointer),
             )
         }.wasInvoked(exactly = once)
         processingJob.cancel()
@@ -189,12 +258,14 @@ class CallingMessageSenderTest {
         @Mock
         val selfConversationIdProvider = mock(SelfConversationIdProvider::class)
 
+        val handle = Handle(42)
+
         init {
             every { calling.wcall_resp(any(), any(), any(), any()) }.returns(0)
         }
 
         fun arrange() = this to CallingMessageSender(
-            testScope.async { Handle(42) },
+            testScope.async { handle },
             calling,
             messageSender,
             testScope,
@@ -218,6 +289,12 @@ class CallingMessageSenderTest {
             coEvery {
                 messageSender.sendMessage(any(), any())
             }.returns(Either.Right(Unit))
+        }
+
+        suspend fun givenSendMessageFails() = apply {
+            coEvery {
+                messageSender.sendMessage(any(), any())
+            }.returns(Either.Left(StorageFailure.DataNotFound))
         }
 
         suspend fun givenSendMessageInvokes(block: suspend () -> Either<CoreFailure, Unit>) = apply {
