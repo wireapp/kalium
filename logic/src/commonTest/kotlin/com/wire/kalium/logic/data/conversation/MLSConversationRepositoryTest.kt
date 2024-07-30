@@ -1269,6 +1269,7 @@ class MLSConversationRepositoryTest {
     fun givenSuccessResponse_whenRotatingKeysAndMigratingConversation_thenReturnsSuccess() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
+            .withGetDefaultCipherSuiteSuccessful()
             .withRotateAllSuccessful()
             .withSendCommitBundleSuccessful()
             .withKeyPackageLimits(10)
@@ -1305,6 +1306,7 @@ class MLSConversationRepositoryTest {
     fun givenNewDistributionsCRL_whenRotatingKeys_thenCheckRevocationList() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
+            .withGetDefaultCipherSuiteSuccessful()
             .withRotateAllSuccessful(ROTATE_BUNDLE.copy(crlNewDistributionPoints = listOf("url")))
             .withSendCommitBundleSuccessful()
             .withKeyPackageLimits(10)
@@ -1332,6 +1334,7 @@ class MLSConversationRepositoryTest {
     fun givenReplacingKeypackagesFailed_whenRotatingKeysAndMigratingConversation_thenReturnsFailure() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
+            .withGetDefaultCipherSuiteSuccessful()
             .withRotateAllSuccessful()
             .withKeyPackageLimits(10)
             .withReplaceKeyPackagesReturning(TEST_FAILURE)
@@ -1363,6 +1366,7 @@ class MLSConversationRepositoryTest {
     fun givenSendingCommitBundlesFails_whenRotatingKeysAndMigratingConversation_thenReturnsFailure() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement()
             .withGetMLSClientSuccessful()
+            .withGetDefaultCipherSuiteSuccessful()
             .withRotateAllSuccessful()
             .withKeyPackageLimits(10)
             .withReplaceKeyPackagesReturning(Either.Right(Unit))
@@ -1758,7 +1762,7 @@ class MLSConversationRepositoryTest {
         fun withReplaceKeyPackagesReturning(result: Either<CoreFailure, Unit>) = apply {
             given(keyPackageRepository)
                 .suspendFunction(keyPackageRepository::replaceKeyPackages)
-                .whenInvokedWith(anything(), anything())
+                .whenInvokedWith(anything(), anything(), anything())
                 .thenReturn(result)
         }
 
@@ -1774,6 +1778,13 @@ class MLSConversationRepositoryTest {
                 .suspendFunction(mlsClientProvider::getMLSClient)
                 .whenInvokedWith(anything())
                 .then { Either.Right(mlsClient) }
+        }
+
+        fun withGetDefaultCipherSuiteSuccessful() = apply {
+            given(mlsClient)
+                .function(mlsClient::getDefaultCipherSuite)
+                .whenInvoked()
+                .then { CIPHER_SUITE.tag.toUShort() }
         }
 
         fun withGetExternalSenderKeySuccessful() = apply {
