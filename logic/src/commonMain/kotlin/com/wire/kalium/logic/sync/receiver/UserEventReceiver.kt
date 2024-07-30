@@ -131,7 +131,7 @@ internal class UserEventReceiverImpl internal constructor(
         return currentClientIdProvider().map { currentClientId ->
             if (currentClientId == event.clientId) {
                 logger.logSuccess("info" to "CURRENT_CLIENT")
-                logout(LogoutReason.REMOVED_CLIENT)
+                logout(LogoutReason.REMOVED_CLIENT, waitUntilCompletes = true)
             } else {
                 logger.logSuccess("info" to "OTHER_CLIENT")
             }
@@ -148,7 +148,7 @@ internal class UserEventReceiverImpl internal constructor(
     private suspend fun handleUserDelete(event: Event.User.UserDelete): Either<CoreFailure, Unit> {
         val logger = kaliumLogger.createEventProcessingLogger(event)
         return if (selfUserId == event.userId) {
-            logout(LogoutReason.DELETED_ACCOUNT)
+            logout(LogoutReason.DELETED_ACCOUNT, waitUntilCompletes = true)
             Either.Right(Unit)
         } else {
             userRepository.markUserAsDeletedAndRemoveFromGroupConversations(event.userId)

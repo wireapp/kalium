@@ -70,7 +70,7 @@ class UserEventReceiverTest {
         eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
 
         coVerify {
-            arrangement.logoutUseCase.invoke(eq(LogoutReason.REMOVED_CLIENT), any())
+            arrangement.logoutUseCase.invoke(eq(LogoutReason.REMOVED_CLIENT), eq(true))
         }.wasInvoked(exactly = once)
     }
 
@@ -99,7 +99,7 @@ class UserEventReceiverTest {
         eventReceiver.onEvent(event, TestEvent.liveDeliveryInfo)
 
         coVerify {
-            arrangement.logoutUseCase.invoke(eq(LogoutReason.DELETED_ACCOUNT), any())
+            arrangement.logoutUseCase.invoke(eq(LogoutReason.DELETED_ACCOUNT), eq(true))
         }.wasInvoked(exactly = once)
     }
 
