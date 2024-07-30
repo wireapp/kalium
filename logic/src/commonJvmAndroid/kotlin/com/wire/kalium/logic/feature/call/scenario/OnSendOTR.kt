@@ -19,36 +19,26 @@
 package com.wire.kalium.logic.feature.call.scenario
 
 import com.sun.jna.Pointer
-import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.callbacks.SendHandler
-import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.calling.types.Size_t
-import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.mapper.CallMapper
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
+import com.wire.kalium.logic.data.message.MessageTarget
 import com.wire.kalium.logic.feature.call.AvsCallBackError
 import com.wire.kalium.logic.feature.call.CallManagerImpl
-import com.wire.kalium.logic.feature.message.MessageSender
-import com.wire.kalium.logic.data.message.MessageTarget
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
 import kotlinx.serialization.json.Json
 
 // TODO(testing): create unit test
 @Suppress("LongParameterList")
 internal class OnSendOTR(
-    private val handle: Deferred<Handle>,
-    private val calling: Calling,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val selfUserId: String,
     private val selfClientId: String,
-    private val messageSender: MessageSender,
-    private val selfConversationIdProvider: SelfConversationIdProvider,
-    private val callingScope: CoroutineScope,
-    private val callMapper: CallMapper
+    private val callMapper: CallMapper,
+    private val callingMessageSender: CallingMessageSender,
 ) : SendHandler {
     @Suppress("TooGenericExceptionCaught", "NestedBlockDepth")
     override fun onSend(
@@ -73,26 +63,26 @@ internal class OnSendOTR(
             try {
                 val messageTarget = if (myClientsOnly) {
                     callingLogger.i("[OnSendOTR] -> Route calling message via self conversation")
-                    MessageTarget.Conversation()
+                    CallingMessageTarget.Self
                 } else {
                     callingLogger.i("[OnSendOTR] -> Decoding Recipients")
-                    targetRecipientsJson?.let { recipientsJson ->
+                    val specificTarget = targetRecipientsJson?.let { recipientsJson ->
                         val callClientList = Json.decodeFromString<CallClientList>(recipientsJson)
 
                         callingLogger.i("[OnSendOTR] -> Mapping Recipients")
                         callMapper.toClientMessageTarget(callClientList = callClientList)
                     } ?: MessageTarget.Conversation()
+                    CallingMessageTarget.HostConversation(specificTarget)
                 }
 
                 callingLogger.i("[OnSendOTR] -> Success")
-                OnHttpRequest(handle, calling, messageSender, callingScope, selfConversationIdProvider).sendHandlerSuccess(
+                callingMessageSender.enqueueSendingOfCallingMessage(
                     context = context,
+                    callHostConversationId = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationId),
                     messageString = data?.getString(0, CallManagerImpl.UTF8_ENCODING),
-                    conversationId = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationId),
                     avsSelfUserId = qualifiedIdMapper.fromStringToQualifiedID(remoteSelfUserId),
                     avsSelfClientId = ClientId(remoteClientIdSelf),
-                    messageTarget = messageTarget,
-                    sendInSelfConversation = myClientsOnly
+                    messageTarget = messageTarget
                 )
                 AvsCallBackError.NONE.value
             } catch (exception: Exception) {
