@@ -30,7 +30,7 @@ import com.wire.kalium.network.utils.NetworkResponse
 import com.wire.kalium.network.utils.handleUnsuccessfulResponse
 import com.wire.kalium.network.utils.wrapFederationResponse
 import com.wire.kalium.network.utils.wrapKaliumResponse
-import com.wire.kalium.util.int.toHex
+import com.wire.kalium.util.int.toHexString
 import io.ktor.client.request.get
 import io.ktor.client.request.parameter
 import io.ktor.client.request.post
@@ -75,7 +75,7 @@ internal open class KeyPackageApiV5 internal constructor(
             kaliumLogger.v("Keypackages Count to replace: ${keyPackages.size}")
             httpClient.put("$PATH_KEY_PACKAGES/$PATH_SELF/$clientId") {
                 setBody(KeyPackageList(keyPackages))
-                parameter(QUERY_CIPHER_SUITES, cipherSuite.toHex())
+                parameter(QUERY_CIPHER_SUITES, cipherSuite.toHexString())
             }
         }
 
