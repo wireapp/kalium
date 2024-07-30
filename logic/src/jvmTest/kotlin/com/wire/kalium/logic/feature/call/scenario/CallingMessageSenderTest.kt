@@ -33,6 +33,7 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
+<<<<<<< HEAD
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
@@ -41,6 +42,16 @@ import io.mockative.instanceOf
 import io.mockative.matches
 import io.mockative.mock
 import io.mockative.once
+=======
+import io.mockative.anyInstanceOf
+import io.mockative.anything
+import io.mockative.eq
+import io.mockative.given
+import io.mockative.matching
+import io.mockative.mock
+import io.mockative.once
+import io.mockative.verify
+>>>>>>> 28e19a6056 (fix: send calling message in order [WPB-10051] (#2920))
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -73,12 +84,22 @@ class CallingMessageSenderTest {
         )
         advanceUntilIdle()
 
+<<<<<<< HEAD
         coVerify {
             arrangement.messageSender.sendMessage(
                 matches { it.conversationId == Arrangement.selfConversationId },
                 matches { it is MessageTarget.Conversation },
             )
         }.wasInvoked(exactly = once)
+=======
+        verify(arrangement.messageSender)
+            .suspendFunction(arrangement.messageSender::sendMessage)
+            .with(
+                matching { it.conversationId == Arrangement.selfConversationId },
+                matching { it is MessageTarget.Conversation }
+            )
+            .wasInvoked(exactly = once)
+>>>>>>> 28e19a6056 (fix: send calling message in order [WPB-10051] (#2920))
         processingJob.cancel()
     }
 
@@ -105,14 +126,24 @@ class CallingMessageSenderTest {
         )
         advanceUntilIdle()
 
+<<<<<<< HEAD
         coVerify {
             arrangement.calling.wcall_resp(
+=======
+        verify(arrangement.calling)
+            .function(arrangement.calling::wcall_resp)
+            .with(
+>>>>>>> 28e19a6056 (fix: send calling message in order [WPB-10051] (#2920))
                 eq(arrangement.handle),
                 eq(400),
                 any(),
                 eq(contextPointer),
+<<<<<<< HEAD
             )
         }.wasInvoked(exactly = once)
+=======
+            ).wasInvoked(exactly = once)
+>>>>>>> 28e19a6056 (fix: send calling message in order [WPB-10051] (#2920))
         processingJob.cancel()
     }
 
@@ -139,14 +170,24 @@ class CallingMessageSenderTest {
         )
         advanceUntilIdle()
 
+<<<<<<< HEAD
         coVerify {
             arrangement.calling.wcall_resp(
+=======
+        verify(arrangement.calling)
+            .function(arrangement.calling::wcall_resp)
+            .with(
+>>>>>>> 28e19a6056 (fix: send calling message in order [WPB-10051] (#2920))
                 eq(arrangement.handle),
                 eq(200),
                 any(),
                 eq(contextPointer),
+<<<<<<< HEAD
             )
         }.wasInvoked(exactly = once)
+=======
+            ).wasInvoked(exactly = once)
+>>>>>>> 28e19a6056 (fix: send calling message in order [WPB-10051] (#2920))
         processingJob.cancel()
     }
 
@@ -170,12 +211,21 @@ class CallingMessageSenderTest {
         )
         advanceUntilIdle()
 
+<<<<<<< HEAD
         coVerify {
             arrangement.messageSender.sendMessage(
                 matches { it.conversationId == Arrangement.conversationId },
                 matches { it is MessageTarget.Conversation },
             )
         }.wasInvoked(exactly = once)
+=======
+        verify(arrangement.messageSender)
+            .suspendFunction(arrangement.messageSender::sendMessage)
+            .with(
+                matching { it.conversationId == Arrangement.conversationId },
+                matching { it is MessageTarget.Conversation },
+            ).wasInvoked(exactly = once)
+>>>>>>> 28e19a6056 (fix: send calling message in order [WPB-10051] (#2920))
         processingJob.cancel()
     }
 
@@ -220,13 +270,21 @@ class CallingMessageSenderTest {
         advanceUntilIdle()
 
         assertEquals(1, invokeCount)
+<<<<<<< HEAD
         coVerify {
             arrangement.messageSender.sendMessage(
                 matches {
+=======
+        verify(arrangement.messageSender)
+            .suspendFunction(arrangement.messageSender::sendMessage)
+            .with(
+                matching {
+>>>>>>> 28e19a6056 (fix: send calling message in order [WPB-10051] (#2920))
                     val content = it.content
                     secondMessageText == (content as? MessageContent.Calling)?.value &&
                             it.conversationId == Arrangement.conversationId
                 },
+<<<<<<< HEAD
                 instanceOf<MessageTarget.Conversation>()
             )
         }.wasNotInvoked()
@@ -237,13 +295,31 @@ class CallingMessageSenderTest {
         coVerify {
             arrangement.messageSender.sendMessage(
                 matches {
+=======
+                anyInstanceOf(MessageTarget.Conversation::class)
+            )
+            .wasNotInvoked()
+
+        firstMessageLock.cancel()
+        advanceUntilIdle()
+        verify(arrangement.messageSender)
+            .suspendFunction(arrangement.messageSender::sendMessage)
+            .with(
+                matching {
+>>>>>>> 28e19a6056 (fix: send calling message in order [WPB-10051] (#2920))
                     val content = it.content
                     secondMessageText == (content as? MessageContent.Calling)?.value &&
                             it.conversationId == Arrangement.conversationId
                 },
+<<<<<<< HEAD
                 instanceOf<MessageTarget.Conversation>()
             )
         }.wasInvoked(exactly = once)
+=======
+                anyInstanceOf(MessageTarget.Conversation::class)
+            )
+            .wasInvoked(exactly = once)
+>>>>>>> 28e19a6056 (fix: send calling message in order [WPB-10051] (#2920))
         processingJob.cancel()
     }
 
@@ -261,7 +337,14 @@ class CallingMessageSenderTest {
         val handle = Handle(42)
 
         init {
+<<<<<<< HEAD
             every { calling.wcall_resp(any(), any(), any(), any()) }.returns(0)
+=======
+            given(calling)
+                .function(calling::wcall_resp)
+                .whenInvokedWith(anything(), anything(), anything(), anything())
+                .thenReturn(0)
+>>>>>>> 28e19a6056 (fix: send calling message in order [WPB-10051] (#2920))
         }
 
         fun arrange() = this to CallingMessageSender(
@@ -280,6 +363,7 @@ class CallingMessageSenderTest {
         }
 
         suspend fun givenSelfConversationIdProviderReturns(result: Either<StorageFailure, List<ConversationId>>) = apply {
+<<<<<<< HEAD
             coEvery {
                 selfConversationIdProvider.invoke()
             }.returns(result)
@@ -301,6 +385,33 @@ class CallingMessageSenderTest {
             coEvery {
                 messageSender.sendMessage(any(), any())
             }.invokes(block)
+=======
+            given(selfConversationIdProvider)
+                .suspendFunction(selfConversationIdProvider::invoke)
+                .whenInvoked()
+                .thenReturn(result)
+        }
+
+        suspend fun givenSendMessageSuccessful() = apply {
+            given(messageSender)
+                .suspendFunction(messageSender::sendMessage)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(Unit))
+        }
+
+        suspend fun givenSendMessageFails() = apply {
+            given(messageSender)
+                .suspendFunction(messageSender::sendMessage)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Left(StorageFailure.DataNotFound))
+        }
+
+        suspend fun givenSendMessageInvokes(block: suspend () -> Either<CoreFailure, Unit>) = apply {
+            given(messageSender)
+                .suspendFunction(messageSender::sendMessage)
+                .whenInvokedWith(any(), any())
+                .thenInvoke(block)
+>>>>>>> 28e19a6056 (fix: send calling message in order [WPB-10051] (#2920))
         }
     }
 }

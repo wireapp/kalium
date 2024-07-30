@@ -18,6 +18,7 @@
 package com.wire.kalium.logic.feature.call.scenario
 
 import com.sun.jna.Memory
+import com.sun.jna.Pointer
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.types.Size_t
 import com.wire.kalium.logic.StorageFailure
@@ -26,6 +27,7 @@ import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
+import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.call.CallManagerImpl
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestUser
@@ -33,12 +35,22 @@ import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import io.mockative.Mock
 import io.mockative.any
+<<<<<<< HEAD
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.eq
 import io.mockative.instanceOf
 import io.mockative.mock
 import io.mockative.once
+=======
+import io.mockative.anyInstanceOf
+import io.mockative.anything
+import io.mockative.eq
+import io.mockative.given
+import io.mockative.mock
+import io.mockative.once
+import io.mockative.verify
+>>>>>>> 28e19a6056 (fix: send calling message in order [WPB-10051] (#2920))
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.yield
 import org.junit.Test
@@ -71,6 +83,7 @@ class OnSendOTRTest {
         )
         yield()
 
+<<<<<<< HEAD
         coVerify {
             arrangement.messageSender.enqueueSendingOfCallingMessage(
                 any(),
@@ -79,6 +92,17 @@ class OnSendOTRTest {
                 any(),
                 any(),
                 instanceOf<CallingMessageTarget.Self>(),
+=======
+        verify(arrangement.messageSender)
+            .suspendFunction(arrangement.messageSender::enqueueSendingOfCallingMessage)
+            .with(
+                anything<Pointer>(),
+                eq(Arrangement.conversationId),
+                anything<String>(),
+                anything<UserId>(),
+                anything<ClientId>(),
+                anyInstanceOf(CallingMessageTarget.Self::class),
+>>>>>>> 28e19a6056 (fix: send calling message in order [WPB-10051] (#2920))
             )
         }.wasInvoked(exactly = once)
     }
@@ -108,6 +132,7 @@ class OnSendOTRTest {
         )
         yield()
 
+<<<<<<< HEAD
         coVerify {
             arrangement.messageSender.enqueueSendingOfCallingMessage(
                 any(),
@@ -116,6 +141,17 @@ class OnSendOTRTest {
                 any(),
                 any(),
                 instanceOf<CallingMessageTarget.HostConversation>(),
+=======
+        verify(arrangement.messageSender)
+            .suspendFunction(arrangement.messageSender::enqueueSendingOfCallingMessage)
+            .with(
+                anything<Pointer>(),
+                eq(Arrangement.conversationId),
+                any<String>(),
+                any<UserId>(),
+                any<ClientId>(),
+                anyInstanceOf(CallingMessageTarget.HostConversation::class),
+>>>>>>> 28e19a6056 (fix: send calling message in order [WPB-10051] (#2920))
             )
         }.wasInvoked(exactly = once)
     }
@@ -151,6 +187,7 @@ class OnSendOTRTest {
         }
 
         suspend fun givenSelfConversationIdProviderReturns(result: Either<StorageFailure, List<ConversationId>>) = apply {
+<<<<<<< HEAD
             coEvery {
                 selfConversationIdProvider.invoke()
             }.returns(result)
@@ -167,6 +204,25 @@ class OnSendOTRTest {
                     messageTarget = any(),
                 )
             }.returns(Unit)
+=======
+            given(selfConversationIdProvider)
+                .suspendFunction(selfConversationIdProvider::invoke)
+                .whenInvoked()
+                .thenReturn(result)
+        }
+
+        suspend fun givenSendMessageSuccessful() = apply {
+            given(messageSender)
+                .suspendFunction(messageSender::enqueueSendingOfCallingMessage)
+                .whenInvokedWith(
+                    any<Pointer?>(),
+                    any<ConversationId>(),
+                    any<String?>(),
+                    any<UserId>(),
+                    any<ClientId>(),
+                    any<CallingMessageTarget>(),
+                ).thenReturn(Unit)
+>>>>>>> 28e19a6056 (fix: send calling message in order [WPB-10051] (#2920))
         }
     }
 

@@ -35,13 +35,20 @@ import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.foldToEitherWhileRight
+<<<<<<< HEAD
+=======
+import com.wire.kalium.util.DateTimeUtil
+>>>>>>> 28e19a6056 (fix: send calling message in order [WPB-10051] (#2920))
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.consumeAsFlow
 import kotlinx.coroutines.launch
+<<<<<<< HEAD
 import kotlinx.datetime.Clock
+=======
+>>>>>>> 28e19a6056 (fix: send calling message in order [WPB-10051] (#2920))
 
 internal interface CallingMessageSender {
 
@@ -161,12 +168,19 @@ internal fun CallingMessageSender(
         transportConversationId: ConversationId
     ): Either<CoreFailure, Unit> {
         val messageContent = MessageContent.Calling(data, callHostConversationId)
+<<<<<<< HEAD
         val date = Clock.System.now()
+=======
+>>>>>>> 28e19a6056 (fix: send calling message in order [WPB-10051] (#2920))
         val message = Message.Signaling(
             id = uuid4().toString(),
             content = messageContent,
             conversationId = transportConversationId,
+<<<<<<< HEAD
             date = date,
+=======
+            date = DateTimeUtil.currentIsoDateTimeString(),
+>>>>>>> 28e19a6056 (fix: send calling message in order [WPB-10051] (#2920))
             senderUserId = userId,
             senderClientId = clientId,
             status = Message.Status.Sent,
