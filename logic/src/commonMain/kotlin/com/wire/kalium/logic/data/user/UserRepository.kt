@@ -152,6 +152,8 @@ interface UserRepository {
 
     suspend fun updateActiveOneOnOneConversation(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
 
+    suspend fun updateActiveOneOnOneConversationIfNotSet(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit>
+
     suspend fun isAtLeastOneUserATeamMember(userId: List<UserId>, teamId: TeamId): Either<StorageFailure, Boolean>
 
     suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedID>): Either<StorageFailure, Unit>
@@ -418,7 +420,9 @@ internal class UserDataSource internal constructor(
                     kaliumLogger.i("$logPrefix: Succeeded")
                     userDetailsRefreshInstantCache[selfUserId] = DateTimeUtil.currentInstant()
                 })
-            } else { refreshUserDetailsIfNeeded(selfUserId) }
+            } else {
+                refreshUserDetailsIfNeeded(selfUserId)
+            }
         }.filterNotNull().flatMapMerge { encodedValue ->
             val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
             userDAO.observeUserDetailsByQualifiedID(selfUserID)
@@ -510,6 +514,13 @@ internal class UserDataSource internal constructor(
 
     override suspend fun updateActiveOneOnOneConversation(userId: UserId, conversationId: ConversationId): Either<CoreFailure, Unit> =
         wrapStorageRequest { userDAO.updateActiveOneOnOneConversation(userId.toDao(), conversationId.toDao()) }
+
+    override suspend fun updateActiveOneOnOneConversationIfNotSet(
+        userId: UserId,
+        conversationId: ConversationId
+    ): Either<CoreFailure, Unit> = wrapStorageRequest {
+        userDAO.updateActiveOneOnOneConversationIfNotSet(userId.toDao(), conversationId.toDao())
+    }
 
     override suspend fun isAtLeastOneUserATeamMember(userId: List<UserId>, teamId: TeamId) = wrapStorageRequest {
         userDAO.isAtLeastOneUserATeamMember(userId.map { it.toDao() }, teamId.value)

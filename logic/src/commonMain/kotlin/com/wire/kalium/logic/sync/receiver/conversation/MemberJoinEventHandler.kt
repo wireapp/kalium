@@ -73,9 +73,27 @@ internal class MemberJoinEventHandlerImpl(
                 userRepository.fetchUsersIfUnknownByIds(event.members.map { it.id }.toSet())
                 conversationRepository.persistMembers(event.members, event.conversationId)
             }.onSuccess {
+<<<<<<< HEAD
                 conversationRepository.getConversationById(event.conversationId).onSuccess { conversation ->
                     if (conversation.type == Conversation.Type.GROUP) addSystemMessage(event)
+=======
+                conversationRepository.detailsById(event.conversationId).onSuccess { conversation ->
+                    when (conversation.type) {
+                        Conversation.Type.ONE_ON_ONE -> {
+                            if (event.members.size == 1) {
+                                userRepository.updateActiveOneOnOneConversationIfNotSet(event.members.first().id, event.conversationId)
+                            }
+                        }
+
+                        Conversation.Type.GROUP -> addSystemMessage(event)
+                        Conversation.Type.SELF,
+                        Conversation.Type.CONNECTION_PENDING -> {
+                            /* no-op */
+                        }
+                    }
+>>>>>>> e2ac7c3762 (fix: newly created 1:1 with bots are not displayed [WPB-4464] (#2912))
                 }
+
                 legalHoldHandler.handleConversationMembersChanged(event.conversationId)
                 eventLogger.logSuccess()
             }.onFailure {
