@@ -73,7 +73,11 @@ interface KeyPackageApi {
      * @param keyPackages list of key packages
      *
      */
-    suspend fun replaceKeyPackages(clientId: String, keyPackages: List<KeyPackage>): NetworkResponse<Unit>
+    suspend fun replaceKeyPackages(
+        clientId: String,
+        keyPackages: List<KeyPackage>,
+        cipherSuite: Int
+    ): NetworkResponse<Unit>
 
     /**
      * Get the number of available key packages for the self client
