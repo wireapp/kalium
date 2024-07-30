@@ -33,14 +33,14 @@ import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.coEvery
-import io.mockative.coVerify
+import io.mockative.anyInstanceOf
+import io.mockative.anything
 import io.mockative.eq
-import io.mockative.every
-import io.mockative.instanceOf
-import io.mockative.matches
+import io.mockative.given
+import io.mockative.matching
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.verify
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
@@ -73,12 +73,13 @@ class CallingMessageSenderTest {
         )
         advanceUntilIdle()
 
-        coVerify {
-            arrangement.messageSender.sendMessage(
-                matches { it.conversationId == Arrangement.selfConversationId },
-                matches { it is MessageTarget.Conversation },
+        verify(arrangement.messageSender)
+            .suspendFunction(arrangement.messageSender::sendMessage)
+            .with(
+                matching { it.conversationId == Arrangement.selfConversationId },
+                matching { it is MessageTarget.Conversation }
             )
-        }.wasInvoked(exactly = once)
+            .wasInvoked(exactly = once)
         processingJob.cancel()
     }
 
@@ -105,14 +106,14 @@ class CallingMessageSenderTest {
         )
         advanceUntilIdle()
 
-        coVerify {
-            arrangement.calling.wcall_resp(
+        verify(arrangement.calling)
+            .function(arrangement.calling::wcall_resp)
+            .with(
                 eq(arrangement.handle),
                 eq(400),
                 any(),
                 eq(contextPointer),
-            )
-        }.wasInvoked(exactly = once)
+            ).wasInvoked(exactly = once)
         processingJob.cancel()
     }
 
@@ -139,14 +140,14 @@ class CallingMessageSenderTest {
         )
         advanceUntilIdle()
 
-        coVerify {
-            arrangement.calling.wcall_resp(
+        verify(arrangement.calling)
+            .function(arrangement.calling::wcall_resp)
+            .with(
                 eq(arrangement.handle),
                 eq(200),
                 any(),
                 eq(contextPointer),
-            )
-        }.wasInvoked(exactly = once)
+            ).wasInvoked(exactly = once)
         processingJob.cancel()
     }
 
@@ -170,12 +171,12 @@ class CallingMessageSenderTest {
         )
         advanceUntilIdle()
 
-        coVerify {
-            arrangement.messageSender.sendMessage(
-                matches { it.conversationId == Arrangement.conversationId },
-                matches { it is MessageTarget.Conversation },
-            )
-        }.wasInvoked(exactly = once)
+        verify(arrangement.messageSender)
+            .suspendFunction(arrangement.messageSender::sendMessage)
+            .with(
+                matching { it.conversationId == Arrangement.conversationId },
+                matching { it is MessageTarget.Conversation },
+            ).wasInvoked(exactly = once)
         processingJob.cancel()
     }
 
@@ -220,30 +221,31 @@ class CallingMessageSenderTest {
         advanceUntilIdle()
 
         assertEquals(1, invokeCount)
-        coVerify {
-            arrangement.messageSender.sendMessage(
-                matches {
+        verify(arrangement.messageSender)
+            .suspendFunction(arrangement.messageSender::sendMessage)
+            .with(
+                matching {
                     val content = it.content
                     secondMessageText == (content as? MessageContent.Calling)?.value &&
                             it.conversationId == Arrangement.conversationId
                 },
-                instanceOf<MessageTarget.Conversation>()
+                anyInstanceOf(MessageTarget.Conversation::class)
             )
-        }.wasNotInvoked()
+            .wasNotInvoked()
 
         firstMessageLock.cancel()
         advanceUntilIdle()
-
-        coVerify {
-            arrangement.messageSender.sendMessage(
-                matches {
+        verify(arrangement.messageSender)
+            .suspendFunction(arrangement.messageSender::sendMessage)
+            .with(
+                matching {
                     val content = it.content
                     secondMessageText == (content as? MessageContent.Calling)?.value &&
                             it.conversationId == Arrangement.conversationId
                 },
-                instanceOf<MessageTarget.Conversation>()
+                anyInstanceOf(MessageTarget.Conversation::class)
             )
-        }.wasInvoked(exactly = once)
+            .wasInvoked(exactly = once)
         processingJob.cancel()
     }
 
@@ -261,7 +263,10 @@ class CallingMessageSenderTest {
         val handle = Handle(42)
 
         init {
-            every { calling.wcall_resp(any(), any(), any(), any()) }.returns(0)
+            given(calling)
+                .function(calling::wcall_resp)
+                .whenInvokedWith(anything(), anything(), anything(), anything())
+                .thenReturn(0)
         }
 
         fun arrange() = this to CallingMessageSender(
@@ -280,27 +285,31 @@ class CallingMessageSenderTest {
         }
 
         suspend fun givenSelfConversationIdProviderReturns(result: Either<StorageFailure, List<ConversationId>>) = apply {
-            coEvery {
-                selfConversationIdProvider.invoke()
-            }.returns(result)
+            given(selfConversationIdProvider)
+                .suspendFunction(selfConversationIdProvider::invoke)
+                .whenInvoked()
+                .thenReturn(result)
         }
 
         suspend fun givenSendMessageSuccessful() = apply {
-            coEvery {
-                messageSender.sendMessage(any(), any())
-            }.returns(Either.Right(Unit))
+            given(messageSender)
+                .suspendFunction(messageSender::sendMessage)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Right(Unit))
         }
 
         suspend fun givenSendMessageFails() = apply {
-            coEvery {
-                messageSender.sendMessage(any(), any())
-            }.returns(Either.Left(StorageFailure.DataNotFound))
+            given(messageSender)
+                .suspendFunction(messageSender::sendMessage)
+                .whenInvokedWith(any(), any())
+                .thenReturn(Either.Left(StorageFailure.DataNotFound))
         }
 
         suspend fun givenSendMessageInvokes(block: suspend () -> Either<CoreFailure, Unit>) = apply {
-            coEvery {
-                messageSender.sendMessage(any(), any())
-            }.invokes(block)
+            given(messageSender)
+                .suspendFunction(messageSender::sendMessage)
+                .whenInvokedWith(any(), any())
+                .thenInvoke(block)
         }
     }
 }
