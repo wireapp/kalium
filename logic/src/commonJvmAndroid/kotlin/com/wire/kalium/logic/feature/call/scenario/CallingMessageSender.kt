@@ -99,7 +99,6 @@ internal fun CallingMessageSender(
 
     override suspend fun processQueue() {
         queue.consumeAsFlow().collect { messageInstructions ->
-            println("Collecting $messageInstructions")
             processInstruction(messageInstructions, selfConversationIdProvider)
         }
     }
@@ -144,14 +143,12 @@ internal fun CallingMessageSender(
                 HttpStatusCode.BadRequest.value to "Couldn't send Calling Message"
             }
         }
-        println("Notifying AVS")
         calling.wcall_resp(
             inst = handle.await(),
             status = code,
             reason = message,
             arg = messageInstructions.context
         )
-        println("Notified AVS")
     }
 
     @Suppress("LongParameterList")
@@ -176,9 +173,6 @@ internal fun CallingMessageSender(
             isSelfMessage = true,
             expirationData = null
         )
-        println("Sending message $message")
-        val result = messageSender.sendMessage(message, messageTarget)
-        println("Sent message $message")
-        return result
+        return messageSender.sendMessage(message, messageTarget)
     }
 }
