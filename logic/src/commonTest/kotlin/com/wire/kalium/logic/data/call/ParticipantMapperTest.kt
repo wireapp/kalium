@@ -69,6 +69,10 @@ class ParticipantMapperTest {
         val expectedParticipant = ParticipantMinimized(
             id = QualifiedID(
                 value = "dummyId",
+                domain = ""
+            ),
+            userId = QualifiedID(
+                value = "dummyId",
                 domain = "dummyDomain"
             ),
             clientId = "dummyClientId",

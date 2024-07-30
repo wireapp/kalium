@@ -417,8 +417,8 @@ internal class CallDataSource(
                             " with size of: ${participants.size}"
                 )
 
-                val currentParticipantIds = call.participants.map { it.id }.toSet()
-                val newParticipantIds = participants.map { it.id }.toSet()
+                val currentParticipantIds = call.participants.map { it.userId }.toSet()
+                val newParticipantIds = participants.map { it.userId }.toSet()
 
                 val updatedUsers = call.users.toMutableList()
 

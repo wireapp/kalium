@@ -81,7 +81,8 @@ object TestCall {
         protocol = Conversation.ProtocolInfo.Proteus,
         participants = listOf(
             ParticipantMinimized(
-                id = QualifiedID("participantId", "participantDomain"),
+                id = QualifiedID("participantId", ""),
+                userId = QualifiedID("participantId", "participantDomain"),
                 clientId = "abcd",
                 isMuted = true,
                 isCameraOn = false,

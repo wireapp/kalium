@@ -21,6 +21,7 @@ package com.wire.kalium.logic.data.call.mapper
 import com.wire.kalium.logic.data.call.CallMember
 import com.wire.kalium.logic.data.call.ParticipantMinimized
 import com.wire.kalium.logic.data.call.VideoStateChecker
+import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 
 interface ParticipantMapper {
@@ -39,7 +40,8 @@ class ParticipantMapperImpl(
         val isSharingScreen = videoStateChecker.isSharingScreen(videoState)
 
         ParticipantMinimized(
-            id = qualifiedIdMapper.fromStringToQualifiedID(member.userId),
+            id = QualifiedID(value = member.userId.removeDomain(), domain = member.userId.getDomain()),
+            userId = qualifiedIdMapper.fromStringToQualifiedID(member.userId),
             clientId = clientId,
             isMuted = isMuted == 1,
             isCameraOn = isCameraOn,

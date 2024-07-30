@@ -37,6 +37,7 @@ data class Participant(
 
 data class ParticipantMinimized(
     val id: QualifiedID,
+    val userId: QualifiedID,
     val clientId: String,
     val isMuted: Boolean,
     val isCameraOn: Boolean,

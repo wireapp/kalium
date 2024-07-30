@@ -763,7 +763,8 @@ class CallRepositoryTest {
             .arrange()
         val participantsList = listOf(
             ParticipantMinimized(
-                id = QualifiedID("participantId", "participantDomain"),
+                id = QualifiedID("participantId", ""),
+                userId = QualifiedID("participantId", "participantDomain"),
                 clientId = "abcd",
                 isMuted = true,
                 isCameraOn = false,
@@ -804,14 +805,15 @@ class CallRepositoryTest {
                 .givenGetKnownUserMinimizedSucceeds()
                 .arrange()
             val participant = ParticipantMinimized(
-                id = QualifiedID("participantId", "participantDomain"),
+                id = QualifiedID("participantId", ""),
+                userId = QualifiedID("participantId", "participantDomain"),
                 clientId = "abcd",
                 isMuted = true,
                 isCameraOn = false,
                 isSharingScreen = false,
                 hasEstablishedAudio = true
             )
-            val newParticipant = participant.copy(id = QualifiedID("anotherParticipantId", "participantDomain"))
+            val newParticipant = participant.copy(userId = QualifiedID("anotherParticipantId", "participantDomain"))
             val participantsList = listOf(participant)
             callRepository.updateCallMetadataProfileFlow(
                 callMetadataProfile = CallMetadataProfile(
@@ -832,7 +834,7 @@ class CallRepositoryTest {
 
             // then
             coVerify {
-                arrangement.userRepository.getUsersMinimizedByQualifiedIDs(listOf(newParticipant.id))
+                arrangement.userRepository.getUsersMinimizedByQualifiedIDs(listOf(newParticipant.userId))
             }.wasInvoked(exactly = once)
         }
 
@@ -844,7 +846,8 @@ class CallRepositoryTest {
                 .givenGetKnownUserMinimizedSucceeds()
                 .arrange()
             val participant = ParticipantMinimized(
-                id = QualifiedID("participantId", "participantDomain"),
+                id = QualifiedID("participantId", ""),
+                userId = QualifiedID("participantId", "participantDomain"),
                 clientId = "abcd",
                 isMuted = true,
                 isCameraOn = false,
@@ -1782,6 +1785,7 @@ class CallRepositoryTest {
             )
             val participant = ParticipantMinimized(
                 id = qualifiedClientID.userId,
+                userId = qualifiedClientID.userId,
                 clientId = qualifiedClientID.clientId.value,
                 isMuted = true,
                 isCameraOn = false,
