@@ -506,6 +506,7 @@ internal class CallDataSource(
         )
 
     override suspend fun updateOpenCallsToClosedStatus() {
+        leavePreviouslyJoinedMlsConferences()
         callDAO.updateOpenCallsToClosedStatus()
     }
 

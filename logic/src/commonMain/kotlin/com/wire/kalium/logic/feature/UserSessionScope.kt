@@ -2016,7 +2016,6 @@ class UserSessionScope internal constructor(
             incrementalSyncManager
             slowSyncManager
 
-            callRepository.leavePreviouslyJoinedMlsConferences()
             callRepository.updateOpenCallsToClosedStatus()
             messageRepository.resetAssetProgressStatus()
         }
