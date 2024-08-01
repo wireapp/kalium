@@ -133,6 +133,7 @@ interface AssetRepository {
     suspend fun fetchDecodedAsset(assetId: String): Either<CoreFailure, Path>
 }
 
+@Suppress("TooManyFunctions")
 internal class AssetDataSource(
     private val assetApi: AssetApi,
     private val assetDao: AssetDAO,
