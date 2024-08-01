@@ -48,7 +48,7 @@ class CertificateRevocationListCheckWorkerTest {
             .withCheckRevocationListResult()
             .arrange()
 
-        checkCrlWorker.execute()
+        checkCrlWorker()
 
         coVerify {
             arrangement.certificateRevocationListRepository.getCRLs()
@@ -75,7 +75,7 @@ class CertificateRevocationListCheckWorkerTest {
         @Mock
         val checkRevocationList = mock(RevocationListChecker::class)
 
-        fun arrange() = this to SyncCertificateRevocationListUseCaseImpl(
+        fun arrange() = this to SyncCertificateRevocationListUseCase(
             certificateRevocationListRepository, incrementalSyncRepository, checkRevocationList, kaliumLogger
         )
 
