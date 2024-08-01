@@ -33,6 +33,9 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.EpochChangesObserver
+import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
+import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
 import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
@@ -50,9 +53,6 @@ import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.di.MapperProvider
-import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
-import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
-import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 import com.wire.kalium.logic.functional.Either
 import com.wire.kalium.logic.functional.flatMap
 import com.wire.kalium.logic.functional.getOrNull
@@ -121,6 +121,7 @@ interface CallRepository {
     fun updateParticipantsActiveSpeaker(conversationId: ConversationId, activeSpeakers: CallActiveSpeakers)
     suspend fun getLastClosedCallCreatedByConversationId(conversationId: ConversationId): Flow<String?>
     suspend fun updateOpenCallsToClosedStatus()
+    suspend fun leavePreviouslyJoinedMlsConferences()
     suspend fun persistMissedCall(conversationId: ConversationId)
     suspend fun joinMlsConference(
         conversationId: ConversationId,
@@ -129,6 +130,7 @@ interface CallRepository {
     suspend fun leaveMlsConference(conversationId: ConversationId)
     suspend fun observeEpochInfo(conversationId: ConversationId): Either<CoreFailure, Flow<EpochInfo>>
     suspend fun advanceEpoch(conversationId: ConversationId)
+    fun currentCallProtocol(conversationId: ConversationId): Conversation.ProtocolInfo?
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -426,7 +428,9 @@ internal class CallDataSource(
             }
         }
 
-        if (_callMetadataProfile.value[conversationId]?.protocol is Conversation.ProtocolInfo.MLS) {
+        if (_callMetadataProfile.value[conversationId]?.protocol is Conversation.ProtocolInfo.MLS &&
+            _callMetadataProfile.value[conversationId]?.conversationType == Conversation.Type.GROUP
+        ) {
             participants.forEach { participant ->
                 if (participant.hasEstablishedAudio) {
                     clearStaleParticipantTimeout(participant)
@@ -502,7 +506,6 @@ internal class CallDataSource(
         )
 
     override suspend fun updateOpenCallsToClosedStatus() {
-        leavePreviouslyJoinedMlsConferences()
         callDAO.updateOpenCallsToClosedStatus()
     }
 
@@ -542,7 +545,7 @@ internal class CallDataSource(
             }
         }
 
-    private suspend fun leavePreviouslyJoinedMlsConferences() {
+    override suspend fun leavePreviouslyJoinedMlsConferences() {
         callingLogger.i("Leaving previously joined MLS conferences")
 
         callDAO.observeEstablishedCalls()
@@ -666,6 +669,9 @@ internal class CallDataSource(
                 .onFailure { callingLogger.e("[CallRepository] -> Failure generating new epoch: $it") }
         } ?: callingLogger.w("[CallRepository] -> Requested new epoch but there's no conference subconversation")
     }
+
+    override fun currentCallProtocol(conversationId: ConversationId): Conversation.ProtocolInfo? =
+        _callMetadataProfile.value.data[conversationId]?.protocol
 
     companion object {
         val STALE_PARTICIPANT_TIMEOUT = 190.toDuration(kotlin.time.DurationUnit.SECONDS)

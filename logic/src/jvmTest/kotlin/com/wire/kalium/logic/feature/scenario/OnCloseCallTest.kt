@@ -27,10 +27,12 @@ import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
 import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.logic.data.call.MLSCallHelper
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.feature.call.scenario.OnCloseCall
 import com.wire.kalium.logic.framework.TestUser
 import io.mockative.Mock
+import io.mockative.any
 import io.mockative.classOf
 import io.mockative.eq
 import io.mockative.given
@@ -49,6 +51,9 @@ class OnCloseCallTest {
     @Mock
     val callRepository = mock(classOf<CallRepository>())
 
+    @Mock
+    val mlsCallHelper = mock(classOf<MLSCallHelper>())
+
     val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
 
     private lateinit var onCloseCall: OnCloseCall
@@ -61,6 +66,7 @@ class OnCloseCallTest {
     fun setUp() {
         onCloseCall = OnCloseCall(
             callRepository,
+            mlsCallHelper,
             testScope,
             qualifiedIdMapper
         )
@@ -276,9 +282,9 @@ class OnCloseCallTest {
             .with(eq(conversationId), eq(CallStatus.CLOSED))
             .wasInvoked(once)
 
-        verify(callRepository)
-            .suspendFunction(callRepository::leaveMlsConference)
-            .with(eq(conversationId))
+        verify(mlsCallHelper)
+            .suspendFunction(mlsCallHelper::handleCallTermination)
+            .with(eq(conversationId), any())
             .wasInvoked(once)
     }
 
