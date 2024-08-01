@@ -12,6 +12,9 @@ concurrency:
     group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.merge_group.head_sha }}
     cancel-in-progress: true
 
+env:
+  CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+
 jobs:
   detekt:
       uses: ./.github/workflows/codestyle.yml
@@ -83,9 +86,10 @@ jobs:
           files: |
             **/build/test-results/**/*.xml
 
-      - name: Upload Test Report
-        uses: codecov/codecov-action@v3
+      - name: Upload test report to codecov
+        uses: codecov/codecov-action@ab904c41d6ece82784817410c45d8b8c02684457
         with:
+            token: ${{ secrets.CODECOV_TOKEN }}
             files: "build/reports/kover/report.xml"
 
       - name: Archive Kover report
