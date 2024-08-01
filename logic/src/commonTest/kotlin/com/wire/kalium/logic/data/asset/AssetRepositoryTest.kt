@@ -544,6 +544,7 @@ class AssetRepositoryTest {
         val (arrangement, assetRepository) = Arrangement()
             .withSuccessDeleteRemotelyResponse()
             .withSuccessDeleteLocallyResponse()
+            .withMockedAssetDaoGetByKeyCall(assetKey, null)
             .arrange()
 
         // When
