@@ -367,7 +367,21 @@ internal class AssetDataSource(
             .flatMap { deleteAssetLocally(assetId) }
 
     override suspend fun deleteAssetLocally(assetId: String): Either<CoreFailure, Unit> =
-        wrapStorageRequest { assetDao.deleteAsset(assetId) }
+        deleteAssetFileLocally(assetId).flatMap {
+            wrapStorageRequest {
+                assetDao.deleteAsset(assetId)
+            }
+        }
+
+    private suspend fun deleteAssetFileLocally(assetId: String): Either<CoreFailure, Unit> =
+        wrapStorageRequest {
+            assetDao.getAssetByKey(assetId).firstOrNull()
+        }.map {
+            val filePath = it.dataPath.toPath()
+            if (kaliumFileSystem.exists(filePath)) {
+                kaliumFileSystem.delete(path = it.dataPath.toPath(), mustExist = false)
+            }
+        }
 }
 
 private fun buildFileName(name: String, extension: String?): String =

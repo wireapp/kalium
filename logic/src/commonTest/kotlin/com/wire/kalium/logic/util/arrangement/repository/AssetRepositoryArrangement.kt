@@ -17,16 +17,38 @@
  */
 package com.wire.kalium.logic.util.arrangement.repository
 
+import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.asset.AssetRepository
+import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
+import io.mockative.coEvery
+import io.mockative.fake.valueOf
+import io.mockative.matchers.AnyMatcher
+import io.mockative.matchers.Matcher
 import io.mockative.mock
 
 internal interface AssetRepositoryArrangement {
     @Mock
     val assetRepository: AssetRepository
+
+    suspend fun withDeleteAssetLocally(
+        result: Either<CoreFailure, Unit>,
+        assetID: Matcher<String> = AnyMatcher(valueOf()),
+    )
 }
 
 internal open class AssetRepositoryArrangementImpl : AssetRepositoryArrangement {
     @Mock
     override val assetRepository: AssetRepository = mock(AssetRepository::class)
+
+    override suspend fun withDeleteAssetLocally(
+        result: Either<CoreFailure, Unit>,
+        assetID: Matcher<String>,
+    ) {
+        coEvery {
+            assetRepository.deleteAssetLocally(
+                io.mockative.matches { assetID.matches(it) },
+            )
+        }.returns(result)
+    }
 }
