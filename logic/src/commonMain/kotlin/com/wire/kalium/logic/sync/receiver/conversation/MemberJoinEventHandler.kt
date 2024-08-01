@@ -74,8 +74,21 @@ internal class MemberJoinEventHandlerImpl(
                 conversationRepository.persistMembers(event.members, event.conversationId)
             }.onSuccess {
                 conversationRepository.detailsById(event.conversationId).onSuccess { conversation ->
-                    if (conversation.type == Conversation.Type.GROUP) addSystemMessage(event)
+                    when (conversation.type) {
+                        Conversation.Type.ONE_ON_ONE -> {
+                            if (event.members.size == 1) {
+                                userRepository.updateActiveOneOnOneConversationIfNotSet(event.members.first().id, event.conversationId)
+                            }
+                        }
+
+                        Conversation.Type.GROUP -> addSystemMessage(event)
+                        Conversation.Type.SELF,
+                        Conversation.Type.CONNECTION_PENDING -> {
+                            /* no-op */
+                        }
+                    }
                 }
+
                 legalHoldHandler.handleConversationMembersChanged(event.conversationId)
                 eventLogger.logSuccess()
             }.onFailure {
