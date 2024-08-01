@@ -21,13 +21,16 @@ package com.wire.kalium.logic.feature.user
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.data.id.TeamId
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.functional.Either
 import io.mockative.Mock
 import io.mockative.coEvery
 import io.mockative.coVerify
 import io.mockative.mock
 import io.mockative.once
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -37,6 +40,7 @@ class IsSelfATeamMemberUseCaseTest {
     @Test
     fun givenSelfIsTeamMember_thenReturnTrue() = runTest {
         val (arrangement, isSelfTeamMember) = Arrangement()
+            .withLastSlowSyncCompletionInstant(Instant.DISTANT_PAST)
             .withSelfTeamId(Either.Right(TeamId("gg")))
             .arrange()
 
@@ -52,6 +56,7 @@ class IsSelfATeamMemberUseCaseTest {
     @Test
     fun givenSelfIsNotTeamMember_thenReturnTrue() = runTest {
         val (arrangement, isSelfTeamMember) = Arrangement()
+            .withLastSlowSyncCompletionInstant(Instant.DISTANT_PAST)
             .withSelfTeamId(Either.Right(null))
             .arrange()
 
@@ -68,7 +73,18 @@ class IsSelfATeamMemberUseCaseTest {
         @Mock
         val selfTeamIdProvider: SelfTeamIdProvider = mock(SelfTeamIdProvider::class)
 
-        private val isSelfATeamMember: IsSelfATeamMemberUseCaseImpl = IsSelfATeamMemberUseCaseImpl(selfTeamIdProvider)
+        @Mock
+        val slowSyncRepository: SlowSyncRepository = mock(SlowSyncRepository::class)
+
+        private val isSelfATeamMember: IsSelfATeamMemberUseCaseImpl = IsSelfATeamMemberUseCaseImpl(
+            selfTeamIdProvider = selfTeamIdProvider,
+            slowSyncRepository = slowSyncRepository
+        )
+
+        suspend fun withLastSlowSyncCompletionInstant(result: Instant?) = apply {
+            coEvery { slowSyncRepository.observeLastSlowSyncCompletionInstant() }.returns(flowOf(result))
+        }
+
         suspend fun withSelfTeamId(result: Either<CoreFailure, TeamId?>) = apply {
             coEvery {
                 selfTeamIdProvider.invoke()
