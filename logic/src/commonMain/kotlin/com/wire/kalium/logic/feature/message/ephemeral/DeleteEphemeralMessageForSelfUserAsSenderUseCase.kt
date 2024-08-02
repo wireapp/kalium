@@ -17,15 +17,23 @@
  */
 package com.wire.kalium.logic.feature.message.ephemeral
 
+import com.wire.kalium.logger.KaliumLogger.Companion.ApplicationFlow.ASSETS
 import com.wire.kalium.logic.CoreFailure
+import com.wire.kalium.logic.data.asset.AssetRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.message.Message
+import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.message.MessageRepository
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.flatMap
+import com.wire.kalium.logic.functional.onFailure
+import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.kaliumLogger
 
 /**
- * When the self user is the sender of the self deletion message, we only mark it as deleted because we are relying on the receiver,
- * telling us when to delete the message permanently, that is when the message has expired for one of the conversation members
- * of GROUP or ONE_TO_ONE type
+ * When the self user is the sender of the self deletion message, we only mark it as deleted (but we delete asset files locally),
+ * because we are relying on the receiver, telling us when to delete the message permanently,
+ * that is when the message has expired for one of the conversation members of GROUP or ONE_TO_ONE type
  * see [com.wire.kalium.logic.feature.message.ephemeral.DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl] for details
  **/
 internal interface DeleteEphemeralMessageForSelfUserAsSenderUseCase {
@@ -37,9 +45,24 @@ internal interface DeleteEphemeralMessageForSelfUserAsSenderUseCase {
 }
 
 internal class DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl internal constructor(
-    private val messageRepository: MessageRepository
+    private val messageRepository: MessageRepository,
+    private val assetRepository: AssetRepository,
 ) : DeleteEphemeralMessageForSelfUserAsSenderUseCase {
-    override suspend fun invoke(conversationId: ConversationId, messageId: String): Either<CoreFailure, Unit> =
-        messageRepository.markMessageAsDeleted(messageId, conversationId)
 
+    override suspend fun invoke(conversationId: ConversationId, messageId: String): Either<CoreFailure, Unit> =
+        messageRepository.getMessageById(conversationId, messageId)
+            .onSuccess { message ->
+                deleteMessageAssetLocallyIfExists(message)
+            }
+            .flatMap {
+                messageRepository.markMessageAsDeleted(messageId, conversationId)
+            }
+
+    private suspend fun deleteMessageAssetLocallyIfExists(message: Message) {
+        (message.content as? MessageContent.Asset)?.value?.remoteData?.let { assetToRemove ->
+            assetRepository.deleteAssetLocally(assetToRemove.assetId).onFailure {
+                kaliumLogger.withFeatureId(ASSETS).w("delete message asset failure: $it")
+            }
+        }
+    }
 }
