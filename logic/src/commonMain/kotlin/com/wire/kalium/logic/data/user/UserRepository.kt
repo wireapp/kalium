@@ -57,14 +57,14 @@ import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.sync.receiver.handler.legalhold.LegalHoldHandler
 import com.wire.kalium.logic.wrapApiRequest
 import com.wire.kalium.logic.wrapStorageRequest
-import com.wire.kalium.network.api.base.authenticated.TeamsApi
-import com.wire.kalium.network.api.base.authenticated.self.SelfApi
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberDTO
 import com.wire.kalium.network.api.authenticated.teams.TeamMemberIdList
 import com.wire.kalium.network.api.authenticated.userDetails.ListUserRequest
 import com.wire.kalium.network.api.authenticated.userDetails.ListUsersDTO
-import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.authenticated.userDetails.qualifiedIds
+import com.wire.kalium.network.api.base.authenticated.TeamsApi
+import com.wire.kalium.network.api.base.authenticated.self.SelfApi
+import com.wire.kalium.network.api.base.authenticated.userDetails.UserDetailsApi
 import com.wire.kalium.network.api.model.LegalHoldStatusDTO
 import com.wire.kalium.network.api.model.SelfUserDTO
 import com.wire.kalium.network.api.model.UserProfileDTO
@@ -159,6 +159,7 @@ interface UserRepository {
     suspend fun fetchUsersLegalHoldConsent(userIds: Set<UserId>): Either<CoreFailure, ListUsersLegalHoldConsent>
 
     suspend fun getOneOnOnConversationId(userId: QualifiedID): Either<StorageFailure, ConversationId>
+    suspend fun getUsersMinimizedByQualifiedIDs(userIds: List<UserId>): Either<StorageFailure, List<OtherUserMinimized>>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -418,7 +419,9 @@ internal class UserDataSource internal constructor(
                     kaliumLogger.i("$logPrefix: Succeeded")
                     userDetailsRefreshInstantCache[selfUserId] = DateTimeUtil.currentInstant()
                 })
-            } else { refreshUserDetailsIfNeeded(selfUserId) }
+            } else {
+                refreshUserDetailsIfNeeded(selfUserId)
+            }
         }.filterNotNull().flatMapMerge { encodedValue ->
             val selfUserID: QualifiedIDEntity = Json.decodeFromString(encodedValue)
             userDAO.observeUserDetailsByQualifiedID(selfUserID)
@@ -476,6 +479,12 @@ internal class UserDataSource internal constructor(
         )?.let {
             userMapper.fromUserEntityToOtherUserMinimized(it)
         }
+    }
+
+    override suspend fun getUsersMinimizedByQualifiedIDs(userIds: List<UserId>) = wrapStorageRequest {
+        userDAO.getUsersMinimizedByQualifiedIDs(
+            qualifiedIDs = userIds.map { it.toDao() }
+        ).map(userMapper::fromUserEntityToOtherUserMinimized)
     }
 
     override suspend fun observeUser(userId: UserId): Flow<User?> =

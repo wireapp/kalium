@@ -186,7 +186,7 @@ class CallMapperImpl(
         callerName = metadata?.callerName,
         callerTeamName = metadata?.callerTeamName,
         establishedTime = metadata?.establishedTime,
-        participants = metadata?.participants ?: emptyList(),
+        participants = metadata?.getFullParticipants() ?: emptyList(),
         maxParticipants = metadata?.maxParticipants ?: 0
     )
 

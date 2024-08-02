@@ -29,6 +29,7 @@ import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationDetails
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.EpochChangesObserver
 import com.wire.kalium.logic.data.conversation.JoinSubconversationUseCase
 import com.wire.kalium.logic.data.conversation.LeaveSubconversationUseCase
 import com.wire.kalium.logic.data.conversation.MLSConversationRepository
@@ -41,17 +42,17 @@ import com.wire.kalium.logic.data.id.QualifiedID
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.id.toDao
 import com.wire.kalium.logic.data.message.PersistMessageUseCase
+import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.data.session.SessionRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.data.user.type.UserType
-import com.wire.kalium.logic.data.conversation.EpochChangesObserver
-import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.framework.TestConversation
 import com.wire.kalium.logic.framework.TestTeam
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.logic.functional.Either
+import com.wire.kalium.logic.functional.right
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.util.shouldSucceed
 import com.wire.kalium.network.api.base.authenticated.CallApi
@@ -63,9 +64,9 @@ import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import io.ktor.util.reflect.instanceOf
 import io.mockative.Mock
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.coEvery
 import io.mockative.coVerify
+import io.mockative.eq
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
@@ -757,17 +758,17 @@ class CallRepositoryTest {
     @Test
     fun givenAConversationIdThatExistsInTheFlow_whenUpdateCallParticipantsIsCalled_thenUpdateCallStatusInTheFlow() = runTest {
         // given
-        val (_, callRepository) = Arrangement().arrange()
+        val (_, callRepository) = Arrangement()
+            .givenGetKnownUserMinimizedSucceeds()
+            .arrange()
         val participantsList = listOf(
-            Participant(
-                id = QualifiedID("participantId", "participantDomain"),
+            ParticipantMinimized(
+                id = QualifiedID("participantId", ""),
+                userId = QualifiedID("participantId", "participantDomain"),
                 clientId = "abcd",
-                name = "name",
                 isMuted = true,
-                isSpeaking = false,
                 isCameraOn = false,
                 isSharingScreen = false,
-                avatarAssetId = null,
                 hasEstablishedAudio = true
             )
         )
@@ -797,11 +798,93 @@ class CallRepositoryTest {
     }
 
     @Test
+    fun givenCallWithSomeParticipants_whenUpdateCallParticipantsIsCalledWithNewParticipants_thenOnlyNewUsersFetchedFromDB() =
+        runTest {
+            // given
+            val (arrangement, callRepository) = Arrangement()
+                .givenGetKnownUserMinimizedSucceeds()
+                .arrange()
+            val participant = ParticipantMinimized(
+                id = QualifiedID("participantId", ""),
+                userId = QualifiedID("participantId", "participantDomain"),
+                clientId = "abcd",
+                isMuted = true,
+                isCameraOn = false,
+                isSharingScreen = false,
+                hasEstablishedAudio = true
+            )
+            val newParticipant = participant.copy(userId = QualifiedID("anotherParticipantId", "participantDomain"))
+            val participantsList = listOf(participant)
+            callRepository.updateCallMetadataProfileFlow(
+                callMetadataProfile = CallMetadataProfile(
+                    data = mapOf(
+                        Arrangement.conversationId to createCallMetadata().copy(
+                            participants = participantsList,
+                            maxParticipants = 0
+                        )
+                    )
+                )
+            )
+
+            // when
+            callRepository.updateCallParticipants(
+                Arrangement.conversationId,
+                participantsList.plus(newParticipant)
+            )
+
+            // then
+            coVerify {
+                arrangement.userRepository.getUsersMinimizedByQualifiedIDs(listOf(newParticipant.userId))
+            }.wasInvoked(exactly = once)
+        }
+
+    @Test
+    fun givenCallWithSomeParticipants_whenUpdateCallParticipantsIsCalledWithSameParticipants_thenNoFetchingUsersFromDB() =
+        runTest {
+            // given
+            val (arrangement, callRepository) = Arrangement()
+                .givenGetKnownUserMinimizedSucceeds()
+                .arrange()
+            val participant = ParticipantMinimized(
+                id = QualifiedID("participantId", ""),
+                userId = QualifiedID("participantId", "participantDomain"),
+                clientId = "abcd",
+                isMuted = true,
+                isCameraOn = false,
+                isSharingScreen = false,
+                hasEstablishedAudio = true
+            )
+            val otherParticipant = participant.copy(id = QualifiedID("anotherParticipantId", "participantDomain"))
+            val participantsList = listOf(participant, otherParticipant)
+            callRepository.updateCallMetadataProfileFlow(
+                callMetadataProfile = CallMetadataProfile(
+                    data = mapOf(
+                        Arrangement.conversationId to createCallMetadata().copy(
+                            participants = participantsList,
+                            maxParticipants = 0
+                        )
+                    )
+                )
+            )
+
+            // when
+            callRepository.updateCallParticipants(
+                Arrangement.conversationId,
+                participantsList
+            )
+
+            // then
+            coVerify {
+                arrangement.userRepository.getUsersMinimizedByQualifiedIDs(listOf(otherParticipant.id))
+            }.wasNotInvoked()
+        }
+
+    @Test
     fun givenAConversationIdThatDoesNotExistsInTheFlow_whenUpdateParticipantsActiveSpeakerIsCalled_thenDoNotUpdateTheFlow() = runTest {
         val (_, callRepository) = Arrangement().arrange()
         callRepository.updateParticipantsActiveSpeaker(
             Arrangement.randomConversationId,
-            CallActiveSpeakers(emptyList())
+            emptyMap()
         )
 
         assertFalse {
@@ -809,64 +892,6 @@ class CallRepositoryTest {
         }
     }
 
-    @Test
-    fun givenAConversationIdThatExistsInTheFlow_whenUpdateParticipantActiveSpeakerIsCalled_thenUpdateCallStatusInTheFlow() = runTest {
-        // given
-        val (_, callRepository) = Arrangement().arrange()
-        val participant = Participant(
-            id = QualifiedID("participantId", "participantDomain"),
-            clientId = "abcd",
-            name = "name",
-            isMuted = true,
-            isSpeaking = false,
-            isCameraOn = false,
-            avatarAssetId = null,
-            isSharingScreen = false,
-            hasEstablishedAudio = true
-        )
-        val participantsList = listOf(participant)
-        val expectedParticipantsList = listOf(participant.copy(isSpeaking = true))
-        callRepository.updateCallMetadataProfileFlow(
-            callMetadataProfile = CallMetadataProfile(
-                data = mapOf(
-                    Arrangement.conversationId to createCallMetadata().copy(
-                        participants = emptyList(),
-                        maxParticipants = 0
-                    )
-                )
-            )
-        )
-        val activeSpeakers = CallActiveSpeakers(
-            activeSpeakers = listOf(
-                CallActiveSpeaker(
-                    userId = "participantId@participantDomain",
-                    clientId = "abcd",
-                    audioLevel = 1,
-                    audioLevelNow = 1
-                )
-            )
-        )
-
-        callRepository.updateCallParticipants(
-            Arrangement.conversationId,
-            participantsList
-        )
-
-        // when
-        callRepository.updateParticipantsActiveSpeaker(Arrangement.conversationId, activeSpeakers)
-
-        // then
-        val metadata = callRepository.getCallMetadataProfile().data[Arrangement.conversationId]
-        assertEquals(
-            expectedParticipantsList,
-            metadata?.participants
-        )
-
-        assertEquals(
-            true,
-            metadata?.participants?.get(0)?.isSpeaking
-        )
-    }
 
     @Test
     fun givenAnIncomingCall_whenRequestingIncomingCalls_thenReturnTheIncomingCall() = runTest {
@@ -1312,6 +1337,7 @@ class CallRepositoryTest {
         TestKaliumDispatcher.main
     ) {
         val (arrangement, callRepository) = Arrangement()
+            .givenGetKnownUserMinimizedSucceeds()
             .givenGetSubconversationInfoReturns(Arrangement.subconversationGroupId)
             .givenRemoveClientsFromMLSGroupSucceeds()
             .arrange()
@@ -1330,8 +1356,8 @@ class CallRepositoryTest {
             Arrangement.conversationId,
             listOf(
                 Arrangement.participant.copy(
-                hasEstablishedAudio = false
-            )
+                    hasEstablishedAudio = false
+                )
             )
         )
         advanceTimeBy(CallDataSource.STALE_PARTICIPANT_TIMEOUT.toLong(DurationUnit.MILLISECONDS))
@@ -1352,6 +1378,7 @@ class CallRepositoryTest {
         val (arrangement, callRepository) = Arrangement()
             .givenGetSubconversationInfoReturns(Arrangement.subconversationGroupId)
             .givenRemoveClientsFromMLSGroupSucceeds()
+            .givenGetKnownUserMinimizedSucceeds()
             .arrange()
 
         callRepository.updateCallMetadataProfileFlow(
@@ -1423,6 +1450,30 @@ class CallRepositoryTest {
 
     }
 
+    @Test
+    fun givenAConversationIdThatExistsInTheFlow_whenUpdateParticipantsActiveSpeakerIsCalled_thenUpdateTheFlow() = runTest {
+        val (_, callRepository) = Arrangement().arrange()
+        val activeSpeakers = mapOf(QualifiedID("participantId", "participantDomain") to listOf("abcd"))
+
+        callRepository.updateCallMetadataProfileFlow(
+            callMetadataProfile = CallMetadataProfile(
+                data = mapOf(
+                    Arrangement.conversationId to createCallMetadata().copy(
+                        participants = emptyList(),
+                        maxParticipants = 0
+                    )
+                )
+            )
+        )
+
+        callRepository.updateParticipantsActiveSpeaker(
+            Arrangement.conversationId,
+            activeSpeakers
+        )
+
+        assertEquals(activeSpeakers, callRepository.getCallMetadataProfile().data[Arrangement.conversationId]?.activeSpeakers)
+    }
+
     private fun provideCall(id: ConversationId, status: CallStatus) = Call(
         conversationId = id,
         status = status,
@@ -1459,7 +1510,8 @@ class CallRepositoryTest {
         callerName = null,
         callerTeamName = null,
         callStatus = CallStatus.ESTABLISHED,
-        protocol = Conversation.ProtocolInfo.Proteus
+        protocol = Conversation.ProtocolInfo.Proteus,
+        activeSpeakers = mapOf()
     )
 
     private class Arrangement {
@@ -1609,6 +1661,12 @@ class CallRepositoryTest {
             }.returns(flowOf(TestUser.OTHER))
         }
 
+        suspend fun givenGetKnownUserMinimizedSucceeds() = apply {
+            coEvery {
+                userRepository.getUsersMinimizedByQualifiedIDs(any())
+            }.returns(listOf(TestUser.OTHER_MINIMIZED).right())
+        }
+
         suspend fun givenGetTeamSucceeds() = apply {
             coEvery {
                 teamRepository.getTeam(any())
@@ -1725,15 +1783,13 @@ class CallRepositoryTest {
                 ClientId("abcd"),
                 QualifiedID("participantId", "participantDomain")
             )
-            val participant = Participant(
+            val participant = ParticipantMinimized(
                 id = qualifiedClientID.userId,
+                userId = qualifiedClientID.userId,
                 clientId = qualifiedClientID.clientId.value,
-                name = "name",
                 isMuted = true,
-                isSpeaking = false,
                 isCameraOn = false,
                 isSharingScreen = false,
-                avatarAssetId = null,
                 hasEstablishedAudio = true
             )
         }
