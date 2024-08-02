@@ -544,6 +544,7 @@ class AssetRepositoryTest {
         val (arrangement, assetRepository) = Arrangement()
             .withSuccessDeleteRemotelyResponse()
             .withSuccessDeleteLocallyResponse()
+            .withMockedAssetDaoGetByKeyCall(assetKey, null)
             .arrange()
 
         // When
@@ -558,6 +559,51 @@ class AssetRepositoryTest {
             arrangement.assetDAO.deleteAsset(any())
         }.wasInvoked(exactly = once)
 
+    }
+
+    @Test
+    fun givenAssetFileExists_whenDeletingRemotelyAsset_thenFileShouldBeDeleted() = runTest {
+        // Given
+        val assetKey = UserAssetId("value1", "domain1")
+        val assetRawData = "some-dummy-data".toByteArray()
+        val assetFile = fakeKaliumFileSystem.providePersistentAssetPath(assetKey.toString())
+
+        val (_, assetRepository) = Arrangement()
+            .withSuccessDeleteRemotelyResponse()
+            .withSuccessDeleteLocallyResponse()
+            .withRawStoredData(assetRawData, assetFile)
+            .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, assetFile, assetRawData.size.toLong()))
+            .arrange()
+
+        assertEquals(true, fakeKaliumFileSystem.exists(assetFile))
+
+        // When
+        assetRepository.deleteAsset(assetKey.value, assetKey.domain, "asset-token")
+
+        // Then
+        assertEquals(false, fakeKaliumFileSystem.exists(assetFile))
+    }
+
+    @Test
+    fun givenAssetFileExists_whenDeletingLocallyAsset_thenFileShouldBeDeleted() = runTest {
+        // Given
+        val assetKey = UserAssetId("value1", "domain1")
+        val assetRawData = "some-dummy-data".toByteArray()
+        val assetFile = fakeKaliumFileSystem.providePersistentAssetPath(assetKey.toString())
+
+        val (_, assetRepository) = Arrangement()
+            .withSuccessDeleteLocallyResponse()
+            .withRawStoredData(assetRawData, assetFile)
+            .withMockedAssetDaoGetByKeyCall(assetKey, stubAssetEntity(assetKey.value, assetFile, assetRawData.size.toLong()))
+            .arrange()
+
+        assertEquals(true, fakeKaliumFileSystem.exists(assetFile))
+
+        // When
+        assetRepository.deleteAssetLocally(assetKey.value)
+
+        // Then
+        assertEquals(false, fakeKaliumFileSystem.exists(assetFile))
     }
 
     @Test
