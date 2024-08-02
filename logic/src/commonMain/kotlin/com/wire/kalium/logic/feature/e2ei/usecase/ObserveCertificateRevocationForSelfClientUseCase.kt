@@ -21,9 +21,6 @@ import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.feature.e2ei.MLSClientE2EIStatus
-import com.wire.kalium.logic.feature.e2ei.MLSClientIdentity
-import com.wire.kalium.logic.functional.isRight
-import com.wire.kalium.logic.functional.map
 import com.wire.kalium.logic.functional.onSuccess
 
 /**

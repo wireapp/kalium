@@ -17,11 +17,9 @@
  */
 package com.wire.kalium.logic.feature.featureConfig
 
-import com.wire.kalium.logger.KaliumLogLevel
 import com.wire.kalium.logger.KaliumLogger
 import com.wire.kalium.logic.data.sync.IncrementalSyncRepository
 import com.wire.kalium.logic.data.sync.IncrementalSyncStatus
-import com.wire.kalium.logic.logStructuredJson
 import kotlinx.coroutines.flow.first
 
 /**
