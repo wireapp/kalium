@@ -20,6 +20,7 @@ package com.wire.kalium.logic.feature.team
 
 import com.wire.kalium.logic.data.conversation.ConversationRepository
 import com.wire.kalium.logic.data.id.SelfTeamIdProvider
+import com.wire.kalium.logic.data.sync.SlowSyncRepository
 import com.wire.kalium.logic.data.team.TeamRepository
 import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCase
 import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCaseImpl
@@ -27,6 +28,7 @@ import com.wire.kalium.logic.feature.user.IsSelfATeamMemberUseCaseImpl
 class TeamScope internal constructor(
     private val teamRepository: TeamRepository,
     private val conversationRepository: ConversationRepository,
+    private val slowSyncRepository: SlowSyncRepository,
     private val selfTeamIdProvider: SelfTeamIdProvider
 ) {
     val getUpdatedSelfTeamUseCase: GetUpdatedSelfTeamUseCase
@@ -42,5 +44,8 @@ class TeamScope internal constructor(
             conversationRepository = conversationRepository,
         )
 
-    val isSelfATeamMember: IsSelfATeamMemberUseCase get() = IsSelfATeamMemberUseCaseImpl(selfTeamIdProvider)
+    val isSelfATeamMember: IsSelfATeamMemberUseCase get() = IsSelfATeamMemberUseCaseImpl(
+        selfTeamIdProvider = selfTeamIdProvider,
+        slowSyncRepository = slowSyncRepository
+    )
 }

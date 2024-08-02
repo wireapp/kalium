@@ -138,6 +138,12 @@ interface UserConfigRepository {
     suspend fun clearE2EISettings()
     fun setShouldFetchE2EITrustAnchors(shouldFetch: Boolean)
     fun getShouldFetchE2EITrustAnchor(): Boolean
+    suspend fun setCurrentTrackingIdentifier(newIdentifier: String)
+    suspend fun getCurrentTrackingIdentifier(): String?
+    suspend fun observeCurrentTrackingIdentifier(): Flow<Either<StorageFailure, String>>
+    suspend fun setPreviousTrackingIdentifier(identifier: String)
+    suspend fun getPreviousTrackingIdentifier(): String?
+    suspend fun deletePreviousTrackingIdentifier()
 }
 
 @Suppress("TooManyFunctions")
@@ -505,4 +511,31 @@ internal class UserConfigDataSource internal constructor(
     }
 
     override fun getShouldFetchE2EITrustAnchor(): Boolean = userConfigStorage.getShouldFetchE2EITrustAnchorHasRun()
+
+    override suspend fun setCurrentTrackingIdentifier(newIdentifier: String) {
+        wrapStorageRequest {
+            userConfigDAO.setTrackingIdentifier(identifier = newIdentifier)
+        }
+    }
+
+    override suspend fun getCurrentTrackingIdentifier(): String? =
+        userConfigDAO.getTrackingIdentifier()
+
+    override suspend fun observeCurrentTrackingIdentifier(): Flow<Either<StorageFailure, String>> =
+        userConfigDAO.observeTrackingIdentifier().wrapStorageRequest()
+
+    override suspend fun setPreviousTrackingIdentifier(identifier: String) {
+        wrapStorageRequest {
+            userConfigDAO.setPreviousTrackingIdentifier(identifier = identifier)
+        }
+    }
+
+    override suspend fun getPreviousTrackingIdentifier(): String? =
+        userConfigDAO.getPreviousTrackingIdentifier()
+
+    override suspend fun deletePreviousTrackingIdentifier() {
+        wrapStorageRequest {
+            userConfigDAO.deletePreviousTrackingIdentifier()
+        }
+    }
 }

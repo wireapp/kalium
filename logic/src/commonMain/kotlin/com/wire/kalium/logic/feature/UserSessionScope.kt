@@ -152,6 +152,8 @@ import com.wire.kalium.logic.di.MapperProvider
 import com.wire.kalium.logic.di.PlatformUserStorageProperties
 import com.wire.kalium.logic.di.RootPathsProvider
 import com.wire.kalium.logic.di.UserStorageProvider
+import com.wire.kalium.logic.feature.analytics.AnalyticsIdentifierManager
+import com.wire.kalium.logic.feature.analytics.ObserveAnalyticsTrackingIdentifierStatusUseCase
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserver
 import com.wire.kalium.logic.feature.applock.AppLockTeamFeatureConfigObserverImpl
 import com.wire.kalium.logic.feature.applock.MarkTeamAppLockStatusAsNotifiedUseCase
@@ -413,6 +415,8 @@ import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandler
 import com.wire.kalium.logic.sync.receiver.handler.CodeDeletedHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdateHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.CodeUpdatedHandler
+import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandler
+import com.wire.kalium.logic.sync.receiver.handler.DataTransferEventHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteForMeHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.DeleteMessageHandlerImpl
 import com.wire.kalium.logic.sync.receiver.handler.LastReadContentHandlerImpl
@@ -1315,6 +1319,13 @@ class UserSessionScope internal constructor(
     private val buttonActionConfirmationHandler: ButtonActionConfirmationHandler
         get() = ButtonActionConfirmationHandlerImpl(compositeMessageRepository, messageMetadataRepository)
 
+    private val dataTransferEventHandler: DataTransferEventHandler
+        get() = DataTransferEventHandlerImpl(
+            userId,
+            userConfigRepository,
+            userScopedLogger
+        )
+
     private val applicationMessageHandler: ApplicationMessageHandler
         get() = ApplicationMessageHandlerImpl(
             userRepository,
@@ -1340,6 +1351,7 @@ class UserSessionScope internal constructor(
             messageEncoder,
             receiptMessageHandler,
             buttonActionConfirmationHandler,
+            dataTransferEventHandler,
             userId
         )
 
@@ -1476,6 +1488,20 @@ class UserSessionScope internal constructor(
 
     val observeLegalHoldStateForUser: ObserveLegalHoldStateForUserUseCase
         get() = ObserveLegalHoldStateForUserUseCaseImpl(clientRepository)
+
+    val observeAnalyticsTrackingIdentifierStatus: ObserveAnalyticsTrackingIdentifierStatusUseCase
+        get() = ObserveAnalyticsTrackingIdentifierStatusUseCase(userConfigRepository, userScopedLogger)
+
+    val analyticsIdentifierManager: AnalyticsIdentifierManager
+        get() = AnalyticsIdentifierManager(
+            messages.messageSender,
+            userConfigRepository,
+            userId,
+            clientIdProvider,
+            selfConversationIdProvider,
+            syncManager,
+            userScopedLogger
+        )
 
     suspend fun observeIfE2EIRequiredDuringLogin(): Flow<Boolean?> = clientRepository.observeIsClientRegistrationBlockedByE2EI()
 
@@ -1950,7 +1976,12 @@ class UserSessionScope internal constructor(
             appLockConfigHandler
         )
 
-    val team: TeamScope get() = TeamScope(teamRepository, conversationRepository, selfTeamId)
+    val team: TeamScope get() = TeamScope(
+        teamRepository = teamRepository,
+        conversationRepository = conversationRepository,
+        slowSyncRepository = slowSyncRepository,
+        selfTeamIdProvider = selfTeamId
+    )
 
     val service: ServiceScope
         get() = ServiceScope(
