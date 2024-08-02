@@ -531,8 +531,7 @@ class CallManagerImpl internal constructor(
                 val onParticipantListChanged = OnParticipantListChanged(
                     callRepository = callRepository,
                     qualifiedIdMapper = qualifiedIdMapper,
-                    participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper),
-                    userRepository = userRepository,
+                    participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper, qualifiedIdMapper),
                     callingScope = scope
                 ).keepingStrongReference()
 
