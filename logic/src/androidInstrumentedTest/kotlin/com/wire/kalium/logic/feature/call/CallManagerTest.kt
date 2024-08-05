@@ -21,19 +21,23 @@ package com.wire.kalium.logic.feature.call
 import com.wire.kalium.calling.Calling
 import com.wire.kalium.calling.types.Handle
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.CallMapperImpl
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
+import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.FederatedIdMapper
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.message.Message
 import com.wire.kalium.logic.data.message.MessageContent
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.data.user.UserRepository
-import com.wire.kalium.logic.data.id.CurrentClientIdProvider
+import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
+import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
@@ -48,11 +52,6 @@ import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Ignore
 import kotlin.test.Test
-import com.wire.kalium.logic.feature.call.usecase.ConversationClientsInCallUpdater
-import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvider
-import com.wire.kalium.network.NetworkStateObserver
-import com.wire.kalium.util.DateTimeUtil.toIsoDateTimeString
-import kotlinx.datetime.Instant
 
 class CallManagerTest {
 
@@ -76,6 +75,12 @@ class CallManagerTest {
 
     @Mock
     private val conversationRepository = mock(classOf<ConversationRepository>())
+
+    @Mock
+    private val subconversationRepository = mock(classOf<SubconversationRepository>())
+
+    @Mock
+    private val userConfigRepository = mock(classOf<UserConfigRepository>())
 
     @Mock
     private val federatedIdMapper = mock(classOf<FederatedIdMapper>())
@@ -109,6 +114,8 @@ class CallManagerTest {
             currentClientIdProvider = currentClientIdProvider,
             selfConversationIdProvider = selfConversationIdProvider,
             conversationRepository = conversationRepository,
+            subconversationRepository = subconversationRepository,
+            userConfigRepository = userConfigRepository,
             messageSender = messageSender,
             kaliumDispatchers = dispatcher,
             federatedIdMapper = federatedIdMapper,
