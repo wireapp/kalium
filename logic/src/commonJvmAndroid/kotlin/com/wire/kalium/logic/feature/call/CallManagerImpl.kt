@@ -32,14 +32,19 @@ import com.wire.kalium.calling.types.Uint32_t
 import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.cache.SelfConversationIdProvider
 import com.wire.kalium.logic.callingLogger
+import com.wire.kalium.logic.configuration.UserConfigRepository
 import com.wire.kalium.logic.data.call.CallClient
 import com.wire.kalium.logic.data.call.CallClientList
 import com.wire.kalium.logic.data.call.CallRepository
 import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.logic.data.call.CallType
 import com.wire.kalium.logic.data.call.EpochInfo
+<<<<<<< HEAD
 import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.call.TestVideoType
+=======
+import com.wire.kalium.logic.data.call.MLSCallHelperImpl
+>>>>>>> 58b3896649 (feat: terminate the SFT OneOnOneCall once the other person hangup the call (WPB-7153) (#2923))
 import com.wire.kalium.logic.data.call.VideoState
 import com.wire.kalium.logic.data.call.VideoStateChecker
 import com.wire.kalium.logic.data.call.mapper.CallMapper
@@ -47,6 +52,7 @@ import com.wire.kalium.logic.data.call.mapper.ParticipantMapperImpl
 import com.wire.kalium.logic.data.conversation.ClientId
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.conversation.ConversationRepository
+import com.wire.kalium.logic.data.conversation.SubconversationRepository
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.CurrentClientIdProvider
 import com.wire.kalium.logic.data.id.FederatedIdMapper
@@ -111,6 +117,8 @@ class CallManagerImpl internal constructor(
     private val conversationClientsInCallUpdater: ConversationClientsInCallUpdater,
     private val networkStateObserver: NetworkStateObserver,
     private val getCallConversationType: GetCallConversationTypeProvider,
+    private val subconversationRepository: SubconversationRepository,
+    private val userConfigRepository: UserConfigRepository,
     private val kaliumConfigs: KaliumConfigs,
     private val mediaManagerService: MediaManagerService,
     private val flowManagerService: FlowManagerService,
@@ -209,8 +217,21 @@ class CallManagerImpl internal constructor(
                     .keepingStrongReference(),
                 establishedCallHandler = OnEstablishedCall(callRepository, scope, qualifiedIdMapper)
                     .keepingStrongReference(),
+<<<<<<< HEAD
                 closeCallHandler = OnCloseCall(callRepository, scope, qualifiedIdMapper, networkStateObserver)
                     .keepingStrongReference(),
+=======
+                closeCallHandler = OnCloseCall(
+                    callRepository = callRepository,
+                    mlsCallHelper = MLSCallHelperImpl(
+                        callRepository = callRepository,
+                        subconversationRepository = subconversationRepository,
+                        userConfigRepository = userConfigRepository
+                    ),
+                    scope = scope,
+                    qualifiedIdMapper = qualifiedIdMapper
+                ).keepingStrongReference(),
+>>>>>>> 58b3896649 (feat: terminate the SFT OneOnOneCall once the other person hangup the call (WPB-7153) (#2923))
                 metricsHandler = metricsHandler,
                 callConfigRequestHandler = OnConfigRequest(calling, callRepository, scope)
                     .keepingStrongReference(),
@@ -532,6 +553,12 @@ class CallManagerImpl internal constructor(
                     qualifiedIdMapper = qualifiedIdMapper,
                     participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper),
                     userRepository = userRepository,
+                    mlsCallHelper = MLSCallHelperImpl(
+                        callRepository = callRepository,
+                        subconversationRepository = subconversationRepository,
+                        userConfigRepository = userConfigRepository
+                    ),
+                    endCall = { endCall(it) },
                     callingScope = scope
                 ).keepingStrongReference()
 

@@ -27,13 +27,23 @@ import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.QualifiedIdMapperImpl
+<<<<<<< HEAD
+=======
+import com.wire.kalium.logic.data.call.CallStatus
+import com.wire.kalium.logic.data.call.MLSCallHelper
+>>>>>>> 58b3896649 (feat: terminate the SFT OneOnOneCall once the other person hangup the call (WPB-7153) (#2923))
 import com.wire.kalium.logic.data.mls.CipherSuite
 import com.wire.kalium.logic.feature.call.scenario.OnCloseCall
 import com.wire.kalium.logic.framework.TestUser
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
 import io.mockative.Mock
+<<<<<<< HEAD
 import io.mockative.coVerify
+=======
+import io.mockative.any
+import io.mockative.classOf
+>>>>>>> 58b3896649 (feat: terminate the SFT OneOnOneCall once the other person hangup the call (WPB-7153) (#2923))
 import io.mockative.eq
 import io.mockative.every
 import io.mockative.mock
@@ -54,6 +64,9 @@ class OnCloseCallTest {
     @Mock
     val networkStateObserver = mock(NetworkStateObserver::class)
 
+    @Mock
+    val mlsCallHelper = mock(classOf<MLSCallHelper>())
+
     val qualifiedIdMapper = QualifiedIdMapperImpl(TestUser.SELF.id)
 
     private lateinit var onCloseCall: OnCloseCall
@@ -66,6 +79,7 @@ class OnCloseCallTest {
     fun setUp() {
         onCloseCall = OnCloseCall(
             callRepository,
+            mlsCallHelper,
             testScope,
             qualifiedIdMapper,
             networkStateObserver
@@ -252,6 +266,7 @@ class OnCloseCallTest {
             callRepository.updateCallStatusById(eq(conversationId), eq(CallStatus.CLOSED))
         }.wasInvoked(once)
 
+<<<<<<< HEAD
         coVerify {
             callRepository.leaveMlsConference(eq(conversationId))
         }.wasInvoked(once)
@@ -271,6 +286,12 @@ class OnCloseCallTest {
         coVerify {
             callRepository.persistMissedCall(conversationId)
         }
+=======
+        verify(mlsCallHelper)
+            .suspendFunction(mlsCallHelper::handleCallTermination)
+            .with(eq(conversationId), any())
+            .wasInvoked(once)
+>>>>>>> 58b3896649 (feat: terminate the SFT OneOnOneCall once the other person hangup the call (WPB-7153) (#2923))
     }
 
     companion object {

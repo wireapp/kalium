@@ -24,22 +24,29 @@ import com.wire.kalium.logger.obfuscateId
 import com.wire.kalium.logic.callingLogger
 import com.wire.kalium.logic.data.call.CallParticipants
 import com.wire.kalium.logic.data.call.CallRepository
+import com.wire.kalium.logic.data.call.MLSCallHelper
 import com.wire.kalium.logic.data.call.Participant
 import com.wire.kalium.logic.data.call.mapper.ParticipantMapper
+import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
 import com.wire.kalium.logic.data.user.UserRepository
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
+import com.wire.kalium.logic.kaliumLogger
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
+// TODO: add tests for this class
 @Suppress("LongParameterList")
 class OnParticipantListChanged internal constructor(
     private val callRepository: CallRepository,
     private val qualifiedIdMapper: QualifiedIdMapper,
     private val participantMapper: ParticipantMapper,
     private val userRepository: UserRepository,
+    private val mlsCallHelper: MLSCallHelper,
+    private val endCall: suspend (conversationId: ConversationId) -> Unit,
     private val callingScope: CoroutineScope
 ) : ParticipantChangedHandler {
 
@@ -63,6 +70,22 @@ class OnParticipantListChanged internal constructor(
                     participants.add(updatedParticipant)
                 }.onFailure {
                     participants.add(participant)
+                }
+            }
+            val callProtocol = callRepository.currentCallProtocol(conversationIdWithDomain)
+
+            val currentCall = callRepository.establishedCallsFlow().first().firstOrNull()
+            currentCall?.let {
+                val shouldEndSFTOneOnOneCall = mlsCallHelper.shouldEndSFTOneOnOneCall(
+                    conversationId = conversationIdWithDomain,
+                    callProtocol = callProtocol,
+                    conversationType = it.conversationType,
+                    newCallParticipants = participants,
+                    previousCallParticipants = it.participants
+                )
+                if (shouldEndSFTOneOnOneCall) {
+                    kaliumLogger.i("[onParticipantChanged] - Ending MLS call due to participant leaving")
+                    endCall(conversationIdWithDomain)
                 }
             }
 

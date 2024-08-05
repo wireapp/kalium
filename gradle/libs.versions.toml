@@ -35,8 +35,13 @@ moduleGraph = "0.7.0"
 sqldelight = "2.0.1"
 sqlcipher-android = "4.5.6"
 pbandk = "0.14.2"
+<<<<<<< HEAD
 turbine = "1.1.0"
 avs = "9.8.6"
+=======
+turbine = "1.0.0"
+avs = "9.6.15"
+>>>>>>> 58b3896649 (feat: terminate the SFT OneOnOneCall once the other person hangup the call (WPB-7153) (#2923))
 jna = "5.14.0"
 core-crypto = "1.0.0-rc.56-hotfix.2"
 core-crypto-multiplatform = "0.6.0-rc.3-multiplatform-pre1"
