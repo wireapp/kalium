@@ -41,7 +41,8 @@ internal open class KeyPackageApiV0 internal constructor() : KeyPackageApi {
 
     override suspend fun replaceKeyPackages(
         clientId: String,
-        keyPackages: List<KeyPackage>
+        keyPackages: List<KeyPackage>,
+        cipherSuite: Int
     ): NetworkResponse<Unit> = NetworkResponse.Error(
         APINotSupported("MLS: replaceKeyPackages api is only available on API V5")
     )
