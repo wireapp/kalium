@@ -19,6 +19,7 @@ package com.wire.kalium.logic.util.arrangement.repository
 
 import com.wire.kalium.logic.CoreFailure
 import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.user.OtherUser
 import com.wire.kalium.logic.data.user.SelfUser
@@ -83,6 +84,7 @@ internal interface UserRepositoryArrangement {
 
     fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: Matcher<List<UserId>>)
     fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>, userId: Matcher<UserId> = any())
+    fun withNameAndHandler(result: Either<StorageFailure, NameAndHandle>, userId: Matcher<UserId>)
 }
 
 @Suppress("INAPPLICABLE_JVM_NAME")
@@ -217,6 +219,13 @@ internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
     override fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>, userId: Matcher<UserId>) {
         given(userRepository)
             .suspendFunction(userRepository::getOneOnOnConversationId)
+            .whenInvokedWith(userId)
+            .thenReturn(result)
+    }
+
+    override fun withNameAndHandler(result: Either<StorageFailure, NameAndHandle>, userId: Matcher<UserId>) {
+        given(userRepository)
+            .suspendFunction(userRepository::getNameAndHandler)
             .whenInvokedWith(userId)
             .thenReturn(result)
     }

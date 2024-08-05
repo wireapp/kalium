@@ -25,6 +25,7 @@ import com.wire.kalium.logic.StorageFailure
 import com.wire.kalium.logic.data.client.MLSClientProvider
 import com.wire.kalium.logic.data.conversation.Conversation.ProtocolInfo.MLSCapable.GroupState
 import com.wire.kalium.logic.data.conversation.mls.EpochChangesData
+import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.GroupID
 import com.wire.kalium.logic.data.id.IdMapper
@@ -298,6 +299,7 @@ interface ConversationRepository {
     suspend fun observeLegalHoldStatusChangeNotified(conversationId: ConversationId): Flow<Either<StorageFailure, Boolean>>
 
     suspend fun getGroupStatusMembersNamesAndHandles(groupID: GroupID): Either<StorageFailure, EpochChangesData>
+    suspend fun selectMembersNameAndHandle(conversationId: ConversationId): Either<StorageFailure, Map<UserId, NameAndHandle>>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions", "LargeClass")
@@ -1106,6 +1108,13 @@ internal class ConversationDataSource internal constructor(
             conversationDAO.getConversationTypeById(conversationId.toDao())?.let {
                 conversationMapper.fromConversationEntityType(it)
             }
+        }
+
+    override suspend fun selectMembersNameAndHandle(conversationId: ConversationId): Either<StorageFailure, Map<UserId, NameAndHandle>> =
+        wrapStorageRequest {
+            memberDAO.selectMembersNameAndHandle(conversationId.toDao())
+                .mapValues { NameAndHandle.fromEntity(it.value) }
+                .mapKeys { it.key.toModel() }
         }
 
     companion object {

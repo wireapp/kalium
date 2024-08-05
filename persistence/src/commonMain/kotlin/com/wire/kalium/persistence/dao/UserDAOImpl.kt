@@ -21,6 +21,7 @@ package com.wire.kalium.persistence.dao
 import app.cash.sqldelight.coroutines.asFlow
 import com.wire.kalium.persistence.UsersQueries
 import com.wire.kalium.persistence.cache.Cache
+import com.wire.kalium.persistence.dao.conversation.NameAndHandleEntity
 import com.wire.kalium.persistence.util.mapToList
 import com.wire.kalium.persistence.util.mapToOneOrNull
 import kotlinx.coroutines.CoroutineScope
@@ -456,5 +457,9 @@ class UserDAOImpl internal constructor(
 
     override suspend fun getOneOnOnConversationId(userId: UserIDEntity): QualifiedIDEntity? = withContext(queriesContext) {
         userQueries.selectOneOnOnConversationId(userId).executeAsOneOrNull()?.active_one_on_one_conversation_id
+    }
+
+    override suspend fun getNameAndHandler(userId: UserIDEntity): NameAndHandleEntity? = withContext(queriesContext) {
+        userQueries.selectNamesAndHandle(userId, ::NameAndHandleEntity).executeAsOneOrNull()
     }
 }
