@@ -27,3 +27,8 @@ fun Int.toByteArray(): ByteArray {
         this.toByte()
     )
 }
+
+@Suppress("MagicNumber")
+fun Int.toHexString(minDigits: Int = 4): String {
+    return "0x" + this.toString(16).padStart(minDigits, '0')
+}
