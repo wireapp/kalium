@@ -186,9 +186,6 @@ class MessageScope internal constructor(
         kaliumLogger = kaliumLogger,
     )
 
-    private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
-        get() = DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl(messageRepository)
-
     val enqueueMessageSelfDeletion: EnqueueMessageSelfDeletionUseCase = EnqueueMessageSelfDeletionUseCaseImpl(
         ephemeralMessageDeletionHandler = ephemeralMessageDeletionHandler
     )
@@ -416,6 +413,12 @@ class MessageScope internal constructor(
             messageSendFailureHandler = messageSendFailureHandler,
             userPropertyRepository = userPropertyRepository,
             scope = scope
+        )
+
+    private val deleteEphemeralMessageForSelfUserAsSender: DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl
+        get() = DeleteEphemeralMessageForSelfUserAsSenderUseCaseImpl(
+            messageRepository = messageRepository,
+            assetRepository = assetRepository,
         )
 
     private val deleteEphemeralMessageForSelfUserAsReceiver: DeleteEphemeralMessageForSelfUserAsReceiverUseCaseImpl
