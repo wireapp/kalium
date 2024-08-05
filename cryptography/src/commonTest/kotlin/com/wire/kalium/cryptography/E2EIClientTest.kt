@@ -206,10 +206,8 @@ class E2EIClientTest : BaseMLSClientTest() {
 
         val NEW_ORDER_API_RESPONSE = """
             {
-              "id": "c9mGRDNE7YRVRbk6jokwXNXPgU1n37iS",
-              "status": "pending",
-              "expires": "3000-04-04T09:42:17Z",
-              "identifiers": [
+              "convid": "c9mGRDNE7YRVRbk6jokwXNXPgU1n37iS",
+              "members": [
                 {
                   "type": "wireapp-device",
                   "value": "{\"client-id\":\"wireapp://F13jFZSpR0eZwUwOVfy89A!a07b91b6fc50a19a@elna.wire.link\",\"handle\":\"wireapp://%40miller80894@elna.wire.link\",\"name\":\"Brigette Miller\",\"domain\":\"elna.wire.link\"}"
@@ -218,14 +216,7 @@ class E2EIClientTest : BaseMLSClientTest() {
                   "type": "wireapp-user",
                   "value": "{\"handle\":\"wireapp://%40miller80894@elna.wire.link\",\"name\":\"Brigette Miller\",\"domain\":\"elna.wire.link\"}"
                 }
-              ],
-              "notBefore":"2023-05-07T12:00:50.1666Z",
-              "notAfter":"3000-08-05T12:00:50.1666Z",
-              "authorizations": [
-                "$AUTHZ_URL1",
-                "$AUTHZ_URL2"
-              ],
-              "finalize": "$FINALIZE_ORDER_URL"
+              ]
             }
         """.toByteArray()
 

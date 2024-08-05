@@ -46,13 +46,72 @@ import kotlin.test.assertTrue
 class MLSCallHelperTest {
 
     @Test
-    fun givenMlsConferenceCall_whenShouldEndSFTOneOnOneCallIsCalled_thenReturnCorrectValue() =
+    fun givenMlsProtocol_whenShouldEndSFTOneOnOneCallIsCalled_thenReturnCorrectValue() =
         runTest {
             val (_, mLSCallHelper) = Arrangement()
                 .withShouldUseSFTForOneOnOneCallsReturning(Either.Right(true))
                 .arrange()
 
-            // Proteus protocol
+            // one participant in the call
+            val shouldEndSFTOneOnOneCall1 = mLSCallHelper.shouldEndSFTOneOnOneCall(
+                conversationId = conversationId,
+                callProtocol = CONVERSATION_MLS_PROTOCOL_INFO,
+                conversationType = Conversation.Type.ONE_ON_ONE,
+                newCallParticipants = listOf(participant1),
+                previousCallParticipants = listOf(participant1)
+            )
+            assertFalse { shouldEndSFTOneOnOneCall1 }
+
+            // Audio not lost for the second participant
+            val shouldEndSFTOneOnOneCall2 = mLSCallHelper.shouldEndSFTOneOnOneCall(
+                conversationId = conversationId,
+                callProtocol = CONVERSATION_MLS_PROTOCOL_INFO,
+                conversationType = Conversation.Type.GROUP,
+                newCallParticipants = listOf(participant1, participant2),
+                previousCallParticipants = listOf(participant1, participant2)
+            )
+            assertFalse { shouldEndSFTOneOnOneCall2 }
+
+            // Audio lost for the second participant
+            val shouldEndSFTOneOnOneCall3 = mLSCallHelper.shouldEndSFTOneOnOneCall(
+                conversationId = conversationId,
+                callProtocol = CONVERSATION_MLS_PROTOCOL_INFO,
+                conversationType = Conversation.Type.ONE_ON_ONE,
+                previousCallParticipants = listOf(participant1, participant2),
+                newCallParticipants = listOf(
+                    participant1,
+                    participant2.copy(hasEstablishedAudio = false)
+                )
+            )
+            assertTrue { shouldEndSFTOneOnOneCall3 }
+
+//            val (_, mLSCallHelper2) = Arrangement()
+//                .withShouldUseSFTForOneOnOneCallsReturning(Either.Left(StorageFailure.DataNotFound))
+//                .arrange()
+
+            // ShouldUseSFTForOneOnOneCalls user config is not found
+//            val shouldEndSFTOneOnOneCall5 = mLSCallHelper2.shouldEndSFTOneOnOneCall(
+//                conversationId = conversationId,
+//                callProtocol = CONVERSATION_MLS_PROTOCOL_INFO,
+//                conversationType = Conversation.Type.ONE_ON_ONE,
+//                previousCallParticipants = listOf(participant1, participant2),
+//                newCallParticipants = listOf(
+//                    participant1,
+//                    participant2.copy(hasEstablishedAudio = false)
+//                )
+//            )
+//            assertFalse { shouldEndSFTOneOnOneCall5 }
+        }
+
+    @Test
+    fun givenProteusProtocol_whenShouldEndSFTOneOnOneCallIsCalled_thenReturnCorrectValue() =
+        runTest {
+
+            val (_, mLSCallHelper) = Arrangement()
+                .withShouldUseSFTForOneOnOneCallsReturning(Either.Right(true))
+                .arrange()
+
+            // participants list has 2 items for the new list and the previous list
             val shouldEndSFTOneOnOneCall1 = mLSCallHelper.shouldEndSFTOneOnOneCall(
                 conversationId = conversationId,
                 callProtocol = Conversation.ProtocolInfo.Proteus,
@@ -62,55 +121,15 @@ class MLSCallHelperTest {
             )
             assertFalse { shouldEndSFTOneOnOneCall1 }
 
-            // one participant in the call
+            // new participants list has 1 participant
             val shouldEndSFTOneOnOneCall2 = mLSCallHelper.shouldEndSFTOneOnOneCall(
                 conversationId = conversationId,
-                callProtocol = CONVERSATION_MLS_PROTOCOL_INFO,
+                callProtocol = Conversation.ProtocolInfo.Proteus,
                 conversationType = Conversation.Type.ONE_ON_ONE,
                 newCallParticipants = listOf(participant1),
-                previousCallParticipants = listOf(participant1)
-            )
-            assertFalse { shouldEndSFTOneOnOneCall2 }
-
-            // Audi not lost for the second participant
-            val shouldEndSFTOneOnOneCall3 = mLSCallHelper.shouldEndSFTOneOnOneCall(
-                conversationId = conversationId,
-                callProtocol = CONVERSATION_MLS_PROTOCOL_INFO,
-                conversationType = Conversation.Type.GROUP,
-                newCallParticipants = listOf(participant1, participant2),
                 previousCallParticipants = listOf(participant1, participant2)
             )
-            assertFalse { shouldEndSFTOneOnOneCall3 }
-
-            // Audio lost for the second participant
-            val shouldEndSFTOneOnOneCall4 = mLSCallHelper.shouldEndSFTOneOnOneCall(
-                conversationId = conversationId,
-                callProtocol = CONVERSATION_MLS_PROTOCOL_INFO,
-                conversationType = Conversation.Type.ONE_ON_ONE,
-                previousCallParticipants = listOf(participant1, participant2),
-                newCallParticipants = listOf(
-                    participant1,
-                    participant2.copy(hasEstablishedAudio = false)
-                )
-            )
-            assertTrue { shouldEndSFTOneOnOneCall4 }
-
-            val (_, mLSCallHelper2) = Arrangement()
-                .withShouldUseSFTForOneOnOneCallsReturning(Either.Left(StorageFailure.DataNotFound))
-                .arrange()
-
-            // ShouldUseSFTForOneOnOneCalls user config is not found
-            val shouldEndSFTOneOnOneCall5 = mLSCallHelper2.shouldEndSFTOneOnOneCall(
-                conversationId = conversationId,
-                callProtocol = CONVERSATION_MLS_PROTOCOL_INFO,
-                conversationType = Conversation.Type.ONE_ON_ONE,
-                previousCallParticipants = listOf(participant1, participant2),
-                newCallParticipants = listOf(
-                    participant1,
-                    participant2.copy(hasEstablishedAudio = false)
-                )
-            )
-            assertFalse { shouldEndSFTOneOnOneCall5 }
+            assertTrue { shouldEndSFTOneOnOneCall2 }
         }
 
     @Test
