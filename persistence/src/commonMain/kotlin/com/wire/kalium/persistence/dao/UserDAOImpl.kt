@@ -442,6 +442,13 @@ class UserDAOImpl internal constructor(
             userQueries.updateOneOnOnConversationId(conversationId, userId)
         }
 
+    override suspend fun updateActiveOneOnOneConversationIfNotSet(
+        userId: QualifiedIDEntity,
+        conversationId: QualifiedIDEntity,
+    ) = withContext(queriesContext) {
+        userQueries.setOneOnOneConversationIdIfNotSet(conversationId, userId)
+    }
+
     override suspend fun upsertConnectionStatuses(userStatuses: Map<QualifiedIDEntity, ConnectionEntity.State>) {
         withContext(queriesContext) {
             userQueries.transaction {
