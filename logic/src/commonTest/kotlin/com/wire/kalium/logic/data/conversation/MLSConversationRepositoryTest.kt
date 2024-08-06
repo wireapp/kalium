@@ -66,16 +66,16 @@ import com.wire.kalium.logic.test_util.TestKaliumDispatcher
 import com.wire.kalium.logic.test_util.testKaliumDispatcher
 import com.wire.kalium.logic.util.shouldFail
 import com.wire.kalium.logic.util.shouldSucceed
-import com.wire.kalium.network.api.base.authenticated.client.ClientApi
 import com.wire.kalium.network.api.authenticated.client.DeviceTypeDTO
 import com.wire.kalium.network.api.authenticated.client.SimpleClientResponse
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMemberRemovedDTO
 import com.wire.kalium.network.api.authenticated.conversation.ConversationMembers
 import com.wire.kalium.network.api.authenticated.keypackage.KeyPackageDTO
-import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.authenticated.message.SendMLSMessageResponse
 import com.wire.kalium.network.api.authenticated.notification.EventContentDTO
 import com.wire.kalium.network.api.authenticated.notification.MemberLeaveReasonDTO
+import com.wire.kalium.network.api.base.authenticated.client.ClientApi
+import com.wire.kalium.network.api.base.authenticated.message.MLSMessageApi
 import com.wire.kalium.network.api.model.ErrorResponse
 import com.wire.kalium.network.exceptions.KaliumException
 import com.wire.kalium.network.utils.NetworkResponse
@@ -84,7 +84,6 @@ import com.wire.kalium.persistence.dao.conversation.ConversationDAO
 import com.wire.kalium.persistence.dao.conversation.ConversationEntity
 import com.wire.kalium.persistence.dao.conversation.E2EIConversationClientInfoEntity
 import com.wire.kalium.persistence.dao.message.LocalId
-import com.wire.kalium.util.DateTimeUtil
 import com.wire.kalium.util.KaliumDispatcher
 import com.wire.kalium.util.time.UNIX_FIRST_DATE
 import io.ktor.util.decodeBase64Bytes
@@ -1165,6 +1164,7 @@ class MLSConversationRepositoryTest {
     fun givenSuccessResponse_whenRotatingKeysAndMigratingConversation_thenReturnsSuccess() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
             .withGetMLSClientSuccessful()
+            .withGetDefaultCipherSuiteSuccessful()
             .withRotateAllSuccessful()
             .withSendCommitBundleSuccessful()
             .withKeyPackageLimits(10)
@@ -1181,7 +1181,7 @@ class MLSConversationRepositoryTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.keyPackageRepository.replaceKeyPackages(any(), any())
+            arrangement.keyPackageRepository.replaceKeyPackages(any(), any(), any())
         }.wasInvoked(once)
 
         coVerify {
@@ -1197,6 +1197,7 @@ class MLSConversationRepositoryTest {
     fun givenNewDistributionsCRL_whenRotatingKeys_thenCheckRevocationList() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
             .withGetMLSClientSuccessful()
+            .withGetDefaultCipherSuiteSuccessful()
             .withRotateAllSuccessful(ROTATE_BUNDLE.copy(crlNewDistributionPoints = listOf("url")))
             .withSendCommitBundleSuccessful()
             .withKeyPackageLimits(10)
@@ -1222,6 +1223,7 @@ class MLSConversationRepositoryTest {
     fun givenReplacingKeypackagesFailed_whenRotatingKeysAndMigratingConversation_thenReturnsFailure() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
             .withGetMLSClientSuccessful()
+            .withGetDefaultCipherSuiteSuccessful()
             .withRotateAllSuccessful()
             .withKeyPackageLimits(10)
             .withReplaceKeyPackagesReturning(TEST_FAILURE)
@@ -1238,7 +1240,7 @@ class MLSConversationRepositoryTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.keyPackageRepository.replaceKeyPackages(any(), any())
+            arrangement.keyPackageRepository.replaceKeyPackages(any(), any(), any())
         }.wasInvoked(once)
 
         coVerify {
@@ -1250,6 +1252,7 @@ class MLSConversationRepositoryTest {
     fun givenSendingCommitBundlesFails_whenRotatingKeysAndMigratingConversation_thenReturnsFailure() = runTest {
         val (arrangement, mlsConversationRepository) = Arrangement(testKaliumDispatcher)
             .withGetMLSClientSuccessful()
+            .withGetDefaultCipherSuiteSuccessful()
             .withRotateAllSuccessful()
             .withKeyPackageLimits(10)
             .withReplaceKeyPackagesReturning(Either.Right(Unit))
@@ -1265,7 +1268,7 @@ class MLSConversationRepositoryTest {
         }.wasInvoked(once)
 
         coVerify {
-            arrangement.keyPackageRepository.replaceKeyPackages(any(), any())
+            arrangement.keyPackageRepository.replaceKeyPackages(any(), any(), any())
         }.wasInvoked(once)
 
         coVerify {
@@ -1609,7 +1612,7 @@ class MLSConversationRepositoryTest {
 
         suspend fun withReplaceKeyPackagesReturning(result: Either<CoreFailure, Unit>) = apply {
             coEvery {
-                keyPackageRepository.replaceKeyPackages(any(), any())
+                keyPackageRepository.replaceKeyPackages(any(), any(), any())
             }.returns(result)
         }
 
@@ -1629,6 +1632,12 @@ class MLSConversationRepositoryTest {
             coEvery {
                 mlsClientProvider.getMLSClient(any())
             }.returns(Either.Right(mlsClient))
+        }
+
+        fun withGetDefaultCipherSuiteSuccessful() = apply {
+            every {
+                mlsClient.getDefaultCipherSuite()
+            }.returns(CIPHER_SUITE.tag.toUShort())
         }
 
         suspend fun withGetExternalSenderKeySuccessful() = apply {
