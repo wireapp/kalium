@@ -40,7 +40,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
-// TODO: add tests for this class
 @Suppress("LongParameterList")
 class OnParticipantListChanged internal constructor(
     private val callRepository: CallRepository,
