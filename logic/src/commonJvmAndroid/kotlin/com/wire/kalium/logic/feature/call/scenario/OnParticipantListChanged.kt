@@ -50,7 +50,7 @@ class OnParticipantListChanged internal constructor(
     private val mlsCallHelper: MLSCallHelper,
     private val endCall: suspend (conversationId: ConversationId) -> Unit,
     private val callingScope: CoroutineScope,
-    private val jsonDecoder: Json = Json { ignoreUnknownKeys = true }
+    private val jsonDecoder: Json = Json
 ) : ParticipantChangedHandler {
 
     override fun onParticipantChanged(remoteConversationId: String, data: String, arg: Pointer?) {
