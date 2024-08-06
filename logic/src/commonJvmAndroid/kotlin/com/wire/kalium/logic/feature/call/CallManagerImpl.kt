@@ -532,6 +532,16 @@ class CallManagerImpl internal constructor(
                     qualifiedIdMapper = qualifiedIdMapper,
                     participantMapper = ParticipantMapperImpl(videoStateChecker, callMapper),
                     userRepository = userRepository,
+<<<<<<< HEAD
+=======
+                    userConfigRepository = userConfigRepository,
+                    mlsCallHelper = MLSCallHelperImpl(
+                        callRepository = callRepository,
+                        subconversationRepository = subconversationRepository,
+                        userConfigRepository = userConfigRepository
+                    ),
+                    endCall = { endCall(it) },
+>>>>>>> 3b8327e4ca (feat: End SFT oneOnOne call on proteus protocol (WPB-7153) (#2934))
                     callingScope = scope
                 ).keepingStrongReference()
 
