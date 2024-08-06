@@ -58,13 +58,11 @@ class OnParticipantListChanged internal constructor(
     override fun onParticipantChanged(remoteConversationId: String, data: String, arg: Pointer?) {
 
         val participantsChange = jsonDecoder.decodeFromString<CallParticipants>(data)
-        println("onParticipantChanged called")
 
         callingScope.launch {
             val participants = mutableListOf<Participant>()
             val conversationIdWithDomain = qualifiedIdMapper.fromStringToQualifiedID(remoteConversationId)
 
-            println("mapping participants")
             participantsChange.members.map { member ->
                 val participant = participantMapper.fromCallMemberToParticipant(member)
                 val userId = qualifiedIdMapper.fromStringToQualifiedID(member.userId)
@@ -79,7 +77,6 @@ class OnParticipantListChanged internal constructor(
                     participants.add(participant)
                 }
             }
-            println("finished mapping participants")
 
             if (userConfigRepository.shouldUseSFTForOneOnOneCalls().getOrElse(false)) {
                 val callProtocol = callRepository.currentCallProtocol(conversationIdWithDomain)
@@ -99,7 +96,6 @@ class OnParticipantListChanged internal constructor(
                     }
                 }
             }
-            println("callingRepository.updateCallParticipants")
 
             callRepository.updateCallParticipants(
                 conversationId = conversationIdWithDomain,
@@ -110,6 +106,5 @@ class OnParticipantListChanged internal constructor(
                         " | ConversationId: ${remoteConversationId.obfuscateId()}"
             )
         }
-        println("finished  participants changed")
     }
 }

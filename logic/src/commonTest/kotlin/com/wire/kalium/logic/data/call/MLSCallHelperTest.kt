@@ -84,23 +84,6 @@ class MLSCallHelperTest {
                 )
             )
             assertTrue { shouldEndSFTOneOnOneCall3 }
-
-//            val (_, mLSCallHelper2) = Arrangement()
-//                .withShouldUseSFTForOneOnOneCallsReturning(Either.Left(StorageFailure.DataNotFound))
-//                .arrange()
-
-            // ShouldUseSFTForOneOnOneCalls user config is not found
-//            val shouldEndSFTOneOnOneCall5 = mLSCallHelper2.shouldEndSFTOneOnOneCall(
-//                conversationId = conversationId,
-//                callProtocol = CONVERSATION_MLS_PROTOCOL_INFO,
-//                conversationType = Conversation.Type.ONE_ON_ONE,
-//                previousCallParticipants = listOf(participant1, participant2),
-//                newCallParticipants = listOf(
-//                    participant1,
-//                    participant2.copy(hasEstablishedAudio = false)
-//                )
-//            )
-//            assertFalse { shouldEndSFTOneOnOneCall5 }
         }
 
     @Test
