@@ -40,6 +40,7 @@ import io.mockative.eq
 import io.mockative.every
 import io.mockative.mock
 import io.mockative.once
+import io.mockative.verify
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
@@ -315,7 +316,7 @@ class OnCloseCallTest {
             }.wasInvoked(once)
 
             coVerify {
-                callRepository.leaveMlsConference(eq(conversationId))
+                mlsCallHelper.handleCallTermination(eq(conversationId), any())
             }.wasInvoked(once)
         }
 
@@ -340,10 +341,7 @@ class OnCloseCallTest {
 
             coVerify {
                 callRepository.persistMissedCall(conversationId)
-            }
-            coVerify {
-                mlsCallHelper.handleCallTermination(conversationId, any())
-            }.wasInvoked(once)
+            }.wasNotInvoked()
         }
 
     companion object {
