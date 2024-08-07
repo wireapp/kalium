@@ -216,11 +216,7 @@ class CallManagerImpl internal constructor(
                     .keepingStrongReference(),
                 closeCallHandler = OnCloseCall(
                     callRepository = callRepository,
-                    mlsCallHelper = MLSCallHelperImpl(
-                        callRepository = callRepository,
-                        subconversationRepository = subconversationRepository,
-                        userConfigRepository = userConfigRepository
-                    ),
+                    mlsCallHelper = MLSCallHelperImpl(callRepository, subconversationRepository, userConfigRepository),
                     networkStateObserver = networkStateObserver,
                     scope = scope,
                     qualifiedIdMapper = qualifiedIdMapper
