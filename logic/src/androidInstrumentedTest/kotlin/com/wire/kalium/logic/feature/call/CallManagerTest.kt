@@ -41,6 +41,7 @@ import com.wire.kalium.logic.feature.call.usecase.GetCallConversationTypeProvide
 import com.wire.kalium.logic.feature.message.MessageSender
 import com.wire.kalium.logic.featureFlags.KaliumConfigs
 import com.wire.kalium.logic.test_util.TestKaliumDispatcher
+import com.wire.kalium.network.NetworkStateObserver
 import io.mockative.Mock
 import io.mockative.any
 import io.mockative.eq
@@ -48,6 +49,7 @@ import io.mockative.mock
 import io.mockative.once
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
+import kotlinx.datetime.Instant
 import kotlin.test.BeforeTest
 import kotlin.test.Ignore
 import kotlin.test.Test
@@ -79,10 +81,10 @@ class CallManagerTest {
     private val selfConversationIdProvider = mock(SelfConversationIdProvider::class)
 
     @Mock
-    private val subconversationRepository = mock(classOf<SubconversationRepository>())
+    private val subconversationRepository = mock(SubconversationRepository::class)
 
     @Mock
-    private val userConfigRepository = mock(classOf<UserConfigRepository>())
+    private val userConfigRepository = mock(UserConfigRepository::class)
 
     @Mock
     private val conversationRepository = mock(ConversationRepository::class)
@@ -135,7 +137,7 @@ class CallManagerTest {
             networkStateObserver = networkStateObserver,
             kaliumConfigs = kaliumConfigs,
             mediaManagerService = mediaManagerService,
-            flowManagerService = flowManagerService,
+            flowManagerService = flowManagerService
         )
     }
 
