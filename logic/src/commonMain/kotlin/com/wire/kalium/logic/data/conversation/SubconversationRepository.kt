@@ -28,9 +28,9 @@ import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
 import com.wire.kalium.logic.kaliumLogger
 import com.wire.kalium.logic.wrapApiRequest
+import com.wire.kalium.network.api.authenticated.conversation.SubconversationDeleteRequest
+import com.wire.kalium.network.api.authenticated.conversation.SubconversationResponse
 import com.wire.kalium.network.api.base.authenticated.conversation.ConversationApi
-import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
-import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationResponse
 import io.ktor.util.collections.ConcurrentMap
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock

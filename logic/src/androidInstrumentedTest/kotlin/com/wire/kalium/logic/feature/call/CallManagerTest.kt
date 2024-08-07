@@ -76,17 +76,13 @@ class CallManagerTest {
     private val flowManagerService = mock(FlowManagerService::class)
 
     @Mock
-<<<<<<< HEAD
     private val selfConversationIdProvider = mock(SelfConversationIdProvider::class)
-=======
+
+    @Mock
     private val subconversationRepository = mock(classOf<SubconversationRepository>())
 
     @Mock
     private val userConfigRepository = mock(classOf<UserConfigRepository>())
-
-    @Mock
-    private val federatedIdMapper = mock(classOf<FederatedIdMapper>())
->>>>>>> 58b3896649 (feat: terminate the SFT OneOnOneCall once the other person hangup the call (WPB-7153) (#2923))
 
     @Mock
     private val conversationRepository = mock(ConversationRepository::class)

@@ -27,7 +27,7 @@ import com.wire.kalium.logic.data.id.toModel
 import com.wire.kalium.logic.functional.getOrElse
 import com.wire.kalium.logic.functional.onFailure
 import com.wire.kalium.logic.functional.onSuccess
-import com.wire.kalium.network.api.base.authenticated.conversation.SubconversationDeleteRequest
+import com.wire.kalium.network.api.authenticated.conversation.SubconversationDeleteRequest
 
 /**
  * Helper class to handle MLS call related operations.

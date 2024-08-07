@@ -32,12 +32,8 @@ import com.wire.kalium.logic.data.call.MLSCallHelper
 import com.wire.kalium.logic.data.conversation.Conversation
 import com.wire.kalium.logic.data.id.ConversationId
 import com.wire.kalium.logic.data.id.QualifiedIdMapper
-<<<<<<< HEAD
-import com.wire.kalium.logic.data.call.CallStatus
 import com.wire.kalium.network.NetworkState
 import com.wire.kalium.network.NetworkStateObserver
-=======
->>>>>>> 58b3896649 (feat: terminate the SFT OneOnOneCall once the other person hangup the call (WPB-7153) (#2923))
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
