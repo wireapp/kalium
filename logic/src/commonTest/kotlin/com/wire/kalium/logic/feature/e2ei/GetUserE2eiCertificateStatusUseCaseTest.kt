@@ -22,6 +22,8 @@ import com.wire.kalium.cryptography.CryptoCertificateStatus
 import com.wire.kalium.cryptography.CryptoQualifiedClientId
 import com.wire.kalium.cryptography.WireIdentity
 import com.wire.kalium.logic.MLSFailure
+import com.wire.kalium.logic.StorageFailure
+import com.wire.kalium.logic.data.conversation.mls.NameAndHandle
 import com.wire.kalium.logic.data.id.toCrypto
 import com.wire.kalium.logic.data.user.UserId
 import com.wire.kalium.logic.feature.e2ei.usecase.IsOtherUserE2EIVerifiedUseCaseImpl
@@ -30,13 +32,13 @@ import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangemen
 import com.wire.kalium.logic.util.arrangement.mls.IsE2EIEnabledUseCaseArrangementImpl
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangement
 import com.wire.kalium.logic.util.arrangement.mls.MLSConversationRepositoryArrangementImpl
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangement
+import com.wire.kalium.logic.util.arrangement.repository.UserRepositoryArrangementImpl
 import io.mockative.any
-import io.mockative.eq
 import io.mockative.verify
 import kotlinx.coroutines.test.runTest
 import kotlinx.datetime.Instant
 import kotlin.test.Test
-import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -48,6 +50,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
             val (_, getUserE2eiCertificateStatus) = arrange {
                 withE2EIEnabledAndMLSEnabled(true)
                 withUserIdentity(Either.Left(MLSFailure.WrongEpoch))
+                withNameAndHandle(Either.Right(NameAndHandle("user displayName", "userHandle")), any())
             }
 
             val result = getUserE2eiCertificateStatus(USER_ID)
@@ -61,6 +64,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
             val (_, getUserE2eiCertificateStatus) = arrange {
                 withE2EIEnabledAndMLSEnabled(true)
                 withUserIdentity(Either.Right(listOf()))
+                withNameAndHandle(Either.Right(NameAndHandle("user displayName", "userHandle")), any())
             }
 
             val result = getUserE2eiCertificateStatus(USER_ID)
@@ -73,6 +77,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
         runTest {
             val (_, getUserE2eiCertificateStatus) = arrange {
                 withE2EIEnabledAndMLSEnabled(true)
+                withNameAndHandle(Either.Right(NameAndHandle("user displayName", "userHandle")), any())
                 withUserIdentity(
                     Either.Right(
                         listOf(
@@ -93,6 +98,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
         runTest {
             val (_, getUserE2eiCertificateStatus) = arrange {
                 withE2EIEnabledAndMLSEnabled(true)
+                withNameAndHandle(Either.Right(NameAndHandle("user displayName", "userHandle")), any())
                 withUserIdentity(
                     Either.Right(
                         listOf(
@@ -113,6 +119,7 @@ class GetUserE2eiCertificateStatusUseCaseTest {
         runTest {
             val (_, getUserE2eiCertificateStatus) = arrange {
                 withE2EIEnabledAndMLSEnabled(true)
+                withNameAndHandle(Either.Right(NameAndHandle("user displayName", "userHandle")), any())
                 withUserIdentity(
                     Either.Right(
                         listOf(
@@ -148,15 +155,73 @@ class GetUserE2eiCertificateStatusUseCaseTest {
                 .wasNotInvoked()
         }
 
+    @Test
+    fun givenOneWireIdentityIsOk_whenUserNameDiffFromIdentityName_thenResultIsExpired() =
+        runTest {
+            val (_, getUserE2eiCertificateStatus) = arrange {
+                withE2EIEnabledAndMLSEnabled(true)
+                withNameAndHandle(Either.Right(NameAndHandle("another user displayName", "userHandle")), any())
+                withUserIdentity(Either.Right(listOf(WIRE_IDENTITY)))
+            }
+
+            val result = getUserE2eiCertificateStatus(USER_ID)
+
+            assertFalse(result)
+        }
+
+    @Test
+    fun givenOneWireIdentityIsOk_whenUserHandleDiffFromIdentityName_thenResultIsExpired() =
+        runTest {
+            val (_, getUserE2eiCertificateStatus) = arrange {
+                withE2EIEnabledAndMLSEnabled(true)
+                withNameAndHandle(Either.Right(NameAndHandle("user displayName", "anotherUserHandle")), any())
+                withUserIdentity(Either.Right(listOf(WIRE_IDENTITY)))
+            }
+
+            val result = getUserE2eiCertificateStatus(USER_ID)
+
+            assertFalse(result)
+        }
+
+    @Test
+    fun givenOneWireIdentityIsOk_whenUserNameAndHandleAbsent_thenResultIsExpired() =
+        runTest {
+            val (_, getUserE2eiCertificateStatus) = arrange {
+                withE2EIEnabledAndMLSEnabled(true)
+                withNameAndHandle(Either.Left(StorageFailure.DataNotFound), any())
+                withUserIdentity(Either.Right(listOf(WIRE_IDENTITY)))
+            }
+
+            val result = getUserE2eiCertificateStatus(USER_ID)
+
+            assertFalse(result)
+        }
+
+    @Test
+    fun givenOneWireIdentityIsOk_whenUserNameAndHandleSameAsInIdentity_thenResultIsTrue() =
+        runTest {
+            val (_, getUserE2eiCertificateStatus) = arrange {
+                withE2EIEnabledAndMLSEnabled(true)
+                withNameAndHandle(Either.Right(NameAndHandle("user displayName", "userHandle")), any())
+                withUserIdentity(Either.Right(listOf(WIRE_IDENTITY)))
+            }
+
+            val result = getUserE2eiCertificateStatus(USER_ID)
+
+            assertTrue(result)
+        }
+
     private class Arrangement(private val block: Arrangement.() -> Unit) :
         MLSConversationRepositoryArrangement by MLSConversationRepositoryArrangementImpl(),
-        IsE2EIEnabledUseCaseArrangement by IsE2EIEnabledUseCaseArrangementImpl() {
+        IsE2EIEnabledUseCaseArrangement by IsE2EIEnabledUseCaseArrangementImpl(),
+        UserRepositoryArrangement by UserRepositoryArrangementImpl() {
 
         fun arrange() = run {
             block()
             this@Arrangement to IsOtherUserE2EIVerifiedUseCaseImpl(
                 mlsConversationRepository = mlsConversationRepository,
-                isE2EIEnabledUseCase = isE2EIEnabledUseCase
+                isE2EIEnabledUseCase = isE2EIEnabledUseCase,
+                userRepository = userRepository
             )
         }
     }
