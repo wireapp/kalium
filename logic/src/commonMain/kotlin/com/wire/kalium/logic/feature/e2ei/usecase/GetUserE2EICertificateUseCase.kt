@@ -38,7 +38,7 @@ class IsOtherUserE2EIVerifiedUseCaseImpl internal constructor(
 ) : IsOtherUserE2EIVerifiedUseCase {
     override suspend operator fun invoke(userId: UserId): Boolean =
         if (isE2EIEnabledUseCase()) {
-            val nameHandle = userRepository.getNameAndHandler(userId).getOrNull()
+            val nameHandle = userRepository.getNameAndHandle(userId).getOrNull()
             mlsConversationRepository.getUserIdentity(userId).fold({ false }, { it.isUserMLSVerified(nameHandle) })
         } else {
             false

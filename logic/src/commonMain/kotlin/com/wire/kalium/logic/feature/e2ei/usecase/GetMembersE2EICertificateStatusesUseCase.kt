@@ -44,10 +44,10 @@ class GetMembersE2EICertificateStatusesUseCaseImpl internal constructor(
     override suspend operator fun invoke(conversationId: ConversationId, userIds: List<UserId>): Map<UserId, Boolean> =
         mlsConversationRepository.getMembersIdentities(conversationId, userIds)
             .map { identities ->
-                val usersNameAndHandler = conversationRepository.selectMembersNameAndHandle(conversationId).getOrElse(mapOf())
+                val usersNameAndHandle = conversationRepository.selectMembersNameAndHandle(conversationId).getOrElse(mapOf())
 
                 identities.mapValues { (userId, identities) ->
-                    identities.isUserMLSVerified(usersNameAndHandler[userId])
+                    identities.isUserMLSVerified(usersNameAndHandle[userId])
                 }
             }.getOrElse(mapOf())
 }
@@ -55,10 +55,10 @@ class GetMembersE2EICertificateStatusesUseCaseImpl internal constructor(
 /**
  * @return if given user is verified or not
  */
-fun List<WireIdentity>.isUserMLSVerified(nameAndHandler: NameAndHandle?) = this.isNotEmpty() && this.all {
+fun List<WireIdentity>.isUserMLSVerified(nameAndHandle: NameAndHandle?) = this.isNotEmpty() && this.all {
     it.x509Identity != null
             && it.credentialType == CredentialType.X509
             && it.status == CryptoCertificateStatus.VALID
-            && it.x509Identity?.handle?.handle == nameAndHandler?.handle
-            && it.x509Identity?.displayName == nameAndHandler?.name
+            && it.x509Identity?.handle?.handle == nameAndHandle?.handle
+            && it.x509Identity?.displayName == nameAndHandle?.name
 }

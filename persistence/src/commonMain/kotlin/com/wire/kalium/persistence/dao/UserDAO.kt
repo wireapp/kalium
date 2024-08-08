@@ -307,5 +307,5 @@ interface UserDAO {
     suspend fun upsertConnectionStatuses(userStatuses: Map<QualifiedIDEntity, ConnectionEntity.State>)
     suspend fun isAtLeastOneUserATeamMember(userId: List<UserIDEntity>, teamId: String): Boolean
     suspend fun getOneOnOnConversationId(userId: UserIDEntity): QualifiedIDEntity?
-    suspend fun getNameAndHandler(userId: UserIDEntity): NameAndHandleEntity?
+    suspend fun getNameAndHandle(userId: UserIDEntity): NameAndHandleEntity?
 }

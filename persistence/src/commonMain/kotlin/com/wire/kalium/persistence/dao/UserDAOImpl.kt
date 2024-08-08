@@ -459,7 +459,7 @@ class UserDAOImpl internal constructor(
         userQueries.selectOneOnOnConversationId(userId).executeAsOneOrNull()?.active_one_on_one_conversation_id
     }
 
-    override suspend fun getNameAndHandler(userId: UserIDEntity): NameAndHandleEntity? = withContext(queriesContext) {
+    override suspend fun getNameAndHandle(userId: UserIDEntity): NameAndHandleEntity? = withContext(queriesContext) {
         userQueries.selectNamesAndHandle(userId, ::NameAndHandleEntity).executeAsOneOrNull()
     }
 }

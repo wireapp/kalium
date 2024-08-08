@@ -151,7 +151,7 @@ interface UserRepository {
 
     suspend fun insertOrIgnoreIncompleteUsers(userIds: List<QualifiedID>): Either<StorageFailure, Unit>
     suspend fun getOneOnOnConversationId(userId: QualifiedID): Either<StorageFailure, ConversationId>
-    suspend fun getNameAndHandler(userId: UserId): Either<StorageFailure, NameAndHandle>
+    suspend fun getNameAndHandle(userId: UserId): Either<StorageFailure, NameAndHandle>
 }
 
 @Suppress("LongParameterList", "TooManyFunctions")
@@ -575,8 +575,8 @@ internal class UserDataSource internal constructor(
         userDAO.getOneOnOnConversationId(userId.toDao())?.toModel()
     }
 
-    override suspend fun getNameAndHandler(userId: UserId): Either<StorageFailure, NameAndHandle> = wrapStorageRequest {
-        userDAO.getNameAndHandler(userId.toDao())
+    override suspend fun getNameAndHandle(userId: UserId): Either<StorageFailure, NameAndHandle> = wrapStorageRequest {
+        userDAO.getNameAndHandle(userId.toDao())
     }.map { NameAndHandle.fromEntity(it) }
 
     companion object {

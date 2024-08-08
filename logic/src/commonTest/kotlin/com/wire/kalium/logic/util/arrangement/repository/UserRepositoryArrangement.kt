@@ -84,7 +84,7 @@ internal interface UserRepositoryArrangement {
 
     fun withMarkAsDeleted(result: Either<StorageFailure, Unit>, userId: Matcher<List<UserId>>)
     fun withOneOnOnConversationId(result: Either<StorageFailure, ConversationId>, userId: Matcher<UserId> = any())
-    fun withNameAndHandler(result: Either<StorageFailure, NameAndHandle>, userId: Matcher<UserId>)
+    fun withNameAndHandle(result: Either<StorageFailure, NameAndHandle>, userId: Matcher<UserId>)
 }
 
 @Suppress("INAPPLICABLE_JVM_NAME")
@@ -223,9 +223,9 @@ internal open class UserRepositoryArrangementImpl : UserRepositoryArrangement {
             .thenReturn(result)
     }
 
-    override fun withNameAndHandler(result: Either<StorageFailure, NameAndHandle>, userId: Matcher<UserId>) {
+    override fun withNameAndHandle(result: Either<StorageFailure, NameAndHandle>, userId: Matcher<UserId>) {
         given(userRepository)
-            .suspendFunction(userRepository::getNameAndHandler)
+            .suspendFunction(userRepository::getNameAndHandle)
             .whenInvokedWith(userId)
             .thenReturn(result)
     }
